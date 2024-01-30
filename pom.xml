@@ -17,7 +17,7 @@
   <modules>
     <module>client</module>
     <module>common</module>
-    <module>els-schema</module>
+    <module>schema</module>
     <module>data-generator</module>
     <module>importer-common</module>
     <module>importer-8_4</module>

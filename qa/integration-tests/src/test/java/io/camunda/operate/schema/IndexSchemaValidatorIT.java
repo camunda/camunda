@@ -83,7 +83,7 @@ public class IndexSchemaValidatorIT {
 
   @Before
   public void setUp() {
-    operatePrefix = operateProperties.getElasticsearch().getIndexPrefix();
+    operatePrefix = DatabaseInfo.isOpensearch()?operateProperties.getOpensearch().getIndexPrefix():operateProperties.getElasticsearch().getIndexPrefix();
     allIndexNames = indexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).collect(Collectors.toList());
     allIndexAliases = indexDescriptors.stream().map(IndexDescriptor::getAlias).collect(Collectors.toList());
     newerVersions = Set.of("100.1.1", "100.1.2", "100.0.1", "100.2.3");
@@ -93,29 +93,29 @@ public class IndexSchemaValidatorIT {
   @Test
   public void testHasAnyOperateIndices() {
     // No indices
-    whenELSClientReturnsIndexNames(List.of());
+    whenDatabaseClientReturnsIndexNames(Set.of());
     assertThat(indexSchemaValidator.hasAnyOperateIndices()).isFalse();
     // At least one operate index
-    whenELSClientReturnsIndexNames(List.of(operatePrefix + "-index", "not-operate"));
+    whenDatabaseClientReturnsIndexNames(Set.of(operatePrefix + "-index", "not-operate"));
     assertThat(indexSchemaValidator.hasAnyOperateIndices()).isTrue();
   }
 
   @Test
   public void testSchemaExists() {
     // No indices
-    whenELSClientReturnsIndexNames(List.of());
+    whenDatabaseClientReturnsIndexNames(Set.of());
     assertThat(indexSchemaValidator.schemaExists()).isFalse();
     // Only 2 operate indices
-    whenELSClientReturnsIndexNames(List.of(allIndexNames.get(0), allIndexNames.get(1)));
+    whenDatabaseClientReturnsIndexNames(Set.of(allIndexNames.get(0), allIndexNames.get(1)));
     assertThat(indexSchemaValidator.schemaExists()).isFalse();
     //All indices, but no aliases
-    whenELSClientReturnsIndexNames(allIndexNames);
+    whenDatabaseClientReturnsIndexNames(new HashSet<>(allIndexNames));
     assertThat(indexSchemaValidator.schemaExists()).isFalse();
     //All indices, but only two aliases
-    whenELSClientReturnsIndexNames(allIndexNames, List.of(allIndexAliases.get(0), allIndexAliases.get(1)));
+    whenDatabaseClientReturnsIndexNames(new HashSet<>(allIndexNames), Set.of(allIndexAliases.get(0), allIndexAliases.get(1)));
     assertThat(indexSchemaValidator.schemaExists()).isFalse();
     // All operate indices
-    whenELSClientReturnsIndexNames(allIndexNames, allIndexAliases);
+    whenDatabaseClientReturnsIndexNames(new HashSet<>(allIndexNames), new HashSet<>(allIndexAliases));
     assertThat(indexSchemaValidator.schemaExists()).isTrue();
   }
 
@@ -123,50 +123,50 @@ public class IndexSchemaValidatorIT {
   public void testNewerVersionsForIndex() {
 
     // Only older versions
-    whenELSClientReturnsIndexNames(versionsOf(processIndex, olderVersions));
+    whenDatabaseClientReturnsIndexNames(versionsOf(processIndex, olderVersions));
     assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).isEmpty();
     // Only current version
-    whenELSClientReturnsIndexNames(versionsOf(processIndex, Set.of(processIndex.getVersion())));
+    whenDatabaseClientReturnsIndexNames(versionsOf(processIndex, Set.of(processIndex.getVersion())));
     assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).isEmpty();
     // Only newer versions
-    whenELSClientReturnsIndexNames(versionsOf(processIndex, newerVersions));
+    whenDatabaseClientReturnsIndexNames(versionsOf(processIndex, newerVersions));
     assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).containsAll(newerVersions);
   }
 
   @Test
   public void testOlderVersionsForIndex() {
     // Only newer versions
-    whenELSClientReturnsIndexNames(versionsOf(processIndex, newerVersions));
+    whenDatabaseClientReturnsIndexNames(versionsOf(processIndex, newerVersions));
     assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEmpty();
     // Only current version
-    whenELSClientReturnsIndexNames(versionsOf(processIndex, Set.of(processIndex.getVersion())));
+    whenDatabaseClientReturnsIndexNames(versionsOf(processIndex, Set.of(processIndex.getVersion())));
     assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEmpty();
     // Only older versions
-    whenELSClientReturnsIndexNames(versionsOf(processIndex, olderVersions));
+    whenDatabaseClientReturnsIndexNames(versionsOf(processIndex, olderVersions));
     assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEqualTo(olderVersions);
   }
 
   @Test
   public void testIsValid() {
     // No indices
-    whenELSClientReturnsIndexNames(List.of());
+    whenDatabaseClientReturnsIndexNames(Set.of());
     indexSchemaValidator.validate();
 
     // Current indices
-    whenELSClientReturnsIndexNames(allIndexNames);
+    whenDatabaseClientReturnsIndexNames(new HashSet<>(allIndexNames));
     indexSchemaValidator.validate();
 
     // 1 older version for index
-    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName(processIndex, "0.9.0")));
+    whenDatabaseClientReturnsIndexNames(Set.of(getFullQualifiedIndexName(processIndex, "0.9.0")));
     indexSchemaValidator.validate();
 
     // two indices with one name substring of another name
-    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName("process", "0.8.0"),
+    whenDatabaseClientReturnsIndexNames(Set.of(getFullQualifiedIndexName("process", "0.8.0"),
         getFullQualifiedIndexName("process-instance", "0.9.0")));
     indexSchemaValidator.validate();
 
     // two indices with one name substring of another name
-    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName("operation", "0.8.0"),
+    whenDatabaseClientReturnsIndexNames(Set.of(getFullQualifiedIndexName("operation", "0.8.0"),
         getFullQualifiedIndexName("batch-operation", "0.9.0")));
     indexSchemaValidator.validate();
   }
@@ -174,7 +174,7 @@ public class IndexSchemaValidatorIT {
   @Test
   public void testIsNotValidForMoreThanOneOlderVersion() {
     // 2 older version for index
-    whenELSClientReturnsIndexNames(List.of(
+    whenDatabaseClientReturnsIndexNames(Set.of(
         getFullQualifiedIndexName(processIndex, "0.9.0"),
         getFullQualifiedIndexName(processIndex, "0.8.0")));
     assertThatExceptionOfType(OperateRuntimeException.class).isThrownBy(() -> indexSchemaValidator.validate())
@@ -185,34 +185,38 @@ public class IndexSchemaValidatorIT {
   public void testIsNotValidForANewerVersion() {
     // 1 newer version for index
     var newerVersion = "10.0.0";
-    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName(processIndex, newerVersion)));
+    whenDatabaseClientReturnsIndexNames(Set.of(getFullQualifiedIndexName(processIndex, newerVersion)));
     assertThatExceptionOfType(OperateRuntimeException.class).isThrownBy(() -> indexSchemaValidator.validate())
         .withMessageContaining("Newer version(s) for process ("+processIndex.getVersion()+") already exists: ["+newerVersion+"]");
   }
 
-  private void whenELSClientReturnsIndexNames(List<String> givenIndexNames) {
-    whenELSClientReturnsIndexNames(givenIndexNames, null);
+  private void whenDatabaseClientReturnsIndexNames(Set<String> givenIndexNames) {
+    whenDatabaseClientReturnsIndexNames(givenIndexNames, null);
   }
 
-  private void whenELSClientReturnsIndexNames(List<String> givenIndexNames, List<String> givenAliasesNames) {
-    Set<String> returnValuesIndices = new HashSet<>(givenIndexNames);
-    when(retryElasticsearchClient.getIndexNames(anyString())).thenReturn(returnValuesIndices);
-    Set<String> returnValuesAliases = new HashSet<>();
+  private void mockElasticsearchReturnIndexNames(Set<String> givenIndexNames, Set<String> givenAliasesNames){
+    when(retryElasticsearchClient.getIndexNames(anyString())).thenReturn(givenIndexNames);
     if (givenAliasesNames != null) {
-      returnValuesAliases.addAll(givenAliasesNames);
-      when(retryElasticsearchClient.getAliasesNames(anyString())).thenReturn(returnValuesAliases);
+      when(retryElasticsearchClient.getAliasesNames(anyString())).thenReturn(givenAliasesNames);
     }
+  }
 
+  private void mockOpenSearchReturnIndexNames(Set<String> givenIndexNames, Set<String> givenAliasesNames){
     OpenSearchIndexOperations indexMock = mock(OpenSearchIndexOperations.class);
-    when(indexMock.getIndexNamesWithRetries(anyString())).thenReturn(returnValuesIndices);
+    when(indexMock.getIndexNamesWithRetries(anyString())).thenReturn(givenIndexNames);
     if (givenAliasesNames != null) {
-      when(indexMock.getAliasesNamesWithRetries(anyString())).thenReturn(returnValuesAliases);
+      when(indexMock.getAliasesNamesWithRetries(anyString())).thenReturn(givenAliasesNames);
     }
     when(richOpenSearchClient.index()).thenReturn(indexMock);
   }
 
-  private List<String> versionsOf(IndexDescriptor index, Set<String> versions) {
-    return map(versions, version -> getFullQualifiedIndexName(index, version));
+  private void whenDatabaseClientReturnsIndexNames(Set<String> givenIndexNames, Set<String> givenAliasesNames) {
+    mockElasticsearchReturnIndexNames(givenIndexNames, givenAliasesNames);
+    mockOpenSearchReturnIndexNames(givenIndexNames, givenAliasesNames);
+  }
+
+  private Set<String> versionsOf(IndexDescriptor index, Set<String> versions) {
+    return new HashSet<>(map(versions, version -> getFullQualifiedIndexName(index, version)));
   }
 
   // See AbstractIndexDescriptor::getFullQualifiedIndexName

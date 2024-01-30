@@ -21,7 +21,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-els-schema</artifactId>
+      <artifactId>operate-schema</artifactId>
       <version>${project.version}</version>
     </dependency>
 
