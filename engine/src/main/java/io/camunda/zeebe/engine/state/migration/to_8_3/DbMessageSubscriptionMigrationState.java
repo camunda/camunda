@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
+import io.camunda.zeebe.engine.state.migration.MemoryBoundedColumnIteration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -33,6 +34,7 @@ public class DbMessageSubscriptionMigrationState {
   }
 
   public void migrateMessageSubscriptionForMultiTenancy() {
+    final var iterator = new MemoryBoundedColumnIteration();
     // setting the tenant id key once, because it's the same for all steps below
     to.tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -40,16 +42,15 @@ public class DbMessageSubscriptionMigrationState {
     - `DEPRECATED_MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY` -> `MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY`
     - Prefix first part of composite key with tenant
      */
-    from.getMessageNameAndCorrelationKeyColumnFamily()
-        .forEach(
-            (key, value) -> {
-              to.messageName.wrapBuffer(key.first().first().getBuffer());
-              to.correlationKey.wrapBuffer(key.first().second().getBuffer());
-              to.elementInstanceKey.wrapLong(key.second().getValue());
-              to.messageNameAndCorrelationKeyColumnFamily.insert(
-                  to.tenantAwareNameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
-              from.getMessageNameAndCorrelationKeyColumnFamily().deleteExisting(key);
-            });
+    iterator.drain(
+        from.getMessageNameAndCorrelationKeyColumnFamily(),
+        (key, value) -> {
+          to.messageName.wrapBuffer(key.first().first().getBuffer());
+          to.correlationKey.wrapBuffer(key.first().second().getBuffer());
+          to.elementInstanceKey.wrapLong(key.second().getValue());
+          to.messageNameAndCorrelationKeyColumnFamily.insert(
+              to.tenantAwareNameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
+        });
   }
 
   private static final class DbMessageSubscriptionState {
