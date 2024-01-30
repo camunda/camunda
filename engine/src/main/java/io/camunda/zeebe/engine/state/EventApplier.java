@@ -19,6 +19,23 @@ public interface EventApplier {
    * @param key the key of the event
    * @param intent the intent of the event
    * @param recordValue the value of the event
+   * @throws NoSuchEventApplier if no event applier is found for the given intent. The event is not
+   *     applied and it is up to the caller to decide what to do.
    */
-  void applyState(long key, Intent intent, RecordValue recordValue);
+  void applyState(long key, Intent intent, RecordValue recordValue) throws NoSuchEventApplier;
+
+  /** Thrown when no event applier is found for a given intent and record version. */
+  abstract sealed class NoSuchEventApplier extends RuntimeException {
+    public NoSuchEventApplier(final String message) {
+      super(message);
+    }
+
+    public static final class NoApplierForIntent extends NoSuchEventApplier {
+      public NoApplierForIntent(final Intent intent) {
+        super(
+            String.format(
+                "Expected to find an event applier for intent '%s', but none was found.", intent));
+      }
+    }
+  }
 }
