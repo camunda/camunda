@@ -53,7 +53,7 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
 
     if (!Set.of(Result.Created, Result.Updated).contains(result)) {
       String message = "Could not write Instant preview dashboard data to Opensearch. " +
-        "Maybe the connection to Opencsearch got lost?";
+        "Maybe the connection to Opensearch got lost?";
       log.error(message);
       throw new OptimizeRuntimeException(message);
     }
@@ -82,6 +82,8 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
           )
         )
       );
+
+    log.debug("Deleting [{}] instant dashboard documents by id with bulk request.", dashboardIdsToBeDeleted.size());
 
     osClient.bulk(
       bulkRequestBuilder,

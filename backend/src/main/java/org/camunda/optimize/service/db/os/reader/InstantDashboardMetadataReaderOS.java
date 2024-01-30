@@ -49,7 +49,7 @@ public class InstantDashboardMetadataReaderOS implements InstantDashboardMetadat
     if (getResponse.found()) {
       return Optional.of(getResponse.source().getDashboardId());
     } else {
-      String reason = "Could not find dashboard data for key [" + instantDashboardKey + "] in Elasticsearch.";
+      String reason = "Could not find dashboard data for key [" + instantDashboardKey + "] in Opensearch.";
       log.error(reason);
       return Optional.empty();
     }
