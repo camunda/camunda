@@ -71,9 +71,7 @@ public class DbMigratorImpl implements DbMigrator {
     final var executedMigrations = new ArrayList<MigrationTask>();
     for (int index = 1; index <= migrationTasks.size(); index++) {
       // one based index looks nicer in logs
-
       final var migration = migrationTasks.get(index - 1);
-
       final var executed = handleMigrationTask(migration, index, migrationTasks.size());
       if (executed) {
         executedMigrations.add(migration);
@@ -109,10 +107,7 @@ public class DbMigratorImpl implements DbMigrator {
   private boolean handleMigrationTask(
       final MigrationTask migrationTask, final int index, final int total) {
     if (migrationTask.needsToRun(processingState)) {
-      try {
-        runMigration(migrationTask, index, total);
-      } finally {
-      }
+      runMigration(migrationTask, index, total);
       return true;
     } else {
       logMigrationSkipped(migrationTask, index, total);
