@@ -8,30 +8,94 @@ package org.camunda.optimize.service.db.os.writer;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import org.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.Result;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import static java.lang.String.format;
+import static org.camunda.optimize.service.db.DatabaseConstants.INSTANT_DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.longTerms;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.not;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.searchRequestBuilder;
 
 @AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadataWriter {
+  private final OptimizeOpenSearchClient osClient;
 
   @Override
   public void saveInstantDashboard(final InstantDashboardDataDto dashboardDataDto) {
-    //todo will be handled in the OPT-7376
+    log.debug("Writing new Instant preview dashboard to Opensearch");
+    String id = dashboardDataDto.getInstantDashboardId();
+
+    IndexRequest.Builder<InstantDashboardDataDto> requestBuilder = new IndexRequest.Builder<InstantDashboardDataDto>()
+      .index(INSTANT_DASHBOARD_INDEX_NAME)
+      .id(id)
+      .document(dashboardDataDto)
+      .refresh(Refresh.True);
+
+    Result result = osClient.index(requestBuilder).result();
+
+    if (!Set.of(Result.Created, Result.Updated).contains(result)) {
+      String message = "Could not write Instant preview dashboard data to Opensearch. " +
+        "Maybe the connection to Opensearch got lost?";
+      log.error(message);
+      throw new OptimizeRuntimeException(message);
+    }
+
+    log.debug("Instant preview dashboard information with id [{}] has been created", id);
   }
 
   @Override
   public List<String> deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(final List<Long> hashesAllowed) throws IOException {
-    //todo will be handled in the OPT-7376
-    return new ArrayList<>();
+    record Result(String dashboardId){}
+    BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
+    SearchRequest.Builder requestBuilder = new SearchRequest.Builder()
+      .index(INSTANT_DASHBOARD_INDEX_NAME)
+      .query(not(longTerms(InstantDashboardDataDto.Fields.templateHash, hashesAllowed)));
+
+    List<String> dashboardIdsToBeDeleted = osClient.searchValues(requestBuilder, Result.class)
+      .stream()
+      .map(Result::dashboardId)
+      .toList();
+
+    dashboardIdsToBeDeleted.forEach(id ->
+        bulkRequestBuilder.operations(op ->
+          op.delete(del -> del
+            .index(INSTANT_DASHBOARD_INDEX_NAME)
+            .id(id)
+          )
+        )
+      );
+
+    log.debug("Deleting [{}] instant dashboard documents by id with bulk request.", dashboardIdsToBeDeleted.size());
+
+    osClient.bulk(
+      bulkRequestBuilder,
+      format(
+        "Failed to bulk delete from %s %s outdated template entries: %s",
+        INSTANT_DASHBOARD_INDEX_NAME,
+        dashboardIdsToBeDeleted.size(),
+        dashboardIdsToBeDeleted
+      )
+    );
+
+    return dashboardIdsToBeDeleted;
   }
 
 }
