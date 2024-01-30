@@ -83,7 +83,7 @@ public abstract class AbstractUserTaskWriterES extends AbstractProcessInstanceDa
       .importName(importName)
       .source(newEntryIfAbsent)
       .type(RequestType.UPDATE)
-      .retryNumbOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+      .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
       .build();
   }
 

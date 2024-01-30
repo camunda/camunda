@@ -182,8 +182,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         }
         bulkRequestBuilder.operations(operations)
           .index(indexName);
-        OpenSearchWriterUtil.doBulkRequest(
-          prefixAwareOptimizeOpenSearchClient,
+        prefixAwareOptimizeOpenSearchClient.doBulkRequest(
           bulkRequestBuilder,
           operations,
           "add entries",

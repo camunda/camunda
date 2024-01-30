@@ -6,9 +6,12 @@
 package org.camunda.optimize.service.db;
 
 import lombok.Getter;
+import org.apache.tika.utils.StringUtils;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
+import org.camunda.optimize.dto.optimize.RequestType;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.ScriptData;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
@@ -20,6 +23,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public abstract class DatabaseClient implements ConfigurationReloadable {
@@ -64,6 +68,12 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
                                                    final List<ImportRequestDto> importRequestDtos,
                                                    final Boolean retryFailedRequestsOnNestedDocLimit);
 
+  public abstract Set<String> performSearchDefinitionQuery(final String indexName,
+                                                           final String definitionXml,
+                                                           final String definitionIdField,
+                                                           final int maxPageSize,
+                                                           final String engineAlias);
+
   protected String[] convertToPrefixedAliasNames(final String[] indices) {
     return Arrays.stream(indices)
       .map(this::convertToPrefixedAliasName)
@@ -77,10 +87,57 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
     return hasExcludePrefix ? "-" + prefixedIndexName : prefixedIndexName;
   }
 
-  public abstract Set<String> performSearchDefinitionQuery(final String indexName,
-                                                           final String definitionXml,
-                                                           final String definitionIdField,
-                                                           final int maxPageSize,
-                                                           final String engineAlias);
+  protected void validateOperationParams(final ImportRequestDto importRequestDto) {
+    if (Objects.isNull(importRequestDto.getType())) {
+      throw new OptimizeRuntimeException(String.format(
+        "The %s param of ImportRequestDto is not set for request",
+        ImportRequestDto.Fields.type.name()
+      ));
+    }
+    if (StringUtils.isBlank(importRequestDto.getIndexName())) {
+      throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
+        importRequestDto.getType(),
+        ImportRequestDto.Fields.indexName.name()
+      ));
+    }
+    if (StringUtils.isBlank(importRequestDto.getId())) {
+      throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
+        importRequestDto.getType(),
+        ImportRequestDto.Fields.id.name()
+      ));
+    }
+    switch (importRequestDto.getType()) {
+      case INDEX -> {
+        if (Objects.isNull(importRequestDto.getSource())) {
+          throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
+            RequestType.INDEX,
+            ImportRequestDto.Fields.source.name()
+          ));
+        }
+      }
+      case UPDATE -> {
+        if (Objects.isNull(importRequestDto.getScriptData())) {
+          throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
+            RequestType.UPDATE,
+            ImportRequestDto.Fields.scriptData.name()
+          ));
+        }
+      }
+    }
+  }
+
+  protected boolean validateImportName(final ImportRequestDto importRequestDto) {
+    if (StringUtils.isBlank(importRequestDto.getImportName())) {
+      throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
+        importRequestDto.getType(),
+        ImportRequestDto.Fields.importName.name()
+      ));
+    }
+    return true;
+  }
+
+  private String generateErrorMessageForValidationImportRequestDto(final RequestType type, final String fieldName) {
+    return String.format("The %s param of ImportRequestDto is not valid for request type %s", fieldName, type);
+  }
 
 }

@@ -120,8 +120,7 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
   private void writeDecisionDefinitionInformation(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     String importItemName = "decision definition information";
     log.debug("Writing [{}] {} to OS.", decisionDefinitionOptimizeDtos.size(), importItemName);
-    OpenSearchWriterUtil.doImportBulkRequestWithList(
-      osClient,
+    osClient.doImportBulkRequestWithList(
       importItemName,
       decisionDefinitionOptimizeDtos,
       this::addImportDecisionDefinitionRequest,

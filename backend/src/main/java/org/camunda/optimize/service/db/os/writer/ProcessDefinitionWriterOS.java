@@ -145,8 +145,7 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
     String importItemName = "process definition information";
     log.debug("Writing [{}] {} to OpenSearch.", procDefs.size(), importItemName);
 
-    OpenSearchWriterUtil.doImportBulkRequestWithList(
-      osClient,
+    osClient.doImportBulkRequestWithList(
       importItemName,
       procDefs,
       this::addImportProcessDefinitionToRequest,

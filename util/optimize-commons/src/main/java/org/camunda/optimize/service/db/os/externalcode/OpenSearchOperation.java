@@ -16,6 +16,7 @@ import org.opensearch.client.util.ObjectBuilderBase;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 @AllArgsConstructor
@@ -30,6 +31,7 @@ public class OpenSearchOperation {
       Field indexField = request.getClass().getDeclaredField(INDEX_FIELD);
       indexField.setAccessible(true);
       Object indexFieldContent = indexField.get(request);
+      if(Objects.isNull(indexFieldContent)) return request;
       if (indexFieldContent instanceof final String currentIndex) {
         indexField.set(request, getIndexAliasFor(currentIndex));
       } else if (indexFieldContent instanceof List<?> currentIndexes) {

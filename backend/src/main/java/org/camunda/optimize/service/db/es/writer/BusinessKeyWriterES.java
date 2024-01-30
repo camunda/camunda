@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.RequestType;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -36,22 +35,6 @@ public class BusinessKeyWriterES implements BusinessKeyWriter {
   private final ObjectMapper objectMapper;
 
   @Override
-  public List<ImportRequestDto> generateBusinessKeyImports(List<ProcessInstanceDto> processInstanceDtos) {
-    List<BusinessKeyDto> businessKeysToSave = processInstanceDtos.stream()
-      .map(this::extractBusinessKey)
-      .distinct().toList();
-
-    String importItemName = "business keys";
-    log.debug("Creating imports for {} [{}].", businessKeysToSave.size(), importItemName);
-
-    return businessKeysToSave.stream()
-      .map(entry -> createIndexRequestForBusinessKey(entry, importItemName))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .toList();
-  }
-
-  @Override
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
     final BulkRequest bulkRequest = new BulkRequest();
     log.debug("Deleting [{}] business key documents by id with bulk request.", processInstanceIds.size());
@@ -59,7 +42,8 @@ public class BusinessKeyWriterES implements BusinessKeyWriter {
     ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, BUSINESS_KEY_INDEX_NAME, false);
   }
 
-  private Optional<ImportRequestDto> createIndexRequestForBusinessKey(final BusinessKeyDto businessKeyDto,
+  @Override
+  public Optional<ImportRequestDto> createIndexRequestForBusinessKey(final BusinessKeyDto businessKeyDto,
                                                                       final String importItemName) {
     try {
       return Optional.of(ImportRequestDto.builder()

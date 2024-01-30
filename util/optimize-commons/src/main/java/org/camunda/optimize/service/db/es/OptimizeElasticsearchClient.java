@@ -406,73 +406,33 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     switch (requestDto.getType()) {
       case INDEX -> bulkRequest.add(new IndexRequest()
                                       .id(requestDto.getId())
-                                      .source(requestDto.getSource(), XContentType.JSON)
+                                      .source(castSourceToStringJson(requestDto), XContentType.JSON)
                                       .index(requestDto.getIndexName()));
       case UPDATE -> bulkRequest.add(new UpdateRequest()
                                        .id(requestDto.getId())
                                        .index(requestDto.getIndexName())
-                                       .upsert(requestDto.getSource(), XContentType.JSON)
+                                       .upsert(castSourceToStringJson(requestDto), XContentType.JSON)
                                        .script(createDefaultScriptWithPrimitiveParams(
                                          requestDto.getScriptData().scriptString(),
                                          requestDto.getScriptData().params()
                                        ))
-                                       .retryOnConflict(requestDto.getRetryNumbOnConflict()));
+                                       .retryOnConflict(requestDto.getRetryNumberOnConflict()));
     }
   }
 
-  private boolean validateImportName(final ImportRequestDto importRequestDto) {
-    if (StringUtils.isBlank(importRequestDto.getImportName())) {
-      throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
-        importRequestDto.getType(),
-        ImportRequestDto.Fields.importName.name()
-      ));
+  private String castSourceToStringJson(final ImportRequestDto requestDto) {
+    if (requestDto.getSource() instanceof String converted) {
+      return converted;
+    } else {
+      final String errorMessage = String.format(
+        "Received object of type %s as source for the importRequestDto with name %s and id %s. " +
+          "ElasticSearch requires a source of type String.",
+        requestDto.getSource() != null ? requestDto.getSource().getClass() : "null",
+        requestDto.getImportName(),
+        requestDto.getId()
+      );
+      throw new OptimizeRuntimeException(errorMessage);
     }
-    return true;
-  }
-
-  private void validateOperationParams(final ImportRequestDto importRequestDto) {
-
-    if (Objects.isNull(importRequestDto.getType())) {
-      throw new OptimizeRuntimeException(String.format(
-        "The %s param of ImportRequestDto is not set for request",
-        ImportRequestDto.Fields.type.name()
-      ));
-    }
-    if (StringUtils.isBlank(importRequestDto.getIndexName())) {
-      throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
-        importRequestDto.getType(),
-        ImportRequestDto.Fields.indexName.name()
-      ));
-    }
-    if (StringUtils.isBlank(importRequestDto.getId())) {
-      throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
-        importRequestDto.getType(),
-        ImportRequestDto.Fields.id.name()
-      ));
-    }
-
-    switch (importRequestDto.getType()) {
-      case INDEX -> {
-        if (StringUtils.isBlank(importRequestDto.getSource())) {
-          throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
-            RequestType.INDEX,
-            ImportRequestDto.Fields.source.name()
-          ));
-        }
-      }
-      case UPDATE -> {
-        if (Objects.isNull(importRequestDto.getScriptData())) {
-          throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
-            RequestType.UPDATE,
-            ImportRequestDto.Fields.scriptData.name()
-          ));
-        }
-      }
-    }
-  }
-
-  private String generateErrorMessageForValidationImportRequestDto(final RequestType type, final String fieldName) {
-    return String.format("The %s param of ImportRequestDto is not valid for request type %s", fieldName, type);
   }
 
   //to avoid cross-dependency, we copied that method from the ElasticsearchWriterUtil

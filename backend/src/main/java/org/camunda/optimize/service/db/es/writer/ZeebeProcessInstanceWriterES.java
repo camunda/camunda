@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.RequestType;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -64,7 +63,7 @@ public class ZeebeProcessInstanceWriterES extends AbstractProcessInstanceDataWri
                  .id(procInst.getProcessInstanceId())
                  .indexName(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
                  .source(newEntryIfAbsent)
-                 .retryNumbOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                 .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
                  .scriptData(DatabaseWriterUtil.createScriptData(createProcessInstanceUpdateScript(), params, objectMapper))
                  .build();
              } catch (IOException e) {

@@ -116,7 +116,7 @@ public class AbstractProcessInstanceWriterES extends AbstractProcessInstanceData
       .importName(importItemName)
       .source(newEntryIfAbsent)
       .type(RequestType.UPDATE)
-      .retryNumbOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+      .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
       .build();
   }
 

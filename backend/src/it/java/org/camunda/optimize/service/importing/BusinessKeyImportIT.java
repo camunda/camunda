@@ -60,7 +60,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void importOfBusinessKeyForRunningProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws
+  public void importOfBusinessKeyForRunningProcess_isImportedOnNextSuccessfulAttemptAfterDbFailures() throws
                                                                                                       JsonProcessingException {
     // given
     importAllEngineEntitiesFromScratch();
@@ -68,7 +68,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     // then
     assertThat(getAllStoredBusinessKeys()).isEmpty();
 
-    // when updates to ES fail
+    // when updates to DB fail
     ProcessInstanceEngineDto runningProcess = deployAndStartUserTaskProcess();
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest businessKeyImportMatcher = request()
@@ -89,7 +89,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void importOfBusinessKeyForCompletedProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws
+  public void importOfBusinessKeyForCompletedProcess_isImportedOnNextSuccessfulAttemptAfterDbFailures() throws
                                                                                                         JsonProcessingException {
     // given
     importAllEngineEntitiesFromScratch();
@@ -97,7 +97,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     // then
     assertThat(getAllStoredBusinessKeys()).isEmpty();
 
-    // when updates to ES fail
+    // when updates to DB fail
     ProcessInstanceEngineDto process = deployAndStartUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(process.getId());
 

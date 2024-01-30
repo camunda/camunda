@@ -99,7 +99,7 @@ public abstract class AbstractIncidentWriterES extends AbstractProcessInstanceDa
         .type(RequestType.UPDATE)
         .scriptData(updateScript)
         .source(newEntryIfAbsent)
-        .retryNumbOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+        .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
         .build();
     } catch (IOException e) {
       String reason = String.format(

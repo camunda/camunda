@@ -14,6 +14,7 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @AllArgsConstructor
@@ -24,12 +25,13 @@ public class VariableUpdateInstanceWriterOS implements VariableUpdateInstanceWri
 
   @Override
   public List<ImportRequestDto> generateVariableUpdateImports(final List<ProcessVariableDto> variableUpdates) {
-    return null;
+    //todo will be handled in the OPT-7376
+    return new ArrayList<>();
   }
 
   @Override
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
-//todo will be handled in the OPT-7376
+    //todo will be handled in the OPT-7376
   }
 
 }

@@ -118,7 +118,7 @@ public abstract class AbstractActivityInstanceWriterES extends AbstractProcessIn
         .type(RequestType.UPDATE)
         .importName(importItemName)
         .source(newEntryIfAbsent)
-        .retryNumbOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+        .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
         .build();
     } catch (IOException e) {
       String reason = String.format(

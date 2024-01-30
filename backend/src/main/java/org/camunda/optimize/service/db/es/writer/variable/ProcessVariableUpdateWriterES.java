@@ -149,7 +149,7 @@ public class ProcessVariableUpdateWriterES extends AbstractProcessInstanceDataWr
         .id(processInstanceId)
         .scriptData(updateScriptData)
         .source(newEntryIfAbsent)
-        .retryNumbOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+        .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
         .build();
     }
     return null;

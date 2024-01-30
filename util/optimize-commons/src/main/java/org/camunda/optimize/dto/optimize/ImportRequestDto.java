@@ -19,8 +19,8 @@ public class ImportRequestDto {
   private String indexName;
   private ScriptData scriptData;
   private String id;
-  private String source;
+  private Object source;
   private RequestType type;
-  private int retryNumbOnConflict;
+  private int retryNumberOnConflict;
 
 }

@@ -45,6 +45,11 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.BulkOperationBase;
+import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
+import org.opensearch.client.opensearch.core.bulk.IndexOperation;
+import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.opensearch.client.opensearch.indices.GetAliasRequest;
@@ -59,6 +64,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -72,6 +78,8 @@ import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionInd
 
 @Slf4j
 public class OptimizeOpenSearchClient extends DatabaseClient {
+
+  private final String NESTED_DOC_LIMIT_MESSAGE = "nested";
 
   @Getter
   private final OpenSearchClient openSearchClient;
@@ -309,8 +317,159 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     if (importRequestDtos.isEmpty()) {
       log.warn("Cannot perform bulk request with empty collection of {}.", bulkRequestName);
     } else {
+      final BulkRequest.Builder bulkReqBuilder = new BulkRequest.Builder();
+      List<BulkOperation> operations = importRequestDtos.stream()
+        .map(this::createBulkOperation)
+        .toList();
+      doBulkRequest(bulkReqBuilder, operations, bulkRequestName, retryRequestIfNestedDocLimitReached);
     }
-   //todo will be implemented at 11391
+  }
+
+  private BulkOperation createBulkOperation(final ImportRequestDto requestDto) {
+    validateOperationParams(requestDto);
+
+    final String indexWithPrefix = richOpenSearchClient.getIndexAliasFor(requestDto.getIndexName());
+    switch (requestDto.getType()) {
+      case INDEX -> {
+        return new BulkOperation.Builder()
+          .index(new IndexOperation.Builder<>()
+                   .id(requestDto.getId())
+                   .document(requestDto.getSource())
+                   .index(indexWithPrefix)
+                   .build())
+          .build();
+      }
+      case UPDATE -> {
+        return new BulkOperation.Builder()
+          .update(new UpdateOperation.Builder<>()
+                    .id(requestDto.getId())
+                    .index(indexWithPrefix)
+                    .upsert(requestDto.getSource())
+                    .script(QueryDSL.scriptFromJsonData(
+                      requestDto.getScriptData().scriptString(),
+                      requestDto.getScriptData()
+                        .params()
+                        .entrySet()
+                        .stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, JsonData::of))
+                    ))
+                    .retryOnConflict(requestDto.getRetryNumberOnConflict())
+                    .build())
+          .build();
+      }
+      default -> throw new OptimizeRuntimeException("The type of bulk operation is not specified for OS");
+    }
+  }
+
+
+  public <T> void doImportBulkRequestWithList(final String importItemName,
+                                              final List<T> entityCollection,
+                                              final Function<T, BulkOperation> addDtoToRequestConsumer,
+                                              final Boolean retryRequestIfNestedDocLimitReached,
+                                              final String indexName) {
+    if (entityCollection.isEmpty()) {
+      log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
+    } else {
+      final BulkRequest.Builder bulkReqBuilder = new BulkRequest.Builder()
+        .index(indexName);
+      List<BulkOperation> operations = entityCollection.stream().map(addDtoToRequestConsumer).toList();
+      doBulkRequest(bulkReqBuilder, operations, importItemName, retryRequestIfNestedDocLimitReached);
+    }
+  }
+
+  public void doBulkRequest(final BulkRequest.Builder bulkReqBuilder,
+                            final List<BulkOperation> operations,
+                            final String itemName,
+                            final boolean retryRequestIfNestedDocLimitReached) {
+    if (retryRequestIfNestedDocLimitReached) {
+      doBulkRequestWithNestedDocHandling(bulkReqBuilder, operations, itemName);
+    } else {
+      doBulkRequestWithoutRetries(bulkReqBuilder, operations, itemName);
+    }
+  }
+
+  private void doBulkRequestWithNestedDocHandling(final BulkRequest.Builder bulkReqBuilder,
+                                                  final List<BulkOperation> operations,
+                                                  final String itemName) {
+    if (!operations.isEmpty()) {
+      log.info("Executing bulk request on {} items of {}", operations.size(), itemName);
+
+      final String errorMessage = String.format("There were errors while performing a bulk on %s.", itemName);
+      BulkResponse bulkResponse = this.bulk(bulkReqBuilder.operations(operations), errorMessage);
+      if (bulkResponse.errors()) {
+        final Set<String> failedNestedDocLimitItemIds = bulkResponse.items()
+          .stream()
+          .filter(operation -> Objects.nonNull(operation.error()))
+          // TODO OPT-7352 we need to validate whether this is a valid way to check for nested document errors
+          .filter(operation -> operation.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
+          .map(BulkResponseItem::id)
+          .collect(Collectors.toSet());
+        if (!failedNestedDocLimitItemIds.isEmpty()) {
+          log.warn("There were failures while performing bulk on {} due to the nested document limit being reached." +
+                     " Removing {} failed items and retrying", itemName, failedNestedDocLimitItemIds.size());
+          operations.removeIf(request -> failedNestedDocLimitItemIds.contains(typeByBulkOperation(request).id()));
+          if (!operations.isEmpty()) {
+            doBulkRequestWithNestedDocHandling(bulkReqBuilder, operations, itemName);
+          }
+        } else {
+          throw new OptimizeRuntimeException(String.format(
+            "There were failures while performing bulk on %s.",
+            itemName
+          ));
+        }
+      }
+    } else {
+      log.debug("Bulk request on {} not executed because it contains no actions.", itemName);
+    }
+  }
+
+  private static String getHintForErrorMsg(final boolean containsNestedDocumentLimitErrorMessage) {
+    if (containsNestedDocumentLimitErrorMessage) {
+      // exception potentially related to nested object limit
+      return "If you are experiencing failures due to too many nested documents, try carefully increasing the " +
+        "configured nested object limit or enabling the skipping of " +
+        "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). " +
+        "See Optimize documentation for details.";
+    }
+    return "";
+  }
+
+  private static BulkOperationBase typeByBulkOperation(final BulkOperation bulkOperation) {
+    if (bulkOperation.isCreate()) {
+      return bulkOperation.create();
+    } else if (bulkOperation.isIndex()) {
+      return bulkOperation.index();
+    } else if (bulkOperation.isDelete()) {
+      return bulkOperation.delete();
+    } else if (bulkOperation.isUpdate()) {
+      return bulkOperation.update();
+    }
+    throw new OptimizeRuntimeException(String.format(
+      "The bulk operation with kind [%s] is not a supported operation.",
+      bulkOperation._kind()
+    ));
+  }
+
+  private void doBulkRequestWithoutRetries(final BulkRequest.Builder bulkReqBuilder,
+                                           final List<BulkOperation> operations,
+                                           final String itemName) {
+    if (!operations.isEmpty()) {
+      final String errorMessage = String.format("There were errors while performing a bulk on %s.", itemName);
+      BulkResponse bulkResponse = this.bulk(bulkReqBuilder.operations(operations), errorMessage);
+      if (bulkResponse.errors()) {
+        final boolean isReachedNestedDocLimit = bulkResponse.items()
+          .stream()
+          .filter(operation -> Objects.nonNull(operation.error()))
+          .anyMatch(operation -> operation.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE));
+        throw new OptimizeRuntimeException(String.format(
+          "There were failures while performing bulk on %s.%n%s",
+          itemName,
+          getHintForErrorMsg(isReachedNestedDocLimit)
+        ));
+      }
+    } else {
+      log.debug("Bulk request on {} not executed because it contains no actions.", itemName);
+    }
   }
 
   @Override

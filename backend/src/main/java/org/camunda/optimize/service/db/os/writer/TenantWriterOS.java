@@ -39,8 +39,7 @@ public class TenantWriterOS implements TenantWriter {
     String importItemName = "tenants";
     log.debug("Writing [{}] {} to Opensearch.", tenantDtos.size(), importItemName);
 
-    OpenSearchWriterUtil.doImportBulkRequestWithList(
-      osClient,
+    osClient.doImportBulkRequestWithList(
       importItemName,
       tenantDtos,
       this::addImportTenantRequest,
