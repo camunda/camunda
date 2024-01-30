@@ -38,6 +38,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -228,7 +229,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasApplicationJsonContentType()
           .extractingListContent(objectMapper, VariableSearchResponse.class)
           .extracting("name", "previewValue", "isValueTruncated", "draft")
-          .containsExactly(
+          .containsExactlyInAnyOrder(
               tuple("varA", "\"test\"", false, null), tuple("varB", "2.02", false, null));
     }
 
@@ -251,7 +252,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasApplicationJsonContentType()
           .extractingListContent(objectMapper, VariableSearchResponse.class)
           .extracting("name", "previewValue", "isValueTruncated", "draft")
-          .containsExactly(tuple("var1", "111", false, null), tuple("var2", "22.2", false, null));
+          .containsExactlyInAnyOrder(
+              tuple("var1", "111", false, null), tuple("var2", "22.2", false, null));
     }
 
     @Test
@@ -310,6 +312,50 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
     }
 
     @Test
+    public void searchAllTaskVariablesWithOnlyDraftVariablesShouldHaveCorrectSize() {
+      // given
+      final String bpmnProcessId = "simpleTestProcess";
+      final String flowNodeBpmnId = "taskH_".concat(UUID.randomUUID().toString());
+      final var taskId =
+          createTask(bpmnProcessId, flowNodeBpmnId, null)
+              .claimHumanTask(flowNodeBpmnId)
+              .getTaskId();
+
+      final int numberOfVariables = 11;
+      final List<VariableInputDTO> variableInputs = new ArrayList<>();
+
+      for (int i = 1; i <= numberOfVariables; i++) {
+        final String variableName = "var_" + i;
+        final String variableValue = String.valueOf(i);
+
+        variableInputs.add(new VariableInputDTO().setName(variableName).setValue(variableValue));
+      }
+
+      final var saveVariablesRequest = new SaveVariablesRequest().setVariables(variableInputs);
+
+      // when
+      final var persistDraftVariablesResult =
+          mockMvcHelper.doRequest(
+              post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables"), taskId),
+              saveVariablesRequest);
+
+      // then
+      assertThat(persistDraftVariablesResult).hasHttpStatus(HttpStatus.NO_CONTENT);
+
+      // when
+      final var result =
+          mockMvcHelper.doRequest(
+              post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId));
+
+      // then
+      assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, VariableSearchResponse.class)
+          .hasSize(11);
+    }
+
+    @Test
     public void searchTaskVariablesOfCompletedTaskByVariableNamesUsingRequestBody() {
       // given
       final String bpmnProcessId = "simpleTestProcess";
@@ -332,7 +378,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasApplicationJsonContentType()
           .extractingListContent(objectMapper, VariableSearchResponse.class)
           .extracting("name", "previewValue", "draft")
-          .containsExactly(tuple("a", "1", null), tuple("c", "3", null));
+          .containsExactlyInAnyOrder(tuple("a", "1", null), tuple("c", "3", null));
     }
 
     // Cover Completed and Created Tasks
@@ -367,7 +413,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasSize(2)
           .flatExtracting("variables")
           .extracting("name", "value")
-          .containsExactly(tuple("a", "1"), tuple("c", "3"), tuple("a", "1"), tuple("c", "3"));
+          .containsExactlyInAnyOrder(
+              tuple("a", "1"), tuple("c", "3"), tuple("a", "1"), tuple("c", "3"));
     }
 
     @Test
@@ -393,7 +440,6 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               .setVariables(
                   List.of(
                       new VariableInputDTO().setName("var_int").setValue("998"),
-                      new VariableInputDTO().setName("var_str").setValue("\"str_value\""),
                       new VariableInputDTO()
                           .setName("var_long_draft_str")
                           .setValue(longDraftVarValue),
@@ -430,7 +476,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasApplicationJsonContentType()
           .extractingListContent(objectMapper, VariableSearchResponse.class)
           .extracting("name", "value", "previewValue", "isValueTruncated", "draft")
-          .containsExactly(
+          .containsExactlyInAnyOrder(
               tuple("var_decimal", "553.12", "553.12", false, null),
               tuple(
                   "var_int",
@@ -911,7 +957,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
       assertThat(taskVariables)
           .extracting("name", "value", "previewValue", "isValueTruncated")
-          .containsExactly(
+          .containsExactlyInAnyOrder(
               tuple("var_0", "0", "0", false),
               tuple("var_1", "11111111111", "11111111111", false),
               tuple("var_2", "222222", "222222", false),

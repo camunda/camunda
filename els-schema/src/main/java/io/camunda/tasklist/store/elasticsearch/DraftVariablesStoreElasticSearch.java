@@ -19,7 +19,6 @@ import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -134,21 +133,9 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
 
       final SearchRequest searchRequest =
           new SearchRequest(draftTaskVariableTemplate.getFullQualifiedName());
-      searchRequest.source(sourceBuilder);
 
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-      final SearchHits hits = searchResponse.getHits();
-      final List<DraftTaskVariableEntity> results = new ArrayList<>();
-
-      for (SearchHit hit : hits) {
-        final String sourceAsString = hit.getSourceAsString();
-        final DraftTaskVariableEntity entity =
-            objectMapper.readValue(sourceAsString, DraftTaskVariableEntity.class);
-        results.add(entity);
-      }
-
-      return results;
+      return ElasticsearchUtil.scroll(
+          searchRequest, DraftTaskVariableEntity.class, objectMapper, esClient);
     } catch (IOException e) {
       throw new TasklistRuntimeException(
           String.format(

@@ -140,12 +140,7 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
               .query(q -> q.bool(queryBuilder.build()))
               .build();
 
-      final SearchResponse<DraftTaskVariableEntity> searchResponse =
-          osClient.search(searchRequest, DraftTaskVariableEntity.class);
-
-      final List<Hit<DraftTaskVariableEntity>> hits = searchResponse.hits().hits();
-
-      return hits.stream().map(m -> m.source()).collect(Collectors.toList());
+      return OpenSearchUtil.scroll(searchRequest, DraftTaskVariableEntity.class, osClient);
     } catch (IOException e) {
       throw new TasklistRuntimeException(
           String.format(
