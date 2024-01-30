@@ -17,7 +17,8 @@ public enum ImportValueType {
   PROCESS(ZeebeESConstants.PROCESS_INDEX_NAME),
   VARIABLE(ZeebeESConstants.VARIABLE_INDEX_NAME),
   VARIABLE_DOCUMENT(ZeebeESConstants.VARIABLE_DOCUMENT_INDEX_NAME),
-  PROCESS_MESSAGE_SUBSCRIPTION(ZeebeESConstants.PROCESS_MESSAGE_SUBSCRIPTION_INDEX_NAME);
+  PROCESS_MESSAGE_SUBSCRIPTION(ZeebeESConstants.PROCESS_MESSAGE_SUBSCRIPTION_INDEX_NAME),
+  USER_TASK(ZeebeESConstants.USER_TASK_INDEX_NAME);
 
   private final String aliasTemplate;
   ImportValueType(String aliasTemplate) {
@@ -34,7 +35,9 @@ public enum ImportValueType {
       INCIDENT,
       VARIABLE,
       VARIABLE_DOCUMENT,
-      PROCESS_MESSAGE_SUBSCRIPTION};
+      PROCESS_MESSAGE_SUBSCRIPTION,
+      USER_TASK
+  };
 
   public String getAliasTemplate() {
     return aliasTemplate;

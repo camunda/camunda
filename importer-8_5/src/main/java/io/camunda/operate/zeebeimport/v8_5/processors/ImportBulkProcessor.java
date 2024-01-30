@@ -75,6 +75,10 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
   private DecisionEvaluationZeebeRecordProcessor decisionEvaluationZeebeRecordProcessor;
 
   @Autowired
+  private UserTaskZeebeRecordProcessor userTaskZeebeRecordProcessor;
+
+
+  @Autowired
   private Metrics metrics;
 
   @Autowired
@@ -136,6 +140,9 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
         break;
       case PROCESS_MESSAGE_SUBSCRIPTION:
         processProcessMessageSubscription(batchRequest, zeebeRecords);
+        break;
+      case USER_TASK:
+        processUserTask(batchRequest, zeebeRecords);
         break;
       default:
         logger.debug("Default case triggered for type {}", importValueType);
@@ -267,6 +274,12 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
         batchRequest);
     for (Record record : zeebeRecords) {
       sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord(record, batchRequest);
+    }
+  }
+
+  private void processUserTask(BatchRequest batchRequest, List<Record> zeebeRecords) throws PersistenceException {
+    for(Record record: zeebeRecords){
+      userTaskZeebeRecordProcessor.processUserTaskRecord(batchRequest, record);
     }
   }
 
