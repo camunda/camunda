@@ -28,7 +28,7 @@ package io.camunda.zeebe.protocol;
  * <p>For example, if we have an enum with values A, B, C, D, and E, and we backport the addition of
  * E to an older version of the enum, we may accidentally miss backporting the addition of D. This
  * would result in the backported enum having values A, B, C, E. The value associated with E would
- * differ between the original and backported enum.
+ * differ semantically but have the same ordinal between the original and backported enum.
  *
  * <p>By using this interface, we can avoid this issue by explicitly setting the value associated.
  */
