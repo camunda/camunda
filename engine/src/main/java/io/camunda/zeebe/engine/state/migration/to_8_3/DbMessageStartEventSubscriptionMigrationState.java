@@ -64,7 +64,6 @@ public class DbMessageStartEventSubscriptionMigrationState {
           to.messageName.wrapBuffer(key.second().getBuffer());
           to.subscriptionsOfProcessDefinitionKeyColumnFamily.insert(
               to.processDefinitionKeyAndMessageName, DbNil.INSTANCE);
-          from.getSubscriptionsOfProcessDefinitionKeyColumnFamily().deleteExisting(key);
         });
   }
 
