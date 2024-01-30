@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.protocol.EnumValue;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -24,7 +25,7 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 
-final class SnapshotOnlyDb<ColumnFamilyType extends Enum<ColumnFamilyType>>
+final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
     implements ZeebeDb<ColumnFamilyType> {
   private static final Logger LOG = Loggers.DB_LOGGER;
 
@@ -80,9 +81,10 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<ColumnFamilyType>>
         managedResources);
   }
 
-  static <ColumnFamilyType extends Enum<ColumnFamilyType>> ZeebeDb<ColumnFamilyType> openDb(
-      final Options options, final String path, final List<AutoCloseable> managedResources)
-      throws RocksDBException {
+  static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
+      ZeebeDb<ColumnFamilyType> openDb(
+          final Options options, final String path, final List<AutoCloseable> managedResources)
+          throws RocksDBException {
     final RocksDB db = RocksDB.openReadOnly(options, path);
     managedResources.add(db);
 

@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.protocol.EnumValue;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -32,7 +33,7 @@ import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 
-public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>>
+public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
     implements ZeebeDb<ColumnFamilyNames>, TransactionRenovator {
 
   private static final Logger LOG = Loggers.DB_LOGGER;
@@ -74,7 +75,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     closables.add(defaultWriteOptions);
   }
 
-  public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
+  public static <ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
       ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
           final Options options,
           final String path,
