@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.MessageStartEventSubscription;
+import io.camunda.zeebe.engine.state.migration.MemoryBoundedColumnIteration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageStartEventSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -34,6 +35,7 @@ public class DbMessageStartEventSubscriptionMigrationState {
   }
 
   public void migrateMessageStartEventSubscriptionForMultiTenancy() {
+    final var iterator = new MemoryBoundedColumnIteration();
     // setting the tenant id key once, because it's the same for all steps below
     to.tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -42,29 +44,28 @@ public class DbMessageStartEventSubscriptionMigrationState {
     - Prefix first part of composite key with tenant
     - Set tenant on value
      */
-    from.getSubscriptionsColumnFamily()
-        .forEach(
-            (key, value) -> {
-              value.getRecord().setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-              to.messageName.wrapBuffer(key.first().getBuffer());
-              to.processDefinitionKey.wrapLong(key.second().getValue());
-              to.subscriptionsColumnFamily.insert(to.messageNameAndProcessDefinitionKey, value);
-              from.getSubscriptionsColumnFamily().deleteExisting(key);
-            });
+    iterator.drain(
+        from.getSubscriptionsColumnFamily(),
+        (key, value) -> {
+          value.getRecord().setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+          to.messageName.wrapBuffer(key.first().getBuffer());
+          to.processDefinitionKey.wrapLong(key.second().getValue());
+          to.subscriptionsColumnFamily.insert(to.messageNameAndProcessDefinitionKey, value);
+        });
 
     /*
     - `DEPRECATED_MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME` -> `MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME`
     - Prefix second part of composite key with tenant
      */
-    from.getSubscriptionsOfProcessDefinitionKeyColumnFamily()
-        .forEach(
-            (key, value) -> {
-              to.processDefinitionKey.wrapLong(key.first().getValue());
-              to.messageName.wrapBuffer(key.second().getBuffer());
-              to.subscriptionsOfProcessDefinitionKeyColumnFamily.insert(
-                  to.processDefinitionKeyAndMessageName, DbNil.INSTANCE);
-              from.getSubscriptionsOfProcessDefinitionKeyColumnFamily().deleteExisting(key);
-            });
+    iterator.drain(
+        from.getSubscriptionsOfProcessDefinitionKeyColumnFamily(),
+        (key, value) -> {
+          to.processDefinitionKey.wrapLong(key.first().getValue());
+          to.messageName.wrapBuffer(key.second().getBuffer());
+          to.subscriptionsOfProcessDefinitionKeyColumnFamily.insert(
+              to.processDefinitionKeyAndMessageName, DbNil.INSTANCE);
+          from.getSubscriptionsOfProcessDefinitionKeyColumnFamily().deleteExisting(key);
+        });
   }
 
   private static final class DbMessageStartEventSubscriptionState {
