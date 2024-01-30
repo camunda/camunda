@@ -20,6 +20,7 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.deployment.Digest;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.deployment.VersionInfo;
+import io.camunda.zeebe.engine.state.migration.MemoryBoundedColumnIteration;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 
@@ -159,33 +160,35 @@ public final class DbProcessMigrationState {
   }
 
   public void migrateProcessStateForMultiTenancy() {
+    final var iterator = new MemoryBoundedColumnIteration();
     tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-    deprecatedProcessCacheColumnFamily.forEach(
+    iterator.drain(
+        deprecatedProcessCacheColumnFamily,
         (key, value) -> {
           value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
           processDefinitionKey.wrapLong(key.getValue());
           processColumnFamily.insert(tenantAwareProcessDefinitionKey, value);
-          deprecatedProcessCacheColumnFamily.deleteExisting(key);
         });
 
-    deprecatedProcessCacheByIdAndVersionColumnFamily.forEach(
+    iterator.drain(
+        deprecatedProcessCacheByIdAndVersionColumnFamily,
         (key, value) -> {
           value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
           processId.wrapBuffer(value.getBpmnProcessId());
           processVersion.wrapLong(value.getVersion());
           processByIdAndVersionColumnFamily.insert(tenantAwareProcessIdAndVersionKey, value);
-          deprecatedProcessCacheByIdAndVersionColumnFamily.deleteExisting(key);
         });
 
-    deprecatedDigestByIdColumnFamily.forEach(
+    iterator.drain(
+        deprecatedDigestByIdColumnFamily,
         (key, value) -> {
           processId.wrapBuffer(key.inner().getBuffer());
           digestByIdColumnFamily.insert(fkTenantAwareProcessId, value);
-          deprecatedDigestByIdColumnFamily.deleteExisting(key);
         });
 
-    deprecatedProcessVersionColumnFamily.forEach(
+    iterator.drain(
+        deprecatedProcessVersionColumnFamily,
         (key, value) -> {
           idKey.wrapBuffer(key.getBuffer());
 
@@ -197,7 +200,6 @@ public final class DbProcessMigrationState {
           }
 
           versionInfoColumnFamily.insert(tenantAwareIdKey, value);
-          deprecatedProcessVersionColumnFamily.deleteExisting(key);
         });
   }
 }
