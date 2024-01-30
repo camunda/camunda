@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
+import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForVersion;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -327,11 +329,17 @@ public final class EventAppliers implements EventApplier {
 
   @Override
   public void applyState(
-      final long key, final Intent intent, final RecordValue value, final int recordVersion) {
-    final var eventApplier =
-        mapping
-            .getOrDefault(intent, new HashMap<>())
-            .getOrDefault(recordVersion, NOOP_EVENT_APPLIER);
-    eventApplier.applyState(key, value);
+      final long key, final Intent intent, final RecordValue value, final int recordVersion)
+      throws NoSuchEventApplier {
+    final var applierForIntent = mapping.get(intent);
+    if (applierForIntent == null) {
+      throw new NoApplierForIntent(intent);
+    }
+    final var applierForVersion = applierForIntent.get(recordVersion);
+    if (applierForVersion == null) {
+      throw new NoApplierForVersion(intent, recordVersion, getLatestVersion(intent));
+    }
+
+    applierForVersion.applyState(key, value);
   }
 }
