@@ -125,8 +125,7 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
   private void writeDecisionDefinitionInformation(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     String importItemName = "decision definition information";
     log.debug("Writing [{}] {} to ES.", decisionDefinitionOptimizeDtos.size(), importItemName);
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       importItemName,
       decisionDefinitionOptimizeDtos,
       this::addImportDecisionDefinitionRequest,

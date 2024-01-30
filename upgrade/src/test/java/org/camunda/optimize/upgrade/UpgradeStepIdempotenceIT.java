@@ -92,7 +92,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
             .build()
         );
 
-        ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, indexName, 0);
+        prefixAwareClient.triggerRollover( indexName, 0);
       },
       new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)
     );
@@ -122,7 +122,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
             .build()
         );
 
-        ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, indexName, 0);
+        prefixAwareClient.triggerRollover( indexName, 0);
       },
       () -> {
         // when creating the second rolled over index fails the upgrade

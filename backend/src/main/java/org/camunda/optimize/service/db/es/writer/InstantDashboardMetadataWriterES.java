@@ -88,7 +88,7 @@ public class InstantDashboardMetadataWriterES implements InstantDashboardMetadat
         dashboardIdsToBeDeleted.add((String) hit.getSourceAsMap().get(InstantDashboardDataDto.Fields.dashboardId));
         bulkRequest.add(new DeleteRequest(INSTANT_DASHBOARD_INDEX_NAME, hit.getId()));
       });
-    ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, INSTANT_DASHBOARD_INDEX_NAME, false);
+    esClient.doBulkRequest(bulkRequest, INSTANT_DASHBOARD_INDEX_NAME, false);
     return dashboardIdsToBeDeleted;
   }
 }

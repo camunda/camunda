@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.db.es.writer.AbstractProcessInstanceDataWriterES;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
@@ -95,8 +94,7 @@ public class ProcessVariableUpdateWriterES extends AbstractProcessInstanceDataWr
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
       )
     );
-    ElasticsearchWriterUtil.doBulkRequest(
-      esClient,
+    esClient.doBulkRequest(
       bulkRequest,
       getProcessInstanceIndexAliasName(processDefinitionKey),
       false

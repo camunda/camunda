@@ -50,8 +50,7 @@ public class ExternalProcessVariableWriterES implements ExternalProcessVariableW
     final BulkRequest bulkRequest = new BulkRequest();
     variables.forEach(variable -> addInsertExternalVariableRequest(bulkRequest, variable));
 
-    ElasticsearchWriterUtil.doBulkRequest(
-      esClient,
+  esClient.doBulkRequest(
       bulkRequest,
       itemName,
       false // there are no nested documents in the externalProcessVariableIndex

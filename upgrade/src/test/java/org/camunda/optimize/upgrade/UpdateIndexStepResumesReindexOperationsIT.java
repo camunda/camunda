@@ -126,7 +126,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     // given a prepared index with some data in it and being rolled over
     createIndex(TEST_INDEX_WITH_TEMPLATE_V1);
     insertTestDocuments(5);
-    ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
+    prefixAwareClient.triggerRollover(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
     insertTestDocuments(5);
     // and the update was run
     final UpdateIndexStep upgradeStep = new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
@@ -237,7 +237,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     // given a prepared index with some data in it and being rolled over
     createIndex(TEST_INDEX_WITH_TEMPLATE_V1);
     insertTestDocuments(5);
-    ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
+    prefixAwareClient.triggerRollover(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
     insertTestDocuments(5);
     // and the update was run
     final UpdateIndexStep upgradeStep = new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);

@@ -13,10 +13,8 @@ import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeException;
 import net.jodah.failsafe.FailsafeExecutor;
 import net.jodah.failsafe.RetryPolicy;
-import org.apache.tika.utils.StringUtils;
 import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
-import org.camunda.optimize.dto.optimize.RequestType;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.service.db.DatabaseClient;
@@ -110,12 +108,13 @@ import org.springframework.context.ApplicationContext;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -140,6 +139,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   private static final String NESTED_DOC_LIMIT_MESSAGE = "The number of nested documents has exceeded the allowed " +
     "limit of";
+
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
 
   // we had to introduce our own options due to a regression with the client's behaviour with the 7.16
@@ -384,6 +384,19 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     highLevelClient.info(RequestOptions.DEFAULT);
   }
 
+  public <T> void doImportBulkRequestWithList(final String importItemName,
+                                              final Collection<T> entityCollection,
+                                              final BiConsumer<BulkRequest, T> addDtoToRequestConsumer,
+                                              final boolean retryRequestIfNestedDocLimitReached) {
+    if (entityCollection.isEmpty()) {
+      log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
+    } else {
+      final BulkRequest bulkRequest = new BulkRequest();
+      entityCollection.forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
+      doBulkRequest(bulkRequest, importItemName, retryRequestIfNestedDocLimitReached);
+    }
+  }
+
   @Override
   public void executeImportRequestsAsBulk(final String bulkRequestName,
                                           final List<ImportRequestDto> importRequestDtos,
@@ -446,9 +459,9 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     );
   }
 
-  public void doBulkRequest(BulkRequest bulkRequest,
-                            String itemName,
-                            boolean retryRequestIfNestedDocLimitReached) {
+  public void doBulkRequest(final BulkRequest bulkRequest,
+                            final String itemName,
+                            final boolean retryRequestIfNestedDocLimitReached) {
     if (retryRequestIfNestedDocLimitReached) {
       doBulkRequestWithNestedDocHandling(bulkRequest, itemName);
     } else {

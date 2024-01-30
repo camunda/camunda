@@ -260,7 +260,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     upgradeProcedure.performUpgrade(buildIndexPlan);
 
-    ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
+    prefixAwareClient.triggerRollover( TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
@@ -395,7 +395,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     upgradeProcedure.performUpgrade(buildIndexPlan);
 
-    ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
+    prefixAwareClient.triggerRollover( TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
 
     // then two indices exist after the rollover
     boolean indicesExist = prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_V1);

@@ -40,8 +40,7 @@ public class TenantWriterES implements TenantWriter {
   public void writeTenants(final List<TenantDto> tenantDtos) {
     String importItemName = "tenants";
     log.debug("Writing [{}] {} to ES.", tenantDtos.size(), importItemName);
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       importItemName,
       tenantDtos,
       this::addImportTenantRequest,

@@ -71,8 +71,7 @@ public class RunningProcessInstanceWriterES extends AbstractProcessInstanceWrite
       .toList();
     createInstanceIndicesIfMissing(processInstanceDtos, ProcessInstanceDto::getProcessDefinitionKey);
 
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       IMPORT_ITEM_NAME,
       processInstanceDtoToUpdateList,
       (request, dto) -> addImportProcessInstanceRequest(

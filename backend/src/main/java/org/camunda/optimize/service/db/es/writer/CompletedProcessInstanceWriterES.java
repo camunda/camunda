@@ -53,8 +53,7 @@ public class CompletedProcessInstanceWriterES extends AbstractProcessInstanceWri
     processInstanceIds.forEach(
       id -> bulkRequest.add(new DeleteRequest(getProcessInstanceIndexAliasName(definitionKey), id))
     );
-    ElasticsearchWriterUtil.doBulkRequest(
-      esClient,
+    esClient.doBulkRequest(
       bulkRequest,
       getProcessInstanceIndexAliasName(definitionKey),
       false

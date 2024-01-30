@@ -10,23 +10,15 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.HttpGet;
-import org.camunda.optimize.dto.optimize.ImportRequestDto;
-import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.es.TaskResponse;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
-import org.elasticsearch.client.indices.rollover.RolloverRequest;
-import org.elasticsearch.client.indices.rollover.RolloverResponse;
-import org.elasticsearch.common.unit.ByteSizeUnit;
-import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
@@ -34,16 +26,11 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.createFieldUpdateScriptParams;
 import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.createUpdateFieldsScript;
@@ -54,8 +41,6 @@ import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.dateTime
 public class ElasticsearchWriterUtil {
 
   private static final String TASKS_ENDPOINT = "_tasks";
-  private static final String NESTED_DOC_LIMIT_MESSAGE = "The number of nested documents has exceeded the allowed " +
-    "limit of";
 
   public static Script createFieldUpdateScript(final Set<String> fields,
                                                final Object entityDto,
@@ -95,21 +80,6 @@ public class ElasticsearchWriterUtil {
       inlineUpdateScript,
       Collections.emptyMap()
     );
-  }
-
-  //TODO will be removed with 11399
-  public static <T> void doImportBulkRequestWithList(OptimizeElasticsearchClient esClient,
-                                                     String importItemName,
-                                                     Collection<T> entityCollection,
-                                                     BiConsumer<BulkRequest, T> addDtoToRequestConsumer,
-                                                     boolean retryRequestIfNestedDocLimitReached) {
-    if (entityCollection.isEmpty()) {
-      log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
-    } else {
-      final BulkRequest bulkRequest = new BulkRequest();
-      entityCollection.forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
-      doBulkRequest(esClient, bulkRequest, importItemName, retryRequestIfNestedDocLimitReached);
-    }
   }
 
   public static boolean tryUpdateByQueryRequest(OptimizeElasticsearchClient esClient,
@@ -189,124 +159,6 @@ public class ElasticsearchWriterUtil {
         String.format("Error while trying to read Elasticsearch task status with ID: [%s]", taskId), e
       );
     }
-  }
-
-  public static boolean triggerRollover(final OptimizeElasticsearchClient esClient, final String indexAliasName,
-                                        final int maxIndexSizeGB) {
-    RolloverRequest rolloverRequest = new RolloverRequest(indexAliasName, null);
-    rolloverRequest.addMaxIndexSizeCondition(new ByteSizeValue(maxIndexSizeGB, ByteSizeUnit.GB));
-
-    log.info("Executing rollover request on {}", indexAliasName);
-
-    try {
-      RolloverResponse rolloverResponse = esClient.rollover(rolloverRequest);
-      if (rolloverResponse.isRolledOver()) {
-        log.info(
-          "Index with alias {} has been rolled over. New index name: {}",
-          indexAliasName,
-          rolloverResponse.getNewIndex()
-        );
-      } else {
-        log.debug("Index with alias {} has not been rolled over.", indexAliasName);
-      }
-      return rolloverResponse.isRolledOver();
-    } catch (Exception e) {
-      String message = "Failed to execute rollover request";
-      log.error(message, e);
-      throw new OptimizeRuntimeException(message, e);
-    }
-  }
-
-  public static void doBulkRequest(OptimizeElasticsearchClient esClient,
-                                   BulkRequest bulkRequest,
-                                   String itemName,
-                                   boolean retryRequestIfNestedDocLimitReached) {
-    if (retryRequestIfNestedDocLimitReached) {
-      doBulkRequestWithNestedDocHandling(esClient, bulkRequest, itemName);
-    } else {
-      doBulkRequestWithoutRetries(esClient, bulkRequest, itemName);
-    }
-  }
-
-  //TODO will be removed with 11399
-  private static void doBulkRequestWithoutRetries(OptimizeElasticsearchClient esClient,
-                                                  BulkRequest bulkRequest,
-                                                  String itemName) {
-    if (bulkRequest.numberOfActions() > 0) {
-      try {
-        BulkResponse bulkResponse = esClient.bulk(bulkRequest);
-        if (bulkResponse.hasFailures()) {
-          throw new OptimizeRuntimeException(String.format(
-            "There were failures while performing bulk on %s.%n%s Message: %s",
-            itemName,
-            getHintForErrorMsg(bulkResponse),
-            bulkResponse.buildFailureMessage()
-          ));
-        }
-      } catch (IOException e) {
-        String reason = String.format("There were errors while performing a bulk on %s.", itemName);
-        log.error(reason, e);
-        throw new OptimizeRuntimeException(reason, e);
-      }
-    } else {
-      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
-    }
-  }
-
-  //TODO will be removed with 11399
-  private static void doBulkRequestWithNestedDocHandling(OptimizeElasticsearchClient esClient,
-                                                         BulkRequest bulkRequest,
-                                                         String itemName) {
-    if (bulkRequest.numberOfActions() > 0) {
-      log.info("Executing bulk request on {} items of {}", bulkRequest.requests().size(), itemName);
-      try {
-        BulkResponse bulkResponse = esClient.bulk(bulkRequest);
-        if (bulkResponse.hasFailures()) {
-          if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
-            final Set<String> failedItemIds = Arrays.stream(bulkResponse.getItems())
-              .filter(BulkItemResponse::isFailed)
-              .filter(responseItem -> responseItem.getFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE))
-              .map(BulkItemResponse::getId)
-              .collect(Collectors.toSet());
-            log.warn("There were failures while performing bulk on {} due to the nested document limit being reached." +
-                       " Removing {} failed items and retrying", itemName, failedItemIds.size());
-            bulkRequest.requests().removeIf(request -> failedItemIds.contains(request.id()));
-            if (!bulkRequest.requests().isEmpty()) {
-              doBulkRequestWithNestedDocHandling(esClient, bulkRequest, itemName);
-            }
-          } else {
-            throw new OptimizeRuntimeException(String.format(
-              "There were failures while performing bulk on %s. Message: %s",
-              itemName,
-              bulkResponse.buildFailureMessage()
-            ));
-          }
-        }
-      } catch (IOException e) {
-        String reason = String.format("There were errors while performing a bulk on %s.", itemName);
-        log.error(reason, e);
-        throw new OptimizeRuntimeException(reason, e);
-      }
-    } else {
-      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
-    }
-  }
-
-  //TODO will be removed with 11399
-  private static boolean containsNestedDocumentLimitErrorMessage(final BulkResponse bulkResponse) {
-    return bulkResponse.buildFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE);
-  }
-
-  //TODO will be removed with 11399
-  private static String getHintForErrorMsg(final BulkResponse bulkResponse) {
-    if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
-      // exception potentially related to nested object limit
-      return "If you are experiencing failures due to too many nested documents, try carefully increasing the " +
-        "configured nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of " +
-        "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). " +
-        "See Optimize documentation for details.";
-    }
-    return "";
   }
 
   public static void waitUntilTaskIsFinished(final OptimizeElasticsearchClient esClient,

@@ -39,12 +39,12 @@ public class BusinessKeyWriterES implements BusinessKeyWriter {
     final BulkRequest bulkRequest = new BulkRequest();
     log.debug("Deleting [{}] business key documents by id with bulk request.", processInstanceIds.size());
     processInstanceIds.forEach(id -> bulkRequest.add(new DeleteRequest(BUSINESS_KEY_INDEX_NAME, id)));
-    ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, BUSINESS_KEY_INDEX_NAME, false);
+    esClient.doBulkRequest(bulkRequest, BUSINESS_KEY_INDEX_NAME, false);
   }
 
   @Override
   public Optional<ImportRequestDto> createIndexRequestForBusinessKey(final BusinessKeyDto businessKeyDto,
-                                                                      final String importItemName) {
+                                                                     final String importItemName) {
     try {
       return Optional.of(ImportRequestDto.builder()
                            .indexName(BUSINESS_KEY_INDEX_NAME)

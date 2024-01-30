@@ -83,8 +83,7 @@ public class EventProcessInstanceWriterES implements EventProcessInstanceWriter 
     final String importItemName = "event process instances";
     log.debug("Writing [{}] {} to ES.", eventProcessInstanceDtos.size(), importItemName);
 
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       importItemName,
       eventProcessInstanceDtos,
       this::addImportProcessInstanceRequest,

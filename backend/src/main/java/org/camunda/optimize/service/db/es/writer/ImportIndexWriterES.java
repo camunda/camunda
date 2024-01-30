@@ -50,8 +50,7 @@ public class ImportIndexWriterES implements ImportIndexWriter {
     String importItemName = "import index information";
     log.debug("Writing [{}] {} to ES.", engineImportIndexDtos.size(), importItemName);
 
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       importItemName,
       engineImportIndexDtos,
       this::addImportIndexRequest,

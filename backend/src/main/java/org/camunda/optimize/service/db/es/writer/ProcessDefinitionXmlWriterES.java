@@ -46,8 +46,7 @@ public class ProcessDefinitionXmlWriterES extends AbstractProcessDefinitionWrite
   public void importProcessDefinitionXmls(List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos) {
     String importItemName = "process definition information";
     log.debug("Writing [{}] {} to ES.", processDefinitionOptimizeDtos.size(), importItemName);
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       importItemName,
       processDefinitionOptimizeDtos,
       this::addImportProcessDefinitionToRequest,
