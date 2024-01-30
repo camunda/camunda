@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.engine.state.migration.MemoryBoundedColumnIteration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -32,6 +33,7 @@ public class DbProcessMessageSubscriptionMigrationState {
   }
 
   public void migrateProcessMessageSubscriptionForMultiTenancy() {
+    final var iterator = new MemoryBoundedColumnIteration();
     // setting the tenant id key once, because it's the same for all steps below
     to.tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -40,15 +42,14 @@ public class DbProcessMessageSubscriptionMigrationState {
     - Prefix second part of composite key with tenant
     - Set tenant on value
      */
-    from.getSubscriptionColumnFamily()
-        .forEach(
-            (key, value) -> {
-              to.elementInstanceKey.wrapLong(key.first().getValue());
-              to.messageName.wrapBuffer(key.second().getBuffer());
-              value.getRecord().setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-              to.subscriptionColumnFamily.insert(to.elementKeyAndMessageName, value);
-              from.getSubscriptionColumnFamily().deleteExisting(key);
-            });
+    iterator.drain(
+        from.getSubscriptionColumnFamily(),
+        (key, value) -> {
+          to.elementInstanceKey.wrapLong(key.first().getValue());
+          to.messageName.wrapBuffer(key.second().getBuffer());
+          value.getRecord().setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+          to.subscriptionColumnFamily.insert(to.elementKeyAndMessageName, value);
+        });
   }
 
   private static final class DbProcessMessageSubscriptionState {
