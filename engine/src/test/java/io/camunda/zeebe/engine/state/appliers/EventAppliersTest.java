@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 
+import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -51,10 +53,9 @@ public class EventAppliersTest {
   void shouldNotApplyStateUsingUnregisteredApplier() {
     // given no registered appliers
 
-    // when
-    eventAppliers.applyState(1, Intent.UNKNOWN, null, 1);
-
     // then
+    assertThatExceptionOfType(NoSuchEventApplier.NoApplierForIntent.class)
+        .isThrownBy(() -> eventAppliers.applyState(1, Intent.UNKNOWN, null, 1));
     Mockito.verify(mockedApplier, Mockito.never()).applyState(anyLong(), any());
   }
 
@@ -63,10 +64,9 @@ public class EventAppliersTest {
     // given
     eventAppliers.register(Intent.UNKNOWN, 1, mockedApplier);
 
-    // when
-    eventAppliers.applyState(1, Intent.UNKNOWN, null, 2);
-
     // then
+    assertThatExceptionOfType(NoSuchEventApplier.NoApplierForVersion.class)
+        .isThrownBy(() -> eventAppliers.applyState(1, Intent.UNKNOWN, null, 2));
     Mockito.verify(mockedApplier, Mockito.never()).applyState(anyLong(), any());
   }
 
