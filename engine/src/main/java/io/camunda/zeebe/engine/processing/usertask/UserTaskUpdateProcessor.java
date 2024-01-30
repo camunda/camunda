@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
 public final class UserTaskUpdateProcessor implements TypedRecordProcessor<UserTaskRecord> {
@@ -52,11 +53,12 @@ public final class UserTaskUpdateProcessor implements TypedRecordProcessor<UserT
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    userTaskRecord.wrapChangedAttributes(command.getValue(), true);
+    final UserTaskRecord updateRecord = new UserTaskRecord();
+    updateRecord.wrap(BufferUtil.createCopy(userTaskRecord));
+    updateRecord.wrapChangedAttributes(command.getValue(), true);
 
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, userTaskRecord);
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
-    responseWriter.writeEventOnCommand(
-        userTaskKey, UserTaskIntent.UPDATED, userTaskRecord, command);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, updateRecord);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, updateRecord);
+    responseWriter.writeEventOnCommand(userTaskKey, UserTaskIntent.UPDATED, updateRecord, command);
   }
 }
