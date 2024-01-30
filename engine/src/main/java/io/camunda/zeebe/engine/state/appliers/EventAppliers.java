@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -43,8 +44,8 @@ import java.util.function.Function;
  */
 public final class EventAppliers implements EventApplier {
 
-  private static final Function<Intent, TypedEventApplier<?, ?>> UNIMPLEMENTED_EVENT_APPLIER =
-      intent -> (key, value) -> {};
+  public static final TypedEventApplier<Intent, RecordValue> NOOP_EVENT_APPLIER =
+      (key, value) -> {};
 
   private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
 
@@ -255,8 +256,10 @@ public final class EventAppliers implements EventApplier {
 
   @Override
   public void applyState(final long key, final Intent intent, final RecordValue value) {
-    final var eventApplier =
-        mapping.getOrDefault(intent, UNIMPLEMENTED_EVENT_APPLIER.apply(intent));
-    eventApplier.applyState(key, value);
+    final var applierForIntent = mapping.get(intent);
+    if (applierForIntent == null) {
+      throw new NoApplierForIntent(intent);
+    }
+    applierForIntent.applyState(key, value);
   }
 }
