@@ -92,7 +92,7 @@ pipeline {
         container('gcloud') {
           camundaInstallKubectl()
           sh("""
-            apk add --no-cache jq py-pip && pip install yq
+            apk add --no-cache jq py-pip && pip install yq --break-system-packages
             gsutil stat gs://optimize-data/optimize_data-stage.sqlc | grep ETag |  yq -r '.ETag' >> /import/optimize_large_data-stage.etag || true
             gsutil cp   gs://optimize-data/optimize_large_data-stage.etag /import/optimize_large_data-stage.etag.old || true
             diff -Ns /import/optimize_large_data-stage.etag /import/optimize_large_data-stage.etag.new && touch /import/skip || true
