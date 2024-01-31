@@ -143,4 +143,50 @@ public final class UserTaskClient {
             authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
   }
+
+  public Record<UserTaskRecordValue> update(
+      final String candidateGroups,
+      final String candidateUsers,
+      final String dueDate,
+      final String followUpDate) {
+    if (candidateGroups != null) {
+      userTaskRecord.setCandidateGroups(candidateGroups).setCandidateGroupsChanged();
+    }
+    if (candidateUsers != null) {
+      userTaskRecord.setCandidateUsers(candidateUsers).setCandidateUsersChanged();
+    }
+    if (dueDate != null) {
+      userTaskRecord.setDueDate(dueDate).setDueDateChanged();
+    }
+    if (followUpDate != null) {
+      userTaskRecord.setFollowUpDate(followUpDate).setFollowUpDateChanged();
+    }
+
+    final long userTaskKey = findUserTaskKey();
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            UserTaskIntent.UPDATE,
+            userTaskRecord.setUserTaskKey(userTaskKey),
+            authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
+
+  public Record<UserTaskRecordValue> update(final UserTaskRecord changes) {
+    userTaskRecord.wrapWithoutVariables(changes);
+    userTaskRecord
+        .setCandidateGroupsChanged()
+        .setCandidateUsersChanged()
+        .setDueDateChanged()
+        .setFollowUpDateChanged();
+
+    final long userTaskKey = findUserTaskKey();
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            UserTaskIntent.UPDATE,
+            userTaskRecord.setUserTaskKey(userTaskKey),
+            authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
 }

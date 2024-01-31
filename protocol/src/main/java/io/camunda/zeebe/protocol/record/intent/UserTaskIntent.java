@@ -30,7 +30,11 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   ASSIGNING(8),
   ASSIGNED(9),
 
-  CLAIM(10);
+  CLAIM(10),
+
+  UPDATE(11),
+  UPDATING(12),
+  UPDATED(13);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -72,6 +76,12 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return ASSIGNED;
       case 10:
         return CLAIM;
+      case 11:
+        return UPDATE;
+      case 12:
+        return UPDATING;
+      case 13:
+        return UPDATED;
       default:
         return UNKNOWN;
     }

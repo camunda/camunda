@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -27,7 +26,6 @@ import java.util.List;
 
 public final class UserTaskCompleteProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
-  private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
   private final EventHandle eventHandle;
   private final StateWriter stateWriter;
@@ -38,7 +36,6 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
 
   public UserTaskCompleteProcessor(
       final ProcessingState state, final EventHandle eventHandle, final Writers writers) {
-    userTaskState = state.getUserTaskState();
     elementInstanceState = state.getElementInstanceState();
     this.eventHandle = eventHandle;
     stateWriter = writers.state();
@@ -47,7 +44,7 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
-            List.of(LifecycleState.CREATED), "complete", userTaskState);
+            List.of(LifecycleState.CREATED), "complete", state.getUserTaskState());
   }
 
   @Override
@@ -55,7 +52,7 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
     preconditionChecker
         .check(userTaskRecord)
         .ifRightOrLeft(
-            ok -> completeUserTask(userTaskRecord),
+            persistedRecord -> completeUserTask(userTaskRecord, persistedRecord),
             violation -> {
               rejectionWriter.appendRejection(
                   userTaskRecord, violation.getLeft(), violation.getRight());
@@ -64,18 +61,17 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
             });
   }
 
-  private void completeUserTask(final TypedRecord<UserTaskRecord> userTaskRecord) {
-    final long userTaskKey = userTaskRecord.getKey();
-    final UserTaskRecord persistedUserTask =
-        userTaskState.getUserTask(userTaskKey, userTaskRecord.getAuthorizations());
+  private void completeUserTask(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
+    final long userTaskKey = command.getKey();
 
-    persistedUserTask.setVariables(userTaskRecord.getValue().getVariablesBuffer());
+    userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
 
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETING, persistedUserTask);
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, persistedUserTask);
-    completeElementInstance(persistedUserTask);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETING, userTaskRecord);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
+    completeElementInstance(userTaskRecord);
     responseWriter.writeEventOnCommand(
-        userTaskKey, UserTaskIntent.COMPLETED, persistedUserTask, userTaskRecord);
+        userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command);
   }
 
   private void completeElementInstance(final UserTaskRecord userTaskRecord) {

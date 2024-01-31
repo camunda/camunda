@@ -15,6 +15,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.BiFunction;
 
 public class UserTaskCommandPreconditionChecker {
 
@@ -22,16 +24,16 @@ public class UserTaskCommandPreconditionChecker {
       "Expected to %s user task with key '%d', but no such user task was found";
   private static final String INVALID_USER_TASK_STATE_MESSAGE =
       "Expected to %s user task with key '%d', but it is in state '%s'";
-  private static final String INVALID_USER_TASK_ASSIGNEE_MESSAGE =
-      "Expected to %s user task with key '%d', but it has already been assigned";
-  private static final String INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE =
-      "Expected to %s user task with key '%d', but provided assignee is empty";
 
   private static final String CLAIM_INTENT = "claim";
 
   private final List<LifecycleState> validLifecycleStates;
   private final String intent;
-
+  private final BiFunction<
+          TypedRecord<UserTaskRecord>,
+          UserTaskRecord,
+          Either<Tuple<RejectionType, String>, UserTaskRecord>>
+      additionalChecks;
   private final UserTaskState userTaskState;
 
   public UserTaskCommandPreconditionChecker(
@@ -40,6 +42,22 @@ public class UserTaskCommandPreconditionChecker {
       final UserTaskState userTaskState) {
     this.validLifecycleStates = validLifecycleStates;
     this.intent = intent;
+    additionalChecks = null;
+    this.userTaskState = userTaskState;
+  }
+
+  public UserTaskCommandPreconditionChecker(
+      final List<LifecycleState> validLifecycleStates,
+      final String intent,
+      final BiFunction<
+              TypedRecord<UserTaskRecord>,
+              UserTaskRecord,
+              Either<Tuple<RejectionType, String>, UserTaskRecord>>
+          additionalChecks,
+      final UserTaskState userTaskState) {
+    this.validLifecycleStates = validLifecycleStates;
+    this.intent = intent;
+    this.additionalChecks = additionalChecks;
     this.userTaskState = userTaskState;
   }
 
@@ -65,37 +83,9 @@ public class UserTaskCommandPreconditionChecker {
               String.format(INVALID_USER_TASK_STATE_MESSAGE, intent, userTaskKey, lifecycleState)));
     }
 
-    if (CLAIM_INTENT.equals(intent)) {
-      final var checkResult = checkClaim(command, persistedRecord);
-      if (checkResult.isLeft()) {
-        return checkResult;
-      }
-    }
-
-    return Either.right(persistedRecord);
-  }
-
-  private Either<Tuple<RejectionType, String>, UserTaskRecord> checkClaim(
-      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedRecord) {
-
-    final long userTaskKey = command.getKey();
-    final String assignee = command.getValue().getAssignee();
-    if (assignee.isBlank()) {
-      return Either.left(
-          Tuple.of(
-              RejectionType.INVALID_STATE,
-              String.format(INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE, intent, userTaskKey)));
-    }
-
-    final String currentAssignee = persistedRecord.getAssignee();
-    final boolean canClaim = currentAssignee.isBlank() || currentAssignee.equals(assignee);
-    if (!canClaim) {
-      return Either.left(
-          Tuple.of(
-              RejectionType.INVALID_STATE,
-              String.format(INVALID_USER_TASK_ASSIGNEE_MESSAGE, intent, userTaskKey)));
-    }
-
-    return Either.right(persistedRecord);
+    return Optional.ofNullable(additionalChecks)
+        .map(checks -> checks.apply(command, persistedRecord))
+        .filter(Either::isLeft)
+        .orElse(Either.right(persistedRecord));
   }
 }

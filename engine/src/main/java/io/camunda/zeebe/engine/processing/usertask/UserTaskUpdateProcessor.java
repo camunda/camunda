@@ -17,22 +17,23 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
-public final class UserTaskAssignProcessor implements TypedRecordProcessor<UserTaskRecord> {
+public final class UserTaskUpdateProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
 
-  public UserTaskAssignProcessor(final ProcessingState state, final Writers writers) {
+  public UserTaskUpdateProcessor(final ProcessingState state, final Writers writers) {
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
-            List.of(LifecycleState.CREATED), "assign", state.getUserTaskState());
+            List.of(LifecycleState.CREATED), "update", state.getUserTaskState());
   }
 
   @Override
@@ -40,7 +41,7 @@ public final class UserTaskAssignProcessor implements TypedRecordProcessor<UserT
     preconditionChecker
         .check(command)
         .ifRightOrLeft(
-            persistedRecord -> assignUserTask(command, persistedRecord),
+            persistedRecord -> updateUserTask(command, persistedRecord),
             violation -> {
               rejectionWriter.appendRejection(command, violation.getLeft(), violation.getRight());
               responseWriter.writeRejectionOnCommand(
@@ -48,15 +49,16 @@ public final class UserTaskAssignProcessor implements TypedRecordProcessor<UserT
             });
   }
 
-  private void assignUserTask(
+  private void updateUserTask(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    userTaskRecord.setAssignee(command.getValue().getAssignee());
+    final UserTaskRecord updateRecord = new UserTaskRecord();
+    updateRecord.wrap(BufferUtil.createCopy(userTaskRecord));
+    updateRecord.wrapChangedAttributes(command.getValue(), true);
 
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-    responseWriter.writeEventOnCommand(
-        userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, updateRecord);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, updateRecord);
+    responseWriter.writeEventOnCommand(userTaskKey, UserTaskIntent.UPDATED, updateRecord, command);
   }
 }

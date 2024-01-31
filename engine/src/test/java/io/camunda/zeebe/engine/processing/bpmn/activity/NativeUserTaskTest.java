@@ -11,10 +11,12 @@ import static io.camunda.zeebe.engine.processing.variable.mapping.VariableValue.
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,6 +50,8 @@ public final class NativeUserTaskTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
+  private UserTaskState userTaskState;
+
   private static BpmnModelInstance process() {
     return process(b -> {});
   }
@@ -58,6 +63,11 @@ public final class NativeUserTaskTest {
     consumer.accept(builder);
 
     return builder.endEvent().done();
+  }
+
+  @Before
+  public void setUp() {
+    userTaskState = ENGINE.getProcessingState().getUserTaskState();
   }
 
   @Test
@@ -569,6 +579,12 @@ public final class NativeUserTaskTest {
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("foo").assign();
 
     // then
+    final UserTaskRecordValue createdUserTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+
     assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
@@ -580,6 +596,9 @@ public final class NativeUserTaskTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst()
                 .getValue())
+        .hasAssignee("foo");
+
+    Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
         .hasAssignee("foo");
   }
 
@@ -594,6 +613,12 @@ public final class NativeUserTaskTest {
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("foo").claim();
 
     // then
+    final UserTaskRecordValue createdUserTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+
     assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
@@ -606,6 +631,70 @@ public final class NativeUserTaskTest {
                 .getFirst()
                 .getValue())
         .hasAssignee("foo");
+
+    Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
+        .hasAssignee("foo");
+  }
+
+  @Test
+  public void shouldUpdateUserTaskAttributes() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                t ->
+                    t.zeebeCandidateGroups("foo, bar")
+                        .zeebeCandidateUsers("oof, rab")
+                        .zeebeFollowUpDate("2023-03-02T15:35+02:00")
+                        .zeebeDueDate("2023-03-02T16:35+02:00")))
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.userTask().ofInstance(processInstanceKey).update(new UserTaskRecord());
+
+    // then
+    final UserTaskRecordValue createdUserTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED));
+
+    Assertions.assertThat(createdUserTask)
+        .hasCandidateGroups("[\"foo\",\"bar\"]")
+        .hasCandidateUsers("[\"oof\",\"rab\"]")
+        .hasDueDate("2023-03-02T16:35+02:00")
+        .hasFollowUpDate("2023-03-02T15:35+02:00")
+        .hasNoChangedAttributes();
+
+    Assertions.assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasCandidateGroups("")
+        .hasCandidateUsers("")
+        .hasDueDate("")
+        .hasFollowUpDate("")
+        .hasChangedAttributes(
+            UserTaskRecord.CANDIDATE_GROUPS,
+            UserTaskRecord.CANDIDATE_USERS,
+            UserTaskRecord.DUE_DATE,
+            UserTaskRecord.FOLLOW_UP_DATE);
+
+    Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
+        .hasCandidateGroups("")
+        .hasCandidateUsers("")
+        .hasDueDate("")
+        .hasFollowUpDate("")
+        .hasNoChangedAttributes();
   }
 
   @Test

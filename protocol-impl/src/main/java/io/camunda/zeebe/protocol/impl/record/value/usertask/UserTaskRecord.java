@@ -12,29 +12,44 @@ import static io.camunda.zeebe.protocol.impl.record.value.processinstance.Proces
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 
 public final class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecordValue {
 
+  public static final String CANDIDATE_GROUPS = "candidateGroups";
+  public static final String CANDIDATE_USERS = "candidateUsers";
+  public static final String DUE_DATE = "dueDate";
+  public static final String FOLLOW_UP_DATE = "followUpDate";
+
   private static final String EMPTY_STRING = "";
+  private static final StringValue CANDIDATE_GROUPS_VALUE = new StringValue(CANDIDATE_GROUPS);
+  private static final StringValue CANDIDATE_USERS_VALUE = new StringValue(CANDIDATE_USERS);
+  private static final StringValue DUE_DATE_VALUE = new StringValue(DUE_DATE);
+  private static final StringValue FOLLOW_UP_DATE_VALUE = new StringValue(FOLLOW_UP_DATE);
 
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
   private final StringProperty assigneeProp = new StringProperty("assignee", EMPTY_STRING);
   private final StringProperty candidateGroupsProp =
-      new StringProperty("candidateGroups", EMPTY_STRING);
+      new StringProperty(CANDIDATE_GROUPS, EMPTY_STRING);
   private final StringProperty candidateUsersProp =
-      new StringProperty("candidateUsers", EMPTY_STRING);
-  private final StringProperty dueDateProp = new StringProperty("dueDate", EMPTY_STRING);
-  private final StringProperty followUpDateProp = new StringProperty("followUpDate", EMPTY_STRING);
+      new StringProperty(CANDIDATE_USERS, EMPTY_STRING);
+  private final StringProperty dueDateProp = new StringProperty(DUE_DATE, EMPTY_STRING);
+  private final StringProperty followUpDateProp = new StringProperty(FOLLOW_UP_DATE, EMPTY_STRING);
   private final LongProperty formKeyProp = new LongProperty("formKey", -1);
 
   private final DocumentProperty variableProp = new DocumentProperty("variables");
@@ -51,9 +66,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final ArrayProperty<StringValue> changedAttributesProp =
+      new ArrayProperty<>("changedAttributes", StringValue::new);
 
   public UserTaskRecord() {
-    super(15);
+    super(16);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsProp)
@@ -68,7 +85,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(changedAttributesProp);
   }
 
   public void wrapWithoutVariables(final UserTaskRecord record) {
@@ -86,16 +104,35 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantIdBuffer());
+    setChangedAttributesProp(record.getChangedAttributesProp());
   }
 
-  public void wrap(final UserTaskRecord record) {
-    wrapWithoutVariables(record);
-    variableProp.setValue(record.getVariablesBuffer());
+  public void wrapChangedAttributes(
+      final UserTaskRecord record, final boolean includeTrackingProperties) {
+    record.getChangedAttributesProp().stream()
+        .forEach(attribute -> updateAttribute(attribute, record));
+    if (includeTrackingProperties) {
+      setChangedAttributesProp(record.getChangedAttributesProp());
+    }
   }
 
-  public UserTaskRecord resetVariables() {
-    variableProp.reset();
-    return this;
+  private void updateAttribute(final StringValue attribute, final UserTaskRecord record) {
+    switch (bufferAsString(attribute.getValue())) {
+      case CANDIDATE_GROUPS:
+        candidateGroupsProp.setValue(record.getCandidateGroupsBuffer());
+        break;
+      case CANDIDATE_USERS:
+        candidateUsersProp.setValue(record.getCandidateUsersBuffer());
+        break;
+      case DUE_DATE:
+        dueDateProp.setValue(record.getDueDateBuffer());
+        break;
+      case FOLLOW_UP_DATE:
+        followUpDateProp.setValue(record.getFollowUpDateBuffer());
+        break;
+      default:
+        break;
+    }
   }
 
   @Override
@@ -131,6 +168,14 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   @Override
   public long getFormKey() {
     return formKeyProp.getValue();
+  }
+
+  @Override
+  public List<String> getChangedAttributes() {
+    return StreamSupport.stream(changedAttributesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -190,6 +235,13 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setElementId(final DirectBuffer elementId) {
     elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  public UserTaskRecord setChangedAttributes(final List<String> changedAttributes) {
+    changedAttributesProp.reset();
+    changedAttributes.forEach(
+        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
     return this;
   }
 
@@ -253,6 +305,26 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     return this;
   }
 
+  public UserTaskRecord setCandidateGroupsChanged() {
+    changedAttributesProp.add().wrap(CANDIDATE_GROUPS_VALUE);
+    return this;
+  }
+
+  public UserTaskRecord setCandidateUsersChanged() {
+    changedAttributesProp.add().wrap(CANDIDATE_USERS_VALUE);
+    return this;
+  }
+
+  public UserTaskRecord setDueDateChanged() {
+    changedAttributesProp.add().wrap(DUE_DATE_VALUE);
+    return this;
+  }
+
+  public UserTaskRecord setFollowUpDateChanged() {
+    changedAttributesProp.add().wrap(FOLLOW_UP_DATE_VALUE);
+    return this;
+  }
+
   @Override
   public String getTenantId() {
     return bufferAsString(tenantIdProp.getValue());
@@ -270,6 +342,18 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setVariables(final DirectBuffer variables) {
     variableProp.setValue(variables);
+    return this;
+  }
+
+  @JsonIgnore
+  public ArrayProperty<StringValue> getChangedAttributesProp() {
+    return changedAttributesProp;
+  }
+
+  public UserTaskRecord setChangedAttributesProp(
+      final ArrayProperty<StringValue> changedAttributes) {
+    changedAttributesProp.reset();
+    changedAttributes.forEach(attribute -> changedAttributesProp.add().wrap(attribute));
     return this;
   }
 
