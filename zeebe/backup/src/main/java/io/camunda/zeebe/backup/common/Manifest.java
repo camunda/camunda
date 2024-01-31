@@ -5,18 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.backup.azure.manifest;
+package io.camunda.zeebe.backup.common;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
-import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
-import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import java.time.Instant;
 
-// This class is a copy from the manifest class in GCS, and eventually it will be refactored,
-// or the code will be reused here.
 @JsonSerialize(as = ManifestImpl.class)
 @JsonDeserialize(as = ManifestImpl.class)
 public sealed interface Manifest {

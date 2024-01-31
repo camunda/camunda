@@ -12,15 +12,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 final class ManifestStateCastingTest {
   @Test
-  public void shouldFailOnAsInProgress() {
+  void shouldFailOnAsInProgress() {
     // given
     final var manifest =
         Manifest.createInProgress(
@@ -39,7 +40,7 @@ final class ManifestStateCastingTest {
   }
 
   @Test
-  public void shouldFailOnAsCompleted() {
+  void shouldFailOnAsCompleted() {
     // given
     final var manifest =
         Manifest.createInProgress(
@@ -56,7 +57,7 @@ final class ManifestStateCastingTest {
   }
 
   @Test
-  public void shouldFailOnAsFailed() {
+  void shouldFailOnAsFailed() {
     // given
     final var manifest =
         Manifest.createInProgress(

@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.backup.gcs.manifest;
 
+import io.camunda.zeebe.backup.common.FileSet;
+import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
-import io.camunda.zeebe.backup.gcs.manifest.FileSet.NamedFile;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;

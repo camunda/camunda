@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.backup.gcs.manifest;
 
+import static io.camunda.zeebe.backup.common.Manifest.StatusCode.COMPLETED;
+import static io.camunda.zeebe.backup.common.Manifest.StatusCode.FAILED;
+import static io.camunda.zeebe.backup.common.Manifest.StatusCode.IN_PROGRESS;
 import static io.camunda.zeebe.backup.gcs.ManifestManager.MAPPER;
-import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.COMPLETED;
-import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.FAILED;
-import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -19,8 +19,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.InvalidPersistedManifestState;
-import io.camunda.zeebe.backup.gcs.manifest.FileSet.NamedFile;
+import io.camunda.zeebe.backup.common.BackupStoreException.InvalidPersistedManifestState;
+import io.camunda.zeebe.backup.common.FileSet;
+import io.camunda.zeebe.backup.common.FileSet.NamedFile;
+import io.camunda.zeebe.backup.common.Manifest;
+import io.camunda.zeebe.backup.common.ManifestImpl;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -308,7 +311,7 @@ final class ManifestSerializationTest {
   }
 
   @Test
-  public void shouldSerializeFileSets() throws JsonProcessingException {
+  void shouldSerializeFileSets() throws JsonProcessingException {
     // given
     final var manifest =
         new ManifestImpl(
