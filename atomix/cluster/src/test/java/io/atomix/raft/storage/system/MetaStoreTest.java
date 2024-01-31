@@ -16,6 +16,7 @@
 package io.atomix.raft.storage.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Named.named;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
@@ -26,12 +27,17 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class MetaStoreTest {
   @TempDir Path temporaryFolder;
@@ -197,21 +203,17 @@ class MetaStoreTest {
       assertThat(metaStore.loadConfiguration()).isNull();
     }
 
-    @Test
-    void shouldStoreAndLoadConfiguration() {
+    @ParameterizedTest
+    @MethodSource("provideConfigurations")
+    void shouldStoreAndLoadConfiguration(final Configuration config) {
       // given
-      final Configuration config = getConfiguration(1, 2);
       metaStore.storeConfiguration(config);
 
       // when
       final Configuration readConfig = metaStore.loadConfiguration();
 
       // then
-      assertThat(readConfig.index()).isEqualTo(config.index());
-      assertThat(readConfig.term()).isEqualTo(config.term());
-      assertThat(readConfig.time()).isEqualTo(config.time());
-      assertThat(readConfig.newMembers())
-          .containsExactlyInAnyOrder(config.newMembers().toArray(new RaftMember[0]));
+      assertThat(readConfig).isEqualTo(config);
     }
 
     @Test
@@ -227,11 +229,7 @@ class MetaStoreTest {
       // then
       final Configuration readConfig = metaStore.loadConfiguration();
 
-      assertThat(readConfig.index()).isEqualTo(config.index());
-      assertThat(readConfig.term()).isEqualTo(config.term());
-      assertThat(readConfig.time()).isEqualTo(config.time());
-      assertThat(readConfig.newMembers())
-          .containsExactlyInAnyOrder(config.newMembers().toArray(new RaftMember[0]));
+      assertThat(readConfig).isEqualTo(config);
     }
 
     @Test
@@ -248,11 +246,7 @@ class MetaStoreTest {
       final Configuration readConfig = metaStore.loadConfiguration();
 
       // then
-      assertThat(readConfig.index()).isEqualTo(secondConfig.index());
-      assertThat(readConfig.term()).isEqualTo(secondConfig.term());
-      assertThat(readConfig.time()).isEqualTo(secondConfig.time());
-      assertThat(readConfig.newMembers())
-          .containsExactlyInAnyOrder(secondConfig.newMembers().toArray(new RaftMember[0]));
+      assertThat(readConfig).isEqualTo(secondConfig);
     }
 
     @Test
@@ -267,24 +261,31 @@ class MetaStoreTest {
       final Configuration readConfig = metaStore.loadConfiguration();
 
       // then
-      assertThat(readConfig.index()).isEqualTo(secondConfig.index());
-      assertThat(readConfig.term()).isEqualTo(secondConfig.term());
-      assertThat(readConfig.time()).isEqualTo(secondConfig.time());
-      assertThat(readConfig.newMembers())
-          .containsExactlyInAnyOrder(secondConfig.newMembers().toArray(new RaftMember[0]));
+      assertThat(readConfig).isEqualTo(secondConfig);
     }
 
-    private Configuration getConfiguration(final long index, final long term) {
-      return new Configuration(
-          index,
-          term,
-          1234L,
-          new ArrayList<>(
-              Set.of(
-                  new DefaultRaftMember(
-                      MemberId.from("0"), Type.ACTIVE, Instant.ofEpochMilli(12345)),
-                  new DefaultRaftMember(
-                      MemberId.from("2"), Type.PASSIVE, Instant.ofEpochMilli(12346)))));
+    private static Configuration getConfiguration(final long index, final long term) {
+      return new Configuration(index, term, 1234L, getMembers("0", "1"));
+    }
+
+    private static ArrayList<RaftMember> getMembers(final String m0, final String m1) {
+      return new ArrayList<>(
+          Set.of(
+              new DefaultRaftMember(MemberId.from(m0), Type.ACTIVE, Instant.ofEpochMilli(12345)),
+              new DefaultRaftMember(MemberId.from(m1), Type.PASSIVE, Instant.ofEpochMilli(12346))));
+    }
+
+    private static Stream<Arguments> provideConfigurations() {
+      return Stream.of(
+          Arguments.of(named("default", getConfiguration(2, 3))),
+          Arguments.of(
+              named(
+                  "joint consensus",
+                  new Configuration(2, 3, 1234L, getMembers("0", "2"), getMembers("0", "1")))),
+          Arguments.of(
+              named(
+                  "force configuration",
+                  new Configuration(2, 3, 1235L, getMembers("0", "3"), List.of(), true))));
     }
   }
 }
