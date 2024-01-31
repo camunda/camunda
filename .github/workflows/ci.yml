@@ -25,21 +25,8 @@ jobs:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `master` or `stable/**`
 
   run-tests:
-    name: "run-${{ matrix.name }}-tests"
-    strategy:
-      fail-fast: false
-      matrix:
-        database: [ elasticsearch, opensearch ]
-        include:
-          - database: elasticsearch
-            testProfile: docker-es
-            name: es
-          - database: opensearch
-            testProfile: docker-os
-            name: os
+    name: run-tests
     uses: ./.github/workflows/ci-test-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      testProfile: ${{ matrix.testProfile }}
-      database: ${{ matrix.database }}
