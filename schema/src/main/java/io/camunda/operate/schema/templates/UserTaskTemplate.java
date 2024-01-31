@@ -30,6 +30,9 @@ public class UserTaskTemplate extends AbstractTemplateDescriptor implements Proc
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
   public static final String VARIABLES = "variables";
+  public static final String EXTERNAL_REFERENCE = "externalReference";
+  public static final String ACTION = "action";
+  public static final String CHANGED_ATTRIBUTES = "changedAttributes";
 
   @Override
   public String getIndexName() {
@@ -38,6 +41,6 @@ public class UserTaskTemplate extends AbstractTemplateDescriptor implements Proc
 
   @Override
   public String getVersion() {
-    return "8.4.0";
+    return "8.5.0";
   }
 }

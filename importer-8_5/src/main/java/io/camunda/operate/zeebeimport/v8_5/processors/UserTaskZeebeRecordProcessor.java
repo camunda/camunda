@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Component
@@ -71,8 +72,8 @@ public class UserTaskZeebeRecordProcessor {
         .setProcessInstanceKey(userTaskRecord.getProcessInstanceKey())
         .setBpmnProcessId(userTaskRecord.getBpmnProcessId())
         .setAssignee(userTaskRecord.getAssignee())
-        .setCandidateGroups(userTaskRecord.getCandidateGroups())
-        .setCandidateUsers(userTaskRecord.getCandidateUsers())
+        .setCandidateGroups(List.of(userTaskRecord.getCandidateGroups()))
+        .setCandidateUsers(List.of(userTaskRecord.getCandidateUsers()))
         .setDueDate(toDateOrNull(userTaskRecord.getDueDate()))
         .setElementId(userTaskRecord.getElementId())
         .setElementInstanceKey(userTaskRecord.getElementInstanceKey())

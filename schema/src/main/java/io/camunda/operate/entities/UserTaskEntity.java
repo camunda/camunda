@@ -7,6 +7,7 @@
 package io.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Objects;
 
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
@@ -15,8 +16,8 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
 
   private Long userTaskKey;
   private String assignee;
-  private String candidateGroups;
-  private String candidateUsers;
+  private List<String> candidateGroups;
+  private List<String> candidateUsers;
   private OffsetDateTime dueDate;
   private OffsetDateTime followUpDate;
   private Long formKey;
@@ -27,6 +28,9 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
   private Integer processDefinitionVersion;
   private Long processInstanceKey;
   private String variables;
+  private String externalReference;
+  private String action;
+  private List<String> changedAttributes;
   private String tenantId = DEFAULT_TENANT_ID;
 
   public Long getUserTaskKey() {
@@ -47,20 +51,20 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return this;
   }
 
-  public String getCandidateGroups() {
+  public List<String> getCandidateGroups() {
     return candidateGroups;
   }
 
-  public UserTaskEntity setCandidateGroups(String candidateGroups) {
+  public UserTaskEntity setCandidateGroups(List<String> candidateGroups) {
     this.candidateGroups = candidateGroups;
     return this;
   }
 
-  public String getCandidateUsers() {
+  public List<String> getCandidateUsers() {
     return candidateUsers;
   }
 
-  public UserTaskEntity setCandidateUsers(String candidateUsers) {
+  public UserTaskEntity setCandidateUsers(List<String> candidateUsers) {
     this.candidateUsers = candidateUsers;
     return this;
   }
@@ -164,23 +168,54 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return this;
   }
 
+  public String getExternalReference() {
+    return externalReference;
+  }
+
+  public UserTaskEntity setExternalReference(String externalReference) {
+    this.externalReference = externalReference;
+    return this;
+  }
+
+  public String getAction() {
+    return action;
+  }
+
+  public UserTaskEntity setAction(String action) {
+    this.action = action;
+    return this;
+  }
+
+  public List<String> getChangedAttributes() {
+    return changedAttributes;
+  }
+
+  public UserTaskEntity setChangedAttributes(List<String> changedAttributes) {
+    this.changedAttributes = changedAttributes;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
     UserTaskEntity that = (UserTaskEntity) o;
-    return Objects.equals(userTaskKey, that.userTaskKey) && Objects.equals(assignee, that.assignee) && Objects.equals(candidateGroups, that.candidateGroups) &&
-        Objects.equals(candidateUsers, that.candidateUsers) && Objects.equals(dueDate, that.dueDate) && Objects.equals(followUpDate, that.followUpDate) &&
-        Objects.equals(formKey, that.formKey) && Objects.equals(elementId, that.elementId) && Objects.equals(elementInstanceKey, that.elementInstanceKey) &&
-        Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
-        Objects.equals(processDefinitionVersion, that.processDefinitionVersion) && Objects.equals(processInstanceKey, that.processInstanceKey) &&
-        Objects.equals(variables, that.variables) && Objects.equals(tenantId, that.tenantId);
+    return Objects.equals(userTaskKey, that.userTaskKey) && Objects.equals(assignee, that.assignee) &&
+        Objects.equals(candidateGroups, that.candidateGroups) && Objects.equals(candidateUsers, that.candidateUsers) &&
+        Objects.equals(dueDate, that.dueDate) && Objects.equals(followUpDate, that.followUpDate) &&
+        Objects.equals(formKey, that.formKey) && Objects.equals(elementId, that.elementId) &&
+        Objects.equals(elementInstanceKey, that.elementInstanceKey) && Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
+        Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(processDefinitionVersion, that.processDefinitionVersion) &&
+        Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(variables, that.variables) &&
+        Objects.equals(externalReference, that.externalReference) && Objects.equals(action, that.action) &&
+        Objects.equals(changedAttributes, that.changedAttributes) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), userTaskKey, assignee, candidateGroups, candidateUsers, dueDate, followUpDate, formKey, elementId,
-        elementInstanceKey, bpmnProcessId, processDefinitionKey, processDefinitionVersion, processInstanceKey, variables, tenantId);
+    return Objects.hash(super.hashCode(), userTaskKey, assignee, candidateGroups, candidateUsers, dueDate, followUpDate,
+        formKey, elementId, elementInstanceKey, bpmnProcessId, processDefinitionKey, processDefinitionVersion, processInstanceKey,
+        variables, externalReference, action, changedAttributes, tenantId);
   }
 }

@@ -46,6 +46,15 @@
       "variables": {
         "type": "text"
       },
+      "externalReference": {
+        "type": "keyword"
+      },
+      "action": {
+        "type": "keyword"
+      },
+      "changedAttributes": {
+        "type": "text"
+      },
       "id": {
         "type": "keyword"
       },
