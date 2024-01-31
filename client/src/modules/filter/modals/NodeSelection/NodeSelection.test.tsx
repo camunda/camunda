@@ -62,7 +62,7 @@ beforeEach(() => {
 
 const props: ComponentProps<typeof NodeSelection> = {
   filterLevel: 'view',
-  filterType: 'executingFlowNodes',
+  filterType: 'executedFlowNodes',
   close: jest.fn(),
   addFilter: jest.fn(),
   definitions: [
@@ -132,6 +132,24 @@ it('should invoke addFilter when applying the filter', async () => {
   });
 });
 
+it('should use the in operator when the more than half of the nodes are deselected', async () => {
+  const spy = jest.fn();
+  const node = shallow(<NodeSelection {...props} addFilter={spy} />);
+
+  await runAllEffects();
+
+  node.find(ClickBehavior).prop('onClick')({id: 'a'});
+  node.find(ClickBehavior).prop('onClick')({id: 'b'});
+
+  node.find(Modal.Footer).find('.confirm').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith({
+    data: {operator: 'in', values: ['c']},
+    type: 'executedFlowNodes',
+    appliedTo: ['definition'],
+  });
+});
+
 it('should disable create filter button if no node was selected', () => {
   const node = shallow(
     <NodeSelection {...props} filterData={{type: '', appliedTo: [], data: {values: []}}} />
@@ -193,4 +211,25 @@ it('should load new xml after changing definition', async () => {
   await runAllEffects();
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('otherDefinitionKey', '1', 'marketing');
+});
+
+it('should populate selected values correctly', async () => {
+  const filterData = {
+    type: 'executedFlowNodes',
+    appliedTo: [props.definitions[0]?.identifier],
+    data: {operator: 'in', values: ['a']},
+  };
+  const spy = jest.fn();
+  const node = shallow(<NodeSelection {...props} filterData={filterData} addFilter={spy} />);
+
+  await runAllEffects();
+
+  expect(node.find('ClickBehavior').prop('selectedNodes')).toEqual(['a']);
+
+  node.find(Modal.Footer).find('.confirm').simulate('click');
+  expect(spy).toHaveBeenCalledWith({
+    data: {operator: 'in', values: ['a']},
+    type: 'executedFlowNodes',
+    appliedTo: ['definition'],
+  });
 });

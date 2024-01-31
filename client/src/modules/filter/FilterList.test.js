@@ -214,7 +214,7 @@ it('should display nodeListPreview for flow node filter', () => {
   });
 });
 
-it('should display excluded flow nodes for view level flow node selection filter', () => {
+it('should display excluded flow nodes for flow node selection filter with not in operator', () => {
   const data = [
     {
       type: 'executedFlowNodes',
@@ -231,7 +231,27 @@ it('should display excluded flow nodes for view level flow node selection filter
   node = shallow(node.find(FlowNodeResolver).prop('render')({flowNode: 'flow node name'}));
 
   expect(node.find('.parameterName').dive()).toIncludeText('Flow node selection');
-  expect(node.find('.filterText')).toIncludeText('2 excluded flow nodes');
+  expect(node.find('.filterText')).toIncludeText('2 excluded flow node(s)');
+});
+
+it('should display included flow nodes for flow node selection filter with in operator', () => {
+  const data = [
+    {
+      type: 'executedFlowNodes',
+      filterLevel: 'view',
+      data: {
+        operator: 'in',
+        values: ['flowNode1'],
+      },
+      appliedTo: ['definition'],
+    },
+  ];
+
+  let node = shallow(<FilterList {...props} data={data} />);
+  node = shallow(node.find(FlowNodeResolver).prop('render')({flowNode: 'flow node name'}));
+
+  expect(node.find('.parameterName').dive()).toIncludeText('Flow node selection');
+  expect(node.find('.filterText')).toIncludeText('1 selected flow node(s)');
 });
 
 it('should disable editing and pass a warning to the filter item if at least one flow node does not exist', async () => {

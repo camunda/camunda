@@ -26,7 +26,7 @@ interface NodeSelectionProps
     operator?: string;
   }> {
   filterLevel: 'view';
-  filterType: 'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes';
+  filterType: 'executedFlowNodes';
 }
 
 export default function NodeSelection({
@@ -72,8 +72,8 @@ export default function NodeSelection({
             .forEach((element) => flowNodes.add(element.id));
           const allFlowNodes = Array.from(flowNodes);
 
-          let preExistingValues;
-          if (filterData?.data.values) {
+          let preExistingValues = filterData?.data.values;
+          if (preExistingValues && filterData?.data.operator === 'not in') {
             preExistingValues = allFlowNodes.filter((id) => !filterData?.data.values?.includes(id));
           }
 
@@ -96,9 +96,16 @@ export default function NodeSelection({
   };
 
   const createFilter = () => {
+    const selectionPercentage = (selectedNodes.length / allFlowNodes.length) * 100;
+    const deselectedFlowNodes = allFlowNodes.filter((id) => !selectedNodes.includes(id));
+
     addFilter({
       type: 'executedFlowNodes',
-      data: {operator: 'not in', values: allFlowNodes.filter((id) => !selectedNodes.includes(id))},
+      data:
+        // Determine whether to use "not in" or "in" for better backend performance
+        selectionPercentage < 50
+          ? {operator: 'in', values: selectedNodes}
+          : {operator: 'not in', values: deselectedFlowNodes},
       appliedTo: [applyTo?.identifier],
     });
   };

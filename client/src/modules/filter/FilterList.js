@@ -221,13 +221,16 @@ export default class FilterList extends React.Component {
                       deleteFilter(filter);
                     }}
                   >
-                    {filter.filterLevel === 'view' ? (
+                    {filter.type === 'executedFlowNodes' && filter.filterLevel === 'view' ? (
                       <>
                         <Tag type="blue" className="parameterName">
                           {t('common.filter.types.flowNodeSelection')}
                         </Tag>
                         <b className="filterText">
-                          {selectedNodes.length} {t('common.filter.excludedFlowNodes')}
+                          {selectedNodes.length}{' '}
+                          {operator === 'in'
+                            ? t('common.filter.selectedFlowNodes')
+                            : t('common.filter.excludedFlowNodes')}
                         </b>
                       </>
                     ) : (
