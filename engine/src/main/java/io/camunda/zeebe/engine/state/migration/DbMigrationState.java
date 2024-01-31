@@ -471,16 +471,22 @@ public class DbMigrationState implements MutableMigrationState {
   }
 
   @Override
-  public void setMigratedByVersion(final String version) {
-    migratedByVersionValue.wrapString(version);
-    migrationsState.upsert(migratedByVersionKey, migratedByVersionValue);
-  }
-
-  @Override
   public boolean shouldRunElementInstancePopulateProcessInstanceByDefinitionKey() {
     parentKey.inner().wrapLong(NO_PARENT_KEY);
     return processInstanceKeyByProcessDefinitionKeyColumnFamily.isEmpty()
         || processInstanceKeyByProcessDefinitionKeyColumnFamily.count()
             != parentChildColumnFamily.countEqualPrefix(parentKey);
+  }
+
+  @Override
+  public String getMigratedByVersion() {
+    final var value = migrationsState.get(migratedByVersionKey);
+    return value == null ? null : value.toString();
+  }
+
+  @Override
+  public void setMigratedByVersion(final String version) {
+    migratedByVersionValue.wrapString(version);
+    migrationsState.upsert(migratedByVersionKey, migratedByVersionValue);
   }
 }
