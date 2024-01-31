@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.HashMap;
 import java.util.Map;
@@ -104,6 +105,7 @@ public final class EventAppliers implements EventApplier {
     final VariableApplier variableApplier = new VariableApplier(state.getVariableState());
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
+    register(VariableDocumentIntent.UPDATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessInstanceEventAppliers(final MutableProcessingState state) {
