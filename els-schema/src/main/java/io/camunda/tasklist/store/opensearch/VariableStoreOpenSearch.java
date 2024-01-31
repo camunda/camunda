@@ -16,7 +16,6 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
@@ -76,7 +75,6 @@ public class VariableStoreOpenSearch implements VariableStore {
   @Autowired private VariableIndex variableIndex;
   @Autowired private TaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
-  @Autowired private ObjectMapper objectMapper;
 
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
       List<String> flowNodeInstanceIds, List<String> varNames, final Set<String> fieldNames) {
@@ -114,7 +112,7 @@ public class VariableStoreOpenSearch implements VariableStore {
     applyFetchSourceForVariableIndex(searchRequest, fieldNames);
 
     try {
-      return OpenSearchUtil.scroll(searchRequest, VariableEntity.class, objectMapper, osClient);
+      return OpenSearchUtil.scroll(searchRequest, VariableEntity.class, osClient);
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
@@ -169,8 +167,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
     try {
       final List<TaskVariableEntity> entities =
-          OpenSearchUtil.scroll(
-              searchRequestBuilder, TaskVariableEntity.class, objectMapper, osClient);
+          OpenSearchUtil.scroll(searchRequestBuilder, TaskVariableEntity.class, osClient);
       return entities.stream()
           .collect(
               groupingBy(TaskVariableEntity::getTaskId, mapping(Function.identity(), toList())));
@@ -259,8 +256,7 @@ public class VariableStoreOpenSearch implements VariableStore {
         .size(tasklistProperties.getOpenSearch().getBatchSize());
 
     try {
-      return OpenSearchUtil.scroll(
-          searchRequestBuilder, FlowNodeInstanceEntity.class, objectMapper, osClient);
+      return OpenSearchUtil.scroll(searchRequestBuilder, FlowNodeInstanceEntity.class, osClient);
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all flow nodes: %s", e.getMessage());

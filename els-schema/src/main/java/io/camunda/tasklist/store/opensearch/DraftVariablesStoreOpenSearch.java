@@ -134,13 +134,12 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
 
       // final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().query(queryBuilder);
 
-      final SearchRequest searchRequest =
+      final SearchRequest.Builder searchRequestBuilder =
           new SearchRequest.Builder()
               .index(draftTaskVariableTemplate.getFullQualifiedName())
-              .query(q -> q.bool(queryBuilder.build()))
-              .build();
+              .query(q -> q.bool(queryBuilder.build()));
 
-      return OpenSearchUtil.scroll(searchRequest, DraftTaskVariableEntity.class, osClient);
+      return OpenSearchUtil.scroll(searchRequestBuilder, DraftTaskVariableEntity.class, osClient);
     } catch (IOException e) {
       throw new TasklistRuntimeException(
           String.format(

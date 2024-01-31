@@ -58,40 +58,6 @@ public abstract class OpenSearchUtil {
   public static final Function<Hit, String> SEARCH_HIT_ID_TO_STRING = Hit::id;
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchUtil.class);
 
-  public static <T extends TasklistEntity> List<T> scroll(
-      SearchRequest searchRequest, Class<T> clazz, OpenSearchClient osClient) throws IOException {
-
-    String scrollId = null;
-    try {
-      SearchResponse<T> response = osClient.search(searchRequest, clazz);
-
-      final List<T> result = new ArrayList<>();
-      scrollId = response.scrollId();
-      List<Hit<T>> hits = response.hits().hits();
-
-      while (hits.size() != 0) {
-        result.addAll(hits.stream().map(Hit::source).toList());
-
-        final ScrollRequest scrollRequest =
-            new ScrollRequest.Builder()
-                .scrollId(scrollId)
-                .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)))
-                .build();
-
-        response = osClient.scroll(scrollRequest, clazz);
-
-        scrollId = response.scrollId();
-        hits = response.hits().hits();
-      }
-      return result;
-
-    } finally {
-      if (scrollId != null) {
-        clearScroll(scrollId, osClient);
-      }
-    }
-  }
-
   public static void clearScroll(String scrollId, OpenSearchClient osClient) {
     if (scrollId != null) {
       // clear the scroll
@@ -420,21 +386,16 @@ public abstract class OpenSearchUtil {
   }
 
   public static <T extends TasklistEntity> List<T> scroll(
-      SearchRequest.Builder searchRequest,
-      Class<T> clazz,
-      ObjectMapper objectMapper,
-      OpenSearchClient osClient)
+      SearchRequest.Builder searchRequest, Class<T> clazz, OpenSearchClient osClient)
       throws IOException {
-    return scroll(searchRequest, clazz, objectMapper, osClient, null, null);
+    return scroll(searchRequest, clazz, osClient, null);
   }
 
   public static <T extends TasklistEntity> List<T> scroll(
       SearchRequest.Builder searchRequest,
       Class<T> clazz,
-      ObjectMapper objectMapper,
       OpenSearchClient osClient,
-      Consumer<HitsMetadata> searchHitsProcessor,
-      Consumer<Map> aggsProcessor)
+      Consumer<HitsMetadata> searchHitsProcessor)
       throws IOException {
 
     searchRequest.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)));

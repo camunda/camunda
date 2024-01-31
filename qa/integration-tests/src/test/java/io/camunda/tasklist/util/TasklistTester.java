@@ -18,6 +18,7 @@ import static io.camunda.tasklist.util.TestCheck.TASK_IS_CREATED_BY_FLOW_NODE_BP
 import static io.camunda.tasklist.util.TestCheck.TASK_VARIABLE_EXISTS_CHECK;
 import static io.camunda.tasklist.util.TestCheck.VARIABLES_EXIST_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -548,6 +549,12 @@ public class TasklistTester {
     // resolve taskId, if not yet resolved
     if (taskId == null) {
       resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
+      if (taskId == null) {
+        fail(
+            String.format(
+                "Cannot resolveTaskId for flowNodeBpmnId=%s processDefinitionKey=%s state=%s",
+                flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
+      }
     }
     taskMutationResolver.claimTask(taskId, null, null);
 
@@ -560,6 +567,12 @@ public class TasklistTester {
     // resolve taskId, if not yet resolved
     if (taskId == null) {
       resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
+      if (taskId == null) {
+        fail(
+            String.format(
+                "Cannot resolveTaskId for flowNodeBpmnId=%s processDefinitionKey=%s state=%s",
+                flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
+      }
     }
 
     taskMutationResolver.completeTask(taskId, createVariablesList(variables));

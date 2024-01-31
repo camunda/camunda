@@ -97,7 +97,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
     public void setUp() {
       if (!initializedLinkedTests) {
         final var bpmnProcessId = "Process_11hxie4";
-        final var flowNodeBpmnId = "taskA";
+        final var flowNodeBpmnId = "Activity_14emqkd";
 
         zeebeClient
             .newDeployResourceCommand()
@@ -130,7 +130,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
             .and()
             .startProcessInstances(bpmnProcessId, 1)
             .waitUntil()
-            .tasksAreCreated(flowNodeBpmnId, 1);
+            .taskIsCreated(flowNodeBpmnId);
 
         initializedLinkedTests = true;
       }

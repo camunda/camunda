@@ -6,7 +6,6 @@
  */
 package io.camunda.tasklist.webapp.security.se.store;
 
-import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -26,7 +25,6 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ScriptSort;
 import org.opensearch.client.opensearch._types.ScriptSortType;
 import org.opensearch.client.opensearch._types.SortOrder;
-import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -95,14 +93,12 @@ public class UserStoreOpenSearch implements UserStore {
     final ConstantScoreQueryBuilder esQuery =
         constantScoreQuery(idsQuery().addIds(userIds.toArray(String[]::new)));
 
-    final SearchRequest searchRequest =
+    final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .index(userIndex.getAlias())
             .query(q -> q.constantScore(qs -> qs.filter(qf -> qf.ids(iq -> iq.values(userIds)))))
             .sort(s -> s.script(getScriptSort(userIds)))
-            .source(s -> s.filter(sf -> sf.includes(UserIndex.USER_ID, UserIndex.DISPLAY_NAME)))
-            .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)))
-            .build();
+            .source(s -> s.filter(sf -> sf.includes(UserIndex.USER_ID, UserIndex.DISPLAY_NAME)));
 
     try {
       return OpenSearchUtil.scroll(searchRequest, UserEntity.class, openSearchClient);
