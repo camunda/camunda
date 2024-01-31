@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
  * was written wrongly to the Process Instance Key by Definition Key column family.
  *
  * <p>Correction: {@link
- * ZbColumnFamilies#DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION}
- * -> {@link ZbColumnFamilies#PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY}
+ * ZbColumnFamilies#DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION} -> {@link
+ * ZbColumnFamilies#PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY}
  */
 @SuppressWarnings("deprecation") // deals with deprecated column families
 public class ColumnFamily49Corrector {
@@ -36,8 +36,7 @@ public class ColumnFamily49Corrector {
   private static final Logger LOG = LoggerFactory.getLogger(DbMigratorImpl.class.getPackageName());
 
   private static final ZbColumnFamilies CF_UNDER_RECOVERY =
-      ZbColumnFamilies
-          .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION;
+      ZbColumnFamilies.DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION;
   private static final ZbColumnFamilies CF_POSSIBLE_TARGET =
       ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY;
 

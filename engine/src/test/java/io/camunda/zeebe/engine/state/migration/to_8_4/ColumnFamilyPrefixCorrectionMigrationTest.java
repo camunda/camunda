@@ -40,9 +40,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
   public static final String EXAMPLE_IDENTIFIER =
       new ColumnFamilyPrefixCorrectionMigration().getIdentifier();
 
-  /**
-   * Test correction from DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION -> MESSAGE_STATS
-   */
+  /** Test correction from DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION -> MESSAGE_STATS */
   @Nested
   @ExtendWith(ProcessingStateExtension.class)
   class ColumnFamily48CorrectorTestTest {
@@ -73,7 +71,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       messagesDeadlineCount = new DbLong();
       wrongMessageStatsColumnFamily =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
+              ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
               transactionContext,
               messagesDeadlineCountKey,
               messagesDeadlineCount);
@@ -88,7 +86,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       decisionKey = new DbLong();
       correctDecisionColumnFamily =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
+              ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
               transactionContext,
               decisionIdAndVersion,
               decisionKey);
@@ -178,8 +176,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
   }
 
   /**
-   * Test correction from
-   * DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION ->
+   * Test correction from DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION ->
    * PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY
    */
   @Nested
@@ -217,8 +214,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
           new DbCompositeKey<>(processDefinitionKey, elementInstanceKey);
       wrongPiKeyByProcDefKeyColumnFamily =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies
-                  .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
+              ZbColumnFamilies.DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
               transactionContext,
               processInstanceKeyByProcessDefinitionKey,
               DbNil.INSTANCE);
@@ -237,8 +233,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       decisionRequirementsKey = new DbLong();
       correctDecisionRequirementsKeyColumnFamily =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies
-                  .DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
+              ZbColumnFamilies.DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
               transactionContext,
               decisionRequirementsIdAndVersion,
               decisionRequirementsKey);
@@ -301,7 +296,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
     }
   }
 
-  /** Test correction from DEPRECATED_SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY -> MIGRATIONS_STATE */
+  /** Test correction from SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY -> MIGRATIONS_STATE */
   @Nested
   @ExtendWith(ProcessingStateExtension.class)
   class ColumnFamily50CorrectorTest {
@@ -334,7 +329,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       migrationTaskState = new MigrationTaskState();
       wrongMigrationStateColumnFamily =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies.DEPRECATED_SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
+              ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
               transactionContext,
               migrationIdentifier,
               migrationTaskState);
@@ -353,7 +348,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
 
       correctSignalSubscriptionColumnFamily =
           zeebeDb.createColumnFamily(
-              ZbColumnFamilies.DEPRECATED_SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
+              ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
               transactionContext,
               signalNameAndSubscriptionKey,
               signalSubscription);

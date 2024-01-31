@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * and version which may contain entries for the MessageStats column family. Vice-versa correction
  * is not needed because no data was written wrongly to the MessageStats column family.
  *
- * <p>Correction: {@link ZbColumnFamilies#DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION} ->
+ * <p>Correction: {@link ZbColumnFamilies#DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION} ->
  * {@link ZbColumnFamilies#MESSAGE_STATS}
  */
 @SuppressWarnings("deprecation") // deals with deprecated column families
@@ -37,7 +37,7 @@ public final class ColumnFamily48Corrector {
   private static final Logger LOG = LoggerFactory.getLogger(DbMigratorImpl.class.getPackageName());
 
   private static final ZbColumnFamilies CF_UNDER_RECOVERY =
-      ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION;
+      ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION;
   private static final ZbColumnFamilies CF_POSSIBLE_TARGET = ZbColumnFamilies.MESSAGE_STATS;
 
   private final ColumnFamily<DbBytes, DbBytes> recoveryDmnDecisionKeyByDecisionIdAndVersion;
