@@ -590,6 +590,70 @@ public class MigrateProcessInstanceTest {
   }
 
   @Test
+  public void shouldWriteMigratedEventForUserTaskWithoutVariables() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask(
+                        "A",
+                        u -> u.zeebeUserTask().zeebeInputExpression("taskVariable", "taskVariable"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask(
+                        "B",
+                        u ->
+                            u.zeebeUserTask()
+                                .zeebeInputExpression("taskVariable2", "taskVariable2"))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(
+                Map.ofEntries(
+                    Map.entry("taskVariable", "taskVariable"),
+                    Map.entry("taskVariable2", "taskVariable2")))
+            .create();
+
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the variables are unset to avoid exceeding the max record size")
+        .hasVariables(Map.of());
+  }
+
+  @Test
   public void shouldContinueFlowInTargetProcessForMigratedJob() {
     // given
     final String processId = helper.getBpmnProcessId();
