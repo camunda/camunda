@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import org.agrona.collections.MutableInteger;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -40,6 +41,13 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
 
   public static final String EXAMPLE_IDENTIFIER =
       new ColumnFamilyPrefixCorrectionMigration().getIdentifier();
+
+  /** Helper method for missing count method on column family */
+  private static int count(final ColumnFamily<?, ?> columnFamily) {
+    final var count = new MutableInteger(0);
+    columnFamily.forEach((key, value) -> count.increment());
+    return count.get();
+  }
 
   /** Test correction from DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION -> MESSAGE_STATS */
   @Nested
@@ -145,7 +153,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       decisionKey.wrapLong(234);
       correctDecisionColumnFamily.insert(decisionIdAndVersion, decisionKey);
 
-      Assertions.assertThat(correctDecisionColumnFamily.count()).isEqualTo(3);
+      Assertions.assertThat(count(correctDecisionColumnFamily)).isEqualTo(3);
 
       // when
       sut.correctColumnFamilyPrefix();
@@ -153,7 +161,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       // then
       // we can no longer use wrongMessageStatsColumnFamily.isEmpty() as there are entries in there
       // just no longer message stats entries, but we can simply count the entries
-      Assertions.assertThat(correctDecisionColumnFamily.count()).isEqualTo(2);
+      Assertions.assertThat(count(correctDecisionColumnFamily)).isEqualTo(2);
 
       decisionId.wrapString("decision");
       decisionVersion.wrapInt(1);
@@ -278,7 +286,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       correctDecisionRequirementsKeyColumnFamily.insert(
           decisionRequirementsIdAndVersion, decisionRequirementsKey);
 
-      Assertions.assertThat(correctDecisionRequirementsKeyColumnFamily.count()).isEqualTo(3);
+      Assertions.assertThat(count(correctDecisionRequirementsKeyColumnFamily)).isEqualTo(3);
 
       // when
       sut.correctColumnFamilyPrefix();
@@ -287,7 +295,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       // we can no longer use wrongPiKeyByProcDefKeyColumnFamily.isEmpty() as there are entries in
       // there just no longer process instance keys by process definition key entries, but we can
       // simply count the entries
-      Assertions.assertThat(correctDecisionRequirementsKeyColumnFamily.count()).isEqualTo(2);
+      Assertions.assertThat(count(correctDecisionRequirementsKeyColumnFamily)).isEqualTo(2);
 
       elementInstanceKey.wrapLong(123);
       processDefinitionKey.wrapLong(456);
@@ -469,7 +477,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       correctSignalSubscriptionColumnFamily.insert(
           signalNameAndSubscriptionKey, signalSubscription);
 
-      Assertions.assertThat(correctSignalSubscriptionColumnFamily.count()).isEqualTo(3);
+      Assertions.assertThat(count(correctSignalSubscriptionColumnFamily)).isEqualTo(3);
 
       // when
       sut.correctColumnFamilyPrefix();
@@ -478,7 +486,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       // we can no longer use wrongMigrationStateColumnFamily.isEmpty() as there are entries in
       // there
       // just no longer migration state entries, but we can simply count the entries
-      Assertions.assertThat(correctSignalSubscriptionColumnFamily.count()).isEqualTo(2);
+      Assertions.assertThat(count(correctSignalSubscriptionColumnFamily)).isEqualTo(2);
 
       signalName.wrapString("signal");
       subscriptionKey.wrapLong(123);
