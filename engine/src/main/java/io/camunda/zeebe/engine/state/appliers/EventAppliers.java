@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -82,6 +83,7 @@ public final class EventAppliers implements EventApplier {
 
     registerDecisionAppliers(state);
     registerDecisionRequirementsAppliers(state);
+    registerDecisionEvaluationAppliers();
 
     registerFormAppliers(state);
 
@@ -308,6 +310,11 @@ public final class EventAppliers implements EventApplier {
     register(
         DecisionRequirementsIntent.DELETED,
         new DecisionRequirementsDeletedApplier(state.getDecisionState()));
+  }
+
+  private void registerDecisionEvaluationAppliers() {
+    register(DecisionEvaluationIntent.EVALUATED, NOOP_EVENT_APPLIER);
+    register(DecisionEvaluationIntent.FAILED, NOOP_EVENT_APPLIER);
   }
 
   private void registerFormAppliers(final MutableProcessingState state) {
