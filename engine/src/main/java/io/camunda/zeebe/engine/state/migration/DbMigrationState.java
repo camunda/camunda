@@ -19,7 +19,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.migration.MigrationTaskState.State;
-import io.camunda.zeebe.engine.state.migration.to_8_4.DbColumnFamilyCorrectionMigrationState;
+import io.camunda.zeebe.engine.state.migration.to_8_2.DbColumnFamilyCorrectionMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;

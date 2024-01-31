@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import io.camunda.zeebe.engine.state.migration.to_8_2.ColumnFamilyPrefixCorrectionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionRequirementsMigration;
-import io.camunda.zeebe.engine.state.migration.to_8_4.ColumnFamilyPrefixCorrectionMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.ArrayList;
 import java.util.List;

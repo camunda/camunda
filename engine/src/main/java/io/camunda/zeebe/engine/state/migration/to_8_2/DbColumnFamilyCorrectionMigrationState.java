@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.state.migration.to_8_4;
+package io.camunda.zeebe.engine.state.migration.to_8_2;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.migration.to_8_4.corrections.ColumnFamily48Corrector;
-import io.camunda.zeebe.engine.state.migration.to_8_4.corrections.ColumnFamily49Corrector;
-import io.camunda.zeebe.engine.state.migration.to_8_4.corrections.ColumnFamily50Corrector;
+import io.camunda.zeebe.engine.state.migration.to_8_2.corrections.ColumnFamily48Corrector;
+import io.camunda.zeebe.engine.state.migration.to_8_2.corrections.ColumnFamily49Corrector;
+import io.camunda.zeebe.engine.state.migration.to_8_2.corrections.ColumnFamily50Corrector;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 public final class DbColumnFamilyCorrectionMigrationState {

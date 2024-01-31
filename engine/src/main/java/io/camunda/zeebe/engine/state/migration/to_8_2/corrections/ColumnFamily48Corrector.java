@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.state.migration.to_8_4.corrections;
+package io.camunda.zeebe.engine.state.migration.to_8_2.corrections;
 
 import static io.camunda.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 
@@ -28,8 +28,8 @@ import org.slf4j.LoggerFactory;
  * and version which may contain entries for the MessageStats column family. Vice-versa correction
  * is not needed because no data was written wrongly to the MessageStats column family.
  *
- * <p>Correction: {@link ZbColumnFamilies#DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION} ->
- * {@link ZbColumnFamilies#MESSAGE_STATS}
+ * <p>Correction: {@link ZbColumnFamilies#DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION} -> {@link
+ * ZbColumnFamilies#MESSAGE_STATS}
  */
 @SuppressWarnings("deprecation") // deals with deprecated column families
 public final class ColumnFamily48Corrector {
