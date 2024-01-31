@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -84,6 +85,7 @@ public final class EventAppliers implements EventApplier {
     registerSignalSubscriptionAppliers(state);
 
     registerCommandDistributionAppliers(state);
+    registerEscalationAppliers();
     return this;
   }
 
@@ -311,6 +313,11 @@ public final class EventAppliers implements EventApplier {
     register(
         CommandDistributionIntent.FINISHED,
         new CommandDistributionFinishedApplier(distributionState));
+  }
+
+  private void registerEscalationAppliers() {
+    register(EscalationIntent.ESCALATED, NOOP_EVENT_APPLIER);
+    register(EscalationIntent.NOT_ESCALATED, NOOP_EVENT_APPLIER);
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
