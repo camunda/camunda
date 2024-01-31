@@ -27,23 +27,28 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       latest-version: ${{ env.LATEST_VERSION }}
-      previous-latest-version: ${{ env.PREVIOUS_LATEST_VERSION }}
-      previous-previous-latest-version: ${{ env.PREVIOUS_PREVIOUS_LATEST_VERSION }}
+      second-last-version: ${{ env.SECOND_LAST_VERSION }}
+      third-last-version: ${{ env.THIRD_LAST_VERSION }}
+      fourth-last-version: ${{ env.FOURTH_LAST_VERSION }}
     steps:
       - uses: actions/checkout@v4
       - run: git fetch --tags
       - run: |
-          latest=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | head -n1)
-          previous=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | grep -v "${latest}" | sort -Vr | head -n1)
-          previous_previous=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | grep -v "${latest}" | grep -v "${previous}" | sort -Vr | head -n1)
-          if [ ! -z $latest ] && [ ! -z $previous ] && [ ! -z $previous_previous ]; then
-            echo "Successfully computed latest versions: ${latest} and ${previous} and ${previous_previous}"
+          versions=($(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | uniq))
+          
+          latest="${versions[0]}"
+          second_last="${versions[1]}"
+          third_last="${versions[2]}"
+          fourth_last="${versions[3]}"
+          if [ ! -z $latest ] && [ ! -z $second_last ] && [ ! -z $third_last ] && [ ! -z $fourth_last ]; then
+            echo "Successfully computed latest versions: ${latest} and ${second_last} and ${third_last} and ${fourth_last}"
           else
             echo "Failed to compute latest versions"
           fi
           echo "LATEST_VERSION=${latest}" >> $GITHUB_ENV
-          echo "PREVIOUS_LATEST_VERSION=${previous}" >> $GITHUB_ENV
-          echo "PREVIOUS_PREVIOUS_LATEST_VERSION=${previous_previous}" >> $GITHUB_ENV
+          echo "SECOND_LAST_VERSION=${second_last}" >> $GITHUB_ENV
+          echo "THIRD_LAST_VERSION=${third_last}" >> $GITHUB_ENV
+          echo "FOURTH_LAST_VERSION=${fourth_last}" >> $GITHUB_ENV
   # Runs the qa-testbench workflow against the stable branches. It assumes that branches follow the
   # pattern of `stable/VERSION`, and generations of `Zeebe VERSION`.
   #
@@ -59,17 +64,20 @@ jobs:
         branch:
           - 'main'
           - ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
-          - ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-version) }}
-          - ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.fourth-last-version) }}
         include:
           - branch: 'main'
             generation_template: 'Zeebe SNAPSHOT'
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
             generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.latest-version) }}
-          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-version) }}
-            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-latest-version) }}
-          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-version) }}
-            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-previous-latest-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.second-last-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.third-last-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.fourth-last-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.fourth-last-version) }}
     name: Daily QA
     uses: ./.github/workflows/qa-testbench.yaml
     with:
