@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -61,6 +62,7 @@ public final class EventAppliers implements EventApplier {
     registerProcessInstanceEventAppliers(state);
     registerProcessInstanceCreationAppliers(state);
     registerProcessInstanceModificationAppliers(state);
+    registerProcessInstanceMigrationAppliers();
 
     registerProcessAppliers(state);
     register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBannedInstanceState()));
@@ -184,6 +186,10 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceModificationIntent.MODIFIED,
         new ProcessInstanceModifiedEventApplier(
             state.getElementInstanceState(), state.getProcessState()));
+  }
+
+  private void registerProcessInstanceMigrationAppliers() {
+    register(ProcessInstanceMigrationIntent.MIGRATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerJobIntentEventAppliers(final MutableProcessingState state) {
