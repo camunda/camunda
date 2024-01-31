@@ -51,7 +51,7 @@
     <version.commons-text>1.11.0</version.commons-text>
     <version.failsafe>2.4.4</version.failsafe>
     <version.guava>33.0.0-jre</version.guava>
-    <version.apache.http5>5.2.3</version.apache.http5>
+    <version.apache.httpclient5>5.3.1</version.apache.httpclient5>
     <version.aws-sdk>2.23.4</version.aws-sdk>
 
     <version.node>v20.11.0</version.node>
@@ -157,18 +157,6 @@
       </dependency>
 
       <!-- Opensearch  -->
-      <dependency>
-        <groupId>org.apache.httpcomponents.core5</groupId>
-        <artifactId>httpcore5</artifactId>
-        <version>${version.apache.http5}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.httpcomponents.core5</groupId>
-        <artifactId>httpcore5-h2</artifactId>
-        <version>${version.apache.http5}</version>
-      </dependency>
-
       <dependency>
         <groupId>org.opensearch.client</groupId>
         <artifactId>opensearch-java</artifactId>
@@ -365,7 +353,7 @@
       <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
         <artifactId>httpclient5</artifactId>
-        <version>${version.apache.http5}</version>
+        <version>${version.apache.httpclient5}</version>
       </dependency>
 
       <!-- Auth0 and it's direct dependencies -->
