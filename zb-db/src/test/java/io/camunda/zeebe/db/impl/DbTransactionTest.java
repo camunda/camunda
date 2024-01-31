@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.protocol.EnumValue;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -476,10 +477,15 @@ public final class DbTransactionTest {
         .isSameAs(exception);
   }
 
-  private enum ColumnFamilies {
+  private enum ColumnFamilies implements EnumValue {
     DEFAULT, // rocksDB needs a default column family
     ONE,
     TWO,
-    THREE
+    THREE;
+
+    @Override
+    public int getValue() {
+      return ordinal();
+    }
   }
 }
