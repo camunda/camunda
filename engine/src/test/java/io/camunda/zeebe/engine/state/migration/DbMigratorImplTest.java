@@ -88,7 +88,7 @@ public class DbMigratorImplTest {
   }
 
   @Test
-  void shouldNotSetVersionIfMigrationsFailed() {
+  void shouldNotSetVersionIfFirstMigrationFails() {
     // given -- two migrations that both need to be run
     final var mockProcessingState = mock(MutableProcessingState.class);
     final var mockMigrationState = mock(MutableMigrationState.class);
@@ -115,30 +115,7 @@ public class DbMigratorImplTest {
   }
 
   @Test
-  void shouldSetVersionAfterRunningMigrations() {
-    // given -- two migrations that both need to be run
-    final var mockProcessingState = mock(MutableProcessingState.class);
-    final var mockMigrationState = mock(MutableMigrationState.class);
-    when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
-
-    final var mockMigration1 = mock(MigrationTask.class);
-    when(mockMigration1.needsToRun(mockProcessingState)).thenReturn(true);
-
-    final var mockMigration2 = mock(MigrationTask.class);
-    when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
-
-    final var sut =
-        new DbMigratorImpl(mockProcessingState, List.of(mockMigration1, mockMigration2));
-
-    // when -- running migrations
-    sut.runMigrations();
-
-    // then -- the version is set
-    verify(mockMigrationState).setMigratedByVersion(VersionUtil.getVersion());
-  }
-
-  @Test
-  void shouldNotSetVersionIfMigrationsFail() {
+  void shouldNotSetVersionIfSecondMigrationFails() {
     // given -- two migrations that both need to be run
     final var mockProcessingState = mock(MutableProcessingState.class);
     final var mockMigrationState = mock(MutableMigrationState.class);
@@ -161,5 +138,28 @@ public class DbMigratorImplTest {
 
     // then -- the version is not set
     verify(mockMigrationState, never()).setMigratedByVersion(any());
+  }
+
+  @Test
+  void shouldSetVersionAfterRunningMigrations() {
+    // given -- two migrations that both need to be run
+    final var mockProcessingState = mock(MutableProcessingState.class);
+    final var mockMigrationState = mock(MutableMigrationState.class);
+    when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
+
+    final var mockMigration1 = mock(MigrationTask.class);
+    when(mockMigration1.needsToRun(mockProcessingState)).thenReturn(true);
+
+    final var mockMigration2 = mock(MigrationTask.class);
+    when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
+
+    final var sut =
+        new DbMigratorImpl(mockProcessingState, List.of(mockMigration1, mockMigration2));
+
+    // when -- running migrations
+    sut.runMigrations();
+
+    // then -- the version is set
+    verify(mockMigrationState).setMigratedByVersion(VersionUtil.getVersion());
   }
 }
