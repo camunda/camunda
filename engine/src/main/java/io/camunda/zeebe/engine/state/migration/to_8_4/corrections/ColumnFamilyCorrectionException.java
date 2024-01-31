@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.state.migration.to_8_4.corrections;
 
 import io.camunda.zeebe.db.impl.DbBytes;
-import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class ColumnFamilyCorrectionException extends RuntimeException {

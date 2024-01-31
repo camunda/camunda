@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.migration.MigrationTaskState;
 import io.camunda.zeebe.engine.state.migration.MigrationTaskState.State;
@@ -22,12 +23,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_4.corrections.ColumnFamily48
 import io.camunda.zeebe.engine.state.migration.to_8_4.corrections.ColumnFamily49Corrector;
 import io.camunda.zeebe.engine.state.migration.to_8_4.corrections.ColumnFamily50Corrector;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
-import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -318,14 +314,6 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
 
     private ColumnFamily<DbString, MigrationTaskState> correctMigrationStateColumnFamily;
 
-    private DbLong subscriptionKey;
-    private DbString signalName;
-    private DbCompositeKey<DbString, DbLong> signalNameAndSubscriptionKey;
-    private SignalSubscription signalSubscription;
-
-    private ColumnFamily<DbCompositeKey<DbString, DbLong>, SignalSubscription>
-        correctSignalSubscriptionColumnFamily;
-
     @BeforeEach
     void setup() {
       sut = new ColumnFamily50Corrector(zeebeDb, transactionContext);
@@ -345,18 +333,6 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
               transactionContext,
               migrationIdentifier,
               migrationTaskState);
-
-      subscriptionKey = new DbLong();
-      signalName = new DbString();
-      signalNameAndSubscriptionKey = new DbCompositeKey<>(signalName, subscriptionKey);
-      signalSubscription = new SignalSubscription();
-
-      correctSignalSubscriptionColumnFamily =
-          zeebeDb.createColumnFamily(
-              ZbColumnFamilies.DEPRECATED_SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
-              transactionContext,
-              signalNameAndSubscriptionKey,
-              signalSubscription);
     }
 
     @Test
@@ -443,61 +419,6 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
           .extracting(MigrationTaskState::getState)
           .isEqualTo(State.NOT_STARTED);
       migrationIdentifier.wrapString(EXAMPLE_IDENTIFIER + "2");
-      Assertions.assertThat(correctMigrationStateColumnFamily.get(migrationIdentifier))
-          .isNotNull()
-          .extracting(MigrationTaskState::getState)
-          .isEqualTo(State.FINISHED);
-    }
-
-    @Test
-    void shouldIgnoreSignalSubscriptionEntries() {
-      // given
-      signalName.wrapString("signal");
-      subscriptionKey.wrapLong(123);
-      signalSubscription
-          .setKey(123)
-          .setRecord(new SignalSubscriptionRecord().setSignalName(BufferUtil.wrapString("signal")));
-      correctSignalSubscriptionColumnFamily.insert(
-          signalNameAndSubscriptionKey, signalSubscription);
-
-      migrationIdentifier.wrapString(EXAMPLE_IDENTIFIER);
-      migrationTaskState.setState(State.FINISHED);
-      wrongMigrationStateColumnFamily.insert(migrationIdentifier, migrationTaskState);
-
-      signalName.wrapString("signal2");
-      subscriptionKey.wrapLong(234);
-      signalSubscription
-          .setKey(234)
-          .setRecord(
-              new SignalSubscriptionRecord().setSignalName(BufferUtil.wrapString("signal2")));
-      correctSignalSubscriptionColumnFamily.insert(
-          signalNameAndSubscriptionKey, signalSubscription);
-
-      Assertions.assertThat(correctSignalSubscriptionColumnFamily.count()).isEqualTo(3);
-
-      // when
-      sut.correctColumnFamilyPrefix();
-
-      // then
-      // we can no longer use wrongMigrationStateColumnFamily.isEmpty() as there are entries in
-      // there
-      // just no longer migration state entries, but we can simply count the entries
-      Assertions.assertThat(correctSignalSubscriptionColumnFamily.count()).isEqualTo(2);
-
-      signalName.wrapString("signal");
-      subscriptionKey.wrapLong(123);
-      Assertions.assertThat(correctSignalSubscriptionColumnFamily.get(signalNameAndSubscriptionKey))
-          .isNotNull()
-          .extracting(SignalSubscription::getKey, s -> s.getRecord().getSignalName())
-          .isEqualTo(List.of(123L, "signal"));
-
-      signalName.wrapString("signal2");
-      subscriptionKey.wrapLong(234);
-      Assertions.assertThat(correctSignalSubscriptionColumnFamily.get(signalNameAndSubscriptionKey))
-          .isNotNull()
-          .extracting(SignalSubscription::getKey, s -> s.getRecord().getSignalName())
-          .isEqualTo(List.of(234L, "signal2"));
-
       Assertions.assertThat(correctMigrationStateColumnFamily.get(migrationIdentifier))
           .isNotNull()
           .extracting(MigrationTaskState::getState)
