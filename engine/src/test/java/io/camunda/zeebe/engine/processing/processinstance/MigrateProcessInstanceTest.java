@@ -331,7 +331,7 @@ public class MigrateProcessInstanceTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .userTask("A")
+                    .userTask("B")
                     .userTask()
                     .endEvent()
                     .done())
@@ -352,7 +352,7 @@ public class MigrateProcessInstanceTest {
         .withInstanceKey(processInstanceKey)
         .migration()
         .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("A", "A")
+        .addMappingInstruction("A", "B")
         .migrate();
 
     // then
@@ -366,8 +366,7 @@ public class MigrateProcessInstanceTest {
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasBpmnProcessId(targetProcessId)
         .hasVersion(1)
-        .describedAs("Expect that element id is left unchanged")
-        .hasElementId("A");
+        .hasElementId("B");
   }
 
   @Test
