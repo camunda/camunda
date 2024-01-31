@@ -33,7 +33,7 @@ import org.agrona.DirectBuffer;
 public final class ProcessInstanceMigrationPreconditionChecker {
 
   private static final EnumSet<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
-      EnumSet.of(BpmnElementType.PROCESS, BpmnElementType.SERVICE_TASK);
+      EnumSet.of(BpmnElementType.PROCESS, BpmnElementType.SERVICE_TASK, BpmnElementType.USER_TASK);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
 
@@ -258,6 +258,29 @@ public final class ProcessInstanceMigrationPreconditionChecker {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS,
           RejectionType.INVALID_STATE);
+    }
+  }
+
+  /**
+   * Checks whether the given element instance is a native user task. Throws an exception if the
+   * element instance is a native user task.
+   *
+   * @param elementInstance element instance to do the check
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireNonNativeUserTask(
+      final ElementInstance elementInstance, final long processInstanceKey) {
+    final boolean isNativeUserTask = elementInstance.getUserTaskKey() > 0;
+    if (isNativeUserTask) {
+      final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
+      final String reason =
+          String.format(
+              ERROR_UNSUPPORTED_ELEMENT_TYPE,
+              processInstanceKey,
+              elementInstanceRecord.getElementId(),
+              elementInstanceRecord.getBpmnElementType());
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
     }
   }
 

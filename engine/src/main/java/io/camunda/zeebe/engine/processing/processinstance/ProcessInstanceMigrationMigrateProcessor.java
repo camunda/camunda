@@ -155,6 +155,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     final long processInstanceKey = elementInstanceRecord.getProcessInstanceKey();
 
     requireSupportedElementType(elementInstanceRecord, processInstanceKey);
+    requireNonNativeUserTask(elementInstance, processInstanceKey);
 
     final String targetElementId =
         sourceElementIdToTargetElementId.get(elementInstanceRecord.getElementId());
@@ -189,13 +190,6 @@ public class ProcessInstanceMigrationMigrateProcessor
                 .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                 .setElementId(targetElementId));
       }
-    }
-
-    if (elementInstance.getUserTaskKey() > 0) {
-      throw new UnsupportedElementMigrationException(
-          processInstanceKey,
-          elementInstanceRecord.getElementId(),
-          elementInstanceRecord.getBpmnElementType());
     }
 
     variableState
