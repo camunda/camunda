@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.client.impl.PartitionIdIterator;
 import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.ResponseMapper;
+import io.camunda.zeebe.gateway.ResponseMapper.JobActivationResult;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
@@ -43,17 +44,21 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   private static final String ACTIVATE_JOB_NOT_SENT_MSG = "Failed to send activated jobs to client";
   private static final String ACTIVATE_JOB_NOT_SENT_MSG_WITH_REASON =
       ACTIVATE_JOB_NOT_SENT_MSG + ", failed with: %s";
+  private static final String MAX_MESSAGE_SIZE_EXCEEDED_MSG =
+      "the response is bigger than the maximum allowed message size %d";
 
   private final Map<String, RoundRobinDispatchStrategy> jobTypeToNextPartitionId =
       new ConcurrentHashMap<>();
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
+  private final long maxMessageSize;
 
   private ActorControl actor;
 
-  public RoundRobinActivateJobsHandler(final BrokerClient brokerClient) {
+  public RoundRobinActivateJobsHandler(final BrokerClient brokerClient, final long maxMessageSize) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
+    this.maxMessageSize = maxMessageSize;
   }
 
   @Override
@@ -151,11 +156,23 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
     actor.run(
         () -> {
           final var response = brokerResponse.getResponse();
-          final ActivateJobsResponse grpcResponse =
-              ResponseMapper.toActivateJobsResponse(brokerResponse.getKey(), response);
+          final JobActivationResult jobActivationResult =
+              ResponseMapper.toActivateJobsResponse(
+                  brokerResponse.getKey(), response, maxMessageSize);
+
+          final List<ActivatedJob> jobsToDefer = jobActivationResult.jobsToDefer();
+          if (!jobsToDefer.isEmpty()) {
+            final var jobKeys = jobsToDefer.stream().map(ActivatedJob::getKey).toList();
+            final var jobType = request.getType();
+            final var reason = String.format(MAX_MESSAGE_SIZE_EXCEEDED_MSG, maxMessageSize);
+
+            logResponseNotSent(jobType, jobKeys, reason);
+            reactivateJobs(jobsToDefer, reason);
+          }
+
+          final ActivateJobsResponse grpcResponse = jobActivationResult.activateJobsResponse();
           final var jobsCount = grpcResponse.getJobsCount();
           final var jobsActivated = jobsCount > 0;
-
           if (jobsActivated) {
             final var result = request.tryToSendActivatedJobs(grpcResponse);
             final var responseWasSent = result.getOrElse(false);

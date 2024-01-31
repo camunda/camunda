@@ -136,12 +136,16 @@ public final class StubbedGateway {
     if (config.getLongPolling().isEnabled()) {
       return buildLongPollingHandler(brokerClient);
     } else {
-      return new RoundRobinActivateJobsHandler(brokerClient);
+      return new RoundRobinActivateJobsHandler(
+          brokerClient, config.getNetwork().getMaxMessageSize().toBytes());
     }
   }
 
   private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {
-    return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
+    return LongPollingActivateJobsHandler.newBuilder()
+        .setBrokerClient(brokerClient)
+        .setMaxMessageSize(config.getNetwork().getMaxMessageSize().toBytes())
+        .build();
   }
 
   /**

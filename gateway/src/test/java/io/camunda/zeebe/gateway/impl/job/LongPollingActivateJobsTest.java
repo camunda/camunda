@@ -64,6 +64,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.util.unit.DataSize;
 
 public final class LongPollingActivateJobsTest {
 
@@ -73,6 +74,7 @@ public final class LongPollingActivateJobsTest {
   private static final long PROBE_TIMEOUT = 20000;
   private static final int FAILED_RESPONSE_THRESHOLD = 3;
   private static final int MAX_JOBS_TO_ACTIVATE = 2;
+  private static final long MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4).toBytes();
   private final ControlledActorClock actorClock = new ControlledActorClock();
   @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
   private LongPollingActivateJobsHandler handler;
@@ -87,6 +89,7 @@ public final class LongPollingActivateJobsTest {
     handler =
         LongPollingActivateJobsHandler.newBuilder()
             .setBrokerClient(brokerClient)
+            .setMaxMessageSize(MAX_MESSAGE_SIZE)
             .setLongPollingTimeout(LONG_POLLING_TIMEOUT)
             .setProbeTimeoutMillis(PROBE_TIMEOUT)
             .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
@@ -246,6 +249,7 @@ public final class LongPollingActivateJobsTest {
     handler =
         LongPollingActivateJobsHandler.newBuilder()
             .setBrokerClient(brokerClient)
+            .setMaxMessageSize(MAX_MESSAGE_SIZE)
             .setLongPollingTimeout(20000)
             .setProbeTimeoutMillis(probeTimeout)
             .build();
@@ -270,6 +274,7 @@ public final class LongPollingActivateJobsTest {
     handler =
         LongPollingActivateJobsHandler.newBuilder()
             .setBrokerClient(brokerClient)
+            .setMaxMessageSize(MAX_MESSAGE_SIZE)
             .setLongPollingTimeout(longPollingTimeout)
             .setProbeTimeoutMillis(probeTimeout)
             .build();
