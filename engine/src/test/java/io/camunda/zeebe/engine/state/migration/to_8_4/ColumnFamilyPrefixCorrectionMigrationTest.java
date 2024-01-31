@@ -150,7 +150,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       decisionKey.wrapLong(234);
       correctDecisionColumnFamily.insert(decisionIdAndVersion, decisionKey);
 
-      Assertions.assertThat(count(correctDecisionColumnFamily)).isEqualTo(3);
+      Assertions.assertThat(count(wrongMessageStatsColumnFamily)).isEqualTo(3);
 
       // when
       sut.correctColumnFamilyPrefix();
@@ -158,7 +158,9 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       // then
       // we can no longer use wrongMessageStatsColumnFamily.isEmpty() as there are entries in there
       // just no longer message stats entries, but we can simply count the entries
+      Assertions.assertThat(count(wrongMessageStatsColumnFamily)).isEqualTo(2);
       Assertions.assertThat(count(correctDecisionColumnFamily)).isEqualTo(2);
+      Assertions.assertThat(count(correctMessageStatsColumnFamily)).isEqualTo(1);
 
       decisionId.wrapString("decision");
       decisionVersion.wrapInt(1);
@@ -174,6 +176,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
           .extracting(DbLong::getValue)
           .isEqualTo(234L);
 
+      messagesDeadlineCountKey.wrapString(DbMessageState.DEADLINE_MESSAGE_COUNT_KEY);
       Assertions.assertThat(correctMessageStatsColumnFamily.get(messagesDeadlineCountKey))
           .isNotNull()
           .extracting(DbLong::getValue)
@@ -286,7 +289,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       correctDecisionRequirementsKeyColumnFamily.insert(
           decisionRequirementsIdAndVersion, decisionRequirementsKey);
 
-      Assertions.assertThat(count(correctDecisionRequirementsKeyColumnFamily)).isEqualTo(3);
+      Assertions.assertThat(count(wrongPiKeyByProcDefKeyColumnFamily)).isEqualTo(3);
 
       // when
       sut.correctColumnFamilyPrefix();
@@ -295,7 +298,9 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       // we can no longer use wrongPiKeyByProcDefKeyColumnFamily.isEmpty() as there are entries in
       // there just no longer process instance keys by process definition key entries, but we can
       // simply count the entries
+      Assertions.assertThat(count(wrongPiKeyByProcDefKeyColumnFamily)).isEqualTo(2);
       Assertions.assertThat(count(correctDecisionRequirementsKeyColumnFamily)).isEqualTo(2);
+      Assertions.assertThat(count(correctPiKeyByProcDefKeyColumnFamily)).isEqualTo(1);
 
       elementInstanceKey.wrapLong(123);
       processDefinitionKey.wrapLong(456);
