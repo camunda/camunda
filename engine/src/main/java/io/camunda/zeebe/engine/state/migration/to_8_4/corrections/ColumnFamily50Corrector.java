@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * which may contain entries for the MigrationState column family. Vice-versa correction is not
  * needed because no data was written wrongly to the MigrationState column family.
  *
- * <p>Correction: {@link ZbColumnFamilies#DEPRECATED_SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY} -> {@link
+ * <p>Correction: {@link ZbColumnFamilies#SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY} -> {@link
  * ZbColumnFamilies#MIGRATIONS_STATE}
  */
 @SuppressWarnings("deprecation") // deals with deprecated column families
@@ -37,7 +37,7 @@ public final class ColumnFamily50Corrector {
   private static final Logger LOG = LoggerFactory.getLogger(DbMigratorImpl.class.getPackageName());
 
   private static final ZbColumnFamilies CF_UNDER_RECOVERY =
-      ZbColumnFamilies.DEPRECATED_SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY;
+      ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY;
   private static final ZbColumnFamilies CF_POSSIBLE_TARGET = ZbColumnFamilies.MIGRATIONS_STATE;
 
   private final ColumnFamily<DbBytes, DbBytes> recoverySignalNameAndSubscriptionKeyColumnFamily;
