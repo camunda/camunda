@@ -46,6 +46,7 @@ import org.agrona.DirectBuffer;
 public class DbMigrationState implements MutableMigrationState {
 
   private static final long NO_PARENT_KEY = -1L;
+  private static final String MIGRATED_BY_VERSION = "migrated-by-version";
 
   // ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME
   // (sentTime, elementInstanceKey, messageName) => \0
@@ -269,7 +270,7 @@ public class DbMigrationState implements MutableMigrationState {
     signalSubscriptionMigrationState =
         new DbSignalSubscriptionMigrationState(zeebeDb, transactionContext);
 
-    migratedByVersionKey.wrapString("migrated-by-version");
+    migratedByVersionKey.wrapString(MIGRATED_BY_VERSION);
     migrationsState =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MIGRATIONS_STATE,
