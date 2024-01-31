@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -78,7 +79,7 @@ public final class EventAppliers implements EventApplier {
     registerDecisionRequirementsAppliers(state);
     registerDecisionEvaluationAppliers();
 
-    registerSignalSubscriptionAppliers(state);
+    registerSignalAppliers(state);
 
     registerCommandDistributionAppliers(state);
     registerEscalationAppliers();
@@ -259,13 +260,14 @@ public final class EventAppliers implements EventApplier {
         new ProcessEventTriggeredApplier(state.getEventScopeInstanceState()));
   }
 
-  private void registerSignalSubscriptionAppliers(final MutableProcessingState state) {
+  private void registerSignalAppliers(final MutableProcessingState state) {
     register(
         SignalSubscriptionIntent.CREATED,
         new SignalSubscriptionCreatedApplier(state.getSignalSubscriptionState()));
     register(
         SignalSubscriptionIntent.DELETED,
         new SignalSubscriptionDeletedApplier(state.getSignalSubscriptionState()));
+    register(SignalIntent.BROADCASTED, NOOP_EVENT_APPLIER);
   }
 
   private void registerDecisionAppliers(final MutableProcessingState state) {
