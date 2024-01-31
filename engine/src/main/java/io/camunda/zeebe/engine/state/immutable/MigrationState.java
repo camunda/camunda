@@ -10,4 +10,10 @@ package io.camunda.zeebe.engine.state.immutable;
 public interface MigrationState {
 
   boolean shouldRunElementInstancePopulateProcessInstanceByDefinitionKey();
+
+  /**
+   * @return a string representing the version that applied migrations or null if the version is
+   *     (not yet) set.
+   */
+  String getMigratedByVersion();
 }

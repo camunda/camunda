@@ -46,6 +46,7 @@ import org.agrona.DirectBuffer;
 public class DbMigrationState implements MutableMigrationState {
 
   private static final long NO_PARENT_KEY = -1L;
+  private static final String MIGRATED_BY_VERSION = "migrated-by-version";
 
   // ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME
   // (sentTime, elementInstanceKey, messageName) => \0
@@ -119,6 +120,9 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbProcessMessageSubscriptionMigrationState processMessageSubscriptionMigrationState;
   private final DbJobMigrationState jobMigrationState;
   private final DbSignalSubscriptionMigrationState signalSubscriptionMigrationState;
+  private final ColumnFamily<DbString, DbString> migrationsState;
+  private final DbString migratedByVersionKey = new DbString();
+  private final DbString migratedByVersionValue = new DbString();
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -265,6 +269,14 @@ public class DbMigrationState implements MutableMigrationState {
 
     signalSubscriptionMigrationState =
         new DbSignalSubscriptionMigrationState(zeebeDb, transactionContext);
+
+    migratedByVersionKey.wrapString(MIGRATED_BY_VERSION);
+    migrationsState =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MIGRATIONS_STATE,
+            transactionContext,
+            migratedByVersionKey,
+            migratedByVersionValue);
   }
 
   @Override
@@ -464,5 +476,17 @@ public class DbMigrationState implements MutableMigrationState {
     return processInstanceKeyByProcessDefinitionKeyColumnFamily.isEmpty()
         || processInstanceKeyByProcessDefinitionKeyColumnFamily.count()
             != parentChildColumnFamily.countEqualPrefix(parentKey);
+  }
+
+  @Override
+  public String getMigratedByVersion() {
+    final var value = migrationsState.get(migratedByVersionKey);
+    return value == null ? null : value.toString();
+  }
+
+  @Override
+  public void setMigratedByVersion(final String version) {
+    migratedByVersionValue.wrapString(version);
+    migrationsState.upsert(migratedByVersionKey, migratedByVersionValue);
   }
 }

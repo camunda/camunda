@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyProcessStateMi
 import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDefinitionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_4.MultiTenancySignalSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -79,7 +80,12 @@ public class DbMigratorImpl implements DbMigrator {
         executedMigrations.add(migration);
       }
     }
+    markMigrationsAsCompleted();
     logSummary(executedMigrations);
+  }
+
+  private void markMigrationsAsCompleted() {
+    processingState.getMigrationState().setMigratedByVersion(VersionUtil.getVersion());
   }
 
   private void logPreview(final List<MigrationTask> migrationTasks) {
