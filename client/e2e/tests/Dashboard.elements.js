@@ -11,6 +11,7 @@ export const body = Selector('body');
 export const dashboard = Selector('.ListItem.dashboard');
 export const reportEditButton = Selector('.EditButton');
 export const reportDeleteButton = Selector('.DeleteButton');
+export const reportCopyButton = Selector('.CopyButton');
 export const reportResizeHandle = Selector('.react-resizable-handle');
 export const dashboardName = Selector('.DashboardView .name');
 export const externalSourceLink = Selector('button').withText('External website');
