@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionRequirementsMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_3.ColumnFamilyPrefixCorrectionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyDecisionStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyJobStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyMessageStartEventSubscriptionStateMigration;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyMessageSubscri
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyProcessMessageSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyProcessStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDefinitionMigration;
-import io.camunda.zeebe.engine.state.migration.to_8_4.ColumnFamilyPrefixCorrectionMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.ArrayList;
 import java.util.List;

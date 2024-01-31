@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.deployment.VersionInfo;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.migration.to_8_3.DbColumnFamilyCorrectionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbDecisionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbJobMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageMigrationState;
@@ -30,7 +31,6 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageStartEventSubscri
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMessageSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMigrationState;
-import io.camunda.zeebe.engine.state.migration.to_8_4.DbColumnFamilyCorrectionMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
