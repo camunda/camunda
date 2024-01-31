@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -73,6 +74,7 @@ public final class EventAppliers implements EventApplier {
     register(
         DecisionRequirementsIntent.CREATED,
         new DecisionRequirementsCreatedApplier(state.getDecisionState()));
+    registerDecisionEvaluationAppliers();
   }
 
   private void registerTimeEventAppliers(final MutableProcessingState state) {
@@ -248,6 +250,11 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessEventIntent.TRIGGERED,
         new ProcessEventTriggeredApplier(state.getEventScopeInstanceState()));
+  }
+
+  private void registerDecisionEvaluationAppliers() {
+    register(DecisionEvaluationIntent.EVALUATED, NOOP_EVENT_APPLIER);
+    register(DecisionEvaluationIntent.FAILED, NOOP_EVENT_APPLIER);
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
