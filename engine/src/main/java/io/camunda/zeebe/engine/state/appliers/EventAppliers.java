@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -89,6 +90,7 @@ public final class EventAppliers implements EventApplier {
 
     registerCommandDistributionAppliers(state);
     registerEscalationAppliers();
+    registerResourceDeletionAppliers();
     return this;
   }
 
@@ -327,6 +329,11 @@ public final class EventAppliers implements EventApplier {
   private void registerEscalationAppliers() {
     register(EscalationIntent.ESCALATED, NOOP_EVENT_APPLIER);
     register(EscalationIntent.NOT_ESCALATED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerResourceDeletionAppliers() {
+    register(ResourceDeletionIntent.DELETING, NOOP_EVENT_APPLIER);
+    register(ResourceDeletionIntent.DELETED, NOOP_EVENT_APPLIER);
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
