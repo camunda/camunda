@@ -32,11 +32,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
-
 /**
  * Applies state changes from events to the {@link MutableProcessingState}.
  *
@@ -101,6 +100,7 @@ public final class EventAppliers implements EventApplier {
     final VariableApplier variableApplier = new VariableApplier(state.getVariableState());
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
+    register(VariableDocumentIntent.UPDATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessInstanceEventAppliers(final MutableProcessingState state) {
