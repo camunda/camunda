@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.impl.rocksdb;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
+import io.camunda.zeebe.protocol.EnumValue;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -37,7 +38,8 @@ import org.rocksdb.Statistics;
 import org.rocksdb.StatsLevel;
 import org.rocksdb.TableFormatConfig;
 
-public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamilyType>>
+public final class ZeebeRocksDbFactory<
+        ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
     implements ZeebeDbFactory<ColumnFamilyType> {
 
   static {

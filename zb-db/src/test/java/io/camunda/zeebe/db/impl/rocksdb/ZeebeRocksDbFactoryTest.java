@@ -73,7 +73,8 @@ public final class ZeebeRocksDbFactoryTest {
     customProperties.put("compaction_pri", "kByCompensatedSize");
 
     final var factoryWithDefaults =
-        (ZeebeRocksDbFactory<DefaultColumnFamily>) DefaultZeebeDbFactory.getDefaultFactory();
+        (ZeebeRocksDbFactory<DefaultColumnFamily>)
+            DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
