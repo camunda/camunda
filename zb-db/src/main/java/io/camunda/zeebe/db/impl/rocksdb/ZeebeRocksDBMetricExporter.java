@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.protocol.EnumValue;
 import io.prometheus.client.Gauge;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -15,7 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** This class exports metrics for a RocksDB instance to Prometheus. */
-public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<ColumnFamilyType>> {
+public final class ZeebeRocksDBMetricExporter<
+    ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue> {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(ZeebeRocksDBMetricExporter.class.getName());
