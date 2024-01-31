@@ -206,7 +206,8 @@ public class ProcessInstanceMigrationMigrateProcessor
                 .setProcessDefinitionKey(targetProcessDefinition.getKey())
                 .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
                 .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-                .setElementId(targetElementId));
+                .setElementId(targetElementId)
+                .setVariables(NIL_VALUE));
       }
     }
 
