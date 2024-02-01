@@ -159,7 +159,9 @@ describe('<FormModal />', () => {
     await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
 
     expect(
-      within(screen.getByRole('alert')).getByText('Something went wrong'),
+      within(await screen.findByRole('alert')).getByText(
+        'Something went wrong',
+      ),
     ).toBeInTheDocument();
     expect(
       within(screen.getByRole('alert')).getByText(
