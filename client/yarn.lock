@@ -241,36 +241,36 @@
     "@codemirror/view" "^6.5.1"
     "@lezer/highlight" "^1.1.4"
 
-"@bpmn-io/feel-lint@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-lint/-/feel-lint-1.1.0.tgz#2bae79d4332d4f0c96afebfc0770ffc1dd30b902"
-  integrity sha512-/StDR3LsWWo2lAEup9fLkH1fqXN3wSkvYBo4KzkQW3zp1QKhqI906bIz1ncmJXi6ao5wWH6YEdjvS1G906D9lQ==
+"@bpmn-io/feel-lint@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-lint/-/feel-lint-1.2.0.tgz#58c5c693e4985d3e621659648dffb89e2043999d"
+  integrity sha512-nsvAYxiSbWyjpd3gNnJd+60aTWrZvngYnZfe+GpmkM/pQoOgtF17GhD/p4fgaeAd/uUP3q9sO6EWRX+OU/p9dw==
   dependencies:
     "@codemirror/language" "^6.8.0"
-    lezer-feel "^1.2.0"
+    lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.6.4":
-  version "1.6.4"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.6.4.tgz#aeac32806aa40b6db7e987f02a98b66915498403"
-  integrity sha512-X0a+q9vTgWd8iJv5HIcAiVsNsTm9dcFXlPMBvajPMF80xJepPCzZEUjuCZe9VIJE7k54ITO7WmuZk6ZELRDvKA==
+"@bpmn-io/form-js-carbon-styles@1.7.0":
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.7.0.tgz#8e615b4ad0804cfb5ad3b13fea56392a94eb8438"
+  integrity sha512-5oCU1Hv1Np0cZf91ll63iK9CIhdbArmSo/JoIWeWap45kQP5fLx406bg5B6kR964OpKEcjfMgNHikVTLSwu+pg==
 
-"@bpmn-io/form-js-viewer@1.6.4":
-  version "1.6.4"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.6.4.tgz#dc1570c9bf44e88f386c685a29c4822e819864cf"
-  integrity sha512-YOllEnc1dKkIrva59Jj31d3HkLjTnWDMY+tOL4XliFrm5a4fMuwUshxXH4J7buW2nRZJzD62tTQk2CAsj69Epg==
+"@bpmn-io/form-js-viewer@1.7.0":
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.7.0.tgz#d7183312cfdbac414504e157206d2f2528dcc8ee"
+  integrity sha512-YT1fUza2E+3lyGVKNwxntLsCqos+8oXuhX1+6KT6C6shlVTg+kp8H7Iwx7BKuvo1ue5w1ufIykv8h3pU2te/2Q==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
     classnames "^2.3.1"
     didi "^10.0.1"
-    feelers "^1.2.0"
+    dompurify "^3.0.8"
+    feelers "^1.3.0"
     feelin "^3.0.0"
     flatpickr "^4.6.13"
     ids "^1.0.0"
     lodash "^4.5.0"
-    min-dash "^4.0.0"
+    min-dash "^4.2.1"
     preact "^10.5.14"
-    preact-markup "^2.1.1"
     showdown "^2.1.0"
 
 "@bundled-es-modules/cookie@^2.0.0":
@@ -1266,14 +1266,7 @@
   resolved "https://registry.yarnpkg.com/@types/ms/-/ms-0.7.32.tgz#f6cd08939ae3ad886fcc92ef7f0109dacddf61ab"
   integrity sha512-xPSg0jm4mqgEkNhowKgZFBNtwoEwF6gJ4Dhww+GFpm3IgtNseHQZ5IqdNwnquZEoANxyDAKDRAdVo4Z72VvD/g==
 
-"@types/node@*", "@types/node@>=12.12.47", "@types/node@>=13.7.0":
-  version "20.11.5"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.11.5.tgz#be10c622ca7fcaa3cf226cf80166abc31389d86e"
-  integrity sha512-g557vgQjUUfN76MZAN/dt1z3dzcUsimuysco0KeluHgrPdJXkP/XdAURgyO2W9fZWHRtRBiVKzKn8vyOAwlG+w==
-  dependencies:
-    undici-types "~5.26.4"
-
-"@types/node@20.11.6":
+"@types/node@*", "@types/node@20.11.6", "@types/node@>=12.12.47", "@types/node@>=13.7.0":
   version "20.11.6"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-20.11.6.tgz#6adf4241460e28be53836529c033a41985f85b6e"
   integrity sha512-+EOokTnksGVgip2PbYbr3xnR7kZigh4LbybAfBAw5BpnQ+FqBYUsvCEjYd70IXKlbohQ64mzEYmMtlWUY8q//Q==
@@ -2464,6 +2457,11 @@ domify@^1.4.1:
   resolved "https://registry.yarnpkg.com/domify/-/domify-1.4.1.tgz#2e1e813019646715deeb8d3c5de4d3ef7bddd07e"
   integrity sha512-x18nuiDHMCZGXr4KJSRMf/TWYtiaRo6RX8KN9fEbW54mvbQ6pieUuerC2ahBg+kEp1wycFj8MPUI0WkIOw5E9w==
 
+dompurify@^3.0.8:
+  version "3.0.8"
+  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-3.0.8.tgz#e0021ab1b09184bc8af7e35c7dd9063f43a8a437"
+  integrity sha512-b7uwreMYL2eZhrSCRC4ahLTeZcPZxSmYfmcQGXGkXiZSNW1X85v+SDM5KsWcpivIiUBH47Ji7NtyUdpLeF5JZQ==
+
 dot-case@^3.0.4:
   version "3.0.4"
   resolved "https://registry.yarnpkg.com/dot-case/-/dot-case-3.0.4.tgz#9b2b670d00a431667a8a75ba29cd1b98809ce751"
@@ -2877,13 +2875,13 @@ fastq@^1.6.0:
   dependencies:
     reusify "^1.0.4"
 
-feelers@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/feelers/-/feelers-1.2.0.tgz#4aa7adc78672eb09eed2ea616f64620de3e1243b"
-  integrity sha512-EPw88XH1UUt4A5JmBrJN3dmCMAxSi54juFuNoGwPKIDz70x9VYJhrECYsDfcx+CbIVNPuoEkt9hlx07bfA1+4A==
+feelers@^1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/feelers/-/feelers-1.3.0.tgz#7afc03f14e65a4b886008e5a3d3eb9692e5ce3c5"
+  integrity sha512-aldR3ybeQlXs1T+PqhKTLyaBJ1NP4bovDrQZzBZ9UUnN4HdEObQpWl9hsgyb8HKwojzRtBoq1BzmGIf07vuRCg==
   dependencies:
     "@bpmn-io/cm-theme" "^0.1.0-alpha.2"
-    "@bpmn-io/feel-lint" "^1.1.0"
+    "@bpmn-io/feel-lint" "^1.2.0"
     "@codemirror/autocomplete" "^6.10.1"
     "@codemirror/commands" "^6.3.0"
     "@codemirror/language" "^6.9.1"
@@ -2894,18 +2892,9 @@ feelers@^1.2.0:
     "@lezer/highlight" "^1.1.6"
     "@lezer/lr" "^1.3.13"
     "@lezer/markdown" "^1.1.0"
-    feelin "^2.3.0"
-    lezer-feel "^1.2.0"
+    feelin "^3.0.0"
+    lezer-feel "^1.2.4"
     min-dom "^4.1.0"
-
-feelin@^2.3.0:
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/feelin/-/feelin-2.3.0.tgz#17f5a7e8982a73f0daf3678f51c452a51ff2b040"
-  integrity sha512-QDXCQRIV6AeLYUZoSlCAM+LEIv5k0+G4UJ+hRvTG42nCsW9YWPeVFNDInJDMGC+NimA6wW+1PKKDY6X8FcKJqg==
-  dependencies:
-    "@lezer/lr" "^1.3.9"
-    lezer-feel "^1.2.0"
-    luxon "^3.1.0"
 
 feelin@^3.0.0:
   version "3.0.0"
@@ -3828,10 +3817,10 @@ levn@^0.4.1:
     prelude-ls "^1.2.1"
     type-check "~0.4.0"
 
-lezer-feel@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/lezer-feel/-/lezer-feel-1.2.0.tgz#2670b88860d732d99fb0708bc525b37c287124fe"
-  integrity sha512-OgSjIEAK0YCxhwkuB1qvhqv65XmZiqLGQv8mvMOVUAcdKE6W72VV/sQ9GTgCBkAnmyB1x16WuzNRpEwpJswkkQ==
+lezer-feel@^1.2.0, lezer-feel@^1.2.3, lezer-feel@^1.2.4:
+  version "1.2.4"
+  resolved "https://registry.yarnpkg.com/lezer-feel/-/lezer-feel-1.2.4.tgz#de25f9bcc1d7b97321e7302e9a10d133ee245a2b"
+  integrity sha512-ASi0yQd6A8a2xeNF+b5Sr7fPcko236i81q9yzMbzi81lKc93CZ3SRR7rgCZgHMVifVthofZRoNczR5lenCRmlw==
   dependencies:
     "@lezer/highlight" "^1.1.6"
     "@lezer/lr" "^1.3.12"
@@ -4340,10 +4329,10 @@ mimic-response@^3.1.0:
   resolved "https://registry.yarnpkg.com/mimic-response/-/mimic-response-3.1.0.tgz#2d1d59af9c1b129815accc2c46a022a5ce1fa3c9"
   integrity sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ==
 
-min-dash@^4.0.0:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.1.1.tgz#09b85a5e1d0189ce02a4ec416180aa85db06451b"
-  integrity sha512-r+Z6vxXLSGr+otyCPx9NKPCSixw7LdfZREPTmqfd2a/d5D6w4NCdOxRJs+HyFO6v2pQkyHroGSiINWECK+OWPg==
+min-dash@^4.0.0, min-dash@^4.2.1:
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.2.1.tgz#26236f4e278053753f17d4284605ec8fa234a275"
+  integrity sha512-to+unsToePnm7cUeR9TrMzFlETHd/UXmU+ELTRfWZj5XGT41KF6X3L233o3E/GdEs3sk2Tbw/lOLD1avmWkg8A==
 
 min-dom@^4.1.0:
   version "4.1.0"
@@ -4794,11 +4783,6 @@ postcss@^8.4.32:
     nanoid "^3.3.7"
     picocolors "^1.0.0"
     source-map-js "^1.0.2"
-
-preact-markup@^2.1.1:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/preact-markup/-/preact-markup-2.1.1.tgz#0451e7eed1dac732d7194c34a7f16ff45a2cfdd7"
-  integrity sha512-8JL2p36mzK8XkspOyhBxUSPjYwMxDM0L5BWBZWxsZMVW8WsGQrYQDgVuDKkRspt2hwrle+Cxr/053hpc9BJwfw==
 
 preact@^10.5.14:
   version "10.18.1"
