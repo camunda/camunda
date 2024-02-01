@@ -113,9 +113,8 @@ public class ElasticsearchTaskStore implements TaskStore {
   }
 
   public boolean needsToPollAgain(final Optional<TaskResponse> maybeTaskResponse) {
-    return maybeTaskResponse
-      .filter(tr -> !tr.isCompleted())
-      .isPresent();
+    return maybeTaskResponse.isEmpty() ||
+           maybeTaskResponse.filter(tr -> !tr.isCompleted()).isPresent();
   }
 
 }
