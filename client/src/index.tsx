@@ -33,7 +33,7 @@ function mock(): Promise<void> {
 const container = document.querySelector('#root');
 const root = createRoot(container!);
 
-Promise.all([tracking.loadAnalyticsToWillingUsers(), mock()]).then(() => {
+Promise.all([tracking.loadAnalyticsToWillingUsers(), mock()]).finally(() => {
   root.render(
     <StrictMode>
       <App />
