@@ -159,7 +159,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     final long processInstanceKey = elementInstanceRecord.getProcessInstanceKey();
 
     requireSupportedElementType(elementInstanceRecord, processInstanceKey);
-    requireNonNativeUserTask(elementInstance, processInstanceKey);
 
     final String targetElementId =
         sourceElementIdToTargetElementId.get(elementInstanceRecord.getElementId());
