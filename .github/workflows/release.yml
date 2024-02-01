@@ -52,7 +52,7 @@ jobs:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.7.5
+        uses: hashicorp/vault-action@v2.8.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -271,7 +271,7 @@ jobs:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.7.5
+        uses: hashicorp/vault-action@v2.8.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
