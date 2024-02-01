@@ -74,7 +74,8 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
       .map(Result::dashboardId)
       .toList();
 
-    dashboardIdsToBeDeleted.forEach(id ->
+    if(!dashboardIdsToBeDeleted.isEmpty()) {
+      dashboardIdsToBeDeleted.forEach(id ->
         bulkRequestBuilder.operations(op ->
           op.delete(del -> del
             .index(INSTANT_DASHBOARD_INDEX_NAME)
@@ -83,17 +84,18 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
         )
       );
 
-    log.debug("Deleting [{}] instant dashboard documents by id with bulk request.", dashboardIdsToBeDeleted.size());
+      log.debug("Deleting [{}] instant dashboard documents by id with bulk request.", dashboardIdsToBeDeleted.size());
 
-    osClient.bulk(
-      bulkRequestBuilder,
-      format(
-        "Failed to bulk delete from %s %s outdated template entries: %s",
-        INSTANT_DASHBOARD_INDEX_NAME,
-        dashboardIdsToBeDeleted.size(),
-        dashboardIdsToBeDeleted
-      )
-    );
+      osClient.bulk(
+        bulkRequestBuilder,
+        format(
+          "Failed to bulk delete from %s %s outdated template entries: %s",
+          INSTANT_DASHBOARD_INDEX_NAME,
+          dashboardIdsToBeDeleted.size(),
+          dashboardIdsToBeDeleted
+        )
+      );
+    }
 
     return dashboardIdsToBeDeleted;
   }
