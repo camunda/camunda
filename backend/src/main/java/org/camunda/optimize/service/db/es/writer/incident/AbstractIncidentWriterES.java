@@ -24,11 +24,9 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -51,26 +49,7 @@ public abstract class AbstractIncidentWriterES extends AbstractProcessInstanceDa
   }
 
   @Override
-  public List<ImportRequestDto> generateIncidentImports(List<IncidentDto> incidents) {
-    final String importItemName = "incidents";
-    log.debug("Creating imports for {} [{}].", incidents.size(), importItemName);
-
-    createInstanceIndicesFromIncidentsIfMissing(incidents);
-
-    Map<String, List<IncidentDto>> processInstanceToEvents = new HashMap<>();
-    for (IncidentDto e : incidents) {
-      processInstanceToEvents.putIfAbsent(e.getProcessInstanceId(), new ArrayList<>());
-      processInstanceToEvents.get(e.getProcessInstanceId()).add(e);
-    }
-
-    return processInstanceToEvents.entrySet().stream()
-      .map(entry -> createImportRequestForIncident(entry, importItemName))
-      .collect(Collectors.toList());
-  }
-
-  protected abstract String createInlineUpdateScript();
-
-  private ImportRequestDto createImportRequestForIncident(Map.Entry<String, List<IncidentDto>> incidentsByProcessInstance,
+  public ImportRequestDto createImportRequestForIncident(Map.Entry<String, List<IncidentDto>> incidentsByProcessInstance,
                                                           final String importName) {
     final List<IncidentDto> incidents = incidentsByProcessInstance.getValue();
     final String processInstanceId = incidentsByProcessInstance.getKey();
@@ -111,7 +90,8 @@ public abstract class AbstractIncidentWriterES extends AbstractProcessInstanceDa
     }
   }
 
-  private void createInstanceIndicesFromIncidentsIfMissing(final List<IncidentDto> incidents) {
+  @Override
+  public void createInstanceIndicesFromIncidentsIfMissing(final List<IncidentDto> incidents) {
     createInstanceIndicesIfMissing(incidents.stream().map(IncidentDto::getDefinitionKey).collect(toSet()));
   }
 

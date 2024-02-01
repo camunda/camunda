@@ -24,6 +24,7 @@ import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.SortOptions;
@@ -141,11 +142,13 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().delete(indexName, entityId);
   }
 
-  public <A, B> UpdateResponse<A> upsert(final UpdateRequest.Builder<A, B> requestBuilder, Class<A> clazz, Function<Exception, String> errorMessageSupplier) {
+  public <A, B> UpdateResponse<A> upsert(final UpdateRequest.Builder<A, B> requestBuilder, Class<A> clazz, Function<Exception,
+    String> errorMessageSupplier) {
     return richOpenSearchClient.doc().upsert(requestBuilder, clazz, errorMessageSupplier);
   }
 
-  public <T> UpdateResponse<Void> update(final UpdateRequest.Builder<Void, T> requestBuilder, Function<Exception, String> errorMessageSupplier) {
+  public <T> UpdateResponse<Void> update(final UpdateRequest.Builder<Void, T> requestBuilder,
+                                         Function<Exception, String> errorMessageSupplier) {
     return richOpenSearchClient.doc().update(requestBuilder, errorMessageSupplier);
   }
 
@@ -459,8 +462,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       if (bulkResponse.errors()) {
         final boolean isReachedNestedDocLimit = bulkResponse.items()
           .stream()
-          .filter(operation -> Objects.nonNull(operation.error()))
-          .anyMatch(operation -> operation.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE));
+          .map(BulkResponseItem::error)
+          .filter(Objects::nonNull)
+          .map(ErrorCause::reason)
+          .filter(Objects::nonNull)
+          .anyMatch(reason -> reason.contains(NESTED_DOC_LIMIT_MESSAGE));
         throw new OptimizeRuntimeException(String.format(
           "There were failures while performing bulk on %s.%n%s",
           itemName,
