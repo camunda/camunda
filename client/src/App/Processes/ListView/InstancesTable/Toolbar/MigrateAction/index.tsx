@@ -61,12 +61,21 @@ const MigrateAction: React.FC = observer(() => {
     );
   })();
 
+  const hasXmlError = processXmlStore.state.status === 'error';
+
   const isDisabled =
-    !isVersionSelected || !hasSelectedFinishedInstances || isChildProcess;
+    !isVersionSelected ||
+    !hasSelectedFinishedInstances ||
+    isChildProcess ||
+    hasXmlError;
 
   const getTooltipText = () => {
     if (!isVersionSelected) {
       return 'To start the migration process, choose a process and version first.';
+    }
+
+    if (hasXmlError) {
+      return 'Issue fetching diagram, contact admin if problem persists.';
     }
 
     if (!hasSelectedFinishedInstances) {

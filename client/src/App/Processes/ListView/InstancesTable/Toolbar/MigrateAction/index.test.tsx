@@ -22,7 +22,9 @@ import {
 import {MigrateAction} from '.';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
 import {tracking} from 'modules/tracking';
 
@@ -74,6 +76,7 @@ function getWrapper(initialPath: string = Paths.processes()) {
           processInstancesStore.reset();
           processInstanceMigrationStore.reset();
           processStatisticsStore.reset();
+          processXmlStore.reset();
         };
       }, []);
       return (
@@ -153,6 +156,30 @@ describe('<MigrateAction />', () => {
     await fetchProcessInstances(user);
 
     const instance = getProcessInstance('ACTIVE', mockCalledProcessInstances);
+
+    act(() => {
+      processInstancesSelectionStore.selectProcessInstance(instance.id);
+    });
+
+    expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
+  });
+
+  it('should disable migrate button, when process XML could not be loaded', async () => {
+    mockFetchProcessInstances().withSuccess(mockCalledProcessInstances);
+
+    const {user} = render(<MigrateAction />, {
+      wrapper: getWrapper(
+        `/processes?process=eventBasedGatewayProcess&version=1`,
+      ),
+    });
+
+    mockFetchProcessXML().withServerError();
+    await waitFor(() => processXmlStore.fetchProcessXml('1'));
+    expect(processXmlStore.state.status).toBe('error');
+
+    await fetchProcessInstances(user);
+
+    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
     act(() => {
       processInstancesSelectionStore.selectProcessInstance(instance.id);
