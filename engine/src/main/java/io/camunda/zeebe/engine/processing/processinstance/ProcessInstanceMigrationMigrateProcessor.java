@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditionChecker.*;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -21,14 +22,17 @@ import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -38,10 +42,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
 public class ProcessInstanceMigrationMigrateProcessor
     implements TypedRecordProcessor<ProcessInstanceMigrationRecord> {
 
+  private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
   private final VariableRecord variableRecord = new VariableRecord().setValue(NIL_VALUE);
 
@@ -51,6 +57,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final JobState jobState;
+  private final UserTaskState userTaskState;
   private final VariableState variableState;
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
@@ -63,6 +70,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     jobState = processingState.getJobState();
+    userTaskState = processingState.getUserTaskState();
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
@@ -123,6 +131,13 @@ public class ProcessInstanceMigrationMigrateProcessor
       rejectionWriter.appendRejection(command, e.getRejectionType(), e.getMessage());
       responseWriter.writeRejectionOnCommand(command, e.getRejectionType(), e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
+
+    } else if (error instanceof final SafetyCheckFailedException e) {
+      LOG.error(e.getMessage(), e);
+      rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, e.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.PROCESSING_ERROR, e.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
@@ -155,7 +170,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     final long processInstanceKey = elementInstanceRecord.getProcessInstanceKey();
 
     requireSupportedElementType(elementInstanceRecord, processInstanceKey);
-    requireNonNativeUserTask(elementInstance, processInstanceKey);
 
     final String targetElementId =
         sourceElementIdToTargetElementId.get(elementInstanceRecord.getElementId());
@@ -181,15 +195,44 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     if (elementInstance.getJobKey() > 0) {
       final var job = jobState.getJob(elementInstance.getJobKey());
-      if (job != null) {
-        stateWriter.appendFollowUpEvent(
-            elementInstance.getJobKey(),
-            JobIntent.MIGRATED,
-            job.setProcessDefinitionKey(targetProcessDefinition.getKey())
-                .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
-                .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-                .setElementId(targetElementId));
+      if (job == null) {
+        throw new SafetyCheckFailedException(
+            String.format(
+                """
+                Expected to migrate a job for process instance with key '%d', \
+                but could not find job with key '%d'. \
+                Please report this as a bug""",
+                processInstanceKey, elementInstance.getUserTaskKey()));
       }
+      stateWriter.appendFollowUpEvent(
+          elementInstance.getJobKey(),
+          JobIntent.MIGRATED,
+          job.setProcessDefinitionKey(targetProcessDefinition.getKey())
+              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+              .setElementId(targetElementId));
+    }
+
+    if (elementInstance.getUserTaskKey() > 0) {
+      final var userTask = userTaskState.getUserTask(elementInstance.getUserTaskKey());
+      if (userTask == null) {
+        throw new SafetyCheckFailedException(
+            String.format(
+                """
+                Expected to migrate a user task for process instance with key '%d', \
+                but could not find user task with key '%d'. \
+                Please report this as a bug""",
+                processInstanceKey, elementInstance.getUserTaskKey()));
+      }
+      stateWriter.appendFollowUpEvent(
+          elementInstance.getUserTaskKey(),
+          UserTaskIntent.MIGRATED,
+          userTask
+              .setProcessDefinitionKey(targetProcessDefinition.getKey())
+              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+              .setElementId(targetElementId)
+              .setVariables(NIL_VALUE));
     }
 
     variableState
@@ -206,5 +249,16 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessDefinitionKey(targetProcessDefinition.getKey())
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
+  }
+
+  /**
+   * Exception that can be thrown when a safety check has failed during migration. It's likely that
+   * a bug is present when this is thrown.
+   */
+  public static final class SafetyCheckFailedException extends RuntimeException {
+
+    public SafetyCheckFailedException(final String message) {
+      super(message);
+    }
   }
 }

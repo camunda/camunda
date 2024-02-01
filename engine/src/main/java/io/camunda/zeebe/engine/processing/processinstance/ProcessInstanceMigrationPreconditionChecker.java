@@ -262,29 +262,6 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Checks whether the given element instance is a native user task. Throws an exception if the
-   * element instance is a native user task.
-   *
-   * @param elementInstance element instance to do the check
-   * @param processInstanceKey process instance key to be logged
-   */
-  public static void requireNonNativeUserTask(
-      final ElementInstance elementInstance, final long processInstanceKey) {
-    final boolean isNativeUserTask = elementInstance.getUserTaskKey() > 0;
-    if (isNativeUserTask) {
-      final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
-      final String reason =
-          String.format(
-              ERROR_UNSUPPORTED_ELEMENT_TYPE,
-              processInstanceKey,
-              elementInstanceRecord.getElementId(),
-              elementInstanceRecord.getBpmnElementType());
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.INVALID_STATE);
-    }
-  }
-
-  /**
    * Checks whether the given element instance is of a supported type. Throws an exception if the
    * element instance is of an unsupported type.
    *
