@@ -512,8 +512,7 @@ describe('Filters', () => {
     }
   });
 
-  // TODO: enable when https://github.com/camunda/operate/issues/4403 is implemented again
-  it.skip('should omit all versions option', async () => {
+  it('should omit all versions option', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(
         `/?${new URLSearchParams(
@@ -525,16 +524,24 @@ describe('Filters', () => {
       ),
     });
 
-    await user.click(screen.getByLabelText(/version/i));
+    await user.click(
+      screen.getByLabelText(/version/i, {
+        selector: 'button',
+      }),
+    );
+
+    const versionDropdownList = screen.queryByLabelText(/version/i, {
+      selector: 'ul',
+    })!;
 
     expect(
-      within(screen.getByLabelText(/version/i)!).getByRole('option', {
+      within(versionDropdownList).getByRole('option', {
         name: '1',
       }),
     ).toBeInTheDocument();
 
     expect(
-      within(screen.queryByLabelText(/version/i)!).queryByRole('option', {
+      within(versionDropdownList).queryByRole('option', {
         name: /all/i,
       }),
     ).not.toBeInTheDocument();

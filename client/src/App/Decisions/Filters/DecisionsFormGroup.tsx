@@ -20,7 +20,8 @@ const DecisionsFormGroup: React.FC = observer(() => {
   const selectedDecisionKey = useField('name').input.value;
   const selectedTenant = useField('tenant').input.value;
   const versions = getVersions(selectedDecisionKey);
-  const items = ['all', ...versions];
+  const initialItems = versions.length > 1 ? ['all'] : [];
+  const items = [...initialItems, ...versions.sort((a, b) => b - a)];
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
   const isSpecificTenantSelected =
     selectedTenant !== '' && selectedTenant !== 'all';

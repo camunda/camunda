@@ -15,7 +15,11 @@ const ProcessVersionField: React.FC = observer(() => {
   const {versionsByProcessAndTenant} = processesStore;
   const selectedProcessKey = useField('process').input.value;
   const versions = versionsByProcessAndTenant[selectedProcessKey] ?? [];
-  const items = ['all', ...versions.map(({version}) => version)];
+  const initialItems = versions.length > 1 ? ['all'] : [];
+  const items = [
+    ...initialItems,
+    ...versions.map(({version}) => version).sort((a, b) => b - a),
+  ];
   const form = useForm();
 
   return (
@@ -36,7 +40,7 @@ const ProcessVersionField: React.FC = observer(() => {
             itemToString={(item) =>
               item === 'all' ? 'All versions' : item.toString()
             }
-            selectedItem={input.value}
+            selectedItem={input.value === 'all' ? 'all' : Number(input.value)}
             size="sm"
           />
         );
