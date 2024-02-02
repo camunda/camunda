@@ -33,6 +33,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
@@ -64,6 +65,9 @@ public class ElasticsearchChecks {
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;
+
+  @Autowired
+  UserTaskReader userTaskReader;
 
   @Autowired
   private FlowNodeInstanceReader flowNodeInstanceReader;
@@ -200,6 +204,21 @@ public class ElasticsearchChecks {
       return events.stream().filter(
           e -> e.getMetadata() != null && e.getMetadata().getJobType() != null && e.getMetadata().getJobType()
               .equals(jobType)).count() > 0;
+    };
+  }
+
+  @Bean(name = "eventIsImportedForFlowNodeCheck")
+  public Predicate<Object[]> getEventIsImportedForFlowNodeCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(3);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      assertThat(objects[2]).isInstanceOf(EventType.class);
+      Long processInstanceKey = (Long) objects[0];
+      String flowNodeId = (String) objects[1];
+      EventType eventType = (EventType) objects[2];
+      List<EventEntity> events = getAllEvents(processInstanceKey);
+      return events.stream().anyMatch(e -> Objects.equals(flowNodeId, e.getFlowNodeId()) && Objects.equals(eventType, e.getEventType()));
     };
   }
 
@@ -1041,4 +1060,18 @@ public class ElasticsearchChecks {
     };
   }
 
+  @Bean(name = "userTasksAreCreated")
+  public Predicate<Object[]> getUserTaskIsImportedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(Integer.class);
+      Integer count = (Integer) objects[0];
+      try {
+        final List<UserTaskEntity> userTasks = userTaskReader.getUserTasks();
+        return userTasks.size() == count;
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
 }

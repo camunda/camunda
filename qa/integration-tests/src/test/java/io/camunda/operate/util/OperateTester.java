@@ -11,10 +11,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.archiver.ArchiveBatch;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.*;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
@@ -145,6 +142,10 @@ public class OperateTester {
   private Predicate<Object[]> eventIsImportedCheck;
 
   @Autowired
+  @Qualifier("eventIsImportedForFlowNodeCheck")
+  private Predicate<Object[]> eventIsImportedForFlowNodeCheck;
+
+  @Autowired
   @Qualifier("flowNodesAreActiveCheck")
   private Predicate<Object[]> flowNodesAreActiveCheck;
 
@@ -189,6 +190,10 @@ public class OperateTester {
   @Autowired
   @Qualifier("variableHasValue")
   private Predicate<Object[]> variableHasValue;
+
+  @Autowired
+  @Qualifier("userTasksAreCreated")
+  private Predicate<Object[]> userTasksAreCreated;
 
   @Autowired
   protected OperationExecutor operationExecutor;
@@ -255,7 +260,6 @@ public class OperateTester {
     processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, null, process, processId+".bpmn");
     return this;
   }
-
   public OperateTester deployProcess(String... classpathResources) {
     Validate.notNull(zeebeClient, "ZeebeClient should be set.");
     logger.debug("Deploy process(es) {}", List.of(classpathResources));
@@ -289,6 +293,12 @@ public class OperateTester {
     searchTestRule.processAllRecordsAndWait(decisionInstancesAreCreated, count);
     return this;
   }
+
+  public OperateTester userTasksAreCreated(int count) {
+    searchTestRule.processAllRecordsAndWait(userTasksAreCreated, count);
+    return this;
+  }
+
 
 
   public OperateTester startProcessInstance(String bpmnProcessId) {
@@ -391,6 +401,11 @@ public class OperateTester {
 
   public OperateTester eventIsImported(String jobType) {
     searchTestRule.processAllRecordsAndWait(eventIsImportedCheck, processInstanceKey, jobType);
+    return this;
+  }
+
+  public OperateTester eventIsImportedForFlowNode(String flowNodeId, EventType eventType) {
+    searchTestRule.processAllRecordsAndWait(eventIsImportedForFlowNodeCheck, processInstanceKey, flowNodeId, eventType);
     return this;
   }
 

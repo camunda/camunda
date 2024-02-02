@@ -7,14 +7,7 @@
 package io.camunda.operate.util;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.EventEntity;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.*;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -29,11 +22,7 @@ import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.reader.IncidentReader;
-import io.camunda.operate.webapp.reader.ListViewReader;
-import io.camunda.operate.webapp.reader.ProcessReader;
-import io.camunda.operate.webapp.reader.VariableReader;
+import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -46,6 +35,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -64,6 +54,7 @@ import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 @Conditional(OpensearchCondition.class)
 @ConditionalOnProperty(prefix = OperateProperties.PREFIX, name = "webappEnabled", havingValue = "true", matchIfMissing = true)
 public class OpensearchChecks {
+
   @Autowired
   private RichOpenSearchClient richOpenSearchClient;
 
@@ -72,6 +63,9 @@ public class OpensearchChecks {
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;
+
+  @Autowired
+  UserTaskReader userTaskReader;
 
   @Autowired
   private FlowNodeInstanceReader flowNodeInstanceReader;
@@ -198,6 +192,21 @@ public class OpensearchChecks {
       return events.stream().filter(
           e -> e.getMetadata() != null && e.getMetadata().getJobType() != null && e.getMetadata().getJobType()
               .equals(jobType)).count() > 0;
+    };
+  }
+
+  @Bean(name = "eventIsImportedForFlowNodeCheck")
+  public Predicate<Object[]> getEventIsImportedForFlowNodeCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(3);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      assertThat(objects[2]).isInstanceOf(EventType.class);
+      Long processInstanceKey = (Long) objects[0];
+      String flowNodeId = (String) objects[1];
+      EventType eventType = (EventType) objects[2];
+      List<EventEntity> events = getAllEvents(processInstanceKey);
+      return events.stream().anyMatch(e -> Objects.equals(flowNodeId, e.getFlowNodeId()) && Objects.equals(eventType, e.getEventType()));
     };
   }
 
@@ -977,6 +986,21 @@ public class OpensearchChecks {
       return events.stream().filter(
         e -> e.getMetadata() != null && e.getMetadata().getJobKey() != null && e.getMetadata().getJobKey()
           .equals(jobKey) && e.getMetadata().getJobRetries().equals(numberOfRetriesLeft)).count() > 0;
+    };
+  }
+
+  @Bean(name = "userTasksAreCreated")
+  public Predicate<Object[]> getUserTaskIsImportedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(Integer.class);
+      Integer count = (Integer) objects[0];
+      try {
+        final List<UserTaskEntity> userTasks = userTaskReader.getUserTasks();
+        return userTasks.size() == count;
+      } catch (NotFoundException ex) {
+        return false;
+      }
     };
   }
 }

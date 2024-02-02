@@ -200,6 +200,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected Predicate<Object[]> processInstancesAreStartedByProcessId;
 
   @Autowired
+  @Qualifier("userTasksAreCreated")
+  protected Predicate<Object[]> userTasksAreCreated;
+
+  @Autowired
   protected OperateProperties operateProperties;
 
   private String workerName;
