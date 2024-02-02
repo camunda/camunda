@@ -2,8 +2,8 @@ name: Weekly internal docker images
 on:
   workflow_dispatch: { }
   schedule:
-    # Runs at 0 am every sunday https://crontab.guru/#0_0_*_*_0
-    - cron: "0 0 * * 0"
+    # Runs at 0:01 am every Monday https://crontab.guru/#1 0 * * 1
+    - cron: "1 0 * * 1"
 jobs:
   operate-image-data:
     name: Collect image data
@@ -14,7 +14,7 @@ jobs:
       - name: Collect image data
         id: data
         run: |
-          echo "image=operate-y-$(date +%Y)-cw-$(date +%U)" >> $GITHUB_OUTPUT
+          echo "image=operate-y-$(date +%Y)-cw-$(date +%V)" >> $GITHUB_OUTPUT
 
   push-docker-image:
     # Need to add these 3 lines to add "id-token" with the intended permissions.
