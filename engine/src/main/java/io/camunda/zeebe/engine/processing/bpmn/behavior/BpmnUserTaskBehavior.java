@@ -26,6 +26,7 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
@@ -85,7 +86,8 @@ public final class BpmnUserTaskBehavior {
         .flatMap(
             p ->
                 evaluateFormIdExpressionToFormKey(userTaskProps.getFormId(), scopeKey, tenantId)
-                    .map(p::formKey));
+                    .map(p::formKey))
+        .flatMap(p -> evaluateCurrentDate().map(p::creationDate));
   }
 
   public long createNewUserTask(
@@ -141,6 +143,10 @@ public final class BpmnUserTaskBehavior {
     return expressionBehavior
         .evaluateDateTimeExpression(date, scopeKey, true)
         .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
+  }
+
+  public Either<Failure, Long> evaluateCurrentDate() {
+    return Either.right(ActorClock.currentTimeMillis());
   }
 
   public Either<Failure, Long> evaluateFormIdExpressionToFormKey(
@@ -210,7 +216,8 @@ public final class BpmnUserTaskBehavior {
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setElementId(userTask.getId())
         .setElementInstanceKey(context.getElementInstanceKey())
-        .setTenantId(context.getTenantId());
+        .setTenantId(context.getTenantId())
+        .setCreationDate(props.getCreationDate());
 
     stateWriter.appendFollowUpEvent(userTaskKey, intent, userTaskRecord);
   }
@@ -223,6 +230,7 @@ public final class BpmnUserTaskBehavior {
     private String dueDate;
     private String followUpDate;
     private Long formKey;
+    private Long creationDate;
 
     public String getAssignee() {
       return getOrEmpty(assignee);
@@ -266,6 +274,15 @@ public final class BpmnUserTaskBehavior {
 
     public UserTaskProperties followUpDate(final String followUpDate) {
       this.followUpDate = followUpDate;
+      return this;
+    }
+
+    public long getCreationDate() {
+      return creationDate;
+    }
+
+    public UserTaskProperties creationDate(final long creationDate) {
+      this.creationDate = creationDate;
       return this;
     }
 
