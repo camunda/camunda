@@ -13,6 +13,7 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -25,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityType.DASHBOARD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
+@Tag("openSearchPassing")
 public class DashboardCollectionScopeEnforcementIT extends AbstractPlatformIT {
 
   private static final List<ReportScenario> POSSIBLE_REPORT_SCENARIOS = ImmutableList

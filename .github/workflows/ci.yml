@@ -203,16 +203,38 @@ jobs:
       with:
         archive_name: data-upgrade-test-docker
 
+  # TODO with #11449 once OS project is completed, the step below shall be completely removed
+  setup-database-test-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      database: ${{ steps.set-matrix.outputs.database }}
+    steps:
+      - name: Determine Matrix for Database
+        id: set-matrix
+        run: |
+          if echo "${{ toJSON(github.event.pull_request.labels.*.name) }}" | grep -q "opensearch"; then
+            echo "::set-output name=database::[\"opensearch\", \"elasticsearch\"]"
+          else
+            echo "::set-output name=database::[\"elasticsearch\"]"
+          fi
+
+      - name: Show Database Output
+        run: echo "Executing tests for these databases ${{ steps.set-matrix.outputs.database }}"
+
   integration-tests:
     name: Integration Tests
+    # TODO with #11449 once OS project is completed, remove this dependency
+    needs: setup-database-test-matrix
     runs-on: gcp-core-32-default
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
         cambpm: [ 'latest' ]
-        elasticsearch: [ '8' ] # exact version is pulled for each from the pom.xml
-        includedGroups: [ 'ccsm-test', 'import,eventBasedProcess', 'reportEvaluation', '' ]
+        # TODO with #11449 once OS project is completed, this shall be changed to
+        # database: ['elasticsearch', 'opensearch']
+        database: ${{fromJson(needs.setup-database-test-matrix.outputs.database)}}
+        includedGroups: [ 'ccsm-test', 'import,eventBasedProcess', 'reportEvaluation', 'openSearchPassing', '' ]
         include:
         - includedGroups: 'ccsm-test'
           excludedGroups: ''
@@ -230,6 +252,16 @@ jobs:
           excludedGroups: ''
           profiles: 'it,engine-latest'
           requiresCambpm: true
+        # TODO with #11449 once OS project is completed remove this "includedGroups" section and the "exclude"
+        # section below
+        - includedGroups: 'openSearchPassing'
+          excludedGroups: 'openSearchSingleTestFailOK'
+          profiles: 'it,engine-latest'
+          requiresCambpm: true
+          database: 'opensearch'
+        exclude:
+        - database: 'elasticsearch'
+          includedGroups: 'openSearchPassing'
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
     - name: Setup Maven
@@ -244,12 +276,12 @@ jobs:
       id: "pom-info"
       uses: YunaBraska/java-info-action@main
     - name: Expose Parsed Elastic Version
+      if: contains(matrix.database, 'elasticsearch')
       run: |
-        if [[ "${{ matrix.elasticsearch }}" == "7" ]]; then
-            echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch_test_version }}" >> "$GITHUB_ENV"
-        else
-            echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}" >> "$GITHUB_ENV"
-        fi
+        echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}" >> "$GITHUB_ENV"
+    - name: Expose Parsed OpenSearch Version
+      if: contains(matrix.database, 'opensearch')
+      run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
     - name: Start Cambpm
       if: ${{ matrix.requiresCambpm }}
       uses: ./.github/actions/compose
@@ -260,6 +292,7 @@ jobs:
         CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
         CAMBPM_JVM_MEMORY: 8
     - name: Start Elastic
+      if: contains(matrix.database, 'elasticsearch')
       uses: ./.github/actions/compose
       with:
         compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
@@ -268,18 +301,35 @@ jobs:
         ELASTIC_VERSION: ${{ env.ELASTIC_VERSION }}
         ELASTIC_JVM_MEMORY: 16
         ELASTIC_HTTP_PORT: 9200
+    - name: Start OpenSearch
+      if: contains(matrix.database, 'opensearch')
+      uses: ./.github/actions/compose
+      with:
+        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.opensearch.yml
+        project_name: opensearch
+      env:
+        OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
+        OPENSEARCH_JVM_MEMORY: 16
+        OPENSEARCH_HTTP_PORT: 9205
     - name: Verify integration
       uses: ./.github/actions/run-maven
       env:
-        LIMITS_CPU: 8
+        # TODO this is a workaround since OS can't run parallel tests and will be replaced with a follow-up ticket
+        LIMITS_CPU: ${{ (matrix.database == 'opensearch' && '1') || '8' }}
       with:
-        threads: 8
-        parameters: verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }} -pl backend -am
+        # TODO this is a workaround since OS can't run parallel tests and will be replaced with a follow-up ticket
+        threads: ${{ (matrix.database == 'opensearch' && '1') || '8' }}
+        parameters: >
+          verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
+          -Dit.test.includedGroups=${{ matrix.includedGroups }}
+          -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
+          -Ddatabase.type=${{ matrix.database }} -pl backend -am
+
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4
       with:
-        name: integration-test-${{ matrix.elasticsearch }}-${{ matrix.includedGroups }}-junit
+        name: integration-test-${{ matrix.database }}-${{ matrix.includedGroups }}-junit
         path: |
           **/failsafe-reports/**/*.xml
         retention-days: 7
@@ -288,7 +338,7 @@ jobs:
       uses: ./.github/actions/docker-logs
       if: always()
       with:
-        archive_name: integration-tests-${{ matrix.elasticsearch }}-${{ matrix.includedGroups }}-docker
+        archive_name: integration-tests-${{ matrix.database }}-${{ matrix.includedGroups }}-docker
 
   # Only deploy artifacts on push event, which in this case can only be triggered by master and maintenance
   deploy-artifacts:

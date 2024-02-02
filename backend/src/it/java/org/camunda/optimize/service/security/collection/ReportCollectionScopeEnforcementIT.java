@@ -23,6 +23,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponse
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonTenantScopeCompliantException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -49,6 +50,7 @@ import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 // we need to create the test instance per class since this allows
 // the @MethodSource method to be non-static.
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Tag("openSearchPassing")
 public class ReportCollectionScopeEnforcementIT extends AbstractPlatformIT {
 
   private static final String DEFINITION_KEY_1 = "KEY_1";

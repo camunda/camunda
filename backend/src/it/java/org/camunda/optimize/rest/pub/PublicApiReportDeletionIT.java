@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -21,6 +22,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_
 import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+@Tag("openSearchPassing")
 public class PublicApiReportDeletionIT extends AbstractPlatformIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 

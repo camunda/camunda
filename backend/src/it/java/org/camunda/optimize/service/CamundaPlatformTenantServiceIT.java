@@ -10,6 +10,7 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -24,6 +25,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
 
+@Tag("openSearchPassing")
 public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
 
   @Test

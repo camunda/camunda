@@ -30,6 +30,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponse
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -60,6 +61,7 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+@Tag("openSearchPassing")
 public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
 
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
@@ -111,6 +113,7 @@ public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void getScopesForCollection_keySpecific_eventBased() {
     // given
     final String key1 = "eventBasedKey1";
@@ -145,6 +148,7 @@ public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void getScopesForCollection_keySpecific_excludeUnauthorizedEventBased() {
     // given
     final String key1 = "eventBasedKey1";
@@ -604,6 +608,7 @@ public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void addScope_existingEventBased() {
     // given
     final String key1 = "eventBasedKey1";

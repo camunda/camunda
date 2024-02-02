@@ -47,6 +47,7 @@ import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -86,6 +87,7 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT
 import static org.mockserver.model.HttpError.error;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag("openSearchPassing")
 public class CollectionHandlingIT extends AbstractPlatformIT {
 
   private static Stream<DefinitionType> definitionTypes() {
@@ -93,7 +95,9 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  public void collectionIsWrittenToElasticsearch() throws IOException {
+  @Tag("openSearchSingleTestFailOK")
+  public void collectionIsWrittenToDatabase() throws IOException {
+    // TODO resolve with OPT-7455 #10085
     // given
     String id = collectionClient.createNewCollection();
 
@@ -485,6 +489,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void collectionNotDeletedIfEsFailsWhenDeletingContainedAlerts() {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -513,6 +518,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void collectionNotDeletedIfEsFailsWhenDeletingContainedReport() {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -536,6 +542,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void collectionNotDeletedIfEsFailsWhenDeletingContainedDashboard() {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -771,6 +778,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void copyCollectionWithAReport_entitiesNotCopiedIfCollectionCreationFailsOnEsFailure() {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -865,6 +873,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void deleteSingleScopeOverrulesCombinedReportConflictsOnForceSet() {
     // given
     String collectionId = collectionClient.createNewCollection();

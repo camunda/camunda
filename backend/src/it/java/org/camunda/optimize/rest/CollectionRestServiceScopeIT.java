@@ -30,6 +30,7 @@ import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConfli
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,6 +62,7 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag("openSearchPassing")
 public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
   public static final String DEFAULT_DEFINITION_KEY = "_KEY_";
@@ -417,6 +419,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void updateDefinitionScopeEntry_removeTenant_reportXmlNotAffected() {
     // given
     final String definitionXml = "someXml";
@@ -553,6 +556,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void forceRemoveScopeFailsIfEsFailsToRemoveReports() {
     // given
     String collectionId = collectionClient.createNewCollection();
@@ -751,6 +755,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void bulkDeleteOfScopesSkipsEntryIfEsFailsToRemoveAssociatedReports() {
     // given
     String collectionId = collectionClient.createNewCollection();

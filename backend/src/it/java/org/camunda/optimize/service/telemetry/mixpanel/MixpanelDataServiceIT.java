@@ -12,10 +12,12 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEntityEventProperties;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatProperties;
 import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("openSearchPassing")
 public class MixpanelDataServiceIT extends AbstractPlatformIT {
 
   private static final String CLUSTER_ID = "IT-cluster";

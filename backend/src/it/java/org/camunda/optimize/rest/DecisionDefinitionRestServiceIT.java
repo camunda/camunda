@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -19,6 +20,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 
+@Tag("openSearchPassing")
 public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServiceIT {
 
   private static final String ALL_VERSIONS_STRING = "ALL";
@@ -94,6 +96,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void getDecisionDefinitionsWithXml() {
     // given
     final DecisionDefinitionOptimizeDto expectedDecisionDefinition = createDecisionDefinitionDto();
@@ -129,6 +132,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void getLatestDecisionDefinitionXml() {
     // given
     final String key = "aKey";

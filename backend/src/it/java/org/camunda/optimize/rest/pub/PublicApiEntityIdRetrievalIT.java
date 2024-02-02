@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -29,6 +30,7 @@ import static org.camunda.optimize.service.util.ProcessReportDataType.RAW_DATA;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
+@Tag("openSearchPassing")
 public class PublicApiEntityIdRetrievalIT extends AbstractPlatformIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 

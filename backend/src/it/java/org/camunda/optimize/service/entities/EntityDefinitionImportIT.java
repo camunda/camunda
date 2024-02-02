@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.client.Entity;
@@ -17,6 +18,7 @@ import jakarta.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("openSearchPassing")
 public class EntityDefinitionImportIT extends AbstractExportImportEntityDefinitionIT {
 
   @Test

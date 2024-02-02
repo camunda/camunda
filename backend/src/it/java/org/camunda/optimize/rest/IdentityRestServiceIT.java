@@ -19,6 +19,7 @@ import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.SuperUserType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -47,6 +48,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag("openSearchPassing")
 public class IdentityRestServiceIT extends AbstractPlatformIT {
 
   @Test

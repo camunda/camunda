@@ -7,6 +7,7 @@ package org.camunda.optimize.service.db.es.retrieval;
 
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -17,6 +18,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
+@Tag("openSearchPassing")
 public class EntityConflictIT extends AbstractPlatformIT {
 
   @Test

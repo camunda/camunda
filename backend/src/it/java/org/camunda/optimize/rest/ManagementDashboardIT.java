@@ -39,6 +39,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.camunda.optimize.test.util.DateCreationFreezer;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -66,6 +67,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_
 import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
+@Tag("openSearchPassing")
 public class ManagementDashboardIT extends AbstractPlatformIT {
 
   private static final Map<String, ExpectedReportConfigurationAndLocation> expectedReportsAndLocationsByName =

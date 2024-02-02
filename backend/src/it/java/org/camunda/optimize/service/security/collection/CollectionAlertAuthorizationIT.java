@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -31,6 +32,7 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINI
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.util.DefinitionResourceTypeUtil.getResourceTypeByDefinitionType;
 
+@Tag("openSearchPassing")
 public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
   private static final String KERMIT_USER = "kermit";

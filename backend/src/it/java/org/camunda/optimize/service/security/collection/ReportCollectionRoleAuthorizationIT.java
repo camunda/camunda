@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -45,6 +46,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 
+@Tag("openSearchPassing")
 public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleIT {
 
   private static final String PROCESS_KEY = "aProcess";
@@ -303,6 +305,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
   @ParameterizedTest
   @MethodSource(ACCESS_IDENTITY_ROLES_AND_REPORT_TYPES)
+  @Tag("openSearchSingleTestFailOK")
   public void evaluateAccessGrantedToCollectionReportByCollectionRole(final IdentityRoleAndReportScenario identityAndReport) {
     // given
     final int engineDefinitionResourceType = getEngineResourceTypeForReportType(identityAndReport);

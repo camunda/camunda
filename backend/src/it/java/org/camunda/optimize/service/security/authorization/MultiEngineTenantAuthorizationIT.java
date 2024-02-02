@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -18,6 +19,7 @@ import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.T
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
+@Tag("openSearchPassing")
 public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
 
   private final AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);

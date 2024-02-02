@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.service.collection.CollectionRoleService;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.event.Level;
@@ -42,6 +43,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 
+@Tag("openSearchPassing")
 public class CollectionRestServiceRoleIT extends AbstractPlatformIT {
 
   private static final String USER_KERMIT_ID = "kermit";
@@ -713,6 +715,7 @@ public class CollectionRestServiceRoleIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void updatingNonPresentRoleFails() {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -873,6 +876,7 @@ public class CollectionRestServiceRoleIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void bulkDeleteDoesNotDeleteLastManager() {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -902,6 +906,7 @@ public class CollectionRestServiceRoleIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void bulkDeleteDoesNotAbortWhenRoleIdDoesNotExist() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();

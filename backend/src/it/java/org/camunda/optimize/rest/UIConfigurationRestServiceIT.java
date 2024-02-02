@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointD
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.util.configuration.OnboardingConfiguration;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -23,6 +24,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
 
+@Tag("openSearchPassing")
 public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
 
   @Test

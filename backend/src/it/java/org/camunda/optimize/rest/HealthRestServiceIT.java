@@ -9,6 +9,7 @@ import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,6 +24,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag("openSearchPassing")
 public class HealthRestServiceIT extends AbstractMultiEngineIT {
 
   @Test
@@ -98,7 +100,9 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void getReadiness_elasticsearchNotConnected() {
+    // TODO resolve with OPT-7455 #10085
     // given
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
     dbMockServer

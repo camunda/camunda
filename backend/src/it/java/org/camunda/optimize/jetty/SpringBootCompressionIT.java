@@ -6,12 +6,14 @@
 package org.camunda.optimize.jetty;
 
 import org.camunda.optimize.AbstractPlatformIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.Collections;
 
 @DirtiesContext
+@Tag("openSearchPassing")
 public class SpringBootCompressionIT extends AbstractPlatformIT {
 
   @Test

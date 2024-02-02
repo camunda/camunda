@@ -6,12 +6,14 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractPlatformIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("openSearchPassing")
 public class AuthenticationRestServiceIT extends AbstractPlatformIT {
 
   @Test

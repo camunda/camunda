@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -31,6 +32,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag("openSearchPassing")
 public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
 
   @Test
@@ -253,6 +255,7 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void deleteDashboardWithShares_shareGetsDeleted_despiteDashboardDeleteFail() {
     // given
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
@@ -283,6 +286,7 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void deleteDashboardWithShares_shareDeleteFails_dashboardNotDeleted() {
     // given
     final ClientAndServer dbMockServer = useAndGetDbMockServer();

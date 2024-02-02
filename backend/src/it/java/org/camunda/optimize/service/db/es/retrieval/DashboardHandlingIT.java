@@ -17,6 +17,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -41,6 +42,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag("openSearchPassing")
 public class DashboardHandlingIT extends AbstractPlatformIT {
 
   @AfterEach
@@ -49,7 +51,9 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void dashboardIsWrittenToElasticsearch() throws IOException {
+    // TODO resolve with OPT-7455 #10085
     // given
     String id = addEmptyPrivateDashboard();
 
@@ -186,6 +190,7 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void copyPrivateDashboardAndMoveToCollection_reportsAreCopiedDespiteDashboardCreationFailureWithEsDown() {
     // given
     String dashboardId = addEmptyPrivateDashboard();
@@ -220,6 +225,7 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void copyPrivateDashboardAndMoveToCollection_dashboardNotCreatedIfReportCopyFailsWithEsDown() {
     // given
     String dashboardId = addEmptyPrivateDashboard();

@@ -7,6 +7,7 @@ package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -21,6 +22,7 @@ import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORI
 import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_FLAG;
 import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_STRICT_VALUE;
 
+@Tag("openSearchPassing")
 public class SecurityCookiesInResponseIT extends AbstractPlatformIT {
 
   @ParameterizedTest

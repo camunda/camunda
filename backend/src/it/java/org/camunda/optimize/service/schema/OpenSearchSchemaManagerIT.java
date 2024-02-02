@@ -42,6 +42,7 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
 // We can unfortunately not use constants in this expression, so it needs to be the literal text "opensearch".
+// TODO resolve with OPT-7455 #10085
 @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "opensearch")
 public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
 

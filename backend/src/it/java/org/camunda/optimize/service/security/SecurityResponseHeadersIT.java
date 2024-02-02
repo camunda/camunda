@@ -7,6 +7,7 @@ package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.client.Entity;
@@ -21,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
+@Tag("openSearchPassing")
 public class SecurityResponseHeadersIT extends AbstractPlatformIT {
 
   @Test

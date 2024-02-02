@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -61,6 +62,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_R
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag("openSearchPassing")
 public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
@@ -360,6 +362,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void getEntities_IncludesCollectionSubEntityCountsIfThereAreNoEntities() {
     // given
     collectionClient.createNewCollection();
@@ -382,6 +385,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void getEntities_IncludesCollectionSubEntityCounts() {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -816,6 +820,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void bulkDeleteEntities_skipsEntryWhenESfailsToDeleteReport() {
     // given
     String reportId1 = reportClient.createEmptySingleProcessReport();
@@ -846,6 +851,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void bulkDeleteEntities_skipsEntryWhenESfailsToDeleteCollection() {
     // given
     String collectionId1 = collectionClient.createNewCollection();
@@ -878,6 +884,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void bulkDeleteEntities_skipsEntryWhenESfailsToDeleteDashboard() {
     // given
     String dashboardId1 = dashboardClient.createEmptyDashboard(null);

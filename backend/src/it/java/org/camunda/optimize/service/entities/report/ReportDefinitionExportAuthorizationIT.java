@@ -8,6 +8,7 @@ package org.camunda.optimize.service.entities.report;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.util.SuperUserType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -20,6 +21,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
  * These are authIT for the export via UI with user authorization. For the public API, please refer to
  * PublicJsonExportRestServiceIT.
  */
+@Tag("openSearchPassing")
 public class ReportDefinitionExportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
 
   @ParameterizedTest

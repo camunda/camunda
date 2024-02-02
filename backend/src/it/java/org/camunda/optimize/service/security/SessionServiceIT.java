@@ -7,6 +7,7 @@ package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.NewCookie;
@@ -19,6 +20,7 @@ import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKE
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_SESSION_INDEX_NAME;
 
+@Tag("openSearchPassing")
 public class SessionServiceIT extends AbstractPlatformIT {
 
   @Test

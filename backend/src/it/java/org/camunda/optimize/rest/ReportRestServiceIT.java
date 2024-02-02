@@ -33,6 +33,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponse
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -83,6 +84,7 @@ import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWoName
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag("openSearchPassing")
 public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
@@ -876,6 +878,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
+  @Tag("openSearchSingleTestFailOK")
   public void forceDeleteReport_notDeletedIfEsFailsWhenRemovingFromDashboards(final ReportType reportType) {
     // given
     String reportId = addEmptyReportToOptimize(reportType);
@@ -912,6 +915,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
+  @Tag("openSearchSingleTestFailOK")
   public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingAlertsForReport(final ReportType reportType) {
     // given
     String collectionId = collectionClient.createNewCollection();
@@ -943,6 +947,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
+  @Tag("openSearchSingleTestFailOK")
   public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingSharesForReport(final ReportType reportType) {
     // given
     String reportId = addEmptyReportToOptimize(reportType);

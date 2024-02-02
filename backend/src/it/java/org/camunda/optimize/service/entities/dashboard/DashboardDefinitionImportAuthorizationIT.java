@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.entities.dashboard;
 
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -14,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
+@Tag("openSearchPassing")
 public class DashboardDefinitionImportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
 
   @Test

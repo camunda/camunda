@@ -6,6 +6,7 @@
 package org.camunda.optimize.jetty;
 
 import org.camunda.optimize.AbstractPlatformIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -18,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESOURCES;
 import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
 
+@Tag("openSearchPassing")
 public class NoCachingIT extends AbstractPlatformIT {
 
   @ParameterizedTest

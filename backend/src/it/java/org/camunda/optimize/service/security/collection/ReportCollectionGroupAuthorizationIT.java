@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -35,6 +36,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 
+@Tag("openSearchPassing")
 public class ReportCollectionGroupAuthorizationIT extends AbstractCollectionRoleIT {
 
   private static final String PROCESS_KEY = "aProcess";
@@ -143,6 +145,7 @@ public class ReportCollectionGroupAuthorizationIT extends AbstractCollectionRole
 
   @ParameterizedTest
   @MethodSource(REPORT_SCENARIOS)
+  @Tag("openSearchSingleTestFailOK")
   public void superGroupIdentityIsGrantedEvaluateAccessToPrivateReportOfOtherUser(final ReportCollectionGroupAuthorizationIT.ReportScenario reportScenario) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();

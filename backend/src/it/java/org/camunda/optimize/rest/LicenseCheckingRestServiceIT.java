@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.LicenseInformationResponseDto;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,6 +29,7 @@ import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORI
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Tag("openSearchPassing")
 public class LicenseCheckingRestServiceIT extends AbstractPlatformIT {
 
   private static final String CUSTOMER_ID = "schrottis inn";

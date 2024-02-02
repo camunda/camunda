@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataD
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.service.db.writer.CollectionWriter;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -26,6 +27,7 @@ import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIEN
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
+@Tag("openSearchPassing")
 public class CollectionRestServiceIT extends AbstractPlatformIT {
 
   @Test

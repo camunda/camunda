@@ -7,10 +7,12 @@ package org.camunda.optimize.service;
 
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("openSearchPassing")
 public class LocalizationServiceIT extends AbstractPlatformIT {
 
   @Test

@@ -26,6 +26,7 @@ import org.camunda.optimize.service.db.schema.index.DashboardIndex;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.service.db.es.schema.index.DashboardIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -42,6 +43,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
+@Tag("openSearchPassing")
 public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefinitionIT {
 
   @Test

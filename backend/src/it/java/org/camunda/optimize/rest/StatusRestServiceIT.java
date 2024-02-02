@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -27,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag("openSearchPassing")
 public class StatusRestServiceIT extends AbstractPlatformIT {
 
   @Test

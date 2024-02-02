@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportVal
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -35,6 +36,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+@Tag("opensearchPassing")
 public class ProcessVariableAuthorizationIT extends AbstractPlatformIT {
 
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
@@ -181,6 +183,7 @@ public class ProcessVariableAuthorizationIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void getVariableNamesForReports_canOnlySeeVariableNamesFromAuthorizedReports() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -224,6 +227,7 @@ public class ProcessVariableAuthorizationIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag("openSearchSingleTestFailOK")
   public void getVariableValuesForReports_canOnlySeeVariableValuesFromAuthorizedReports() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();

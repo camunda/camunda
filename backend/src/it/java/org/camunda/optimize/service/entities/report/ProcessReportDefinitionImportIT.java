@@ -30,6 +30,7 @@ import org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIn
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -51,6 +52,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
+@Tag("openSearchPassing")
 public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityDefinitionIT {
 
   private static Stream<String> specialVersionKeywords() {

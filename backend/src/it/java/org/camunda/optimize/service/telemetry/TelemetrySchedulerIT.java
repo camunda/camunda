@@ -6,10 +6,12 @@
 package org.camunda.optimize.service.telemetry;
 
 import org.camunda.optimize.AbstractPlatformIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("openSearchPassing")
 public class TelemetrySchedulerIT extends AbstractPlatformIT {
 
   @Test

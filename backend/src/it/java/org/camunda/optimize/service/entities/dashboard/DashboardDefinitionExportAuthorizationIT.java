@@ -8,6 +8,7 @@ package org.camunda.optimize.service.entities.dashboard;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.util.SuperUserType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -23,6 +24,7 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
  * These are authIT for the export via UI with user authorization. For the public API, please refer to
  * PublicJsonExportRestServiceIT.
  */
+@Tag("openSearchPassing")
 public class DashboardDefinitionExportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
 
   @ParameterizedTest

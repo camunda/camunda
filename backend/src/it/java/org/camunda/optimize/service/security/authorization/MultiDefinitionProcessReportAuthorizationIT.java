@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -28,6 +29,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 
+@Tag("openSearchPassing")
 public class MultiDefinitionProcessReportAuthorizationIT extends AbstractPlatformIT {
   private static final String DEFINITION_KEY_1 = "key1";
   private static final String DEFINITION_KEY_2 = "key2";
