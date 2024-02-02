@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.test.util.BufferAssert;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Arrays;
@@ -168,7 +169,8 @@ public class UserTaskStateTest {
         .setDueDate("2023-11-11T11:11:00+01:00")
         .setFollowUpDate("2023-11-12T11:11:00+01:00")
         .setFormKey(5678)
-        .setUserTaskKey(userTaskKey);
+        .setUserTaskKey(userTaskKey)
+        .setCreationDate(ActorClock.currentTimeMillis());
   }
 
   private void assertUserTask(
@@ -201,7 +203,8 @@ public class UserTaskStateTest {
         .hasFollowUpDate(expectedRecord.getFollowUpDate())
         .hasFormKey(expectedRecord.getFormKey())
         .hasUserTaskKey(expectedRecord.getUserTaskKey())
-        .hasTenantId(expectedTenantId);
+        .hasTenantId(expectedTenantId)
+        .hasCreationDate(expectedRecord.getCreationDate());
     assertUserTaskState(expectedRecord.getUserTaskKey(), expectedLifecycleState);
   }
 
