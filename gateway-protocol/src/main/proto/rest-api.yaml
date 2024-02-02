@@ -1,0 +1,25 @@
+openapi: "3.0.2"
+info:
+  title: Zeebe REST API
+  version: "0.1"
+  description: API for communicating with the Zeebe cluster.
+  license:
+    name: Zeebe Community License Version 1.1
+    url: https://github.com/camunda/zeebe/blob/main/licenses/ZEEBE-COMMUNITY-LICENSE-1.1.txt
+  externalDocs:
+    description: Find out more
+    url: https://docs.camunda.io/docs/apis-tools/zeebe-api-rest/overview/
+
+servers:
+  - url: "{schema}://{host}:{port}/api/v1"
+    variables:
+      host:
+        default: localhost
+        description: The hostname of a Zeebe Gateway
+      port:
+        default: "8080"
+        description: The port of the Zeebe REST API server
+      schema:
+        default: http
+        description: The schema of the Zeebe REST API server
+
