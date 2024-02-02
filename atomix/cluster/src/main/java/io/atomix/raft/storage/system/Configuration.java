@@ -71,6 +71,11 @@ public record Configuration(
     this.newMembers = copyMembers(newMembers);
     this.oldMembers = copyMembers(oldMembers);
     this.force = force;
+
+    if (force) {
+      checkArgument(oldMembers.isEmpty(), "oldMembers must be empty when force is true");
+      checkArgument(!newMembers.isEmpty(), "newMembers must not be empty when force is true");
+    }
   }
 
   public Configuration(
