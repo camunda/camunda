@@ -43,6 +43,9 @@
             "formKey": {
               "type": "long"
             },
+            "creationDate": {
+              "type": "long"
+            },
             "elementId": {
               "type": "text"
             },
