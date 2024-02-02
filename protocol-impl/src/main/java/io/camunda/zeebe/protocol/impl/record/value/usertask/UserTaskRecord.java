@@ -69,8 +69,10 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
 
+  private final LongProperty creationDateProp = new LongProperty("creationDate", -1L);
+
   public UserTaskRecord() {
-    super(16);
+    super(17);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsProp)
@@ -86,7 +88,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(changedAttributesProp);
+        .declareProperty(changedAttributesProp)
+        .declareProperty(creationDateProp);
   }
 
   public void wrapWithoutVariables(final UserTaskRecord record) {
@@ -104,6 +107,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantIdBuffer());
+    creationDateProp.setValue(record.getCreationDate());
     setChangedAttributesProp(record.getChangedAttributesProp());
   }
 
@@ -179,6 +183,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @Override
+  public long getCreationDate() {
+    return creationDateProp.getValue();
+  }
+
+  @Override
   public String getElementId() {
     return bufferAsString(elementIdProp.getValue());
   }
@@ -235,6 +244,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setElementId(final DirectBuffer elementId) {
     elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  public UserTaskRecord setCreationDate(final long creationDate) {
+    creationDateProp.setValue(creationDate);
     return this;
   }
 
