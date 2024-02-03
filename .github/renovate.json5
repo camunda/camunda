@@ -7,7 +7,7 @@
     "helpers:pinGitHubActionDigests",
     // Pins docker digests
     "docker:pinDigests",
-    // Enables Dependency Dahboard issue to control renovate
+    // Enables Dependency Dashboard issue to control renovate
     ":dependencyDashboard",
     // Sets the automerge type to 'pr'
     ":automergePr",
@@ -18,7 +18,7 @@
     // Create separate PRs for patch releases
     ":separatePatchReleases",
     // Default labels added to event renovate PR
-    ":labels(renovate,dependencies)",
+    ":labels(dependencies)",
     // add renovate/ prefix to every renovate branch
     ":renovatePrefix",
     // Enables semantic commits
@@ -26,7 +26,7 @@
     // Sets the commit message to start with chore()
     ":semanticCommitTypeAll(chore)",
     // Raise PR when vulnerability alerts are detected
-    ":enableVulnerabilityAlertsWithLabel(security)",
+    ":enableVulnerabilityAlertsWithLabel(dependencies-security)",
     // Groups together all Typescript deps
     "group:definitelyTyped",
   ],
@@ -53,7 +53,7 @@
     "maintenance/3.9",
     "master",
   ],
-  // This ignores are the ones comming by default from config:base with exception to **/test/**
+  // This ignores are the ones coming by default from config:base with exception to **/test/**
   // We do this to be able to test files in docker/test directory
   ignorePaths: [
     "**/node_modules/**",
@@ -122,7 +122,7 @@
     },
     // Infra deps
     {
-      addLabels: ["component:infra"],
+      addLabels: ["component:ci"],
       managers: ["docker-compose", "dockerfile", "github-actions"],
     },
     // Docker deps
@@ -142,8 +142,6 @@
     // Settings for patch versions update
     {
       matchUpdateTypes: ["patch"],
-      addLabels: ["patch"],
-      // Group all patch updates into one PR
       groupName: "Patch dependencies",
     },
     // Disable major and minor updates for maintenance branches

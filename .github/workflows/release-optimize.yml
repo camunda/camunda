@@ -7,30 +7,30 @@ on:
     inputs:
       RELEASE_VERSION:
         required: true
-        description: 'Version to release. Applied to pom.xml and Git tag.'
+        description: 'Version to release. Applied to pom.xml and Git tag'
         default: '0.0.0'
       DEVELOPMENT_VERSION:
         required: true
-        description: 'Next development version.'
+        description: 'Next development version'
         default: '0.1.0-SNAPSHOT'
       BRANCH:
         required: true
-        description: 'The branch used for the release checkout.'
+        description: 'The branch used for the release checkout'
         default: '0.0.0'
       DOCKER_LATEST:
         required: true
-        description: 'Should the docker image be tagged as latest.'
+        description: 'Should the docker image be tagged as latest?'
         default: true
       ADDITIONAL_DOCKER_TAG:
         required: false
-        description: 'Any additional tag that should be added to the docker image.'
+        description: 'Any additional tag that should be added to the docker image'
       DRY_RUN:
         required: true
-        description: 'Is dry run.'
+        description: 'Is this a dry run?'
         default: 'true'
       RELEASE_EXAMPLES:
         required: true
-        description: 'Verify whether the optimize examples repository has to be updated.'
+        description: 'Update Optimize examples repository?'
         default: false
 
 jobs:
