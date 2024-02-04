@@ -95,6 +95,11 @@
       <artifactId>jackson-core</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-utils</artifactId>
+    </dependency>
+
     <!-- required for the protocol factory -->
     <dependency>
       <groupId>org.jeasy</groupId>
