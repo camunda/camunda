@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
-import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.Node;
+import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -37,7 +37,6 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
@@ -63,16 +62,14 @@ public final class BrokerClientTest {
 
   @BeforeEach
   void beforeEach() {
-    final var stubAddress = Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
-    final var stubNode = Node.builder().withAddress(stubAddress).build();
-    final var listOfNodes = List.of(stubNode);
+    final var brokerAddress =
+        Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
+    final var membership = BootstrapDiscoveryProvider.builder().withNodes(brokerAddress).build();
     atomixCluster =
         AtomixCluster.builder()
             .withPort(SocketUtil.getNextAddress().getPort())
-            .withMemberId("gateway")
-            .withClusterId("cluster")
-            .withMembershipProvider(
-                BootstrapDiscoveryProvider.builder().withNodes(listOfNodes).build())
+            .withMembershipProvider(membership)
+            .withClusterId(broker.clusterId())
             .build();
     atomixCluster.start().join();
     actorScheduler.start();
@@ -83,13 +80,7 @@ public final class BrokerClientTest {
     actorScheduler.submitActor(topologyManager).join();
     atomixCluster.getMembershipService().addListener(topologyManager);
 
-    topologyManager.updateTopology(
-        topology -> {
-          topology.addPartitionIfAbsent(START_PARTITION_ID);
-          topology.setPartitionLeader(START_PARTITION_ID, 0, 1);
-          topology.addBrokerIfAbsent(0);
-          topology.setBrokerAddressIfPresent(0, stubAddress.toString());
-        });
+    topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, broker.member()));
     Awaitility.await("Topology is updated")
         .untilAsserted(
             () -> assertThat(topologyManager.getTopology().getPartitions()).isNotEmpty());
@@ -101,7 +92,6 @@ public final class BrokerClientTest {
             atomixCluster.getEventService(),
             actorScheduler,
             topologyManager);
-
     client.start().forEach(ActorFuture::join);
   }
 

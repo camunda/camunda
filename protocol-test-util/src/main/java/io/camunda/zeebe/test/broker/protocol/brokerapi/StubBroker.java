@@ -8,7 +8,10 @@
 package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.Member;
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.protocol.impl.Loggers;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -23,6 +26,8 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public final class StubBroker implements AutoCloseable {
+
+  private static final String CLUSTER_ID = "cluster";
   private final int nodeId;
   private final InetSocketAddress socketAddress;
   private ActorScheduler scheduler;
@@ -51,23 +56,41 @@ public final class StubBroker implements AutoCloseable {
 
     scheduler.start();
 
-    final InetSocketAddress nextAddress = SocketUtil.getNextAddress();
-    currentStubHost = nextAddress.getHostName();
-    currentStubPort = nextAddress.getPort();
+    currentStubHost = socketAddress.getHostName();
+    currentStubPort = socketAddress.getPort();
     cluster =
         AtomixCluster.builder()
             .withPort(currentStubPort)
             .withMemberId("0")
-            .withClusterId("cluster")
+            .withClusterId(CLUSTER_ID)
             .build();
     cluster.start().join();
+
     final var transportFactory = new TransportFactory(scheduler);
     serverTransport = transportFactory.createServerTransport(nodeId, cluster.getMessagingService());
 
     channelHandler = new StubRequestHandler(msgPackHelper);
     serverTransport.subscribe(1, RequestType.COMMAND, channelHandler);
 
+    writeBrokerInfoProperties();
     return this;
+  }
+
+  public Member member() {
+    return cluster.getMembershipService().getLocalMember();
+  }
+
+  private void writeBrokerInfoProperties() {
+    final var brokerInfo =
+        new BrokerInfo()
+            .setCommandApiAddress(Address.from("localhost", socketAddress.getPort()).toString())
+            .setClusterSize(1)
+            .setReplicationFactor(1)
+            .setPartitionsCount(1)
+            .setNodeId(0)
+            .setPartitionHealthy(1)
+            .setLeaderForPartition(1, 1);
+    brokerInfo.writeIntoProperties(cluster.getMembershipService().getLocalMember().properties());
   }
 
   @Override
@@ -106,15 +129,11 @@ public final class StubBroker implements AutoCloseable {
     return channelHandler.getReceivedCommandRequests();
   }
 
-  public InetSocketAddress getSocketAddress() {
-    return socketAddress;
-  }
-
   public int getNodeId() {
     return nodeId;
   }
 
-  public ControlledActorClock getClock() {
-    return clock;
+  public String clusterId() {
+    return CLUSTER_ID;
   }
 }
