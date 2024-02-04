@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
+import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
+
 /** Implementations must be thread-safe. */
 public interface RequestDispatchStrategy {
 
@@ -14,4 +16,11 @@ public interface RequestDispatchStrategy {
    * @return {@link BrokerClusterState#PARTITION_ID_NULL} if no partition can be determined
    */
   int determinePartition(final BrokerTopologyManager topologyManager);
+
+  /**
+   * Returns a dispatch strategy which will perform a stateful round robin between the partitions.
+   */
+  static RequestDispatchStrategy roundRobin() {
+    return new RoundRobinDispatchStrategy();
+  }
 }
