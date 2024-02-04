@@ -31,6 +31,7 @@ public final class StubBroker implements AutoCloseable {
 
   private static final String CLUSTER_ID = "cluster";
   private final int nodeId;
+  private final int partitionId;
   private final InetSocketAddress socketAddress;
   private final BrokerInfo brokerInfo;
   private ActorScheduler scheduler;
@@ -47,7 +48,12 @@ public final class StubBroker implements AutoCloseable {
   }
 
   public StubBroker(final int nodeId) {
+    this(nodeId, 1);
+  }
+
+  public StubBroker(final int nodeId, final int partitionId) {
     this.nodeId = nodeId;
+    this.partitionId = partitionId;
     socketAddress = SocketUtil.getNextAddress();
     brokerInfo =
         new BrokerInfo()
@@ -57,7 +63,7 @@ public final class StubBroker implements AutoCloseable {
             .setPartitionsCount(1)
             .setNodeId(nodeId)
             .setPartitionHealthy(1)
-            .setLeaderForPartition(1, 1);
+            .setLeaderForPartition(partitionId, 1);
     brokerInfo.setVersion(VersionUtil.getVersion());
   }
 
@@ -87,7 +93,7 @@ public final class StubBroker implements AutoCloseable {
     serverTransport = transportFactory.createServerTransport(nodeId, cluster.getMessagingService());
 
     channelHandler = new StubRequestHandler(msgPackHelper);
-    serverTransport.subscribe(1, RequestType.COMMAND, channelHandler);
+    serverTransport.subscribe(partitionId, RequestType.COMMAND, channelHandler);
 
     writeBrokerInfoProperties();
     return this;

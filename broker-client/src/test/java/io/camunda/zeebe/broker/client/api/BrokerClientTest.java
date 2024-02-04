@@ -40,9 +40,11 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
@@ -252,7 +254,17 @@ public final class BrokerClientTest {
   void shouldReturnRejectionWithCorrectTypeAndReason() {
     // given
     final var request = new TestCommand(1L);
-    registerRejection(broker, RejectionType.INVALID_ARGUMENT, "foo");
+    broker
+        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
+        .respondWith()
+        .event()
+        .intent(TestCommand.INTENT)
+        .key(ExecuteCommandRequest::key)
+        .rejection(RejectionType.INVALID_ARGUMENT, "foo")
+        .value()
+        .allOf(ExecuteCommandRequest::getCommand)
+        .done()
+        .register();
 
     // when
     final var responseFuture = client.sendRequestWithRetry(request);
@@ -267,46 +279,23 @@ public final class BrokerClientTest {
   }
 
   @Test
-  void shouldRouteRequestBasedOnTopology() {
-    // given - a second broker (1), which will respond successfully, and broker 0 which will respond
-    // with an error, we expect to get a successful response
-    // the request is routed to partition 1 first through the default round robin strategy
-    final var request = new TestCommand();
-    final BrokerResponse<?> response;
-    broker.updateInfo(info -> info.setFollowerForPartition(1));
-    registerError(broker, ErrorCode.INTERNAL_ERROR, "test");
+  void shouldPassTopologyManagerToDispatchStrategy() {
+    // given
+    final AtomicReference<BrokerTopologyManager> managerRef = new AtomicReference<>();
+    final var request =
+        new TestCommand(
+            1L,
+            topologyManager -> {
+              managerRef.set(topologyManager);
+              return 1;
+            });
 
-    try (final var otherBroker =
-        new StubBroker(1).start().updateInfo(info -> info.setLeaderForPartition(1, 1))) {
-      registerSuccessResponse(otherBroker);
-
-      topologyManager.event(new ClusterMembershipEvent(Type.METADATA_CHANGED, broker.member()));
-      topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
-      Awaitility.await("Topology is updated")
-          .untilAsserted(
-              () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isOne());
-
-      // when
-      response = client.sendRequest(request).join();
-    }
+    // when
+    final var responseFuture = client.sendRequest(request);
 
     // then
-    assertThat(response.isResponse()).isTrue();
-  }
-
-  private void registerRejection(
-      final StubBroker broker, final RejectionType type, final String reason) {
-    broker
-        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
-        .respondWith()
-        .event()
-        .intent(TestCommand.INTENT)
-        .key(ExecuteCommandRequest::key)
-        .rejection(type, reason)
-        .value()
-        .allOf(ExecuteCommandRequest::getCommand)
-        .done()
-        .register();
+    assertThat(responseFuture).failsWithin(Duration.ofSeconds(10));
+    assertThat(managerRef).hasValue(topologyManager);
   }
 
   private void registerSuccessResponse(final StubBroker broker) {
@@ -347,6 +336,10 @@ public final class BrokerClientTest {
       this(new UnifiedRecordValue(10), key);
     }
 
+    private TestCommand(final long key, final RequestDispatchStrategy dispatchStrategy) {
+      this(new UnifiedRecordValue(10), key, dispatchStrategy);
+    }
+
     private TestCommand(final UnifiedRecordValue record) {
       this(record, Protocol.encodePartitionId(1, 1));
     }
@@ -385,6 +378,95 @@ public final class BrokerClientTest {
     @Override
     public Optional<RequestDispatchStrategy> requestDispatchStrategy() {
       return Optional.ofNullable(dispatchStrategy);
+    }
+  }
+
+  @Nested
+  final class RoutingTest {
+    @Test
+    void shouldRouteToLeaderOfRequestedPartition() {
+      // given - a second broker (1), which will respond successfully, and broker 0 which will
+      // respond
+      // with an error, we expect to get a successful response
+      // the request is routed to partition 1 first through the default round robin strategy
+      final var request = new TestCommand();
+      final BrokerResponse<?> response;
+      broker.updateInfo(info -> info.setFollowerForPartition(1));
+      registerError(broker, ErrorCode.INTERNAL_ERROR, "test");
+
+      try (final var otherBroker =
+          new StubBroker(1).start().updateInfo(info -> info.setLeaderForPartition(1, 1))) {
+        registerSuccessResponse(otherBroker);
+
+        topologyManager.event(new ClusterMembershipEvent(Type.METADATA_CHANGED, broker.member()));
+        topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
+        Awaitility.await("Topology is updated")
+            .untilAsserted(
+                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isOne());
+
+        // when
+        response = client.sendRequest(request).join();
+      }
+
+      // then
+      assertThat(response.isResponse()).isTrue();
+    }
+
+    @Test
+    void shouldRouteRequestBasedOnPartitionId() {
+      // given - a second broker (1), which respond successfully for partition 2
+      final BrokerResponse<?> response;
+      final var request = new TestCommand(1L);
+      request.setPartitionId(2);
+
+      try (final var otherBroker = new StubBroker(1, 2).start()) {
+        registerSuccessResponse(otherBroker);
+        topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
+        Awaitility.await("Topology is updated")
+            .untilAsserted(
+                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+
+        // when
+        response = client.sendRequest(request).join();
+      }
+
+      // then
+      assertThat(response.isResponse()).isTrue();
+    }
+
+    @Test
+    void shouldRouteRequestBasedOnDispatchStrategy() {
+      // given - a second broker (1), which respond successfully for partition 2
+      final BrokerResponse<?> response;
+      final var request = new TestCommand(1L, ignored -> 2);
+
+      try (final var otherBroker = new StubBroker(1, 2).start()) {
+        registerSuccessResponse(otherBroker);
+        topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
+        Awaitility.await("Topology is updated")
+            .untilAsserted(
+                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+
+        // when
+        response = client.sendRequest(request).join();
+      }
+
+      // then
+      assertThat(response.isResponse()).isTrue();
+    }
+
+    @Test
+    void shouldRouteToDeploymentPartitionAsFallback() {
+      // given - a dispatch strategy which returns "null"
+      final BrokerResponse<?> response;
+      final var request = new TestCommand(1L, ignored -> BrokerClusterState.PARTITION_ID_NULL);
+      registerSuccessResponse(broker);
+
+      // when
+      response = client.sendRequest(request).join();
+
+      // then
+      assertThat(response.isResponse()).isTrue();
     }
   }
 }
