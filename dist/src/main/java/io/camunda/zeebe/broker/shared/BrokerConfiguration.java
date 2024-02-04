@@ -10,9 +10,12 @@ package io.camunda.zeebe.broker.shared;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
@@ -37,6 +40,16 @@ public final class BrokerConfiguration {
 
   public WorkingDirectory workingDirectory() {
     return workingDirectory;
+  }
+
+  @ConditionalOnProperty(
+      prefix = "zeebe.broker.gateway",
+      name = "enable",
+      havingValue = "false",
+      matchIfMissing = true)
+  @Bean
+  public RestGatewayDisabled disableRestGateway() {
+    return new RestGatewayDisabled();
   }
 
   @ConfigurationProperties("zeebe.broker")
