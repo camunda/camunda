@@ -43,6 +43,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -296,6 +297,20 @@ public final class BrokerClientTest {
     // then
     assertThat(responseFuture).failsWithin(Duration.ofSeconds(10));
     assertThat(managerRef).hasValue(topologyManager);
+  }
+
+  @Test
+  void shouldReceiveJobAvailableNotification() {
+    // given
+    final AtomicReference<String> messageRef = new AtomicReference<>();
+    client.subscribeJobAvailableNotification("foo", messageRef::set);
+
+    // when
+    atomixCluster.getEventService().broadcast("foo", "bar");
+
+    // then
+    Awaitility.await("until notification received")
+        .untilAtomic(messageRef, Matchers.equalTo("bar"));
   }
 
   private void registerSuccessResponse(final StubBroker broker) {
