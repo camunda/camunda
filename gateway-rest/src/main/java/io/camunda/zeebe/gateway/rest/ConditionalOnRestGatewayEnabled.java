@@ -7,20 +7,20 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import io.camunda.zeebe.gateway.rest.ConditionalOnGatewayEnabled.RestGatewayEnabled;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
 @ConditionalOnWebApplication
-@ConditionalOnBean(value = RestGatewayEnabled.class)
-public @interface ConditionalOnGatewayEnabled {
-  record RestGatewayEnabled() {}
+@ConditionalOnMissingBean(value = RestGatewayDisabled.class)
+public @interface ConditionalOnRestGatewayEnabled {
+  record RestGatewayDisabled() {}
 }

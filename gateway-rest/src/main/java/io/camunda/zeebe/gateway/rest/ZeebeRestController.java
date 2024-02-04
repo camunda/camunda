@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
-@ConditionalOnGatewayEnabled
+@ConditionalOnRestGatewayEnabled
 @RestController
 @RequestMapping("/api/v1")
 public @interface ZeebeRestController {}
