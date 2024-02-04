@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.client.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.AtomixCluster;
@@ -20,6 +19,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.protocol.Protocol;
@@ -37,6 +37,8 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
@@ -50,15 +52,13 @@ public final class BrokerClientTest {
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
 
   @AutoCloseResource private final StubBroker broker = new StubBroker().start();
-
   @AutoCloseResource private BrokerClient client;
-
   @AutoCloseResource private AtomixCluster atomixCluster;
 
   // keep as field to ensure it gets closed at the end
   @SuppressWarnings({"FieldCanBeLocal", "Unused"})
   @AutoCloseResource
-  private BrokerTopologyManager topologyManager;
+  private BrokerTopologyManagerImpl topologyManager;
 
   @BeforeEach
   void beforeEach() {
@@ -98,21 +98,18 @@ public final class BrokerClientTest {
   @Test
   void shouldReturnErrorOnRequestFailure() {
     // given
-    broker
-        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
-        .respondWithError()
-        .errorCode(ErrorCode.INTERNAL_ERROR)
-        .errorData("test")
-        .register();
+    registerError(broker, ErrorCode.INTERNAL_ERROR, "test");
 
-    assertThatThrownBy(() -> client.sendRequestWithRetry(new TestCommand()).join())
-        .hasCauseInstanceOf(BrokerErrorException.class)
-        .hasCause(new BrokerErrorException(new BrokerError(ErrorCode.INTERNAL_ERROR, "test")));
+    // when
+    final Future<?> result = client.sendRequestWithRetry(new TestCommand());
 
     // then
     final var receivedCommandRequests = broker.getReceivedCommandRequests();
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCause(new BrokerErrorException(new BrokerError(ErrorCode.INTERNAL_ERROR, "test")));
     assertThat(receivedCommandRequests).hasSize(1);
-
     receivedCommandRequests.forEach(
         request -> {
           assertThat(request.valueType()).isEqualTo(TestCommand.VALUE_TYPE);
@@ -123,43 +120,35 @@ public final class BrokerClientTest {
   @Test
   void shouldReturnErrorOnReadResponseFailure() {
     // given
-    broker
-        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
-        .respondWith()
-        .event()
-        .intent(TestCommand.INTENT)
-        .key(ExecuteCommandRequest::key)
-        .value()
-        .allOf(ExecuteCommandRequest::getCommand)
-        .done()
-        .register();
-
+    final var error = new RuntimeException("Catch Me");
     final var request =
         new TestCommand() {
           @Override
           protected UnifiedRecordValue toResponseDto(final DirectBuffer buffer) {
-            throw new RuntimeException("Catch Me");
+            throw error;
           }
         };
+    registerSuccessResponse(broker);
+
+    // when
+    final Future<?> response = client.sendRequestWithRetry(request);
 
     // then
-    assertThatThrownBy(() -> client.sendRequestWithRetry(request).join())
-        .hasCauseInstanceOf(BrokerResponseException.class)
-        .hasMessageContaining("Catch Me");
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCauseInstanceOf(BrokerResponseException.class)
+        .havingRootCause()
+        .isSameAs(error);
   }
 
   @Test
   void shouldTimeoutIfPartitionLeaderMismatchResponse() {
     // given
-    broker
-        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
-        .respondWithError()
-        .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
-        .errorData("")
-        .register();
+    registerError(broker, ErrorCode.PARTITION_LEADER_MISMATCH, "");
 
     // when
-    final var future = client.sendRequestWithRetry(new TestCommand());
+    final Future<?> response = client.sendRequestWithRetry(new TestCommand());
 
     // then
     // when the partition is repeatedly not found, the client loops
@@ -168,25 +157,25 @@ public final class BrokerClientTest {
     // specifically. It is also possible that Atomix times out beforehand if we calculated a very
     // small timeout for the request, e.g. < 50ms, so we also cannot assert the value of the
     // timeout
-    assertThatThrownBy(future::join).hasCauseInstanceOf(TimeoutException.class);
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCauseInstanceOf(TimeoutException.class);
   }
 
   @Test
   void shouldNotTimeoutIfPartitionLeaderMismatchResponseWhenRetryDisabled() {
     // given
-    broker
-        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
-        .respondWithError()
-        .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
-        .errorData("")
-        .register();
+    registerError(broker, ErrorCode.PARTITION_LEADER_MISMATCH, "");
 
     // when
-    final var future = client.sendRequest(new TestCommand());
+    final Future<?> response = client.sendRequest(new TestCommand());
 
     // then
-    assertThatThrownBy(future::join)
-        .hasCause(
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCause(
             new BrokerErrorException(new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "")));
   }
 
@@ -207,10 +196,13 @@ public final class BrokerClientTest {
     // when
     final var request = new TestCommand();
     request.setPartitionId(1);
-    final var async = client.sendRequestWithRetry(request, Duration.ofMillis(100));
+    final Future<?> response = client.sendRequestWithRetry(request, Duration.ofMillis(100));
 
     // then
-    assertThatThrownBy(async::join).hasRootCauseInstanceOf(TimeoutException.class);
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(TimeoutException.class);
   }
 
   @Test
@@ -220,14 +212,16 @@ public final class BrokerClientTest {
     request.setPartitionId(0);
 
     // when
-    final var async = client.sendRequestWithRetry(request);
+    final Future<?> response = client.sendRequestWithRetry(request);
 
     // then
     final var expected =
         "Expected to execute command on partition 0, but either it does not exist, or the gateway is not yet aware of it";
-    assertThatThrownBy(async::join)
-        .hasCauseInstanceOf(PartitionNotFoundException.class)
-        .hasMessageContaining(expected);
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCauseInstanceOf(PartitionNotFoundException.class)
+        .withMessageContaining(expected);
   }
 
   @Test
@@ -257,27 +251,84 @@ public final class BrokerClientTest {
   @Test
   void shouldReturnRejectionWithCorrectTypeAndReason() {
     // given
+    final var request = new TestCommand(1L);
+    registerRejection(broker, RejectionType.INVALID_ARGUMENT, "foo");
+
+    // when
+    final var responseFuture = client.sendRequestWithRetry(request);
+
+    // then
+    assertThat(responseFuture)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCause(
+            new BrokerRejectionException(
+                new BrokerRejection(TestCommand.INTENT, 1, RejectionType.INVALID_ARGUMENT, "foo")));
+  }
+
+  @Test
+  void shouldRouteRequestBasedOnTopology() {
+    // given - a second broker (1), which will respond successfully, and broker 0 which will respond
+    // with an error, we expect to get a successful response
+    // the request is routed to partition 1 first through the default round robin strategy
+    final var request = new TestCommand();
+    final BrokerResponse<?> response;
+    broker.updateInfo(info -> info.setFollowerForPartition(1));
+    registerError(broker, ErrorCode.INTERNAL_ERROR, "test");
+
+    try (final var otherBroker =
+        new StubBroker(1).start().updateInfo(info -> info.setLeaderForPartition(1, 1))) {
+      registerSuccessResponse(otherBroker);
+
+      topologyManager.event(new ClusterMembershipEvent(Type.METADATA_CHANGED, broker.member()));
+      topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
+      Awaitility.await("Topology is updated")
+          .untilAsserted(
+              () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isOne());
+
+      // when
+      response = client.sendRequest(request).join();
+    }
+
+    // then
+    assertThat(response.isResponse()).isTrue();
+  }
+
+  private void registerRejection(
+      final StubBroker broker, final RejectionType type, final String reason) {
     broker
         .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
         .respondWith()
         .event()
         .intent(TestCommand.INTENT)
-        .key(1L)
-        .rejection(RejectionType.INVALID_ARGUMENT, "foo")
+        .key(ExecuteCommandRequest::key)
+        .rejection(type, reason)
         .value()
         .allOf(ExecuteCommandRequest::getCommand)
         .done()
         .register();
+  }
 
-    // when
-    final var responseFuture = client.sendRequestWithRetry(new TestCommand(1L));
+  private void registerSuccessResponse(final StubBroker broker) {
+    broker
+        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
+        .respondWith()
+        .event()
+        .intent(TestCommand.INTENT)
+        .key(ExecuteCommandRequest::key)
+        .value()
+        .allOf(ExecuteCommandRequest::getCommand)
+        .done()
+        .register();
+  }
 
-    // then
-    assertThatThrownBy(responseFuture::join)
-        .hasCauseInstanceOf(BrokerRejectionException.class)
-        .hasCause(
-            new BrokerRejectionException(
-                new BrokerRejection(TestCommand.INTENT, 1, RejectionType.INVALID_ARGUMENT, "foo")));
+  private void registerError(final StubBroker broker, final ErrorCode code, final String data) {
+    broker
+        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
+        .respondWithError()
+        .errorCode(code)
+        .errorData(data)
+        .register();
   }
 
   private static class TestCommand extends BrokerExecuteCommand<UnifiedRecordValue> {
@@ -286,6 +337,7 @@ public final class BrokerClientTest {
 
     private final UnifiedRecordValue record;
     private final long key;
+    private final RequestDispatchStrategy dispatchStrategy;
 
     private TestCommand() {
       this(new UnifiedRecordValue(10));
@@ -300,9 +352,17 @@ public final class BrokerClientTest {
     }
 
     private TestCommand(final UnifiedRecordValue record, final long key) {
+      this(record, key, null);
+    }
+
+    private TestCommand(
+        final UnifiedRecordValue record,
+        final long key,
+        final RequestDispatchStrategy dispatchStrategy) {
       super(VALUE_TYPE, INTENT);
       this.record = record;
       this.key = key;
+      this.dispatchStrategy = dispatchStrategy;
     }
 
     @Override
@@ -320,6 +380,11 @@ public final class BrokerClientTest {
       final var response = new UnifiedRecordValue(10);
       response.wrap(buffer);
       return response;
+    }
+
+    @Override
+    public Optional<RequestDispatchStrategy> requestDispatchStrategy() {
+      return Optional.ofNullable(dispatchStrategy);
     }
   }
 }

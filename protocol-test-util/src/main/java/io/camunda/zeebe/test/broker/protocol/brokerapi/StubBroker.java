@@ -21,8 +21,10 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
+import io.camunda.zeebe.util.VersionUtil;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public final class StubBroker implements AutoCloseable {
@@ -30,6 +32,7 @@ public final class StubBroker implements AutoCloseable {
   private static final String CLUSTER_ID = "cluster";
   private final int nodeId;
   private final InetSocketAddress socketAddress;
+  private final BrokerInfo brokerInfo;
   private ActorScheduler scheduler;
   private MsgPackHelper msgPackHelper;
   private final ControlledActorClock clock = new ControlledActorClock();
@@ -40,8 +43,22 @@ public final class StubBroker implements AutoCloseable {
   private ServerTransport serverTransport;
 
   public StubBroker() {
-    nodeId = 0;
+    this(0);
+  }
+
+  public StubBroker(final int nodeId) {
+    this.nodeId = nodeId;
     socketAddress = SocketUtil.getNextAddress();
+    brokerInfo =
+        new BrokerInfo()
+            .setCommandApiAddress(Address.from("localhost", socketAddress.getPort()).toString())
+            .setClusterSize(1)
+            .setReplicationFactor(1)
+            .setPartitionsCount(1)
+            .setNodeId(nodeId)
+            .setPartitionHealthy(1)
+            .setLeaderForPartition(1, 1);
+    brokerInfo.setVersion(VersionUtil.getVersion());
   }
 
   public StubBroker start() {
@@ -80,16 +97,13 @@ public final class StubBroker implements AutoCloseable {
     return cluster.getMembershipService().getLocalMember();
   }
 
+  public StubBroker updateInfo(final Consumer<BrokerInfo> consumer) {
+    consumer.accept(brokerInfo);
+    writeBrokerInfoProperties();
+    return this;
+  }
+
   private void writeBrokerInfoProperties() {
-    final var brokerInfo =
-        new BrokerInfo()
-            .setCommandApiAddress(Address.from("localhost", socketAddress.getPort()).toString())
-            .setClusterSize(1)
-            .setReplicationFactor(1)
-            .setPartitionsCount(1)
-            .setNodeId(0)
-            .setPartitionHealthy(1)
-            .setLeaderForPartition(1, 1);
     brokerInfo.writeIntoProperties(cluster.getMembershipService().getLocalMember().properties());
   }
 
