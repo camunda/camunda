@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.client.impl;
+package io.camunda.zeebe.broker.client.api;
 
 import static io.camunda.zeebe.broker.client.api.BrokerClusterState.NODE_ID_NULL;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,12 +15,13 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
+import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
+import io.camunda.zeebe.topology.state.PartitionState;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -31,11 +32,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-final class TopologyUpdateTest {
+final class BrokerTopologyManagerTest {
   @RegisterExtension
   final ControlledActorSchedulerExtension actorSchedulerRule =
       new ControlledActorSchedulerExtension();
 
+  // keep referencing the implementation class here to allow interactions with the actor scheduler
   private BrokerTopologyManagerImpl topologyManager;
   private Set<Member> members;
 
@@ -417,6 +419,58 @@ final class TopologyUpdateTest {
 
     // then
     assertThat(topologyManager.getTopology().getClusterSize()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldUpdatePartitionsCountFromClusterTopology() {
+    // given
+    final var broker = createBroker(1);
+    notifyEvent(createMemberAddedEvent(broker));
+
+    assertThat(topologyManager.getTopology().getClusterSize()).isEqualTo(3);
+
+    // when
+    final var clusterTopologyWithTwoBrokers =
+        ClusterTopology.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(2))))
+            .addMember(
+                MemberId.from("2"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(1))));
+    topologyManager.onTopologyUpdated(clusterTopologyWithTwoBrokers);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(topologyManager.getTopology().getPartitionsCount()).isEqualTo(2));
+  }
+
+  @Test
+  void shouldNotOverwritePartitionsCountFromBrokerInfo() {
+    // given
+    final var clusterTopologyWithTwoBrokers =
+        ClusterTopology.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(2))))
+            .addMember(
+                MemberId.from("2"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(1))));
+    topologyManager.onTopologyUpdated(clusterTopologyWithTwoBrokers);
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    final var broker = createBroker(1);
+    notifyEvent(createMemberAddedEvent(broker));
+
+    // then
+    assertThat(topologyManager.getTopology().getPartitionsCount()).isEqualTo(2);
   }
 
   private void addTopologyListener(final RecordingTopologyListener listener) {
