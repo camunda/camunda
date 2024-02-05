@@ -71,6 +71,11 @@ public class TransferRequest extends AbstractRaftRequest {
     return toStringHelper(this).add("member", member).toString();
   }
 
+  @Override
+  public MemberId from() {
+    return member;
+  }
+
   /** Transfer request builder. */
   public static class Builder extends AbstractRaftRequest.Builder<Builder, TransferRequest> {
 

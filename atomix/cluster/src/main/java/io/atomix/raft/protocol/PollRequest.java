@@ -132,6 +132,11 @@ public class PollRequest extends AbstractRaftRequest {
         .toString();
   }
 
+  @Override
+  public MemberId from() {
+    return candidate();
+  }
+
   /** Poll request builder. */
   public static class Builder extends AbstractRaftRequest.Builder<Builder, PollRequest> {
 

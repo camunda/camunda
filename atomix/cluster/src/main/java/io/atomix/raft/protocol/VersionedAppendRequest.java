@@ -183,6 +183,11 @@ public class VersionedAppendRequest extends AbstractRaftRequest {
     return version;
   }
 
+  @Override
+  public MemberId from() {
+    return leader();
+  }
+
   /** Append request builder. */
   public static class Builder extends AbstractRaftRequest.Builder<Builder, VersionedAppendRequest> {
 

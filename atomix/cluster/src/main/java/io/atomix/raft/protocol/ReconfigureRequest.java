@@ -20,8 +20,8 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
-import io.atomix.utils.Builder;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
@@ -34,11 +34,15 @@ public class ReconfigureRequest extends AbstractRaftRequest {
   private final long term;
   private final Collection<RaftMember> members;
 
+  // The sender for this request
+  private final String from;
+
   public ReconfigureRequest(
-      final Collection<RaftMember> members, final long index, final long term) {
+      final Collection<RaftMember> members, final long index, final long term, final String from) {
     this.members = members;
     this.index = index;
     this.term = term;
+    this.from = from;
   }
 
   /**
@@ -99,12 +103,19 @@ public class ReconfigureRequest extends AbstractRaftRequest {
         .toString();
   }
 
+  @Override
+  public MemberId from() {
+    return MemberId.from(from);
+  }
+
   /** Reconfigure request builder. */
   public static class Builder extends AbstractRaftRequest.Builder<Builder, ReconfigureRequest> {
 
     private Set<RaftMember> members;
     private long index = -1;
     private long term = -1;
+
+    private String from;
 
     /**
      * Sets the request members.
@@ -157,10 +168,21 @@ public class ReconfigureRequest extends AbstractRaftRequest {
       return this;
     }
 
+    /**
+     * Sets the sender for this request.
+     *
+     * @param from Member id of the sender
+     * @return The request builder.
+     */
+    public Builder from(final String from) {
+      this.from = from;
+      return this;
+    }
+
     @Override
     public ReconfigureRequest build() {
       validate();
-      return new ReconfigureRequest(members, index, term);
+      return new ReconfigureRequest(members, index, term, from);
     }
 
     @Override
@@ -169,6 +191,7 @@ public class ReconfigureRequest extends AbstractRaftRequest {
       checkNotNull(members, "members cannot be null");
       checkArgument(index >= 0, "index must be positive");
       checkArgument(term >= 0, "term must be positive");
+      checkNotNull(from, "from cannot be null");
     }
   }
 }

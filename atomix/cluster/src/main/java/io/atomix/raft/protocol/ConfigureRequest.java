@@ -161,6 +161,11 @@ public class ConfigureRequest extends AbstractRaftRequest {
     return oldMembers;
   }
 
+  @Override
+  public MemberId from() {
+    return leader();
+  }
+
   /** Heartbeat request builder. */
   public static class Builder extends AbstractRaftRequest.Builder<Builder, ConfigureRequest> {
 

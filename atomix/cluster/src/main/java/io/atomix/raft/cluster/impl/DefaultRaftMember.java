@@ -167,6 +167,7 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
                 .withMembers(currentConfiguration.newMembers())
                 // Override local member with the new type.
                 .withMember(new DefaultRaftMember(id, type, updated))
+                .from(cluster.getLocalMember().memberId().id())
                 .build())
         .whenComplete(
             (response, error) -> {

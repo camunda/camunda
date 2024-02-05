@@ -212,6 +212,11 @@ public class InstallRequest extends AbstractRaftRequest {
         .toString();
   }
 
+  @Override
+  public MemberId from() {
+    return leader;
+  }
+
   /** Snapshot request builder. */
   public static class Builder extends AbstractRaftRequest.Builder<Builder, InstallRequest> {
 
