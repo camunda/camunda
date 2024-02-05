@@ -766,12 +766,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetCollectionDeleteConflictsRequest(String id) {
-    this.path = "collection/" + id + "/delete-conflicts";
-    this.method = GET;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildGetAllEntitiesRequest() {
     return buildGetAllEntitiesRequest(null);
   }

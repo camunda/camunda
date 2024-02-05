@@ -129,18 +129,6 @@ public class CollectionRestService {
     collectionService.deleteCollection(userId, collectionId, force);
   }
 
-  /**
-   * Retrieve the conflicting items that would occur on performing a delete.
-   */
-  @GET
-  @Path("/{id}/delete-conflicts")
-  @Produces(MediaType.APPLICATION_JSON)
-  public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
-                                                @PathParam("id") String collectionId) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.getDeleteConflictingItems(userId, collectionId);
-  }
-
   @PUT
   @Path("/{id}/scope")
   @Consumes(MediaType.APPLICATION_JSON)

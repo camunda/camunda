@@ -50,24 +50,6 @@ import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAM
 public class CollectionConflictIT extends AbstractPlatformIT {
 
   @Test
-  public void getCollectionDeleteConflictsIfEntitiesAdded() {
-    // given
-    String collectionId = collectionClient.createNewCollection();
-    String firstDashboardId = dashboardClient.createEmptyDashboard(collectionId);
-    String secondDashboardId = dashboardClient.createEmptyDashboard(collectionId);
-    String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
-    String[] expectedConflictedItemIds = {firstDashboardId, secondDashboardId, reportId};
-
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    ConflictResponseDto conflictResponseDto = collectionClient.getDeleteCollectionConflicts(collectionId);
-
-    // then
-    checkConflictedItems(conflictResponseDto, ConflictedItemType.COLLECTION, expectedConflictedItemIds);
-  }
-
-  @Test
   public void checkDeleteConflictsForBulkDeleteOfCollectionScope_withoutAuthentication_fails() {
     // when
     Response response = checkScopeBulkDeletionConflictsNoAuth();
