@@ -64,7 +64,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     actor.run(() -> topologyListeners.remove(listener));
   }
 
-  public void updateTopology(final Consumer<BrokerClusterStateImpl> updater) {
+  private void updateTopology(final Consumer<BrokerClusterStateImpl> updater) {
     actor.run(
         () -> {
           final var updated = new BrokerClusterStateImpl(topology);
