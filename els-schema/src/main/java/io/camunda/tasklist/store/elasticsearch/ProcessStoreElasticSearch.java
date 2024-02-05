@@ -153,7 +153,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   }
 
   public List<ProcessEntity> getProcesses(
-      final List<String> processDefinitions, final String tenantId) {
+      final List<String> processDefinitions, final String tenantId, final Boolean isStartedByForm) {
     final QueryBuilder qb;
 
     if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
@@ -184,15 +184,19 @@ public class ProcessStoreElasticSearch implements ProcessStore {
               .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
     }
 
-    final QueryBuilder finalQuery = enhanceQueryByTenantIdCheck(qb, tenantId);
+    QueryBuilder finalQuery = enhanceQueryByTenantIdCheck(qb, tenantId);
+    finalQuery = enhanceQueryByIsStartedByForm(finalQuery, isStartedByForm);
     return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(finalQuery);
   }
 
   public List<ProcessEntity> getProcesses(
-      String search, final List<String> processDefinitions, final String tenantId) {
+      String search,
+      final List<String> processDefinitions,
+      final String tenantId,
+      final Boolean isStartedByForm) {
 
     if (StringUtils.isBlank(search)) {
-      return getProcesses(processDefinitions, tenantId);
+      return getProcesses(processDefinitions, tenantId, isStartedByForm);
     }
 
     final QueryBuilder qb;
@@ -249,7 +253,8 @@ public class ProcessStoreElasticSearch implements ProcessStore {
               .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""))
               .minimumShouldMatch(1);
     }
-    final QueryBuilder finalQuery = enhanceQueryByTenantIdCheck(qb, tenantId);
+    QueryBuilder finalQuery = enhanceQueryByTenantIdCheck(qb, tenantId);
+    finalQuery = enhanceQueryByIsStartedByForm(finalQuery, isStartedByForm);
     return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(finalQuery);
   }
 
@@ -257,6 +262,16 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       return ElasticsearchUtil.joinWithAnd(
           QueryBuilders.termQuery(ProcessIndex.TENANT_ID, tenantId), qb);
+    }
+
+    return qb;
+  }
+
+  private QueryBuilder enhanceQueryByIsStartedByForm(
+      QueryBuilder qb, final Boolean isStartedByForm) {
+    if (isStartedByForm != null) {
+      return ElasticsearchUtil.joinWithAnd(
+          QueryBuilders.termQuery(ProcessIndex.IS_STARTED_BY_FORM, isStartedByForm), qb);
     }
 
     return qb;

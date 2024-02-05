@@ -18,10 +18,14 @@ public interface ProcessStore {
 
   ProcessEntity getProcess(String processId);
 
-  List<ProcessEntity> getProcesses(final List<String> processDefinitions, final String tenantId);
+  List<ProcessEntity> getProcesses(
+      final List<String> processDefinitions, final String tenantId, final Boolean isStartedByForm);
 
   List<ProcessEntity> getProcesses(
-      String search, final List<String> processDefinitions, final String tenantId);
+      String search,
+      final List<String> processDefinitions,
+      final String tenantId,
+      final Boolean isStartedByForm);
 
   List<ProcessEntity> getProcessesStartedByForm();
 }

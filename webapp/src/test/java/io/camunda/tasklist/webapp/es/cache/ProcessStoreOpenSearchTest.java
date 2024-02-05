@@ -185,9 +185,9 @@ class ProcessStoreOpenSearchTest {
 
     // given
     final List<ProcessEntity> processes =
-        processStore.getProcesses(authorizations, DEFAULT_TENANT_IDENTIFIER);
+        processStore.getProcesses(authorizations, DEFAULT_TENANT_IDENTIFIER, null);
     final List<ProcessEntity> processesWithCondition =
-        processStore.getProcesses("*", authorizations, DEFAULT_TENANT_IDENTIFIER);
+        processStore.getProcesses("*", authorizations, DEFAULT_TENANT_IDENTIFIER, null);
 
     // then
     assertThat(processes).isEmpty();
@@ -203,9 +203,9 @@ class ProcessStoreOpenSearchTest {
 
     // given
     final List<ProcessEntity> processes =
-        processStore.getProcesses(authorizations, DEFAULT_TENANT_IDENTIFIER);
+        processStore.getProcesses(authorizations, DEFAULT_TENANT_IDENTIFIER, null);
     final List<ProcessEntity> processesWithCondition =
-        processStore.getProcesses("*", authorizations, DEFAULT_TENANT_IDENTIFIER);
+        processStore.getProcesses("*", authorizations, DEFAULT_TENANT_IDENTIFIER, null);
 
     // then
     assertNotNull(processes);
@@ -223,9 +223,9 @@ class ProcessStoreOpenSearchTest {
 
     // given
     final List<ProcessEntity> processes =
-        processStore.getProcesses(authorizations, DEFAULT_TENANT_IDENTIFIER);
+        processStore.getProcesses(authorizations, DEFAULT_TENANT_IDENTIFIER, null);
     final List<ProcessEntity> processesWithCondition =
-        processStore.getProcesses("*", authorizations, DEFAULT_TENANT_IDENTIFIER);
+        processStore.getProcesses("*", authorizations, DEFAULT_TENANT_IDENTIFIER, null);
 
     // then
     assertNotNull(processes);

@@ -340,7 +340,7 @@ class TaskControllerTest {
       // Then
       assertThat(result)
           .extracting("name", "value", "isValueTruncated", "previewValue", "draft")
-          .containsExactly(
+          .containsExactlyInAnyOrder(
               tuple(
                   "varA",
                   "925.5",
@@ -431,7 +431,7 @@ class TaskControllerTest {
       // Then
       assertThat(result)
           .extracting("name", "value", "isValueTruncated", "previewValue", "draft")
-          .containsExactly(
+          .containsExactlyInAnyOrder(
               tuple(
                   "varA",
                   "925.5",

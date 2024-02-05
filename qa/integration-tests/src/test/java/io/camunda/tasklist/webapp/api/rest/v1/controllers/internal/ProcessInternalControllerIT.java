@@ -108,14 +108,21 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
       final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
       final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process_2.bpmn");
       final String processId3 = ZeebeTestUtil.deployProcess(zeebeClient, "userTaskForm.bpmn");
+      final String processId4 =
+          ZeebeTestUtil.deployProcess(zeebeClient, "subscribeFormProcess.bpmn");
 
       databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
       databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId2);
       databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId3);
+      databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId4);
 
       // when
       final var resultWithQuery =
           mockMvcHelper.doRequest(get(TasklistURIs.PROCESSES_URL_V1).param("query", processId2));
+
+      final var resultWithQueryByStartedByForm =
+          mockMvcHelper.doRequest(
+              get(TasklistURIs.PROCESSES_URL_V1).param("isStartedByForm", String.valueOf(true)));
 
       final var resultEmptyQuery = mockMvcHelper.doRequest(get(TasklistURIs.PROCESSES_URL_V1));
 
@@ -132,6 +139,19 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(process.getVersion()).isEqualTo(1);
               });
 
+      // test query for start by forms
+      assertThat(resultWithQueryByStartedByForm)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, ProcessResponse.class)
+          .singleElement()
+          .satisfies(
+              process -> {
+                assertThat(process.getId()).isEqualTo(processId4);
+                assertThat(process.getBpmnProcessId()).isEqualTo("subscribeFormProcess");
+                assertThat(process.getVersion()).isEqualTo(1);
+              });
+
       assertThat(resultEmptyQuery)
           .hasOkHttpStatus()
           .hasApplicationJsonContentType()
@@ -140,7 +160,8 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
           .containsExactlyInAnyOrder(
               tuple(processId1, "Process_1g4wt4m", 1),
               tuple(processId2, "testProcess2", 1),
-              tuple(processId3, "userTaskFormProcess", 1));
+              tuple(processId3, "userTaskFormProcess", 1),
+              tuple(processId4, "subscribeFormProcess", 1));
     }
 
     @Test

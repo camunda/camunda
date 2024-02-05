@@ -29,7 +29,8 @@ public class ProcessQueryResolver implements GraphQLQueryResolver {
         .getProcesses(
             search,
             identityAuthorizationService.getProcessDefinitionsFromAuthorization(),
-            DEFAULT_TENANT_IDENTIFIER)
+            DEFAULT_TENANT_IDENTIFIER,
+            null)
         .stream()
         .map(ProcessDTO::createFrom)
         .collect(Collectors.toList());

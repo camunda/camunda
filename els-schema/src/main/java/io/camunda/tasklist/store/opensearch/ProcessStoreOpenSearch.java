@@ -184,7 +184,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
   @Override
   public List<ProcessEntity> getProcesses(
-      final List<String> processDefinitions, final String tenantId) {
+      final List<String> processDefinitions, final String tenantId, final Boolean isStartedByForm) {
     final FieldCollapse keyCollapse =
         new FieldCollapse.Builder().field(ProcessIndex.PROCESS_DEFINITION_ID).build();
     final SortOptions sortOptions =
@@ -250,16 +250,22 @@ public class ProcessStoreOpenSearch implements ProcessStore {
               ._toQuery();
     }
 
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(
-        addFilterOnTenantIdIfRequired(q, tenantId));
+    final Query applyTenantIdFilter = addFilterOnTenantIdIfRequired(q, tenantId);
+    final Query finalQueryWithStartedByForm =
+        addFilterIsStartedByForm(applyTenantIdFilter, isStartedByForm);
+
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(finalQueryWithStartedByForm);
   }
 
   @Override
   public List<ProcessEntity> getProcesses(
-      String search, final List<String> processDefinitions, final String tenantId) {
+      String search,
+      final List<String> processDefinitions,
+      final String tenantId,
+      final Boolean isStartedByForm) {
 
     if (search == null || search.isBlank()) {
-      return getProcesses(processDefinitions, tenantId);
+      return getProcesses(processDefinitions, tenantId, isStartedByForm);
     }
 
     final Query query;
@@ -362,8 +368,11 @@ public class ProcessStoreOpenSearch implements ProcessStore {
               ._toQuery();
     }
 
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(
-        addFilterOnTenantIdIfRequired(query, tenantId));
+    final Query applyTenantIdFilter = addFilterOnTenantIdIfRequired(query, tenantId);
+    final Query finalQueryWithStartedByForm =
+        addFilterIsStartedByForm(applyTenantIdFilter, isStartedByForm);
+
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(finalQueryWithStartedByForm);
   }
 
   private Query addFilterOnTenantIdIfRequired(final Query query, final String tenantId) {
@@ -371,6 +380,20 @@ public class ProcessStoreOpenSearch implements ProcessStore {
       final Query tenantQuery =
           new Query.Builder()
               .term(term -> term.field(ProcessIndex.TENANT_ID).value(FieldValue.of(tenantId)))
+              .build();
+      return OpenSearchUtil.joinWithAnd(tenantQuery, query);
+    }
+    return query;
+  }
+
+  private Query addFilterIsStartedByForm(final Query query, final Boolean isStartedByForm) {
+    if (isStartedByForm != null) {
+      final Query tenantQuery =
+          new Query.Builder()
+              .term(
+                  term ->
+                      term.field(ProcessIndex.IS_STARTED_BY_FORM)
+                          .value(FieldValue.of(isStartedByForm)))
               .build();
       return OpenSearchUtil.joinWithAnd(tenantQuery, query);
     }

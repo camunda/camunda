@@ -86,14 +86,23 @@ public class ProcessInternalController extends ApiErrorController {
                       + "If `tenantId` is provided, only processes for that tenant will be returned, or an empty list if the user does not have access to the provided tenant.</br>"
                       + "If multi-tenancy is disabled, this parameter will be ignored.")
           @RequestParam(required = false)
-          String tenantId) {
+          String tenantId,
+      @Parameter(
+              description =
+                  "If this parameter is set (Default value `null`): </br>"
+                      + "`true`: It will return all the processes started by a form </br>"
+                      + "`false`: It will return all the processes that are not started by a form </br>"
+                      + "`null`: The filter is not applied")
+          @RequestParam(required = false)
+          Boolean isStartedByForm) {
 
     final var processes =
         processStore
             .getProcesses(
                 query,
                 identityAuthorizationService.getProcessDefinitionsFromAuthorization(),
-                tenantId)
+                tenantId,
+                isStartedByForm)
             .stream()
             .map(pe -> ProcessResponse.fromProcessEntity(pe, getStartEventFormIdByBpmnProcess(pe)))
             .collect(Collectors.toList());
