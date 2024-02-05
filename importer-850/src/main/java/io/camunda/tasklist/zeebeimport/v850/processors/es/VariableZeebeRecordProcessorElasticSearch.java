@@ -40,6 +40,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
   static {
     VARIABLE_STATES.add(Intent.CREATED.name());
     VARIABLE_STATES.add(Intent.UPDATED.name());
+    VARIABLE_STATES.add(Intent.MIGRATED.name());
   }
 
   @Autowired private ObjectMapper objectMapper;
@@ -53,7 +54,9 @@ public class VariableZeebeRecordProcessorElasticSearch {
     final VariableRecordValueImpl recordValue = (VariableRecordValueImpl) record.getValue();
 
     // update variable
-    bulkRequest.add(persistVariable(record, recordValue));
+    if (record.getIntent().name() != Intent.MIGRATED.name()) {
+      bulkRequest.add(persistVariable(record, recordValue));
+    }
   }
 
   private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue)

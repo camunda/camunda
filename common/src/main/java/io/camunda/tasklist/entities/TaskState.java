@@ -9,5 +9,6 @@ package io.camunda.tasklist.entities;
 public enum TaskState {
   CREATED,
   COMPLETED,
-  CANCELED
+  CANCELED,
+  MIGRATED
 }

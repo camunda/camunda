@@ -27,6 +27,8 @@ public enum Intent implements io.camunda.zeebe.protocol.record.intent.Intent {
 
   COMPLETED,
 
+  MIGRATED,
+
   TIMED_OUT,
 
   FAILED,

@@ -173,6 +173,12 @@ public class JobZeebeRecordProcessorOpenSearch {
       entity
           .setState(TaskState.CREATED)
           .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    } else if (taskState.equals(Intent.MIGRATED.name())) {
+      entity
+          .setState(TaskState.MIGRATED)
+          .setFlowNodeBpmnId(recordValue.getElementId())
+          .setBpmnProcessId(recordValue.getBpmnProcessId())
+          .setProcessDefinitionId(processDefinitionId);
     } else {
       LOGGER.warn(String.format("TaskState %s not supported", taskState));
     }
@@ -182,8 +188,16 @@ public class JobZeebeRecordProcessorOpenSearch {
   private BulkOperation getTaskQuery(TaskEntity entity) throws PersistenceException {
     LOGGER.debug("Task instance: id {}", entity.getId());
     final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(TaskTemplate.STATE, entity.getState());
-    updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
+    if (entity.getState() == TaskState.MIGRATED) {
+      entity.setState(TaskState.CREATED);
+      updateFields.put(TaskTemplate.STATE, entity.getState());
+      updateFields.put(TaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
+      updateFields.put(TaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
+      updateFields.put(TaskTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
+    } else {
+      updateFields.put(TaskTemplate.STATE, entity.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
+    }
 
     final JsonObjectBuilder jsonEntityBuilder = CommonUtils.getJsonObjectBuilderForEntity(entity);
     if (entity.getCreationTime() == null) {
