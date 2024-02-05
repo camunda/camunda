@@ -1,4 +1,4 @@
-openapi: "3.0.2"
+openapi: "3.1.0"
 info:
   title: Zeebe REST API
   version: "0.1"
@@ -6,9 +6,9 @@ info:
   license:
     name: Zeebe Community License Version 1.1
     url: https://github.com/camunda/zeebe/blob/main/licenses/ZEEBE-COMMUNITY-LICENSE-1.1.txt
-  externalDocs:
-    description: Find out more
-    url: https://docs.camunda.io/docs/apis-tools/zeebe-api-rest/overview/
+externalDocs:
+  description: Find out more
+  url: https://docs.camunda.io/docs/apis-tools/zeebe-api-rest/overview/
 
 servers:
   - url: "{schema}://{host}:{port}/api/v1"
@@ -23,3 +23,4 @@ servers:
         default: http
         description: The schema of the Zeebe REST API server
 
+paths: {}
