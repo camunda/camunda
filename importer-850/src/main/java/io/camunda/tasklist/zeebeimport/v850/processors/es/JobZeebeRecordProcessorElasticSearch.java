@@ -177,12 +177,6 @@ public class JobZeebeRecordProcessorElasticSearch {
       entity
           .setState(TaskState.CREATED)
           .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    } else if (taskState.equals(Intent.MIGRATED.name())) {
-      entity
-          .setState(TaskState.MIGRATED)
-          .setFlowNodeBpmnId(recordValue.getElementId())
-          .setBpmnProcessId(recordValue.getBpmnProcessId())
-          .setProcessDefinitionId(processDefinitionId);
     } else {
       LOGGER.warn(String.format("TaskState %s not supported", taskState));
     }
@@ -191,20 +185,15 @@ public class JobZeebeRecordProcessorElasticSearch {
 
   private UpdateRequest getTaskQuery(TaskEntity entity) throws PersistenceException {
     try {
-      final Map<String, Object> updateFields = new HashMap<>();
       LOGGER.debug("Task instance: id {}", entity.getId());
-      if (entity.getState() == TaskState.MIGRATED) {
-        updateFields.put(TaskTemplate.STATE, TaskState.CREATED); // Gonna keep as Created
-        updateFields.put(TaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
-        updateFields.put(TaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
-        updateFields.put(TaskTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
-      } else {
-        updateFields.put(TaskTemplate.STATE, entity.getState());
-        updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
-      }
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TaskTemplate.STATE, entity.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
+
       // format date fields properly
       final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+
       return new UpdateRequest()
           .index(taskTemplate.getFullQualifiedName())
           .id(entity.getId())

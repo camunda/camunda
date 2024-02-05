@@ -37,7 +37,6 @@ public class VariableZeebeRecordProcessorOpenSearch {
   static {
     VARIABLE_STATES.add(Intent.CREATED.name());
     VARIABLE_STATES.add(Intent.UPDATED.name());
-    VARIABLE_STATES.add(Intent.MIGRATED.name());
   }
 
   @Autowired private ObjectMapper objectMapper;
@@ -50,10 +49,7 @@ public class VariableZeebeRecordProcessorOpenSearch {
       throws PersistenceException {
     final VariableRecordValueImpl recordValue = (VariableRecordValueImpl) record.getValue();
 
-    // update variable
-    if (record.getIntent().name() != Intent.MIGRATED.name()) {
-      operations.add(persistVariable(record, recordValue));
-    }
+    operations.add(persistVariable(record, recordValue));
   }
 
   private BulkOperation persistVariable(Record record, VariableRecordValueImpl recordValue)
