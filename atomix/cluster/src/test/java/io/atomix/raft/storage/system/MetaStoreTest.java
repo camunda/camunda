@@ -16,6 +16,7 @@
 package io.atomix.raft.storage.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Named.named;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
@@ -23,253 +24,268 @@ import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.RaftStorage;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-public class MetaStoreTest {
-
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+class MetaStoreTest {
+  @TempDir Path temporaryFolder;
   private MetaStore metaStore;
   private RaftStorage storage;
 
-  @Before
+  @BeforeEach
   public void setup() throws IOException {
-    storage = RaftStorage.builder().withDirectory(temporaryFolder.newFolder("store")).build();
+    storage = RaftStorage.builder().withDirectory(temporaryFolder.toFile()).build();
     metaStore = new MetaStore(storage);
   }
 
-  @Test
-  public void shouldStoreAndLoadConfiguration() {
-    // given
-    final Configuration config = getConfiguration(1, 2);
-    metaStore.storeConfiguration(config);
-
-    // when
-    final Configuration readConfig = metaStore.loadConfiguration();
-
-    // then
-    assertThat(readConfig.index()).isEqualTo(config.index());
-    assertThat(readConfig.term()).isEqualTo(config.term());
-    assertThat(readConfig.time()).isEqualTo(config.time());
-    assertThat(readConfig.newMembers())
-        .containsExactlyInAnyOrder(config.newMembers().toArray(new RaftMember[0]));
-  }
-
-  private Configuration getConfiguration(final long index, final long term) {
-    return new Configuration(
-        index,
-        term,
-        1234L,
-        new ArrayList<>(
-            Set.of(
-                new DefaultRaftMember(MemberId.from("0"), Type.ACTIVE, Instant.ofEpochMilli(12345)),
-                new DefaultRaftMember(
-                    MemberId.from("2"), Type.PASSIVE, Instant.ofEpochMilli(12346)))));
-  }
-
-  @Test
-  public void shouldStoreAndLoadTerm() {
-    // when
-    metaStore.storeTerm(2L);
-
-    // then
-    assertThat(metaStore.loadTerm()).isEqualTo(2L);
-  }
-
-  @Test
-  public void shouldStoreAndLoadVote() {
-    // when
-    metaStore.storeVote(new MemberId("id"));
-
-    // then
-    assertThat(metaStore.loadVote().id()).isEqualTo("id");
-  }
-
-  @Test
-  public void shouldLoadExistingConfiguration() throws IOException {
-    // given
-    final Configuration config = getConfiguration(1, 2);
-    metaStore.storeConfiguration(config);
-
-    // when
+  @AfterEach
+  public void tearDown() {
     metaStore.close();
-    metaStore = new MetaStore(storage);
-
-    // then
-    final Configuration readConfig = metaStore.loadConfiguration();
-
-    assertThat(readConfig.index()).isEqualTo(config.index());
-    assertThat(readConfig.term()).isEqualTo(config.term());
-    assertThat(readConfig.time()).isEqualTo(config.time());
-    assertThat(readConfig.newMembers())
-        .containsExactlyInAnyOrder(config.newMembers().toArray(new RaftMember[0]));
   }
 
-  @Test
-  public void shouldLoadExistingTerm() throws IOException {
-    // given
-    metaStore.storeTerm(2L);
+  @Nested
+  final class MetadataTest {
 
-    // when
-    metaStore.close();
-    metaStore = new MetaStore(storage);
+    @Test
+    void shouldStoreAndLoadTerm() {
+      // when
+      metaStore.storeTerm(2L);
 
-    // then
-    assertThat(metaStore.loadTerm()).isEqualTo(2L);
+      // then
+      assertThat(metaStore.loadTerm()).isEqualTo(2L);
+    }
+
+    @Test
+    void shouldStoreAndLoadVote() {
+      // when
+      metaStore.storeVote(new MemberId("id"));
+
+      // then
+      assertThat(metaStore.loadVote().id()).isEqualTo("id");
+    }
+
+    @Test
+    void shouldLoadExistingTerm() throws IOException {
+      // given
+      metaStore.storeTerm(2L);
+
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage);
+
+      // then
+      assertThat(metaStore.loadTerm()).isEqualTo(2L);
+    }
+
+    @Test
+    void shouldLoadExistingVote() throws IOException {
+      // given
+      metaStore.storeVote(new MemberId("id"));
+
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage);
+
+      // then
+      assertThat(metaStore.loadVote().id()).isEqualTo("id");
+    }
+
+    @Test
+    void shouldLoadEmptyMeta() {
+      // when -then
+      assertThat(metaStore.loadVote()).isNull();
+
+      // when - then
+      assertThat(metaStore.loadTerm()).isEqualTo(0);
+    }
+
+    @Test
+    void shouldLoadEmptyVoteWhenTermExists() {
+      // given
+      metaStore.storeTerm(1);
+
+      // when - then
+      assertThat(metaStore.loadVote()).isNull();
+    }
+
+    @Test
+    void shouldLoadLatestTermAndVoteAfterRestart() throws IOException {
+      //  given
+      metaStore.storeTerm(2L);
+      metaStore.storeVote(MemberId.from("0"));
+      metaStore.storeTerm(3L);
+      metaStore.storeVote(MemberId.from("1"));
+
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage);
+
+      // then
+      assertThat(metaStore.loadTerm()).isEqualTo(3L);
+      assertThat(metaStore.loadVote().id()).isEqualTo("1");
+    }
+
+    @Test
+    void shouldStoreAndLoadLastFlushedIndex() {
+      // given
+      metaStore.storeLastFlushedIndex(5L);
+
+      // when/then
+      assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(5L);
+    }
+
+    @Test
+    void shouldStoreAndLoadLastFlushedIndexAfterRestart() throws IOException {
+      // given
+      metaStore.storeLastFlushedIndex(5L);
+
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage);
+
+      // then
+      assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(5L);
+    }
+
+    @Test
+    void shouldLoadLatestWrittenIndex() throws IOException {
+      // given
+      metaStore.storeLastFlushedIndex(5L);
+
+      // when
+      metaStore.storeLastFlushedIndex(7L);
+
+      // then
+      assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(7L);
+
+      // when
+      metaStore.storeLastFlushedIndex(8L);
+
+      metaStore.close();
+      metaStore = new MetaStore(storage);
+
+      // then
+      assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(8L);
+    }
+
+    @Test
+    void shouldStoreAndLoadAllMetadata() {
+      // when
+      metaStore.storeTerm(1L);
+      metaStore.storeLastFlushedIndex(2L);
+      metaStore.storeVote(MemberId.from("a"));
+
+      // then
+      assertThat(metaStore.loadTerm()).isEqualTo(1L);
+      assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(2L);
+      assertThat(metaStore.loadVote()).isEqualTo(MemberId.from("a"));
+    }
   }
 
-  @Test
-  public void shouldLoadExistingVote() throws IOException {
-    // given
-    metaStore.storeVote(new MemberId("id"));
+  @Nested
+  final class ConfigurationTest {
 
-    // when
-    metaStore.close();
-    metaStore = new MetaStore(storage);
+    @Test
+    void shouldLoadEmptyConfig() {
+      // when -then
+      assertThat(metaStore.loadConfiguration()).isNull();
+    }
 
-    // then
-    assertThat(metaStore.loadVote().id()).isEqualTo("id");
-  }
+    @ParameterizedTest
+    @MethodSource("provideConfigurations")
+    void shouldStoreAndLoadConfiguration(final Configuration config) {
+      // given
+      metaStore.storeConfiguration(config);
 
-  @Test
-  public void shouldLoadEmptyMeta() {
-    // when -then
-    assertThat(metaStore.loadVote()).isNull();
+      // when
+      final Configuration readConfig = metaStore.loadConfiguration();
 
-    // when - then
-    assertThat(metaStore.loadTerm()).isEqualTo(0);
-  }
+      // then
+      assertThat(readConfig).isEqualTo(config);
+    }
 
-  @Test
-  public void shouldLoadEmptyVoteWhenTermExists() {
-    // given
-    metaStore.storeTerm(1);
+    @Test
+    void shouldLoadExistingConfiguration() throws IOException {
+      // given
+      final Configuration config = getConfiguration(1, 2);
+      metaStore.storeConfiguration(config);
 
-    // when - then
-    assertThat(metaStore.loadVote()).isNull();
-  }
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage);
 
-  @Test
-  public void shouldLoadEmptyConfig() {
-    // when -then
-    assertThat(metaStore.loadConfiguration()).isNull();
-  }
+      // then
+      final Configuration readConfig = metaStore.loadConfiguration();
 
-  @Test
-  public void shouldLoadLatestTermAndVoteAfterRestart() throws IOException {
-    //  given
-    metaStore.storeTerm(2L);
-    metaStore.storeVote(MemberId.from("0"));
-    metaStore.storeTerm(3L);
-    metaStore.storeVote(MemberId.from("1"));
+      assertThat(readConfig).isEqualTo(config);
+    }
 
-    // when
-    metaStore.close();
-    metaStore = new MetaStore(storage);
+    @Test
+    void shouldLoadLatestConfigurationAfterRestart() throws IOException {
+      // given
+      final Configuration firstConfig = getConfiguration(1, 2);
+      metaStore.storeConfiguration(firstConfig);
+      final Configuration secondConfig = getConfiguration(3, 4);
+      metaStore.storeConfiguration(secondConfig);
 
-    // then
-    assertThat(metaStore.loadTerm()).isEqualTo(3L);
-    assertThat(metaStore.loadVote().id()).isEqualTo("1");
-  }
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage);
+      final Configuration readConfig = metaStore.loadConfiguration();
 
-  @Test
-  public void shouldStoreConfigurationMultipleTimes() {
-    // given
-    final Configuration firstConfig = getConfiguration(1, 2);
-    metaStore.storeConfiguration(firstConfig);
-    final Configuration secondConfig = getConfiguration(3, 4);
-    metaStore.storeConfiguration(secondConfig);
+      // then
+      assertThat(readConfig).isEqualTo(secondConfig);
+    }
 
-    // when
-    final Configuration readConfig = metaStore.loadConfiguration();
+    @Test
+    void shouldStoreConfigurationMultipleTimes() {
+      // given
+      final Configuration firstConfig = getConfiguration(1, 2);
+      metaStore.storeConfiguration(firstConfig);
+      final Configuration secondConfig = getConfiguration(3, 4);
+      metaStore.storeConfiguration(secondConfig);
 
-    // then
-    assertThat(readConfig.index()).isEqualTo(secondConfig.index());
-    assertThat(readConfig.term()).isEqualTo(secondConfig.term());
-    assertThat(readConfig.time()).isEqualTo(secondConfig.time());
-    assertThat(readConfig.newMembers())
-        .containsExactlyInAnyOrder(secondConfig.newMembers().toArray(new RaftMember[0]));
-  }
+      // when
+      final Configuration readConfig = metaStore.loadConfiguration();
 
-  @Test
-  public void shouldLoadLatestConfigurationAfterRestart() throws IOException {
-    // given
-    final Configuration firstConfig = getConfiguration(1, 2);
-    metaStore.storeConfiguration(firstConfig);
-    final Configuration secondConfig = getConfiguration(3, 4);
-    metaStore.storeConfiguration(secondConfig);
+      // then
+      assertThat(readConfig).isEqualTo(secondConfig);
+    }
 
-    // when
-    metaStore.close();
-    metaStore = new MetaStore(storage);
-    final Configuration readConfig = metaStore.loadConfiguration();
+    private static Configuration getConfiguration(final long index, final long term) {
+      return new Configuration(index, term, 1234L, getMembers("0", "1"));
+    }
 
-    // then
-    assertThat(readConfig.index()).isEqualTo(secondConfig.index());
-    assertThat(readConfig.term()).isEqualTo(secondConfig.term());
-    assertThat(readConfig.time()).isEqualTo(secondConfig.time());
-    assertThat(readConfig.newMembers())
-        .containsExactlyInAnyOrder(secondConfig.newMembers().toArray(new RaftMember[0]));
-  }
+    private static ArrayList<RaftMember> getMembers(final String m0, final String m1) {
+      return new ArrayList<>(
+          Set.of(
+              new DefaultRaftMember(MemberId.from(m0), Type.ACTIVE, Instant.ofEpochMilli(12345)),
+              new DefaultRaftMember(MemberId.from(m1), Type.PASSIVE, Instant.ofEpochMilli(12346))));
+    }
 
-  @Test
-  public void shouldStoreAndLoadLastFlushedIndex() {
-    // given
-    metaStore.storeLastFlushedIndex(5L);
-
-    // when/then
-    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(5L);
-  }
-
-  @Test
-  public void shouldStoreAndLoadLastFlushedIndexAfterRestart() throws IOException {
-    // given
-    metaStore.storeLastFlushedIndex(5L);
-
-    // when
-    metaStore.close();
-    metaStore = new MetaStore(storage);
-
-    // then
-    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(5L);
-  }
-
-  @Test
-  public void shouldLoadLatestWrittenIndex() throws IOException {
-    // given
-    metaStore.storeLastFlushedIndex(5L);
-
-    // when
-    metaStore.storeLastFlushedIndex(7L);
-
-    // then
-    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(7L);
-
-    // when
-    metaStore.storeLastFlushedIndex(8L);
-
-    metaStore.close();
-    metaStore = new MetaStore(storage);
-
-    // then
-    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(8L);
-  }
-
-  @Test
-  public void shouldStoreAndLoadAllMetadata() {
-    // when
-    metaStore.storeTerm(1L);
-    metaStore.storeLastFlushedIndex(2L);
-    metaStore.storeVote(MemberId.from("a"));
-
-    // then
-    assertThat(metaStore.loadTerm()).isEqualTo(1L);
-    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(2L);
-    assertThat(metaStore.loadVote()).isEqualTo(MemberId.from("a"));
+    private static Stream<Arguments> provideConfigurations() {
+      return Stream.of(
+          Arguments.of(named("default", getConfiguration(2, 3))),
+          Arguments.of(
+              named(
+                  "joint consensus",
+                  new Configuration(2, 3, 1234L, getMembers("0", "2"), getMembers("0", "1")))),
+          Arguments.of(
+              named(
+                  "force configuration",
+                  new Configuration(2, 3, 1235L, getMembers("0", "3"), List.of(), true))));
+    }
   }
 }

@@ -52,7 +52,8 @@ public class MetaStoreSerializer {
     configurationEncoder
         .index(configuration.index())
         .term(configuration.term())
-        .timestamp(configuration.time());
+        .timestamp(configuration.time())
+        .force(configuration.force() ? BooleanType.TRUE : BooleanType.FALSE);
 
     final var newMembersEncoder =
         configurationEncoder.newMembersCount(configuration.newMembers().size());
@@ -94,6 +95,7 @@ public class MetaStoreSerializer {
     final long index = configurationDecoder.index();
     final long term = configurationDecoder.term();
     final long timestamp = configurationDecoder.timestamp();
+    final boolean force = BooleanType.TRUE.equals(configurationDecoder.force());
 
     final var newMembersDecoder = configurationDecoder.newMembers();
     final var newMembers = new ArrayList<RaftMember>(newMembersDecoder.count());
@@ -113,7 +115,7 @@ public class MetaStoreSerializer {
       oldMembers.add(new DefaultRaftMember(MemberId.from(memberId), type, updated));
     }
 
-    return new Configuration(index, term, timestamp, newMembers, oldMembers);
+    return new Configuration(index, term, timestamp, newMembers, oldMembers, force);
   }
 
   public void writeTerm(final long term, final MutableDirectBuffer buffer, final int offset) {

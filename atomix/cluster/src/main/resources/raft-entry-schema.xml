@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude"
-  package="io.atomix.raft.storage.serializer" id="8" version="2"
+  package="io.atomix.raft.storage.serializer" id="8" version="3"
   semanticVersion="0.1.0" description="Raft Entry" byteOrder="littleEndian"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://fixprotocol.io/2016/sbe http://fixprotocol.io/2016/sbe/sbe.xsd">
@@ -65,6 +65,7 @@
     <field name="index" id="0" type="uint64"/>
     <field name="term" id="1" type="uint64"/>
     <field name="timestamp" id="2" type="uint64"/>
+    <field name="force" id="5" type="BooleanType" sinceVersion="3"/>
     <group name="newMembers" id="3">
       <field name="type" id="1" type="MemberType"/>
       <field name="updated" id="2" type="int64"/>
