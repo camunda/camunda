@@ -17,8 +17,11 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExportingControlService implements ExportingControlApi {
+  private static final Logger LOG = LoggerFactory.getLogger(ExportingControlService.class);
   final BrokerClient brokerClient;
 
   public ExportingControlService(final BrokerClient brokerClient) {
@@ -27,12 +30,14 @@ public class ExportingControlService implements ExportingControlApi {
 
   @Override
   public CompletableFuture<Void> pauseExporting() {
+    LOG.info("Pausing exporting on all partitions.");
     final var topology = brokerClient.getTopologyManager().getTopology();
     return broadcastOnTopology(topology, BrokerAdminRequest::pauseExporting);
   }
 
   @Override
   public CompletableFuture<Void> resumeExporting() {
+    LOG.info("Resuming exporting on all partitions.");
     final var topology = brokerClient.getTopologyManager().getTopology();
     return broadcastOnTopology(topology, BrokerAdminRequest::resumeExporting);
   }
