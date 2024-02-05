@@ -1673,7 +1673,6 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
   public void getDefinitionsGroupedByTenant_allEntriesAreRetrievedIfMoreThanBucketLimit() {
     // given
     final Integer bucketLimit = 1000;

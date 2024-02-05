@@ -23,7 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class OpenSearchCompositeAggregationScroller {
@@ -99,14 +98,21 @@ public class OpenSearchCompositeAggregationScroller {
       .afterKey()
       .entrySet()
       .stream()
-      .collect(Collectors.toMap(Map.Entry::getKey, key -> key.getValue().to(String.class)));
+      // Below is a workaround for a known java issue https://bugs.openjdk.org/browse/JDK-8148463
+      .collect(HashMap::new, (m, v) -> m.put(v.getKey(), v.getValue().to(String.class)), HashMap::putAll);
+    Aggregation currentAggregations = getCurrentAggregations();
+
+    CompositeAggregation prevCompositeAggregation = currentAggregations.composite();
 
     // find aggregation and adjust after key for next invocation
-    CompositeAggregation upgradedCompositeAggregation = getCompositeAggregationBuilder().after(
-      convertedCompositeBucketConsumer)
+    CompositeAggregation upgradedCompositeAggregation = new CompositeAggregation.Builder()
+      .sources(prevCompositeAggregation.sources())
+      .size(prevCompositeAggregation.size())
+      .after(convertedCompositeBucketConsumer)
       .build();
 
-    this.aggregations.put(pathToAggregation.get(0), upgradedCompositeAggregation._toAggregation());
+    this.aggregations.put(pathToAggregation.get(0), Aggregation.of(a -> a.composite(upgradedCompositeAggregation)
+      .aggregations(currentAggregations.aggregations())));
 
     return compositeAggregationResult.buckets().array();
   }
@@ -121,12 +127,11 @@ public class OpenSearchCompositeAggregationScroller {
     return aggregations.get(pathToAggregation.getLast()).composite();
   }
 
-  private CompositeAggregation.Builder getCompositeAggregationBuilder() {
+  private Aggregation getCurrentAggregations() {
     Map<String, Aggregation> aggCol = this.aggregations;
     Aggregation currentAggregationFromPath;
 
     for (int i = 0; i < pathToAggregation.size() - 1; i++) {
-
       if (aggCol.containsKey(pathToAggregation.get(i))) {
         currentAggregationFromPath = aggCol.get(pathToAggregation.get(i));
       } else {
@@ -142,10 +147,7 @@ public class OpenSearchCompositeAggregationScroller {
       throw new OptimizeRuntimeException(
         String.format("Could not find composite aggregation [%s] in aggregation path.", pathToAggregation.getLast()));
     }
-
-    CompositeAggregation compositeAggregationResult = currentAggregationFromPath.composite();
-    return new CompositeAggregation.Builder().sources(compositeAggregationResult.sources())
-      .size(compositeAggregationResult.size());
+    return currentAggregationFromPath;
   }
 
   public OpenSearchCompositeAggregationScroller setClient(final OptimizeOpenSearchClient osClient) {
