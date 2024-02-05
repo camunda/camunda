@@ -21,9 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Component
 public class UserTaskZeebeRecordProcessor {
@@ -39,27 +37,52 @@ public class UserTaskZeebeRecordProcessor {
     this.objectMapper = objectMapper;
   }
 
-  private static final Set<String> STATES = new HashSet<>();
-  static {
-    STATES.add(UserTaskIntent.CREATED.name());
-  }
+  private static final Set<String> CREATE_STATES = Set.of(UserTaskIntent.CREATED.name());
+  private static final Set<String> UPDATE_STATES = Set.of(
+    UserTaskIntent.ASSIGNED.name()
+    ,UserTaskIntent.MIGRATED.name()
+  );
 
   public void processUserTaskRecord(BatchRequest batchRequest, Record<UserTaskRecordValue> userTaskRecord) throws PersistenceException {
     final String intent = userTaskRecord.getIntent().name();
-
-    if (STATES.contains(intent)) {
-      UserTaskRecordValue recordValue = userTaskRecord.getValue();
-      persistUserTask(recordValue, batchRequest);
+    logger.info("Intent is: {}", intent);
+    var userTaskValue = userTaskRecord.getValue();
+    UserTaskEntity userTaskEntity;
+    try {
+      userTaskEntity = createEntity(userTaskValue);
+    } catch (JsonProcessingException e) {
+      throw new OperateRuntimeException(String.format("Could not create UserTaskEntity from record value %s", userTaskValue), e);
+    }
+    if (CREATE_STATES.contains(intent)) {
+      persistUserTask(userTaskEntity, batchRequest);
+    } else if (UPDATE_STATES.contains(intent)) {
+      Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intent, userTaskValue, userTaskEntity);
+      updateUserTask(userTaskEntity, updateFields, batchRequest);
+    } else {
+      logger.debug("UserTask record with intent {} is ignored", intent);
     }
   }
 
-  private void persistUserTask(UserTaskRecordValue recordValue, BatchRequest batchRequest) throws PersistenceException {
-    UserTaskEntity userTaskEntity;
-    try {
-      userTaskEntity = createEntity(recordValue);
-    } catch (JsonProcessingException e) {
-      throw new OperateRuntimeException(String.format("Could not create UserTaskEntity from record value %s", recordValue), e);
+  private static Map<String, Object> getUpdateFieldsMapByIntent(String intent, UserTaskRecordValue userTaskValue, UserTaskEntity userTaskEntity) {
+    final Map<String, Object> updateFields = new HashMap<>();
+    if (intent.equals(UserTaskIntent.ASSIGNED.name())) {
+      updateFields.put(UserTaskTemplate.ASSIGNEE, userTaskValue.getAssignee());
     }
+    if (intent.equals(UserTaskIntent.MIGRATED.name())) {
+      updateFields.put(UserTaskTemplate.BPMN_PROCESS_ID, userTaskEntity.getBpmnProcessId());
+      updateFields.put(UserTaskTemplate.PROCESS_DEFINITION_VERSION, userTaskEntity.getProcessDefinitionVersion());
+      updateFields.put(UserTaskTemplate.PROCESS_DEFINITION_KEY, userTaskEntity.getProcessDefinitionKey());
+      updateFields.put(UserTaskTemplate.ELEMENT_ID, userTaskEntity.getElementId());
+    }
+    return updateFields;
+  }
+
+  private void updateUserTask(UserTaskEntity userTaskEntity, Map<String, Object> updateFields, BatchRequest batchRequest) throws PersistenceException {
+    batchRequest.update(userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), updateFields);
+    logger.debug("Updated UserTaskEntity {} with update fields {} to batch request", userTaskEntity.getId(), updateFields);
+  }
+
+  private void persistUserTask(UserTaskEntity userTaskEntity, BatchRequest batchRequest) throws PersistenceException {
     batchRequest.addWithId(userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), userTaskEntity);
     logger.debug("Added UserTaskEntity {} to batch request", userTaskEntity);
   }

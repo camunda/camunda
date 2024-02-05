@@ -16,6 +16,7 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.*;
+import io.camunda.operate.webapp.reader.UserTaskReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
@@ -58,6 +59,9 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
 
   private Long initialBatchOperationMaxSize;
 
+  @Autowired
+  private UserTaskReader userTaskReader;
+
   @Before
   public void before() {
     super.before();
@@ -72,6 +76,49 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
     operateProperties.setBatchOperationMaxSize(initialBatchOperationMaxSize);
 
     super.after();
+  }
+
+  @Test
+  public void testCanMigrateZeebeUserTask() throws Exception {
+    var processDefinitionKey = tester.deployProcess("three-zeebe-user-tasks.bpmn")
+        .waitUntil().processIsDeployed()
+        .then().startProcessInstance("Three-Zeebe-User-Tasks")
+        .waitUntil().processInstanceIsStarted().and().userTasksAreCreated(3)
+        .getProcessDefinitionKey();
+
+    var beforeUserTasks = userTaskReader.getUserTasks();
+    var userTask1 = beforeUserTasks.stream().filter( u -> "UserTask-1".equals(u.getElementId())).findFirst().get();
+    var userTask3 = beforeUserTasks.stream().filter( u -> "UserTask-3".equals(u.getElementId())).findFirst().get();
+    ListViewQueryDto query = createGetAllProcessInstancesQuery();
+    CreateBatchOperationRequestDto request = new CreateBatchOperationRequestDto()
+        .setName("batch-1")
+        .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE).setQuery(query)
+        .setMigrationPlan(new MigrationPlanDto()
+            .setTargetProcessDefinitionKey(String.valueOf(processDefinitionKey))
+            .setMappingInstructions(List.of(
+              new MigrationPlanDto.MappingInstruction()
+                .setSourceElementId("UserTask-1").setTargetElementId("UserTask-2"),
+            new MigrationPlanDto.MappingInstruction()
+                .setSourceElementId("UserTask-2").setTargetElementId("UserTask-1"),
+            new MigrationPlanDto.MappingInstruction()
+              .setSourceElementId("UserTask-3").setTargetElementId("UserTask-3")
+        )));
+
+    MvcResult mvcResult = postBatchOperation(request, HttpStatus.SC_OK);
+    //and execute the operation
+    tester.waitUntil().operationIsCompleted();
+
+    //then
+    //the state of operation is COMPLETED
+    final BatchOperationEntity batchOperationEntity = objectMapper.readValue(mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
+    final List<OperationEntity> operations = searchAllDocuments(operationTemplate.getAlias(), OperationEntity.class);
+    final String migrationPlanJson = objectMapper.writeValueAsString(request.getMigrationPlan());
+
+    var afterUserTasks = userTaskReader.getUserTasks();
+    var afterUserTask1 = afterUserTasks.stream().filter( u -> "UserTask-1".equals(u.getElementId())).findFirst().get();
+    assertThat(userTask1.getUserTaskKey()).isNotEqualTo(afterUserTask1.getUserTaskKey());
+    var afterUserTask3 = afterUserTasks.stream().filter( u -> "UserTask-3".equals(u.getElementId())).findFirst().get();
+    assertThat(userTask3.getUserTaskKey()).isEqualTo(afterUserTask3.getUserTaskKey());
   }
 
   @Test
