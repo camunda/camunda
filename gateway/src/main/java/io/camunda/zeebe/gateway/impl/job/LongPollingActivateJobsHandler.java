@@ -54,12 +54,11 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
 
   private LongPollingActivateJobsHandler(
       final BrokerClient brokerClient,
-      final long maxMessageSize,
       final long longPollingTimeout,
       final long probeTimeoutMillis,
       final int failedAttemptThreshold) {
     this.brokerClient = brokerClient;
-    activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient, maxMessageSize);
+    activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;
@@ -357,18 +356,12 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
     private static final int EMPTY_RESPONSE_THRESHOLD = 3;
 
     private BrokerClient brokerClient;
-    private long maxMessageSize;
     private long longPollingTimeout = DEFAULT_LONG_POLLING_TIMEOUT;
     private long probeTimeoutMillis = DEFAULT_PROBE_TIMEOUT;
     private int minEmptyResponses = EMPTY_RESPONSE_THRESHOLD;
 
     public Builder setBrokerClient(final BrokerClient brokerClient) {
       this.brokerClient = brokerClient;
-      return this;
-    }
-
-    public Builder setMaxMessageSize(final long maxMessageSize) {
-      this.maxMessageSize = maxMessageSize;
       return this;
     }
 
@@ -390,7 +383,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
     public LongPollingActivateJobsHandler build() {
       Objects.requireNonNull(brokerClient, "brokerClient");
       return new LongPollingActivateJobsHandler(
-          brokerClient, maxMessageSize, longPollingTimeout, probeTimeoutMillis, minEmptyResponses);
+          brokerClient, longPollingTimeout, probeTimeoutMillis, minEmptyResponses);
     }
   }
 }

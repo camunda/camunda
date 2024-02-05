@@ -11,9 +11,9 @@ import com.google.rpc.Code;
 import com.google.rpc.Status;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.ResponseMapper;
+import io.camunda.zeebe.gateway.ResponseMapper.JobActivationResult;
 import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
 import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
-import io.camunda.zeebe.gateway.ResponseMapper.JobActivationResult;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.PartitionIdIterator;
@@ -52,14 +52,12 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
       new ConcurrentHashMap<>();
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
-  private final long maxMessageSize;
 
   private ActorControl actor;
 
-  public RoundRobinActivateJobsHandler(final BrokerClient brokerClient, final long maxMessageSize) {
+  public RoundRobinActivateJobsHandler(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
-    this.maxMessageSize = maxMessageSize;
   }
 
   @Override
@@ -154,14 +152,13 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
         () -> {
           final var response = brokerResponse.getResponse();
           final JobActivationResult jobActivationResult =
-              ResponseMapper.toActivateJobsResponse(
-                  brokerResponse.getKey(), response, maxMessageSize);
+              ResponseMapper.toActivateJobsResponse(brokerResponse.getKey(), response);
 
           final List<ActivatedJob> jobsToDefer = jobActivationResult.jobsToDefer();
           if (!jobsToDefer.isEmpty()) {
             final var jobKeys = jobsToDefer.stream().map(ActivatedJob::getKey).toList();
             final var jobType = request.getType();
-            final var reason = String.format(MAX_MESSAGE_SIZE_EXCEEDED_MSG, maxMessageSize);
+            final var reason = String.format(MAX_MESSAGE_SIZE_EXCEEDED_MSG);
 
             logResponseNotSent(jobType, jobKeys, reason);
             reactivateJobs(jobsToDefer, reason);

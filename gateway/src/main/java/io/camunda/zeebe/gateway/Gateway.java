@@ -209,16 +209,12 @@ public final class Gateway {
     if (gatewayCfg.getLongPolling().isEnabled()) {
       return buildLongPollingHandler(brokerClient);
     } else {
-      return new RoundRobinActivateJobsHandler(
-          brokerClient, gatewayCfg.getNetwork().getMaxMessageSize().toBytes());
+      return new RoundRobinActivateJobsHandler(brokerClient);
     }
   }
 
   private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {
-    return LongPollingActivateJobsHandler.newBuilder()
-        .setBrokerClient(brokerClient)
-        .setMaxMessageSize(gatewayCfg.getNetwork().getMaxMessageSize().toBytes())
-        .build();
+    return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
   }
 
   private ServerServiceDefinition applyInterceptors(final BindableService service) {

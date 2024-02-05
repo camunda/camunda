@@ -88,7 +88,6 @@ public final class LongPollingActivateJobsTest {
     handler =
         LongPollingActivateJobsHandler.newBuilder()
             .setBrokerClient(brokerClient)
-            .setMaxMessageSize(MAX_MESSAGE_SIZE)
             .setLongPollingTimeout(LONG_POLLING_TIMEOUT)
             .setProbeTimeoutMillis(PROBE_TIMEOUT)
             .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
@@ -248,7 +247,6 @@ public final class LongPollingActivateJobsTest {
     handler =
         LongPollingActivateJobsHandler.newBuilder()
             .setBrokerClient(brokerClient)
-            .setMaxMessageSize(MAX_MESSAGE_SIZE)
             .setLongPollingTimeout(20000)
             .setProbeTimeoutMillis(probeTimeout)
             .build();
@@ -273,7 +271,6 @@ public final class LongPollingActivateJobsTest {
     handler =
         LongPollingActivateJobsHandler.newBuilder()
             .setBrokerClient(brokerClient)
-            .setMaxMessageSize(MAX_MESSAGE_SIZE)
             .setLongPollingTimeout(longPollingTimeout)
             .setProbeTimeoutMillis(probeTimeout)
             .build();

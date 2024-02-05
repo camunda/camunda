@@ -43,8 +43,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import org.agrona.DirectBuffer;
+import org.springframework.util.unit.DataSize;
 
 public final class ResponseMapper {
+  private static final long MAX_MESSAGE_SIZE =
+      DataSize.ofMegabytes(4).toBytes(); // default max response size is 4MB
 
   public static DeployProcessResponse toDeployProcessResponse(
       final long key, final DeploymentRecord brokerResponse) {
@@ -170,9 +173,9 @@ public final class ResponseMapper {
    *
    * <p>This is because the jobs returned from the broker is in MessagePack format and while
    * converting them to gRPC response the size of the response may increase (e.g. we do JSON and
-   * String conversions see: {@link #toActivatedJob(long, JobRecord)}). That will cause the response
-   * size to exceed the maximum response size allowed by the gateway and the gateway will log a
-   * Stream Error indicating that streaming out the activated jobs failed.
+   * String conversions on building ActivatedJob response object). That will cause the response size
+   * to exceed the maximum response size allowed by the gateway and the gateway will log a Stream
+   * Error indicating that streaming out the activated jobs failed.
    *
    * <p>If we do not respect the actual max response size, Zeebe Java Client rejects the response
    * containing the activated jobs and the client cancels the channel/stream/connection as well.
@@ -180,12 +183,11 @@ public final class ResponseMapper {
    *
    * @param key the key of the request
    * @param brokerResponse the broker response
-   * @param maxResponseSize the maximum size of the response
    * @return a pair of the response and a list of jobs that could not be included in the response
    *     because the response size exceeded the maximum response size
    */
   public static JobActivationResult toActivateJobsResponse(
-      final long key, final JobBatchRecord brokerResponse, final long maxResponseSize) {
+      final long key, final JobBatchRecord brokerResponse) {
     final Iterator<LongValue> jobKeys = brokerResponse.jobKeys().iterator();
     final Iterator<JobRecord> jobs = brokerResponse.jobs().iterator();
 
@@ -214,7 +216,7 @@ public final class ResponseMapper {
               .build();
 
       final int activatedJobSize = activatedJob.getSerializedSize();
-      if (currentResponseSize + activatedJobSize <= maxResponseSize) {
+      if (currentResponseSize + activatedJobSize <= MAX_MESSAGE_SIZE) {
         responseJobs.add(activatedJob);
         currentResponseSize += activatedJobSize;
       } else {
@@ -229,7 +231,7 @@ public final class ResponseMapper {
     // is still exceeding the maximum response size, we remove the last added job from the response
     // and add it to the list of jobs to be reactivated.
     // We do this until the response size is below the maximum response size.
-    while (!responseJobs.isEmpty() && response.getSerializedSize() > maxResponseSize) {
+    while (!responseJobs.isEmpty() && response.getSerializedSize() > MAX_MESSAGE_SIZE) {
       sizeExceedingJobs.add(responseJobs.removeLast());
       response = ActivateJobsResponse.newBuilder().addAllJobs(responseJobs).build();
     }
