@@ -44,13 +44,24 @@ import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.protocol.AppendResponse;
+import io.atomix.raft.protocol.ConfigureResponse;
+import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinRequest;
+import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.LeaveRequest;
+import io.atomix.raft.protocol.LeaveResponse;
+import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
+import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.protocol.RaftResponse.Builder;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.RaftServerProtocol;
+import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TransferRequest;
+import io.atomix.raft.protocol.TransferResponse;
+import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.roles.ActiveRole;
 import io.atomix.raft.roles.CandidateRole;
 import io.atomix.raft.roles.FollowerRole;
@@ -316,35 +327,77 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   /** Registers server handlers on the configured protocol. */
   private void registerHandlers(final RaftServerProtocol protocol) {
-    protocol.registerConfigureHandler(request -> runOnContext(() -> role.onConfigure(request)));
-    protocol.registerInstallHandler(request -> runOnContext(() -> role.onInstall(request)));
-    protocol.registerReconfigureHandler(request -> runOnContext(() -> role.onReconfigure(request)));
-    protocol.registerJoinHandler(request -> runOnContext(() -> role.onJoin(request)));
-    protocol.registerLeaveHandler(request -> runOnContext(() -> role.onLeave(request)));
-    protocol.registerTransferHandler(request -> runOnContext(() -> role.onTransfer(request)));
+    protocol.registerConfigureHandler(
+        request ->
+            handleRequestOnContext(
+                request, () -> role.onConfigure(request), ConfigureResponse::builder));
+    protocol.registerInstallHandler(
+        request ->
+            handleRequestOnContext(
+                request, () -> role.onInstall(request), InstallResponse::builder));
+    protocol.registerReconfigureHandler(
+        request ->
+            handleRequestOnContext(
+                request, () -> role.onReconfigure(request), ReconfigureResponse::builder));
+    protocol.registerJoinHandler(
+        request ->
+            handleRequestOnContext(request, () -> role.onJoin(request), JoinResponse::builder));
+    protocol.registerLeaveHandler(
+        request ->
+            handleRequestOnContext(request, () -> role.onLeave(request), LeaveResponse::builder));
+    protocol.registerTransferHandler(
+        request ->
+            handleRequestOnContext(
+                request, () -> role.onTransfer(request), TransferResponse::builder));
     protocol.registerAppendV1Handler(
-        request -> runOnContext(() -> role.onAppend(ProtocolVersionHandler.transform(request))));
+        request ->
+            handleRequestOnContext(
+                request,
+                () -> role.onAppend(ProtocolVersionHandler.transform(request)),
+                AppendResponse::builder));
     protocol.registerAppendV2Handler(
-        request -> runOnContext(() -> role.onAppend(ProtocolVersionHandler.transform(request))));
-    protocol.registerPollHandler(request -> runOnContext(() -> role.onPoll(request)));
-    protocol.registerVoteHandler(request -> runOnContext(() -> role.onVote(request)));
+        request ->
+            handleRequestOnContext(
+                request,
+                () -> role.onAppend(ProtocolVersionHandler.transform(request)),
+                AppendResponse::builder));
+    protocol.registerPollHandler(
+        request ->
+            handleRequestOnContext(request, () -> role.onPoll(request), PollResponse::builder));
+    protocol.registerVoteHandler(
+        request ->
+            handleRequestOnContext(request, () -> role.onVote(request), VoteResponse::builder));
   }
 
-  private <R extends RaftResponse> CompletableFuture<R> runOnContext(
-      final Supplier<CompletableFuture<R>> function) {
+  private <T extends Builder<T, R>, R extends RaftResponse>
+      CompletableFuture<R> handleRequestOnContext(
+          final RaftRequest request,
+          final Supplier<CompletableFuture<R>> function,
+          final Supplier<RaftResponse.Builder<T, R>> responseBuilder) {
+
     final CompletableFuture<R> future = new CompletableFuture<>();
     threadContext.execute(
         () ->
-            function
-                .get()
-                .whenComplete(
-                    (response, error) -> {
-                      if (error == null) {
-                        future.complete(response);
-                      } else {
-                        future.completeExceptionally(error);
-                      }
+            role.shouldAcceptRequest(request)
+                .ifRightOrLeft(
+                    ignore -> // assume it is always true otherwise the response is left
+                    function
+                            .get()
+                            .whenComplete(
+                                (response, error) -> {
+                                  if (error == null) {
+                                    future.complete(response);
+                                  } else {
+                                    future.completeExceptionally(error);
+                                  }
+                                }),
+                    error -> {
+                      final R response =
+                          responseBuilder.get().withStatus(Status.ERROR).withError(error).build();
+                      log.trace("Sending {}", response);
+                      future.complete(response);
                     }));
+
     return future;
   }
 

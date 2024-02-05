@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import java.util.Collection;
@@ -119,5 +120,9 @@ public record Configuration(
           new DefaultRaftMember(member.memberId(), member.getType(), member.getLastUpdated()));
     }
     return copied.build();
+  }
+
+  public boolean hasMember(final MemberId member) {
+    return allMembers().stream().anyMatch(m -> m.memberId().equals(member));
   }
 }

@@ -16,6 +16,7 @@
  */
 package io.atomix.raft.roles;
 
+import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
@@ -29,6 +30,7 @@ import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
+import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TransferRequest;
@@ -36,6 +38,7 @@ import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.utils.Managed;
+import io.camunda.zeebe.util.Either;
 import java.util.concurrent.CompletableFuture;
 
 /** Raft role interface. */
@@ -109,4 +112,6 @@ public interface RaftRole extends Managed<RaftRole> {
    * @return A completable future to be completed with the request response.
    */
   CompletableFuture<VoteResponse> onVote(VoteRequest request);
+
+  Either<RaftError, Boolean> shouldAcceptRequest(RaftRequest request);
 }
