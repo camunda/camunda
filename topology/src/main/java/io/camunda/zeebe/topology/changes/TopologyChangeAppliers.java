@@ -22,7 +22,7 @@ public interface TopologyChangeAppliers {
   /**
    * @return the operation applier for the given operation
    */
-  MemberOperationApplier getApplier(TopologyChangeOperation operation);
+  ClusterOperationApplier getApplier(TopologyChangeOperation operation);
 
   /** An operation applier that can apply and operation and changes the ClusterTopology. */
   interface ClusterOperationApplier {

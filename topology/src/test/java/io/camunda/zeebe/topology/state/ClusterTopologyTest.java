@@ -127,7 +127,8 @@ class ClusterTopologyTest {
 
     // when
     final var updatedTopology =
-        initialTopology.advanceTopologyChange(member(1), MemberState::toActive);
+        initialTopology.advanceTopologyChange(
+            t -> t.updateMember(member(1), MemberState::toActive));
 
     // then
     ClusterTopologyAssert.assertThatClusterTopology(updatedTopology)
@@ -145,7 +146,7 @@ class ClusterTopologyTest {
 
     // when
     final var updatedTopology =
-        initialTopology.advanceTopologyChange(member(1), MemberState::toLeft);
+        initialTopology.advanceTopologyChange(t -> t.updateMember(member(1), MemberState::toLeft));
 
     // then
     ClusterTopologyAssert.assertThatClusterTopology(updatedTopology)
@@ -166,7 +167,8 @@ class ClusterTopologyTest {
 
     // when
     final var updatedTopology =
-        initialTopology.advanceTopologyChange(member(1), MemberState::toActive);
+        initialTopology.advanceTopologyChange(
+            t -> t.updateMember(member(1), MemberState::toActive));
 
     final var mergedTopology = initialTopology.merge(updatedTopology);
 
@@ -186,7 +188,7 @@ class ClusterTopologyTest {
     // when
     final var finalTopology =
         initialTopology.advanceTopologyChange(
-            member(1), m -> m.addPartition(1, PartitionState.active(1)));
+            t -> t.updateMember(member(1), m -> m.addPartition(1, PartitionState.active(1))));
 
     // then
     final var expected =

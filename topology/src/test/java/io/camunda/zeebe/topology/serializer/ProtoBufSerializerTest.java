@@ -259,7 +259,7 @@ final class ProtoBufSerializerTest {
     return ClusterTopology.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
         .startTopologyChange(changes)
-        .advanceTopologyChange(MemberId.from("1"), m -> m);
+        .advanceTopologyChange(topology -> topology);
   }
 
   private static ClusterTopology topologyWithClusterChangePlanWithMemberOperations() {

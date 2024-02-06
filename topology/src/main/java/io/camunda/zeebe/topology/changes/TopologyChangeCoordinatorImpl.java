@@ -14,7 +14,6 @@ import io.camunda.zeebe.topology.api.TopologyRequestFailedException;
 import io.camunda.zeebe.topology.api.TopologyRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.topology.api.TopologyRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.topology.api.TopologyRequestFailedException.OperationNotAllowed;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.CompletedChange;
@@ -235,25 +234,24 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     }
 
     final var operation = updatedTopology.nextPendingOperation();
-    final MemberOperationApplier applier = topologyChangeSimulator.getApplier(operation);
-    final var result = applier.initMemberState(updatedTopology);
+    final var applier = topologyChangeSimulator.getApplier(operation);
+    final var result = applier.init(updatedTopology);
     if (result.isLeft()) {
       failFuture(simulationCompleted, new InvalidRequest(result.getLeft()));
       return;
     }
 
-    final var initializedChanges = updatedTopology.updateMember(operation.memberId(), result.get());
+    final var initializedChanges = result.get().apply(updatedTopology);
 
     applier
-        .applyOperation()
+        .apply()
         .onComplete(
-            (stateUpdater, error) -> {
+            (topologyUpdater, error) -> {
               if (error != null) {
                 failFuture(simulationCompleted, new InvalidRequest(error));
                 return;
               }
-              final var newTopology =
-                  initializedChanges.advanceTopologyChange(operation.memberId(), stateUpdater);
+              final var newTopology = initializedChanges.advanceTopologyChange(topologyUpdater);
 
               simulateTopologyChange(newTopology, topologyChangeSimulator, simulationCompleted);
             });

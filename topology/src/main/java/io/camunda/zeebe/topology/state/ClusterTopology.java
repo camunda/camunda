@@ -182,13 +182,12 @@ public record ClusterTopology(
    * should be reflected in ClusterTopology by invoking this method. This removes the completed
    * operation from the pending changes and update the member state using the given updater.
    *
-   * @param memberId id of the member which completed the operation
-   * @param memberStateUpdater the method to update the member state
+   * @param topologyUpdater the method to update the topology
    * @return the updated ClusterTopology
    */
   public ClusterTopology advanceTopologyChange(
-      final MemberId memberId, final UnaryOperator<MemberState> memberStateUpdater) {
-    return updateMember(memberId, memberStateUpdater).advance();
+      final UnaryOperator<ClusterTopology> topologyUpdater) {
+    return topologyUpdater.apply(this).advance();
   }
 
   private ClusterTopology advance() {
