@@ -30,8 +30,8 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageStartEventSubscri
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMessageSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMigrationState;
-import io.camunda.zeebe.engine.state.migration.to_8_4.DbColumnFamilyCorrectionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_4.DbSignalSubscriptionMigrationState;
+import io.camunda.zeebe.engine.state.migration.to_8_5.DbColumnFamilyCorrectionMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
