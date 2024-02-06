@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
+import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -96,6 +98,8 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   private static final String ERROR_CONCURRENT_COMMAND =
       "Expected to migrate process instance '%s' but a concurrent command was executed on the process instance. Please retry the migration.";
   private static final long NO_PARENT = -1L;
+  private static final String ZEEBE_USER_TASK = "ZEEBE_USER_TASK";
+  private static final String JOB_WORKER_USER_TASK = "USER_TASK";
 
   /**
    * Checks whether the given record exists. Throws exception if given process instance record is
@@ -354,6 +358,50 @@ public final class ProcessInstanceMigrationPreconditionChecker {
               targetElementType);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
+    }
+  }
+
+  /**
+   * Since we introduce zeebe user tasks and job worker tasks has the same bpmn element type, we
+   * need to check whether the given element instance and target element has the same user task
+   * type. Throws an exception if they have different types.
+   *
+   * @param targetProcessDefinition target process definition to retrieve the target element type
+   * @param targetElementId target element id
+   * @param elementInstance element instance to do the check
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireSameUserTaskType(
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ElementInstance elementInstance,
+      final long processInstanceKey) {
+    final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
+    final AbstractFlowElement targetElement =
+        targetProcessDefinition.getProcess().getElementById(targetElementId);
+    final BpmnElementType targetElementType = targetElement.getElementType();
+
+    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.USER_TASK
+        && targetElementType == BpmnElementType.USER_TASK) {
+      final ExecutableUserTask targetUserTask =
+          (ExecutableUserTask) targetProcessDefinition.getProcess().getElementById(targetElementId);
+      final String targetUserTaskType =
+          targetUserTask.getUserTaskProperties() != null ? ZEEBE_USER_TASK : JOB_WORKER_USER_TASK;
+      final String sourceUserTaskType =
+          elementInstance.getUserTaskKey() > 0 ? ZEEBE_USER_TASK : JOB_WORKER_USER_TASK;
+
+      if (!targetUserTaskType.equals(sourceUserTaskType)) {
+        final String reason =
+            String.format(
+                ERROR_ELEMENT_TYPE_CHANGED,
+                processInstanceKey,
+                elementInstanceRecord.getElementId(),
+                sourceUserTaskType,
+                targetElementId,
+                targetUserTaskType);
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
     }
   }
 
