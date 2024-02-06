@@ -73,6 +73,11 @@ public final class UserTaskClient {
     return this;
   }
 
+  public UserTaskClient withAction(final String action) {
+    userTaskRecord.setAction(action);
+    return this;
+  }
+
   public UserTaskClient withVariables(final String variables) {
     userTaskRecord.setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
     return this;
@@ -173,12 +178,12 @@ public final class UserTaskClient {
   }
 
   public Record<UserTaskRecordValue> update(final UserTaskRecord changes) {
-    userTaskRecord.wrapWithoutVariables(changes);
-    userTaskRecord
+    changes
         .setCandidateGroupsChanged()
         .setCandidateUsersChanged()
         .setDueDateChanged()
         .setFollowUpDateChanged();
+    userTaskRecord.wrapChangedAttributes(changes, true);
 
     final long userTaskKey = findUserTaskKey();
     final long position =

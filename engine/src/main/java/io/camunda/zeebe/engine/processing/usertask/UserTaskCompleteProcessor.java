@@ -26,6 +26,8 @@ import java.util.List;
 
 public final class UserTaskCompleteProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
+  private static final String DEFAULT_ACTION = "complete";
+
   private final ElementInstanceState elementInstanceState;
   private final EventHandle eventHandle;
   private final StateWriter stateWriter;
@@ -66,6 +68,7 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
     final long userTaskKey = command.getKey();
 
     userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
+    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETING, userTaskRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);

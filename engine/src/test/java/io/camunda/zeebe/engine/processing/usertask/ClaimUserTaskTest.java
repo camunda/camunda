@@ -70,6 +70,40 @@ public class ClaimUserTaskTest {
 
     Assertions.assertThat(recordValue)
         .hasUserTaskKey(userTaskKey)
+        .hasAction("claim")
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldTrackCustomActionInAssigningEvent() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // when
+    final Record<UserTaskRecordValue> claimedRecord =
+        ENGINE
+            .userTask()
+            .withKey(userTaskKey)
+            .withAction("customAction")
+            .withAssignee("foo")
+            .claim();
+
+    // then
+    final UserTaskRecordValue recordValue = claimedRecord.getValue();
+
+    Assertions.assertThat(claimedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(UserTaskIntent.ASSIGNING);
+
+    Assertions.assertThat(recordValue)
+        .hasUserTaskKey(userTaskKey)
+        .hasAction("customAction")
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
