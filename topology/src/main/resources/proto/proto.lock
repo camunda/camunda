@@ -464,6 +464,11 @@
                 "id": 6,
                 "name": "partitionReconfigurePriority",
                 "type": "PartitionReconfigurePriorityOperation"
+              },
+              {
+                "id": 7,
+                "name": "partitionForceReconfigure",
+                "type": "PartitionForceReconfigureOperation"
               }
             ]
           },
@@ -519,6 +524,22 @@
                 "id": 2,
                 "name": "priority",
                 "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "PartitionForceReconfigureOperation",
+            "fields": [
+              {
+                "id": 1,
+                "name": "partitionId",
+                "type": "int32"
+              },
+              {
+                "id": 2,
+                "name": "members",
+                "type": "string",
+                "is_repeated": true
               }
             ]
           },
