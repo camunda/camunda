@@ -32,6 +32,7 @@ import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.core.serializer.support.DeserializingConverter;
 import org.springframework.core.serializer.support.SerializingConverter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.session.MapSession;
@@ -402,7 +403,12 @@ public class OpenSearchSessionRepository
 
     public boolean isAuthenticated() {
       final var authentication = getAuthentication();
-      return (authentication != null && authentication.isAuthenticated());
+      try {
+        return authentication != null && authentication.isAuthenticated();
+      } catch (InsufficientAuthenticationException ex) {
+        // TODO consider not throwing exceptions in authentication.isAuthenticated()
+        return false;
+      }
     }
 
     private Authentication getAuthentication() {

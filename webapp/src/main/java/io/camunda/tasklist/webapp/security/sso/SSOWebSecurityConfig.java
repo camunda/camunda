@@ -87,6 +87,7 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
     }
 
     if (containsAny(requestedUrl.toLowerCase(), GRAPHQL_URL, REST_V1_API)) {
+      req.getSession().invalidate();
       sendJSONErrorMessage(res, ex.getMessage());
     } else {
       LOGGER.debug("Try to access protected resource {}. Save it for later redirect", requestedUrl);
