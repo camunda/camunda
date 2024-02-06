@@ -246,13 +246,6 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     return this;
   }
 
-  public UserTaskRecord setChangedAttributes(final List<String> changedAttributes) {
-    changedAttributesProp.reset();
-    changedAttributes.forEach(
-        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
-    return this;
-  }
-
   public UserTaskRecord setAction(final String action) {
     actionProp.setValue(action);
     return this;
@@ -260,6 +253,13 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setAction(final DirectBuffer action) {
     actionProp.setValue(action);
+    return this;
+  }
+
+  public UserTaskRecord setChangedAttributes(final List<String> changedAttributes) {
+    changedAttributesProp.reset();
+    changedAttributes.forEach(
+        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
     return this;
   }
 
@@ -426,7 +426,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @JsonIgnore
-  public String getAction(final String defaultAction) {
+  public String getActionOrDefault(final String defaultAction) {
     final String action = bufferAsString(actionProp.getValue());
     return action.isEmpty() ? defaultAction : action;
   }
