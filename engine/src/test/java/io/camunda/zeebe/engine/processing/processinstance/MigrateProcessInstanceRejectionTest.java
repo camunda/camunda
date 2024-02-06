@@ -958,6 +958,112 @@ public class MigrateProcessInstanceRejectionTest {
         .hasKey(processInstanceKey);
   }
 
+  @Test
+  public void shouldRejectCommandWhenNativeUserTaskIsMappedToUserTask() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .userTask("A")
+                    .zeebeUserTask()
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .startEvent()
+                    .userTask("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, "process2");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                """
+              Expected to migrate process instance '%s' \
+              but active element with id 'A' and type 'ZEEBE_USER_TASK' is mapped to \
+              an element with id 'B' and different type 'USER_TASK'. \
+              Elements must be mapped to elements of the same type.""",
+                processInstanceKey))
+        .hasKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldRejectCommandWhenUserTaskIsMappedToNativeUserTask() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .userTask("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .startEvent()
+                    .userTask("B")
+                    .zeebeUserTask()
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, "process2");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                """
+              Expected to migrate process instance '%s' \
+              but active element with id 'A' and type 'USER_TASK' is mapped to \
+              an element with id 'B' and different type 'ZEEBE_USER_TASK'. \
+              Elements must be mapped to elements of the same type.""",
+                processInstanceKey))
+        .hasKey(processInstanceKey);
+  }
+
   private static long extractTargetProcessDefinitionKey(
       final Record<DeploymentRecordValue> deployment, final String bpmnProcessId) {
     return deployment.getValue().getProcessesMetadata().stream()
