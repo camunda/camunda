@@ -359,7 +359,15 @@ public class ClusterEndpoint {
               .partitionId(reconfigure.partitionId())
               .priority(reconfigure.priority());
       case final PartitionForceReconfigureOperation partitionForceReconfigureOperation ->
-          throw new UnsupportedOperationException("Not implemented yet");
+          new Operation()
+              .operation(OperationEnum.PARTITION_FORCE_RECONFIGURE)
+              .brokerId(Integer.parseInt(partitionForceReconfigureOperation.memberId().id()))
+              .partitionId(partitionForceReconfigureOperation.partitionId())
+              .brokers(
+                  partitionForceReconfigureOperation.members().stream()
+                      .map(MemberId::id)
+                      .map(Integer::parseInt)
+                      .collect(Collectors.toList()));
     };
   }
 
@@ -494,7 +502,15 @@ public class ClusterEndpoint {
                   .partitionId(reconfigure.partitionId())
                   .priority(reconfigure.priority());
           case final PartitionForceReconfigureOperation partitionForceReconfigureOperation ->
-              throw new UnsupportedOperationException("Not implemented yet");
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_FORCE_RECONFIGURE)
+                  .brokerId(Integer.parseInt(partitionForceReconfigureOperation.memberId().id()))
+                  .partitionId(partitionForceReconfigureOperation.partitionId())
+                  .brokers(
+                      partitionForceReconfigureOperation.members().stream()
+                          .map(MemberId::id)
+                          .map(Integer::parseInt)
+                          .collect(Collectors.toList()));
         };
 
     mappedOperation.completedAt(mapInstantToDateTime(operation.completedAt()));
