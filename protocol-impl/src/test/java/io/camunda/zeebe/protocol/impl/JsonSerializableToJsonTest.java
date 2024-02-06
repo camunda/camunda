@@ -2251,7 +2251,6 @@ final class JsonSerializableToJsonTest {
                     .setThrowEventId("elementThrowEventId")
                     .setThrowEventInstanceKey(123L)
                     .setCompensationHandlerId("compensationActivityElementId")
-                    .setSubprocessSubscription(true)
                     .setVariables(VARIABLES_MSGPACK),
         """
         {
@@ -2263,7 +2262,6 @@ final class JsonSerializableToJsonTest {
           "throwEventId": "elementThrowEventId",
           "throwEventInstanceKey": 123,
           "compensationHandlerId": "compensationActivityElementId",
-          "subprocessSubscription": true,
           "variables": {
             "foo": "bar"
           }
@@ -2287,7 +2285,6 @@ final class JsonSerializableToJsonTest {
           "throwEventId": "",
           "throwEventInstanceKey": -1,
           "compensationHandlerId": "",
-          "subprocessSubscription": false,
           "variables": {}
         }
         """

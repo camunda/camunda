@@ -23,10 +23,4 @@ public interface CompensationSubscriptionState {
 
   Set<CompensationSubscription> findSubscriptionsByThrowEventInstanceKey(
       String tenantId, long processInstanceKey, long throwEventInstanceKey);
-
-  Set<CompensationSubscription> findSubscriptionsByCompensableActivityScopeId(
-      String tenantId, long processInstanceKey, String compensableActivityScopeId);
-
-  Set<CompensationSubscription> findSubprocessSubscriptions(
-      String tenantId, long processInstanceKey);
 }

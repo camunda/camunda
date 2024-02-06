@@ -8,7 +8,11 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.agrona.DirectBuffer;
 
 /**
  * ExecutableFlowElementContainer is currently used to represent processes as well ({@link
@@ -20,9 +24,12 @@ import java.util.List;
 public class ExecutableFlowElementContainer extends ExecutableActivity {
 
   private final List<ExecutableStartEvent> startEvents = new ArrayList<>();
+  private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
+  private final Map<DirectBuffer, AbstractFlowElement> childScopes = new HashMap<>();
 
   public ExecutableFlowElementContainer(final String id) {
     super(id);
+    addFlowElement(this);
   }
 
   public ExecutableStartEvent getNoneStartEvent() {
@@ -56,5 +63,21 @@ public class ExecutableFlowElementContainer extends ExecutableActivity {
 
   public boolean hasSignalStartEvent() {
     return startEvents.stream().anyMatch(ExecutableCatchEventElement::isSignal);
+  }
+
+  public void addFlowElement(final AbstractFlowElement element) {
+    flowElements.put(element.getId(), element);
+  }
+
+  public Collection<AbstractFlowElement> getFlowElements() {
+    return flowElements.values();
+  }
+
+  public void addChildScope(final AbstractFlowElement element) {
+    childScopes.put(element.getId(), element);
+  }
+
+  public Collection<AbstractFlowElement> getChildScopes() {
+    return childScopes.values();
   }
 }

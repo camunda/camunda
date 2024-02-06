@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class DbCompensationSubscriptionState implements MutableCompensationSubscriptionState {
 
@@ -67,11 +66,16 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   @Override
   public Set<CompensationSubscription> findSubscriptionsByProcessInstanceKey(
       final String tenantId, final long piKey) {
-    return getSubscriptionsByProcessInstanceKey(tenantId, piKey).stream()
-        .filter(
-            compensationSubscription ->
-                !compensationSubscription.getRecord().isSubprocessSubscription())
-        .collect(Collectors.toSet());
+    tenantIdKey.wrapString(tenantId);
+    processInstanceKey.wrapLong(piKey);
+
+    final Set<CompensationSubscription> subscriptions = new HashSet<>();
+    compensationSubscriptionColumnFamily.whileEqualPrefix(
+        new DbCompositeKey<>(tenantIdKey, processInstanceKey),
+        ((key, value) -> {
+          subscriptions.add(value.copy());
+        }));
+    return subscriptions;
   }
 
   @Override
@@ -110,36 +114,6 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   }
 
   @Override
-  public Set<CompensationSubscription> findSubscriptionsByCompensableActivityScopeId(
-      final String tenantId, final long piKey, final String compensableActivityScopeId) {
-    tenantIdKey.wrapString(tenantId);
-    processInstanceKey.wrapLong(piKey);
-
-    final Set<CompensationSubscription> compensationSubscription = new HashSet<>();
-    compensationSubscriptionColumnFamily.whileEqualPrefix(
-        new DbCompositeKey<>(tenantIdKey, processInstanceKey),
-        ((key, value) -> {
-          final var compensation = value.getRecord();
-          if (compensation.getCompensableActivityScopeId().equals(compensableActivityScopeId)
-              && !compensation.isSubprocessSubscription()) {
-            compensationSubscription.add(value.copy());
-          }
-        }));
-
-    return compensationSubscription;
-  }
-
-  @Override
-  public Set<CompensationSubscription> findSubprocessSubscriptions(
-      final String tenantId, final long piKey) {
-    return getSubscriptionsByProcessInstanceKey(tenantId, piKey).stream()
-        .filter(
-            compensationSubscription ->
-                compensationSubscription.getRecord().isSubprocessSubscription())
-        .collect(Collectors.toSet());
-  }
-
-  @Override
   public void put(final long key, final CompensationSubscriptionRecord compensation) {
     compensationSubscription.setKey(key).setRecord(compensation);
 
@@ -170,19 +144,5 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
     processInstanceKey.wrapLong(processInstance);
     recordKey.wrapLong(key);
     tenantIdKey.wrapString(tenantId);
-  }
-
-  private Set<CompensationSubscription> getSubscriptionsByProcessInstanceKey(
-      final String tenantId, final long piKey) {
-    tenantIdKey.wrapString(tenantId);
-    processInstanceKey.wrapLong(piKey);
-
-    final Set<CompensationSubscription> completedActivities = new HashSet<>();
-    compensationSubscriptionColumnFamily.whileEqualPrefix(
-        new DbCompositeKey<>(tenantIdKey, processInstanceKey),
-        ((key, value) -> {
-          completedActivities.add(value.copy());
-        }));
-    return completedActivities;
   }
 }

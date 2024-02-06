@@ -11,31 +11,26 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import scala.collection.mutable.Buffer$;
 
 /** Executable* prefix in order to avoid confusion with model API classes. */
 public class ExecutableProcess extends ExecutableFlowElementContainer {
 
-  private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
-
   public ExecutableProcess(final String id) {
     super(id);
-    addFlowElement(this);
-  }
-
-  public void addFlowElement(final AbstractFlowElement element) {
-    flowElements.put(element.getId(), element);
   }
 
   public AbstractFlowElement getElementById(final DirectBuffer id) {
-    return flowElements.get(id);
+    return getFlowElements().stream().filter(abstractFlowElement -> id.equals(abstractFlowElement.getId())).findFirst().get();
   }
 
   public AbstractFlowElement getElementById(final String id) {
-    return flowElements.get(wrapString(id));
+    return getFlowElements().stream().filter(abstractFlowElement -> id.equals(BufferUtil.bufferAsString(abstractFlowElement.getId()))).findFirst().get();
   }
 
   /** convenience function for transformation */
@@ -58,7 +53,7 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
   public <T extends ExecutableFlowElement> T getElementById(
       final DirectBuffer id, final BpmnElementType elementType, final Class<T> expectedClass) {
 
-    var element = flowElements.get(id);
+    var element = getElementById(id);
     if (element == null) {
       return null;
     }
@@ -87,9 +82,5 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
               expectedClass.getSimpleName(),
               element.getClass().getSimpleName()));
     }
-  }
-
-  public Collection<AbstractFlowElement> getFlowElements() {
-    return flowElements.values();
   }
 }

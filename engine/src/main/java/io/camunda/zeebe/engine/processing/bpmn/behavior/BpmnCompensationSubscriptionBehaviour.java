@@ -75,26 +75,32 @@ public class BpmnCompensationSubscriptionBehaviour {
 
   public boolean triggerCompensation(
       final ExecutableFlowNode element, final BpmnElementContext context) {
-    final Set<CompensationSubscription> completedCompensationSubscription =
-        getCompensationSubscriptionForCompletedActivities(context);
+    final Set<CompensationSubscription> subscriptions =
+        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
+            context.getTenantId(), context.getProcessInstanceKey());
 
-    if (completedCompensationSubscription.isEmpty()) {
+    if (subscriptions.isEmpty()) {
       return false;
     }
 
-    // trigger compensation on process level
-    triggerCompensationForScopeId(
-        context, BufferUtil.bufferAsString(element.getFlowScope().getId()));
+    final var availableScopeIds = getAvailableSubprocessScopeIds(element);
 
-    final var completedSubprocessScopeId =
-        getCompletedSubprocessScopeId(context.getTenantId(), context.getProcessInstanceKey());
-    final var availableScopeId = getAvailableSubprocessScopeId(element);
+    final Set<CompensationSubscription> subscriptionsOfCompensationHandlers =
+        subscriptions.stream()
+            .filter(
+                subscription ->
+                    !availableScopeIds.contains(
+                        subscription.getRecord().getCompensableActivityId()))
+            .collect(Collectors.toSet());
 
-    availableScopeId.forEach(
-        scopeId -> {
-          if (completedSubprocessScopeId.contains(scopeId)) {
-            triggerCompensationForScopeId(context, scopeId);
-          }
+    triggerCompensationForScope(
+        context,
+        subscriptionsOfCompensationHandlers,
+        BufferUtil.bufferAsString(element.getFlowScope().getId()));
+
+    availableScopeIds.forEach(
+        activityId -> {
+          triggerCompensationForScope(context, subscriptionsOfCompensationHandlers, activityId);
         });
     return true;
   }
@@ -127,16 +133,16 @@ public class BpmnCompensationSubscriptionBehaviour {
     }
   }
 
-  public void deleteNotTriggeredSubscriptions(final BpmnElementContext context) {
-    final var notTriggeredSubscriptions =
-        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
-            context.getTenantId(), context.getProcessInstanceKey());
-    notTriggeredSubscriptions.forEach(
-        compensation ->
-            stateWriter.appendFollowUpEvent(
-                compensation.getKey(),
-                CompensationSubscriptionIntent.DELETED,
-                compensation.getRecord()));
+  public void deleteSubscriptions(final BpmnElementContext context) {
+    compensationSubscriptionState
+        .findSubscriptionsByProcessInstanceKey(
+            context.getTenantId(), context.getProcessInstanceKey())
+        .forEach(
+            compensation ->
+                stateWriter.appendFollowUpEvent(
+                    compensation.getKey(),
+                    CompensationSubscriptionIntent.DELETED,
+                    compensation.getRecord()));
   }
 
   public void createCompensationSubscriptionForSubprocess(
@@ -148,22 +154,11 @@ public class BpmnCompensationSubscriptionBehaviour {
               .setTenantId(context.getTenantId())
               .setProcessInstanceKey(context.getProcessInstanceKey())
               .setProcessDefinitionKey(context.getProcessDefinitionKey())
-              .setCompensableActivityScopeId(BufferUtil.bufferAsString(element.getId()))
-              .setSubprocessSubscription(true);
+              .setCompensableActivityId(BufferUtil.bufferAsString(context.getElementId()))
+              .setCompensableActivityScopeId(
+                  BufferUtil.bufferAsString(element.getFlowScope().getId()));
       stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
     }
-  }
-
-  public void deleteSubprocessSubscriptions(final BpmnElementContext context) {
-    final var subprocessSubscriptions =
-        compensationSubscriptionState.findSubprocessSubscriptions(
-            context.getTenantId(), context.getProcessInstanceKey());
-    subprocessSubscriptions.forEach(
-        compensation ->
-            stateWriter.appendFollowUpEvent(
-                compensation.getKey(),
-                CompensationSubscriptionIntent.DELETED,
-                compensation.getRecord()));
   }
 
   private Set<CompensationSubscription> getCompensationSubscriptionForCompletedActivities(
@@ -262,50 +257,35 @@ public class BpmnCompensationSubscriptionBehaviour {
   private boolean hasCompletedActivityWithCompensationHandler(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
     return !compensationSubscriptionState
-        .findSubscriptionsByCompensableActivityScopeId(
-            context.getTenantId(),
-            context.getProcessInstanceKey(),
-            BufferUtil.bufferAsString(element.getId()))
+        .findSubscriptionsByProcessInstanceKey(
+            context.getTenantId(), context.getProcessInstanceKey())
         .isEmpty();
   }
 
-  private void triggerCompensationForScopeId(
-      final BpmnElementContext context, final String scopeId) {
-    final Set<CompensationSubscription> subscriptions =
-        compensationSubscriptionState.findSubscriptionsByCompensableActivityScopeId(
-            context.getTenantId(), context.getProcessInstanceKey(), scopeId);
+  private void triggerCompensationForScope(
+      final BpmnElementContext context,
+      final Set<CompensationSubscription> subscriptions,
+      final String subprocessId) {
+    subscriptions.stream()
+        .filter(
+            subscription ->
+                subscription.getRecord().getCompensableActivityScopeId().equals(subprocessId))
+        .forEach(
+            subscription -> {
+              final var key = subscription.getKey();
+              final var compensationRecord = subscription.getRecord();
+              compensationRecord
+                  .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
+                  .setThrowEventInstanceKey(context.getElementInstanceKey());
+              stateWriter.appendFollowUpEvent(
+                  key, CompensationSubscriptionIntent.TRIGGERED, compensationRecord);
 
-    if (subscriptions.isEmpty()) {
-      return;
-    }
-    // activate the compensation handler
-    subscriptions.forEach(
-        compensation -> {
-          final var key = compensation.getKey();
-          final var compensationRecord = compensation.getRecord();
-          compensationRecord
-              .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
-              .setThrowEventInstanceKey(context.getElementInstanceKey());
-          stateWriter.appendFollowUpEvent(
-              key, CompensationSubscriptionIntent.TRIGGERED, compensationRecord);
-
-          activateCompensationHandler(compensationRecord.getCompensableActivityId(), context);
-        });
+              activateCompensationHandler(compensationRecord.getCompensableActivityId(), context);
+            });
   }
 
-  private Set<String> getCompletedSubprocessScopeId(
-      final String tenantId, final long processInstanceKey) {
-    return compensationSubscriptionState
-        .findSubprocessSubscriptions(tenantId, processInstanceKey)
-        .stream()
-        .map(
-            compensationSubscription ->
-                compensationSubscription.getRecord().getCompensableActivityScopeId())
-        .collect(Collectors.toSet());
-  }
-
-  private Set<String> getAvailableSubprocessScopeId(final ExecutableFlowNode element) {
-    return ((ExecutableProcess) element.getFlowScope())
+  private Set<String> getAvailableSubprocessScopeIds(final ExecutableFlowNode element) {
+    return ((ExecutableFlowElementContainer) element.getFlowScope())
         .getFlowElements().stream()
             .filter(e -> BpmnElementType.SUB_PROCESS.equals(e.getElementType()))
             .map(e -> BufferUtil.bufferAsString(e.getId()))

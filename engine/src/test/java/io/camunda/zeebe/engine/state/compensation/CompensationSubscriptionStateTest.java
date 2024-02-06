@@ -187,23 +187,6 @@ public class CompensationSubscriptionStateTest {
         .isEqualTo(THROW_EVENT_INSTANCE_KEY);
   }
 
-  @Test
-  public void shouldFindCompensationByCompensableActivityScopeId() {
-    final var compensation = createCompensation(PROCESS_INSTANCE_KEY);
-    final var notValidCompensation = createCompensation(PROCESS_INSTANCE_KEY);
-    notValidCompensation.setCompensableActivityId("anotherCompensableActivityId");
-    notValidCompensation.setCompensableActivityScopeId("anotherCompensableActivityScopeId");
-    state.put(1L, compensation);
-    state.put(2L, notValidCompensation);
-
-    final var compensations =
-        state.findSubscriptionsByCompensableActivityScopeId(
-            TENANT_ID, PROCESS_INSTANCE_KEY, COMPENSABLE_ACTIVITY_SCOPE_ID);
-    assertThat(compensations.size()).isEqualTo(1);
-    assertThat(compensations.stream().findFirst().get().getRecord().getCompensableActivityScopeId())
-        .isEqualTo(COMPENSABLE_ACTIVITY_SCOPE_ID);
-  }
-
   private CompensationSubscriptionRecord createCompensation(final long key) {
     return new CompensationSubscriptionRecord()
         .setTenantId(TENANT_ID)
