@@ -31,7 +31,7 @@
 
     <version.zeebe>8.4.0</version.zeebe>
     <version.identity>8.4.0</version.identity>
-    <version.elasticsearch>7.17.16</version.elasticsearch>
+    <version.elasticsearch>7.17.17</version.elasticsearch>
     <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
     <version.opensearch>2.8.0</version.opensearch>
     <version.spring.boot>3.1.8</version.spring.boot>
@@ -41,7 +41,7 @@
     <version.micrometer>1.12.2</version.micrometer>
     <version.mockito>5.0.0</version.mockito>
     <version.byte.buddy>1.14.11</version.byte.buddy>
-    <version.assertj-core>3.25.1</version.assertj-core>
+    <version.assertj-core>3.25.3</version.assertj-core>
     <version.jackson>2.16.1</version.jackson>
     <version.graphql>15.1.0</version.graphql>
     <version.graphql.tools>13.1.1</version.graphql.tools>
@@ -52,17 +52,17 @@
     <version.failsafe>2.4.4</version.failsafe>
     <version.guava>33.0.0-jre</version.guava>
     <version.apache.httpclient5>5.3.1</version.apache.httpclient5>
-    <version.aws-sdk>2.23.4</version.aws-sdk>
+    <version.aws-sdk>2.23.18</version.aws-sdk>
 
     <version.node>v20.11.0</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
     <zeebe-test-container.version>3.6.3</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
+    <elasticsearch-test-container.version>1.19.4</elasticsearch-test-container.version>
     <opensearch-testcontainers.version>2.0.1</opensearch-testcontainers.version>
-    <postgres-test-container.version>1.19.3</postgres-test-container.version>
-    <testcontainers.version>1.19.3</testcontainers.version>
-    <keycloak-client.version>23.0.4</keycloak-client.version>
+    <postgres-test-container.version>1.19.4</postgres-test-container.version>
+    <testcontainers.version>1.19.4</testcontainers.version>
+    <keycloak-client.version>23.0.6</keycloak-client.version>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
@@ -126,7 +126,7 @@
       <dependency>
         <groupId>org.eclipse.parsson</groupId>
         <artifactId>parsson</artifactId>
-        <version>1.1.4</version>
+        <version>1.1.5</version>
         <scope>compile</scope>
         <exclusions>
           <exclusion>
@@ -415,7 +415,7 @@
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-sts</artifactId>
-        <version>1.12.638</version>
+        <version>1.12.652</version>
       </dependency>
 
       <dependency>
