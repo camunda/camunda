@@ -60,8 +60,6 @@ public class OperateProperties {
 
   private String tasklistUrl = null;
 
-  private boolean useSpringSecurityJwkUri = false;
-
   @Value("${camunda.operate.internal.version.current}")
   private String version = UNKNOWN_VERSION;
 
@@ -349,14 +347,6 @@ public class OperateProperties {
 
   public void setTasklistUrl(String tasklistUrl) {
     this.tasklistUrl = tasklistUrl;
-  }
-
-  public boolean isUseSpringSecurityJwkUri() {
-    return useSpringSecurityJwkUri;
-  }
-
-  public void setUseSpringSecurityJwkUri(boolean useSpringSecurityJwkUri) {
-    this.useSpringSecurityJwkUri = useSpringSecurityJwkUri;
   }
 
   public String getVersion() {

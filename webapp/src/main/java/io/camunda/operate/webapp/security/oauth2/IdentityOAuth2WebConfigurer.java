@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.security.oauth2;
 
 import io.camunda.identity.sdk.IdentityConfiguration;
-import io.camunda.operate.property.OperateProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -46,9 +45,6 @@ public class IdentityOAuth2WebConfigurer {
   private IdentityConfiguration identityConfiguration;
 
   @Autowired
-  private OperateProperties operateProperties;
-
-  @Autowired
   private IdentityJwt2AuthenticationTokenConverter jwtConverter;
 
   public void configure(HttpSecurity http) throws Exception {
@@ -63,20 +59,17 @@ public class IdentityOAuth2WebConfigurer {
   }
 
   private String getJwkSetUriProperty() {
-    String backendUri = identityConfiguration.getIssuerBackendUrl() + JWKS_PATH;
+    String backendUri;
 
-    // Certain configurations such as Microsoft Entra use a different URI format and need
-    // this value as it comes in from the Spring Security environment variable. To ensure
-    // backwards compatibility, only use the different format if a specific property config
-    // has been set by the user
-    if (operateProperties.isUseSpringSecurityJwkUri()) {
-      if (env.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI)) {
-        backendUri = env.getProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI);
-        LOGGER.info("JWK override uri property set, using value in SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI for issuer authentication");
-      }
-      else {
-        LOGGER.warn("JWK override uri property set but SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI is not present");
-      }
+    // If the SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI is present, then it has already been correctly
+    // calculated and should be used as-is.
+    if (env.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI)) {
+      backendUri = env.getProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI);
+      LOGGER.info("Using value in SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI for issuer authentication");
+    }
+    else {
+      backendUri = identityConfiguration.getIssuerBackendUrl() + JWKS_PATH;
+      LOGGER.warn("SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI is not present, building issuer authentication uri from issuer backend url.");
     }
 
     LOGGER.info("Using {} for issuer authentication", backendUri);

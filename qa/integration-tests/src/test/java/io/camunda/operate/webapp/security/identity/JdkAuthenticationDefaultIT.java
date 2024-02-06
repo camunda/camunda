@@ -33,19 +33,12 @@ import static org.mockito.Mockito.when;
         OperateProperties.class,
         IdentityOAuth2WebConfigurer.class
     },
-    properties = {
-        "camunda.operate.identity.issuerUrl=http://localhost:18080/auth/realms/camunda-platform",
-        "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://localhost:2222/auth"
-    },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
-public class JdkOverrideIT {
+public class JdkAuthenticationDefaultIT {
 
   @Autowired
   private IdentityOAuth2WebConfigurer identityOAuth2WebConfigurer;
-
-  @SpyBean
-  private OperateProperties operateProperties;
 
   @SpyBean
   private IdentityConfiguration identityConfiguration;
@@ -60,15 +53,5 @@ public class JdkOverrideIT {
     String result = (String)(ReflectionTestUtils.invokeGetterMethod(identityOAuth2WebConfigurer, "getJwkSetUriProperty"));
 
     assertThat(result).isEqualTo("http://localhost:1111/protocol/openid-connect/certs");
-  }
-
-  @Test
-  public void shouldReturnOverrideUrlForJdkAuthWhenSpringPropertySet() {
-    when(identityConfiguration.getIssuerBackendUrl()).thenReturn("http://localhost:1111");
-    when(operateProperties.isUseSpringSecurityJwkUri()).thenReturn(true);
-
-    String result = (String)(ReflectionTestUtils.invokeGetterMethod(identityOAuth2WebConfigurer, "getJwkSetUriProperty"));
-
-    assertThat(result).isEqualTo("http://localhost:2222/auth");
   }
 }
