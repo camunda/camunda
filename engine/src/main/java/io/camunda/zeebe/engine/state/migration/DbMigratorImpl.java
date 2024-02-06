@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import io.camunda.zeebe.engine.state.migration.to_8_2.ColumnFamilyPrefixCorrectionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionRequirementsMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -32,6 +33,7 @@ public class DbMigratorImpl implements DbMigrator {
           new DecisionRequirementsMigration(),
           new JobTimeoutCleanupMigration(),
           new JobBackoffCleanupMigration(),
+          new ColumnFamilyPrefixCorrectionMigration(),
           new JobBackoffRestoreMigration());
   // Be mindful of https://github.com/camunda/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
