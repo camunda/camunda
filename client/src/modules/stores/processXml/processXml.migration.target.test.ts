@@ -24,6 +24,6 @@ describe('stores/processXml/processXml.list', () => {
 
     expect(
       processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
-    ).toEqual(['checkPayment', 'shipArticles', 'requestForPayment']);
+    ).toEqual(['checkPayment', 'requestForPayment', 'shipArticles']);
   });
 });

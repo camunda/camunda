@@ -53,6 +53,12 @@ const BottomPanel: React.FC = observer(() => {
           )(processInstanceMigrationStore.selectedSourceFlowNodeIds)}
           rows={processXmlMigrationSourceStore.selectableFlowNodes.map(
             (sourceFlowNode) => {
+              const selectableFlowNodes =
+                processXmlMigrationTargetStore.selectableFlowNodes.filter(
+                  (flowNode) => {
+                    return sourceFlowNode.$type === flowNode.$type;
+                  },
+                );
               return {
                 id: sourceFlowNode.id,
                 sourceFlowNode: (
@@ -71,8 +77,7 @@ const BottomPanel: React.FC = observer(() => {
                     <Select
                       disabled={
                         processInstanceMigrationStore.state.currentStep ===
-                          'summary' ||
-                        !processXmlMigrationTargetStore.hasSelectableFlowNodes
+                          'summary' || selectableFlowNodes.length === 0
                       }
                       size="sm"
                       hideLabel
@@ -86,12 +91,11 @@ const BottomPanel: React.FC = observer(() => {
                         });
                       }}
                     >
-                      {[
-                        {id: '', name: ''},
-                        ...processXmlMigrationTargetStore.selectableFlowNodes,
-                      ].map(({id, name}) => {
-                        return <SelectItem key={id} value={id} text={name} />;
-                      })}
+                      {[{id: '', name: ''}, ...selectableFlowNodes].map(
+                        ({id, name}) => {
+                          return <SelectItem key={id} value={id} text={name} />;
+                        },
+                      )}
                     </Select>
                   );
                 })(),

@@ -22,7 +22,7 @@ class ProcessesXml extends ProcessXmlBase {
   get selectableFlowNodes() {
     return super.selectableFlowNodes
       .filter((flowNode) => {
-        return flowNode.$type === 'bpmn:ServiceTask';
+        return ['bpmn:ServiceTask', 'bpmn:UserTask'].includes(flowNode.$type);
       })
       .map((flowNode) => {
         return {...flowNode, name: flowNode.name ?? flowNode.id};

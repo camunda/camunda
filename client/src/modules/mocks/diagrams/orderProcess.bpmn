@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.8.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.12.0">
   <bpmn:process id="orderProcess" name="Order process" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Order received">
       <bpmn:outgoing>SequenceFlow_0j6tsnn</bpmn:outgoing>
@@ -12,13 +12,6 @@
       <bpmn:incoming>SequenceFlow_0j6tsnn</bpmn:incoming>
       <bpmn:incoming>SequenceFlow_1q6ade7</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1s6g17c</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="shipArticles" name="Ship Articles">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="shipArticles" />
-      </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_1dq2rqw</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_19klrd3</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:endEvent id="EndEvent_042s0oc">
       <bpmn:incoming>SequenceFlow_19klrd3</bpmn:incoming>
@@ -44,6 +37,10 @@
     <bpmn:sequenceFlow id="SequenceFlow_1dq2rqw" name="paid" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="shipArticles">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=paid = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
+    <bpmn:userTask id="shipArticles" name="Ship Articles">
+      <bpmn:incoming>SequenceFlow_1dq2rqw</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_19klrd3</bpmn:outgoing>
+    </bpmn:userTask>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="orderProcess">
@@ -53,18 +50,8 @@
           <dc:Bounds x="157" y="156" width="73" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SequenceFlow_0j6tsnn_di" bpmnElement="SequenceFlow_0j6tsnn">
-        <di:waypoint x="211" y="138" />
-        <di:waypoint x="300" y="138" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="-169.5" y="227" width="90" height="12" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="ServiceTask_0c3g2sx_di" bpmnElement="checkPayment">
         <dc:Bounds x="300" y="98" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_0k2efs8_di" bpmnElement="shipArticles">
-        <dc:Bounds x="633" y="98" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_042s0oc_di" bpmnElement="EndEvent_042s0oc">
         <dc:Bounds x="792" y="120" width="36" height="36" />
@@ -72,6 +59,25 @@
           <dc:Bounds x="385" y="270" width="90" height="12" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_1qqmrb8_di" bpmnElement="ExclusiveGateway_1qqmrb8" isMarkerVisible="true">
+        <dc:Bounds x="469" y="113" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="460" y="85" width="69" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="requestForPayment_di" bpmnElement="requestForPayment">
+        <dc:Bounds x="444" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_08ac618_di" bpmnElement="shipArticles">
+        <dc:Bounds x="633" y="98" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0j6tsnn_di" bpmnElement="SequenceFlow_0j6tsnn">
+        <di:waypoint x="211" y="138" />
+        <di:waypoint x="300" y="138" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="-169.5" y="227" width="90" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SequenceFlow_19klrd3_di" bpmnElement="SequenceFlow_19klrd3">
         <di:waypoint x="733" y="138" />
         <di:waypoint x="792" y="138" />
@@ -79,12 +85,6 @@
           <dc:Bounds x="337.5" y="227" width="90" height="12" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ExclusiveGateway_1qqmrb8_di" bpmnElement="ExclusiveGateway_1qqmrb8" isMarkerVisible="true">
-        <dc:Bounds x="469" y="113" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="460" y="85" width="69" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_1s6g17c_di" bpmnElement="SequenceFlow_1s6g17c">
         <di:waypoint x="400" y="138" />
         <di:waypoint x="469" y="138" />
@@ -92,9 +92,6 @@
           <dc:Bounds x="54.5" y="227" width="0" height="12" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="requestForPayment_di" bpmnElement="requestForPayment">
-        <dc:Bounds x="444" y="260" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0jzbqu1_di" bpmnElement="SequenceFlow_0jzbqu1">
         <di:waypoint x="494" y="163" />
         <di:waypoint x="494" y="260" />
