@@ -12,8 +12,11 @@ import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
+import io.camunda.identity.sdk.authentication.exception.CodeExchangeException;
 import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
+import io.camunda.identity.sdk.exception.IdentityException;
+import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import jakarta.servlet.http.Cookie;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -125,7 +128,11 @@ public class CCSMTokenService {
       .map(CCSMTokenService::appendCallbackSubpath)
       .orElse(requestContext.getUriInfo().getAbsolutePath().toString());
     log.trace("Exchanging auth code with redirectUri: {}", redirectUri);
-    return authentication().exchangeAuthCode(authCode, redirectUri);
+    try {
+      return authentication().exchangeAuthCode(authCode, redirectUri);
+    } catch (final CodeExchangeException | RestException e) {
+      throw new NotAuthorizedException("Token exchange failed", e);
+    }
   }
 
   private Date getRefreshTokenExpirationDate(final String refreshToken) {
@@ -167,15 +174,27 @@ public class CCSMTokenService {
   }
 
   public Tokens renewToken(final String refreshToken) {
-    return authentication().renewToken(extractTokenFromAuthorizationValue(refreshToken));
+    try {
+      return authentication().renewToken(extractTokenFromAuthorizationValue(refreshToken));
+    } catch (IdentityException ex) {
+      throw new NotAuthorizedException("Token could not be renewed", ex);
+    }
   }
 
   public void revokeToken(final String refreshToken) {
-    authentication().revokeToken(extractTokenFromAuthorizationValue(refreshToken));
+    try {
+      authentication().revokeToken(extractTokenFromAuthorizationValue(refreshToken));
+    } catch (IdentityException ex) {
+      throw new NotAuthorizedException("Token could not be revoked", ex);
+    }
   }
 
   public String getSubjectFromToken(final String accessToken) {
-    return authentication().decodeJWT(extractTokenFromAuthorizationValue(accessToken)).getSubject();
+    try {
+      return authentication().decodeJWT(extractTokenFromAuthorizationValue(accessToken)).getSubject();
+    } catch (TokenDecodeException ex) {
+      throw new NotAuthorizedException("Token could not be decoded", ex);
+    }
   }
 
   public UserDto getUserInfoFromToken(final String userId, final String accessToken) {
@@ -189,8 +208,12 @@ public class CCSMTokenService {
   }
 
   public Optional<String> getCurrentUserIdFromAuthToken() {
-    // The userID is the subject of the current JWT token
-    return getCurrentUserAuthToken().map(token -> authentication().decodeJWT(token).getSubject());
+    try {
+      // The userID is the subject of the current JWT token
+      return getCurrentUserAuthToken().map(token -> authentication().decodeJWT(token).getSubject());
+    } catch (TokenDecodeException ex) {
+      throw new NotAuthorizedException("Token could not be decoded", ex);
+    }
   }
 
   public Optional<String> getCurrentUserAuthToken() {

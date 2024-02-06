@@ -57,9 +57,10 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
   @Override
   public Response loginCallback(final ContainerRequestContext requestContext,
                                 final AuthCodeDto authCode) {
-    final Tokens tokens = ccsmTokenService.exchangeAuthCode(authCode, requestContext);
+    final Tokens tokens;
     final AccessToken accessToken;
     try {
+      tokens = ccsmTokenService.exchangeAuthCode(authCode, requestContext);
       accessToken = ccsmTokenService.verifyToken(tokens.getAccessToken());
     } catch (NotAuthorizedException ex) {
       return Response.status(Response.Status.FORBIDDEN)
