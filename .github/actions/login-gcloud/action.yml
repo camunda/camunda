@@ -23,7 +23,7 @@ runs:
         secrets: |
           secret/data/products/optimize/ci/camunda-optimize CI_SERVICE_ACCOUNT | GCP_CREDENTIALS;
     - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@5a50e581162a13f4baa8916d01180d2acbc04363 # v2
+      uses: google-github-actions/auth@a6e2e39c0a0331da29f7fd2c2a20a427e8d3ad1f # v2
       with:
         credentials_json: ${{ steps.secrets.outputs.GCP_CREDENTIALS }}
 
