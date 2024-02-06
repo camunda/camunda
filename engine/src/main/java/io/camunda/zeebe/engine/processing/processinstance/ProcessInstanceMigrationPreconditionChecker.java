@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
+import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -77,6 +79,13 @@ public final class ProcessInstanceMigrationPreconditionChecker {
               but active element with id '%s' and type '%s' is mapped to \
               an element with id '%s' and different type '%s'. \
               Elements must be mapped to elements of the same type.""";
+
+  private static final String ERROR_USER_TASK_IMPLEMENTATION_CHANGED =
+      """
+              Expected to migrate process instance '%s' \
+              but active user task with id '%s' and implementation '%s' is mapped to \
+              an user task with id '%s' and different implementation '%s'. \
+              Elements must be mapped to elements of the same implementation.""";
   private static final String ERROR_MESSAGE_ELEMENT_FLOW_SCOPE_CHANGED =
       """
               Expected to migrate process instance '%s' \
@@ -96,6 +105,8 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   private static final String ERROR_CONCURRENT_COMMAND =
       "Expected to migrate process instance '%s' but a concurrent command was executed on the process instance. Please retry the migration.";
   private static final long NO_PARENT = -1L;
+  private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
+  private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
 
   /**
    * Checks whether the given record exists. Throws exception if given process instance record is
@@ -352,6 +363,60 @@ public final class ProcessInstanceMigrationPreconditionChecker {
               elementInstanceRecord.getBpmnElementType(),
               targetElementId,
               targetElementType);
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
+    }
+  }
+
+  /**
+   * Since we introduce zeebe user tasks and job worker tasks has the same bpmn element type, we
+   * need to check whether the given element instance and target element has the same user task
+   * type. Throws an exception if they have different types.
+   *
+   * @param targetProcessDefinition target process definition to retrieve the target element type
+   * @param targetElementId target element id
+   * @param elementInstance element instance to do the check
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireSameUserTaskImplementation(
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ElementInstance elementInstance,
+      final long processInstanceKey) {
+    final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
+    if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
+      return;
+    }
+
+    final AbstractFlowElement targetElement =
+        targetProcessDefinition.getProcess().getElementById(targetElementId);
+    final BpmnElementType targetElementType = targetElement.getElementType();
+    if (targetElementType != BpmnElementType.USER_TASK) {
+      return;
+    }
+
+    final ExecutableUserTask targetUserTask =
+        targetProcessDefinition
+            .getProcess()
+            .getElementById(targetElementId, ExecutableUserTask.class);
+    final String targetUserTaskType =
+        targetUserTask.getUserTaskProperties() != null
+            ? ZEEBE_USER_TASK_IMPLEMENTATION
+            : JOB_WORKER_IMPLEMENTATION;
+    final String sourceUserTaskType =
+        elementInstance.getUserTaskKey() > 0
+            ? ZEEBE_USER_TASK_IMPLEMENTATION
+            : JOB_WORKER_IMPLEMENTATION;
+
+    if (!targetUserTaskType.equals(sourceUserTaskType)) {
+      final String reason =
+          String.format(
+              ERROR_USER_TASK_IMPLEMENTATION_CHANGED,
+              processInstanceKey,
+              elementInstanceRecord.getElementId(),
+              sourceUserTaskType,
+              targetElementId,
+              targetUserTaskType);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
