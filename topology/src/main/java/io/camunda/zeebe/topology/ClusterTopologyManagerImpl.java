@@ -232,7 +232,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     final var operationApplier = changeAppliers.getApplier(operation);
     final var initialized =
         operationApplier
-            .init(mergedTopology)
+            .initMemberState(mergedTopology)
             .map(transformer -> mergedTopology.updateMember(localMemberId, transformer))
             .flatMap(this::updateLocalTopology);
 
@@ -247,7 +247,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
 
     final var initializedTopology = initialized.get();
     operationApplier
-        .apply()
+        .applyOperation()
         .onComplete(
             (transformer, error) ->
                 onOperationApplied(initializedTopology, operation, transformer, error, observer));

@@ -17,7 +17,7 @@ import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.OperationApplier;
+import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -235,7 +235,7 @@ final class ClusterTopologyManagerTest {
   @Test
   void shouldRetryClusterTopologyChangeOperationOnFailure() {
     // given
-    final FailingLeaveApplier failingLeaveApplier = new FailingLeaveApplier(1);
+    final FailingLeaveApplier failingLeaveApplier = new FailingLeaveApplier(localMemberId, 1);
     final ClusterTopologyManagerImpl clusterTopologyManager =
         startTopologyManager(successInitializer, o -> failingLeaveApplier).join();
 
@@ -260,22 +260,33 @@ final class ClusterTopologyManagerTest {
   private static final class TestMemberLeaver implements TopologyChangeAppliers {
 
     @Override
-    public OperationApplier getApplier(final TopologyChangeOperation operation) {
+    public MemberOperationApplier getApplier(final TopologyChangeOperation operation) {
       // ignore type of operation and always apply member leave operation
-      return new LeaveOperationApplier();
+      return new LeaveOperationApplier(operation.memberId());
     }
   }
 
-  private static class LeaveOperationApplier implements OperationApplier {
+  private static class LeaveOperationApplier implements MemberOperationApplier {
+
+    private final MemberId memberId;
+
+    public LeaveOperationApplier(final MemberId memberId) {
+      this.memberId = memberId;
+    }
 
     @Override
-    public Either<Exception, UnaryOperator<MemberState>> init(
+    public MemberId memberId() {
+      return memberId;
+    }
+
+    @Override
+    public Either<Exception, UnaryOperator<MemberState>> initMemberState(
         final ClusterTopology currentClusterTopology) {
       return Either.right(MemberState::toLeaving);
     }
 
     @Override
-    public ActorFuture<UnaryOperator<MemberState>> apply() {
+    public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
       return CompletableActorFuture.completed(MemberState::toLeft);
     }
   }
@@ -283,17 +294,18 @@ final class ClusterTopologyManagerTest {
   private static final class FailingLeaveApplier extends LeaveOperationApplier {
     int numFailures;
 
-    private FailingLeaveApplier(final int numFailures) {
+    private FailingLeaveApplier(final MemberId memberId, final int numFailures) {
+      super(memberId);
       this.numFailures = numFailures;
     }
 
     @Override
-    public ActorFuture<UnaryOperator<MemberState>> apply() {
+    public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
       if (numFailures > 0) {
         numFailures--;
         return CompletableActorFuture.completedExceptionally(new RuntimeException("Expected"));
       } else {
-        return super.apply();
+        return super.applyOperation();
       }
     }
   }

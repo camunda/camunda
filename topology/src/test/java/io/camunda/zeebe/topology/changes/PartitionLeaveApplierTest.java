@@ -20,11 +20,9 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.PartitionState.State;
-import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.function.UnaryOperator;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -42,8 +40,7 @@ final class PartitionLeaveApplierTest {
   @Test
   void shouldRejectLeaveWhenPartitionDoesNotExist() {
     // when
-    final Either<Exception, UnaryOperator<MemberState>> result =
-        partitionLeaveApplier.init(initialClusterTopology);
+    final var result = partitionLeaveApplier.init(initialClusterTopology);
 
     // then
     assertThat(result).isLeft();
@@ -61,8 +58,7 @@ final class PartitionLeaveApplierTest {
             localMemberId, m -> m.addPartition(1, PartitionState.active(1)));
 
     // when
-    final Either<Exception, UnaryOperator<MemberState>> result =
-        partitionLeaveApplier.init(topologyWithOneReplica);
+    final var result = partitionLeaveApplier.init(topologyWithOneReplica);
 
     // then
     assertThat(result).isLeft();
@@ -83,8 +79,7 @@ final class PartitionLeaveApplierTest {
 
     // when
     final var resultingTopology =
-        topologyWithPartition.updateMember(
-            localMemberId, partitionLeaveApplier.init(topologyWithPartition).get());
+        partitionLeaveApplier.init(topologyWithPartition).get().apply(topologyWithPartition);
 
     // then
     ClusterTopologyAssert.assertThatClusterTopology(resultingTopology)
@@ -102,14 +97,12 @@ final class PartitionLeaveApplierTest {
             .updateMember(MemberId.from("2"), m -> m.addPartition(1, PartitionState.active(1)));
 
     final var topologyAfterInit =
-        topologyWithPartition.updateMember(
-            localMemberId, partitionLeaveApplier.init(topologyWithPartition).get());
+        partitionLeaveApplier.init(topologyWithPartition).get().apply(topologyWithPartition);
 
     when(partitionChangeExecutor.leave(1)).thenReturn(CompletableActorFuture.completed(null));
 
     // when
-    final var stateUpdater = partitionLeaveApplier.apply().join();
-    final var resultingTopology = topologyAfterInit.updateMember(localMemberId, stateUpdater);
+    final var resultingTopology = partitionLeaveApplier.apply().join().apply(topologyAfterInit);
 
     // then
     verify(partitionChangeExecutor).leave(1);

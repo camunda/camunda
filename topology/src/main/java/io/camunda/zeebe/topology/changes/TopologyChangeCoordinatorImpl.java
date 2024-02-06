@@ -14,7 +14,7 @@ import io.camunda.zeebe.topology.api.TopologyRequestFailedException;
 import io.camunda.zeebe.topology.api.TopologyRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.topology.api.TopologyRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.topology.api.TopologyRequestFailedException.OperationNotAllowed;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.OperationApplier;
+import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.CompletedChange;
@@ -235,8 +235,8 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     }
 
     final var operation = updatedTopology.nextPendingOperation();
-    final OperationApplier applier = topologyChangeSimulator.getApplier(operation);
-    final var result = applier.init(updatedTopology);
+    final MemberOperationApplier applier = topologyChangeSimulator.getApplier(operation);
+    final var result = applier.initMemberState(updatedTopology);
     if (result.isLeft()) {
       failFuture(simulationCompleted, new InvalidRequest(result.getLeft()));
       return;
@@ -245,7 +245,7 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     final var initializedChanges = updatedTopology.updateMember(operation.memberId(), result.get());
 
     applier
-        .apply()
+        .applyOperation()
         .onComplete(
             (stateUpdater, error) -> {
               if (error != null) {

@@ -33,12 +33,12 @@ final class TestTopologyChangeSimulator {
     while (newTopology.hasPendingChanges()) {
       final var operation = newTopology.nextPendingOperation();
       final var applier = topologyChangeSimulator.getApplier(operation);
-      final Either<Exception, UnaryOperator<MemberState>> init = applier.init(newTopology);
+      final Either<Exception, UnaryOperator<MemberState>> init = applier.initMemberState(newTopology);
       if (init.isLeft()) {
         fail("Failed to init operation ", init.getLeft());
       }
       newTopology = newTopology.updateMember(operation.memberId(), init.get());
-      newTopology = newTopology.advanceTopologyChange(operation.memberId(), applier.apply().join());
+      newTopology = newTopology.advanceTopologyChange(operation.memberId(), applier.applyOperation().join());
     }
     return newTopology;
   }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.topology.changes;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -33,7 +34,7 @@ public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
   }
 
   @Override
-  public OperationApplier getApplier(final TopologyChangeOperation operation) {
+  public MemberOperationApplier getApplier(final TopologyChangeOperation operation) {
     if (operation instanceof final PartitionJoinOperation joinOperation) {
       return new PartitionJoinApplier(
           joinOperation.partitionId(),
@@ -61,7 +62,7 @@ public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
     }
   }
 
-  static class FailingApplier implements OperationApplier {
+  static class FailingApplier implements MemberOperationApplier {
 
     private final TopologyChangeOperation operation;
 
@@ -70,13 +71,18 @@ public class TopologyChangeAppliersImpl implements TopologyChangeAppliers {
     }
 
     @Override
-    public Either<Exception, UnaryOperator<MemberState>> init(
+    public MemberId memberId() {
+      return operation.memberId();
+    }
+
+    @Override
+    public Either<Exception, UnaryOperator<MemberState>> initMemberState(
         final ClusterTopology currentClusterTopology) {
       return Either.left(new UnknownOperationException(operation));
     }
 
     @Override
-    public ActorFuture<UnaryOperator<MemberState>> apply() {
+    public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
       return CompletableActorFuture.completedExceptionally(
           new UnknownOperationException(operation));
     }

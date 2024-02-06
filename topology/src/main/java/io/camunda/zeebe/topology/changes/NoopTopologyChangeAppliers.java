@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.topology.changes;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -22,20 +23,31 @@ import java.util.function.UnaryOperator;
 public class NoopTopologyChangeAppliers implements TopologyChangeAppliers {
 
   @Override
-  public OperationApplier getApplier(final TopologyChangeOperation operation) {
-    return new NoopApplier();
+  public MemberOperationApplier getApplier(final TopologyChangeOperation operation) {
+    return new NoopApplier(operation.memberId());
   }
 
-  public static class NoopApplier implements OperationApplier {
+  public static class NoopApplier implements MemberOperationApplier {
+
+    private final MemberId memberId;
+
+    public NoopApplier(final MemberId memberId) {
+      this.memberId = memberId;
+    }
 
     @Override
-    public Either<Exception, UnaryOperator<MemberState>> init(
+    public MemberId memberId() {
+      return memberId;
+    }
+
+    @Override
+    public Either<Exception, UnaryOperator<MemberState>> initMemberState(
         final ClusterTopology currentClusterTopology) {
       return Either.right(memberState -> memberState);
     }
 
     @Override
-    public ActorFuture<UnaryOperator<MemberState>> apply() {
+    public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
       return CompletableActorFuture.completed(memberState -> memberState);
     }
   }
