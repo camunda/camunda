@@ -719,7 +719,7 @@ public class CompensationEventExecutionTest {
   }
 
   @Test
-  public void shouldTriggerCompensationHandlerInTheRightOrderForSubprocesses() {
+  public void shouldTriggerCompensationHandlerInSubprocesses() {
     final var process =
         createModelFromClasspathResource("/compensation/compensation-embedded-subprocess.bpmn");
 
@@ -751,7 +751,7 @@ public class CompensationEventExecutionTest {
     assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(6))
+                .limit(8))
         .extracting(
             Record::getValueType,
             Record::getIntent,
@@ -768,9 +768,10 @@ public class CompensationEventExecutionTest {
   }
 
   @Test
-  public void test() {
+  public void shouldNotTriggerCompensationIfSubprocessIsNotCompleted() {
     final var process =
-        createModelFromClasspathResource("/compensation/compensation-single-embedded-subprocess.bpmn");
+        createModelFromClasspathResource(
+            "/compensation/compensation-single-embedded-subprocess.bpmn");
 
     ENGINE.deployment().withXmlResource(process).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -781,32 +782,121 @@ public class CompensationEventExecutionTest {
         .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
         .complete();
 
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType("completableActivity")
-        .complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("completableActivity").complete();
 
-    assert false;
+    ENGINE.job().ofInstance(processInstanceKey).withType("NotActivableTask").complete();
 
     // then
     assertThat(
-        RecordingExporter.compensationSubscriptionRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .limit(6))
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(4))
         .extracting(
-            Record::getValueType,
-            Record::getIntent,
-            r -> r.getValue().getCompensableActivityScopeId())
+            Record::getValueType, Record::getIntent, r -> r.getValue().getCompensableActivityId())
         .containsSubsequence(
             tuple(
                 ValueType.COMPENSATION_SUBSCRIPTION,
-                CompensationSubscriptionIntent.TRIGGERED,
-                "embedded-subprocess"),
+                CompensationSubscriptionIntent.DELETED,
+                "ActivityToCompensate"),
             tuple(
                 ValueType.COMPENSATION_SUBSCRIPTION,
-                CompensationSubscriptionIntent.TRIGGERED,
-                "embedded-subprocess-2"));
+                CompensationSubscriptionIntent.DELETED,
+                "embedded-subprocess"));
+  }
+
+  @Test
+  public void shouldNotTriggerCompensationOnParentScope() {
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-embedded-subprocess-parent.bpmn");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
+        .complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY2)
+        .complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER2)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(6))
+        .extracting(
+            Record::getValueType,
+            Record::getIntent,
+            r -> r.getValue().getCompensableActivityScopeId(),
+            r -> r.getValue().getCompensationHandlerId())
+        .containsSubsequence(
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION,
+                CompensationSubscriptionIntent.COMPLETED,
+                "embedded-subprocess",
+                "CompensationHandler2"),
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION,
+                CompensationSubscriptionIntent.DELETED,
+                "compensation-process",
+                "CompensationHandler"));
+  }
+
+  @Test
+  public void shouldNotCreateSubprocessSubscriptionWithoutChildSubscription() {
+    // given
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/subprocess-after-compensation-activity.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
+        .complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    // When
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getBpmnEventType(),
+            Record::getIntent)
+        .containsSubsequence(
+            tuple(
+                BpmnElementType.SERVICE_TASK,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {

@@ -29,7 +29,6 @@ public final class SubProcessTransformer implements ModelElementTransformer<SubP
     final ExecutableFlowElementContainer subprocess =
         currentProcess.getElementById(element.getId(), ExecutableFlowElementContainer.class);
 
-    element.setTriggeredByEvent(true);
     if (element.triggeredByEvent()) {
       transformEventSubprocess(element, currentProcess, subprocess);
     }

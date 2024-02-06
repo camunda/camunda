@@ -24,12 +24,10 @@ import org.agrona.DirectBuffer;
 public class ExecutableFlowElementContainer extends ExecutableActivity {
 
   private final List<ExecutableStartEvent> startEvents = new ArrayList<>();
-  private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
-  private final Map<DirectBuffer, AbstractFlowElement> childScopes = new HashMap<>();
+  private final Map<DirectBuffer, AbstractFlowElement> childElements = new HashMap<>();
 
   public ExecutableFlowElementContainer(final String id) {
     super(id);
-    addFlowElement(this);
   }
 
   public ExecutableStartEvent getNoneStartEvent() {
@@ -65,19 +63,11 @@ public class ExecutableFlowElementContainer extends ExecutableActivity {
     return startEvents.stream().anyMatch(ExecutableCatchEventElement::isSignal);
   }
 
-  public void addFlowElement(final AbstractFlowElement element) {
-    flowElements.put(element.getId(), element);
+  public void addChildElement(final AbstractFlowElement element) {
+    childElements.put(element.getId(), element);
   }
 
-  public Collection<AbstractFlowElement> getFlowElements() {
-    return flowElements.values();
-  }
-
-  public void addChildScope(final AbstractFlowElement element) {
-    childScopes.put(element.getId(), element);
-  }
-
-  public Collection<AbstractFlowElement> getChildScopes() {
-    return childScopes.values();
+  public Collection<AbstractFlowElement> getChildElements() {
+    return childElements.values();
   }
 }
