@@ -39,10 +39,15 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import org.agrona.DirectBuffer;
+import org.springframework.util.unit.DataSize;
 
 public final class ResponseMapper {
+  public static final long MAX_MESSAGE_SIZE =
+      DataSize.ofMegabytes(4).toBytes(); // default max response size is 4MB
 
   public static DeployProcessResponse toDeployProcessResponse(
       final long key, final DeploymentRecord brokerResponse) {
@@ -161,12 +166,34 @@ public final class ResponseMapper {
     return SetVariablesResponse.newBuilder().setKey(key).build();
   }
 
-  public static ActivateJobsResponse toActivateJobsResponse(
+  /**
+   * While converting the broker response to the gRPC response, the response size is checked. If the
+   * response size exceeds the maximum response size, exceeding jobs are added to the list of
+   * exceeding jobs to be reactivated.
+   *
+   * <p>This is because the jobs returned from the broker is in MessagePack format and while
+   * converting them to gRPC response the size of the response may increase (e.g. we do JSON and
+   * String conversions on building ActivatedJob response object). That will cause the response size
+   * to exceed the maximum response size allowed by the gateway and the gateway will log a Stream
+   * Error indicating that streaming out the activated jobs failed.
+   *
+   * <p>If we do not respect the actual max response size, Zeebe Java Client rejects the response
+   * containing the activated jobs and the client cancels the channel/stream/connection as well.
+   * Leaving failed jobs non-activatable until their configured timeout.
+   *
+   * @param key the key of the request
+   * @param brokerResponse the broker response
+   * @return a pair of the response and a list of jobs that could not be included in the response
+   *     because the response size exceeded the maximum response size
+   */
+  public static JobActivationResult toActivateJobsResponse(
       final long key, final JobBatchRecord brokerResponse) {
-    final ActivateJobsResponse.Builder responseBuilder = ActivateJobsResponse.newBuilder();
-
     final Iterator<LongValue> jobKeys = brokerResponse.jobKeys().iterator();
     final Iterator<JobRecord> jobs = brokerResponse.jobs().iterator();
+
+    long currentResponseSize = 0L;
+    final List<ActivatedJob> sizeExceedingJobs = new ArrayList<>();
+    final List<ActivatedJob> responseJobs = new ArrayList<>();
 
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
@@ -188,10 +215,29 @@ public final class ResponseMapper {
               .setVariables(bufferAsJson(job.getVariablesBuffer()))
               .build();
 
-      responseBuilder.addJobs(activatedJob);
+      final int activatedJobSize = activatedJob.getSerializedSize();
+      if (currentResponseSize + activatedJobSize <= MAX_MESSAGE_SIZE) {
+        responseJobs.add(activatedJob);
+        currentResponseSize += activatedJobSize;
+      } else {
+        sizeExceedingJobs.add(activatedJob);
+      }
     }
 
-    return responseBuilder.build();
+    ActivateJobsResponse response =
+        ActivateJobsResponse.newBuilder().addAllJobs(responseJobs).build();
+    // Response size can still exceed the maximum response size because of the metadata added on
+    // building the response. Therefore, we check the response size again and if the response size
+    // is still exceeding the maximum response size, we remove the last added job from the response
+    // and add it to the list of jobs to be reactivated.
+    // We do this until the response size is below the maximum response size.
+    while (!responseJobs.isEmpty() && response.getSerializedSize() > MAX_MESSAGE_SIZE) {
+      // pull last job from the response jobs and add it to the list of jobs to be reactivated
+      sizeExceedingJobs.add(responseJobs.remove(responseJobs.size() - 1));
+      response = ActivateJobsResponse.newBuilder().addAllJobs(responseJobs).build();
+    }
+
+    return new JobActivationResult(response, sizeExceedingJobs);
   }
 
   public static ResolveIncidentResponse toResolveIncidentResponse(
@@ -207,6 +253,9 @@ public final class ResponseMapper {
   private static String bufferAsJson(final DirectBuffer customHeaders) {
     return MsgPackConverter.convertToJson(bufferAsArray(customHeaders));
   }
+
+  public record JobActivationResult(
+      ActivateJobsResponse activateJobsResponse, List<ActivatedJob> jobsToDefer) {}
 
   @FunctionalInterface
   public interface BrokerResponseMapper<BrokerResponseDto, GrpcResponseT> {

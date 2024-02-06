@@ -11,6 +11,7 @@ import com.google.rpc.Code;
 import com.google.rpc.Status;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.ResponseMapper;
+import io.camunda.zeebe.gateway.ResponseMapper.JobActivationResult;
 import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
 import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
@@ -44,6 +45,8 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   private static final String ACTIVATE_JOB_NOT_SENT_MSG = "Failed to send activated jobs to client";
   private static final String ACTIVATE_JOB_NOT_SENT_MSG_WITH_REASON =
       ACTIVATE_JOB_NOT_SENT_MSG + ", failed with: %s";
+  private static final String MAX_MESSAGE_SIZE_EXCEEDED_MSG =
+      "the response is bigger than the maximum allowed message size %d";
 
   private final Map<String, RequestDispatchStrategy> jobTypeToNextPartitionId =
       new ConcurrentHashMap<>();
@@ -148,11 +151,23 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
     actor.run(
         () -> {
           final var response = brokerResponse.getResponse();
-          final ActivateJobsResponse grpcResponse =
+          final JobActivationResult jobActivationResult =
               ResponseMapper.toActivateJobsResponse(brokerResponse.getKey(), response);
+
+          final List<ActivatedJob> jobsToDefer = jobActivationResult.jobsToDefer();
+          if (!jobsToDefer.isEmpty()) {
+            final var jobKeys = jobsToDefer.stream().map(ActivatedJob::getKey).toList();
+            final var jobType = request.getType();
+            final var reason =
+                String.format(MAX_MESSAGE_SIZE_EXCEEDED_MSG, ResponseMapper.MAX_MESSAGE_SIZE);
+
+            logResponseNotSent(jobType, jobKeys, reason);
+            reactivateJobs(jobsToDefer, reason);
+          }
+
+          final ActivateJobsResponse grpcResponse = jobActivationResult.activateJobsResponse();
           final var jobsCount = grpcResponse.getJobsCount();
           final var jobsActivated = jobsCount > 0;
-
           if (jobsActivated) {
             final var result = request.tryToSendActivatedJobs(grpcResponse);
             final var responseWasSent = result.getOrElse(false);
