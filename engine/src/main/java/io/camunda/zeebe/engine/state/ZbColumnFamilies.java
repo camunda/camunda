@@ -99,14 +99,16 @@ public enum ZbColumnFamilies implements EnumValue {
   DMN_LATEST_DECISION_REQUIREMENTS_BY_ID(46),
   DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY(47),
 
-  // has value 54 on other versions, it received a wrong ordinal on 8.1 by accident
-  MESSAGE_STATS(48),
+  DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION(48),
+  DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION(49),
+  DEPRECATED_SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY(50),
+  DEPRECATED_SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME(51),
 
-  // has value 55 on other versions, it received a wrong ordinal on 8.1 by accident
-  PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY(49),
-
-  // has value 56 on other versions, it received a wrong ordinal on 8.1 by accident
-  MIGRATIONS_STATE(50);
+  PENDING_DISTRIBUTION(52),
+  COMMAND_DISTRIBUTION_RECORD(53),
+  MESSAGE_STATS(54),
+  PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY(55),
+  MIGRATIONS_STATE(56);
 
   private final int value;
 

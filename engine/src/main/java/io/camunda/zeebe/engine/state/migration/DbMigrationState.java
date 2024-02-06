@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.migration.MigrationTaskState.State;
+import io.camunda.zeebe.engine.state.migration.to_8_4.DbColumnFamilyCorrectionMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -61,6 +62,8 @@ public class DbMigrationState implements MutableMigrationState {
       processSubscriptionSentTimeColumnFamily;
 
   private final ColumnFamily<DbLong, TemporaryVariables> temporaryVariableColumnFamily;
+
+  private final DbColumnFamilyCorrectionMigrationState columnFamilyCorrectionMigrationState;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -113,6 +116,9 @@ public class DbMigrationState implements MutableMigrationState {
             transactionContext,
             temporaryVariablesKeyInstance,
             temporaryVariablesValue);
+
+    columnFamilyCorrectionMigrationState =
+        new DbColumnFamilyCorrectionMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -227,6 +233,11 @@ public class DbMigrationState implements MutableMigrationState {
     migrationIdentifier.wrapString(identifier);
     migrationStateColumnFamily.insert(
         migrationIdentifier, new MigrationTaskState().setState(MIGRATION_TASK_FINISHED_STATE));
+  }
+
+  @Override
+  public void correctColumnFamilyPrefix() {
+    columnFamilyCorrectionMigrationState.correctColumnFamilyPrefix();
   }
 
   @Override
