@@ -132,6 +132,11 @@ public class VoteRequest extends AbstractRaftRequest {
         .toString();
   }
 
+  @Override
+  public MemberId from() {
+    return candidate();
+  }
+
   /** Vote request builder. */
   public static class Builder extends AbstractRaftRequest.Builder<Builder, VoteRequest> {
 

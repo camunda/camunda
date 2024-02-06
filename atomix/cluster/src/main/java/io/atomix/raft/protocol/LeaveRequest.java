@@ -9,6 +9,7 @@ package io.atomix.raft.protocol;
 
 import static java.util.Objects.requireNonNull;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import java.util.Objects;
 
@@ -42,6 +43,13 @@ public final class LeaveRequest extends AbstractRaftRequest {
     }
     final LeaveRequest that = (LeaveRequest) o;
     return Objects.equals(leaving, that.leaving);
+  }
+
+  @Override
+  public MemberId from() {
+    // Although it is not strictly required, in the current implementation this request is sent by
+    // the member who is leaving.
+    return leaving.memberId();
   }
 
   public static final class Builder

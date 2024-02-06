@@ -19,6 +19,8 @@ package io.atomix.raft.roles;
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.RaftError;
+import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
@@ -27,6 +29,7 @@ import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import io.camunda.zeebe.util.Either;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import org.slf4j.Logger;
@@ -49,13 +52,25 @@ public abstract class AbstractRole implements RaftRole {
                 .build());
   }
 
-  /**
-   * Returns the Raft state represented by this state.
-   *
-   * @return The Raft state represented by this state.
-   */
   @Override
-  public abstract RaftServer.Role role();
+  public Either<RaftError, Void> shouldAcceptRequest(final RaftRequest request) {
+    // Reject only if we are in force configuration change and the request is not from the members
+    // of forced configuration
+    final boolean shouldReject =
+        raft.getCluster().getConfiguration() != null
+            && raft.getCluster().getConfiguration().force()
+            && !raft.getCluster().getConfiguration().hasMember(request.from());
+    if (shouldReject) {
+      return Either.left(
+          new RaftError(
+              Type.ILLEGAL_MEMBER_STATE,
+              String.format(
+                  "Force configuration change is in progress. Cannot accept request from %s which is not a member of the new configuration.",
+                  request.from())));
+    } else {
+      return Either.right(null);
+    }
+  }
 
   /** Logs a request. */
   protected final void logRequest(final Object request) {
