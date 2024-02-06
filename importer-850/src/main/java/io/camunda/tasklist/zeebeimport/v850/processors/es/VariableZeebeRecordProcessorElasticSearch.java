@@ -18,9 +18,7 @@ import io.camunda.tasklist.zeebeimport.v850.record.value.VariableRecordValueImpl
 import io.camunda.zeebe.protocol.record.Record;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
@@ -35,13 +33,6 @@ public class VariableZeebeRecordProcessorElasticSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(VariableZeebeRecordProcessorElasticSearch.class);
 
-  private static final Set<String> VARIABLE_STATES = new HashSet<>();
-
-  static {
-    VARIABLE_STATES.add(Intent.CREATED.name());
-    VARIABLE_STATES.add(Intent.UPDATED.name());
-  }
-
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private VariableIndex variableIndex;
@@ -53,7 +44,9 @@ public class VariableZeebeRecordProcessorElasticSearch {
     final VariableRecordValueImpl recordValue = (VariableRecordValueImpl) record.getValue();
 
     // update variable
-    bulkRequest.add(persistVariable(record, recordValue));
+    if (record.getIntent().name() != Intent.MIGRATED.name()) {
+      bulkRequest.add(persistVariable(record, recordValue));
+    }
   }
 
   private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue)

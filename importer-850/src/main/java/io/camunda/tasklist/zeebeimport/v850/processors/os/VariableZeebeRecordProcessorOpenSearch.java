@@ -6,7 +6,6 @@
  */
 package io.camunda.tasklist.zeebeimport.v850.processors.os;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.VariableEntity;
@@ -32,15 +31,6 @@ public class VariableZeebeRecordProcessorOpenSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(VariableZeebeRecordProcessorOpenSearch.class);
 
-  private static final Set<String> VARIABLE_STATES = new HashSet<>();
-
-  static {
-    VARIABLE_STATES.add(Intent.CREATED.name());
-    VARIABLE_STATES.add(Intent.UPDATED.name());
-  }
-
-  @Autowired private ObjectMapper objectMapper;
-
   @Autowired private VariableIndex variableIndex;
 
   @Autowired private TasklistProperties tasklistProperties;
@@ -49,7 +39,10 @@ public class VariableZeebeRecordProcessorOpenSearch {
       throws PersistenceException {
     final VariableRecordValueImpl recordValue = (VariableRecordValueImpl) record.getValue();
 
-    operations.add(persistVariable(record, recordValue));
+    // update variable
+    if (record.getIntent().name() != Intent.MIGRATED.name()) {
+      operations.add(persistVariable(record, recordValue));
+    }
   }
 
   private BulkOperation persistVariable(Record record, VariableRecordValueImpl recordValue)

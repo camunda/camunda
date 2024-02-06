@@ -173,6 +173,12 @@ public class JobZeebeRecordProcessorOpenSearch {
       entity
           .setState(TaskState.CREATED)
           .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    } else if (taskState.equals(Intent.MIGRATED.name())) {
+      entity
+          .setState(TaskState.MIGRATED)
+          .setFlowNodeBpmnId(recordValue.getElementId())
+          .setBpmnProcessId(recordValue.getBpmnProcessId())
+          .setProcessDefinitionId(processDefinitionId);
     } else {
       LOGGER.warn(String.format("TaskState %s not supported", taskState));
     }
@@ -182,8 +188,9 @@ public class JobZeebeRecordProcessorOpenSearch {
   private BulkOperation getTaskQuery(TaskEntity entity) throws PersistenceException {
     LOGGER.debug("Task instance: id {}", entity.getId());
     final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(TaskTemplate.STATE, entity.getState());
-    updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
+    if (entity.getState() == TaskState.MIGRATED) {
+      entity.setState(TaskState.CREATED); // Set back the state of Migrated
+    }
 
     final JsonObjectBuilder jsonEntityBuilder = CommonUtils.getJsonObjectBuilderForEntity(entity);
     if (entity.getCreationTime() == null) {
