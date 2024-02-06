@@ -9,6 +9,7 @@ package io.camunda.zeebe.topology.changes;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -44,9 +45,21 @@ public interface PartitionChangeExecutor {
   /**
    * Updates the priority of the member used for raft priority election for the given partition.
    *
-   * @param partitionId id of hte partition
+   * @param partitionId id of the partition
    * @param newPriority new priority value
    * @return a future that completes when the priority is updated
    */
   ActorFuture<Void> reconfigurePriority(int partitionId, int newPriority);
+
+  /**
+   * Force reconfigure a partition to include only the given members in the replication group.
+   *
+   * @param partitionId id of the partition
+   * @param members members that will be part of the replication group after reconfiguring
+   * @return a future that completes when the partition is reconfigured
+   */
+  default ActorFuture<Void> forceReconfigure(
+      final int partitionId, final Collection<MemberId> members) {
+    throw new UnsupportedOperationException("Not implemented");
+  }
 }
