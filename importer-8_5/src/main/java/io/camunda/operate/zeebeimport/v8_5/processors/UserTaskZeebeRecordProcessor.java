@@ -49,7 +49,7 @@ public class UserTaskZeebeRecordProcessor {
     var userTaskValue = userTaskRecord.getValue();
     UserTaskEntity userTaskEntity;
     try {
-      userTaskEntity = createEntity(userTaskValue);
+      userTaskEntity = createEntity(userTaskRecord);
     } catch (JsonProcessingException e) {
       throw new OperateRuntimeException(String.format("Could not create UserTaskEntity from record value %s", userTaskValue), e);
     }
@@ -87,24 +87,27 @@ public class UserTaskZeebeRecordProcessor {
     logger.debug("Added UserTaskEntity {} to batch request", userTaskEntity);
   }
 
-  private UserTaskEntity createEntity(UserTaskRecordValue userTaskRecord) throws JsonProcessingException {
+  private UserTaskEntity createEntity(Record<UserTaskRecordValue> userTaskRecord) throws JsonProcessingException {
+    UserTaskRecordValue userTaskRecordValue = userTaskRecord.getValue();
     return new UserTaskEntity()
-        .setId(String.valueOf(userTaskRecord.getUserTaskKey()))
-        .setBpmnProcessId(userTaskRecord.getBpmnProcessId())
-        .setTenantId(userTaskRecord.getTenantId())
-        .setProcessInstanceKey(userTaskRecord.getProcessInstanceKey())
-        .setBpmnProcessId(userTaskRecord.getBpmnProcessId())
-        .setAssignee(userTaskRecord.getAssignee())
-        .setCandidateGroups(List.of(userTaskRecord.getCandidateGroups()))
-        .setCandidateUsers(List.of(userTaskRecord.getCandidateUsers()))
-        .setDueDate(toDateOrNull(userTaskRecord.getDueDate()))
-        .setElementId(userTaskRecord.getElementId())
-        .setElementInstanceKey(userTaskRecord.getElementInstanceKey())
-        .setProcessDefinitionKey(userTaskRecord.getProcessDefinitionKey())
-        .setUserTaskKey(userTaskRecord.getUserTaskKey())
-        .setVariables(objectMapper.writeValueAsString(userTaskRecord.getVariables()))
-        .setFollowUpDate(toDateOrNull(userTaskRecord.getFollowUpDate()))
-        .setFormKey(userTaskRecord.getFormKey());
+        .setId(String.valueOf(userTaskRecordValue.getUserTaskKey()))
+        .setKey(userTaskRecordValue.getUserTaskKey())
+        .setPartitionId(userTaskRecord.getPartitionId())
+        .setBpmnProcessId(userTaskRecordValue.getBpmnProcessId())
+        .setTenantId(userTaskRecordValue.getTenantId())
+        .setProcessInstanceKey(userTaskRecordValue.getProcessInstanceKey())
+        .setBpmnProcessId(userTaskRecordValue.getBpmnProcessId())
+        .setAssignee(userTaskRecordValue.getAssignee())
+        .setCandidateGroups(List.of(userTaskRecordValue.getCandidateGroups()))
+        .setCandidateUsers(List.of(userTaskRecordValue.getCandidateUsers()))
+        .setDueDate(toDateOrNull(userTaskRecordValue.getDueDate()))
+        .setElementId(userTaskRecordValue.getElementId())
+        .setElementInstanceKey(userTaskRecordValue.getElementInstanceKey())
+        .setProcessDefinitionKey(userTaskRecordValue.getProcessDefinitionKey())
+        .setUserTaskKey(userTaskRecordValue.getUserTaskKey())
+        .setVariables(objectMapper.writeValueAsString(userTaskRecordValue.getVariables()))
+        .setFollowUpDate(toDateOrNull(userTaskRecordValue.getFollowUpDate()))
+        .setFormKey(userTaskRecordValue.getFormKey());
   }
 
   private OffsetDateTime toDateOrNull(String dateString) {

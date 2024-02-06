@@ -57,6 +57,8 @@ public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
 
     UserTaskEntity userTask = userTasks.get(0);
 
+    assertThat(userTask.getKey()).isGreaterThan(0);
+    assertThat(userTask.getPartitionId()).isGreaterThan(0);
     assertThat(userTask.getElementId()).isEqualTo("taskRequestLeave");
     assertThat(userTask.getBpmnProcessId()).isEqualTo("processAnnualLeave");
     assertThat(userTask.getProcessDefinitionKey()).isEqualTo(tester.getProcessDefinitionKey());
