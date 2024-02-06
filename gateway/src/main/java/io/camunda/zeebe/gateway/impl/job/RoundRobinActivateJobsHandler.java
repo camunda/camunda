@@ -158,7 +158,8 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
           if (!jobsToDefer.isEmpty()) {
             final var jobKeys = jobsToDefer.stream().map(ActivatedJob::getKey).toList();
             final var jobType = request.getType();
-            final var reason = String.format(MAX_MESSAGE_SIZE_EXCEEDED_MSG);
+            final var reason =
+                String.format(MAX_MESSAGE_SIZE_EXCEEDED_MSG, ResponseMapper.MAX_MESSAGE_SIZE);
 
             logResponseNotSent(jobType, jobKeys, reason);
             reactivateJobs(jobsToDefer, reason);

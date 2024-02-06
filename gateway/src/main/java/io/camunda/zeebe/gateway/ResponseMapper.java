@@ -46,7 +46,7 @@ import org.agrona.DirectBuffer;
 import org.springframework.util.unit.DataSize;
 
 public final class ResponseMapper {
-  private static final long MAX_MESSAGE_SIZE =
+  public static final long MAX_MESSAGE_SIZE =
       DataSize.ofMegabytes(4).toBytes(); // default max response size is 4MB
 
   public static DeployProcessResponse toDeployProcessResponse(
