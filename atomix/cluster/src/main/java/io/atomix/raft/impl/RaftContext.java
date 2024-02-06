@@ -380,8 +380,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         () ->
             role.shouldAcceptRequest(request)
                 .ifRightOrLeft(
-                    ignore -> // assume it is always true otherwise the response is left
-                    function
+                    ignore ->
+                        function
                             .get()
                             .whenComplete(
                                 (response, error) -> {

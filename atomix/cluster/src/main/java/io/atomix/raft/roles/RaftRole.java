@@ -113,5 +113,5 @@ public interface RaftRole extends Managed<RaftRole> {
    */
   CompletableFuture<VoteResponse> onVote(VoteRequest request);
 
-  Either<RaftError, Boolean> shouldAcceptRequest(RaftRequest request);
+  Either<RaftError, Void> shouldAcceptRequest(RaftRequest request);
 }

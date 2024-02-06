@@ -53,7 +53,7 @@ public abstract class AbstractRole implements RaftRole {
   }
 
   @Override
-  public Either<RaftError, Boolean> shouldAcceptRequest(final RaftRequest request) {
+  public Either<RaftError, Void> shouldAcceptRequest(final RaftRequest request) {
     // Reject only if we are in force configuration change and the request is not from the members
     // of forced configuration
     final boolean shouldReject =
@@ -68,7 +68,7 @@ public abstract class AbstractRole implements RaftRole {
                   "Force configuration change is in progress. Cannot accept request from %s which is not a member of the new configuration.",
                   request.from())));
     } else {
-      return Either.right(true);
+      return Either.right(null);
     }
   }
 
