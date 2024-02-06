@@ -334,6 +334,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                             t ->
                                 t.field(ProcessIndex.PROCESS_DEFINITION_ID)
                                     .value(FieldValue.of(""))))
+                .minimumShouldMatch("1")
                 .build()
                 ._toQuery();
       }
