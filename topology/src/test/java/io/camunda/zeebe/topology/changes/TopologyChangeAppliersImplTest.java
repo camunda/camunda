@@ -13,9 +13,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -47,6 +49,9 @@ final class TopologyChangeAppliersImplTest {
         Arguments.of(new MemberLeaveOperation(localMemberId), MemberLeaveApplier.class),
         Arguments.of(
             new PartitionReconfigurePriorityOperation(localMemberId, 1, 1),
-            PartitionReconfigurePriorityApplier.class));
+            PartitionReconfigurePriorityApplier.class),
+        Arguments.of(
+            new PartitionForceReconfigureOperation(localMemberId, 1, List.of()),
+            PartitionForceReconfigureApplier.class));
   }
 }
