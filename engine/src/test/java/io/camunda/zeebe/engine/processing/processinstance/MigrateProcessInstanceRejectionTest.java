@@ -1004,9 +1004,9 @@ public class MigrateProcessInstanceRejectionTest {
             String.format(
                 """
               Expected to migrate process instance '%s' \
-              but active element with id 'A' and type 'ZEEBE_USER_TASK' is mapped to \
-              an element with id 'B' and different type 'USER_TASK'. \
-              Elements must be mapped to elements of the same type.""",
+              but active user task with id 'A' and implementation 'zeebe user task' is mapped to \
+              an user task with id 'B' and different implementation 'job worker'. \
+              Elements must be mapped to elements of the same implementation.""",
                 processInstanceKey))
         .hasKey(processInstanceKey);
   }
@@ -1057,9 +1057,9 @@ public class MigrateProcessInstanceRejectionTest {
             String.format(
                 """
               Expected to migrate process instance '%s' \
-              but active element with id 'A' and type 'USER_TASK' is mapped to \
-              an element with id 'B' and different type 'ZEEBE_USER_TASK'. \
-              Elements must be mapped to elements of the same type.""",
+              but active user task with id 'A' and implementation 'job worker' is mapped to \
+              an user task with id 'B' and different implementation 'zeebe user task'. \
+              Elements must be mapped to elements of the same implementation.""",
                 processInstanceKey))
         .hasKey(processInstanceKey);
   }

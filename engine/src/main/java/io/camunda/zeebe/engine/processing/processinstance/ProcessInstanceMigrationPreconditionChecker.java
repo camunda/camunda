@@ -79,6 +79,13 @@ public final class ProcessInstanceMigrationPreconditionChecker {
               but active element with id '%s' and type '%s' is mapped to \
               an element with id '%s' and different type '%s'. \
               Elements must be mapped to elements of the same type.""";
+
+  private static final String ERROR_USER_TASK_IMPLEMENTATION_CHANGED =
+      """
+              Expected to migrate process instance '%s' \
+              but active user task with id '%s' and implementation '%s' is mapped to \
+              an user task with id '%s' and different implementation '%s'. \
+              Elements must be mapped to elements of the same implementation.""";
   private static final String ERROR_MESSAGE_ELEMENT_FLOW_SCOPE_CHANGED =
       """
               Expected to migrate process instance '%s' \
@@ -98,8 +105,8 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   private static final String ERROR_CONCURRENT_COMMAND =
       "Expected to migrate process instance '%s' but a concurrent command was executed on the process instance. Please retry the migration.";
   private static final long NO_PARENT = -1L;
-  private static final String ZEEBE_USER_TASK = "ZEEBE_USER_TASK";
-  private static final String JOB_WORKER_USER_TASK = "USER_TASK";
+  private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
+  private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
 
   /**
    * Checks whether the given record exists. Throws exception if given process instance record is
@@ -371,37 +378,47 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
    */
-  public static void requireSameUserTaskType(
+  public static void requireSameUserTaskImplementation(
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
       final ElementInstance elementInstance,
       final long processInstanceKey) {
     final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
+    if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
+      return;
+    }
+
     final AbstractFlowElement targetElement =
         targetProcessDefinition.getProcess().getElementById(targetElementId);
     final BpmnElementType targetElementType = targetElement.getElementType();
+    if (targetElementType != BpmnElementType.USER_TASK) {
+      return;
+    }
 
-    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.USER_TASK
-        && targetElementType == BpmnElementType.USER_TASK) {
-      final ExecutableUserTask targetUserTask =
-          (ExecutableUserTask) targetProcessDefinition.getProcess().getElementById(targetElementId);
-      final String targetUserTaskType =
-          targetUserTask.getUserTaskProperties() != null ? ZEEBE_USER_TASK : JOB_WORKER_USER_TASK;
-      final String sourceUserTaskType =
-          elementInstance.getUserTaskKey() > 0 ? ZEEBE_USER_TASK : JOB_WORKER_USER_TASK;
+    final ExecutableUserTask targetUserTask =
+        targetProcessDefinition
+            .getProcess()
+            .getElementById(targetElementId, ExecutableUserTask.class);
+    final String targetUserTaskType =
+        targetUserTask.getUserTaskProperties() != null
+            ? ZEEBE_USER_TASK_IMPLEMENTATION
+            : JOB_WORKER_IMPLEMENTATION;
+    final String sourceUserTaskType =
+        elementInstance.getUserTaskKey() > 0
+            ? ZEEBE_USER_TASK_IMPLEMENTATION
+            : JOB_WORKER_IMPLEMENTATION;
 
-      if (!targetUserTaskType.equals(sourceUserTaskType)) {
-        final String reason =
-            String.format(
-                ERROR_ELEMENT_TYPE_CHANGED,
-                processInstanceKey,
-                elementInstanceRecord.getElementId(),
-                sourceUserTaskType,
-                targetElementId,
-                targetUserTaskType);
-        throw new ProcessInstanceMigrationPreconditionFailedException(
-            reason, RejectionType.INVALID_STATE);
-      }
+    if (!targetUserTaskType.equals(sourceUserTaskType)) {
+      final String reason =
+          String.format(
+              ERROR_USER_TASK_IMPLEMENTATION_CHANGED,
+              processInstanceKey,
+              elementInstanceRecord.getElementId(),
+              sourceUserTaskType,
+              targetElementId,
+              targetUserTaskType);
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
     }
   }
 

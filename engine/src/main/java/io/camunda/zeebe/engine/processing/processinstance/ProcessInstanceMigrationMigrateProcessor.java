@@ -178,7 +178,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNoIncident(incidentState, elementInstance);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstanceRecord, processInstanceKey);
-    requireSameUserTaskType(
+    requireSameUserTaskImplementation(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
