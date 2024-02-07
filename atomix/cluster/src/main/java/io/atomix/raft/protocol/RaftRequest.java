@@ -16,8 +16,12 @@
  */
 package io.atomix.raft.protocol;
 
+import io.atomix.cluster.MemberId;
+
 /** Base interface for requests. */
 public interface RaftRequest extends RaftMessage {
+
+  MemberId from();
 
   /**
    * Request builder.

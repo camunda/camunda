@@ -138,4 +138,9 @@ public class AppendRequest extends AbstractRaftRequest {
         .add("commitIndex", commitIndex)
         .toString();
   }
+
+  @Override
+  public MemberId from() {
+    return leader();
+  }
 }

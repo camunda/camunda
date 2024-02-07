@@ -235,6 +235,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 .withMembers(currentConfiguration.newMembers())
                 // Override local member with the new type.
                 .withMember(request.joiningMember())
+                .from(raft.getCluster().getLocalMember().memberId().id())
                 .build())
         .handle(
             (reconfigureResponse, throwable) -> {
@@ -269,6 +270,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 .withIndex(currentConfiguration.index())
                 .withTerm(currentConfiguration.term())
                 .withMembers(updatedMembers)
+                .from(raft.getCluster().getLocalMember().memberId().id())
                 .build())
         .handle(
             (reconfigureResponse, throwable) -> {

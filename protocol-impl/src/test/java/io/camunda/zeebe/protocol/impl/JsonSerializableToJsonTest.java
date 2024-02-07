@@ -2084,6 +2084,7 @@ final class JsonSerializableToJsonTest {
                     .setFormKey(456)
                     .setVariables(VARIABLES_MSGPACK)
                     .setChangedAttributes(List.of("foo", "bar"))
+                    .setAction("complete")
                     .setBpmnProcessId("test-process")
                     .setProcessDefinitionKey(13)
                     .setProcessDefinitionVersion(12)
@@ -2108,6 +2109,7 @@ final class JsonSerializableToJsonTest {
         "variables": {
           "foo": "bar"
         },
+        "action": "complete",
         "formKey": 456,
         "userTaskKey": 123,
         "tenantId": "<default>"
@@ -2137,6 +2139,7 @@ final class JsonSerializableToJsonTest {
         "followUpDate": "",
         "changedAttributes": [],
         "variables": {},
+        "action": "",
         "formKey": -1,
         "userTaskKey": -1,
         "tenantId": "<default>"
@@ -2171,6 +2174,7 @@ final class JsonSerializableToJsonTest {
         "variables": {
           "foo": null
         },
+        "action": "",
         "formKey": -1,
         "userTaskKey": -1,
         "tenantId": "<default>"

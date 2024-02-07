@@ -48,4 +48,6 @@ public interface MutableMigrationState extends MigrationState {
   void migrateSignalSubscriptionStateForMultiTenancy();
 
   void setMigratedByVersion(String version);
+
+  void correctColumnFamilyPrefix();
 }

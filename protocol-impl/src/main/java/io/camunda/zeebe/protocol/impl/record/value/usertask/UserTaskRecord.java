@@ -68,6 +68,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
+  private final StringProperty actionProp = new StringProperty("action", EMPTY_STRING);
   private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
 
   public UserTaskRecord() {
@@ -88,7 +89,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(changedAttributesProp)
-        .declareProperty(creationTimestampProp);
+        .declareProperty(creationTimestampProp)
+        .declareProperty(actionProp);
   }
 
   public void wrapWithoutVariables(final UserTaskRecord record) {
@@ -108,6 +110,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     tenantIdProp.setValue(record.getTenantIdBuffer());
     creationTimestampProp.setValue(record.getCreationTimestamp());
     setChangedAttributesProp(record.getChangedAttributesProp());
+    actionProp.setValue(record.getActionBuffer());
   }
 
   public void wrapChangedAttributes(
@@ -182,6 +185,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @Override
+  public String getAction() {
+    return bufferAsString(actionProp.getValue());
+  }
+
+  @Override
   public long getCreationTimestamp() {
     return creationTimestampProp.getValue();
   }
@@ -248,6 +256,16 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setCreationTimestamp(final long creationTimestamp) {
     creationTimestampProp.setValue(creationTimestamp);
+    return this;
+  }
+
+  public UserTaskRecord setAction(final String action) {
+    actionProp.setValue(action);
+    return this;
+  }
+
+  public UserTaskRecord setAction(final DirectBuffer action) {
+    actionProp.setValue(action);
     return this;
   }
 
@@ -396,11 +414,6 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @JsonIgnore
-  public DirectBuffer getTenantIdBuffer() {
-    return tenantIdProp.getValue();
-  }
-
-  @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
     return variableProp.getValue();
   }
@@ -408,6 +421,27 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
     return bpmnProcessIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getElementIdBuffer() {
+    return elementIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getTenantIdBuffer() {
+    return tenantIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getActionBuffer() {
+    return actionProp.getValue();
+  }
+
+  @JsonIgnore
+  public String getActionOrDefault(final String defaultAction) {
+    final String action = bufferAsString(actionProp.getValue());
+    return action.isEmpty() ? defaultAction : action;
   }
 
   @Override
@@ -418,10 +452,5 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public UserTaskRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
     return this;
-  }
-
-  @JsonIgnore
-  public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
   }
 }

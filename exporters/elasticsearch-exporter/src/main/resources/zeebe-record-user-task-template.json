@@ -43,6 +43,9 @@
             "formKey": {
               "type": "long"
             },
+            "action": {
+              "type": "text"
+            },
             "creationTimestamp": {
               "type": "long"
             },

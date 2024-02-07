@@ -71,6 +71,35 @@ public final class CompleteUserTaskTest {
 
     Assertions.assertThat(recordValue)
         .hasUserTaskKey(userTaskKey)
+        .hasAction("complete")
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldTrackCustomActionInCompletingEvent() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // when
+    final Record<UserTaskRecordValue> completedRecord =
+        ENGINE.userTask().withKey(userTaskKey).withAction("customAction").complete();
+
+    // then
+    final UserTaskRecordValue recordValue = completedRecord.getValue();
+
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(UserTaskIntent.COMPLETING);
+
+    Assertions.assertThat(recordValue)
+        .hasUserTaskKey(userTaskKey)
+        .hasAction("customAction")
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 

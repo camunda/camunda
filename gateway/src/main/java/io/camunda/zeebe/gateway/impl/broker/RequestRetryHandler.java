@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.client.impl;
+package io.camunda.zeebe.gateway.impl.broker;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.broker.client.impl.PartitionIdIterator;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.net.ConnectException;
 import java.time.Duration;
@@ -31,18 +32,22 @@ import org.slf4j.LoggerFactory;
  * When a requests to a partition fails, request will be retried with a different partition until
  * all partitions are tried. The request is retried only for specific errors such as connection
  * errors or resource exhausted errors. The request is not retried for time outs.
+ *
+ * <p>Use carefully! Only certain requests can be retried on other partitions, and this class will
+ * overwrite the specific partition previously assigned to a request!
  */
 public final class RequestRetryHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(RequestRetryHandler.class);
 
+  private final RequestDispatchStrategy roundRobinDispatchStrategy =
+      RequestDispatchStrategy.roundRobin();
+
   private final BrokerClient brokerClient;
-  private final RequestDispatchStrategy roundRobinDispatchStrategy;
   private final BrokerTopologyManager topologyManager;
 
   public RequestRetryHandler(
       final BrokerClient brokerClient, final BrokerTopologyManager topologyManager) {
     this.brokerClient = brokerClient;
-    roundRobinDispatchStrategy = new RoundRobinDispatchStrategy();
     this.topologyManager = topologyManager;
   }
 

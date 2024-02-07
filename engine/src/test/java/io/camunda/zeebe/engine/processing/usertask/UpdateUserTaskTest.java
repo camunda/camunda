@@ -70,6 +70,37 @@ public final class UpdateUserTaskTest {
 
     Assertions.assertThat(updateRecord.getValue())
         .hasUserTaskKey(userTaskKey)
+        .hasAction("update")
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldTrackCustomActionInUpdatingEvent() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // when
+    final Record<UserTaskRecordValue> updateRecord =
+        ENGINE
+            .userTask()
+            .withKey(userTaskKey)
+            .withAction("customAction")
+            .update(new UserTaskRecord());
+
+    // then
+    Assertions.assertThat(updateRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(UserTaskIntent.UPDATING);
+
+    Assertions.assertThat(updateRecord.getValue())
+        .hasUserTaskKey(userTaskKey)
+        .hasAction("customAction")
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 

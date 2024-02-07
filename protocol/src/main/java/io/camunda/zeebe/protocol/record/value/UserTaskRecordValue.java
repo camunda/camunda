@@ -47,6 +47,8 @@ public interface UserTaskRecordValue
 
   List<String> getChangedAttributes();
 
+  String getAction();
+
   long getCreationTimestamp();
 
   /**

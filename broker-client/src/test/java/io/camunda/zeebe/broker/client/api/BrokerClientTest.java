@@ -7,19 +7,19 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
-import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.Node;
+import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.protocol.Protocol;
@@ -37,11 +37,15 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
-import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
@@ -51,28 +55,24 @@ public final class BrokerClientTest {
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
 
   @AutoCloseResource private final StubBroker broker = new StubBroker().start();
-
   @AutoCloseResource private BrokerClient client;
-
   @AutoCloseResource private AtomixCluster atomixCluster;
 
   // keep as field to ensure it gets closed at the end
   @SuppressWarnings({"FieldCanBeLocal", "Unused"})
   @AutoCloseResource
-  private BrokerTopologyManager topologyManager;
+  private BrokerTopologyManagerImpl topologyManager;
 
   @BeforeEach
   void beforeEach() {
-    final var stubAddress = Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
-    final var stubNode = Node.builder().withAddress(stubAddress).build();
-    final var listOfNodes = List.of(stubNode);
+    final var brokerAddress =
+        Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
+    final var membership = BootstrapDiscoveryProvider.builder().withNodes(brokerAddress).build();
     atomixCluster =
         AtomixCluster.builder()
             .withPort(SocketUtil.getNextAddress().getPort())
-            .withMemberId("gateway")
-            .withClusterId("cluster")
-            .withMembershipProvider(
-                BootstrapDiscoveryProvider.builder().withNodes(listOfNodes).build())
+            .withMembershipProvider(membership)
+            .withClusterId(broker.clusterId())
             .build();
     atomixCluster.start().join();
     actorScheduler.start();
@@ -83,13 +83,7 @@ public final class BrokerClientTest {
     actorScheduler.submitActor(topologyManager).join();
     atomixCluster.getMembershipService().addListener(topologyManager);
 
-    topologyManager.updateTopology(
-        topology -> {
-          topology.addPartitionIfAbsent(START_PARTITION_ID);
-          topology.setPartitionLeader(START_PARTITION_ID, 0, 1);
-          topology.addBrokerIfAbsent(0);
-          topology.setBrokerAddressIfPresent(0, stubAddress.toString());
-        });
+    topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, broker.member()));
     Awaitility.await("Topology is updated")
         .untilAsserted(
             () -> assertThat(topologyManager.getTopology().getPartitions()).isNotEmpty());
@@ -101,28 +95,24 @@ public final class BrokerClientTest {
             atomixCluster.getEventService(),
             actorScheduler,
             topologyManager);
-
     client.start().forEach(ActorFuture::join);
   }
 
   @Test
   void shouldReturnErrorOnRequestFailure() {
     // given
-    broker
-        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
-        .respondWithError()
-        .errorCode(ErrorCode.INTERNAL_ERROR)
-        .errorData("test")
-        .register();
+    registerError(broker, ErrorCode.INTERNAL_ERROR, "test");
 
-    assertThatThrownBy(() -> client.sendRequestWithRetry(new TestCommand()).join())
-        .hasCauseInstanceOf(BrokerErrorException.class)
-        .hasCause(new BrokerErrorException(new BrokerError(ErrorCode.INTERNAL_ERROR, "test")));
+    // when
+    final Future<?> result = client.sendRequestWithRetry(new TestCommand());
 
     // then
     final var receivedCommandRequests = broker.getReceivedCommandRequests();
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCause(new BrokerErrorException(new BrokerError(ErrorCode.INTERNAL_ERROR, "test")));
     assertThat(receivedCommandRequests).hasSize(1);
-
     receivedCommandRequests.forEach(
         request -> {
           assertThat(request.valueType()).isEqualTo(TestCommand.VALUE_TYPE);
@@ -133,43 +123,35 @@ public final class BrokerClientTest {
   @Test
   void shouldReturnErrorOnReadResponseFailure() {
     // given
-    broker
-        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
-        .respondWith()
-        .event()
-        .intent(TestCommand.INTENT)
-        .key(ExecuteCommandRequest::key)
-        .value()
-        .allOf(ExecuteCommandRequest::getCommand)
-        .done()
-        .register();
-
+    final var error = new RuntimeException("Catch Me");
     final var request =
         new TestCommand() {
           @Override
           protected UnifiedRecordValue toResponseDto(final DirectBuffer buffer) {
-            throw new RuntimeException("Catch Me");
+            throw error;
           }
         };
+    registerSuccessResponse(broker);
+
+    // when
+    final Future<?> response = client.sendRequestWithRetry(request);
 
     // then
-    assertThatThrownBy(() -> client.sendRequestWithRetry(request).join())
-        .hasCauseInstanceOf(BrokerResponseException.class)
-        .hasMessageContaining("Catch Me");
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCauseInstanceOf(BrokerResponseException.class)
+        .havingRootCause()
+        .isSameAs(error);
   }
 
   @Test
   void shouldTimeoutIfPartitionLeaderMismatchResponse() {
     // given
-    broker
-        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
-        .respondWithError()
-        .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
-        .errorData("")
-        .register();
+    registerError(broker, ErrorCode.PARTITION_LEADER_MISMATCH, "");
 
     // when
-    final var future = client.sendRequestWithRetry(new TestCommand());
+    final Future<?> response = client.sendRequestWithRetry(new TestCommand());
 
     // then
     // when the partition is repeatedly not found, the client loops
@@ -178,25 +160,25 @@ public final class BrokerClientTest {
     // specifically. It is also possible that Atomix times out beforehand if we calculated a very
     // small timeout for the request, e.g. < 50ms, so we also cannot assert the value of the
     // timeout
-    assertThatThrownBy(future::join).hasCauseInstanceOf(TimeoutException.class);
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCauseInstanceOf(TimeoutException.class);
   }
 
   @Test
   void shouldNotTimeoutIfPartitionLeaderMismatchResponseWhenRetryDisabled() {
     // given
-    broker
-        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
-        .respondWithError()
-        .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
-        .errorData("")
-        .register();
+    registerError(broker, ErrorCode.PARTITION_LEADER_MISMATCH, "");
 
     // when
-    final var future = client.sendRequest(new TestCommand());
+    final Future<?> response = client.sendRequest(new TestCommand());
 
     // then
-    assertThatThrownBy(future::join)
-        .hasCause(
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCause(
             new BrokerErrorException(new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "")));
   }
 
@@ -217,10 +199,13 @@ public final class BrokerClientTest {
     // when
     final var request = new TestCommand();
     request.setPartitionId(1);
-    final var async = client.sendRequestWithRetry(request, Duration.ofMillis(100));
+    final Future<?> response = client.sendRequestWithRetry(request, Duration.ofMillis(100));
 
     // then
-    assertThatThrownBy(async::join).hasRootCauseInstanceOf(TimeoutException.class);
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(TimeoutException.class);
   }
 
   @Test
@@ -230,14 +215,16 @@ public final class BrokerClientTest {
     request.setPartitionId(0);
 
     // when
-    final var async = client.sendRequestWithRetry(request);
+    final Future<?> response = client.sendRequestWithRetry(request);
 
     // then
     final var expected =
         "Expected to execute command on partition 0, but either it does not exist, or the gateway is not yet aware of it";
-    assertThatThrownBy(async::join)
-        .hasCauseInstanceOf(PartitionNotFoundException.class)
-        .hasMessageContaining(expected);
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCauseInstanceOf(PartitionNotFoundException.class)
+        .withMessageContaining(expected);
   }
 
   @Test
@@ -267,12 +254,13 @@ public final class BrokerClientTest {
   @Test
   void shouldReturnRejectionWithCorrectTypeAndReason() {
     // given
+    final var request = new TestCommand(1L);
     broker
         .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
         .respondWith()
         .event()
         .intent(TestCommand.INTENT)
-        .key(1L)
+        .key(ExecuteCommandRequest::key)
         .rejection(RejectionType.INVALID_ARGUMENT, "foo")
         .value()
         .allOf(ExecuteCommandRequest::getCommand)
@@ -280,14 +268,71 @@ public final class BrokerClientTest {
         .register();
 
     // when
-    final var responseFuture = client.sendRequestWithRetry(new TestCommand(1L));
+    final var responseFuture = client.sendRequestWithRetry(request);
 
     // then
-    assertThatThrownBy(responseFuture::join)
-        .hasCauseInstanceOf(BrokerRejectionException.class)
-        .hasCause(
+    assertThat(responseFuture)
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .withCause(
             new BrokerRejectionException(
                 new BrokerRejection(TestCommand.INTENT, 1, RejectionType.INVALID_ARGUMENT, "foo")));
+  }
+
+  @Test
+  void shouldPassTopologyManagerToDispatchStrategy() {
+    // given
+    final AtomicReference<BrokerTopologyManager> managerRef = new AtomicReference<>();
+    final var request =
+        new TestCommand(
+            1L,
+            topologyManager -> {
+              managerRef.set(topologyManager);
+              return 1;
+            });
+
+    // when
+    final var responseFuture = client.sendRequest(request);
+
+    // then
+    assertThat(responseFuture).failsWithin(Duration.ofSeconds(10));
+    assertThat(managerRef).hasValue(topologyManager);
+  }
+
+  @Test
+  void shouldReceiveJobAvailableNotification() {
+    // given
+    final AtomicReference<String> messageRef = new AtomicReference<>();
+    client.subscribeJobAvailableNotification("foo", messageRef::set);
+
+    // when
+    atomixCluster.getEventService().broadcast("foo", "bar");
+
+    // then
+    Awaitility.await("until notification received")
+        .untilAtomic(messageRef, Matchers.equalTo("bar"));
+  }
+
+  private void registerSuccessResponse(final StubBroker broker) {
+    broker
+        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
+        .respondWith()
+        .event()
+        .intent(TestCommand.INTENT)
+        .key(ExecuteCommandRequest::key)
+        .value()
+        .allOf(ExecuteCommandRequest::getCommand)
+        .done()
+        .register();
+  }
+
+  private void registerError(final StubBroker broker, final ErrorCode code, final String data) {
+    broker
+        .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
+        .respondWithError()
+        .errorCode(code)
+        .errorData(data)
+        .register();
   }
 
   private static class TestCommand extends BrokerExecuteCommand<UnifiedRecordValue> {
@@ -296,6 +341,7 @@ public final class BrokerClientTest {
 
     private final UnifiedRecordValue record;
     private final long key;
+    private final RequestDispatchStrategy dispatchStrategy;
 
     private TestCommand() {
       this(new UnifiedRecordValue(10));
@@ -305,14 +351,26 @@ public final class BrokerClientTest {
       this(new UnifiedRecordValue(10), key);
     }
 
+    private TestCommand(final long key, final RequestDispatchStrategy dispatchStrategy) {
+      this(new UnifiedRecordValue(10), key, dispatchStrategy);
+    }
+
     private TestCommand(final UnifiedRecordValue record) {
       this(record, Protocol.encodePartitionId(1, 1));
     }
 
     private TestCommand(final UnifiedRecordValue record, final long key) {
+      this(record, key, null);
+    }
+
+    private TestCommand(
+        final UnifiedRecordValue record,
+        final long key,
+        final RequestDispatchStrategy dispatchStrategy) {
       super(VALUE_TYPE, INTENT);
       this.record = record;
       this.key = key;
+      this.dispatchStrategy = dispatchStrategy;
     }
 
     @Override
@@ -330,6 +388,100 @@ public final class BrokerClientTest {
       final var response = new UnifiedRecordValue(10);
       response.wrap(buffer);
       return response;
+    }
+
+    @Override
+    public Optional<RequestDispatchStrategy> requestDispatchStrategy() {
+      return Optional.ofNullable(dispatchStrategy);
+    }
+  }
+
+  @Nested
+  final class RoutingTest {
+    @Test
+    void shouldRouteToLeaderOfRequestedPartition() {
+      // given - a second broker (1), which will respond successfully, and broker 0 which will
+      // respond
+      // with an error, we expect to get a successful response
+      // the request is routed to partition 1 first through the default round robin strategy
+      final var request = new TestCommand();
+      final BrokerResponse<?> response;
+      broker.updateInfo(info -> info.setFollowerForPartition(1));
+      registerError(broker, ErrorCode.INTERNAL_ERROR, "test");
+
+      try (final var otherBroker =
+          new StubBroker(1).start().updateInfo(info -> info.setLeaderForPartition(1, 1))) {
+        registerSuccessResponse(otherBroker);
+
+        topologyManager.event(new ClusterMembershipEvent(Type.METADATA_CHANGED, broker.member()));
+        topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
+        Awaitility.await("Topology is updated")
+            .untilAsserted(
+                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isOne());
+
+        // when
+        response = client.sendRequest(request).join();
+      }
+
+      // then
+      assertThat(response.isResponse()).isTrue();
+    }
+
+    @Test
+    void shouldRouteRequestBasedOnPartitionId() {
+      // given - a second broker (1), which respond successfully for partition 2
+      final BrokerResponse<?> response;
+      final var request = new TestCommand(1L);
+      request.setPartitionId(2);
+
+      try (final var otherBroker = new StubBroker(1, 2).start()) {
+        registerSuccessResponse(otherBroker);
+        topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
+        Awaitility.await("Topology is updated")
+            .untilAsserted(
+                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+
+        // when
+        response = client.sendRequest(request).join();
+      }
+
+      // then
+      assertThat(response.isResponse()).isTrue();
+    }
+
+    @Test
+    void shouldRouteRequestBasedOnDispatchStrategy() {
+      // given - a second broker (1), which respond successfully for partition 2
+      final BrokerResponse<?> response;
+      final var request = new TestCommand(1L, ignored -> 2);
+
+      try (final var otherBroker = new StubBroker(1, 2).start()) {
+        registerSuccessResponse(otherBroker);
+        topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, otherBroker.member()));
+        Awaitility.await("Topology is updated")
+            .untilAsserted(
+                () -> assertThat(topologyManager.getTopology().getLeaderForPartition(2)).isOne());
+
+        // when
+        response = client.sendRequest(request).join();
+      }
+
+      // then
+      assertThat(response.isResponse()).isTrue();
+    }
+
+    @Test
+    void shouldRouteToDeploymentPartitionAsFallback() {
+      // given - a dispatch strategy which returns "null"
+      final BrokerResponse<?> response;
+      final var request = new TestCommand(1L, ignored -> BrokerClusterState.PARTITION_ID_NULL);
+      registerSuccessResponse(broker);
+
+      // when
+      response = client.sendRequest(request).join();
+
+      // then
+      assertThat(response.isResponse()).isTrue();
     }
   }
 }
