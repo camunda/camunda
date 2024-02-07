@@ -163,11 +163,16 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
   }
 
   @Override
-  public B zeebeExternalReference(final String externalReference) {
+  public B zeebeExternalFormReference(final String externalFormReference) {
     final ZeebeFormDefinition formDefinition =
         getCreateSingleExtensionElement(ZeebeFormDefinition.class);
-    formDefinition.setExternalReference(externalReference);
+    formDefinition.setExternalReference(externalFormReference);
     return myself;
+  }
+
+  @Override
+  public B zeebeExternalFormReferenceExpression(final String expression) {
+    return zeebeExternalFormReference(asZeebeExpression(expression));
   }
 
   public B zeebeTaskHeader(final String key, final String value) {

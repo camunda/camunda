@@ -61,7 +61,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .userTask("task")
-            .zeebeExternalReference("")
+            .zeebeExternalFormReference("")
             .endEvent()
             .done(),
         singletonList(
@@ -87,7 +87,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeFormId("")
-            .zeebeExternalReference("")
+            .zeebeExternalFormReference("")
             .endEvent()
             .done(),
         singletonList(
@@ -100,7 +100,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeFormKey("")
-            .zeebeExternalReference("")
+            .zeebeExternalFormReference("")
             .endEvent()
             .done(),
         singletonList(
@@ -114,7 +114,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .userTask("task")
             .zeebeFormId("")
             .zeebeFormKey("")
-            .zeebeExternalReference("")
+            .zeebeExternalFormReference("")
             .endEvent()
             .done(),
         singletonList(
@@ -140,7 +140,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeFormId("form-id")
-            .zeebeExternalReference("reference")
+            .zeebeExternalFormReference("reference")
             .endEvent()
             .done(),
         EMPTY_LIST
@@ -150,7 +150,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeFormKey("form-key")
-            .zeebeExternalReference("reference")
+            .zeebeExternalFormReference("reference")
             .endEvent()
             .done(),
         EMPTY_LIST
@@ -161,7 +161,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .userTask("task")
             .zeebeFormId("form-id")
             .zeebeFormKey("form-key")
-            .zeebeExternalReference("reference")
+            .zeebeExternalFormReference("reference")
             .endEvent()
             .done(),
         singletonList(
@@ -194,7 +194,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeFormId(" ")
-            .zeebeExternalReference("reference")
+            .zeebeExternalFormReference("reference")
             .endEvent()
             .done(),
         singletonList(
@@ -207,7 +207,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeFormId("form-id")
-            .zeebeExternalReference(" ")
+            .zeebeExternalFormReference(" ")
             .endEvent()
             .done(),
         EMPTY_LIST
@@ -217,7 +217,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeFormKey(" ")
-            .zeebeExternalReference("reference")
+            .zeebeExternalFormReference("reference")
             .endEvent()
             .done(),
         singletonList(
@@ -230,7 +230,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeFormKey("form-key")
-            .zeebeExternalReference(" ")
+            .zeebeExternalFormReference(" ")
             .endEvent()
             .done(),
         EMPTY_LIST
@@ -263,7 +263,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .userTask("task")
-            .zeebeExternalReference(" ")
+            .zeebeExternalFormReference(" ")
             .endEvent()
             .done(),
         singletonList(
@@ -299,7 +299,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .userTask("task")
-            .zeebeExternalReference("  ")
+            .zeebeExternalFormReference("  ")
             .endEvent()
             .done(),
         singletonList(
@@ -341,7 +341,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .userTask("task")
-            .zeebeExternalReference("reference")
+            .zeebeExternalFormReference("reference")
             .endEvent()
             .done(),
         singletonList(
@@ -383,7 +383,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeUserTask()
-            .zeebeExternalReference("")
+            .zeebeExternalFormReference("")
             .endEvent()
             .done(),
         singletonList(
@@ -411,7 +411,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .userTask("task")
             .zeebeUserTask()
             .zeebeFormId("")
-            .zeebeExternalReference("")
+            .zeebeExternalFormReference("")
             .endEvent()
             .done(),
         singletonList(
@@ -425,7 +425,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .userTask("task")
             .zeebeUserTask()
             .zeebeFormKey("")
-            .zeebeExternalReference("")
+            .zeebeExternalFormReference("")
             .endEvent()
             .done(),
         singletonList(
@@ -440,7 +440,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .zeebeUserTask()
             .zeebeFormId("")
             .zeebeFormKey("")
-            .zeebeExternalReference("")
+            .zeebeExternalFormReference("")
             .endEvent()
             .done(),
         singletonList(
@@ -465,7 +465,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .userTask("task")
             .zeebeUserTask()
             .zeebeFormId("form-id")
-            .zeebeExternalReference("reference")
+            .zeebeExternalFormReference("reference")
             .endEvent()
             .done(),
         singletonList(
@@ -479,7 +479,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .userTask("task")
             .zeebeUserTask()
             .zeebeFormKey("form-key")
-            .zeebeExternalReference("reference")
+            .zeebeExternalFormReference("reference")
             .endEvent()
             .done(),
         EMPTY_LIST
@@ -491,7 +491,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .zeebeUserTask()
             .zeebeFormId("form-id")
             .zeebeFormKey("form-key")
-            .zeebeExternalReference("reference")
+            .zeebeExternalFormReference("reference")
             .endEvent()
             .done(),
         singletonList(
@@ -530,7 +530,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeUserTask()
-            .zeebeExternalReference(" ")
+            .zeebeExternalFormReference(" ")
             .endEvent()
             .done(),
         singletonList(
@@ -569,7 +569,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeUserTask()
-            .zeebeExternalReference("  ")
+            .zeebeExternalFormReference("  ")
             .endEvent()
             .done(),
         singletonList(
@@ -621,7 +621,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeUserTask()
-            .zeebeExternalReference("reference")
+            .zeebeExternalFormReference("reference")
             .endEvent()
             .done(),
         EMPTY_LIST
