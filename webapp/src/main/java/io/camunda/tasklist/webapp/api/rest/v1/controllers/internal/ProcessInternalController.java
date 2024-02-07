@@ -81,17 +81,17 @@ public class ProcessInternalController extends ApiErrorController {
           String query,
       @Parameter(
               description =
-                  "Identifies the tenant.</br>"
-                      + "If multi-tenancy is enabled and `tenantId` is not provided, processes for all tenants available for the current user will be returned.</br>"
-                      + "If `tenantId` is provided, only processes for that tenant will be returned, or an empty list if the user does not have access to the provided tenant.</br>"
+                  "Identifies the tenant.<br>"
+                      + "If multi-tenancy is enabled and `tenantId` is not provided, processes for all tenants available for the current user will be returned.<br>"
+                      + "If `tenantId` is provided, only processes for that tenant will be returned, or an empty list if the user does not have access to the provided tenant.<br>"
                       + "If multi-tenancy is disabled, this parameter will be ignored.")
           @RequestParam(required = false)
           String tenantId,
       @Parameter(
               description =
-                  "If this parameter is set (Default value `null`): </br>"
-                      + "`true`: It will return all the processes started by a form </br>"
-                      + "`false`: It will return all the processes that are not started by a form </br>"
+                  "If this parameter is set (Default value `null`): <br>"
+                      + "`true`: It will return all the processes started by a form <br>"
+                      + "`false`: It will return all the processes that are not started by a form <br>"
                       + "`null`: The filter is not applied")
           @RequestParam(required = false)
           Boolean isStartedByForm) {

@@ -60,7 +60,7 @@ public class OpenApiConfig {
                       new Info()
                           .title("Tasklist webapp Internal API")
                           .description(
-                              "<b>NOTE:</b> For internal use only.</br>"
+                              "<b>NOTE:</b> For internal use only.<br>"
                                   + "Please take into account that this is an <b>internal API</b> and it may be subject to changes "
                                   + "in the future without guaranteeing backward compatibility with previous versions.")
                           .contact(new Contact().url("https://www.camunda.com"))
@@ -91,7 +91,7 @@ public class OpenApiConfig {
                       new Info()
                           .title("Tasklist webapp External API")
                           .description(
-                              "<b>NOTE:</b> For public use.</br>"
+                              "<b>NOTE:</b> For public use.<br>"
                                   + "This API is exposed publicly but should only be used by internal apps.")
                           .contact(new Contact().url("https://www.camunda.com"))
                           .license(

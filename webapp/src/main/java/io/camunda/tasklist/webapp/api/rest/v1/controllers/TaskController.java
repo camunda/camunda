@@ -74,7 +74,7 @@ public class TaskController extends ApiErrorController {
   @Operation(
       summary = "Returns the list of tasks that satisfy search request params",
       description =
-          "Returns the list of tasks that satisfy search request params.</br>"
+          "Returns the list of tasks that satisfy search request params.<br>"
               + "<b>NOTE:</b> Only one of `[searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual]`"
               + "search options must be present in request.",
       responses = {
@@ -216,7 +216,7 @@ public class TaskController extends ApiErrorController {
             useReturnTypeSchema = true),
         @ApiResponse(
             description =
-                "An error is returned when the task is not active (not in the CREATED state).</br>"
+                "An error is returned when the task is not active (not in the CREATED state).<br>"
                     + "An error is returned when task was already assigned, except the case when JWT authentication token used and `allowOverrideAssignment = true`.",
             responseCode = "400",
             content =
@@ -260,7 +260,7 @@ public class TaskController extends ApiErrorController {
             useReturnTypeSchema = true),
         @ApiResponse(
             description =
-                "An error is returned when the task is not active (not in the CREATED state).</br>"
+                "An error is returned when the task is not active (not in the CREATED state).<br>"
                     + "An error is returned if the task was not claimed (assigned) before.",
             responseCode = "400",
             content =
@@ -292,8 +292,8 @@ public class TaskController extends ApiErrorController {
             useReturnTypeSchema = true),
         @ApiResponse(
             description =
-                "An error is returned when the task is not active (not in the CREATED state).</br>"
-                    + "An error is returned if the task was not claimed (assigned) before.</br>"
+                "An error is returned when the task is not active (not in the CREATED state).<br>"
+                    + "An error is returned if the task was not claimed (assigned) before.<br>"
                     + "An error is returned if the task is not assigned to the current user.",
             responseCode = "400",
             content =
@@ -353,8 +353,8 @@ public class TaskController extends ApiErrorController {
             useReturnTypeSchema = true),
         @ApiResponse(
             description =
-                "An error is returned when the task is not active (not in the `CREATED` state).</br>"
-                    + "An error is returned if the task was not claimed (assigned) before, except the case when JWT authentication token used.</br>"
+                "An error is returned when the task is not active (not in the `CREATED` state).<br>"
+                    + "An error is returned if the task was not claimed (assigned) before, except the case when JWT authentication token used.<br>"
                     + "An error is returned if the task is not assigned to the current user, except the case when JWT authentication token used.",
             responseCode = "400",
             content =
@@ -400,7 +400,7 @@ public class TaskController extends ApiErrorController {
   @Operation(
       summary = "Returns the list of task variables",
       description =
-          "This method returns a list of task variables for the specified `taskId` and `variableName`.</br>"
+          "This method returns a list of task variables for the specified `taskId` and `variableName`.<br>"
               + "If the request body is not provided or if the `variableNames` parameter in the request is empty, "
               + "all variables associated with the task will be returned.",
       responses = {
