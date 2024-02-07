@@ -170,7 +170,7 @@ public class UserTaskStateTest {
         .setFollowUpDate("2023-11-12T11:11:00+01:00")
         .setFormKey(5678)
         .setUserTaskKey(userTaskKey)
-        .setCreationDate(ActorClock.currentTimeMillis());
+        .setCreationTimestamp(ActorClock.currentTimeMillis());
   }
 
   private void assertUserTask(
@@ -204,7 +204,7 @@ public class UserTaskStateTest {
         .hasFormKey(expectedRecord.getFormKey())
         .hasUserTaskKey(expectedRecord.getUserTaskKey())
         .hasTenantId(expectedTenantId)
-        .hasCreationDate(expectedRecord.getCreationDate());
+        .hasCreationTimestamp(expectedRecord.getCreationTimestamp());
     assertUserTaskState(expectedRecord.getUserTaskKey(), expectedLifecycleState);
   }
 

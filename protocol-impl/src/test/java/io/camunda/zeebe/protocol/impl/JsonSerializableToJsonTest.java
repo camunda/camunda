@@ -2078,7 +2078,7 @@ final class JsonSerializableToJsonTest {
                     .setAssignee("myAssignee")
                     .setCandidateGroups("myCandidateGroups")
                     .setCandidateUsers("myCandidateUsers")
-                    .setCreationDate(1699633748000L)
+                    .setCreationTimestamp(1699633748000L)
                     .setDueDate("2023-11-11T11:11:00+01:00")
                     .setFollowUpDate("2023-11-12T11:11:00+01:00")
                     .setFormKey(456)
@@ -2101,7 +2101,7 @@ final class JsonSerializableToJsonTest {
         "assignee": "myAssignee",
         "candidateGroups": "myCandidateGroups",
         "candidateUsers": "myCandidateUsers",
-        "creationDate": 1699633748000,
+        "creationTimestamp": 1699633748000,
         "dueDate": "2023-11-11T11:11:00+01:00",
         "followUpDate": "2023-11-12T11:11:00+01:00",
         "changedAttributes": ["foo", "bar"],
@@ -2132,7 +2132,7 @@ final class JsonSerializableToJsonTest {
         "assignee": "",
         "candidateGroups": "",
         "candidateUsers": "",
-        "creationDate": -1,
+        "creationTimestamp": -1,
         "dueDate": "",
         "followUpDate": "",
         "changedAttributes": [],
@@ -2164,7 +2164,7 @@ final class JsonSerializableToJsonTest {
         "assignee": "",
         "candidateGroups": "",
         "candidateUsers": "",
-        "creationDate": -1,
+        "creationTimestamp": -1,
         "dueDate": "",
         "followUpDate": "",
         "changedAttributes": [],

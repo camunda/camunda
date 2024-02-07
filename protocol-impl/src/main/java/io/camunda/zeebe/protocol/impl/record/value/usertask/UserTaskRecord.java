@@ -68,8 +68,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
-
-  private final LongProperty creationDateProp = new LongProperty("creationDate", -1L);
+  private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
 
   public UserTaskRecord() {
     super(17);
@@ -89,7 +88,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(changedAttributesProp)
-        .declareProperty(creationDateProp);
+        .declareProperty(creationTimestampProp);
   }
 
   public void wrapWithoutVariables(final UserTaskRecord record) {
@@ -107,7 +106,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantIdBuffer());
-    creationDateProp.setValue(record.getCreationDate());
+    creationTimestampProp.setValue(record.getCreationTimestamp());
     setChangedAttributesProp(record.getChangedAttributesProp());
   }
 
@@ -183,8 +182,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @Override
-  public long getCreationDate() {
-    return creationDateProp.getValue();
+  public long getCreationTimestamp() {
+    return creationTimestampProp.getValue();
   }
 
   @Override
@@ -247,8 +246,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     return this;
   }
 
-  public UserTaskRecord setCreationDate(final long creationDate) {
-    creationDateProp.setValue(creationDate);
+  public UserTaskRecord setCreationTimestamp(final long creationTimestamp) {
+    creationTimestampProp.setValue(creationTimestamp);
     return this;
   }
 

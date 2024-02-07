@@ -47,7 +47,7 @@ public interface UserTaskRecordValue
 
   List<String> getChangedAttributes();
 
-  long getCreationDate();
+  long getCreationTimestamp();
 
   /**
    * @return the element id of the corresponding user task

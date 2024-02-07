@@ -43,7 +43,7 @@
             "formKey": {
               "type": "long"
             },
-            "creationDate": {
+            "creationTimestamp": {
               "type": "long"
             },
             "elementId": {
