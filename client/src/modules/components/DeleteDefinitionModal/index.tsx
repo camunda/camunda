@@ -50,10 +50,12 @@ const DeleteDefinitionModal: React.FC<Props> = ({
         }
 
         onDelete();
+        setIsConfirmed(false);
       }}
       onRequestClose={() => {
         setHasConfirmationError(false);
         onClose();
+        setIsConfirmed(false);
       }}
       size="md"
     >
@@ -72,6 +74,7 @@ const DeleteDefinitionModal: React.FC<Props> = ({
           />
         )}
         <Checkbox
+          checked={isConfirmed}
           id="confirmation-checkbox"
           labelText={confirmationText}
           invalid={hasConfirmationError}

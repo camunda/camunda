@@ -440,4 +440,43 @@ describe('<ProcessOperations />', () => {
       ).toBeEnabled(),
     );
   });
+
+  it('should reset confirmation checkbox to unchecked when delete modal is closed and reopened', async () => {
+    mockApplyProcessDefinitionOperation().withSuccess(mockOperation);
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [],
+      totalCount: 0,
+    });
+
+    const {user} = render(
+      <ProcessOperations
+        processDefinitionId="2251799813687094"
+        processName="myProcess"
+        processVersion="2"
+      />,
+      {wrapper: Wrapper},
+    );
+
+    const deleteButton = await screen.findByRole('button', {
+      name: /^delete process definition "myProcess - version 2"$/i,
+    });
+
+    await user.click(deleteButton);
+
+    const checkbox = await screen.findByLabelText(
+      /Yes, I confirm I want to delete this process definition./i,
+    );
+
+    expect(checkbox).not.toBeChecked();
+
+    await user.click(checkbox);
+
+    expect(checkbox).toBeChecked();
+
+    await user.click(screen.getByLabelText('close', {selector: 'button'}));
+
+    await user.click(deleteButton);
+
+    expect(checkbox).not.toBeChecked();
+  });
 });
