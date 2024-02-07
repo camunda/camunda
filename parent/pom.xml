@@ -1191,6 +1191,13 @@
         <artifactId>reactor-core</artifactId>
         <version>3.5.11</version>
       </dependency>
+
+      <!-- between identity and identity -->
+      <dependency>
+        <groupId>com.squareup.okio</groupId>
+        <artifactId>okio</artifactId>
+        <version>3.5.0</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
