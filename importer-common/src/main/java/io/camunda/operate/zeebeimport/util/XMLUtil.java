@@ -11,15 +11,14 @@ import javax.xml.parsers.SAXParserFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.Optional;
+import java.util.*;
+
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.ProcessFlowNodeEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.xml.ModelException;
-import org.camunda.bpm.model.xml.ModelParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -50,17 +49,24 @@ public class XMLUtil {
     }
   }
 
-  public Optional<ProcessEntity> extractDiagramData(byte[] byteArray) {
+  public Optional<ProcessEntity> extractDiagramData(byte[] byteArray, String bpmnProcessId) {
     SAXParserFactory saxParserFactory = getSAXParserFactory();
     InputStream is = new ByteArrayInputStream(byteArray);
     BpmnXmlParserHandler handler = new BpmnXmlParserHandler();
     try {
       saxParserFactory.newSAXParser().parse(is, handler);
-      ProcessEntity processEntity = handler.getProcessEntity();
+      ProcessEntity processEntity = handler.getProcessEntity(bpmnProcessId);
+      if (processEntity == null) {
+        return Optional.empty();
+      }
+      Set<String> processChildrenIds = handler.getProcessChildrenIds(bpmnProcessId);
       is = new ByteArrayInputStream(byteArray);
       BpmnModelInstance modelInstance = Bpmn.readModelFromStream(is);
       Collection<FlowNode> flowNodes = modelInstance.getModelElementsByType(FlowNode.class);
-      flowNodes.forEach(x -> processEntity.getFlowNodes().add(new ProcessFlowNodeEntity(x.getId(), x.getName())));
+      flowNodes.stream()
+          .filter(x -> processChildrenIds.contains(x.getId()))
+          .toList()
+          .forEach(x -> processEntity.getFlowNodes().add(new ProcessFlowNodeEntity(x.getId(), x.getName())));
       return Optional.of(processEntity);
     } catch (ParserConfigurationException | SAXException | IOException | ModelException e) {
       logger.warn("Unable to parse diagram: " + e.getMessage(), e);
@@ -70,20 +76,39 @@ public class XMLUtil {
 
   public static class BpmnXmlParserHandler extends DefaultHandler {
 
-    ProcessEntity processEntity = new ProcessEntity();
+    private final String processElement = "process";
+    private final List<ProcessEntity> processEntities = new ArrayList<>();
+    private final Map<String, Set<String>> processChildrenIds = new LinkedHashMap<>();
+    private String currentProcessId = null;
 
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-      if (localName.equalsIgnoreCase("process")) {
-        if (attributes.getValue("name") != null) {
-          processEntity.setName(attributes.getValue("name"));
+      String elementId = attributes.getValue("id");
+      if (localName.equalsIgnoreCase(processElement)) {
+        if (elementId == null) {
+          throw new SAXException("Process has null id");
         }
+        processEntities.add(new ProcessEntity().setBpmnProcessId(elementId).setName(attributes.getValue("name")));
+        processChildrenIds.put(elementId, new LinkedHashSet<>());
+        currentProcessId = elementId;
+      } else if (currentProcessId != null && elementId != null) {
+        processChildrenIds.get(currentProcessId).add(elementId);
       }
     }
 
-    public ProcessEntity getProcessEntity() {
-      return processEntity;
+    @Override
+    public void endElement(String uri, String localName, String qName) throws SAXException {
+      if (localName.equalsIgnoreCase(processElement)) {
+        currentProcessId = null;
+      }
+    }
+
+    public ProcessEntity getProcessEntity(String processId) {
+      return processEntities.stream().filter(x -> Objects.equals(x.getBpmnProcessId(), processId)).findFirst().orElse(null);
+    }
+
+    public Set<String> getProcessChildrenIds(String processId) {
+      return processChildrenIds.containsKey(processId) ? processChildrenIds.get(processId) : new HashSet<>();
     }
   }
-
 }

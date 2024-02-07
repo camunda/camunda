@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.UserService;
@@ -48,6 +49,10 @@ import static org.mockito.Mockito.when;
 @WithMockUser(DEFAULT_USER)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS) // Lifecycle required to use BeforeAll and AfterAll in non-static fashion
 public class OperateZeebeSearchAbstractIT {
+
+  @Autowired
+  protected TestSearchRepository testSearchRepository;
+
   // These are mocked so we can bypass authentication issues when connecting to zeebe and search
   @MockBean
   protected UserService userService;

@@ -97,7 +97,7 @@ public class ProcessZeebeRecordProcessor {
     String resourceName = process.getResourceName();
     processEntity.setResourceName(resourceName);
 
-    final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
+    final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray, process.getBpmnProcessId());
     if (diagramData.isPresent()) {
       processEntity.setName(diagramData.get().getName())
           .setFlowNodes(diagramData.get().getFlowNodes());
