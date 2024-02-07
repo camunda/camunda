@@ -147,6 +147,7 @@ public class CUSTOMCopyProcessesFromOptimize {
 
     xmlUtil.extractDiagramData(
         bpmXml.getBytes(),
+        processEntity.getBpmnProcessId()::equals,
         processEntity::setName,
         flowNode -> processEntity.getFlowNodes().add(flowNode),
         userTaskFormCollector,

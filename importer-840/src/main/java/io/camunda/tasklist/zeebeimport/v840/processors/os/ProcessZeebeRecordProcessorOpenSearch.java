@@ -123,6 +123,7 @@ public class ProcessZeebeRecordProcessorOpenSearch {
 
     xmlUtil.extractDiagramData(
         byteArray,
+        process.getBpmnProcessId()::equals,
         processEntity::setName,
         flowNode -> processEntity.getFlowNodes().add(flowNode),
         userTaskFormCollector,
