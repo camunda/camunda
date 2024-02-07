@@ -26,6 +26,7 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
@@ -93,21 +94,30 @@ public final class BpmnUserTaskBehavior {
                     .map(p::externalFormReference));
   }
 
-  public long createNewUserTask(
+  public UserTaskRecord createNewUserTask(
       final BpmnElementContext context,
       final ExecutableUserTask element,
       final UserTaskProperties userTaskProperties) {
     final var userTaskKey = keyGenerator.nextKey();
-    writeUserTaskEvent(userTaskKey, context, element, UserTaskIntent.CREATING, userTaskProperties);
-    return userTaskKey;
-  }
 
-  public void userTaskCreated(
-      final long userTaskKey,
-      final BpmnElementContext context,
-      final ExecutableUserTask element,
-      final UserTaskProperties userTaskProperties) {
-    writeUserTaskEvent(userTaskKey, context, element, UserTaskIntent.CREATED, userTaskProperties);
+    userTaskRecord
+        .setUserTaskKey(userTaskKey)
+        .setAssignee(userTaskProperties.getAssignee())
+        .setCandidateGroups(userTaskProperties.getCandidateGroups())
+        .setCandidateUsers(userTaskProperties.getCandidateUsers())
+        .setDueDate(userTaskProperties.getDueDate())
+        .setFollowUpDate(userTaskProperties.getFollowUpDate())
+        .setFormKey(userTaskProperties.getFormKey())
+        .setBpmnProcessId(context.getBpmnProcessId())
+        .setProcessDefinitionVersion(context.getProcessVersion())
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
+        .setElementId(element.getId())
+        .setElementInstanceKey(context.getElementInstanceKey())
+        .setTenantId(context.getTenantId())
+        .setCreationTimestamp(ActorClock.currentTimeMillis());
+
+    return userTaskRecord;
   }
 
   public Either<Failure, String> evaluateAssigneeExpression(
@@ -202,30 +212,8 @@ public final class BpmnUserTaskBehavior {
     }
   }
 
-  private void writeUserTaskEvent(
-      final long userTaskKey,
-      final BpmnElementContext context,
-      final ExecutableUserTask userTask,
-      final UserTaskIntent intent,
-      final UserTaskProperties props) {
-
-    userTaskRecord
-        .setUserTaskKey(userTaskKey)
-        .setAssignee(props.getAssignee())
-        .setCandidateGroups(props.getCandidateGroups())
-        .setCandidateUsers(props.getCandidateUsers())
-        .setDueDate(props.getDueDate())
-        .setFollowUpDate(props.getFollowUpDate())
-        .setFormKey(props.getFormKey())
-        .setExternalFormReference(props.getExternalFormReference())
-        .setBpmnProcessId(context.getBpmnProcessId())
-        .setProcessDefinitionVersion(context.getProcessVersion())
-        .setProcessDefinitionKey(context.getProcessDefinitionKey())
-        .setProcessInstanceKey(context.getProcessInstanceKey())
-        .setElementId(userTask.getId())
-        .setElementInstanceKey(context.getElementInstanceKey())
-        .setTenantId(context.getTenantId());
-
+  public void appendFollowUpEvent(
+      final long userTaskKey, final UserTaskIntent intent, final UserTaskRecord userTaskRecord) {
     stateWriter.appendFollowUpEvent(userTaskKey, intent, userTaskRecord);
   }
 
