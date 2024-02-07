@@ -185,6 +185,35 @@ public final class NativeUserTaskTest {
   }
 
   @Test
+  public void shouldPickUpCustomFormExpressionForUserTask() {
+    // given
+    final String externalReference = "http://example.com/my-external-form";
+
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeExternalFormReferenceExpression("externalReference")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("externalReference", externalReference)
+            .create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue())
+        .hasFormKey(-1L)
+        .hasExternalFormReference(externalReference);
+  }
+
+  @Test
   public void shouldNotPickUpEmbeddedFormForUserTask() {
     // given
     final String formKey = Strings.newRandomValidBpmnId();

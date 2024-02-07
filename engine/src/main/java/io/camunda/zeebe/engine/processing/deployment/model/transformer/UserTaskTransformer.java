@@ -241,7 +241,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
                   ExpressionTransformer.asFeelExpressionString(
                       ExpressionTransformer.asStringLiteral(externalReference))));
         } else {
-          userTaskProperties.setAssignee(externalReferenceExpression);
+          userTaskProperties.setExternalFormReference(externalReferenceExpression);
         }
       }
     }
