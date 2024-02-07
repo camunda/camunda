@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehav
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
 public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
 
@@ -69,9 +70,15 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
         .ifRightOrLeft(
             userTaskProperties -> {
-              final var userTaskKey =
+              final var userTaskRecord =
                   userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
-              userTaskBehavior.userTaskCreated(userTaskKey, context, element, userTaskProperties);
+
+              userTaskBehavior.appendFollowUpEvent(
+                  userTaskRecord.getUserTaskKey(), UserTaskIntent.CREATING, userTaskRecord);
+
+              userTaskBehavior.appendFollowUpEvent(
+                  userTaskRecord.getUserTaskKey(), UserTaskIntent.CREATED, userTaskRecord);
+
               stateTransitionBehavior.transitionToActivated(context, element.getEventType());
             },
             failure -> incidentBehavior.createIncident(failure, context));

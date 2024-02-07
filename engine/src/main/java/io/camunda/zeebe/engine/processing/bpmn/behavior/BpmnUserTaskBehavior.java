@@ -86,25 +86,33 @@ public final class BpmnUserTaskBehavior {
         .flatMap(
             p ->
                 evaluateFormIdExpressionToFormKey(userTaskProps.getFormId(), scopeKey, tenantId)
-                    .map(p::formKey))
-        .flatMap(p -> evaluateCurrentDate().map(p::creationDate));
+                    .map(p::formKey));
   }
 
-  public long createNewUserTask(
+  public UserTaskRecord createNewUserTask(
       final BpmnElementContext context,
       final ExecutableUserTask element,
       final UserTaskProperties userTaskProperties) {
     final var userTaskKey = keyGenerator.nextKey();
-    writeUserTaskEvent(userTaskKey, context, element, UserTaskIntent.CREATING, userTaskProperties);
-    return userTaskKey;
-  }
 
-  public void userTaskCreated(
-      final long userTaskKey,
-      final BpmnElementContext context,
-      final ExecutableUserTask element,
-      final UserTaskProperties userTaskProperties) {
-    writeUserTaskEvent(userTaskKey, context, element, UserTaskIntent.CREATED, userTaskProperties);
+    userTaskRecord
+        .setUserTaskKey(userTaskKey)
+        .setAssignee(userTaskProperties.getAssignee())
+        .setCandidateGroups(userTaskProperties.getCandidateGroups())
+        .setCandidateUsers(userTaskProperties.getCandidateUsers())
+        .setDueDate(userTaskProperties.getDueDate())
+        .setFollowUpDate(userTaskProperties.getFollowUpDate())
+        .setFormKey(userTaskProperties.getFormKey())
+        .setBpmnProcessId(context.getBpmnProcessId())
+        .setProcessDefinitionVersion(context.getProcessVersion())
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
+        .setElementId(element.getId())
+        .setElementInstanceKey(context.getElementInstanceKey())
+        .setTenantId(context.getTenantId())
+        .setCreationTimestamp(ActorClock.currentTimeMillis());
+
+    return userTaskRecord;
   }
 
   public Either<Failure, String> evaluateAssigneeExpression(
@@ -143,10 +151,6 @@ public final class BpmnUserTaskBehavior {
     return expressionBehavior
         .evaluateDateTimeExpression(date, scopeKey, true)
         .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
-  }
-
-  public Either<Failure, Long> evaluateCurrentDate() {
-    return Either.right(ActorClock.currentTimeMillis());
   }
 
   public Either<Failure, Long> evaluateFormIdExpressionToFormKey(
@@ -195,30 +199,8 @@ public final class BpmnUserTaskBehavior {
     }
   }
 
-  private void writeUserTaskEvent(
-      final long userTaskKey,
-      final BpmnElementContext context,
-      final ExecutableUserTask userTask,
-      final UserTaskIntent intent,
-      final UserTaskProperties props) {
-
-    userTaskRecord
-        .setUserTaskKey(userTaskKey)
-        .setAssignee(props.getAssignee())
-        .setCandidateGroups(props.getCandidateGroups())
-        .setCandidateUsers(props.getCandidateUsers())
-        .setDueDate(props.getDueDate())
-        .setFollowUpDate(props.getFollowUpDate())
-        .setFormKey(props.getFormKey())
-        .setBpmnProcessId(context.getBpmnProcessId())
-        .setProcessDefinitionVersion(context.getProcessVersion())
-        .setProcessDefinitionKey(context.getProcessDefinitionKey())
-        .setProcessInstanceKey(context.getProcessInstanceKey())
-        .setElementId(userTask.getId())
-        .setElementInstanceKey(context.getElementInstanceKey())
-        .setTenantId(context.getTenantId())
-        .setCreationDate(props.getCreationDate());
-
+  public void appendFollowUpEvent(
+      final long userTaskKey, final UserTaskIntent intent, final UserTaskRecord userTaskRecord) {
     stateWriter.appendFollowUpEvent(userTaskKey, intent, userTaskRecord);
   }
 
@@ -230,7 +212,6 @@ public final class BpmnUserTaskBehavior {
     private String dueDate;
     private String followUpDate;
     private Long formKey;
-    private Long creationDate;
 
     public String getAssignee() {
       return getOrEmpty(assignee);
@@ -274,15 +255,6 @@ public final class BpmnUserTaskBehavior {
 
     public UserTaskProperties followUpDate(final String followUpDate) {
       this.followUpDate = followUpDate;
-      return this;
-    }
-
-    public long getCreationDate() {
-      return creationDate;
-    }
-
-    public UserTaskProperties creationDate(final long creationDate) {
-      this.creationDate = creationDate;
       return this;
     }
 
