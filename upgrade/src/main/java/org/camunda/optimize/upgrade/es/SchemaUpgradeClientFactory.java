@@ -39,7 +39,12 @@ public class SchemaUpgradeClientFactory {
     MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
     // TODO remove call to convert list with OPT-7238
     return createSchemaUpgradeClient(
-      new ElasticSearchSchemaManager(metadataService, configurationService, indexNameService, convertList(mappingUtil.getAllMappings())),
+      new ElasticSearchSchemaManager(
+        metadataService,
+        configurationService,
+        indexNameService,
+        convertList(mappingUtil.getAllMappings(indexNameService.getIndexPrefix()))
+      ),
       metadataService,
       configurationService,
       esClient
