@@ -7,6 +7,7 @@ package org.camunda.optimize.service.schema;
 
 import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.HttpMethod.HEAD;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.camunda.optimize.ApplicationContextProvider.getBean;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_NESTED_OBJECTS_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAX_NGRAM_DIFF;
@@ -51,12 +53,13 @@ import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_N
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_REPLICAS_SETTING;
 import static org.camunda.optimize.service.db.DatabaseConstants.REFRESH_INTERVAL_SETTING;
 import static org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
 // Here we need to negate the opensearch profile because the elasticsearch profile is the default when no database profile is set.
-// Moreover we can unfortunately not use constants in this expression, so it needs to be the literal text "opensearch".
+// Moreover, we can unfortunately not use constants in this expression, so it needs to be the literal text "opensearch".
 @DisabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "opensearch")
 public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
 
@@ -235,6 +238,17 @@ public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     embeddedOptimizeExtension.getConfigurationService()
       .getElasticSearchConfiguration()
       .setNestedDocumentsLimit(oldNestedDocumentLimit);
+    initializeSchema();
+  }
+
+  @Test
+  public void dynamicSettingsAreAppliedWhenIndexNameContainsProcessInstanceIndexPrefixString() {
+    // given a process with key containing the 'process-instance-' constant
+    engineIntegrationExtension.deployAndStartProcess(
+      getSimpleBpmnDiagram(DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX + "testProcess"));
+    importAllEngineEntitiesFromScratch();
+
+    // then schema initialization executes successfully
     initializeSchema();
   }
 

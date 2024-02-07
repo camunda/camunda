@@ -342,13 +342,13 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
       updateDynamicSettingsAndMappings(esClient, mapping);
     }
 
-        final List<IndexMappingCreator<?>> allDynamicMappings =
-          new MappingMetadataUtil(esClient).getAllDynamicMappings();
-        for (IndexMappingCreator<?> mapping : allDynamicMappings) {
-            updateDynamicSettingsAndMappings(esClient, (IndexMappingCreator<XContentBuilder>) mapping);
-        }
-        log.info("Finished updating Optimize schema.");
+    final List<IndexMappingCreator<?>> allDynamicMappings =
+      new MappingMetadataUtil(esClient).getAllDynamicMappings(indexNameService.getIndexPrefix());
+    for (IndexMappingCreator<?> mapping : allDynamicMappings) {
+      updateDynamicSettingsAndMappings(esClient, (IndexMappingCreator<XContentBuilder>) mapping);
     }
+    log.info("Finished updating Optimize schema.");
+  }
 
   private void unblockIndices(final OptimizeElasticsearchClient esClient) {
     final boolean indexBlocked;

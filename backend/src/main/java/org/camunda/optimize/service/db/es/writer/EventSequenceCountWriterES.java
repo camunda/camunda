@@ -52,7 +52,7 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
         final BulkResponse bulkResponse = esClient.bulk(bulkRequest);
         if (bulkResponse.hasFailures()) {
           final String errorMessage = String.format(
-            "There were failures while writing event trace states. Received error message: %s",
+            "There were failures while writing event sequence counts. Received error message: %s",
             bulkResponse.buildFailureMessage()
           );
           throw new OptimizeRuntimeException(errorMessage);

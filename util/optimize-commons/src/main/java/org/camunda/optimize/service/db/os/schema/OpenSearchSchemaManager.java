@@ -442,7 +442,7 @@ public class OpenSearchSchemaManager extends DatabaseSchemaManager<OptimizeOpenS
       updateDynamicSettingsAndMappings(osClient, mapping);
     }
     final List<IndexMappingCreator<?>> allDynamicMappings =
-      new MappingMetadataUtil(osClient).getAllDynamicMappings();
+      new MappingMetadataUtil(osClient).getAllDynamicMappings(indexNameService.getIndexPrefix());
     for (IndexMappingCreator<?> mapping : allDynamicMappings) {
       updateDynamicSettingsAndMappings(osClient, (IndexMappingCreator<IndexSettings.Builder>) mapping);
     }
