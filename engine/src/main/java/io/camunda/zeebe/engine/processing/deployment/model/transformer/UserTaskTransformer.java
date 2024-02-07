@@ -235,8 +235,8 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         final var externalReferenceExpression =
             expressionLanguage.parseExpression(externalReference);
         if (externalReferenceExpression.isStatic()) {
-          // static assignee values are always treated as string literals
-          userTaskProperties.setExternalReference(
+          // static external reference values are always treated as string literals
+          userTaskProperties.setExternalFormReference(
               expressionLanguage.parseExpression(
                   ExpressionTransformer.asFeelExpressionString(
                       ExpressionTransformer.asStringLiteral(externalReference))));

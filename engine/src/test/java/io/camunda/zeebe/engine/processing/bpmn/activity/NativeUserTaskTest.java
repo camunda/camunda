@@ -167,7 +167,7 @@ public final class NativeUserTaskTest {
 
     ENGINE
         .deployment()
-        .withXmlResource(process(t -> t.zeebeExternalReference(externalReference)))
+        .withXmlResource(process(t -> t.zeebeExternalFormReference(externalReference)))
         .deploy();
 
     // when
@@ -181,7 +181,7 @@ public final class NativeUserTaskTest {
 
     Assertions.assertThat(userTask.getValue())
         .hasFormKey(-1L)
-        .hasExternalReference(externalReference);
+        .hasExternalFormReference(externalReference);
   }
 
   @Test
@@ -191,7 +191,7 @@ public final class NativeUserTaskTest {
 
     ENGINE
         .deployment()
-        .withXmlResource(process(t -> t.zeebeFormKey(formKey).zeebeExternalReference("foo")))
+        .withXmlResource(process(t -> t.zeebeFormKey(formKey).zeebeExternalFormReference("foo")))
         .deploy();
 
     // when
@@ -215,7 +215,9 @@ public final class NativeUserTaskTest {
         .deployment()
         .withXmlResource(
             process(
-                t -> t.zeebeUserTaskForm(formKey, "User Task Form").zeebeExternalReference("foo")))
+                t ->
+                    t.zeebeUserTaskForm(formKey, "User Task Form")
+                        .zeebeExternalFormReference("foo")))
         .deploy();
 
     // when

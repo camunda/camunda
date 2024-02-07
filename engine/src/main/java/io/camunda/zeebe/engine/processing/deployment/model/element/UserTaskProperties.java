@@ -16,7 +16,7 @@ public class UserTaskProperties {
   private Expression candidateGroups;
   private Expression candidateUsers;
   private Expression dueDate;
-  private Expression externalReference;
+  private Expression externalFormReference;
   private Expression followUpDate;
   private Expression formId;
 
@@ -52,12 +52,12 @@ public class UserTaskProperties {
     this.dueDate = dueDate;
   }
 
-  public Expression getExternalReference() {
-    return externalReference;
+  public Expression getExternalFormReference() {
+    return externalFormReference;
   }
 
-  public void setExternalReference(final Expression externalReference) {
-    this.externalReference = externalReference;
+  public void setExternalFormReference(final Expression externalFormReference) {
+    this.externalFormReference = externalFormReference;
   }
 
   public Expression getFollowUpDate() {
@@ -81,7 +81,7 @@ public class UserTaskProperties {
     setCandidateGroups(userTaskProperties.getCandidateGroups());
     setCandidateUsers(userTaskProperties.getCandidateUsers());
     setDueDate(userTaskProperties.getDueDate());
-    setExternalReference(userTaskProperties.getExternalReference());
+    setExternalFormReference(userTaskProperties.getExternalFormReference());
     setFollowUpDate(userTaskProperties.getFollowUpDate());
     setFormId(userTaskProperties.getFormId());
   }

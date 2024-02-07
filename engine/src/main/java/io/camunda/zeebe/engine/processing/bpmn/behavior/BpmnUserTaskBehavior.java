@@ -88,8 +88,9 @@ public final class BpmnUserTaskBehavior {
                     .map(p::formKey))
         .flatMap(
             p ->
-                evaluateExternalReferenceExpression(userTaskProps.getExternalReference(), scopeKey)
-                    .map(p::externalReference));
+                evaluateExternalFormReferenceExpression(
+                        userTaskProps.getExternalFormReference(), scopeKey)
+                    .map(p::externalFormReference));
   }
 
   public long createNewUserTask(
@@ -176,12 +177,12 @@ public final class BpmnUserTaskBehavior {
             });
   }
 
-  public Either<Failure, String> evaluateExternalReferenceExpression(
-      final Expression externalReference, final long scopeKey) {
-    if (externalReference == null) {
+  public Either<Failure, String> evaluateExternalFormReferenceExpression(
+      final Expression externalFormReference, final long scopeKey) {
+    if (externalFormReference == null) {
       return Either.right(null);
     }
-    return expressionBehavior.evaluateStringExpression(externalReference, scopeKey);
+    return expressionBehavior.evaluateStringExpression(externalFormReference, scopeKey);
   }
 
   public void cancelUserTask(final BpmnElementContext context) {
@@ -216,7 +217,7 @@ public final class BpmnUserTaskBehavior {
         .setDueDate(props.getDueDate())
         .setFollowUpDate(props.getFollowUpDate())
         .setFormKey(props.getFormKey())
-        .setExternalReference(props.getExternalReference())
+        .setExternalFormReference(props.getExternalFormReference())
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessDefinitionVersion(context.getProcessVersion())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
@@ -234,7 +235,7 @@ public final class BpmnUserTaskBehavior {
     private String candidateGroups;
     private String candidateUsers;
     private String dueDate;
-    private String externalReference;
+    private String externalFormReference;
     private String followUpDate;
     private Long formKey;
 
@@ -274,12 +275,12 @@ public final class BpmnUserTaskBehavior {
       return this;
     }
 
-    public String getExternalReference() {
-      return getOrEmpty(externalReference);
+    public String getExternalFormReference() {
+      return getOrEmpty(externalFormReference);
     }
 
-    public UserTaskProperties externalReference(final String externalReference) {
-      this.externalReference = externalReference;
+    public UserTaskProperties externalFormReference(final String externalFormReference) {
+      this.externalFormReference = externalFormReference;
       return this;
     }
 
