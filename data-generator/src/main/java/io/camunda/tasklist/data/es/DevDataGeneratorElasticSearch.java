@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile({"dev-data", "e2e-test"})
+@Profile("dev-data")
 @Conditional(ElasticSearchCondition.class)
 public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
     implements DataGenerator {

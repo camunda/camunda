@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile({"dev-data", "e2e-test"})
+@Profile("dev-data")
 @Conditional(OpenSearchCondition.class)
 public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract implements DataGenerator {
 
