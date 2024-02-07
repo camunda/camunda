@@ -8,6 +8,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.se.SearchEngineUserDetailsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +40,8 @@ public class DevUtilExternalController {
 
   @Autowired private SearchEngineUserDetailsService searchEngineUserDetailsService;
 
+  @Autowired private ProcessCache processCache;
+
   @Operation(
       summary = "Get details about the current user.",
       responses = {
@@ -52,6 +55,7 @@ public class DevUtilExternalController {
     final DeleteIndexRequest deleteRequest = new DeleteIndexRequest();
     deleteRequest.indices("_all");
     esClient.indices().delete(deleteRequest, RequestOptions.DEFAULT);
+    processCache.clearCache();
     schemaManager.createSchema();
     searchEngineUserDetailsService.initializeUsers();
     devDataGenerator.createDemoUsers();
