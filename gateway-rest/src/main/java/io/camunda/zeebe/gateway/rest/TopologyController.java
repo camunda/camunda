@@ -93,8 +93,9 @@ public final class TopologyController {
                 case HEALTHY -> partition.setHealth(HealthEnum.HEALTHY);
                 case UNHEALTHY -> partition.setHealth(HealthEnum.UNHEALTHY);
                 case DEAD -> partition.setHealth(HealthEnum.DEAD);
-                default -> Loggers.REST_LOGGER.debug(
-                    "Unsupported partition broker health status '{}'", status.name());
+                default ->
+                    Loggers.REST_LOGGER.debug(
+                        "Unsupported partition broker health status '{}'", status.name());
               }
               brokerInfo.addPartitionsItem(partition);
             });
