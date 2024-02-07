@@ -46,7 +46,8 @@ const config: PlaywrightTestConfig = {
   use: {
     actionTimeout: 0,
     baseURL: `http://localhost:${IS_CI && IS_E2E ? 8080 : 8081}`,
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
+    video: 'retain-on-failure',
   },
 };
 
