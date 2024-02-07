@@ -127,8 +127,9 @@ public class XMLUtil {
             formIdConsumer.accept(attributes.getValue("formId"));
           }
         } else if ("property".equalsIgnoreCase(localName)) {
-          if (attributes.getValue("name").equalsIgnoreCase("publicAccess")
-              && attributes.getValue("value").equalsIgnoreCase("true")) {
+          final String name = attributes.getValue("name");
+          final String value = attributes.getValue("value");
+          if ("publicAccess".equalsIgnoreCase(name) && "true".equalsIgnoreCase(value)) {
             startedByFormConsumer.accept(true);
           }
         }
