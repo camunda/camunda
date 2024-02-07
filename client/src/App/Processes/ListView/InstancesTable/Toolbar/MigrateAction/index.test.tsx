@@ -254,12 +254,12 @@ describe('<MigrateAction />', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'When Migrate steps are run, all process instances will be affected. Interruptions, delays or changes may happen as a result.',
+        'When the migration steps are executed, all process instances are affected. This can lead to interruptions, delays, or changes.',
       ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'To minimize interruptions or delays, schedule Migrate during periods of low system usage.',
+        'To minimize interruptions or delays, plan the migration at times when the system load is low.',
       ),
     ).toBeInTheDocument();
     expect(
