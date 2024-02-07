@@ -72,7 +72,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
 
   public UserTaskRecord() {
-    super(17);
+    super(18);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsProp)
