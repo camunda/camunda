@@ -65,6 +65,8 @@ public class OperateZeebeSearchAbstractIT {
   protected SearchContainerManager searchContainerManager;
   @Autowired
   protected TestResourceManager testResourceManager;
+  @Autowired
+  protected TestSearchRepository testSearchRepository;
 
   // Used to control and clear process/import info between test suites
   @Autowired

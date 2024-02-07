@@ -56,14 +56,17 @@ public class OperateJ5Tester {
   public Long startProcessAndWait(String bpmnProcessId, String payload) {
     Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
     searchTestRuleProvider.processAllRecordsAndWait(searchPredicates.getProcessInstanceExistsCheck(), Arrays.asList(processInstanceKey));
-
     return processInstanceKey;
   }
 
   public void completeTaskAndWaitForProcessFinish(Long processInstanceKey, String activityId, String jobKey, String payload) {
     ZeebeTestUtil.completeTask(zeebeClient, jobKey, TestUtil.createRandomString(10), payload);
     searchTestRuleProvider.processAllRecordsAndWait(searchPredicates.getFlowNodeIsCompletedCheck(), processInstanceKey, activityId);
+    searchTestRuleProvider.processAllRecordsAndWait(searchPredicates.getProcessInstancesAreFinishedCheck(), Arrays.asList(processInstanceKey));
+  }
 
+  public void cancelProcessAndWait(Long processInstanceKey) {
+    ZeebeTestUtil.cancelProcessInstance(zeebeClient, processInstanceKey);
     searchTestRuleProvider.processAllRecordsAndWait(searchPredicates.getProcessInstancesAreFinishedCheck(), Arrays.asList(processInstanceKey));
   }
 

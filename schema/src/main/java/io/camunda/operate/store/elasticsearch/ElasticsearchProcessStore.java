@@ -30,7 +30,12 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.*;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.IdsQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.SearchHit;
@@ -47,23 +52,46 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_XML;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
-import static io.camunda.operate.schema.templates.ListViewTemplate.*;
+import static io.camunda.operate.schema.templates.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.operate.schema.templates.ListViewTemplate.ID;
+import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.KEY;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_NAME;
+import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
-import static io.camunda.operate.util.ElasticsearchUtil.*;
-import static org.elasticsearch.index.query.QueryBuilders.*;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
+import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+import static io.camunda.operate.util.ElasticsearchUtil.createSearchRequest;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinality;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
@@ -84,26 +112,32 @@ public class ElasticsearchProcessStore implements ProcessStore {
   );
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchProcessStore.class);
   private static final String DISTINCT_FIELD_COUNTS = "distinctFieldCounts";
-  @Autowired
-  private ProcessIndex processIndex;
+  private final ProcessIndex processIndex;
 
-  @Autowired
-  private ListViewTemplate listViewTemplate;
+  private final ListViewTemplate listViewTemplate;
 
-  @Autowired
-  private List<ProcessInstanceDependant> processInstanceDependantTemplates;
+  private final List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
-  @Autowired
-  private RestHighLevelClient esClient;
+  private final RestHighLevelClient esClient;
 
-  @Autowired
-  private TenantAwareElasticsearchClient tenantAwareClient;
+  private final TenantAwareElasticsearchClient tenantAwareClient;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  private final OperateProperties operateProperties;
+
+  public ElasticsearchProcessStore(ProcessIndex processIndex, ListViewTemplate listViewTemplate,
+                                   List<ProcessInstanceDependant> processInstanceDependantTemplates,
+                                   ObjectMapper objectMapper, OperateProperties operateProperties,
+                                   RestHighLevelClient esClient, TenantAwareElasticsearchClient tenantAwareClient) {
+    this.processIndex = processIndex;
+    this.listViewTemplate = listViewTemplate;
+    this.processInstanceDependantTemplates = processInstanceDependantTemplates;
+    this.objectMapper = objectMapper;
+    this.operateProperties = operateProperties;
+    this.esClient = esClient;
+    this.tenantAwareClient = tenantAwareClient;
+  }
 
   @Override
   public Optional<Long> getDistinctCountFor(String fieldName) {
@@ -547,11 +581,5 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   private ProcessEntity fromSearchHit(String processString) {
     return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
-  }
-
-  private List<ProcessEntity> scroll(SearchRequest searchRequest) throws IOException {
-    return tenantAwareClient.search(searchRequest, () -> {
-      return ElasticsearchUtil.scroll(searchRequest, ProcessEntity.class, objectMapper, esClient);
-    });
   }
 }
