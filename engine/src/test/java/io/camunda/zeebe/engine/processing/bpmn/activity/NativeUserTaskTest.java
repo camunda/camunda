@@ -629,6 +629,23 @@ public final class NativeUserTaskTest {
   }
 
   @Test
+  public void shouldCreateUserTaskWithCreationTimestampGreaterThanZero() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(userTask.getValue().getCreationTimestamp()).isGreaterThan(0L);
+  }
+
+  @Test
   public void shouldAssignUserTask() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
