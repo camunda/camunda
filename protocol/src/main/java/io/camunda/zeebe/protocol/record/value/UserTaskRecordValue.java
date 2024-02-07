@@ -49,7 +49,7 @@ public interface UserTaskRecordValue
 
   String getAction();
 
-  String getExternalReference();
+  String getExternalFormReference();
 
   /**
    * @return the element id of the corresponding user task
