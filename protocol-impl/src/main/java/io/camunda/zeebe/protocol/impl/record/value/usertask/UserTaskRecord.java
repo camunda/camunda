@@ -71,6 +71,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
   private final StringProperty actionProp = new StringProperty("action", EMPTY_STRING);
+  private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
 
   public UserTaskRecord() {
     super(18);
@@ -91,7 +92,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(changedAttributesProp)
-        .declareProperty(actionProp);
+        .declareProperty(actionProp)
+        .declareProperty(creationTimestampProp);
   }
 
   public void wrapWithoutVariables(final UserTaskRecord record) {
@@ -110,6 +112,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantIdBuffer());
+    creationTimestampProp.setValue(record.getCreationTimestamp());
     setChangedAttributesProp(record.getChangedAttributesProp());
     actionProp.setValue(record.getActionBuffer());
   }
@@ -196,6 +199,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @Override
+  public long getCreationTimestamp() {
+    return creationTimestampProp.getValue();
+  }
+
+  @Override
   public String getElementId() {
     return bufferAsString(elementIdProp.getValue());
   }
@@ -252,6 +260,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setElementId(final DirectBuffer elementId) {
     elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  public UserTaskRecord setCreationTimestamp(final long creationTimestamp) {
+    creationTimestampProp.setValue(creationTimestamp);
     return this;
   }
 

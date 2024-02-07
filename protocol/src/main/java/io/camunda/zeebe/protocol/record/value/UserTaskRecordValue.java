@@ -51,6 +51,8 @@ public interface UserTaskRecordValue
 
   String getExternalFormReference();
 
+  long getCreationTimestamp();
+
   /**
    * @return the element id of the corresponding user task
    */
