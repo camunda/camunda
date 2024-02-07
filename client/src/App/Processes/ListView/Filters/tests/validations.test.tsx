@@ -19,6 +19,7 @@ import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {ERRORS} from 'modules/validators';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -50,36 +51,20 @@ describe('Validations', () => {
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), 'a');
 
-    expect(
-      await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.clear(screen.getByLabelText(/^process instance key\(s\)$/i));
 
-    expect(
-      screen.queryByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(ERRORS.ids)).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
-    expect(
-      await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/^process instance key\(s\)$/i));
 
-    expect(
-      screen.queryByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(ERRORS.ids)).not.toBeInTheDocument();
   });
 
   it('should validate Parent Process Instance Key', async () => {
@@ -96,15 +81,13 @@ describe('Validations', () => {
     );
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number'),
+      await screen.findByText(ERRORS.parentInstanceId),
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.clear(screen.getByLabelText(/^Parent Process Instance Key$/i));
 
-    expect(
-      screen.queryByText('Key has to be a 16 to 19 digit number'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(ERRORS.parentInstanceId)).not.toBeInTheDocument();
 
     await user.type(
       screen.getByLabelText(/^Parent Process Instance Key$/i),
@@ -112,14 +95,12 @@ describe('Validations', () => {
     );
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number'),
+      await screen.findByText(ERRORS.parentInstanceId),
     ).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/^Parent Process Instance Key$/i));
 
-    expect(
-      screen.queryByText('Key has to be a 16 to 19 digit number'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(ERRORS.parentInstanceId)).not.toBeInTheDocument();
 
     await user.type(
       screen.getByLabelText(/^Parent Process Instance Key$/i),
@@ -127,14 +108,12 @@ describe('Validations', () => {
     );
 
     expect(
-      await screen.findByText('Key has to be a 16 to 19 digit number'),
+      await screen.findByText(ERRORS.parentInstanceId),
     ).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/^Parent Process Instance Key$/i));
 
-    expect(
-      screen.queryByText('Key has to be a 16 to 19 digit number'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(ERRORS.parentInstanceId)).not.toBeInTheDocument();
   });
 
   it('should validate variable name', async () => {
@@ -149,7 +128,7 @@ describe('Validations', () => {
     await user.type(screen.getByLabelText(/^value$/i), '"someValidValue"');
 
     expect(
-      await screen.findByText('Name has to be filled'),
+      await screen.findByText(ERRORS.variables.nameUnfilled),
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
@@ -158,10 +137,12 @@ describe('Validations', () => {
     await user.type(screen.getByLabelText(/^value$/i), 'somethingInvalid');
 
     expect(
-      await screen.findByText('Name has to be filled'),
+      await screen.findByText(ERRORS.variables.nameUnfilled),
     ).toBeInTheDocument();
 
-    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
+    expect(
+      await screen.findByText(ERRORS.variables.valueInvalid),
+    ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
   });
@@ -181,7 +162,7 @@ describe('Validations', () => {
     );
 
     expect(
-      await screen.findByText('Value has to be filled'),
+      await screen.findByText(ERRORS.variables.valueUnfilled),
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
@@ -189,14 +170,16 @@ describe('Validations', () => {
     await user.clear(screen.getByTestId('optional-filter-variable-name'));
 
     expect(
-      screen.queryByText('Value has to be filled'),
+      screen.queryByText(ERRORS.variables.valueUnfilled),
     ).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/^value$/i), 'invalidValue');
 
-    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
     expect(
-      await screen.findByText('Name has to be filled'),
+      await screen.findByText(ERRORS.variables.valueInvalid),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(ERRORS.variables.nameUnfilled),
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
@@ -205,7 +188,9 @@ describe('Validations', () => {
       'aRandomVariable',
     );
 
-    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
+    expect(
+      await screen.findByText(ERRORS.variables.valueInvalid),
+    ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
   });
@@ -226,7 +211,7 @@ describe('Validations', () => {
     );
 
     expect(
-      await screen.findByText('Value has to be filled'),
+      await screen.findByText(ERRORS.variables.valueUnfilled),
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
@@ -234,18 +219,16 @@ describe('Validations', () => {
     await user.clear(screen.getByTestId('optional-filter-variable-name'));
 
     expect(
-      screen.queryByText('Value has to be filled'),
+      screen.queryByText(ERRORS.variables.valueUnfilled),
     ).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/^values$/i), 'invalidValue');
 
     expect(
-      await screen.findByText(
-        'Values have to be in JSON format, separated by comma',
-      ),
+      await screen.findByText(ERRORS.variables.mulipleValueInvalid),
     ).toBeInTheDocument();
     expect(
-      await screen.findByText('Name has to be filled'),
+      await screen.findByText(ERRORS.variables.nameUnfilled),
     ).toBeInTheDocument();
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
@@ -255,9 +238,7 @@ describe('Validations', () => {
     );
 
     expect(
-      await screen.findByText(
-        'Values have to be in JSON format, separated by comma',
-      ),
+      await screen.findByText(ERRORS.variables.mulipleValueInvalid),
     ).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
@@ -274,16 +255,16 @@ describe('Validations', () => {
 
     await user.type(screen.getByLabelText(/^operation id$/i), 'g');
 
-    expect(await screen.findByText('Id has to be a UUID')).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
 
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
     await user.clear(screen.getByLabelText(/^operation id$/i));
 
-    expect(screen.queryByTitle('Id has to be a UUID')).not.toBeInTheDocument();
+    expect(screen.queryByTitle(ERRORS.operationId)).not.toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/^operation id$/i), 'a');
 
-    expect(await screen.findByText('Id has to be a UUID')).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
   });
 });

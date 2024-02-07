@@ -24,10 +24,9 @@ import {
   validateTimeComplete,
   validateTimeCharacters,
   validateMultipleVariableValuesValid,
+  ERRORS,
 } from '../index';
 import {mockMeta} from './mocks';
-
-const TIME_ERROR = 'Time has to be in format hh:mm:ss';
 
 describe('validators', () => {
   let setTimeoutSpy: jest.SpyInstance;
@@ -50,16 +49,10 @@ describe('validators', () => {
     expect(validateIdsCharacters('225179981368554300', {})).toBeUndefined();
     expect(validateIdsCharacters('2251799813685543000', {})).toBeUndefined();
 
-    expect(validateIdsCharacters('2251799813685543a', {})).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
-    expect(validateIdsCharacters('a', {})).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
+    expect(validateIdsCharacters('2251799813685543a', {})).toBe(ERRORS.ids);
+    expect(validateIdsCharacters('a', {})).toBe(ERRORS.ids);
 
-    expect(validateIdsCharacters('-', {})).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
+    expect(validateIdsCharacters('-', {})).toBe(ERRORS.ids);
 
     expect(
       validateIdsCharacters('2251799813685543 2251799813685543', {}),
@@ -82,39 +75,29 @@ describe('validators', () => {
 
     expect(
       validateIdsCharacters('2251799813685543 a 2251799813685543 ', {}),
-    ).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
+    ).toBe(ERRORS.ids);
 
     expect(
       validateIdsCharacters('225179a9813685543 2251799813685543 ', {}),
-    ).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
+    ).toBe(ERRORS.ids);
 
     expect(
       validateIdsCharacters('225179$9813685543 2251799813685543 ', {}),
-    ).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
+    ).toBe(ERRORS.ids);
 
     expect(
       validateIdsLength(
         '2251799813685543 2251799813685543 11111111111111111111',
         {},
       ),
-    ).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
+    ).toBe(ERRORS.ids);
 
     expect(
       validateIdsLength(
         '2251799813685543, 2251799813685543, 11111111111111111111',
         {},
       ),
-    ).toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
+    ).toBe(ERRORS.ids);
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
   });
@@ -125,24 +108,16 @@ describe('validators', () => {
         '2251799813685543 22517998136855430 225179981368554300 2251799813685543000 22517998136855430000 22517998136855430000',
         {},
       ),
-    ).resolves.toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
+    ).resolves.toBe(ERRORS.ids);
 
-    expect(validatesIdsComplete('1', {})).resolves.toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
+    expect(validatesIdsComplete('1', {})).resolves.toBe(ERRORS.ids);
 
-    expect(validatesIdsComplete('1 1 1 ', {})).resolves.toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
+    expect(validatesIdsComplete('1 1 1 ', {})).resolves.toBe(ERRORS.ids);
 
-    expect(validatesIdsComplete('1', {})).resolves.toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
-    );
+    expect(validatesIdsComplete('1', {})).resolves.toBe(ERRORS.ids);
 
     expect(validatesIdsComplete('225179981368554', {})).resolves.toBe(
-      'Key has to be a 16 to 19 digit number, separated by space or comma',
+      ERRORS.ids,
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(5);
@@ -165,14 +140,14 @@ describe('validators', () => {
     ).toBeUndefined();
 
     expect(validateParentInstanceIdCharacters('2251799813685543a', {})).toBe(
-      'Key has to be a 16 to 19 digit number',
+      ERRORS.parentInstanceId,
     );
     expect(validateParentInstanceIdCharacters('a', {})).toBe(
-      'Key has to be a 16 to 19 digit number',
+      ERRORS.parentInstanceId,
     );
 
     expect(validateParentInstanceIdCharacters('-', {})).toBe(
-      'Key has to be a 16 to 19 digit number',
+      ERRORS.parentInstanceId,
     );
 
     expect(
@@ -180,17 +155,17 @@ describe('validators', () => {
         '2251799813685543 2251799813685543',
         {},
       ),
-    ).toBe('Key has to be a 16 to 19 digit number');
+    ).toBe(ERRORS.parentInstanceId);
 
     expect(
       validateParentInstanceIdCharacters(
         '2251799813685543,2251799813685543',
         {},
       ),
-    ).toBe('Key has to be a 16 to 19 digit number');
+    ).toBe(ERRORS.parentInstanceId);
 
     expect(validateParentInstanceIdNotTooLong('11111111111111111111', {})).toBe(
-      'Key has to be a 16 to 19 digit number',
+      ERRORS.parentInstanceId,
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
@@ -198,12 +173,12 @@ describe('validators', () => {
 
   it('should validate parent instance id with delay', async () => {
     expect(validateParentInstanceIdComplete('1', {})).resolves.toBe(
-      'Key has to be a 16 to 19 digit number',
+      ERRORS.parentInstanceId,
     );
 
     expect(
       validateParentInstanceIdComplete('225179981368554', {}),
-    ).resolves.toBe('Key has to be a 16 to 19 digit number');
+    ).resolves.toBe(ERRORS.parentInstanceId);
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
   });
@@ -214,9 +189,9 @@ describe('validators', () => {
       validateOperationIdCharacters('1f4d40c3-7cce-4e51-8abe-0cda8d42f04f', {}),
     ).toBeUndefined();
 
-    expect(validateOperationIdCharacters('&', {})).toBe('Id has to be a UUID');
+    expect(validateOperationIdCharacters('&', {})).toBe(ERRORS.operationId);
 
-    expect(validateOperationIdCharacters('g', {})).toBe('Id has to be a UUID');
+    expect(validateOperationIdCharacters('g', {})).toBe(ERRORS.operationId);
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
   });
@@ -224,19 +199,19 @@ describe('validators', () => {
   it('should validate operationId with delay', () => {
     expect(
       validateOperationIdComplete('1f4d40c3-7cce-4e51-', {}),
-    ).resolves.toBe('Id has to be a UUID');
+    ).resolves.toBe(ERRORS.operationId);
     expect(
       validateOperationIdComplete('0e8481e6-b652-41c9-a72a-f531c783122', {}),
-    ).resolves.toBe('Id has to be a UUID');
+    ).resolves.toBe(ERRORS.operationId);
     expect(
       validateOperationIdComplete('0e8-481e6-b652-41c9-a72a-f531c7831220', {}),
-    ).resolves.toBe('Id has to be a UUID');
+    ).resolves.toBe(ERRORS.operationId);
     expect(validateOperationIdComplete('a', {})).resolves.toBe(
-      'Id has to be a UUID',
+      ERRORS.operationId,
     );
 
     expect(validateOperationIdComplete('0', {})).resolves.toBe(
-      'Id has to be a UUID',
+      ERRORS.operationId,
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(5);
@@ -299,13 +274,13 @@ describe('validators', () => {
   it('should validate variable name with delay', () => {
     expect(
       validateVariableNameComplete('', {variableValues: '"somethingValid"'}),
-    ).resolves.toBe('Name has to be filled');
+    ).resolves.toBe(ERRORS.variables.nameUnfilled);
     expect(
       validateVariableNameComplete('', {variableValues: '123'}),
-    ).resolves.toBe('Name has to be filled');
+    ).resolves.toBe(ERRORS.variables.nameUnfilled);
     expect(
       validateVariableNameComplete('', {variableValues: true}),
-    ).resolves.toBe('Name has to be filled');
+    ).resolves.toBe(ERRORS.variables.nameUnfilled);
     expect(
       validateVariableNameComplete('', {variableValues: 'somethingInvalid'}),
     ).resolves.toBe('Name has to be filled and Value has to be JSON');
@@ -348,14 +323,14 @@ describe('validators', () => {
 
     expect(
       validateVariableValueValid('{"tes}', {variableName: 'test'}),
-    ).resolves.toBe('Value has to be JSON');
+    ).resolves.toBe(ERRORS.variables.valueInvalid);
 
     expect(
       validateVariableValuesComplete('', {variableName: 'test'}),
-    ).resolves.toBe('Value has to be filled');
+    ).resolves.toBe(ERRORS.variables.valueUnfilled);
 
     expect(validateVariableValueValid('a', {})).resolves.toBe(
-      'Value has to be JSON',
+      ERRORS.variables.valueInvalid,
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(3);
@@ -372,10 +347,10 @@ describe('validators', () => {
   it('should validate multi variable values with delay', () => {
     expect(
       validateMultipleVariableValuesValid('2, {"tes}', {variableName: 'test'}),
-    ).resolves.toBe('Value has to be JSON');
+    ).resolves.toBe(ERRORS.variables.valueInvalid);
 
     expect(validateMultipleVariableValuesValid('a,a', {})).resolves.toBe(
-      'Value has to be JSON',
+      ERRORS.variables.valueInvalid,
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
@@ -393,7 +368,7 @@ describe('validators', () => {
 
     ['2251799813685543a', 'a', '!', ' '].forEach((decisionId) => {
       expect(validateDecisionIdsCharacters(decisionId, {})).toBe(
-        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+        ERRORS.decisionsIds,
       );
     });
 
@@ -411,7 +386,7 @@ describe('validators', () => {
     ['225179981368554332130-1', '225179981368554332130-999'].forEach(
       (decisionId) => {
         expect(validateDecisionIdsLength(decisionId, {})).toBe(
-          'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+          ERRORS.decisionsIds,
         );
       },
     );
@@ -438,7 +413,7 @@ describe('validators', () => {
       '2251799813685542-1 225179981368554212',
     ].forEach((decisionId) => {
       expect(validatesDecisionIdsComplete(decisionId, {})).resolves.toBe(
-        'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1',
+        ERRORS.decisionsIds,
       );
     });
 
@@ -449,7 +424,7 @@ describe('validators', () => {
   it('should validate time with delay', async () => {
     const validate = validateTimeComplete('99:99:99', {});
     jest.runOnlyPendingTimers();
-    await expect(validate).resolves.toBe(TIME_ERROR);
+    await expect(validate).resolves.toBe(ERRORS.time);
   });
 
   it('should pass validating time', () => {
@@ -458,10 +433,10 @@ describe('validators', () => {
   });
 
   it('should validate invalid characters without delay', () => {
-    expect(validateTimeCharacters('a')).toBe(TIME_ERROR);
-    expect(validateTimeCharacters(' ')).toBe(TIME_ERROR);
-    expect(validateTimeCharacters('xx:xx:xx')).toBe(TIME_ERROR);
-    expect(validateTimeCharacters('--')).toBe(TIME_ERROR);
+    expect(validateTimeCharacters('a')).toBe(ERRORS.time);
+    expect(validateTimeCharacters(' ')).toBe(ERRORS.time);
+    expect(validateTimeCharacters('xx:xx:xx')).toBe(ERRORS.time);
+    expect(validateTimeCharacters('--')).toBe(ERRORS.time);
 
     expect(validateTimeCharacters(':')).toBeUndefined();
     expect(validateTimeCharacters('')).toBeUndefined();

@@ -119,7 +119,7 @@ describe('Date Range Field', () => {
 
   it('should show validation error on invalid character', async () => {
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
-    const TIME_ERROR = 'Time has to be in format hh:mm:ss';
+    const TIME_ERROR = 'Time has to be in the format hh:mm:ss';
 
     await user.click(screen.getByLabelText('Start Date Range'));
 
@@ -147,7 +147,7 @@ describe('Date Range Field', () => {
     jest.useFakeTimers();
 
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
-    const TIME_ERROR = 'Time has to be in format hh:mm:ss';
+    const TIME_ERROR = 'Time has to be in the format hh:mm:ss';
 
     await user.click(screen.getByLabelText('Start Date Range'));
 

@@ -20,6 +20,7 @@ import {
   selectProcess,
   selectProcessVersion,
 } from 'modules/testUtils/selectComboBoxOption';
+import {ERRORS} from 'modules/validators';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -48,22 +49,18 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByText('Operation Id'));
     await user.type(screen.getByLabelText(/^operation id$/i), 'a');
 
-    expect(await screen.findByText('Id has to be a UUID')).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Process Instance Key(s)'));
 
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
-    expect(screen.getByText('Id has to be a UUID')).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.operationId)).toBeInTheDocument();
 
-    expect(
-      await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
-    expect(screen.getByText('Id has to be a UUID')).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.operationId)).toBeInTheDocument();
   });
 
   it('validation for Operation ID field should not affect other fields validation errors', async () => {
@@ -75,29 +72,17 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
-    expect(
-      await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Operation Id'));
     await user.type(screen.getByLabelText(/^operation id$/i), 'abc');
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
-    expect(await screen.findByText('Id has to be a UUID')).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
   });
 
   it('validation for Variable Value field should not affect other fields validation errors', async () => {
@@ -109,21 +94,13 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
-    expect(
-      await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Variable'));
     await user.type(screen.getByLabelText(/value/i), 'a');
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
     expect(
       await screen.findByText('Name has to be filled'),
@@ -131,11 +108,7 @@ describe('Interaction with other fields during validation', () => {
 
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
   });
 
   it('validation for Variable Name field should not affect other fields validation errors', async () => {
@@ -147,31 +120,19 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
-    expect(
-      await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Variable'));
     await user.type(screen.getByTestId('optional-filter-variable-name'), 'a');
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
     expect(
       await screen.findByText('Value has to be filled'),
     ).toBeInTheDocument();
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
   });
 
   it('validation for Process, Version and Flow Node fields should not affect other fields validation errors', async () => {
@@ -183,37 +144,21 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
-    expect(
-      await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await selectProcess({user, option: 'eventBasedGatewayProcess'});
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeEnabled();
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
     await selectProcessVersion({user, option: '2'});
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
     await selectFlowNode({user, option: 'ServiceTask_0kt6c5i'});
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
   });
 
   it('clicking checkboxes should not affect other fields validation errors', async () => {
@@ -225,59 +170,31 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
-    expect(
-      await screen.findByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByLabelText(/^active$/i));
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByLabelText(/^incidents$/i));
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByLabelText(/^completed$/i));
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByLabelText(/^canceled$/i));
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByTestId('filter-running-instances'));
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByTestId('filter-finished-instances'));
 
-    expect(
-      screen.getByText(
-        'Key has to be a 16 to 19 digit number, separated by space or comma',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
   });
 
   it('should continue validation on blur', async () => {
@@ -301,6 +218,6 @@ describe('Interaction with other fields during validation', () => {
       await screen.findByText('Key has to be a 16 to 19 digit number'),
     ).toBeInTheDocument();
 
-    expect(await screen.findByText('Id has to be a UUID')).toBeInTheDocument();
+    expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
   });
 });
