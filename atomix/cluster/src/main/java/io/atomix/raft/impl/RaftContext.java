@@ -23,13 +23,9 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
-import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
-import io.atomix.raft.RaftError;
-import io.atomix.raft.RaftException.ProtocolException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
@@ -47,9 +43,7 @@ import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallResponse;
-import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
-import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
@@ -59,7 +53,6 @@ import io.atomix.raft.protocol.RaftResponse.Builder;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.ReconfigureResponse;
-import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.roles.ActiveRole;
@@ -86,23 +79,15 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
-import java.net.ConnectException;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.Collection;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
@@ -618,171 +603,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     }
 
     return CompletableFuture.runAsync(raftLog::forceFlush, threadContext);
-  }
-
-  /** Attempts to become the leader. */
-  public CompletableFuture<Void> anoint() {
-    if (role.role() == Role.LEADER) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    final CompletableFuture<Void> future = new CompletableFuture<>();
-
-    threadContext.execute(
-        () -> {
-          // Register a leader election listener to wait for the election of this node.
-          final Consumer<RaftMember> electionListener =
-              new Consumer<>() {
-                @Override
-                public void accept(final RaftMember member) {
-                  if (member.memberId().equals(cluster.getLocalMember().memberId())) {
-                    future.complete(null);
-                  } else {
-                    future.completeExceptionally(
-                        new ProtocolException("Failed to transfer leadership"));
-                  }
-                  removeLeaderElectionListener(this);
-                }
-              };
-          addLeaderElectionListener(electionListener);
-
-          // If a leader already exists, request a leadership transfer from it. Otherwise,
-          // transition to the candidate
-          // state and attempt to get elected.
-          final RaftMember member = getCluster().getLocalMember();
-          final RaftMember leader = getLeader();
-          if (leader != null) {
-            protocol
-                .transfer(
-                    leader.memberId(),
-                    TransferRequest.builder().withMember(member.memberId()).build())
-                .whenCompleteAsync(
-                    (response, error) -> {
-                      if (error != null) {
-                        future.completeExceptionally(error);
-                      } else if (response.status() == Status.ERROR) {
-                        future.completeExceptionally(response.error().createException());
-                      } else {
-                        transition(Role.CANDIDATE);
-                      }
-                    },
-                    threadContext);
-          } else {
-            transition(Role.CANDIDATE);
-          }
-        });
-    return future;
-  }
-
-  public CompletableFuture<Void> join(final Collection<MemberId> clusterMembers) {
-    final var result = new CompletableFuture<Void>();
-    threadContext.execute(
-        () -> {
-          final var joining =
-              new DefaultRaftMember(
-                  cluster.getLocalMember().memberId(), Type.ACTIVE, Instant.now());
-          final var assistingMembers =
-              clusterMembers.stream()
-                  .filter(memberId -> !memberId.equals(joining.memberId()))
-                  .collect(Collectors.toCollection(LinkedBlockingQueue::new));
-          if (assistingMembers.isEmpty()) {
-            result.completeExceptionally(
-                new IllegalStateException(
-                    "Cannot join cluster, because there are no other members in the cluster."));
-            return;
-          }
-          joinWithRetry(joining, assistingMembers, result);
-        });
-    return result;
-  }
-
-  /**
-   * Repeatedly tries to join the cluster until it succeeds or there are no more members to try.
-   * When sending a join request to an assisting member fails because the member is currently not
-   * known, or it is known but not ready to receive join request, try again with a different
-   * assisting member.
-   *
-   * <p>Retrying helps in cases where the cluster is in flux and not all members are online and
-   * ready.
-   *
-   * @param joining the new member joining
-   * @param assistingMembers a queue of members that we will send a join request to.
-   * @param result a future to complete when joining succeeds or fails
-   */
-  private void joinWithRetry(
-      final RaftMember joining,
-      final Queue<MemberId> assistingMembers,
-      final CompletableFuture<Void> result) {
-    threadContext.execute(
-        () -> {
-          final var receiver = assistingMembers.poll();
-          if (receiver == null) {
-            result.completeExceptionally(
-                new IllegalStateException(
-                    "Sent join request to all known members, but all failed. No more members left."));
-            return;
-          }
-          protocol
-              .join(receiver, JoinRequest.builder().withJoiningMember(joining).build())
-              .whenCompleteAsync(
-                  (response, error) -> {
-                    if (error != null) {
-                      final var cause = error.getCause();
-                      if (cause instanceof NoSuchMemberException
-                          || cause instanceof NoRemoteHandler
-                          || cause instanceof TimeoutException
-                          || cause instanceof ConnectException) {
-                        log.debug("Join request was not acknowledged, retrying", cause);
-                        joinWithRetry(joining, assistingMembers, result);
-                      } else {
-                        log.error(
-                            "Join request failed with an unexpected error, not retrying", error);
-                        result.completeExceptionally(error);
-                      }
-                    } else if (response.status() == Status.OK) {
-                      log.debug("Join request accepted");
-                      result.complete(null);
-                    } else if (response.error().type() == RaftError.Type.NO_LEADER
-                        || response.error().type() == RaftError.Type.UNAVAILABLE) {
-                      log.debug(
-                          "Join request failed, retrying", response.error().createException());
-                      joinWithRetry(joining, assistingMembers, result);
-                    } else {
-                      final var errorAsException = response.error().createException();
-                      log.error("Join request rejected, not retrying", errorAsException);
-                      result.completeExceptionally(errorAsException);
-                    }
-                  },
-                  threadContext);
-        });
-  }
-
-  public CompletableFuture<Void> leave() {
-    final CompletableFuture<Void> future = new CompletableFuture<>();
-
-    threadContext.execute(
-        () -> {
-          final var leaving = cluster.getLocalMember();
-          final var receiver =
-              Optional.ofNullable(leader)
-                  .or(() -> cluster.getVotingMembers().stream().map(RaftMember::memberId).findAny())
-                  .orElseThrow();
-          protocol
-              .leave(receiver, LeaveRequest.builder().withLeavingMember(leaving).build())
-              .whenCompleteAsync(
-                  (response, error) -> {
-                    if (error != null) {
-                      future.completeExceptionally(error);
-                    } else if (response.status() == Status.OK) {
-                      future.complete(null);
-                      updateState(State.LEFT);
-                    } else {
-                      future.completeExceptionally(response.error().createException());
-                    }
-                  },
-                  threadContext);
-        });
-    return future;
   }
 
   /**
@@ -1385,7 +1205,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return partitionId;
   }
 
-  private void updateState(final State newState) {
+  public void updateState(final State newState) {
     if (state != newState) {
       state = newState;
       stateChangeListeners.forEach(l -> l.accept(state));

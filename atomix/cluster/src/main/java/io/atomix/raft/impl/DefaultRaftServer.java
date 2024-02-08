@@ -107,12 +107,12 @@ public class DefaultRaftServer implements RaftServer {
 
   @Override
   public CompletableFuture<RaftServer> leave() {
-    return context.leave().thenApply(v -> this);
+    return new ReconfigurationHelper(context).leave().thenApply(v -> this);
   }
 
   @Override
   public CompletableFuture<RaftServer> promote() {
-    return context.anoint().thenApply(v -> this);
+    return new ReconfigurationHelper(context).anoint().thenApply(v -> this);
   }
 
   @Override
