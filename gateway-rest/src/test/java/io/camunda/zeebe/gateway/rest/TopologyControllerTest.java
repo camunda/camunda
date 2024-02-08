@@ -16,13 +16,14 @@ import io.camunda.zeebe.gateway.protocol.rest.Partition;
 import io.camunda.zeebe.gateway.protocol.rest.Partition.HealthEnum;
 import io.camunda.zeebe.gateway.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.gateway.protocol.rest.TopologyResponse;
-import io.camunda.zeebe.gateway.rest.util.TestApplication;
+import io.camunda.zeebe.gateway.rest.TopologyControllerTest.TestTopologyApplication;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -30,7 +31,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @SpringBootTest(
-    classes = {TestApplication.class, TopologyController.class},
+    classes = {TestTopologyApplication.class, TopologyController.class},
     webEnvironment = WebEnvironment.RANDOM_PORT)
 public class TopologyControllerTest {
 
@@ -102,4 +103,7 @@ public class TopologyControllerTest {
 
     return brokerClusterState;
   }
+
+  @SpringBootApplication
+  static class TestTopologyApplication {}
 }

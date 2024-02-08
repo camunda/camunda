@@ -33,7 +33,7 @@ public final class TopologyController {
   @GetMapping(path = "/topology", produces = "application/json")
   public TopologyResponse get() {
 
-    final TopologyResponse response = new TopologyResponse();
+    final var response = new TopologyResponse();
     final BrokerClusterState topology = client.getTopologyManager().getTopology();
 
     final String gatewayVersion = VersionUtil.getVersion();
@@ -83,8 +83,8 @@ public final class TopologyController {
               final Partition partition = new Partition();
 
               partition.setPartitionId(partitionId);
-
-              if (!setRole(brokerId, partitionId, topology, partition)) {
+              final var isRoleSet = setRole(brokerId, partitionId, topology, partition);
+              if (!isRoleSet) {
                 return;
               }
 
