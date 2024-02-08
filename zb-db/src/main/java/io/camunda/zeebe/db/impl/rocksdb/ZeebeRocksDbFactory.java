@@ -9,6 +9,7 @@ package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbOptions;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.EnumValue;
 import java.io.File;
@@ -58,31 +59,27 @@ public final class ZeebeRocksDbFactory<
 
   @Override
   public ZeebeTransactionDb<ColumnFamilyType> createDb(final File pathName) {
-    final ZeebeTransactionDb<ColumnFamilyType> db;
     final List<AutoCloseable> closeables = Collections.synchronizedList(new ArrayList<>());
     try {
-      // column family options have to be closed as last
-      final var columnFamilyOptions = createColumnFamilyOptions(closeables);
-      closeables.add(columnFamilyOptions);
-      final var dbOptions = createDefaultDbOptions(closeables);
-      closeables.add(dbOptions);
-
-      final var options = new Options(dbOptions, columnFamilyOptions);
-      closeables.add(options);
-
-      db =
-          ZeebeTransactionDb.openTransactionalDb(
-              options,
-              pathName.getAbsolutePath(),
-              closeables,
-              rocksDbConfiguration,
-              consistencyChecksSettings);
-
+      return ZeebeTransactionDb.openTransactionalDb(
+          prepareOptions(closeables),
+          pathName.getAbsolutePath(),
+          closeables,
+          rocksDbConfiguration,
+          consistencyChecksSettings);
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
       throw new IllegalStateException("Unexpected error occurred trying to open the database", e);
     }
-    return db;
+  }
+
+  private RocksDbOptions prepareOptions(final List<AutoCloseable> managedResources) {
+    // column family options have to be closed as last
+    final var columnFamilyOptions = createColumnFamilyOptions(managedResources);
+    managedResources.add(columnFamilyOptions);
+    final var dbOptions = createDefaultDbOptions(managedResources);
+    managedResources.add(dbOptions);
+    return new RocksDbOptions(dbOptions, columnFamilyOptions);
   }
 
   private DBOptions createDefaultDbOptions(final List<AutoCloseable> closeables) {
