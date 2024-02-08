@@ -1123,6 +1123,7 @@
     "details": "Details",
     "nextStep": "nächster Schritt",
     "previousStep": "Vorheriger Schritt",
+    "sort": "Sortieren",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"

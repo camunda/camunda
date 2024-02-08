@@ -17,6 +17,7 @@ interface CreateNewButtonProps {
   collection?: string;
   importEntity: () => void;
   kind?: ComponentProps<typeof MenuButton>['kind'];
+  size?: ComponentProps<typeof MenuButton>['size'];
 }
 
 export default function CreateNewButton({
@@ -24,6 +25,7 @@ export default function CreateNewButton({
   collection,
   importEntity,
   kind = 'tertiary',
+  size = 'md',
 }: CreateNewButtonProps): JSX.Element {
   const [optimizeProfile, setOptimizeProfile] = useState<'platform' | 'cloud' | 'ccsm'>();
 
@@ -35,7 +37,7 @@ export default function CreateNewButton({
 
   return (
     <MenuButton
-      size="md"
+      size={size}
       kind={kind}
       label={t('home.createBtn.default').toString()}
       className="CreateNewButton"

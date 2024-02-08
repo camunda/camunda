@@ -9,10 +9,9 @@ import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {ReportTemplateModal, KpiCreationModal} from 'components';
+import {loadEntities} from 'services';
 
 import {Home} from './Home';
-import {loadEntities} from 'services';
-import CreateNewButton from './CreateNewButton';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -84,7 +83,7 @@ it('should load collection entities with sort parameters', () => {
   expect(loadEntities).toHaveBeenCalledWith('lastModifier', 'desc');
 });
 
-it('should show the loading indicator', async () => {
+it('should pass loading state to entitylist', async () => {
   const node = shallow(
     <Home
       {...props}
@@ -98,11 +97,26 @@ it('should show the loading indicator', async () => {
 
   runAllEffects();
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('EntityList').prop('isLoading')).toBe(true);
   await flushPromises();
-  expect(node.find('LoadingIndicator')).not.toExist();
+  expect(node.find('EntityList').prop('isLoading')).toBe(false);
+});
 
-  expect(node.find('EntityList')).toExist();
+it('should show loading indicator before displaying empty state', async () => {
+  loadEntities.mockReturnValueOnce([]);
+  const node = shallow(
+    <Home
+      {...props}
+      mightFail={async (data, cb, err, final) => {
+        cb(await data);
+        final();
+      }}
+    />
+  );
+
+  runAllEffects();
+
+  expect(node.find('Loading')).toExist();
 });
 
 it('should show empty state component', async () => {
@@ -151,7 +165,7 @@ it('should hide edit options for read only users', () => {
 
   runAllEffects();
 
-  expect(node.find('EntityList').prop('data')[0].actions.length).toBe(0);
+  expect(node.find('EntityList').prop('rows')[0].actions.length).toBe(0);
 });
 
 it('should hide edit options for collection editors', () => {
@@ -169,7 +183,7 @@ it('should hide edit options for collection editors', () => {
 
   runAllEffects();
 
-  expect(node.find('EntityList').prop('data')[0].actions.length).toBe(0);
+  expect(node.find('EntityList').prop('rows')[0].actions.length).toBe(0);
 });
 
 it('should hide bulk actions for read only users', () => {
@@ -185,13 +199,12 @@ it('should hide entity creation button for read only users', () => {
 
   runAllEffects();
 
-  const actionButton = node.find('EntityList').renderProp('action')();
-  expect(actionButton.find(CreateNewButton)).toExist();
+  const actionButton = shallow(node.find('EntityList').prop('action'));
+  expect(actionButton.find('.CreateNewButton')).toExist();
 
   node.setProps({user: {name: 'John Doe', authorizations: []}});
 
-  const updatedActionButton = node.find('EntityList').renderProp('action')();
-  expect(updatedActionButton.find(CreateNewButton)).not.toExist();
+  expect(node.find('EntityList').prop('action')).toBe(false);
 });
 
 describe('export authorizations', () => {
@@ -212,7 +225,7 @@ describe('export authorizations', () => {
     expect(
       node
         .find('EntityList')
-        .prop('data')[0]
+        .prop('rows')[0]
         .actions.find(({text}) => text === 'Export')
     ).not.toBe(undefined);
   });
@@ -234,7 +247,7 @@ describe('export authorizations', () => {
     expect(
       node
         .find('EntityList')
-        .prop('data')[0]
+        .prop('rows')[0]
         .actions.find(({text}) => text === 'Export')
     ).toBe(undefined);
   });
@@ -256,7 +269,7 @@ describe('export authorizations', () => {
     expect(
       node
         .find('EntityList')
-        .prop('data')[0]
+        .prop('rows')[0]
         .actions.find(({text}) => text === 'Export')
     ).toBe(undefined);
   });
@@ -267,6 +280,6 @@ it('should show entity name and description', () => {
 
   runAllEffects();
 
-  expect(node.find('EntityList').prop('data')[0].name).toBe('Test Report');
-  expect(node.find('EntityList').prop('data')[0].meta[0]).toBe('This is a description');
+  expect(node.find('EntityList').prop('rows')[0].name).toBe('Test Report');
+  expect(node.find('EntityList').prop('rows')[0].meta[0]).toBe('This is a description');
 });

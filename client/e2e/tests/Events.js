@@ -125,7 +125,7 @@ test('add sources, map and publish a process', async (t) => {
   // Listing
   await t.click(e.navItem);
   await t.hover(e.entity('Event Invoice process'));
-  await t.click(Common.contextMenu(e.invoiceEventProcess));
+  await t.click(Common.oldContextMenu(e.invoiceEventProcess));
   await t.takeScreenshot('additional-features/img/processList.png');
 
   // Edit Access

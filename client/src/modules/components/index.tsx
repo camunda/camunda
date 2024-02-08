@@ -51,6 +51,7 @@ export {DefinitionSelection} from './DefinitionSelection';
 // @ts-ignore
 export {ReportRenderer} from './ReportRenderer';
 export {Loading} from './Loading';
+export {CarbonEntityList} from './CarbonEntityList';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

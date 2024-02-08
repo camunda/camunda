@@ -28,28 +28,19 @@ export const submenuOption = (text) =>
   Selector('.cds--menu-item[aria-expanded=true] > .cds--menu > *').withText(text);
 export const selectedOption = (text) =>
   Selector('.cds--list-box__menu-item--active').withText(text);
-export const entityList = Selector('.EntityList');
-export const edit = (element) => element.find('.DropdownOption').withText('Edit');
-export const copy = (element) => element.find('.DropdownOption').withText('Copy');
-export const del = (element) => element.find('.DropdownOption').withText('Delete');
-export const contextMenu = (entity) => entity.find('.Dropdown');
-export const selectAllCheckbox = Selector('.columnHeaders > input[type="checkbox"]');
+export const entityList = Selector('.CarbonEntityList');
+export const edit = Selector('.CarbonListItemSingleAction').withText('Edit');
+export const copy = Selector('.CarbonListItemSingleAction').withText('Copy');
+export const del = Selector('.CarbonListItemSingleAction').withText('Delete');
+export const contextMenu = (entity) => entity.find('button.cds--overflow-menu');
+export const selectAllCheckbox = Selector('thead .cds--checkbox--inline');
 export const bulkMenu = Selector('.bulkMenu');
-export const listItem = Selector('.ListItem');
-export const dashboardItem = listItem.filter(
-  (node) => node.querySelector('.name .type').textContent.indexOf('Dashboard') !== -1
-);
-export const reportItem = listItem.filter(
-  (node) =>
-    node.querySelector('.name .type').textContent.toLocaleLowerCase().indexOf('report') !== -1
-);
-export const collectionItem = listItem.filter(
-  (node) => node.querySelector('.name .type').textContent.indexOf('Collection') !== -1
-);
-export const processItem = listItem.filter(
-  (node) => node.querySelector('.name .type').textContent.indexOf('Process') !== -1
-);
-export const reportLabel = reportItem.find('.name .type');
+export const bulkDelete = Selector('.cds--action-list button').withText('Delete');
+export const listItem = (type) =>
+  Selector('.CarbonEntityList tbody tr td:nth-child(2) span')
+    .withText(new RegExp(type, 'i'))
+    .parent('tr');
+export const listItemLink = (type) => listItem(type).find('td:nth-child(2) a');
 export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
 export const newReportOption = Selector('.cds--menu--shown .cds--menu-item[aria-haspopup=true]');
 export const templateModalProcessField = Selector('.Modal .DefinitionSelection input');

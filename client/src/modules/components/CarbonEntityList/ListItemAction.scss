@@ -1,0 +1,6 @@
+@use '@carbon/styles/scss/spacing';
+
+.CarbonListItemSingleAction > svg {
+  display: block;
+  margin-right: spacing.$spacing-04;
+}

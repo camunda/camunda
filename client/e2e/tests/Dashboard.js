@@ -395,7 +395,7 @@ test('filters', async (t) => {
   await t.expect(Report.reportRenderer.visible).ok();
 
   await u.gotoOverview(t);
-  await t.click(Common.dashboardItem);
+  await t.click(Common.listItemLink('dashboard'));
   await t.expect(Report.reportRenderer.visible).ok();
   await t.expect(e.instanceStateFilter.textContent).contains('Running');
 
@@ -511,9 +511,9 @@ test('add, edit and remove dashboards description', async (t) => {
 
   await u.save(t);
   await u.gotoOverview(t);
-  await t.expect(Common.dashboardItem.textContent).contains(description);
+  await t.expect(Common.listItem('dashboard').textContent).contains(description);
 
-  await t.click(Common.dashboardItem);
+  await t.click(Common.listItemLink('dashboard'));
   await t.expect(Common.descriptionField.textContent).contains(description);
 
   // Edit description
@@ -566,9 +566,9 @@ test('copy instant preview dashboard', async (t) => {
 
   await u.gotoOverview(t);
 
-  await t.expect(Common.collectionItem.textContent).contains('Analysis Testing Process');
+  await t.expect(Common.listItem('collection').textContent).contains('Analysis Testing Process');
 
-  await t.click(Common.collectionItem);
+  await t.click(Common.listItemLink('collection'));
   await t.expect(Common.dashboardItem.count).eql(1);
   await t.expect(Common.dashboardItem.textContent).contains('Process dashboard');
 
@@ -582,7 +582,7 @@ test('copy instant preview dashboard', async (t) => {
   await u.save(t);
 
   await u.gotoOverview(t);
-  await t.click(Common.collectionItem);
+  await t.click(Common.listItemLink('collection'));
   await t.expect(Common.dashboardItem.count).eql(2);
   await t.expect(Common.dashboardItem.nth(0).textContent).contains('New Name');
   await t.expect(Common.dashboardItem.nth(1).textContent).contains('Process dashboard');
@@ -595,8 +595,8 @@ test('copy instant preview dashboard', async (t) => {
   await t.click(Common.modalConfirmButton);
 
   await u.gotoOverview(t);
-  await t.expect(Common.collectionItem.count).eql(1);
-  await t.expect(Common.collectionItem.textContent).contains('another Collection Name');
+  await t.expect(Common.listItem('collection').count).eql(1);
+  await t.expect(Common.listItem('collection').textContent).contains('another Collection Name');
 
   await t.click(e.dashboardsLink);
   await t.click(Common.processItem);
@@ -607,9 +607,13 @@ test('copy instant preview dashboard', async (t) => {
 
   await u.gotoOverview(t);
 
-  await t.expect(Common.collectionItem.count).eql(2);
-  await t.expect(Common.collectionItem.nth(0).textContent).contains('Analysis Testing Process');
-  await t.expect(Common.collectionItem.nth(1).textContent).contains('another Collection Name');
+  await t.expect(Common.listItem('collection').count).eql(2);
+  await t
+    .expect(Common.listItem('collection').nth(0).textContent)
+    .contains('Analysis Testing Process');
+  await t
+    .expect(Common.listItem('collection').nth(1).textContent)
+    .contains('another Collection Name');
 });
 
 test('copy dashboard tiles', async (t) => {

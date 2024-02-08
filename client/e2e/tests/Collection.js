@@ -132,10 +132,10 @@ test('user permissions', async (t) => {
   // change permissions
   const managerName = await e.managerName.textContent;
   await t.hover(e.userItem(managerName));
-  await t.expect(Common.contextMenu(e.userItem(managerName)).exists).notOk();
+  await t.expect(Common.oldContextMenu(e.userItem(managerName)).exists).notOk();
 
   await t.hover(e.groupItem);
-  await t.expect(Common.contextMenu(e.groupItem).visible).ok();
+  await t.expect(Common.oldContextMenu(e.groupItem).visible).ok();
 
   const {username} = getUser(t, 'user2');
 
@@ -146,10 +146,10 @@ test('user permissions', async (t) => {
   await t.click(Common.modalConfirmButton);
 
   await t.hover(e.userItem(managerName));
-  await t.expect(Common.contextMenu(e.userItem(managerName)).visible).ok();
+  await t.expect(Common.oldContextMenu(e.userItem(managerName)).visible).ok();
 
-  await t.click(Common.contextMenu(e.userItem(managerName)));
-  await t.click(Common.edit(e.userItem(managerName)));
+  await t.click(Common.oldContextMenu(e.userItem(managerName)));
+  await t.click(Common.oldEdit(e.userItem(managerName)));
 
   await t.click(e.carbonRoleOption('Viewer'));
   await t.click(Common.modalConfirmButton);
@@ -168,13 +168,13 @@ test('user permissions', async (t) => {
   await login(t, 'user2');
   await t.click(e.navItem);
 
-  await t.click(Common.collectionItem);
+  await t.click(Common.listItemLink('collection'));
   await t.click(e.userTab);
-  await t.click(Common.selectAllCheckbox.filterVisible());
+  await t.click(Common.oldSelectAllCheckbox.filterVisible());
   await t.click(Common.bulkMenu.filterVisible());
   await t.click(e.remove(Common.bulkMenu.filterVisible()));
   await t.click(Common.modalConfirmButton);
-  await t.expect(Common.listItem.filterVisible().count).eql(1);
+  await t.expect(Common.oldListItem.filterVisible().count).eql(1);
 
   // delete collection
   await t.click(e.collectionContextMenu);
@@ -216,16 +216,16 @@ test('add, edit and delete sources', async (t) => {
 
   // edit source
   await t.hover(e.processItem.nth(1));
-  await t.expect(Common.contextMenu(e.processItem.nth(1)).visible).ok();
-  await t.click(Common.contextMenu(e.processItem.nth(1)));
-  await t.click(Common.edit(e.processItem.nth(1)));
+  await t.expect(Common.oldContextMenu(e.processItem.nth(1)).visible).ok();
+  await t.click(Common.oldContextMenu(e.processItem.nth(1)));
+  await t.click(Common.oldEdit(e.processItem.nth(1)));
   await t.click(e.checkbox('engineering'));
   await t.click(Common.modalConfirmButton);
   await t.expect(e.processItem.nth(1).textContent).notContains('engineering');
 
   // delete source
   await t.hover(e.decisionItem);
-  await t.click(Common.contextMenu(e.decisionItem));
+  await t.click(Common.oldContextMenu(e.decisionItem));
   await t.click(e.remove(e.decisionItem));
   await t.click(Common.modalConfirmButton);
   await t.expect(e.decisionItem.exists).notOk();
@@ -236,7 +236,7 @@ test('add, edit and delete sources', async (t) => {
   await t.click(Common.bulkMenu.filterVisible());
   await t.click(e.remove(Common.bulkMenu.filterVisible()));
   await t.click(Common.modalConfirmButton);
-  await t.expect(Common.listItem.filterVisible().exists).notOk();
+  await t.expect(Common.oldListItem.filterVisible().exists).notOk();
 });
 
 test('create new KPI report', async (t) => {

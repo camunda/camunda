@@ -1,0 +1,19 @@
+.CarbonEntityList {
+  .entityIcon {
+    align-self: center;
+
+    > svg {
+      display: block;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  thead th.tableHeader {
+    white-space: nowrap;
+  }
+
+  tbody tr:hover .ListItemAction {
+    opacity: 1;
+  }
+}

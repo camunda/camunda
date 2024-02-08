@@ -64,3 +64,4 @@ export {InstanceViewTable} from './InstanceViewTable';
 export {TenantInfo} from './TenantInfo';
 export {TargetSelection} from './TargetSelection';
 export {Loading} from './Loading';
+export {CarbonEntityList} from './CarbonEntityList';

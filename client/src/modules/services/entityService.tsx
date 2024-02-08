@@ -5,6 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
+import {ChartColumn, Dashboard, Folder} from '@carbon/icons-react';
+
 import {get, post} from 'request';
 import {GenericEntity, GenericReport} from 'types';
 import {track} from 'tracking';
@@ -72,4 +74,15 @@ export async function createEntity(
   const json = await response.json();
   track(createEventName('create', type), {entityId: json.id, context});
   return json.id;
+}
+
+export function getEntityIcon(type: 'report' | 'dashboard' | 'collection') {
+  switch (type) {
+    case 'collection':
+      return <Folder />;
+    case 'dashboard':
+      return <Dashboard />;
+    case 'report':
+      return <ChartColumn />;
+  }
 }

@@ -98,7 +98,7 @@ test('save the report', async (t) => {
 
   await u.gotoOverview(t);
 
-  await t.expect(Common.reportLabel.textContent).contains('Decision');
+  await t.expect(Common.listItem('decision report').visible).ok();
 });
 
 test('create a single number report', async (t) => {

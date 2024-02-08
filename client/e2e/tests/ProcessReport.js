@@ -1296,9 +1296,9 @@ test('add, edit and remove reports description', async (t) => {
 
   await u.save(t);
   await u.gotoOverview(t);
-  await t.expect(Common.reportItem.textContent).contains(description);
+  await t.expect(Common.listItem('report').textContent).contains(description);
 
-  await t.click(Common.reportItem);
+  await t.click(Common.listItemLink('report'));
   await t.expect(Common.descriptionField.textContent).contains(description);
 
   // Edit description
