@@ -18,14 +18,17 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.rocksdb.Checkpoint;
+import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.OptimisticTransactionDB;
-import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
+import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksObject;
 import org.rocksdb.Transaction;
@@ -76,16 +79,28 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
 
   public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
       ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
-          final Options options,
+          final RocksDbOptions options,
           final String path,
           final List<AutoCloseable> closables,
           final RocksDbConfiguration rocksDbConfiguration,
           final ConsistencyChecksSettings consistencyChecksSettings)
           throws RocksDBException {
+    final var cfDescriptors =
+        Arrays.asList( // todo: could consider using List.of
+            new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, options.cfOptions()));
+    final List<ColumnFamilyHandle> cfHandles = new ArrayList<>();
     final OptimisticTransactionDB optimisticTransactionDB =
-        OptimisticTransactionDB.open(options, path);
+        OptimisticTransactionDB.open(options.dbOptions(), path, cfDescriptors, cfHandles);
     closables.add(optimisticTransactionDB);
-    final var defaultColumnFamilyHandle = optimisticTransactionDB.getDefaultColumnFamily();
+
+    if (cfHandles.size() != 1) {
+      throw new IllegalStateException(
+          "Expected a handle for the default column family but found %d handles"
+              .formatted(cfHandles.size()));
+    }
+
+    final ColumnFamilyHandle defaultColumnFamilyHandle = cfHandles.getFirst();
+    closables.add(defaultColumnFamilyHandle);
 
     return new ZeebeTransactionDb<>(
         defaultColumnFamilyHandle,
