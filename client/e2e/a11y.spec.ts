@@ -113,6 +113,8 @@ test.describe('a11y', () => {
     await page.goto('/');
     await page.getByText('Big form process').click();
 
+    await expect(page.getByText('Title 1')).toBeVisible();
+
     const results = await makeAxeBuilder().analyze();
 
     expect(results.violations).toHaveLength(0);
