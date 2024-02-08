@@ -344,8 +344,23 @@ public class PassiveRole extends InactiveRole {
                   List.of(), // Skip joint consensus
                   true));
       raft.getCluster().commitCurrentConfiguration();
+    } else if (!(currentConfiguration.allMembers().containsAll(request.newMembers())
+        && request.newMembers().containsAll(currentConfiguration.allMembers()))) {
+      // This is not expected. When force configuration is retried, we expect that they are retried
+      // with the same state. If this is not the case, it is likely that there are two force
+      // configuration requested at the same time.
+      // Reject the request. There is possibly no way out to recover from this.
+      return CompletableFuture.completedFuture(
+          logResponse(
+              ForceConfigureResponse.builder()
+                  .withStatus(Status.ERROR)
+                  .withError(
+                      Type.CONFIGURATION_ERROR,
+                      String.format(
+                          "Expected to force configure with members '%s', but the member is already in force configuration with a different set of members '%s'",
+                          request.newMembers(), currentConfiguration.allMembers()))
+                  .build()));
     }
-    // TODO: else verify if the new members are the same as the current configuration
 
     final var result =
         logResponse(
