@@ -50,9 +50,6 @@ import static org.mockito.Mockito.when;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS) // Lifecycle required to use BeforeAll and AfterAll in non-static fashion
 public class OperateZeebeSearchAbstractIT {
 
-  @Autowired
-  protected TestSearchRepository testSearchRepository;
-
   // These are mocked so we can bypass authentication issues when connecting to zeebe and search
   @MockBean
   protected UserService userService;
