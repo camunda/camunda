@@ -61,4 +61,5 @@ public class SettingsReaderES implements SettingsReader {
 
     return Optional.ofNullable(result);
   }
+
 }

@@ -19,7 +19,7 @@ import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.reader.ProcessVariableReader;
 import org.camunda.optimize.service.db.reader.VariableLabelReader;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.db.es.CompositeAggregationScroller;
+import org.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -154,7 +154,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
       .source(searchSourceBuilder);
 
     List<ProcessVariableNameResponseDto> variableNames = new ArrayList<>();
-    CompositeAggregationScroller.create()
+    ElasticsearchCompositeAggregationScroller.create()
       .setEsClient(esClient)
       .setSearchRequest(searchRequest)
       .setPathToAggregation(VARIABLES, VAR_NAME_AND_TYPE_COMPOSITE_AGG)

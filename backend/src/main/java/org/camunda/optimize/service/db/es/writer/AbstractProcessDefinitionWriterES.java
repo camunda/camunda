@@ -8,7 +8,6 @@ package org.camunda.optimize.service.db.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.service.db.writer.AbstractProcessDefinitionWriter;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -25,7 +24,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITI
 
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public abstract class AbstractProcessDefinitionWriterES implements AbstractProcessDefinitionWriter<BulkRequest> {
+public abstract class AbstractProcessDefinitionWriterES {
 
   protected final Logger log = LoggerFactory.getLogger(getClass());
   protected final ObjectMapper objectMapper;
@@ -33,7 +32,6 @@ public abstract class AbstractProcessDefinitionWriterES implements AbstractProce
 
   abstract Script createUpdateScript(ProcessDefinitionOptimizeDto processDefinitionDtos);
 
-  @Override
   public void addImportProcessDefinitionToRequest(final BulkRequest bulkRequest,
                                                   final ProcessDefinitionOptimizeDto processDefinitionDto) {
     final Script updateScript = createUpdateScript(processDefinitionDto);

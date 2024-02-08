@@ -10,10 +10,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.CountResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
@@ -42,10 +45,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.ids;
@@ -62,7 +65,6 @@ import static org.camunda.optimize.service.db.os.externalcode.client.dsl.Request
 public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   // TODO check unused methods with OPT-7352
-
   public record AggregatedResult<R>(List<R> values, Map<String, Aggregate> aggregates) {
   }
 
@@ -224,17 +226,19 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     return response;
   }
 
-  public <R> SearchResponse<R> search(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
-    return search(requestBuilder, entityClass, false);
+  public <R> SearchResponse<R> search(final SearchRequest.Builder requestBuilder, final Class<R> entityClass,
+                                      final Function<Exception, String> errorMessage) {
+    return search(requestBuilder, entityClass, errorMessage, false);
   }
 
-  public <R> SearchResponse<R> search(SearchRequest.Builder requestBuilder, Class<R> entityClass, boolean retry) {
+  public <R> SearchResponse<R> search(final SearchRequest.Builder requestBuilder, final Class<R> entityClass,
+                                      final Function<Exception, String> searchErrorMessage, boolean retry) {
     var request = applyIndexPrefix(requestBuilder).build();
     return retry ?
       executeWithRetries(() -> unsafeSearch(request, entityClass)) :
       safe(
         () -> unsafeSearch(request, entityClass),
-        defaultSearchErrorMessage(getIndex(requestBuilder))
+        searchErrorMessage
       );
   }
 
@@ -243,16 +247,20 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public <R> List<R> searchValues(SearchRequest.Builder requestBuilder, Class<R> entityClass, boolean retry) {
-    return search(requestBuilder, entityClass, retry).hits().hits().stream().map(Hit::source).toList();
+    return search(requestBuilder, entityClass, defaultSearchErrorMessage(getIndex(requestBuilder)), retry).hits()
+      .hits()
+      .stream()
+      .map(Hit::source)
+      .toList();
   }
 
   public Map<String, Aggregate> searchAggregations(SearchRequest.Builder requestBuilder) {
     requestBuilder.size(0);
-    return search(requestBuilder, Void.class).aggregations();
+    return search(requestBuilder, Void.class, defaultSearchErrorMessage(getIndex(requestBuilder))).aggregations();
   }
 
   public <R> R searchUnique(SearchRequest.Builder requestBuilder, Class<R> entityClass, String key) {
-    final SearchResponse<R> response = search(requestBuilder, entityClass);
+    final SearchResponse<R> response = search(requestBuilder, entityClass, defaultSearchErrorMessage(getIndex(requestBuilder)));
 
     if (response.hits().total().value() == 1) {
       return response.hits().hits().get(0).source();
@@ -263,9 +271,17 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     }
   }
 
+  public BulkResponse bulk(final BulkRequest.Builder bulkReqBuilder, final Function<Exception,
+    String> errorMessageSupplier) {
+    return safe(
+      () -> openSearchClient.bulk(applyIndexPrefix(bulkReqBuilder).build()),
+      errorMessageSupplier
+    );
+  }
+
   public long docCount(SearchRequest.Builder requestBuilder) {
     requestBuilder.size(0);
-    return search(requestBuilder, Void.class).hits().total().value();
+    return search(requestBuilder, Void.class, defaultSearchErrorMessage(getIndex(requestBuilder))).hits().total().value();
   }
 
   public Map<String, String> getIndexNames(String index, Collection<String> ids) {
@@ -324,11 +340,14 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       });
   }
 
-  public long deleteByQuery(Query query, String... indexes) {
+  public long deleteByQuery(final Query query, boolean refresh, final String... indexes) {
     List<String> listIndexes = List.of(indexes);
     Long status = executeWithRetries(
       () -> {
-        final DeleteByQueryRequest request = applyIndexPrefix(deleteByQueryRequestBuilder(listIndexes)).query(query).build();
+        final DeleteByQueryRequest request = applyIndexPrefix(deleteByQueryRequestBuilder(listIndexes))
+          .query(query)
+          .refresh(refresh)
+          .build();
         final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
         return response.deleted();
       });
@@ -351,7 +370,9 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public long updateByQuery(String index, Query query, Script script) {
     Long status = executeWithRetries(
       () -> {
-        final UpdateByQueryRequest request = applyIndexPrefix(updateByQueryRequestBuilder(List.of(index))).query(query)
+        final UpdateByQueryRequest request = applyIndexPrefix(updateByQueryRequestBuilder(List.of(index)))
+          .query(query)
+          .refresh(true)
           .script(script)
           .build();
         final UpdateByQueryResponse response = openSearchClient.updateByQuery(request);
@@ -379,6 +400,13 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       .result() == Result.Deleted);
   }
 
+  public DeleteResponse delete(final String indexName, final String entityId) {
+    return safe(
+      () -> openSearchClient.delete(applyIndexPrefix(deleteRequestBuilder(indexName, entityId)).build()),
+      e -> defaultDeleteErrorMessage(indexName)
+    );
+  }
+
   public <A> IndexResponse index(IndexRequest.Builder<A> requestBuilder) {
     return safe(
       () -> openSearchClient.index(applyIndexPrefix(requestBuilder).build()),
@@ -386,10 +414,19 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     );
   }
 
-  public <A> UpdateResponse<Void> update(UpdateRequest.Builder<Void, A> requestBuilder,
-                                         Function<Exception, String> errorMessageSupplier) {
+  public <T> UpdateResponse<Void> update(final UpdateRequest.Builder<Void, T> requestBuilder,
+                                         final Function<Exception, String> errorMessageSupplier) {
     return safe(
       () -> openSearchClient.update(applyIndexPrefix(requestBuilder).build(), Void.class),
+      errorMessageSupplier
+    );
+  }
+
+  public <A, B> UpdateResponse<A> upsert(final UpdateRequest.Builder<A, B> requestBuilder,
+                                         final Class<A> clazz,
+                                         final Function<Exception, String> errorMessageSupplier) {
+    return safe(
+      () -> openSearchClient.update(applyIndexPrefix(requestBuilder).build(), clazz),
       errorMessageSupplier
     );
   }
@@ -417,11 +454,11 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public <T> MgetResponse<T> mget(final Class<T> responseClass, final Function<Exception,
-    String> errorMessageSupplier, String id, String... indexes) {
+    String> errorMessageSupplier, Map<String, String> indexesToEntitiesId) {
 
-    List<MultiGetOperation> operations = Stream.of(indexes)
-      .map(this::getIndexAliasFor)
-      .map(index -> getMultiGetOperation(index, id))
+    List<MultiGetOperation> operations = indexesToEntitiesId.entrySet().stream()
+      .filter(pair -> Objects.nonNull(pair.getKey()) && Objects.nonNull(pair.getValue()))
+      .map(idToIndex -> getMultiGetOperation(getIndexAliasFor(idToIndex.getKey()), idToIndex.getValue()))
       .toList();
 
     MgetRequest.Builder requestBuilder = new MgetRequest.Builder()

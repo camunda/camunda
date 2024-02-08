@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.util.configuration.condition;
 
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.DatabaseProfile;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
@@ -14,6 +14,6 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 public class OpenSearchCondition implements Condition {
   @Override
   public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-    return ConfigurationService.getDatabaseProfile(context.getEnvironment()).equals(DatabaseProfile.OPENSEARCH);
+    return ConfigurationService.getDatabaseType(context.getEnvironment()) == DatabaseType.OPENSEARCH;
   }
 }

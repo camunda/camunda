@@ -405,11 +405,11 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
     final List<String> eventIdsToDelete = Collections.singletonList(eventTraceOne.get(0).getId());
     assertEventInstanceContainsAllEventsOfIds(
       getSavedInstanceWithId(instance.getProcessInstanceId()), eventIdsToDelete);
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + EventProcessInstanceIndex.constructIndexName("*") + ".*/_update_by_query")
       .withMethod(POST);
-    esMockServer.when(requestMatcher, Times.once())
+    dbMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
 
     // when a delete request will fail to delete the instance events
@@ -418,7 +418,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
       .execute();
 
     // then the instance and unsaved events are unchanged
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(getSavedInstanceWithId(instance.getProcessInstanceId()).getFlowNodeInstances())
       .containsExactlyInAnyOrderElementsOf(instance.getFlowNodeInstances());
 
@@ -443,11 +443,11 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
       .collect(Collectors.toList());
     assertEventInstanceContainsAllEventsOfIds(
       getSavedInstanceWithId(instance.getProcessInstanceId()), eventIdsToDelete);
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + EventProcessInstanceIndex.constructIndexName("*") + ".*/_update_by_query")
       .withMethod(POST);
-    esMockServer.when(requestMatcher, Times.once())
+    dbMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
 
     // when a delete request will fail to delete the instance events
@@ -456,7 +456,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
       .execute();
 
     // then the instance and unsaved events are unchanged
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(getSavedInstanceWithId(instance.getProcessInstanceId()).getFlowNodeInstances())
       .containsExactlyInAnyOrderElementsOf(instance.getFlowNodeInstances());
 
@@ -479,13 +479,13 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
     final List<String> eventIdsToDelete = Collections.singletonList(eventTraceOne.get(0).getId());
     assertEventInstanceContainsAllEventsOfIds(
       getSavedInstanceWithId(instance.getProcessInstanceId()), eventIdsToDelete);
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/" + embeddedOptimizeExtension.getIndexNameService()
         // TODO don't use ES coupling here, to be dealt with OPT-7246
         .getOptimizeIndexNameWithVersionWithoutSuffix(new EventIndexES()) + ".*/_delete_by_query")
       .withMethod(POST);
-    esMockServer.when(requestMatcher, Times.once())
+    dbMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
 
     // when a delete request will fail to delete the event
@@ -494,7 +494,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
       .execute();
 
     // then the instance has already had the event removed
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertEventInstancesDoNotContainAnyEventsOfIds(getAllStoredEventInstances(), eventIdsToDelete);
     assertThat(getAllStoredEvents()).containsExactlyInAnyOrderElementsOf(allSavedEventsBeforeDelete);
 
@@ -519,13 +519,13 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
       .collect(Collectors.toList());
     assertEventInstanceContainsAllEventsOfIds(
       getSavedInstanceWithId(instance.getProcessInstanceId()), eventIdsToDelete);
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/" + embeddedOptimizeExtension.getIndexNameService()
         // TODO don't use ES coupling here, to be dealt with OPT-7246
         .getOptimizeIndexNameWithVersionWithoutSuffix(new EventIndexES()) + ".*/_delete_by_query")
       .withMethod(POST);
-    esMockServer.when(requestMatcher, Times.once())
+    dbMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
 
     // when a delete request will fail to delete the events
@@ -534,7 +534,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
       .execute();
 
     // then the instance has already had the events removed
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertEventInstancesDoNotContainAnyEventsOfIds(getAllStoredEventInstances(), eventIdsToDelete);
     assertThat(getAllStoredEvents()).containsExactlyInAnyOrderElementsOf(allSavedEventsBeforeDelete);
 

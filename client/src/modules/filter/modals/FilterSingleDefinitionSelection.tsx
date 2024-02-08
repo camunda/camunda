@@ -5,7 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {Labeled, Typeahead} from 'components';
+import {ComboBox} from '@carbon/react';
+
 import {t} from 'translation';
 import {Definition} from 'types';
 
@@ -28,21 +29,19 @@ export default function FilterSingleDefinitionSelection({
 
   return (
     <div className="FilterSingleDefinitionSelection">
-      <Labeled label={t('common.definitionSelection.select.process')}>
-        <Typeahead
-          initialValue={applyTo ?? undefined}
-          placeholder={t('dashboard.addButton.selectReportPlaceholder')}
-          onChange={setApplyTo}
-        >
-          {availableDefinitions
-            .filter((definition) => definition.versions?.length && definition.tenantIds?.length)
-            .map((definition) => (
-              <Typeahead.Option key={definition.identifier} value={definition}>
-                {definition.displayName || definition.name || definition.key}
-              </Typeahead.Option>
-            ))}
-        </Typeahead>
-      </Labeled>
+      <ComboBox
+        titleText={t('common.definitionSelection.select.process')}
+        id="definition-selector"
+        items={availableDefinitions.filter(
+          (definition) => definition.versions?.length && definition.tenantIds?.length
+        )}
+        itemToString={(definition) =>
+          (definition?.displayName || definition?.name || definition?.key)?.toString() || ''
+        }
+        selectedItem={applyTo}
+        placeholder={t('dashboard.addButton.selectReportPlaceholder').toString()}
+        onChange={({selectedItem}) => selectedItem && setApplyTo(selectedItem)}
+      />
     </div>
   );
 }

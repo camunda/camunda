@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.activity.CompletedActivityInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -31,12 +32,14 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   private final CamundaEventImportService camundaEventService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
+  private final DatabaseClient databaseClient;
 
   public CompletedActivityInstanceImportService(final CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                 final CamundaEventImportService camundaEventService,
                                                 final EngineContext engineContext,
                                                 final ConfigurationService configurationService,
-                                                final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                                final ProcessDefinitionResolverService processDefinitionResolverService,
+                                                final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -45,6 +48,7 @@ public class CompletedActivityInstanceImportService implements ImportService<His
     this.camundaEventService = camundaEventService;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -85,7 +89,8 @@ public class CompletedActivityInstanceImportService implements ImportService<His
         completedActivityInstanceWriter,
         camundaEventService,
         configurationService,
-        callback
+        callback,
+        databaseClient
       );
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;

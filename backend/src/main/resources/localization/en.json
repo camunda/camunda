@@ -96,7 +96,7 @@
       "noProcess": "Select process definition to be able to select a template.",
       "multipleProcess": "This template is best suited for multiple processes.",
       "singleProcess": "This template is best suited for single processes.",
-      "editReport": "To change this value, edit the data source section of the created report(s)."
+      "editReport": "To change the version selection, edit the data source section of the created report(s)."
     },
     "templateGroups": {
       "blankGroup": "Blank template",
@@ -1403,7 +1403,8 @@
           "notExecutedFlowNodes": "Not executed flow nodes",
           "canceledFlowNodes": "Canceled flow nodes",
           "executingFlowNodes": "Running flow nodes"
-        }
+        },
+        "selectFlowNode": "Click on the flow node you'd like to select:"
       },
       "nodeDateModal": {
         "info": {
@@ -1445,7 +1446,9 @@
       "instanceFilter": "Process instance filter",
       "decisionFilter": "Decision instance filter",
       "flowNodeFilter": "Flow node data filter",
-      "excludedFlowNodes": "excluded flow nodes"
+      "excludedFlowNodes": "excluded flow node(s)",
+      "selectedFlowNodes": "selected flow node(s)",
+      "UnselectFlowNodes": "Unselect the flow nodes to exclude them from the visualization:"
     },
     "definitionSelection": {
       "latest": "Latest",
@@ -1589,7 +1592,20 @@
       }
     },
     "expand": "Expand",
-    "collapse": "Collapse"
+    "collapse": "Collapse",
+    "carbon": {
+      "table": {
+        "batch": {
+          "cancel": "Cancel",
+          "items": {
+            "selected": "{totalSelected} selected"
+          },
+          "item": {
+            "selected": "{totalSelected} selected"
+          }
+        }
+      }
+    }
   },
   "apiErrors": {
     "serverError": "An internal server error occurred.",

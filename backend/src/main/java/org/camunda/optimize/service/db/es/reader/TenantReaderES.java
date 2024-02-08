@@ -65,4 +65,5 @@ public class TenantReaderES implements TenantReader {
       configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     ));
   }
+
 }

@@ -41,153 +41,153 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @Conditional(ElasticSearchCondition.class)
 public class ProcessOverviewWriterES implements ProcessOverviewWriter {
 
-    private final OptimizeElasticsearchClient esClient;
-    private final ObjectMapper objectMapper;
+  private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
 
-    @Override
-    public void updateProcessConfiguration(final String processDefinitionKey, final ProcessUpdateDto processUpdateDto) {
-        try {
-            final ProcessOverviewDto overviewDto = createNewProcessOverviewDto(processDefinitionKey, processUpdateDto);
-            final Map<String, Object> paramMap = new HashMap<>();
-            paramMap.put("owner", overviewDto.getOwner());
-            paramMap.put("processDefinitionKey", overviewDto.getProcessDefinitionKey());
-            paramMap.put("digestEnabled", overviewDto.getDigest().isEnabled());
-            final UpdateRequest updateRequest = new UpdateRequest()
-                    .index(PROCESS_OVERVIEW_INDEX_NAME)
-                    .id(processDefinitionKey)
-                    .script(
-                            new Script(
-                                    ScriptType.INLINE,
-                                    Script.DEFAULT_SCRIPT_LANG,
-                                    getUpdateOverviewScript(),
-                                    paramMap
-                            )
-                    )
-                    .upsert(objectMapper.convertValue(overviewDto, Map.class))
-                    .setRefreshPolicy(IMMEDIATE)
-                    .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-            esClient.update(updateRequest);
-        } catch (Exception e) {
-            final String errorMessage = String.format(
-                    "There was a problem while updating the process: [%s].",
-                    processUpdateDto
-            );
-            log.error(errorMessage, e);
-            throw new OptimizeRuntimeException(errorMessage, e);
-        }
+  @Override
+  public void updateProcessConfiguration(final String processDefinitionKey, final ProcessUpdateDto processUpdateDto) {
+    try {
+      final ProcessOverviewDto overviewDto = createNewProcessOverviewDto(processDefinitionKey, processUpdateDto);
+      final Map<String, Object> paramMap = new HashMap<>();
+      paramMap.put("owner", overviewDto.getOwner());
+      paramMap.put("processDefinitionKey", overviewDto.getProcessDefinitionKey());
+      paramMap.put("digestEnabled", overviewDto.getDigest().isEnabled());
+      final UpdateRequest updateRequest = new UpdateRequest()
+        .index(PROCESS_OVERVIEW_INDEX_NAME)
+        .id(processDefinitionKey)
+        .script(
+          new Script(
+            ScriptType.INLINE,
+            Script.DEFAULT_SCRIPT_LANG,
+            getUpdateOverviewScript(),
+            paramMap
+          )
+        )
+        .upsert(objectMapper.convertValue(overviewDto, Map.class))
+        .setRefreshPolicy(IMMEDIATE)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      esClient.update(updateRequest);
+    } catch (Exception e) {
+      final String errorMessage = String.format(
+        "There was a problem while updating the process: [%s].",
+        processUpdateDto
+      );
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  @Override
+  public void updateProcessDigestResults(final String processDefKey, final ProcessDigestDto processDigestDto) {
+    try {
+      final UpdateRequest updateRequest = new UpdateRequest()
+        .index(PROCESS_OVERVIEW_INDEX_NAME)
+        .id(processDefKey)
+        .script(
+          new Script(
+            ScriptType.INLINE,
+            Script.DEFAULT_SCRIPT_LANG,
+            "ctx._source.digest.kpiReportResults = params.kpiReportResults;\n",
+            Map.of("kpiReportResults", processDigestDto.getKpiReportResults())
+          )
+        )
+        .setRefreshPolicy(IMMEDIATE)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      esClient.update(updateRequest);
+    } catch (Exception e) {
+      final String errorMessage = String.format(
+        "There was a problem while updating the digest results for process with key: [%s] and digest results: %s.",
+        processDefKey, processDigestDto.getKpiReportResults()
+      );
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  @Override
+  public void updateProcessOwnerIfNotSet(final String processDefinitionKey, final String ownerId) {
+    try {
+      final ProcessUpdateDto processUpdateDto = new ProcessUpdateDto();
+      processUpdateDto.setOwnerId(ownerId);
+      final ProcessDigestRequestDto processDigestRequestDto = new ProcessDigestRequestDto();
+      processUpdateDto.setProcessDigest(processDigestRequestDto);
+      final UpdateRequest updateRequest = new UpdateRequest()
+        .index(PROCESS_OVERVIEW_INDEX_NAME)
+        .id(processDefinitionKey)
+        .script(ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+          getUpdateOwnerIfNotSetScript(),
+          Map.of("owner", ownerId, "processDefinitionKey", processDefinitionKey)
+        ))
+        .upsert(objectMapper.convertValue(
+          createNewProcessOverviewDto(processDefinitionKey, processUpdateDto),
+          Map.class
+        ))
+        .setRefreshPolicy(IMMEDIATE)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      esClient.update(updateRequest);
+    } catch (Exception e) {
+      final String errorMessage = String.format(
+        "There was a problem while updating the owner for process with key: [%s] and owner ID: %s.",
+        processDefinitionKey, ownerId
+      );
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  @Override
+  public void updateKpisForProcessDefinitions(Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis) {
+    final BulkRequest bulkRequest = new BulkRequest();
+    log.debug("Updating KPI values for process definitions with keys: [{}]", definitionKeyToKpis.keySet());
+    for (Map.Entry<String, LastKpiEvaluationResultsDto> entry : definitionKeyToKpis.entrySet()) {
+      Map<String, String> reportIdToValue = entry.getValue().getReportIdToValue();
+      ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
+      processOverviewDto.setProcessDefinitionKey(entry.getKey());
+      processOverviewDto.setDigest(new ProcessDigestDto(
+        false,
+        Collections.emptyMap()
+      ));
+      processOverviewDto.setLastKpiEvaluationResults(reportIdToValue);
+      UpdateRequest updateRequest = new UpdateRequest()
+        .index(PROCESS_OVERVIEW_INDEX_NAME)
+        .id(entry.getKey())
+        .upsert(objectMapper.convertValue(processOverviewDto, Map.class))
+        .script(ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+          "ctx._source.lastKpiEvaluationResults = params.lastKpiEvaluationResults;\n",
+          Map.of("lastKpiEvaluationResults", reportIdToValue)
+        ))
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      bulkRequest.add(updateRequest);
     }
 
-    @Override
-    public void updateProcessDigestResults(final String processDefKey, final ProcessDigestDto processDigestDto) {
-        try {
-            final UpdateRequest updateRequest = new UpdateRequest()
-                    .index(PROCESS_OVERVIEW_INDEX_NAME)
-                    .id(processDefKey)
-                    .script(
-                            new Script(
-                                    ScriptType.INLINE,
-                                    Script.DEFAULT_SCRIPT_LANG,
-                                    "ctx._source.digest.kpiReportResults = params.kpiReportResults;\n",
-                                    Map.of("kpiReportResults", processDigestDto.getKpiReportResults())
-                            )
-                    )
-                    .setRefreshPolicy(IMMEDIATE)
-                    .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-            esClient.update(updateRequest);
-        } catch (Exception e) {
-            final String errorMessage = String.format(
-                    "There was a problem while updating the digest results for process with key: [%s] and digest results: %s.",
-                    processDefKey, processDigestDto.getKpiReportResults()
-            );
-            log.error(errorMessage, e);
-            throw new OptimizeRuntimeException(errorMessage, e);
-        }
-    }
+    esClient.doBulkRequest(
+      bulkRequest,
+      new ProcessOverviewIndexES().getIndexName(),
+      false
+    );
+  }
 
-    @Override
-    public void updateProcessOwnerIfNotSet(final String processDefinitionKey, final String ownerId) {
-        try {
-            final ProcessUpdateDto processUpdateDto = new ProcessUpdateDto();
-            processUpdateDto.setOwnerId(ownerId);
-            final ProcessDigestRequestDto processDigestRequestDto = new ProcessDigestRequestDto();
-            processUpdateDto.setProcessDigest(processDigestRequestDto);
-            final UpdateRequest updateRequest = new UpdateRequest()
-                    .index(PROCESS_OVERVIEW_INDEX_NAME)
-                    .id(processDefinitionKey)
-                    .script(ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-                            getUpdateOwnerIfNotSetScript(),
-                            Map.of("owner", ownerId, "processDefinitionKey", processDefinitionKey)
-                    ))
-                    .upsert(objectMapper.convertValue(
-                            createNewProcessOverviewDto(processDefinitionKey, processUpdateDto),
-                            Map.class
-                    ))
-                    .setRefreshPolicy(IMMEDIATE)
-                    .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-            esClient.update(updateRequest);
-        } catch (Exception e) {
-            final String errorMessage = String.format(
-                    "There was a problem while updating the owner for process with key: [%s] and owner ID: %s.",
-                    processDefinitionKey, ownerId
-            );
-            log.error(errorMessage, e);
-            throw new OptimizeRuntimeException(errorMessage, e);
-        }
-    }
-
-    @Override
-    public void updateKpisForProcessDefinitions(Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis) {
-        final BulkRequest bulkRequest = new BulkRequest();
-        log.debug("Updating KPI values for process definitions with keys: [{}]", definitionKeyToKpis.keySet());
-        for (Map.Entry<String, LastKpiEvaluationResultsDto> entry : definitionKeyToKpis.entrySet()) {
-            Map<String, String> reportIdToValue = entry.getValue().getReportIdToValue();
-            ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
-            processOverviewDto.setProcessDefinitionKey(entry.getKey());
-            processOverviewDto.setDigest(new ProcessDigestDto(
-                    false,
-                    Collections.emptyMap()
-            ));
-            processOverviewDto.setLastKpiEvaluationResults(reportIdToValue);
-            UpdateRequest updateRequest = new UpdateRequest()
-                    .index(PROCESS_OVERVIEW_INDEX_NAME)
-                    .id(entry.getKey())
-                    .upsert(objectMapper.convertValue(processOverviewDto, Map.class))
-                    .script(ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-                            "ctx._source.lastKpiEvaluationResults = params.lastKpiEvaluationResults;\n",
-                            Map.of("lastKpiEvaluationResults", reportIdToValue)
-                    ))
-                    .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-            bulkRequest.add(updateRequest);
-        }
-        ElasticsearchWriterUtil.doBulkRequest(
-                esClient,
-                bulkRequest,
-                new ProcessOverviewIndexES().getIndexName(),
-                false
+  @Override
+  public void deleteProcessOwnerEntry(final String processDefinitionKey) {
+    log.info("Removing pending entry " + processDefinitionKey);
+    try {
+      final DeleteRequest deleteRequest = new DeleteRequest()
+        .index(PROCESS_OVERVIEW_INDEX_NAME)
+        .id(processDefinitionKey);
+      esClient.delete(deleteRequest);
+    } catch (IOException e) {
+      final String errorMessage =
+        String.format(
+          "There was a problem while deleting process owner entry for %s",
+          processDefinitionKey
         );
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
     }
+  }
 
-    @Override
-    public void deleteProcessOwnerEntry(final String processDefinitionKey) {
-        log.info("Removing pending entry " + processDefinitionKey);
-        try {
-            final DeleteRequest deleteRequest = new DeleteRequest()
-                    .index(PROCESS_OVERVIEW_INDEX_NAME)
-                    .id(processDefinitionKey);
-            esClient.delete(deleteRequest);
-        } catch (IOException e) {
-            final String errorMessage =
-                    String.format(
-                            "There was a problem while deleting process owner entry for %s",
-                            processDefinitionKey
-                    );
-            log.error(errorMessage, e);
-            throw new OptimizeRuntimeException(errorMessage, e);
-        }
-    }
-
-    private String getUpdateOverviewScript() {
-        // @formatter:off
+  private String getUpdateOverviewScript() {
+    // @formatter:off
         return
                 "ctx._source.owner = params.owner;\n" +
                         "ctx._source.processDefinitionKey = params.processDefinitionKey;\n" +
@@ -200,29 +200,29 @@ public class ProcessOverviewWriterES implements ProcessOverviewWriter {
                         "  ctx._source.digest.checkInterval = alertInterval;\n" +
                         "}\n";
         // @formatter:on
-    }
+  }
 
-    private String getUpdateOwnerIfNotSetScript() {
-        // @formatter:off
+  private String getUpdateOwnerIfNotSetScript() {
+    // @formatter:off
         return
                 "if (ctx._source.owner == null) {\n" +
                         "  ctx._source.owner = params.owner;\n" +
                         "}\n" +
                         "ctx._source.processDefinitionKey = params.processDefinitionKey;\n";
         // @formatter:on
-    }
+  }
 
-    private ProcessOverviewDto createNewProcessOverviewDto(final String processDefinitionKey,
-                                                           final ProcessUpdateDto processUpdateDto) {
-        final ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
-        processOverviewDto.setProcessDefinitionKey(processDefinitionKey);
-        processOverviewDto.setOwner(processUpdateDto.getOwnerId());
-        processOverviewDto.setDigest(new ProcessDigestDto(
-                processUpdateDto.getProcessDigest().isEnabled(),
-                Collections.emptyMap()
-        ));
-        processOverviewDto.setLastKpiEvaluationResults(Collections.emptyMap());
-        return processOverviewDto;
-    }
+  private ProcessOverviewDto createNewProcessOverviewDto(final String processDefinitionKey,
+                                                         final ProcessUpdateDto processUpdateDto) {
+    final ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
+    processOverviewDto.setProcessDefinitionKey(processDefinitionKey);
+    processOverviewDto.setOwner(processUpdateDto.getOwnerId());
+    processOverviewDto.setDigest(new ProcessDigestDto(
+      processUpdateDto.getProcessDigest().isEnabled(),
+      Collections.emptyMap()
+    ));
+    processOverviewDto.setLastKpiEvaluationResults(Collections.emptyMap());
+    return processOverviewDto;
+  }
 
 }

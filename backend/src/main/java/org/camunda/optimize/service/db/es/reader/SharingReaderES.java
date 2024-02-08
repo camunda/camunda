@@ -138,16 +138,6 @@ public class SharingReaderES implements SharingReader {
     return findDashboardSharesByQuery(boolQueryBuilder);
   }
 
-  @Override
-  public long getReportShareCount() {
-    return getShareCount(REPORT_SHARE_INDEX_NAME);
-  }
-
-  @Override
-  public long getDashboardShareCount() {
-    return getShareCount(DASHBOARD_SHARE_INDEX_NAME);
-  }
-
   private Optional<ReportShareRestDto> findReportShareByQuery(QueryBuilder query) {
     Optional<ReportShareRestDto> result = Optional.empty();
 
@@ -180,7 +170,8 @@ public class SharingReaderES implements SharingReader {
     return result;
   }
 
-  private long getShareCount(final String indexName) {
+  @Override
+  public long getShareCount(final String indexName) {
     final CountRequest countRequest = new CountRequest(indexName);
     try {
       return esClient.count(countRequest).getCount();

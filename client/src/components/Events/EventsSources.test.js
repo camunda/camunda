@@ -7,10 +7,10 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {MenuItem} from '@carbon/react';
 
 import EventsSourceModal from './EventsSourceModal';
 import EventsSources from './EventsSources';
-import {Dropdown} from 'components';
 
 const props = {
   sources: [
@@ -18,6 +18,8 @@ const props = {
     {type: 'external', configuration: {includeAllGroups: true, group: null}},
   ],
   onChange: jest.fn(),
+  searchFor: jest.fn(),
+  searchQuery: '',
 };
 
 beforeEach(() => {
@@ -41,7 +43,7 @@ it('should open addSourceModal when clicking the add button', () => {
 it('should remove a source from the list', () => {
   const node = shallow(<EventsSources {...props} />);
 
-  node.find(Dropdown.Option).at(2).simulate('click');
+  node.find(MenuItem).at(2).simulate('click');
 
   node.find('DeleterErrorHandler').prop('deleteEntity')(props.sources[0]);
 
@@ -54,7 +56,7 @@ it('should remove a source from the list', () => {
 it('should hide/show source', () => {
   const node = shallow(<EventsSources {...props} />);
 
-  node.find(Dropdown.Option).at(0).simulate('click');
+  node.find(MenuItem).at(0).simulate('click');
 
   expect(props.onChange).toHaveBeenCalledWith(
     [
@@ -68,7 +70,7 @@ it('should hide/show source', () => {
 it('should edit a source from the list', () => {
   const node = shallow(<EventsSources {...props} />);
 
-  node.find(Dropdown.Option).at(1).simulate('click');
+  node.find(MenuItem).at(1).simulate('click');
 
   expect(node.find(EventsSourceModal).prop('initialSource')).toEqual({
     configuration: {processDefinitionKey: 'src1'},
@@ -89,7 +91,7 @@ it('should edit a scope of a source', () => {
     />
   );
 
-  node.find(Dropdown.Option).at(2).simulate('click');
+  node.find(MenuItem).at(2).simulate('click');
 
   const modal = node.find('VisibleEventsModal');
 
@@ -105,4 +107,17 @@ it('should edit a scope of a source', () => {
     ],
     true
   );
+});
+
+it('should allow searching for events', async () => {
+  const searchForSpy = jest.fn();
+  const node = shallow(<EventsSources {...props} searchFor={searchForSpy} />);
+
+  node.find('TableToolbarSearch').prop('onChange')({
+    target: {value: 'some String'},
+  });
+
+  await flushPromises();
+
+  expect(searchForSpy).toHaveBeenCalledWith('some String');
 });

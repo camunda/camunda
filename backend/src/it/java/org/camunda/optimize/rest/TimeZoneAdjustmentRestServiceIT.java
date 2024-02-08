@@ -1077,7 +1077,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .startDate(date)
       .endDate(date)
       .build();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager()
+    embeddedOptimizeExtension.getDatabaseSchemaManager()
       .createIndexIfMissing(
         databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
         new ProcessInstanceIndexES("aKey")

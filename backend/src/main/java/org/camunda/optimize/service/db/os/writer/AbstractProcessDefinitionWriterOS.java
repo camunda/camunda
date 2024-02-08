@@ -9,17 +9,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.writer.AbstractProcessDefinitionWriter;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.Script;
-import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
-public abstract class AbstractProcessDefinitionWriterOS implements AbstractProcessDefinitionWriter<BulkRequest> {
+public abstract class AbstractProcessDefinitionWriterOS {
 
   protected final Logger log = LoggerFactory.getLogger(getClass());
   protected final ObjectMapper objectMapper;
@@ -27,10 +29,20 @@ public abstract class AbstractProcessDefinitionWriterOS implements AbstractProce
 
   abstract Script createUpdateScript(ProcessDefinitionOptimizeDto processDefinitionDtos);
 
-  @Override
-  public void addImportProcessDefinitionToRequest(final BulkRequest bulkRequest,
-                                                  final ProcessDefinitionOptimizeDto processDefinitionDto) {
-    //todo will be handled in the OPT-7376
+  public BulkOperation addImportProcessDefinitionToRequest(final ProcessDefinitionOptimizeDto processDefinitionDto) {
+    final Script updateScript = createUpdateScript(processDefinitionDto);
+
+    final UpdateOperation<ProcessDefinitionOptimizeDto> request =
+      new UpdateOperation.Builder<ProcessDefinitionOptimizeDto>()
+        .id(processDefinitionDto.getId())
+        .script(updateScript)
+        .upsert(processDefinitionDto)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+        .build();
+
+    return new BulkOperation.Builder()
+      .update(request)
+      .build();
   }
 
 }

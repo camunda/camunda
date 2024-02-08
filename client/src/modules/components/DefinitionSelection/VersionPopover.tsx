@@ -21,7 +21,6 @@ interface VersionPopoverProps extends Pick<ComponentProps<typeof Popover>, 'alig
   selectedSpecificVersions?: Version['version'][];
   onChange: (versions: Version['version'][]) => void;
   disabled?: boolean;
-  tooltip?: ReactNode;
   loading?: boolean;
   label?: ReactNode;
 }
@@ -32,7 +31,6 @@ export default function VersionPopover({
   selectedSpecificVersions = [],
   onChange,
   disabled,
-  tooltip,
   loading,
   label,
   align = 'bottom-right',
@@ -53,7 +51,6 @@ export default function VersionPopover({
   return (
     <Popover
       className="VersionPopover"
-      tooltip={tooltip}
       align={align}
       trigger={
         <Popover.ListBox label={label} disabled={disabled || !versions}>

@@ -31,6 +31,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceUpd
 import org.camunda.optimize.dto.optimize.query.event.process.MappedEventType;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -76,10 +77,12 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   private final EventProcessPublishStateDto eventProcessPublishStateDto;
   private final Map<String, EventToFlowNodeMapping> eventMappingIdToEventMapping;
   private final BpmnModelInstance bpmnModelInstance;
+  private final DatabaseClient databaseClient;
 
   public EventProcessInstanceImportService(final ConfigurationService configurationService,
                                            final EventProcessPublishStateDto eventProcessPublishStateDto,
-                                           final EventProcessInstanceWriter eventProcessInstanceWriter) {
+                                           final EventProcessInstanceWriter eventProcessInstanceWriter,
+                                           final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -90,6 +93,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     this.eventProcessInstanceWriter.setGatewayLookup(buildGatewayLookup(
       eventProcessPublishStateDto, bpmnModelInstance
     ));
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -442,7 +446,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   private DatabaseImportJob<EventProcessInstanceDto> createDatabaseImportJob(List<EventProcessInstanceDto> processInstances,
                                                                                   Runnable callback) {
     EventProcessInstanceDatabaseImportJob importJob = new EventProcessInstanceDatabaseImportJob(
-      eventProcessInstanceWriter, callback
+      eventProcessInstanceWriter, callback, databaseClient
     );
     importJob.setEntitiesToImport(processInstances);
     return importJob;

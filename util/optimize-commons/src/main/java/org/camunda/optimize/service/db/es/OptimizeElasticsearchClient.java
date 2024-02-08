@@ -7,18 +7,21 @@ package org.camunda.optimize.service.db.es;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeException;
 import net.jodah.failsafe.FailsafeExecutor;
 import net.jodah.failsafe.RetryPolicy;
 import org.camunda.optimize.dto.optimize.DataImportSourceType;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.service.db.DatabaseClient;
+import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
+import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
@@ -45,6 +48,7 @@ import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -92,22 +96,29 @@ import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.groupingBy;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -125,6 +136,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
  */
 @Slf4j
 public class OptimizeElasticsearchClient extends DatabaseClient {
+
+  private static final String NESTED_DOC_LIMIT_MESSAGE = "The number of nested documents has exceeded the allowed " +
+    "limit of";
 
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
 
@@ -189,7 +203,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return highLevelClient.bulk(bulkRequest, requestOptions());
   }
 
-  @Override
   public final CountResponse count(final CountRequest countRequest) throws IOException {
     applyIndexPrefixes(countRequest);
     return highLevelClient.count(countRequest, requestOptions());
@@ -298,6 +311,28 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return highLevelClient.updateByQuery(updateByQueryRequest, requestOptions());
   }
 
+  @Override
+  public void update(final String indexName, final String entityId, final ScriptData script) {
+
+    final UpdateRequest updateRequest = new UpdateRequest()
+      .index(indexName)
+      .id(entityId)
+      .script(new Script(
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        script.scriptString(),
+        script.params()
+      ))
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    try {
+      update(updateRequest);
+    } catch (IOException e) {
+      String errorMessage = String.format("The error occurs while updating OpenSearch entity %s with id %s", indexName, entityId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
   public final RolloverResponse rollover(RolloverRequest rolloverRequest) throws IOException {
     rolloverRequest = applyAliasPrefixAndRolloverConditions(rolloverRequest);
     return highLevelClient.indices().rollover(rolloverRequest, requestOptions());
@@ -305,6 +340,11 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   public void deleteIndex(final IndexMappingCreator indexMappingCreator) {
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexMappingCreator);
+    deleteIndex(indexAlias);
+  }
+
+  @Override
+  public void deleteIndex(final String indexAlias) {
     final String[] allIndicesForAlias = getAllIndicesForAlias(indexAlias).toArray(String[]::new);
     deleteIndexByRawIndexNames(allIndicesForAlias);
   }
@@ -336,6 +376,172 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   public String getElasticsearchVersion() throws IOException {
     return highLevelClient.info(requestOptions()).getVersion().getNumber();
+  }
+
+  @Override
+  @SneakyThrows
+  public void setDefaultRequestOptions() {
+    highLevelClient.info(RequestOptions.DEFAULT);
+  }
+
+  public <T> void doImportBulkRequestWithList(final String importItemName,
+                                              final Collection<T> entityCollection,
+                                              final BiConsumer<BulkRequest, T> addDtoToRequestConsumer,
+                                              final boolean retryRequestIfNestedDocLimitReached) {
+    if (entityCollection.isEmpty()) {
+      log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
+    } else {
+      final BulkRequest bulkRequest = new BulkRequest();
+      entityCollection.forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
+      doBulkRequest(bulkRequest, importItemName, retryRequestIfNestedDocLimitReached);
+    }
+  }
+
+  @Override
+  public void executeImportRequestsAsBulk(final String bulkRequestName,
+                                          final List<ImportRequestDto> importRequestDtos,
+                                          final Boolean retryFailedRequestsOnNestedDocLimit) {
+    final BulkRequest bulkRequest = new BulkRequest();
+    final Map<String, List<ImportRequestDto>> requestsByType = importRequestDtos.stream()
+      .filter(this::validateImportName)
+      .collect(groupingBy(ImportRequestDto::getImportName));
+    requestsByType.forEach((type, requests) -> {
+      log.debug("Adding [{}] requests of type {} to bulk request", requests.size(), type);
+      requests.forEach(importRequest -> applyOperationToBulkRequest(bulkRequest, importRequest));
+    });
+    doBulkRequest(bulkRequest, bulkRequestName, retryFailedRequestsOnNestedDocLimit);
+  }
+
+  private void applyOperationToBulkRequest(final BulkRequest bulkRequest, final ImportRequestDto requestDto) {
+
+    validateOperationParams(requestDto);
+
+    switch (requestDto.getType()) {
+      case INDEX -> bulkRequest.add(new IndexRequest()
+                                      .id(requestDto.getId())
+                                      .source(castSourceToStringJson(requestDto), XContentType.JSON)
+                                      .index(requestDto.getIndexName()));
+      case UPDATE -> bulkRequest.add(new UpdateRequest()
+                                       .id(requestDto.getId())
+                                       .index(requestDto.getIndexName())
+                                       .upsert(castSourceToStringJson(requestDto), XContentType.JSON)
+                                       .script(createDefaultScriptWithPrimitiveParams(
+                                         requestDto.getScriptData().scriptString(),
+                                         requestDto.getScriptData().params()
+                                       ))
+                                       .retryOnConflict(requestDto.getRetryNumberOnConflict()));
+    }
+  }
+
+  private String castSourceToStringJson(final ImportRequestDto requestDto) {
+    if (requestDto.getSource() instanceof String converted) {
+      return converted;
+    } else {
+      final String errorMessage = String.format(
+        "Received object of type %s as source for the importRequestDto with name %s and id %s. " +
+          "ElasticSearch requires a source of type String.",
+        requestDto.getSource() != null ? requestDto.getSource().getClass() : "null",
+        requestDto.getImportName(),
+        requestDto.getId()
+      );
+      throw new OptimizeRuntimeException(errorMessage);
+    }
+  }
+
+  //to avoid cross-dependency, we copied that method from the ElasticsearchWriterUtil
+  private static Script createDefaultScriptWithPrimitiveParams(final String inlineUpdateScript,
+                                                               final Map<String, Object> params) {
+    return new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      inlineUpdateScript,
+      params
+    );
+  }
+
+  public void doBulkRequest(final BulkRequest bulkRequest,
+                            final String itemName,
+                            final boolean retryRequestIfNestedDocLimitReached) {
+    if (retryRequestIfNestedDocLimitReached) {
+      doBulkRequestWithNestedDocHandling(bulkRequest, itemName);
+    } else {
+      doBulkRequestWithoutRetries(bulkRequest, itemName);
+    }
+  }
+
+  private void doBulkRequestWithoutRetries(BulkRequest bulkRequest,
+                                           String itemName) {
+    if (bulkRequest.numberOfActions() > 0) {
+      try {
+        BulkResponse bulkResponse = this.bulk(bulkRequest);
+        if (bulkResponse.hasFailures()) {
+          throw new OptimizeRuntimeException(String.format(
+            "There were failures while performing bulk on %s.%n%s Message: %s",
+            itemName,
+            getHintForErrorMsg(bulkResponse),
+            bulkResponse.buildFailureMessage()
+          ));
+        }
+      } catch (IOException e) {
+        String reason = String.format("There were errors while performing a bulk on %s.", itemName);
+        log.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
+      }
+    } else {
+      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
+    }
+  }
+
+  private void doBulkRequestWithNestedDocHandling(BulkRequest bulkRequest,
+                                                  String itemName) {
+    if (bulkRequest.numberOfActions() > 0) {
+      log.info("Executing bulk request on {} items of {}", bulkRequest.requests().size(), itemName);
+      try {
+        BulkResponse bulkResponse = this.bulk(bulkRequest);
+        if (bulkResponse.hasFailures()) {
+          if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
+            final Set<String> failedItemIds = Arrays.stream(bulkResponse.getItems())
+              .filter(BulkItemResponse::isFailed)
+              .filter(responseItem -> responseItem.getFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE))
+              .map(BulkItemResponse::getId)
+              .collect(Collectors.toSet());
+            log.warn("There were failures while performing bulk on {} due to the nested document limit being reached." +
+                       " Removing {} failed items and retrying", itemName, failedItemIds.size());
+            bulkRequest.requests().removeIf(request -> failedItemIds.contains(request.id()));
+            if (!bulkRequest.requests().isEmpty()) {
+              doBulkRequestWithNestedDocHandling(bulkRequest, itemName);
+            }
+          } else {
+            throw new OptimizeRuntimeException(String.format(
+              "There were failures while performing bulk on %s. Message: %s",
+              itemName,
+              bulkResponse.buildFailureMessage()
+            ));
+          }
+        }
+      } catch (IOException e) {
+        String reason = String.format("There were errors while performing a bulk on %s.", itemName);
+        log.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
+      }
+    } else {
+      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
+    }
+  }
+
+  private static boolean containsNestedDocumentLimitErrorMessage(final BulkResponse bulkResponse) {
+    return bulkResponse.buildFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE);
+  }
+
+  private static String getHintForErrorMsg(final BulkResponse bulkResponse) {
+    if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
+      // exception potentially related to nested object limit
+      return "If you are experiencing failures due to too many nested documents, try carefully increasing the " +
+        "configured nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of " +
+        "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). " +
+        "See Optimize documentation for details.";
+    }
+    return "";
   }
 
   public void createIndex(final CreateIndexRequest request) throws IOException {
@@ -548,6 +754,18 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       String message = "Failed to execute rollover request";
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  @Override
+  public <T> long count(final String[] indexNames, final T query) throws IOException {
+    CountRequest countRequest = new CountRequest(indexNames);
+    if (query instanceof QueryBuilder elasticSearchQuery) {
+      countRequest.query(elasticSearchQuery);
+      return count(countRequest).getCount();
+    } else {
+      throw new IllegalArgumentException("The count method requires an ElasticSearch object of type QueryBuilder, " +
+                                           "instead got " + query.getClass().getSimpleName());
     }
   }
 

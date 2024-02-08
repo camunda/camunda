@@ -96,7 +96,7 @@
       "noProcess": "Wählen Sie eine Prozessdefinition aus, um eine Vorlage auswählen zu können.",
       "multipleProcess": "Diese Vorlage eignet sich am besten für mehrere Prozesse.",
       "singleProcess": "Diese Vorlage eignet sich am besten für einzelne Prozesse.",
-      "editReport": "Um diesen Wert zu ändern, bearbeiten Sie die Datenquellen der erstellten Berichte."
+      "editReport": "Um die Versionenauswahl zu ändern, bearbeiten Sie die Datenquellen der erstellten Berichte."
     },
     "templateGroups": {
       "blankGroup": "Leere Vorlage",
@@ -1403,7 +1403,8 @@
           "notExecutedFlowNodes": "Nicht ausgeführte Prozessknoten",
           "canceledFlowNodes": "Abgebrochene Prozessknoten",
           "executingFlowNodes": "Laufende Prozessknoten"
-        }
+        },
+        "selectFlowNode": "Klicken Sie auf den Prozessknoten, den Sie auswählen möchten:"
       },
       "nodeDateModal": {
         "info": {
@@ -1445,7 +1446,9 @@
       "instanceFilter": "Prozessinstanzen Filter",
       "decisionFilter": "Entscheidungsevaluierungen Filter",
       "flowNodeFilter": "Prozessknoten-Daten Filter",
-      "excludedFlowNodes": "Ausgeschlossene Prozessknoten"
+      "excludedFlowNodes": "Ausgeschlossene Prozessknoten",
+      "selectedFlowNodes": "Ausgewählte Prozessknoten",
+      "UnselectFlowNodes": "Deselektieren Sie die Prozessknoten, um sie von der Visualisierung auszuschließen:"
     },
     "definitionSelection": {
       "latest": "Neueste",
@@ -1589,7 +1592,20 @@
       }
     },
     "expand": "Erweitern",
-    "collapse": "Ausblenden"
+    "collapse": "Ausblenden",
+    "carbon": {
+      "table": {
+        "batch": {
+          "cancel": "Abbrechen",
+          "items": {
+            "selected": "{totalSelected} Ausgewählt"
+          },
+          "item": {
+            "selected": "{totalSelected} Ausgewählt"
+          }
+        }
+      }
+    }
   },
   "apiErrors": {
     "serverError": "Es ist ein interner Server Fehler aufgetreten.",

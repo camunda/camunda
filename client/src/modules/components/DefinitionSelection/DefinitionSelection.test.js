@@ -298,7 +298,7 @@ it('should construct a popover title', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
   await flushPromises();
 
-  expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Select process');
+  expect(node.find('.DefinitionSelection').prop('trigger').props.children).toBe('Select process');
 
   loadTenants.mockReturnValueOnce([
     {
@@ -321,7 +321,7 @@ it('should construct a popover title', async () => {
   );
   await flushPromises();
 
-  expect(nodeWithData.find('.DefinitionSelection')).toHaveProp('title', 'Bar : 1');
+  expect(nodeWithData.find('.DefinitionSelection').prop('trigger').props.children).toBe('Bar : 1');
 });
 
 it('should construct a popover title even without xml', async () => {
@@ -330,7 +330,7 @@ it('should construct a popover title even without xml', async () => {
   );
   await flushPromises();
 
-  expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Foo : 1 : -');
+  expect(node.find('.DefinitionSelection').prop('trigger').props.children).toBe('Foo : 1 : -');
 });
 
 it('should hide the tenant selection by default', async () => {
@@ -364,23 +364,27 @@ describe('tenants', () => {
     let node = await shallow(<DefinitionSelection {...props} />);
     await flushPromises();
 
-    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Select process');
+    expect(node.find('.DefinitionSelection').prop('trigger').props.children).toBe('Select process');
 
     node = await shallow(
       <DefinitionSelection {...props} definitionKey="foo" versions={['3']} tenants={[]} />
     );
     await flushPromises();
 
-    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Foo : 3 : -');
+    expect(node.find('.DefinitionSelection').prop('trigger').props.children).toBe('Foo : 3 : -');
 
     node.find('TenantPopover').simulate('change', ['a']);
-    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Foo : 3 : Tenant A');
+    expect(node.find('.DefinitionSelection').prop('trigger').props.children).toBe(
+      'Foo : 3 : Tenant A'
+    );
 
     node.find('TenantPopover').simulate('change', ['a', 'b']);
-    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Foo : 3 : Multiple');
+    expect(node.find('.DefinitionSelection').prop('trigger').props.children).toBe(
+      'Foo : 3 : Multiple'
+    );
 
     node.find('TenantPopover').simulate('change', ['a', 'b', 'c']);
-    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Foo : 3 : All');
+    expect(node.find('.DefinitionSelection').prop('trigger').props.children).toBe('Foo : 3 : All');
   });
 
   it('should show a tenant selection component', async () => {
@@ -445,12 +449,6 @@ it('should invoke onChange from MultiDefinitionSelection if selectedDefinitions 
   ]);
 });
 
-it('should pass versionTooltip to the version popover', async () => {
-  const node = await shallow(<DefinitionSelection {...props} versionTooltip={'test tooltip'} />);
-
-  expect(node.find(VersionPopover).prop('tooltip')).toBe('test tooltip');
-});
-
 it('should display the readonly tenantInfo component in self managed mode', async () => {
   getOptimizeProfile.mockReturnValueOnce('ccsm');
   loadTenants.mockReturnValueOnce([
@@ -475,4 +473,15 @@ it('should display the readonly tenantInfo component in self managed mode', asyn
   await flushPromises();
 
   expect(node.find(TenantInfo).prop('tenant')).toEqual({id: '<default>', name: 'Default'});
+});
+
+it('should display an info message about version selection when loading multiple definitions', async () => {
+  const spy = jest.fn();
+  const node = await shallow(
+    <DefinitionSelection {...props} selectedDefinitions={[{}, {}]} onChange={spy} />
+  );
+
+  await flushPromises();
+
+  expect(node.find('Message').children()).toIncludeText('To change the version selection');
 });

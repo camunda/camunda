@@ -69,12 +69,13 @@ export default class Filter extends Component {
       case 'flowNodeDuration':
         return NodeDuration;
       case 'executedFlowNodes':
-      case 'executingFlowNodes':
-      case 'canceledFlowNodes':
         const {newFilterLevel, editFilter} = this.state;
         if (newFilterLevel === 'view' || editFilter?.filterLevel === 'view') {
           return NodeSelection;
         }
+        return NodeFilter;
+      case 'executingFlowNodes':
+      case 'canceledFlowNodes':
         return NodeFilter;
       case 'assignee':
       case 'candidateGroup':

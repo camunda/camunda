@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.engine.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.PositionBasedImportIndexWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.job.StorePositionBasedIndexDatabaseImportJob;
@@ -25,21 +26,24 @@ public class StorePositionBasedIndexImportService implements ImportService<Posit
 
   private final PositionBasedImportIndexWriter importIndexWriter;
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
+  private final DatabaseClient databaseClient;
 
   public StorePositionBasedIndexImportService(final ConfigurationService configurationService,
-                                              final PositionBasedImportIndexWriter importIndexWriter) {
+                                              final PositionBasedImportIndexWriter importIndexWriter,
+                                              final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.importIndexWriter = importIndexWriter;
+    this.databaseClient = databaseClient;
   }
 
   public void executeImport(final List<PositionBasedImportIndexDto> importIndexesToStore,
                             final Runnable importCompleteCallback) {
     final StorePositionBasedIndexDatabaseImportJob storeIndexesImportJob =
       new StorePositionBasedIndexDatabaseImportJob(
-      importIndexWriter, importCompleteCallback
-    );
+        importIndexWriter, importCompleteCallback, databaseClient
+      );
     storeIndexesImportJob.setEntitiesToImport(importIndexesToStore);
     databaseImportJobExecutor.executeImportJob(storeIndexesImportJob);
   }

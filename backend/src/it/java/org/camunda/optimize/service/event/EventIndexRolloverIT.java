@@ -54,12 +54,12 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
   public void cleanUpEventIndices() {
     databaseIntegrationTestExtension.deleteAllExternalEventIndices();
     databaseIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeElasticClient(),
+    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
+      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
       new EventIndexES()
     );
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeElasticClient(),
+    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
+      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
       new VariableUpdateInstanceIndexES()
     );
   }
@@ -348,12 +348,12 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
   }
 
   private List<String> getAllIndicesWithWriteAlias(String indexName) throws IOException {
-    final String aliasNameWithPrefix = embeddedOptimizeExtension.getOptimizeElasticClient()
+    final String aliasNameWithPrefix = embeddedOptimizeExtension.getOptimizeDatabaseClient()
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(indexName);
 
     GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    Map<String, Set<AliasMetadata>> aliasMap = embeddedOptimizeExtension.getOptimizeElasticClient()
+    Map<String, Set<AliasMetadata>> aliasMap = embeddedOptimizeExtension.getOptimizeElasticSearchClient()
       .getAlias(aliasesRequest).getAliases();
 
     return aliasMap.keySet()

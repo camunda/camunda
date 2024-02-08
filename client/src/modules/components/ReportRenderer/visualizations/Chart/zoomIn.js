@@ -30,7 +30,7 @@ export default function zoomIn({updateReport, filters, type, valueRange: {min, m
     const {left, right} = this.chartArea;
 
     if (offsetX >= left && offsetX <= right) {
-      const position = addMilliseconds(((offsetX - left) / (right - left)) * (max - min), min);
+      const position = addMilliseconds(min, ((offsetX - left) / (right - left)) * (max - min));
       currentPosition = position;
     } else {
       currentPosition = null;

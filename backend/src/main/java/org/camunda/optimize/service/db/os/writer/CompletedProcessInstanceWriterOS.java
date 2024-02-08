@@ -16,6 +16,7 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -32,7 +33,7 @@ public class CompletedProcessInstanceWriterOS extends AbstractProcessInstanceWri
   @Override
   public List<ImportRequestDto> generateProcessInstanceImports(final List<ProcessInstanceDto> processInstances) {
     //todo will be handled in the OPT-7376
-    return null;
+    return Collections.emptyList();
   }
 
   @Override

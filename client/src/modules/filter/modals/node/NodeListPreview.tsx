@@ -6,6 +6,7 @@
  */
 
 import {ReactNode} from 'react';
+import {Tag} from '@carbon/react';
 
 import {Tooltip, ModdleElement} from 'components';
 import {t} from 'translation';
@@ -40,11 +41,11 @@ export default function NodeListPreview({nodes, operator, type}: NodeListPreview
   });
 
   const parameterName = (
-    <span className="parameterName">
+    <Tag type="blue" className="parameterName">
       {t(
         'common.filter.nodeModal.preview.' + (operator === 'not in' ? 'notExecutedFlowNodes' : type)
       )}
-    </span>
+    </Tag>
   );
 
   return (

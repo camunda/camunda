@@ -47,10 +47,11 @@
   ],
   // Branches to be checked
   baseBranches: [
-    "master",
+    "maintenance/3.12",
     "maintenance/3.11",
     "maintenance/3.10",
-    "maintenance/3.9"
+    "maintenance/3.9",
+    "master",
   ],
   // This ignores are the ones comming by default from config:base with exception to **/test/**
   // We do this to be able to test files in docker/test directory
@@ -89,7 +90,7 @@
   packageRules: [
     // Ignore deps
     {
-      "matchPackageNames": [
+      matchPackageNames: [
         "org.camunda.optimize:optimize-data-generator",
         "org.camunda.optimize:camunda-optimize",
         "org.camunda.optimize:util",
@@ -99,36 +100,37 @@
         "org.camunda.bpm.model:camunda-dmn-model",
         "org.camunda.bpm:camunda-engine-rest-core",
         "org.camunda.bpm:camunda-engine",
-        "org.camunda.bpm:camunda-engine-rest-core",
-        "org.camunda.bpm.model:camunda-bpmn-model",
-        "io.camunda:identity-spring-boot-starter",
+        "org.camunda.bpm:camunda-license-check",
         "io.camunda:identity-sdk",
+        "io.camunda:identity-spring-boot-starter",
         "io.camunda:zeebe-client-java",
         "io.camunda:zeebe-protocol",
         "ant-contrib:ant-contrib",
-        "old-bpmn-js"
+        "old-bpmn-js",
       ],
-      "enabled": false
+      enabled: false,
     },
     // Frontend deps
     {
-      addLabels: ["frontend"],
+      addLabels: ["component:frontend"],
       languages: ["js"],
     },
     // Backend deps
     {
-      addLabels: ["backend"],
+      addLabels: ["component:backend"],
       languages: ["java"],
     },
     // Infra deps
     {
-      addLabels: ["infra"],
+      addLabels: ["component:infra"],
       managers: ["docker-compose", "dockerfile", "github-actions"],
     },
     // Docker deps
     {
       matchManagers: "dockerfile",
       separateMajorMinor: true,
+      separateMinorPatch: true,
+      prPriority: 100,
     },
     {
       matchDatasources: ["docker"],
@@ -143,6 +145,12 @@
       addLabels: ["patch"],
       // Group all patch updates into one PR
       groupName: "Patch dependencies",
+    },
+    // Disable major and minor updates for maintenance branches
+    {
+      matchUpdateTypes: ["major", "minor"],
+      matchBaseBranches: ["/^maintenance/.*/"],
+      enabled: false,
     },
   ],
   regexManagers: [
@@ -169,4 +177,14 @@
       datasourceTemplate: "docker",
     },
   ],
+  patch: {
+    automerge: true,
+  },
+  pin: {
+    automerge: true,
+  },
+  digest: {
+    automerge: true,
+  },
+  platformAutomerge: false,
 }

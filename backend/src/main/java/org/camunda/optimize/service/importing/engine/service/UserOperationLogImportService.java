@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.engine.HistoricUserOperationLogDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationType;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -33,12 +34,14 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
   private final RunningProcessInstanceImportIndexHandler runningProcessInstanceImportIndexHandler;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ProcessInstanceResolverService processInstanceResolverService;
+  private final DatabaseClient databaseClient;
 
   public UserOperationLogImportService(final ConfigurationService configurationService,
                                        final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                        final RunningProcessInstanceImportIndexHandler runningProcessInstanceImportIndexHandler,
                                        final ProcessDefinitionResolverService processDefinitionResolverService,
-                                       final ProcessInstanceResolverService processInstanceResolverService) {
+                                       final ProcessInstanceResolverService processInstanceResolverService,
+                                       final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -46,6 +49,7 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
     this.runningProcessInstanceImportIndexHandler = runningProcessInstanceImportIndexHandler;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.processInstanceResolverService = processInstanceResolverService;
+    this.databaseClient = databaseClient;
   }
 
   /**
@@ -85,7 +89,8 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
     Runnable callback) {
     final UserOperationLogDatabaseImportJob importJob = new UserOperationLogDatabaseImportJob(
       runningProcessInstanceWriter,
-      callback
+      callback,
+      databaseClient
     );
     importJob.setEntitiesToImport(userOperationLogs);
     return importJob;

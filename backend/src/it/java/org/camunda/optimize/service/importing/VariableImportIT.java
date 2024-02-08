@@ -187,14 +187,14 @@ public class VariableImportIT extends AbstractImportIT {
     );
 
     // whenES update writes fail
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest variableImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "\""));
-    esMockServer
+    dbMockServer
       .when(variableImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
     importAllEngineEntitiesFromLastIndex();
@@ -206,7 +206,7 @@ public class VariableImportIT extends AbstractImportIT {
     // then variables are stored as expected after ES writes successful
     assertThat(variablesResponseDtos).hasSize(variables.size());
     assertThat(storedVariableUpdateInstances).hasSize(variables.size());
-    esMockServer.verify(variableImportMatcher);
+    dbMockServer.verify(variableImportMatcher);
   }
 
   @Test

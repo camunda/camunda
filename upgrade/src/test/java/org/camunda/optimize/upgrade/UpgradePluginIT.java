@@ -35,18 +35,18 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
     setUpUpgradeDependenciesWithConfiguration(configurationService);
     // clear all mock recordings that happen during setup
-    esMockServer.clear(request());
+    dbMockServer.clear(request());
 
     // given
     performUpgrade();
 
     // then
-    esMockServer.verify(
+    dbMockServer.verify(
       request().withHeader(new Header("Authorization", "Bearer fixedToken")),
       VerificationTimes.atLeast(2)
     );
     // ensure there was no request without the header
-    esMockServer.verify(
+    dbMockServer.verify(
       request().withHeader(NottableString.not("Authorization")), VerificationTimes.exactly(0)
     );
   }
@@ -62,17 +62,17 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
     performUpgrade();
 
     // then
-    esMockServer.verify(
+    dbMockServer.verify(
       request().withHeader(new Header("Authorization", "Bearer dynamicToken_0")),
       // The first request is to check the ES version during client creation, the second is
       // being done when fetching the ES version to verify if we need to turn on the compatibility mode.
       VerificationTimes.exactly(2)
     );
-    esMockServer.verify(
+    dbMockServer.verify(
       request().withHeader(new Header("Authorization", "Bearer dynamicToken_1")),
       VerificationTimes.once()
     );
-    esMockServer.verify(
+    dbMockServer.verify(
       request().withHeader(new Header("Authorization", "Bearer dynamicToken_2")),
       VerificationTimes.once()
     );
@@ -92,7 +92,7 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
     performUpgrade();
 
     // then
-    esMockServer.verify(request().withHeaders(
+    dbMockServer.verify(request().withHeaders(
       new Header("Authorization", "Bearer dynamicToken_0"),
       new Header("CustomHeader", "customValue")
     ),

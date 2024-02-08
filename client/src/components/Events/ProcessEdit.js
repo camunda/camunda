@@ -5,11 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
+import {Loading} from '@carbon/react';
 
-import {EntityNameForm, BPMNDiagram, LoadingIndicator, PageTitle} from 'components';
+import {EntityNameForm, BPMNDiagram, PageTitle} from 'components';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {nowDirty, nowPristine} from 'saveGuard';
@@ -33,7 +34,7 @@ const asMapping = ({group, source, eventName, eventLabel}) => ({
   eventLabel,
 });
 
-export class ProcessEdit extends React.Component {
+export class ProcessEdit extends Component {
   constructor(props) {
     super(props);
 
@@ -225,7 +226,7 @@ export class ProcessEdit extends React.Component {
     const {name, mappings, selectedNode, xml, eventSources, selectedEvent} = this.state;
 
     if (!xml) {
-      return <LoadingIndicator />;
+      return <Loading className="processEditLoading" withOverlay={false} />;
     }
 
     return (

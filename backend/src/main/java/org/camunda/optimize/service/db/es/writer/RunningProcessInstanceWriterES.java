@@ -52,14 +52,11 @@ public class RunningProcessInstanceWriterES extends AbstractProcessInstanceWrite
     log.debug("Creating imports for {} [{}].", processInstanceDtos.size(), IMPORT_ITEM_NAME);
     createInstanceIndicesIfMissing(processInstanceDtos, ProcessInstanceDto::getProcessDefinitionKey);
 
-    return processInstanceDtos.stream().map(instance -> ImportRequestDto.builder()
-            .importName(IMPORT_ITEM_NAME)
-            .client(esClient)
-            .request(createImportRequestForProcessInstance(instance, UPDATABLE_FIELDS))
-            .build())
-            .collect(Collectors.toList());
+    return processInstanceDtos.stream()
+      .map(instance -> createImportRequestForProcessInstance(instance, UPDATABLE_FIELDS, IMPORT_ITEM_NAME))
+      .collect(Collectors.toList());
   }
-  
+
   @SuppressWarnings(UNCHECKED_CAST)
   @Override
   public void importProcessInstancesFromUserOperationLogs(final List<ProcessInstanceDto> processInstanceDtos) {
@@ -74,8 +71,7 @@ public class RunningProcessInstanceWriterES extends AbstractProcessInstanceWrite
       .toList();
     createInstanceIndicesIfMissing(processInstanceDtos, ProcessInstanceDto::getProcessDefinitionKey);
 
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       IMPORT_ITEM_NAME,
       processInstanceDtoToUpdateList,
       (request, dto) -> addImportProcessInstanceRequest(
@@ -154,4 +150,5 @@ public class RunningProcessInstanceWriterES extends AbstractProcessInstanceWrite
       "newState", newState
     );
   }
+
 }

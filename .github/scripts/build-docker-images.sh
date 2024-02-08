@@ -18,7 +18,7 @@ docker buildx create --use
 export VERSION="${VERSION}"
 export DATE="$(date +%FT%TZ)"
 export REVISION="${REVISION}"
-export BASE_IMAGE=docker.io/library/alpine:3.19.0
+export BASE_IMAGE=docker.io/library/alpine:3.19.1
 
 # if CI (GHA) export the variables for pushing in a later step
 if [ "${CI}" = "true"  ]; then
@@ -35,6 +35,7 @@ docker buildx build \
     --build-arg DATE="${DATE}" \
     --build-arg REVISION="${REVISION}" \
     --platform linux/arm64 \
+    --provenance false \
     --load \
     .
 export ARCHITECTURE=arm64
@@ -47,6 +48,7 @@ docker buildx build \
     --build-arg DATE="${DATE}" \
     --build-arg REVISION="${REVISION}" \
     --platform linux/amd64 \
+    --provenance false \
     --load \
     .
 export ARCHITECTURE=amd64

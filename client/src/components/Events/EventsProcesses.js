@@ -5,11 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import {Redirect} from 'react-router-dom';
+import {Component, createRef} from 'react';
+import {Redirect, withRouter} from 'react-router-dom';
 import {parseISO} from 'date-fns';
+import {MenuButton, MenuItem} from '@carbon/react';
 
-import {EntityList, BulkDeleter, Deleter, Dropdown, PageTitle} from 'components';
+import {EntityList, BulkDeleter, Deleter, PageTitle} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
 import {t} from 'translation';
@@ -29,7 +30,7 @@ import {
 
 import './EventsProcesses.scss';
 
-export class EventsProcesses extends React.Component {
+export class EventsProcesses extends Component {
   state = {
     processes: null,
     deleting: null,
@@ -39,7 +40,7 @@ export class EventsProcesses extends React.Component {
     openGenerationModal: false,
   };
 
-  fileInput = React.createRef();
+  fileInput = createRef();
 
   componentDidMount() {
     this.loadList();
@@ -133,13 +134,18 @@ export class EventsProcesses extends React.Component {
           empty={t('events.empty')}
           isLoading={!processes}
           action={(bulkActive) => (
-            <Dropdown main primary={!bulkActive} label={t('events.new')}>
-              <Dropdown.Option onClick={this.toggleGenerationModal}>
-                {t('events.autogenerate')}
-              </Dropdown.Option>
-              <Dropdown.Option link="new/edit">{t('events.modelProcess')}</Dropdown.Option>
-              <Dropdown.Option onClick={this.triggerUpload}>{t('events.upload')}</Dropdown.Option>
-            </Dropdown>
+            <MenuButton
+              className="createNewProcess"
+              kind={!bulkActive ? 'primary' : 'secondary'}
+              label={t('events.new')}
+            >
+              <MenuItem onClick={this.toggleGenerationModal} label={t('events.autogenerate')} />
+              <MenuItem
+                onClick={() => this.props.history.push('new/edit')}
+                label={t('events.modelProcess')}
+              />
+              <MenuItem onClick={this.triggerUpload} label={t('events.upload')} />
+            </MenuButton>
           )}
           bulkActions={[<BulkDeleter type="delete" deleteEntities={deleteProcesses} />]}
           onChange={this.loadList}
@@ -238,4 +244,4 @@ export class EventsProcesses extends React.Component {
   }
 }
 
-export default withErrorHandling(EventsProcesses);
+export default withErrorHandling(withRouter(EventsProcesses));

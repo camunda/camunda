@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.cloud.panelnotifications.PanelNotificat
 import org.camunda.optimize.rest.cloud.CCSaaSNotificationClient;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.onboarding.CCSaaSOnboardingPanelNotificationService;
+import org.camunda.optimize.service.util.RootUrlGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,8 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
   @Mock
   private DefinitionService definitionService;
   private CCSaaSOnboardingPanelNotificationService underTest;
+  @Mock
+  private RootUrlGenerator rootUrlGenerator;
 
   @BeforeEach
   public void setup() {
@@ -50,7 +53,8 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
     underTest = new CCSaaSOnboardingPanelNotificationService(
       notificationClient,
       configurationService,
-      definitionService
+      definitionService,
+      rootUrlGenerator
     );
   }
 
@@ -60,6 +64,7 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
     final DefinitionOptimizeResponseDto returnedDefWithName = new ProcessDefinitionOptimizeDto();
     returnedDefWithName.setName(PROCESS_NAME);
     when(definitionService.getDefinition(any(), any(), any(), any())).thenReturn(Optional.of(returnedDefWithName));
+    when(rootUrlGenerator.getRootUrl()).thenReturn("http://localhost:8090");
 
     // when
     ArgumentCaptor<PanelNotificationRequestDto> actualNotification = ArgumentCaptor.forClass(PanelNotificationRequestDto.class);

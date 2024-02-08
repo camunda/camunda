@@ -10,12 +10,19 @@ import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 import {Button} from '@carbon/react';
 
-import {Modal, Button as LegacyButton, BPMNDiagram, ClickBehavior} from 'components';
+import {Modal, BPMNDiagram, ClickBehavior} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 
-import {NodeSelection} from './NodeSelection';
+import NodeSelection from './NodeSelection';
+
+jest.mock('hooks', () => ({
+  ...jest.requireActual('hooks'),
+  useErrorHandling: () => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  }),
+}));
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   return class Viewer {
@@ -55,10 +62,9 @@ beforeEach(() => {
 
 const props: ComponentProps<typeof NodeSelection> = {
   filterLevel: 'view',
-  filterType: 'executingFlowNodes',
+  filterType: 'executedFlowNodes',
   close: jest.fn(),
   addFilter: jest.fn(),
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   definitions: [
     {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
   ],
@@ -126,6 +132,24 @@ it('should invoke addFilter when applying the filter', async () => {
   });
 });
 
+it('should use the in operator when the more than half of the nodes are deselected', async () => {
+  const spy = jest.fn();
+  const node = shallow(<NodeSelection {...props} addFilter={spy} />);
+
+  await runAllEffects();
+
+  node.find(ClickBehavior).prop('onClick')({id: 'a'});
+  node.find(ClickBehavior).prop('onClick')({id: 'b'});
+
+  node.find(Modal.Footer).find('.confirm').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith({
+    data: {operator: 'in', values: ['c']},
+    type: 'executedFlowNodes',
+    appliedTo: ['definition'],
+  });
+});
+
 it('should disable create filter button if no node was selected', () => {
   const node = shallow(
     <NodeSelection {...props} filterData={{type: '', appliedTo: [], data: {values: []}}} />
@@ -148,14 +172,16 @@ it('should disable create filter button if all nodes are selected', async () => 
   expect(node.find(Modal.Footer).find('.confirm').prop('disabled')).toBeTruthy();
 });
 
-it('should deselect All nodes if deselectAll button is clicked', async () => {
+it('should deselect/select All nodes using the provided buttons', async () => {
   const node = shallow(<NodeSelection {...props} />);
 
   await runAllEffects();
 
-  node.find(Modal.Content).find(LegacyButton).at(1).simulate('click');
-
+  node.find('.diagramActions Button').at(1).simulate('click');
   expect(node.find(ClickBehavior).prop('selectedNodes')).toEqual([]);
+
+  node.find('.diagramActions Button').at(0).simulate('click');
+  expect(node.find(ClickBehavior).prop('selectedNodes')).toEqual(['a', 'b', 'c']);
 });
 
 it('should initially load xml', async () => {
@@ -185,4 +211,25 @@ it('should load new xml after changing definition', async () => {
   await runAllEffects();
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('otherDefinitionKey', '1', 'marketing');
+});
+
+it('should populate selected values correctly', async () => {
+  const filterData = {
+    type: 'executedFlowNodes',
+    appliedTo: [props.definitions[0]?.identifier],
+    data: {operator: 'in', values: ['a']},
+  };
+  const spy = jest.fn();
+  const node = shallow(<NodeSelection {...props} filterData={filterData} addFilter={spy} />);
+
+  await runAllEffects();
+
+  expect(node.find('ClickBehavior').prop('selectedNodes')).toEqual(['a']);
+
+  node.find(Modal.Footer).find('.confirm').simulate('click');
+  expect(spy).toHaveBeenCalledWith({
+    data: {operator: 'in', values: ['a']},
+    type: 'executedFlowNodes',
+    appliedTo: ['definition'],
+  });
 });

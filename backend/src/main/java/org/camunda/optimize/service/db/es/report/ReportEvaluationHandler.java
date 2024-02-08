@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report;
 
+import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -28,11 +29,11 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.db.reader.ReportReader;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -40,7 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import jakarta.ws.rs.ForbiddenException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -61,14 +61,15 @@ public abstract class ReportEvaluationHandler {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  protected final ReportReader reportReader;
+  private final ReportService reportService;
   private final SingleReportEvaluator singleReportEvaluator;
   private final CombinedReportEvaluator combinedReportEvaluator;
   private final ProcessVariableService processVariableService;
   private final DefinitionService definitionService;
 
   public AuthorizedReportEvaluationResult evaluateReport(final ReportEvaluationInfo evaluationInfo) {
-    evaluationInfo.postFetchSavedReport(reportReader);
+    evaluationInfo.postFetchSavedReport(reportService);
+    updateAndSetLatestReportDefinitionXml(evaluationInfo);
     setDataSourcesForSystemGeneratedReports(evaluationInfo);
     final RoleType currentUserRole = getAuthorizedRole(evaluationInfo.getUserId(), evaluationInfo.getReport())
       .orElseThrow(() -> new ForbiddenException(String.format(
@@ -83,6 +84,11 @@ public abstract class ReportEvaluationHandler {
       result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
     }
     return new AuthorizedReportEvaluationResult(result, currentUserRole);
+  }
+
+  private void updateAndSetLatestReportDefinitionXml(final ReportEvaluationInfo reportEvaluationInfo) {
+    reportService.updateReportDefinitionXmlIfRequiredAndReturn(reportEvaluationInfo.getReport())
+      .ifPresent(reportEvaluationInfo::updateReportDefinitionXml);
   }
 
   private void setDataSourcesForSystemGeneratedReports(final ReportEvaluationInfo reportEvaluationInfo) {
@@ -104,15 +110,16 @@ public abstract class ReportEvaluationHandler {
             ))
             .collect(Collectors.toList());
         processReportData.setDefinitions(definitionsForManagementReport);
-      }
-      else if (processReportData.isInstantPreviewReport() && !reportEvaluationInfo.isSharedReport()) {
+      } else if (processReportData.isInstantPreviewReport() && !reportEvaluationInfo.isSharedReport()) {
         // Same logic as above, but just for the single process definition in the report
         String key =
           ((SingleReportDataDto) reportEvaluationInfo.getReport().getData()).getDefinitionKey();
         List<ReportDataDefinitionDto> definitionForInstantPreviewReport =
-          definitionService.getDefinitionWithAvailableTenants(DefinitionType.PROCESS,
-                                                              key,
-                                                              reportEvaluationInfo.getUserId())
+          definitionService.getDefinitionWithAvailableTenants(
+              DefinitionType.PROCESS,
+              key,
+              reportEvaluationInfo.getUserId()
+            )
             .stream()
             .map(def -> new ReportDataDefinitionDto(
               def.getKey(),
@@ -167,7 +174,7 @@ public abstract class ReportEvaluationHandler {
     final String userId = evaluationInfo.getUserId();
     List<String> singleReportIds = combinedReportDefinitionDto.getData().getReportIds();
     List<SingleProcessReportDefinitionRequestDto> foundSingleReports =
-      reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds)
+      reportService.getAllSingleProcessReportsForIdsOmitXml(singleReportIds)
         .stream()
         .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
         .peek(reportDefinition -> addAdditionalFiltersForReport(evaluationInfo, reportDefinition))

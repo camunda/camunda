@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.TenantWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
@@ -15,8 +16,10 @@ public class TenantDatabaseImportJob extends DatabaseImportJob<TenantDto> {
 
   private final TenantWriter tenantWriter;
 
-  public TenantDatabaseImportJob(final TenantWriter tenantWriter, final Runnable importCompleteCallback) {
-    super(importCompleteCallback);
+  public TenantDatabaseImportJob(final TenantWriter tenantWriter,
+                                 final Runnable importCompleteCallback,
+                                 final DatabaseClient databaseClient) {
+    super(importCompleteCallback, databaseClient);
     this.tenantWriter = tenantWriter;
   }
 

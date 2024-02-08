@@ -9,13 +9,13 @@ import React from 'react';
 import equal from 'fast-deep-equal';
 import {Chart as ChartRenderer} from 'chart.js';
 
+import {t} from 'translation';
+import {getFlowNodeNames, getDiagramElementsBetween} from 'services';
+import {LoadingIndicator} from 'components';
+
 import {loadCorrelationData} from './service';
 
-import {getFlowNodeNames, getDiagramElementsBetween} from 'services';
-
 import './Statistics.scss';
-import {LoadingIndicator} from 'components';
-import {t} from 'translation';
 
 export default class Statistics extends React.Component {
   constructor(props) {

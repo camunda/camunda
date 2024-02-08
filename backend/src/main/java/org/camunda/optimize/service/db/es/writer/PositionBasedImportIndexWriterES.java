@@ -40,8 +40,7 @@ public class PositionBasedImportIndexWriterES implements PositionBasedImportInde
     String importItemName = "position based import index information";
     log.debug("Writing [{}] {} to ES.", importIndexDtos.size(), importItemName);
 
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       importItemName,
       importIndexDtos,
       this::addImportIndexRequest,

@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionDataDto;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -33,16 +34,19 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ConfigurationService configurationService;
   private final int partitionId;
+  private final DatabaseClient databaseClient;
 
   public ZeebeProcessDefinitionImportService(final ConfigurationService configurationService,
                                              final ProcessDefinitionWriter processDefinitionWriter,
-                                             final int partitionId) {
+                                             final int partitionId,
+                                             final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.processDefinitionWriter = processDefinitionWriter;
     this.partitionId = partitionId;
     this.configurationService = configurationService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -87,7 +91,7 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
     final List<ProcessDefinitionOptimizeDto> processDefinitions,
     final Runnable importCompleteCallback) {
     ProcessDefinitionDatabaseImportJob procDefImportJob = new ProcessDefinitionDatabaseImportJob(
-      processDefinitionWriter, importCompleteCallback
+      processDefinitionWriter, importCompleteCallback, databaseClient
     );
     procDefImportJob.setEntitiesToImport(processDefinitions);
     return procDefImportJob;

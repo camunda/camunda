@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.service.db.reader.ExternalEventReader;
-import org.camunda.optimize.service.db.es.CompositeAggregationScroller;
+import org.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -187,7 +187,7 @@ public class ExternalEventReaderES implements ExternalEventReader {
     final SearchRequest searchRequest = new SearchRequest(EXTERNAL_EVENTS_INDEX_NAME)
       .source(searchSourceBuilder);
     List<String> groups = new ArrayList<>();
-    CompositeAggregationScroller.create()
+    ElasticsearchCompositeAggregationScroller.create()
       .setEsClient(esClient)
       .setSearchRequest(searchRequest)
       .setPathToAggregation(GROUP_COMPOSITE_AGG)

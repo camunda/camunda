@@ -95,7 +95,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKey(final DefinitionType definitionType) {
     // given
-    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToDatabase(
       definitionType, "key", "1", null, "the name"
     );
 
@@ -117,10 +117,10 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKeyGetsLatestName(final DefinitionType definitionType) {
     // given
-    final DefinitionOptimizeResponseDto definitionV1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto definitionV1 = createDefinitionAndAddToDatabase(
       definitionType, "key", "1", null, "the name"
     );
-    final DefinitionOptimizeResponseDto definitionV2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto definitionV2 = createDefinitionAndAddToDatabase(
       definitionType, "key", "2", null, "new name"
     );
 
@@ -142,10 +142,10 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKeyReturnsNonDeletedDefinition(final DefinitionType definitionType) {
     // given
-    final DefinitionOptimizeResponseDto nonDeletedDefinition = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto nonDeletedDefinition = createDefinitionAndAddToDatabase(
       definitionType, "key", "1", null, "not deleted", false
     );
-    createDefinitionAndAddToElasticsearch(definitionType, "key", "1", null, "deleted", true);
+    createDefinitionAndAddToDatabase(definitionType, "key", "1", null, "deleted", true);
 
     // when
     final DefinitionResponseDto definition = definitionClient.getDefinitionByTypeAndKey(
@@ -225,7 +225,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     // should not be in the result
     createTenant(TENANT_3);
 
-    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToDatabase(
       definitionType, "key", "1", TENANT_2.getId(), "the name"
     );
 
@@ -252,7 +252,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_1);
     createTenant(TENANT_2);
 
-    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToDatabase(
       definitionType, "key", "1", null, "the name"
     );
 
@@ -279,11 +279,11 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_1);
     createTenant(TENANT_2);
 
-    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto expectedDefinition = createDefinitionAndAddToDatabase(
       definitionType, "key", "1", null, "the name"
     );
     // having a mix should not distort the result
-    createDefinitionAndAddToElasticsearch(definitionType, "key", "1", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, "key", "1", TENANT_2.getId(), "the name");
 
     // when
     final DefinitionResponseDto definition = definitionClient.getDefinitionByTypeAndKey(
@@ -304,22 +304,22 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getDefinitions() {
     // given
-    final DefinitionOptimizeResponseDto processDefinition1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition1 = createDefinitionAndAddToDatabase(
       PROCESS, "process1", "1", null, "Process Definition1"
     );
-    final DefinitionOptimizeResponseDto processDefinition2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition2 = createDefinitionAndAddToDatabase(
       PROCESS, "process2", "1", null, "process Definition2"
     );
-    final DefinitionOptimizeResponseDto processDefinition3 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition3 = createDefinitionAndAddToDatabase(
       PROCESS, "process3", "1", null, "a process Definition3"
     );
-    final DefinitionOptimizeResponseDto decisionDefinition1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition1 = createDefinitionAndAddToDatabase(
       DECISION, "decision1", "1", null, "Decision Definition1"
     );
-    final DefinitionOptimizeResponseDto decisionDefinition2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition2 = createDefinitionAndAddToDatabase(
       DECISION, "decision2", "1", null, "decision Definition2"
     );
-    final DefinitionOptimizeResponseDto decisionDefinition3 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition3 = createDefinitionAndAddToDatabase(
       DECISION, "decision3", "1", null, "a decision Definition3"
     );
     final DefinitionOptimizeResponseDto eventProcessDefinition1 = createEventBasedDefinition(
@@ -332,10 +332,10 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
       "eventProcess3", "an event process Definition3"
     );
     // deleted definitions will not be included in the result
-    createDefinitionAndAddToElasticsearch(
+    createDefinitionAndAddToDatabase(
       PROCESS, "process1", "1", null, "Process Definition1", true
     );
-    createDefinitionAndAddToElasticsearch(
+    createDefinitionAndAddToDatabase(
       DECISION, "decision1", "1", null, "Decision Definition1", true
     );
 
@@ -403,13 +403,13 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   @EnumSource(DefinitionType.class)
   public void getDefinitions_nameUpdatedBetweenVersions(final DefinitionType definitionType) {
     // given
-    createDefinitionAndAddToElasticsearch(
+    createDefinitionAndAddToDatabase(
       definitionType, "definition1", "1", null, "original name"
     );
-    final DefinitionOptimizeResponseDto definition1v2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto definition1v2 = createDefinitionAndAddToDatabase(
       definitionType, "definition1", "2", null, "updated name"
     );
-    final DefinitionOptimizeResponseDto definition2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto definition2 = createDefinitionAndAddToDatabase(
       definitionType, "definition2", "1", null, "process2"
     );
 
@@ -440,30 +440,30 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_2);
     createTenant(TENANT_3);
 
-    final DefinitionOptimizeResponseDto processDefinition1_1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition1_1 = createDefinitionAndAddToDatabase(
       PROCESS, "process1", "1", TENANT_1.getId(), "Process Definition1"
     );
-    final DefinitionOptimizeResponseDto processDefinition1_2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition1_2 = createDefinitionAndAddToDatabase(
       PROCESS, "process1", "1", TENANT_2.getId(), "Process Definition1"
     );
-    final DefinitionOptimizeResponseDto processDefinition2_3 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition2_3 = createDefinitionAndAddToDatabase(
       PROCESS, "process2", "1", TENANT_3.getId(), "Process Definition2"
     );
-    final DefinitionOptimizeResponseDto processDefinition2_2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition2_2 = createDefinitionAndAddToDatabase(
       PROCESS, "process2", "1", TENANT_2.getId(), "Process Definition2"
     );
 
-    final DefinitionOptimizeResponseDto decisionDefinition1_1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition1_1 = createDefinitionAndAddToDatabase(
       DECISION, "decision1", "2", TENANT_1.getId(), "Decision Definition1"
     );
-    final DefinitionOptimizeResponseDto decisionDefinition1_2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition1_2 = createDefinitionAndAddToDatabase(
       DECISION, "decision1", "2", TENANT_2.getId(), "Decision Definition1"
     );
     // create tenant3 definition first, to ensure creation order does not affect result
-    final DefinitionOptimizeResponseDto decisionDefinition2_3 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition2_3 = createDefinitionAndAddToDatabase(
       DECISION, "decision2", "1", TENANT_3.getId(), "Decision Definition2"
     );
-    final DefinitionOptimizeResponseDto decisionDefinition2_2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition2_2 = createDefinitionAndAddToDatabase(
       DECISION, "decision2", "1", TENANT_2.getId(), "Decision Definition2"
     );
 
@@ -508,10 +508,10 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_2);
     createTenant(TENANT_3);
 
-    final DefinitionOptimizeResponseDto processDefinition1_1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto processDefinition1_1 = createDefinitionAndAddToDatabase(
       PROCESS, "process1", "1", null, "Process Definition1"
     );
-    final DefinitionOptimizeResponseDto decisionDefinition1_1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto decisionDefinition1_1 = createDefinitionAndAddToDatabase(
       DECISION, "decision1", "1", null, "Decision Definition1"
     );
     final DefinitionOptimizeResponseDto eventProcessDefinition1_1 = createEventBasedDefinition(
@@ -558,31 +558,31 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     final SimpleDefinitionDto processDefinition1 = new SimpleDefinitionDto(
       processKey1, processName1, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", null, processName1);
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_1.getId(), processName1);
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_2.getId(), processName1);
+    createDefinitionAndAddToDatabase(PROCESS, processKey1, "1", null, processName1);
+    createDefinitionAndAddToDatabase(PROCESS, processKey1, "1", TENANT_1.getId(), processName1);
+    createDefinitionAndAddToDatabase(PROCESS, processKey1, "1", TENANT_2.getId(), processName1);
     final String processKey2 = "process2";
     // `A` prefix should put this first in any list
     final String processName2 = "A Process Definition2";
     final SimpleDefinitionDto processDefinition2 = new SimpleDefinitionDto(
       processKey2, processName2, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_3.getId(), processName2);
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_2.getId(), processName2);
+    createDefinitionAndAddToDatabase(PROCESS, processKey2, "1", TENANT_3.getId(), processName2);
+    createDefinitionAndAddToDatabase(PROCESS, processKey2, "1", TENANT_2.getId(), processName2);
     final String decisionKey1 = "decision1";
     final String decisionName1 = "Decision Definition1";
     final SimpleDefinitionDto decisionDefinition1 = new SimpleDefinitionDto(
       decisionKey1, decisionName1, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "1", null, decisionName1);
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "2", TENANT_1.getId(), decisionName1);
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "2", TENANT_2.getId(), decisionName1);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey1, "1", null, decisionName1);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey1, "2", TENANT_1.getId(), decisionName1);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey1, "2", TENANT_2.getId(), decisionName1);
     // create tenant3 definition first, to ensure creation order does not affect result
     final String decisionKey2 = "decision2";
     // lowercase to ensure it doesn't affect ordering
     final String decisionName2 = "decision Definition2";
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_3.getId(), decisionName2);
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_2.getId(), decisionName2);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey2, "1", TENANT_3.getId(), decisionName2);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey2, "1", TENANT_2.getId(), decisionName2);
     final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
       decisionKey2, decisionName2, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
@@ -665,23 +665,23 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   public void getDefinitionKeysByType(final DefinitionType definitionType) {
     // given
     createTenant(TENANT_1);
-    final DefinitionOptimizeResponseDto definition1 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto definition1 = createDefinitionAndAddToDatabase(
       definitionType, "1", "1", null, "D1"
     );
     // another version of definition1 to ensure no duplicates are caused
-    createDefinitionAndAddToElasticsearch(definitionType, "1", "2", null, "D1");
-    final DefinitionOptimizeResponseDto definition2_tenant1 = createDefinitionAndAddToElasticsearch(
+    createDefinitionAndAddToDatabase(definitionType, "1", "2", null, "D1");
+    final DefinitionOptimizeResponseDto definition2_tenant1 = createDefinitionAndAddToDatabase(
       definitionType, "2", "1", TENANT_1.getId(), "d2"
     );
     // another definition with same key but different tenant to ensure this causes no duplicate key entries
-    final DefinitionOptimizeResponseDto definition2_tenant2 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto definition2_tenant2 = createDefinitionAndAddToDatabase(
       definitionType, "2", "1", TENANT_2.getId(), "d2"
     );
-    final DefinitionOptimizeResponseDto definition3 = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto definition3 = createDefinitionAndAddToDatabase(
       definitionType, "3", "1", null, "a"
     );
     // another definition that is deleted, which should not be returned
-    final DefinitionOptimizeResponseDto deleted = createDefinitionAndAddToElasticsearch(
+    final DefinitionOptimizeResponseDto deleted = createDefinitionAndAddToDatabase(
       definitionType, "deletedKey", "1", null, "deleted", true
     );
     // also create a definition of another type, should not be returned
@@ -689,7 +689,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
       .filter(value -> !definitionType.equals(value))
       .findFirst()
       .orElseThrow(OptimizeIntegrationTestException::new);
-    createDefinitionAndAddToElasticsearch(otherDefinitionType, "other", "1", null, "other");
+    createDefinitionAndAddToDatabase(otherDefinitionType, "other", "1", null, "other");
 
     // when I get process definition keys
     final List<DefinitionKeyResponseDto> definitions = definitionClient.getDefinitionKeysByType(definitionType);
@@ -776,16 +776,16 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   public void getDefinitionVersionsByTypeAndKey(final DefinitionType definitionType) {
     // given
     final String definitionKey = "key";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "2", null, "the name");
     // also create a definition of another type, should not be returned
     final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
       .filter(value -> !definitionType.equals(value))
       .findFirst()
       .orElseThrow(OptimizeIntegrationTestException::new);
-    createDefinitionAndAddToElasticsearch(otherDefinitionType, "other", "1", null, "other");
-    createDefinitionAndAddToElasticsearch(otherDefinitionType, "other", "2", null, "other");
-    createDefinitionAndAddToElasticsearch(otherDefinitionType, "other", "3", null, "other");
+    createDefinitionAndAddToDatabase(otherDefinitionType, "other", "1", null, "other");
+    createDefinitionAndAddToDatabase(otherDefinitionType, "other", "2", null, "other");
+    createDefinitionAndAddToDatabase(otherDefinitionType, "other", "3", null, "other");
 
     // when
     final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
@@ -809,7 +809,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     // We add them to ES in random order
     final List<String> randomOrderVersions = new ArrayList<>(descendingVersions);
     Collections.shuffle(randomOrderVersions);
-    randomOrderVersions.forEach(version -> createDefinitionAndAddToElasticsearch(
+    randomOrderVersions.forEach(version -> createDefinitionAndAddToDatabase(
       definitionType,
       definitionKey,
       version,
@@ -852,10 +852,10 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_2);
     createTenant(TENANT_3);
     final String definitionKey = "key";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_1.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_2.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", TENANT_3.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "1", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "3", TENANT_3.getId(), "the name");
 
     // when
     final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
@@ -879,11 +879,11 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_2);
     createTenant(TENANT_3);
     final String definitionKey = "key";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "4", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "3", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "4", null, "the name");
 
     // when
     final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
@@ -908,12 +908,12 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_2);
     createTenant(TENANT_3);
     final String definitionKey = "key";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", TENANT_2.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", TENANT_2.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "4", TENANT_3.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "1", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "3", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "4", TENANT_3.getId(), "the name");
 
     // when
     final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
@@ -935,9 +935,9 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   public void getDefinitionVersionsByTypeAndKeyExcludesDeletedDefinitions(final DefinitionType definitionType) {
     // given
     final String definitionKey = "key";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "1", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "2", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey, "3", null, "deleted", true);
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "1", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "2", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey, "3", null, "deleted", true);
 
     // when
     final List<DefinitionVersionResponseDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
@@ -960,18 +960,18 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_2);
     createTenant(TENANT_3);
     final String definitionKey1 = "key1";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "2", TENANT_2.getId(), "the name");
     // also create a definition of another type, should not affect result
     final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
       .filter(value -> !definitionType.equals(value))
       .findFirst()
       .orElseThrow(OptimizeIntegrationTestException::new);
-    createDefinitionAndAddToElasticsearch(otherDefinitionType, definitionKey1, "1", TENANT_3.getId(), "other");
-    createDefinitionAndAddToElasticsearch(otherDefinitionType, definitionKey1, "2", TENANT_3.getId(), "other");
+    createDefinitionAndAddToDatabase(otherDefinitionType, definitionKey1, "1", TENANT_3.getId(), "other");
+    createDefinitionAndAddToDatabase(otherDefinitionType, definitionKey1, "2", TENANT_3.getId(), "other");
     // and a second definition of same type we want to get as well
     final String definitionKey2 = "key2";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "1", TENANT_3.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", TENANT_3.getId(), "the name");
 
     // when all versions are included
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
@@ -1027,14 +1027,14 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_2);
     createTenant(TENANT_3);
     final String definitionKey1 = "key1";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "1", TENANT_2.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "2", TENANT_2.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "3", TENANT_3.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "1", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "3", TENANT_3.getId(), "the name");
     // and a second definition of same type we want to get as well
     final String definitionKey2 = "key2";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "1", TENANT_3.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", TENANT_3.getId(), "the name");
 
     // when the "all" version is included
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
@@ -1080,13 +1080,13 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_2);
     createTenant(TENANT_3);
     final String definitionKey1 = "key";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "2", TENANT_2.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "3", TENANT_3.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "3", TENANT_3.getId(), "the name");
     // and a second definition of same type we want to get as well
     final String definitionKey2 = "key2";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "1", TENANT_3.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", TENANT_3.getId(), "the name");
 
     // when latest version is requested
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForLatestVersion =
@@ -1134,12 +1134,12 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_2);
     createTenant(TENANT_3);
     final String definitionKey1 = "key";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "1", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "2", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "3", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "1", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "2", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "3", null, "the name");
     // and a second definition of same type we want to get as well
     final String definitionKey2 = "key2";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "1", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", null, "the name");
 
     // when all versions are included
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForAllVersions =
@@ -1202,17 +1202,17 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_1);
     createTenant(TENANT_2);
     final String definitionKey1 = "key";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "1", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "1", aTenant.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "2", aTenant.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "2", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "3", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "1", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "1", aTenant.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "2", aTenant.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "2", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "3", TENANT_2.getId(), "the name");
     // and a second definition of same type we want to get as well
     final String definitionKey2 = "key2";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "1", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "1", TENANT_2.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "2", aTenant.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "2", aTenant.getId(), "the name");
 
     // when all versions are included
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForAllVersions =
@@ -1316,11 +1316,11 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     // given
     createTenant(TENANT_1);
     final String definitionKey1 = "key";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "1", null, "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "1", null, "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
     // and a second definition of same type we want to get as well
     final String definitionKey2 = "key2";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
 
     // when the version list is empty
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
@@ -1350,13 +1350,13 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     createTenant(TENANT_2);
     createTenant(TENANT_3);
     final String definitionKey1 = "key";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "2", TENANT_2.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey1, "2", TENANT_3.getId(), "deleted", true);
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "2", TENANT_2.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey1, "2", TENANT_3.getId(), "deleted", true);
     // and a second definition of same type we want to get as well
     final String definitionKey2 = "key2";
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
-    createDefinitionAndAddToElasticsearch(definitionType, definitionKey2, "1", TENANT_2.getId(), "deleted", true);
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
+    createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", TENANT_2.getId(), "deleted", true);
 
     // when all versions are included
     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
@@ -1389,35 +1389,35 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     final SimpleDefinitionDto processDefinition1 = new SimpleDefinitionDto(
       processKey1, processName1, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_1.getId(), processName1);
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_2.getId(), processName1);
+    createDefinitionAndAddToDatabase(PROCESS, processKey1, "1", TENANT_1.getId(), processName1);
+    createDefinitionAndAddToDatabase(PROCESS, processKey1, "1", TENANT_2.getId(), processName1);
     final String processKey2 = "process2";
     // `A` prefix should put this first in any list
     final String processName2 = "A Process Definition2";
     final SimpleDefinitionDto processDefinition2 = new SimpleDefinitionDto(
       processKey2, processName2, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_3.getId(), processName2);
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_2.getId(), processName2);
+    createDefinitionAndAddToDatabase(PROCESS, processKey2, "1", TENANT_3.getId(), processName2);
+    createDefinitionAndAddToDatabase(PROCESS, processKey2, "1", TENANT_2.getId(), processName2);
 
     final String decisionKey1 = "decision1";
     final String decisionName1 = "Decision Definition1";
     final SimpleDefinitionDto decisionDefinition1 = new SimpleDefinitionDto(
       decisionKey1, decisionName1, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "2", TENANT_1.getId(), decisionName1);
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "2", TENANT_2.getId(), decisionName1);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey1, "2", TENANT_1.getId(), decisionName1);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey1, "2", TENANT_2.getId(), decisionName1);
     // create tenant3 definition first, to ensure creation order does not affect result
     final String decisionKey2 = "decision2";
     // lowercase to ensure it doesn't affect ordering
     final String decisionName2 = "decision Definition2";
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_3.getId(), decisionName2);
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_2.getId(), decisionName2);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey2, "1", TENANT_3.getId(), decisionName2);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey2, "1", TENANT_2.getId(), decisionName2);
     final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
       decisionKey2, decisionName2, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
     // the deleted definition should not be included in the grouped results
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_3.getId(), processName1, true);
+    createDefinitionAndAddToDatabase(PROCESS, processKey1, "1", TENANT_3.getId(), processName1, true);
 
     // when
     final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions =
@@ -1460,14 +1460,14 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     final SimpleDefinitionDto processDefinition1 = new SimpleDefinitionDto(
       processKey1, processName1, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", null, processName1);
+    createDefinitionAndAddToDatabase(PROCESS, processKey1, "1", null, processName1);
 
     final String decisionKey1 = "decision1";
     final String decisionName1 = "Decision Definition1";
     final SimpleDefinitionDto decisionDefinition1 = new SimpleDefinitionDto(
       decisionKey1, decisionName1, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "1", null, decisionName1);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey1, "1", null, decisionName1);
 
     final DefinitionOptimizeResponseDto eventBasedDefinition1 = createEventBasedDefinition(
       "eventProcess1", "Event Process Definition1"
@@ -1520,31 +1520,31 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     final SimpleDefinitionDto processDefinition1 = new SimpleDefinitionDto(
       processKey1, processName1, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", null, processName1);
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_1.getId(), processName1);
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey1, "1", TENANT_2.getId(), processName1);
+    createDefinitionAndAddToDatabase(PROCESS, processKey1, "1", null, processName1);
+    createDefinitionAndAddToDatabase(PROCESS, processKey1, "1", TENANT_1.getId(), processName1);
+    createDefinitionAndAddToDatabase(PROCESS, processKey1, "1", TENANT_2.getId(), processName1);
     final String processKey2 = "process2";
     // `A` prefix should put this first in any list
     final String processName2 = "A Process Definition2";
     final SimpleDefinitionDto processDefinition2 = new SimpleDefinitionDto(
       processKey2, processName2, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS
     );
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_3.getId(), processName2);
-    createDefinitionAndAddToElasticsearch(PROCESS, processKey2, "1", TENANT_2.getId(), processName2);
+    createDefinitionAndAddToDatabase(PROCESS, processKey2, "1", TENANT_3.getId(), processName2);
+    createDefinitionAndAddToDatabase(PROCESS, processKey2, "1", TENANT_2.getId(), processName2);
     final String decisionKey1 = "decision1";
     final String decisionName1 = "Decision Definition1";
     final SimpleDefinitionDto decisionDefinition1 = new SimpleDefinitionDto(
       decisionKey1, decisionName1, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "1", null, decisionName1);
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "2", TENANT_1.getId(), decisionName1);
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey1, "2", TENANT_2.getId(), decisionName1);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey1, "1", null, decisionName1);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey1, "2", TENANT_1.getId(), decisionName1);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey1, "2", TENANT_2.getId(), decisionName1);
     // create tenant3 definition first, to ensure creation order does not affect result
     final String decisionKey2 = "decision2";
     // lowercase to ensure it doesn't affect ordering
     final String decisionName2 = "decision Definition2";
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_3.getId(), decisionName2);
-    createDefinitionAndAddToElasticsearch(DECISION, decisionKey2, "1", TENANT_2.getId(), decisionName2);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey2, "1", TENANT_3.getId(), decisionName2);
+    createDefinitionAndAddToDatabase(DECISION, decisionKey2, "1", TENANT_2.getId(), decisionName2);
     final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
       decisionKey2, decisionName2, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS
     );
@@ -1697,35 +1697,35 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     return databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(key, name);
   }
 
-  private DefinitionOptimizeResponseDto createDefinitionAndAddToElasticsearch(final DefinitionType definitionType,
-                                                                              final String key,
-                                                                              final String version,
-                                                                              final String tenantId,
-                                                                              final String name) {
-    return createDefinitionAndAddToElasticsearch(definitionType, key, version, tenantId, name, false);
+  private DefinitionOptimizeResponseDto createDefinitionAndAddToDatabase(final DefinitionType definitionType,
+                                                                         final String key,
+                                                                         final String version,
+                                                                         final String tenantId,
+                                                                         final String name) {
+    return createDefinitionAndAddToDatabase(definitionType, key, version, tenantId, name, false);
   }
 
-  private DefinitionOptimizeResponseDto createDefinitionAndAddToElasticsearch(final DefinitionType definitionType,
-                                                                              final String key,
-                                                                              final String version,
-                                                                              final String tenantId,
-                                                                              final String name,
-                                                                              final boolean deleted) {
+  private DefinitionOptimizeResponseDto createDefinitionAndAddToDatabase(final DefinitionType definitionType,
+                                                                         final String key,
+                                                                         final String version,
+                                                                         final String tenantId,
+                                                                         final String name,
+                                                                         final boolean deleted) {
     switch (definitionType) {
       case PROCESS:
         return addProcessDefinitionToElasticsearch(key, version, tenantId, name, deleted);
       case DECISION:
-        return addDecisionDefinitionToElasticsearch(key, version, tenantId, name, deleted);
+        return addDecisionDefinitionToDatabase(key, version, tenantId, name, deleted);
       default:
         throw new OptimizeIntegrationTestException("Unsupported definition type: " + definitionType);
     }
   }
 
-  private DecisionDefinitionOptimizeDto addDecisionDefinitionToElasticsearch(final String key,
-                                                                             final String version,
-                                                                             final String tenantId,
-                                                                             final String name,
-                                                                             final boolean deleted) {
+  private DecisionDefinitionOptimizeDto addDecisionDefinitionToDatabase(final String key,
+                                                                        final String version,
+                                                                        final String tenantId,
+                                                                        final String name,
+                                                                        final boolean deleted) {
     final DecisionDefinitionOptimizeDto decisionDefinitionDto = DecisionDefinitionOptimizeDto.builder()
       .id(IdGenerator.getNextId())
       .key(key)

@@ -100,8 +100,8 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
   @Test
   public void getReadiness_elasticsearchNotConnected() {
     // given
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
-    esMockServer
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
+    dbMockServer
       .when(request())
       .error(HttpError.error().withDropConnection(true));
 

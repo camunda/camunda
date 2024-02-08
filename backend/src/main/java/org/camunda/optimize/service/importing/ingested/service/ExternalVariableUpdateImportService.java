@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -40,16 +41,19 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
   private final ProcessVariableUpdateWriter variableWriter;
   private final ConfigurationService configurationService;
   private final ObjectVariableService objectVariableService;
+  private final DatabaseClient databaseClient;
 
   public ExternalVariableUpdateImportService(final ConfigurationService configurationService,
                                              final ProcessVariableUpdateWriter variableWriter,
-                                             final ObjectVariableService objectVariableService) {
+                                             final ObjectVariableService objectVariableService,
+                                             final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.variableWriter = variableWriter;
     this.configurationService = configurationService;
     this.objectVariableService = objectVariableService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -136,7 +140,7 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
   private DatabaseImportJob<ProcessVariableDto> createDatabaseImportJob(final List<ProcessVariableDto> processVariables,
                                                                              final Runnable callback) {
     final ExternalVariableUpdateDatabaseImportJob importJob = new ExternalVariableUpdateDatabaseImportJob(
-      variableWriter, configurationService, callback
+      variableWriter, configurationService, callback, databaseClient
     );
     importJob.setEntitiesToImport(processVariables);
     return importJob;

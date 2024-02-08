@@ -58,8 +58,7 @@ public class EntitiesRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public EntityNameResponseDto getEntityNames(@Context ContainerRequestContext requestContext,
                                               @BeanParam EntityNameRequestDto requestDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return entitiesService.getEntityNames(requestDto, userId, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+    return entitiesService.getEntityNames(requestDto, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
   @POST

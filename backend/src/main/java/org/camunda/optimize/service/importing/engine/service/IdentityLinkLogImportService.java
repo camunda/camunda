@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.usertask.IdentityLinkLogWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -36,12 +37,14 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
+  private final DatabaseClient databaseClient;
 
   public IdentityLinkLogImportService(final ConfigurationService configurationService,
                                       final IdentityLinkLogWriter identityLinkLogWriter,
                                       final AssigneeCandidateGroupService assigneeCandidateGroupService,
                                       final EngineContext engineContext,
-                                      final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                      final ProcessDefinitionResolverService processDefinitionResolverService,
+                                      final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -50,6 +53,7 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
     this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -97,7 +101,7 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
     final List<IdentityLinkLogEntryDto> identityLinkLogs,
     final Runnable callback) {
     final IdentityLinkLogImportJob importJob = new IdentityLinkLogImportJob(
-      identityLinkLogWriter, assigneeCandidateGroupService, configurationService, callback
+      identityLinkLogWriter, assigneeCandidateGroupService, configurationService, callback, databaseClient
     );
     importJob.setEntitiesToImport(identityLinkLogs);
     return importJob;

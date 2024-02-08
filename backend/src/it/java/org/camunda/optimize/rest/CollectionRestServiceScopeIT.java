@@ -560,11 +560,11 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     collectionClient.addScopeEntryToCollection(collectionId, entry);
     reportClient.createAndStoreProcessReport(collectionId, DEFAULT_DEFINITION_KEY, Collections.singletonList(null));
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -574,7 +574,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
       .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(collectionClient.getCollectionById(collectionId).getData().getScope())
       .extracting(CollectionScopeEntryDto::getId)
       .contains(entry.getId());
@@ -760,11 +760,11 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -778,7 +778,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
     );
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(collectionClient.getCollectionById(collectionId).getData().getScope()).hasSize(1)
       .extracting(CollectionScopeEntryDto::getId)
       .containsExactly(scopeEntry1.getId());

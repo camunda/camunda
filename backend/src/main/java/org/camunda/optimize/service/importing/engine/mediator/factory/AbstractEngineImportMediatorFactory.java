@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -19,6 +20,7 @@ public abstract class AbstractEngineImportMediatorFactory {
   protected final BeanFactory beanFactory;
   protected final ImportIndexHandlerRegistry importIndexHandlerRegistry;
   protected final ConfigurationService configurationService;
+  protected final DatabaseClient databaseClient;
 
   public abstract List<ImportMediator> createMediators(EngineContext engineContext);
 }

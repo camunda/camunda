@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
@@ -16,8 +17,9 @@ public class EventProcessInstanceDatabaseImportJob extends DatabaseImportJob<Eve
   private final EventProcessInstanceWriter eventProcessInstanceWriter;
 
   public EventProcessInstanceDatabaseImportJob(final EventProcessInstanceWriter eventProcessInstanceWriter,
-                                               final Runnable callback) {
-    super(callback);
+                                               final Runnable callback,
+                                               final DatabaseClient databaseClient) {
+    super(callback, databaseClient);
     this.eventProcessInstanceWriter = eventProcessInstanceWriter;
   }
 

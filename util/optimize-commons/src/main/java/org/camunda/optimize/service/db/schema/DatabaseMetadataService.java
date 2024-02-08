@@ -104,6 +104,5 @@ public abstract class DatabaseMetadataService<CLIENT extends DatabaseClient> {
     return generateUpdateScript(newInstallationId, null);
   }
 
-  protected record ScriptData(Map<String, Object> params, String scriptString) {}
 
 }

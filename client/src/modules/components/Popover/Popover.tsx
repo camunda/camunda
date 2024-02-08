@@ -26,7 +26,6 @@ import {
 } from '@carbon/react';
 import ListBox from '@carbon/react/lib/components/ListBox';
 
-import {Button as LegacyButton, Icon, Tooltip, TooltipProps, Labeled} from 'components';
 import {getRandomId, getScreenBounds} from 'services';
 
 import classNames from 'classnames';
@@ -48,19 +47,7 @@ const possibleAlignments: PopoverAlignment[] = [
   'right-top',
 ];
 
-interface LegacyTriggerProps {
-  main?: boolean;
-  icon?: string;
-  title?: ReactNode;
-  label?: ReactNode;
-  disabled?: boolean;
-  tooltip?: TooltipProps['content'];
-  tooltipPosition?: TooltipProps['position'];
-}
-
-interface PopoverProps
-  extends Omit<CarbonPopoverProps<'div'>, 'title' | 'open' | 'align'>,
-    LegacyTriggerProps {
+interface PopoverProps extends Omit<CarbonPopoverProps<'div'>, 'open' | 'align'> {
   className?: string;
   children: ReactNode;
   floating?: boolean;
@@ -68,7 +55,7 @@ interface PopoverProps
   onClose?: () => void;
   autoOpen?: boolean;
   align?: PopoverAlignment;
-  trigger?: ReactNode;
+  trigger: ReactNode;
 }
 
 interface TriggerContextProps {
@@ -83,19 +70,12 @@ const TriggerContext = createContext<TriggerContextProps>({open: false, setOpen:
 export default function Popover({
   className,
   children,
-  title,
-  main,
-  disabled,
-  icon,
   floating,
   onOpen,
   onClose,
-  tooltip,
   autoOpen = false,
   align,
-  tooltipPosition,
   trigger,
-  label,
   ...props
 }: PopoverProps): JSX.Element {
   const [open, setOpen] = useState(autoOpen);
@@ -253,7 +233,6 @@ export default function Popover({
   }, [open]);
 
   const popoverId = getRandomId();
-  const buttonId = getRandomId();
 
   return (
     <TriggerContext.Provider value={{open, setOpen, buttonRef, popoverId}}>
@@ -263,28 +242,7 @@ export default function Popover({
         open={open}
         ref={popoverRef}
       >
-        <Tooltip content={tooltip} position={tooltipPosition}>
-          <div className="buttonWrapper">
-            {trigger || (
-              <>
-                {label && <Labeled label={label} htmlFor={buttonId} />}
-                <LegacyButton
-                  id={buttonId}
-                  onClick={() => setOpen(!open)}
-                  active={!disabled && open}
-                  main={main}
-                  disabled={disabled}
-                  icon={!!icon && !title}
-                  ref={buttonRef}
-                >
-                  {icon ? <Icon type={icon} /> : ''}
-                  {title}
-                  <Icon type="down" className="downIcon" />
-                </LegacyButton>
-              </>
-            )}
-          </div>
-        </Tooltip>
+        <div className="buttonWrapper">{trigger}</div>
         {open && (
           <PopoverContent
             id={popoverId}

@@ -63,7 +63,7 @@ export function isNonTimerEvent(node) {
     return false;
   }
 
-  if (node.eventDefinitions) {
+  if (node.eventDefinitions?.[0]) {
     return !node.eventDefinitions[0].$instanceOf('bpmn:TimerEventDefinition');
   }
 

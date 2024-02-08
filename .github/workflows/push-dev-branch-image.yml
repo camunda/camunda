@@ -22,7 +22,7 @@ jobs:
       # that is being administrated by infra.
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@00bce0da9c4b8be526718f7f5f20a88966f31022
+        uses: hashicorp/vault-action@d523bb05b2178553ddd1114264a252e0e703535b
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -40,7 +40,7 @@ jobs:
       # Configure the registry where we can push the GH IMAGE
       - name: Configure Google tools
         id: auth
-        uses: camunda-cloud/action-setup-gcloud@c71cc322659cc39518d359fcd5c5d8818aa9bca5 # v3
+        uses: camunda-cloud/action-setup-gcloud@aed04dff4f99e58cec247cb920d2f7d49b8daf74 # v3
         with:
           account-alias: registry
 
@@ -83,6 +83,7 @@ jobs:
         uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5
         with:
           context: .
+          provenance: false
           push: true
           platforms: linux/amd64
           build-args: |
@@ -90,4 +91,3 @@ jobs:
             DATE= ${{ steps.get-date.outputs.result }}
             REVISION= ${{ github.sha }}
           tags: ${{ steps.meta.outputs.docker_image }}
-

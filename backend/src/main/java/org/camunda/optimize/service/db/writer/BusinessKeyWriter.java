@@ -7,12 +7,39 @@ package org.camunda.optimize.service.db.writer;
 
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface BusinessKeyWriter {
 
+  Logger log = LoggerFactory.getLogger(BusinessKeyWriter.class);
+
   void deleteByProcessInstanceIds(final List<String> processInstanceIds);
 
-  List<ImportRequestDto> generateBusinessKeyImports(List<ProcessInstanceDto> processInstanceDtos);
+  Optional<ImportRequestDto> createIndexRequestForBusinessKey(final BusinessKeyDto businessKeyDto,
+                                                              final String importItemName);
+
+  default List<ImportRequestDto> generateBusinessKeyImports(List<ProcessInstanceDto> processInstanceDtos) {
+    List<BusinessKeyDto> businessKeysToSave = processInstanceDtos.stream()
+      .map(this::extractBusinessKey)
+      .distinct().toList();
+
+    String importItemName = "business keys";
+    log.debug("Creating imports for {} [{}].", businessKeysToSave.size(), importItemName);
+
+    return businessKeysToSave.stream()
+      .map(entry -> createIndexRequestForBusinessKey(entry, importItemName))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .toList();
+  }
+
+  default BusinessKeyDto extractBusinessKey(final ProcessInstanceDto processInstance) {
+    return new BusinessKeyDto(processInstance.getProcessInstanceId(), processInstance.getBusinessKey());
+  }
+
 }

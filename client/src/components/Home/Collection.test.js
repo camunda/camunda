@@ -92,7 +92,6 @@ jest.mock('./service', () => ({
       currentUserRole: 'editor', // or viewer
     },
   ]),
-  copyEntity: jest.fn(),
 }));
 
 const props = {

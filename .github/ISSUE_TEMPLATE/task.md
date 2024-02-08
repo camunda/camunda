@@ -25,7 +25,7 @@ assignees: ''
 <!-- Add any other information about the task here. -->
 
 ### Links
-<!-- Add links to support tickets -->
+<!-- Add links to support tickets or other issues  -->
 
 ### Breakdown
 

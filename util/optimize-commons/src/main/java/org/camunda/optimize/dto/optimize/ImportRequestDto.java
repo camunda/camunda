@@ -7,16 +7,20 @@ package org.camunda.optimize.dto.optimize;
 
 import lombok.Builder;
 import lombok.Data;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.elasticsearch.action.DocWriteRequest;
+import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.service.db.schema.ScriptData;
 
 @Data
 @Builder
+@FieldNameConstants(asEnum = true)
 public class ImportRequestDto {
 
   private String importName;
-  //todo handle it in the OPT-7228
-  private OptimizeElasticsearchClient client;
-  private DocWriteRequest<?> request;
+  private String indexName;
+  private ScriptData scriptData;
+  private String id;
+  private Object source;
+  private RequestType type;
+  private int retryNumberOnConflict;
 
 }

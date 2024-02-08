@@ -128,14 +128,14 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // given failed ES update requests to store new definition
     engineIntegrationExtension.deployAndStartDecisionDefinition();
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest definitionImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + DECISION_DEFINITION_INDEX_NAME + "\""));
-    esMockServer
+    dbMockServer
       .when(definitionImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -149,7 +149,7 @@ public class DecisionImportIT extends AbstractImportIT {
       1,
       DECISION_DEFINITION_NULLABLE_FIELDS
     );
-    esMockServer.verify(definitionImportMatcher);
+    dbMockServer.verify(definitionImportMatcher);
   }
 
   @Test
@@ -163,14 +163,14 @@ public class DecisionImportIT extends AbstractImportIT {
     // given failed ES update requests to store new instance
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       engineIntegrationExtension.deployAndStartDecisionDefinition();
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest instanceImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + DECISION_INSTANCE_INDEX_PREFIX));
-    esMockServer
+    dbMockServer
       .when(instanceImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -183,7 +183,7 @@ public class DecisionImportIT extends AbstractImportIT {
         .equals(decisionDefinitionEngineDto.getKey()))
       .singleElement()
       .satisfies(this::assertDecisionInstanceFieldSetAsExpected);
-    esMockServer.verify(instanceImportMatcher);
+    dbMockServer.verify(instanceImportMatcher);
   }
 
   @Test

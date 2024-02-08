@@ -154,12 +154,12 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
     String importItemName = "process definition information";
     log.debug("Writing [{}] {} to ES.", procDefs.size(), importItemName);
 
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       importItemName,
       procDefs,
       this::addImportProcessDefinitionToRequest,
       configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
+
 }

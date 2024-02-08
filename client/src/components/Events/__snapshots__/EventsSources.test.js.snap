@@ -7,59 +7,72 @@ exports[`should match snapshot 1`] = `
   <div
     className="sourcesList"
   >
-    <Dropdown
-      className="isActive"
+    <ForwardRef(MenuButton)
+      className="SourceMenuButton"
       key="src1"
+      kind="tertiary"
       label="src1"
+      size="sm"
     >
-      <ForwardRef(DropdownOption)
+      <ForwardRef(MenuItem)
+        label="Hide in table"
         onClick={[Function]}
-      >
-        Hide in table
-      </ForwardRef(DropdownOption)>
-      <ForwardRef(DropdownOption)
+      />
+      <ForwardRef(MenuItem)
+        label="Edit event source"
         onClick={[Function]}
-      >
-        Edit event source
-      </ForwardRef(DropdownOption)>
-      <ForwardRef(DropdownOption)
+      />
+      <ForwardRef(MenuItem)
+        label="Edit event list"
         onClick={[Function]}
-      >
-        Edit event list
-      </ForwardRef(DropdownOption)>
-      <ForwardRef(DropdownOption)
+      />
+      <ForwardRef(MenuItem)
+        label="Remove source"
         onClick={[Function]}
-      >
-        Remove source
-      </ForwardRef(DropdownOption)>
-    </Dropdown>
-    <Dropdown
-      className="isActive"
+      />
+    </ForwardRef(MenuButton)>
+    <ForwardRef(MenuButton)
+      className="SourceMenuButton"
       key="External events"
+      kind="tertiary"
       label="External events"
+      size="sm"
     >
-      <ForwardRef(DropdownOption)
+      <ForwardRef(MenuItem)
+        label="Hide in table"
         onClick={[Function]}
-      >
-        Hide in table
-      </ForwardRef(DropdownOption)>
-      <ForwardRef(DropdownOption)
+      />
+      <ForwardRef(MenuItem)
+        label="Remove source"
         onClick={[Function]}
-      >
-        Remove source
-      </ForwardRef(DropdownOption)>
-    </Dropdown>
+      />
+    </ForwardRef(MenuButton)>
   </div>
-  <ForwardRef(Button)
+  <TableToolbarSearch
+    expanded={true}
+    onChange={[Function]}
+    onClear={[Function]}
+    persistent={false}
+    placeholder="Search for name..."
+    tabIndex="0"
+    translateWithId={[Function]}
+    value=""
+  />
+  <Button
     className="addProcess"
     onClick={[Function]}
+    renderIcon={
+      Object {
+        "$$typeof": Symbol(react.forward_ref),
+        "propTypes": Object {
+          "size": [Function],
+        },
+        "render": [Function],
+      }
+    }
   >
-    <Icon
-      size="14"
-      type="plus"
-    />
     Add event source
-  </ForwardRef(Button)>
+  </Button>
   <DeleterErrorHandler
     deleteEntity={[Function]}
     deleteText="Remove Process events"

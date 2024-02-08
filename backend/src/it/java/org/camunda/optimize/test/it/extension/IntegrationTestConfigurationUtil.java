@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.springframework.context.ApplicationContext;
@@ -39,8 +40,8 @@ public class IntegrationTestConfigurationUtil {
     return PROPERTIES.getProperty("zeebe.docker.version");
   }
 
-  public static String getDatabaseProfile() {
-    return PROPERTIES.getProperty("database.profile");
+  public static DatabaseType getDatabaseType() {
+    return DatabaseType.fromString(PROPERTIES.getProperty("database.type"));
   }
 
   public static String getEngineDateFormat() {
@@ -101,10 +102,8 @@ public class IntegrationTestConfigurationUtil {
     return Integer.parseInt(System.getProperty("httpTestTimeout", "10000"));
   }
 
-  public static int getElasticsearchMockServerPort() {
-    return Integer.parseInt(
-      System.getProperty("elasticSearchMockServerPort", "1080")
-    );
+  public static int getDatabaseMockServerPort() {
+    return Integer.parseInt(System.getProperty("databaseMockServerPort", "1080"));
   }
 
   public static int getEngineMockServerPort() {

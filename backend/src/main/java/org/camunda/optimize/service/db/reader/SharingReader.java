@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_SHARE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.REPORT_SHARE_INDEX_NAME;
+
 public interface SharingReader {
 
   Optional<ReportShareRestDto> getReportShare(String shareId);
@@ -26,8 +29,14 @@ public interface SharingReader {
 
   Map<String, DashboardShareRestDto> findShareForDashboards(List<String> dashboards);
 
-  long getReportShareCount();
+  long getShareCount(final String indexName);
 
-  long getDashboardShareCount();
+  default long getDashboardShareCount() {
+    return getShareCount(DASHBOARD_SHARE_INDEX_NAME);
+  }
+
+  default long getReportShareCount() {
+    return getShareCount(REPORT_SHARE_INDEX_NAME);
+  }
 
 }

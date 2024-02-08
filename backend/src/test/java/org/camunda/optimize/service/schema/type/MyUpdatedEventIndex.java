@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.schema.type;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.db.DatabaseConstants;
@@ -19,7 +20,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 
 @Slf4j
-public class MyUpdatedEventIndex implements IndexMappingCreator<XContentBuilder> {
+public abstract class MyUpdatedEventIndex<TBuilder> implements IndexMappingCreator<TBuilder> {
 
   public static final String MY_NEW_FIELD = "myAwesomeNewField";
 
@@ -57,11 +58,4 @@ public class MyUpdatedEventIndex implements IndexMappingCreator<XContentBuilder>
     }
     return source;
   }
-
-  @Override
-  public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
-                                           ConfigurationService configurationService) throws IOException {
-    return xContentBuilder.field(NUMBER_OF_SHARDS_SETTING, DEFAULT_SHARD_NUMBER);
-  }
-
 }

@@ -10,9 +10,9 @@ import {Redirect} from 'react-router-dom';
 
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {copyEntity} from 'services';
 
 import CopyModal from './modals/CopyModal';
-import {copyEntity} from './service';
 
 export default withErrorHandling(
   class Copier extends React.Component {

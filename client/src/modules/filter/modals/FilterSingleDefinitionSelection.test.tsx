@@ -5,10 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
-
-import {Typeahead} from 'components';
 
 import FilterSingleDefinitionSelection from './FilterSingleDefinitionSelection';
 
@@ -36,8 +33,9 @@ const props = {
 it('should show only definitions that have version and tenant', () => {
   const node = shallow(<FilterSingleDefinitionSelection {...props} />);
 
-  const options = node.find(Typeahead.Option);
+  const options = node.find('ComboBox').prop('items') as unknown[];
+  const itemToString = node.find('ComboBox').prop('itemToString') as Function;
   expect(options.length).toBe(1);
-  expect(options).toIncludeText('valid definition');
-  expect(options).not.toIncludeText('missing Tenant');
+  expect(itemToString(options[0])).toContain('valid definition');
+  expect(itemToString(options[0])).not.toContain('missing Tenant');
 });

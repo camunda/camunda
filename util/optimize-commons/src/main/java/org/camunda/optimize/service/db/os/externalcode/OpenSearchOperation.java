@@ -16,6 +16,7 @@ import org.opensearch.client.util.ObjectBuilderBase;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 @AllArgsConstructor
@@ -30,6 +31,7 @@ public class OpenSearchOperation {
       Field indexField = request.getClass().getDeclaredField(INDEX_FIELD);
       indexField.setAccessible(true);
       Object indexFieldContent = indexField.get(request);
+      if(Objects.isNull(indexFieldContent)) return request;
       if (indexFieldContent instanceof final String currentIndex) {
         indexField.set(request, getIndexAliasFor(currentIndex));
       } else if (indexFieldContent instanceof List<?> currentIndexes) {
@@ -51,6 +53,10 @@ public class OpenSearchOperation {
 
   protected List<String> applyIndexPrefix(String... indexes) {
     return Arrays.stream(indexes).map(this::getIndexAliasFor).toList();
+  }
+
+  protected String applyIndexPrefix(String index) {
+    return getIndexAliasFor(index);
   }
 
   protected String getIndexAliasFor(String indexName) {
@@ -75,7 +81,7 @@ public class OpenSearchOperation {
     } catch (OpenSearchException e) {
       final String message = "An exception has occurred when trying to execute an OpenSearch operation";
       log.error(message, e);
-      throw new OptimizeRuntimeException(message, e);
+      throw e;
     } catch (Exception e) {
       final String message = errorMessage.apply(e);
       log.error(message, e);

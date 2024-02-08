@@ -9,6 +9,8 @@ import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetup;
 import io.github.netmikey.logunit.api.LogCapturer;
+import jakarta.mail.Message;
+import jakarta.mail.internet.MimeMessage;
 import lombok.SneakyThrows;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
@@ -27,9 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import jakarta.mail.Message;
-import jakarta.mail.internet.MimeMessage;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -38,8 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.importing.CustomerOnboardingDataImportIT.CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME;
 import static org.camunda.optimize.service.importing.CustomerOnboardingDataImportIT.CUSTOMER_ONBOARDING_PROCESS_INSTANCES;
+import static org.camunda.optimize.service.onboarding.OnboardingEmailNotificationService.DASHBOARD_LINK_TEMPLATE;
 import static org.camunda.optimize.service.onboarding.OnboardingEmailNotificationService.EMAIL_SUBJECT;
-import static org.camunda.optimize.service.onboarding.OnboardingEmailNotificationService.MAGIC_LINK_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
@@ -369,14 +368,14 @@ public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
       "You have started your first process instance for the %s process!",
       processKey
     ).replaceAll("[\\n\t ]", "");
-    String expectedMagicLink = String.format(MAGIC_LINK_TEMPLATE, "", processKey, processKey).replaceAll("[\\n\t ]", "");
+    String expectedDashboardLink = String.format(DASHBOARD_LINK_TEMPLATE, "", processKey).replaceAll("[\\n\t ]", "");
     String expectedGreeting = String.format("Hi %s %s,", kermitUser.getProfile().getFirstName(),
                                             kermitUser.getProfile().getLastName()
     ).replaceAll("[\\n\t ]", "");
     String emailBodyWithoutEmptySpaces = GreenMailUtil.getBody(emails[0]).replaceAll("[\\n\r\t ]", "");
     assertThat(emailBodyWithoutEmptySpaces)
       .contains(expectedEmailText)
-      .contains(expectedMagicLink)
+      .contains(expectedDashboardLink)
       .contains(expectedGreeting);
     assertThat(emails[0].getSubject()).isEqualTo(EMAIL_SUBJECT);
     assertThat(emails[0].getAllRecipients()).hasSize(1);
@@ -406,9 +405,9 @@ public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
       // then
       MimeMessage[] emails = greenMail.getReceivedMessages();
       assertThat(emails).hasSize(1);
-      String expectedMagicLink = customContextPath + "/#" + String.format(MAGIC_LINK_TEMPLATE, "", processKey, processKey)
+      String expectedDashboardLink = customContextPath + "/#" + String.format(DASHBOARD_LINK_TEMPLATE, "", processKey)
         .replaceAll("[\\n\t ]", "");
-      assertThat(GreenMailUtil.getBody(emails[0]).replaceAll("[\\n\r\t ]", "")).contains(expectedMagicLink);
+      assertThat(GreenMailUtil.getBody(emails[0]).replaceAll("[\\n\r\t ]", "")).contains(expectedDashboardLink);
     } finally {
       embeddedOptimizeExtension.getConfigurationService().setContextPath(null);
     }

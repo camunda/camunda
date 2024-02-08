@@ -222,6 +222,7 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -281,6 +282,7 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -336,6 +338,8 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(false));
     environmentVariablesExtension.set(
       "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(false));
+    environmentVariablesExtension.set(
+            "CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(false));
     System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFE_MIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
@@ -385,6 +389,7 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -454,6 +459,7 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -570,6 +576,7 @@ public class ConfigurationServiceTest {
     assertThat(underTest.getCleanupServiceConfiguration().getDecisionCleanupConfiguration().isEnabled()).isFalse();
     assertThat(underTest.getCleanupServiceConfiguration().getIngestedEventCleanupConfiguration().isEnabled()).isFalse();
     assertThat(underTest.getCleanupServiceConfiguration().getExternalVariableCleanupConfiguration().isEnabled()).isFalse();
+    assertThat(underTest.getContainerHttp2Enabled()).isFalse();
   }
 
   private void assertThatVariablePlaceHoldersAreResolved(final ConfigurationService underTest) {
@@ -633,6 +640,8 @@ public class ConfigurationServiceTest {
     assertThat(underTest.getCleanupServiceConfiguration().getDecisionCleanupConfiguration().isEnabled()).isTrue();
     assertThat(underTest.getCleanupServiceConfiguration().getIngestedEventCleanupConfiguration().isEnabled()).isTrue();
     assertThat(underTest.getCleanupServiceConfiguration().getExternalVariableCleanupConfiguration().isEnabled()).isTrue();
+
+    assertThat(underTest.getContainerHttp2Enabled()).isTrue();
   }
 
 }

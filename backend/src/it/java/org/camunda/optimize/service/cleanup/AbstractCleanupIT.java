@@ -54,12 +54,12 @@ public abstract class AbstractCleanupIT extends AbstractPlatformIT {
   protected void cleanUpEventIndices() {
     databaseIntegrationTestExtension.deleteAllExternalEventIndices();
     databaseIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeElasticClient(),
+    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
+      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
       new EventIndexES()
     );
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeElasticClient(),
+    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
+      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
       new VariableUpdateInstanceIndexES()
     );
   }

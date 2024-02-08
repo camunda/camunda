@@ -41,7 +41,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
-import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
@@ -495,11 +494,11 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     alertClient.createAlertForReport(reportId1);
     alertClient.createAlertForReport(reportId2);
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + ALERT_INDEX_NAME + "/_delete_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
 
@@ -507,7 +506,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     collectionClient.deleteCollection(collectionId);
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     Integer alertCount = databaseIntegrationTestExtension.getDocumentCountOf(ALERT_INDEX_NAME);
     assertThat(alertCount).isEqualTo(3);
     assertThat(collectionClient.getCollectionById(collectionId)).isNotNull();
@@ -519,11 +518,11 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     final String collectionId = collectionClient.createNewCollection();
     final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
 
@@ -531,7 +530,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     collectionClient.deleteCollection(collectionId);
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(reportClient.getSingleProcessReportDefinitionDto(reportId)).isNotNull();
     assertThat(collectionClient.getCollectionById(collectionId)).isNotNull();
   }
@@ -542,18 +541,18 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     final String collectionId = collectionClient.createNewCollection();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_delete_by_query")
       .withMethod(POST);
-    esMockServer.when(requestMatcher, Times.once())
+    dbMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
 
     // when
     collectionClient.deleteCollection(collectionId);
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(dashboardClient.getDashboard(dashboardId)).isNotNull();
     assertThat(collectionClient.getCollectionById(collectionId)).isNotNull();
   }
@@ -779,11 +778,11 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     final String alertId = alertClient.createAlertForReport(reportId);
     final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(reportId));
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + COLLECTION_INDEX_NAME + "/_doc/.*")
       .withMethod(PUT);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
 
@@ -793,7 +792,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
       .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then only original entities exist
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(getAllStoredCollections()).extracting(CollectionDefinitionDto::getId).containsExactly(collectionId);
     assertThat(getAllStoredProcessReports()).extracting(SingleProcessReportDefinitionRequestDto::getId)
       .containsExactly(reportId);

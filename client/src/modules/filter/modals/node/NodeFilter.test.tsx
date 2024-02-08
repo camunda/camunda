@@ -5,16 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
+import {ComponentProps} from 'react';
+import {RadioButton} from '@carbon/react';
 import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
-import {Button, ClickBehavior} from 'components';
+import {ClickBehavior} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 import {NodeFilter} from './NodeFilter';
 import NodeListPreview from './NodeListPreview';
-import {ComponentProps} from 'react';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -123,7 +124,7 @@ it('should set filter type depending on selected operation', () => {
 
   runAllEffects();
 
-  node.find(Button).at(0).simulate('click');
+  node.find(RadioButton).at(0).simulate('click');
 
   node.find(ClickBehavior).prop('onClick')?.(flowNode1);
 
@@ -138,7 +139,7 @@ it('should set filter type depending on selected operation', () => {
     appliedTo: ['definition'],
   });
 
-  node.find(Button).at(3).simulate('click');
+  node.find(RadioButton).at(3).simulate('click');
   node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
@@ -183,12 +184,10 @@ it('should contain buttons to switch between executed and not executed mode', ()
 
   runAllEffects();
 
-  const buttonGroup = node.find('ButtonGroup');
-
-  expect(buttonGroup.find(Button).at(0).text()).toBe('Running');
-  expect(buttonGroup.find(Button).at(1).text()).toBe('Running, canceled, or completed');
-  expect(buttonGroup.find(Button).at(2).text()).toBe('Not executed');
-  expect(buttonGroup.find(Button).at(3).text()).toBe('Canceled');
+  expect(node.find(RadioButton).at(0).prop('labelText')).toBe('Running');
+  expect(node.find(RadioButton).at(1).prop('labelText')).toBe('Running, canceled, or completed');
+  expect(node.find(RadioButton).at(2).prop('labelText')).toBe('Not executed');
+  expect(node.find(RadioButton).at(3).prop('labelText')).toBe('Canceled');
 });
 
 it('should set the operator when clicking the operator buttons', () => {
@@ -196,10 +195,10 @@ it('should set the operator when clicking the operator buttons', () => {
 
   runAllEffects();
 
-  node.find(Button).at(1).simulate('click');
+  node.find(RadioButton).at(1).simulate('click');
   expect(node.find(NodeListPreview).props().operator).toBe('in');
 
-  node.find(Button).at(2).simulate('click');
+  node.find(RadioButton).at(2).simulate('click');
   expect(node.find(NodeListPreview).prop('operator')).toBe('not in');
 });
 

@@ -571,7 +571,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
 
   protected List<EventProcessInstanceDto> getAllStoredEventInstances() {
     return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      embeddedOptimizeExtension.getOptimizeElasticClient()
+      embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventProcessInstanceIndexES("*")),
       EventProcessInstanceDto.class
@@ -593,11 +593,11 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   @SneakyThrows
   protected EventProcessInstanceIndexES createEventInstanceIndex(final String indexId) {
     final EventProcessInstanceIndexES newIndex = new EventProcessInstanceIndexES(indexId);
-    final boolean indexExists = embeddedOptimizeExtension.getElasticSearchSchemaManager()
-      .indicesExist(embeddedOptimizeExtension.getOptimizeElasticClient(), Collections.singletonList(newIndex));
+    final boolean indexExists = embeddedOptimizeExtension.getDatabaseSchemaManager()
+      .indicesExist(embeddedOptimizeExtension.getOptimizeDatabaseClient(), Collections.singletonList(newIndex));
     if (!indexExists) {
-      embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
-        embeddedOptimizeExtension.getOptimizeElasticClient(),
+      embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
+        embeddedOptimizeExtension.getOptimizeDatabaseClient(),
         newIndex
       );
     }

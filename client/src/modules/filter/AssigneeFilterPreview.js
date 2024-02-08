@@ -6,6 +6,7 @@
  */
 
 import {useState, useEffect} from 'react';
+import {Tag} from '@carbon/react';
 
 import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
@@ -36,7 +37,9 @@ export default function AssigneeFilterPreview({filter, getNames}) {
 
   return (
     <span className="AssigneeFilterPreview">
-      <span className="parameterName">{t(`common.filter.types.${filter.type}`)}</span>
+      <Tag type="blue" className="parameterName">
+        {t(`common.filter.types.${filter.type}`)}
+      </Tag>
       <span className="filterText">
         {operator === 'in' && createOperator(t('common.filter.list.operators.is'))}
         {operator === 'not in' &&

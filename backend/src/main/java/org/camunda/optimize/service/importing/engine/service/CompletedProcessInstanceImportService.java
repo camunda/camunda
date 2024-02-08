@@ -11,10 +11,11 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.importing.job.CompletedProcessInstanceDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.importing.job.CompletedProcessInstanceDatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.temporal.ChronoUnit;
@@ -30,8 +31,9 @@ public class CompletedProcessInstanceImportService extends AbstractProcessInstan
                                                final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
                                                final CompletedProcessInstanceWriter completedProcessInstanceWriter,
                                                final CamundaEventImportService camundaEventService,
-                                               final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(configurationService, engineContext, businessKeyImportAdapterProvider, processDefinitionResolverService);
+                                               final ProcessDefinitionResolverService processDefinitionResolverService,
+                                               final DatabaseClient databaseClient) {
+    super(configurationService, engineContext, businessKeyImportAdapterProvider, processDefinitionResolverService, databaseClient);
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
   }
@@ -42,7 +44,7 @@ public class CompletedProcessInstanceImportService extends AbstractProcessInstan
     final List<ProcessInstanceDto> processInstances,
     final Runnable callback) {
     CompletedProcessInstanceDatabaseImportJob importJob = new CompletedProcessInstanceDatabaseImportJob(
-      completedProcessInstanceWriter, camundaEventService, configurationService, callback);
+      completedProcessInstanceWriter, camundaEventService, configurationService, callback, databaseClient);
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }

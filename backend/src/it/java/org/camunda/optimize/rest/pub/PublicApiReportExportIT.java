@@ -166,7 +166,7 @@ public class PublicApiReportExportIT extends AbstractPlatformIT {
 
     ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
     clearScrollRequest.addScrollId(dataPage1.getSearchRequestId());
-    ClearScrollResponse clearScrollResponse = embeddedOptimizeExtension.getOptimizeElasticClient()
+    ClearScrollResponse clearScrollResponse = embeddedOptimizeExtension.getOptimizeDatabaseClient()
       .clearScroll(clearScrollRequest);
     boolean succeeded = clearScrollResponse.isSucceeded();
 

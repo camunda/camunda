@@ -32,14 +32,14 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
   private final ObjectVariableService objectVariableService;
 
   public ZeebeVariableImportMediatorFactory(final BeanFactory beanFactory,
-                                              final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                              final ConfigurationService configurationService,
-                                              final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
-                                              final ObjectMapper objectMapper,
-                                              final DatabaseClient esClient,
-                                              final ProcessDefinitionReader processDefinitionReader,
-                                              final ObjectVariableService objectVariableService) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, esClient);
+                                            final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                            final ConfigurationService configurationService,
+                                            final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
+                                            final ObjectMapper objectMapper,
+                                            final DatabaseClient databaseClient,
+                                            final ProcessDefinitionReader processDefinitionReader,
+                                            final ObjectVariableService objectVariableService) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, databaseClient);
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.processDefinitionReader = processDefinitionReader;
     this.objectVariableService = objectVariableService;
@@ -63,7 +63,8 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
           zeebeDataSourceDto.getPartitionId(),
           new ObjectMapper(),
           processDefinitionReader,
-          objectVariableService
+          objectVariableService,
+          databaseClient
         ),
         configurationService,
         new BackoffCalculator(configurationService)

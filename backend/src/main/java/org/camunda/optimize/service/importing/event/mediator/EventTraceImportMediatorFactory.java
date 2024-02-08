@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.event.mediator;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.events.CamundaTraceableEventFetcherService;
@@ -29,6 +30,7 @@ public class EventTraceImportMediatorFactory {
   private final CamundaEventService camundaEventService;
   private final ExternalEventService externalEventService;
   private final BackoffCalculator idleBackoffCalculator;
+  private final DatabaseClient databaseClient;
 
   public EventTraceImportMediator createCamundaEventTraceImportMediator(final String processDefinitionKey) {
     return beanFactory.getBean(
@@ -37,7 +39,8 @@ public class EventTraceImportMediatorFactory {
       eventImportIndexHandlerRegistry.getCamundaEventTraceImportIndexHandler(processDefinitionKey),
       new EventTraceImportService(
         configurationService,
-        eventTraceStateServiceFactory.createEventTraceStateService(processDefinitionKey)
+        eventTraceStateServiceFactory.createEventTraceStateService(processDefinitionKey),
+        databaseClient
       ),
       configurationService,
       idleBackoffCalculator
@@ -51,7 +54,8 @@ public class EventTraceImportMediatorFactory {
       eventImportIndexHandlerRegistry.getExternalEventTraceImportIndexHandler(),
       new EventTraceImportService(
         configurationService,
-        eventTraceStateServiceFactory.createEventTraceStateService(DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX)
+        eventTraceStateServiceFactory.createEventTraceStateService(DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX),
+        databaseClient
       ),
       configurationService,
       idleBackoffCalculator

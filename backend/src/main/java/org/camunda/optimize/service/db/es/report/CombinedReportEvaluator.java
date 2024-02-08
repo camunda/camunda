@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.db.DatabaseClient;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.report.command.Command;
 import org.camunda.optimize.service.db.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.db.es.report.command.ProcessCmd;
@@ -20,7 +19,6 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
@@ -32,8 +30,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Slf4j
@@ -72,9 +70,9 @@ public class CombinedReportEvaluator {
     final SingleReportEvaluatorForCombinedReports singleReportEvaluator =
       new SingleReportEvaluatorForCombinedReports(singleReportEvaluatorInjected);
     final List<QueryBuilder> baseQueries = getAllBaseQueries(singleReportDefinitions, singleReportEvaluator);
-    final CountRequest instanceCountRequest = createInstanceCountRequest(baseQueries);
+    final QueryBuilder instanceCountRequestQuery = createInstanceCountRequestQueries(baseQueries);
     try {
-      return databaseClient.count(instanceCountRequest).getCount();
+      return databaseClient.count(new String[] { PROCESS_INSTANCE_MULTI_ALIAS }, instanceCountRequestQuery);
     } catch (IOException e) {
       final String message = String.format(
         "Could not count instances in combined report with single report IDs: [%s]",
@@ -95,10 +93,10 @@ public class CombinedReportEvaluator {
     }
   }
 
-  private CountRequest createInstanceCountRequest(final List<QueryBuilder> baseQueries) {
+  private QueryBuilder createInstanceCountRequestQueries(final List<QueryBuilder> baseQueries) {
     final BoolQueryBuilder baseQuery = new BoolQueryBuilder();
     baseQueries.forEach(baseQuery::should);
-    return new CountRequest(PROCESS_INSTANCE_MULTI_ALIAS).query(baseQuery);
+    return baseQuery;
   }
 
   private List<QueryBuilder> getAllBaseQueries(List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions,

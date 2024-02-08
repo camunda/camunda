@@ -9,13 +9,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -42,11 +41,7 @@ public class CompletedProcessInstanceWriterES extends AbstractProcessInstanceWri
     log.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
     createInstanceIndicesIfMissing(processInstances, ProcessInstanceDto::getProcessDefinitionKey);
     return processInstances.stream()
-      .map(key -> ImportRequestDto.builder()
-        .importName(importItemName)
-        .client(esClient)
-        .request(createImportRequestForProcessInstance(key))
-        .build())
+      .map(processInstanceDto -> createImportRequestForProcessInstance(processInstanceDto, importItemName))
       .collect(Collectors.toList());
   }
 
@@ -58,14 +53,12 @@ public class CompletedProcessInstanceWriterES extends AbstractProcessInstanceWri
     processInstanceIds.forEach(
       id -> bulkRequest.add(new DeleteRequest(getProcessInstanceIndexAliasName(definitionKey), id))
     );
-    ElasticsearchWriterUtil.doBulkRequest(
-      esClient,
+    esClient.doBulkRequest(
       bulkRequest,
       getProcessInstanceIndexAliasName(definitionKey),
       false
     );
   }
-
 
   @Override
   protected void addImportProcessInstanceRequest(BulkRequest bulkRequest,
@@ -79,11 +72,12 @@ public class CompletedProcessInstanceWriterES extends AbstractProcessInstanceWri
     super.addImportProcessInstanceRequest(bulkRequest, procInst, primitiveUpdatableFields, objectMapper);
   }
 
-  private UpdateRequest createImportRequestForProcessInstance(final ProcessInstanceDto processInstanceDto) {
+  private ImportRequestDto createImportRequestForProcessInstance(final ProcessInstanceDto processInstanceDto,
+                                                                 final String importItemName) {
     if (processInstanceDto.getEndDate() == null) {
       log.warn("End date should not be null for completed process instances!");
     }
-    return createImportRequestForProcessInstance(processInstanceDto, UPDATABLE_FIELDS);
+    return createImportRequestForProcessInstance(processInstanceDto, UPDATABLE_FIELDS, importItemName);
   }
 
 }

@@ -1,4 +1,14 @@
+@use '@carbon/styles/scss/spacing';
+
 .Events {
-  padding: 68px 20px 0;
-  height: 100%;
+  padding: 0 20px;
+  height: calc(100% - 42px - spacing.$spacing-04);
+
+  .tabList {
+    margin-bottom: spacing.$spacing-04;
+
+    > .cds--tab--list > a {
+      line-height: 38px;
+    }
+  }
 }

@@ -29,7 +29,7 @@ import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsExceptio
 import org.camunda.optimize.service.util.ProcessReportDataType
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder
-import org.camunda.optimize.service.util.configuration.DatabaseProfile
+import org.camunda.optimize.service.util.configuration.DatabaseType
 import org.camunda.optimize.test.optimize.AlertClient
 import org.camunda.optimize.test.optimize.CollectionClient
 import org.camunda.optimize.test.optimize.EntitiesClient
@@ -72,7 +72,7 @@ class PostMigrationTest {
     requestExecutor = new OptimizeRequestExecutor(DEFAULT_USER, DEFAULT_USER, "http://localhost:8090/api/");
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH)
+      new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH)
     );
 
     alertClient = new AlertClient(() -> requestExecutor);

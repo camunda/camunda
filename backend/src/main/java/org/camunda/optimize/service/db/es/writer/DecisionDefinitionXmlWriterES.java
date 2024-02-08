@@ -40,8 +40,7 @@ public class DecisionDefinitionXmlWriterES implements DecisionDefinitionXmlWrite
   public void importDecisionDefinitionXmls(final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
     String importItemName = "decision definition XML information";
     log.debug("Writing [{}] {} to ES.", decisionDefinitions.size(), importItemName);
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       importItemName,
       decisionDefinitions,
       this::addImportDecisionDefinitionXmlRequest,

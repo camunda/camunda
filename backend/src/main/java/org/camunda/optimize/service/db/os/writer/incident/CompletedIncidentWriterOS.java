@@ -25,10 +25,4 @@ public class CompletedIncidentWriterOS extends AbstractIncidentWriterOS implemen
     super(osClient, openSearchSchemaManager, objectMapper);
   }
 
-  @Override
-  protected String createInlineUpdateScript() {
-    //todo will be handled in the OPT-7376
-    return "";
-  }
-
 }

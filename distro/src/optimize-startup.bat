@@ -8,7 +8,7 @@
 ::
 :: Note: This script is supposed to be used in production
 :: to start-up Optimize. For further information please consult
-:: the documentation: https://docs.camunda.org/optimize/${docs.version}/technical-guide/setup/installation/
+:: the documentation: https://docs.camunda.io/optimize/${docs.version}/self-managed/optimize-deployment/install-and-start/
 ::
 :: Optionally, you can overwrite the default JVM options by setting the `OPTIMIZE_JAVA_OPTS`
 :: variable.

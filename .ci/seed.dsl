@@ -125,7 +125,7 @@ multibranchPipelineJob('camunda-optimize') {
             // That to avoid running the same CI job twice (one for branch and one for PR).
             headWildcardFilter {
               // Space-separated list of name patterns to consider.
-              includes 'master PR-* CI-* maintenance/3.7 maintenance/3.9 maintenance/3.10 maintenance/3.11'
+              includes 'master PR-* CI-* maintenance/3.7 maintenance/3.9 maintenance/3.10 maintenance/3.11 maintenance/3.12'
               excludes ''
             }
 

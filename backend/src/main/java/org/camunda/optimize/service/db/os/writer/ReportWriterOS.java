@@ -44,7 +44,6 @@ import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
@@ -75,7 +74,7 @@ public class ReportWriterOS implements ReportWriter {
                                                @NonNull final String reportName,
                                                final String description,
                                                final String collectionId) {
-    log.debug("Writing new combined report to Opensearch");
+    log.debug("Writing new combined report to OpenSearch");
     final String id = IdGenerator.getNextId();
     final CombinedReportDefinitionRequestDto reportDefinitionDto = new CombinedReportDefinitionRequestDto();
 
@@ -100,7 +99,7 @@ public class ReportWriterOS implements ReportWriter {
     IndexResponse indexResponse = osClient.index(request);
 
     if (!indexResponse.result().equals(Result.Created)) {
-      String message = String.format("Could not write report with id [%s] and name [%s] to Opensearch.", id, reportName);
+      String message = String.format("Could not write report with id [%s] and name [%s] to OpenSearch.", id, reportName);
       log.error(message);
       throw new OptimizeRuntimeException(message);
     }
@@ -115,7 +114,7 @@ public class ReportWriterOS implements ReportWriter {
                                                     @NonNull final String reportName,
                                                     final String description,
                                                     final String collectionId) {
-    log.debug("Writing new single report to Opensearch");
+    log.debug("Writing new single report to OpenSearch");
 
     final String id = IdGenerator.getNextId();
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
@@ -142,7 +141,7 @@ public class ReportWriterOS implements ReportWriter {
 
     if (!indexResponse.result().equals(Result.Created)) {
       String message = String.format(
-        "Could not write single process report with id [%s] and name [%s] to Opensearch.",
+        "Could not write single process report with id [%s] and name [%s] to OpenSearch.",
         id,
         reportName
       );
@@ -161,7 +160,7 @@ public class ReportWriterOS implements ReportWriter {
                                                      @NonNull final String reportName,
                                                      final String description,
                                                      final String collectionId) {
-    log.debug("Writing new single report to Opensearch");
+    log.debug("Writing new single report to OpenSearch");
 
     final String id = IdGenerator.getNextId();
     final SingleDecisionReportDefinitionRequestDto reportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
@@ -187,7 +186,7 @@ public class ReportWriterOS implements ReportWriter {
 
     if (!indexResponse.result().equals(Result.Created)) {
       String message = String.format(
-        "Could not write single decision report with id [%s] and name [%s] to Opensearch.",
+        "Could not write single decision report with id [%s] and name [%s] to OpenSearch.",
         id,
         reportName
       );
@@ -218,7 +217,7 @@ public class ReportWriterOS implements ReportWriter {
   public void updateProcessDefinitionXmlForProcessReportsWithKey(final String definitionKey,
                                                                  final String definitionXml) {
     final String updateItem = String.format("reports with definitionKey [%s]", definitionKey);
-    log.debug("Updating definition XML in {} in Opensearch", updateItem);
+    log.debug("Updating definition XML in {} in OpenSearch", updateItem);
 
     final Script updateDefinitionXmlScript = OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
       "ctx._source.data.configuration.xml = params.newXml;",
@@ -236,6 +235,7 @@ public class ReportWriterOS implements ReportWriter {
   public void deleteAllManagementReports() {
     osClient.deleteByQuery(
       QueryDSL.term(DATA + "." + MANAGEMENT_REPORT, true),
+      true,
       SINGLE_PROCESS_REPORT_INDEX_NAME
     );
   }
@@ -244,6 +244,7 @@ public class ReportWriterOS implements ReportWriter {
   public void deleteSingleReport(final String reportId) {
     osClient.deleteByQuery(
       QueryDSL.ids(reportId),
+      true,
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SINGLE_DECISION_REPORT_INDEX_NAME
     );
@@ -265,20 +266,21 @@ public class ReportWriterOS implements ReportWriter {
       .path(String.join(".", DATA, REPORTS))
       .query(QueryDSL.term(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), reportId))
       .scoreMode(ChildScoreMode.None)
-      .build().query();
+      .build()
+      .query();
 
     Query query = new NestedQuery.Builder()
       .path(DATA)
       .query(nested)
       .scoreMode(ChildScoreMode.None)
-      .build().query();
+      .build()
+      .query();
 
     osClient.updateByQuery(
       COMBINED_REPORT_INDEX_NAME,
       query,
       removeReportIdFromCombinedReportsScript
     );
-
   }
 
   @Override
@@ -310,6 +312,7 @@ public class ReportWriterOS implements ReportWriter {
   public void deleteAllReportsOfCollection(String collectionId) {
     osClient.deleteByQuery(
       QueryDSL.term(COLLECTION_ID, collectionId),
+      true,
       COMBINED_REPORT_INDEX_NAME,
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SINGLE_DECISION_REPORT_INDEX_NAME
@@ -317,14 +320,14 @@ public class ReportWriterOS implements ReportWriter {
   }
 
   private void updateReport(ReportDefinitionUpdateDto updatedReport, String indexName) {
-    log.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
-    final Map<String, JsonData> updateParams = DatabaseWriterUtil.createFieldUpdateScriptParams(
+    log.debug("Updating report with id [{}] in OpenSearch", updatedReport.getId());
+    final Map<String, JsonData> updateParams = OpenSearchWriterUtil.createFieldUpdateScriptParams(
       UPDATABLE_FIELDS,
       updatedReport,
       objectMapper
     );
     // We always update the description, even if the new value is null
-    updateParams.put(DESCRIPTION, JsonData.of(updatedReport.getDescription()));
+    updateParams.put(DESCRIPTION, JsonData.of(String.valueOf(updatedReport.getDescription())));
 
     final Script updateScript = OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
       DatabaseWriterUtil.createUpdateFieldsScript(updateParams.keySet()),
@@ -332,7 +335,7 @@ public class ReportWriterOS implements ReportWriter {
     );
 
     final UpdateRequest.Builder request =
-      new UpdateRequest.Builder<>()
+      new UpdateRequest.Builder()
         .index(indexName)
         .id(updatedReport.getId())
         .script(updateScript)
@@ -345,7 +348,10 @@ public class ReportWriterOS implements ReportWriter {
       updatedReport.getName()
     );
 
-    final UpdateResponse updateResponse = osClient.update(request, errorMessage);
+    final UpdateResponse<ReportDefinitionUpdateDto> updateResponse = osClient.update(
+      request,
+      errorMessage
+    );
     if (updateResponse.shards().failed().intValue() > 0) {
       log.error(
         "Was not able to update report with id [{}] and name [{}].", updatedReport.getId(), updatedReport.getName()

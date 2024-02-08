@@ -5,21 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
 import {Link} from 'react-router-dom';
+import {Edit, Error, TrashCan, Upload} from '@carbon/icons-react';
+import {ActionableNotification, Button, Loading} from '@carbon/react';
 
-import {
-  LoadingIndicator,
-  Button,
-  Icon,
-  Deleter,
-  BPMNDiagram,
-  MessageBox,
-  EntityName,
-  LastModifiedInfo,
-  DocsLink,
-  PageTitle,
-} from 'components';
+import {Deleter, BPMNDiagram, EntityName, LastModifiedInfo, DocsLink, PageTitle} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
@@ -32,7 +23,7 @@ import {checkDeleteConflict} from 'services';
 import './ProcessView.scss';
 
 export default withErrorHandling(
-  class ProcessView extends React.Component {
+  class ProcessView extends Component {
     state = {
       data: null,
       deleting: null,
@@ -87,7 +78,7 @@ export default withErrorHandling(
 
     render() {
       if (!this.state.data) {
-        return <LoadingIndicator />;
+        return <Loading className="processViewLoading" withOverlay={false} />;
       }
 
       const {
@@ -109,49 +100,56 @@ export default withErrorHandling(
               </EntityName>
               <div className="tools">
                 {isPublishing && (
-                  <>
+                  <div className="publishing">
                     <span className="progressLabel">
                       {t('events.state.publish_pending', {publishingProgress})}
                     </span>
-                    <Button onClick={this.cancelPublish} className="tool-button cancel-button">
-                      <Icon type="cancel" />
-                      {t('events.cancelPublish')}
-                    </Button>
-                  </>
+                    <Button
+                      kind="secondary"
+                      onClick={this.cancelPublish}
+                      className="cancel-button"
+                      renderIcon={Error}
+                      iconDescription={t('events.cancelPublish')}
+                      hasIconOnly
+                    />
+                  </div>
                 )}
-                <Link className="tool-button edit-button" to="edit">
-                  <Button main disabled={isPublishing} tabIndex="-1">
-                    <Icon type="edit" />
-                    {t('common.edit')}
-                  </Button>
-                </Link>
                 <Button
-                  main
+                  as={Link}
+                  to="edit"
+                  className="edit-button"
+                  disabled={isPublishing}
+                  renderIcon={Edit}
+                  hasIconOnly
+                  iconDescription={t('common.edit')}
+                />
+                <Button
+                  kind="ghost"
                   disabled={isPublishing || !canPublish}
                   onClick={() => this.setState({publishing: id})}
-                  className="tool-button publish-button"
-                >
-                  <Icon type="publish" />
-                  {t('events.publish')}
-                </Button>
+                  className="publish-button"
+                  renderIcon={Upload}
+                  hasIconOnly
+                  iconDescription={t('events.publish')}
+                />
                 <Button
-                  main
+                  kind="ghost"
                   disabled={isPublishing}
                   onClick={() => this.setState({deleting: {id, name}})}
-                  className="tool-button delete-button"
-                >
-                  <Icon type="delete" />
-                  {t('common.delete')}
-                </Button>
+                  className="delete-button"
+                  renderIcon={TrashCan}
+                  hasIconOnly
+                  iconDescription={t('common.delete')}
+                />
               </div>
             </div>
             {this.props.generated && (
-              <MessageBox type="warning">
+              <ActionableNotification className="generationWarning" kind="warning" hideCloseButton>
                 {t('events.generationWarning')}{' '}
                 <DocsLink location="components/userguide/additional-features/event-based-processes/#event-based-process-auto-generation">
                   {t('common.seeDocs')}
                 </DocsLink>
-              </MessageBox>
+              </ActionableNotification>
             )}
           </div>
           <div className="content">

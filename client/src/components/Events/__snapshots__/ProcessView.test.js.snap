@@ -36,43 +36,69 @@ exports[`should match snapshot 1`] = `
       <div
         className="tools"
       >
-        <Link
-          className="tool-button edit-button"
+        <Button
+          as={
+            Object {
+              "$$typeof": Symbol(react.forward_ref),
+              "propTypes": Object {
+                "innerRef": [Function],
+                "onClick": [Function],
+                "replace": [Function],
+                "target": [Function],
+                "to": [Function],
+              },
+              "render": [Function],
+            }
+          }
+          className="edit-button"
+          disabled={false}
+          hasIconOnly={true}
+          iconDescription="Edit"
+          renderIcon={
+            Object {
+              "$$typeof": Symbol(react.forward_ref),
+              "propTypes": Object {
+                "size": [Function],
+              },
+              "render": [Function],
+            }
+          }
           to="edit"
-        >
-          <ForwardRef(Button)
-            disabled={false}
-            main={true}
-            tabIndex="-1"
-          >
-            <Icon
-              type="edit"
-            />
-            Edit
-          </ForwardRef(Button)>
-        </Link>
-        <ForwardRef(Button)
-          className="tool-button publish-button"
+        />
+        <Button
+          className="publish-button"
           disabled={false}
-          main={true}
+          hasIconOnly={true}
+          iconDescription="Publish"
+          kind="ghost"
           onClick={[Function]}
-        >
-          <Icon
-            type="publish"
-          />
-          Publish
-        </ForwardRef(Button)>
-        <ForwardRef(Button)
-          className="tool-button delete-button"
+          renderIcon={
+            Object {
+              "$$typeof": Symbol(react.forward_ref),
+              "propTypes": Object {
+                "size": [Function],
+              },
+              "render": [Function],
+            }
+          }
+        />
+        <Button
+          className="delete-button"
           disabled={false}
-          main={true}
+          hasIconOnly={true}
+          iconDescription="Delete"
+          kind="ghost"
           onClick={[Function]}
-        >
-          <Icon
-            type="delete"
-          />
-          Delete
-        </ForwardRef(Button)>
+          renderIcon={
+            Object {
+              "$$typeof": Symbol(react.forward_ref),
+              "propTypes": Object {
+                "size": [Function],
+              },
+              "render": [Function],
+            }
+          }
+        />
       </div>
     </div>
   </div>

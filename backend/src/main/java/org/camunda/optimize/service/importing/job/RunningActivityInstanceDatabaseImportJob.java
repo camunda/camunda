@@ -8,9 +8,9 @@ package org.camunda.optimize.service.importing.job;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.service.CamundaEventImportService;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
@@ -25,8 +25,9 @@ public class RunningActivityInstanceDatabaseImportJob extends DatabaseImportJob<
   public RunningActivityInstanceDatabaseImportJob(final RunningActivityInstanceWriter runningActivityInstanceWriter,
                                                   final CamundaEventImportService camundaEventImportService,
                                                   final ConfigurationService configurationService,
-                                                  final Runnable callback) {
-    super(callback);
+                                                  final Runnable callback,
+                                                  final DatabaseClient databaseClient) {
+    super(callback, databaseClient);
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
     this.camundaEventImportService = camundaEventImportService;
     this.configurationService = configurationService;
@@ -37,8 +38,7 @@ public class RunningActivityInstanceDatabaseImportJob extends DatabaseImportJob<
     final List<ImportRequestDto> importBulks = new ArrayList<>();
     importBulks.addAll(runningActivityInstanceWriter.generateActivityInstanceImports(runningActivityInstances));
     importBulks.addAll(camundaEventImportService.generateRunningCamundaActivityEventsImports(runningActivityInstances));
-    //todo handle it in the OPT-7228
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+    databaseClient.executeImportRequestsAsBulk(
       "Running activity instances",
       importBulks,
       configurationService.getSkipDataAfterNestedDocLimitReached()

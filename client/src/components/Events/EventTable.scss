@@ -3,40 +3,30 @@
 
   .cds--toolbar-content {
     height: auto;
-    align-items: flex-start;
-  }
-
-  .Switch {
-    font-size: 14px;
-    color: var(--grey-lighten-50);
-    margin-top: 12px;
-    margin-left: 20px;
-    .label {
-      white-space: nowrap;
-    }
   }
 
   b {
-    font-size: 14px;
-    color: var(--grey-darken-23);
-    margin-left: 20px;
-    margin-top: 16px;
+    padding: 0.875rem;
     white-space: nowrap;
   }
 
-  .collapseButton {
-    margin-left: 10px;
+  .showSuggestionsToggle {
+    padding-top: 0.875rem;
   }
 
   .Table {
-    .cds--data-table-content {
+    .cds--data-table-content,
+    table.cds--skeleton {
       transition: height 0.25s;
       height: 300px;
     }
 
-    &.collapsed .cds--data-table-content {
-      height: 0;
-      overflow: hidden;
+    &.collapsed {
+      .cds--data-table-content,
+      table.cds--skeleton {
+        height: 0;
+        overflow: hidden;
+      }
     }
 
     .cds--search {
@@ -45,10 +35,6 @@
 
     .cds--data-table-header {
       padding-bottom: 0;
-    }
-
-    .cds--data-table-header__description {
-      display: none;
     }
 
     table {
@@ -70,21 +56,9 @@
       }
 
       tbody {
-        .Dropdown {
-          .activateButton {
-            border: 0;
-            background: none;
-            padding: 0 30px 0 0;
-            font-size: 1em;
-          }
-
-          .menu {
-            left: auto !important;
-            width: 100px;
-          }
-        }
-
         tr {
+          height: auto;
+
           &.mapped:hover {
             cursor: pointer;
 
@@ -96,15 +70,11 @@
 
           &:not(.disabled).mapped td {
             color: var(--white);
-            background-color: var(--blue-darken-62);
-
-            .Button {
-              color: var(--white);
-            }
+            background-color: var(--cds-button-primary);
           }
 
           &.suggested {
-            border-left: 10px solid var(--blue-darken-62);
+            border-left: 10px solid var(--cds-button-primary);
           }
 
           span.disabled {

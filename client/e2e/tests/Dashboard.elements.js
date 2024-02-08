@@ -11,6 +11,7 @@ export const body = Selector('body');
 export const dashboard = Selector('.ListItem.dashboard');
 export const reportEditButton = Selector('.EditButton');
 export const reportDeleteButton = Selector('.DeleteButton');
+export const reportCopyButton = Selector('.CopyButton');
 export const reportResizeHandle = Selector('.react-resizable-handle');
 export const dashboardName = Selector('.DashboardView .name');
 export const externalSourceLink = Selector('button').withText('External website');
@@ -47,6 +48,8 @@ export const templateModalProcessTag = Selector('.TemplateModal .Tag');
 export const templateOption = (text) =>
   Selector('.Modal .templateContainer .Button').withText(text);
 export const reportTile = Selector('.OptimizeReportTile');
+export const textTile = Selector('.TextTile');
+export const externalUrlTile = Selector('.ExternalUrlTile');
 export const customValueAddButton = Selector('.customValueAddButton');
 export const typeaheadInput = Selector('.Typeahead .Input');
 export const alertsDropdown = Selector('.AlertsDropdown button');

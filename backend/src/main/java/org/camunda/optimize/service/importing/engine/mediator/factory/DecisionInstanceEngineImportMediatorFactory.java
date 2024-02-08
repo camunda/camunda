@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
 import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -37,8 +38,9 @@ public class DecisionInstanceEngineImportMediatorFactory extends AbstractEngineI
                                                      final DecisionInstanceWriter decisionInstanceWriter,
                                                      final DecisionDefinitionResolverService decisionDefinitionResolverService,
                                                      final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider,
-                                                     final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                                     final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider,
+                                                     final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.decisionInstanceWriter = decisionInstanceWriter;
     this.decisionDefinitionResolverService = decisionDefinitionResolverService;
     this.decisionInputImportAdapterProvider = decisionInputImportAdapterProvider;
@@ -63,7 +65,8 @@ public class DecisionInstanceEngineImportMediatorFactory extends AbstractEngineI
         decisionInstanceWriter,
         decisionDefinitionResolverService,
         decisionInputImportAdapterProvider,
-        decisionOutputImportAdapterProvider
+        decisionOutputImportAdapterProvider,
+        databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)

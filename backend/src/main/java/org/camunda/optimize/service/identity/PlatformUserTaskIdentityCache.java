@@ -15,6 +15,8 @@ import org.camunda.optimize.service.SearchableIdentityCache;
 import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -70,10 +72,6 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformIdentityCache
 
   public List<UserDto> getAssigneesByIds(final Collection<String> assigneeIds) {
     return getUserIdentitiesById(assigneeIds);
-  }
-
-  public List<GroupDto> getCandidateGroupsByIds(final Collection<String> candidateGroupIds) {
-    return getCandidateGroupIdentitiesById(candidateGroupIds);
   }
 
   public void resolveAndAddIdentities(final Set<IdentityDto> identities) {

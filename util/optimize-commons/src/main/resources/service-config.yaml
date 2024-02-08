@@ -134,6 +134,8 @@ container:
   maxRequestHeaderSizeInBytes: ${CAMUNDA_OPTIMIZE_CONTAINER_MAX_REQUEST_HEADER_SIZE_BYTES:8192}
   # Maximum size of a single response header. Note that higher values consume more memory
   maxResponseHeaderSizeInBytes: ${CAMUNDA_OPTIMIZE_CONTAINER_MAX_RESPONSE_HEADER_SIZE_BYTES:8192}
+  # Enable HTTP/2 support
+  http2Enabled: ${CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED:false}
 
 # Configuration for fetching user data
 users:
@@ -357,15 +359,6 @@ opensearch:
       - host: '${CAMUNDA_OPTIMIZE_OPENSEARCH_HOST:localhost}'
         # A port number used by OpenSearch to accept HTTP connections.
         httpPort: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT:9205}
-    proxy:
-      # whether an HTTP proxy should be used for requests to opensearch
-      enabled: false
-      # the host of the proxy to use
-      host: null
-      # the port of the proxy to use
-      port: null
-      # whether this proxy is using a secured connection
-      sslEnabled: false
     # Determines whether the hostname verification should be skipped
     skipHostnameVerification: ${CAMUNDA_OPTIMIZE_OPENSEARCH_CONNECTION_SKIP_HOSTNAME_VERIFICATION:false}
     # Configuration relating to OS backup

@@ -18,6 +18,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -40,6 +41,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponse
 import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -58,7 +60,6 @@ import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.util.StringUtils;
 
 import javax.net.ssl.SSLContext;
 import java.io.BufferedInputStream;
@@ -95,9 +96,25 @@ public class OptimizeOpenSearchClientFactory {
     // TODO Evaluate the need for OpenSearchCustomHeaderProvider with OPT-7400
     final RequestOptionsProvider requestOptionsProvider =
       new RequestOptionsProvider(Collections.emptyList(), configurationService);
-    final HttpHost host = getHttpHost(configurationService.getOpenSearchConfiguration().getFirstConnectionNode());
+    final OpenSearchClient openSearchClient = buildOpenSearchClientFromConfig(configurationService);
+    waitForOpenSearch(openSearchClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
+    log.info("OpenSearch cluster successfully started");
+
+    OptimizeOpenSearchClient osClient = new OptimizeOpenSearchClient(
+      openSearchClient,
+      optimizeIndexNameService,
+      requestOptionsProvider
+    );
+    openSearchSchemaManager.validateExistingSchemaVersion(osClient);
+    openSearchSchemaManager.initializeSchema(osClient);
+
+    return osClient;
+  }
+
+  public static OpenSearchClient buildOpenSearchClientFromConfig(final ConfigurationService configurationService) {
+    final HttpHost[] hosts = buildOpenSearchConnectionNodes(configurationService);
     final ApacheHttpClient5TransportBuilder builder =
-      ApacheHttpClient5TransportBuilder.builder(host);
+      ApacheHttpClient5TransportBuilder.builder(hosts);
 
     builder.setHttpClientConfigCallback(
       httpClientBuilder -> {
@@ -110,6 +127,10 @@ public class OptimizeOpenSearchClientFactory {
         setTimeouts(requestConfigBuilder, configurationService);
         return requestConfigBuilder;
       });
+
+    if (StringUtils.isNotBlank(configurationService.getOpenSearchConfiguration().getPathPrefix())) {
+      builder.setPathPrefix(configurationService.getOpenSearchConfiguration().getPathPrefix());
+    }
 
     DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
@@ -133,12 +154,12 @@ public class OptimizeOpenSearchClientFactory {
         DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
         DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
         DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY,
-        SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS
+        SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS,
+        SerializationFeature.INDENT_OUTPUT,
+        DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY
       )
       .featuresToEnable(
         JsonParser.Feature.ALLOW_COMMENTS,
-        SerializationFeature.INDENT_OUTPUT,
-        DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,
         MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS
       )
       .build();
@@ -157,21 +178,19 @@ public class OptimizeOpenSearchClientFactory {
     builder.setMapper(jsonpMapper);
 
     final OpenSearchTransport transport = builder.build();
-    final OpenSearchClient openSearchClient = new OpenSearchClient(transport);
-    waitForOpenSearch(openSearchClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
-    log.info("OpenSearch cluster successfully started");
+    return new OpenSearchClient(transport);
+  }
 
-    OptimizeOpenSearchClient osClient =  new OptimizeOpenSearchClient(openSearchClient, optimizeIndexNameService,
-                                                                      requestOptionsProvider);
-    openSearchSchemaManager.validateExistingSchemaVersion(osClient);
-    openSearchSchemaManager.initializeSchema(osClient);
-
-    return osClient;
+  private static HttpHost[] buildOpenSearchConnectionNodes(ConfigurationService configurationService) {
+    return configurationService.getOpenSearchConfiguration().getConnectionNodes()
+      .stream()
+      .map(OptimizeOpenSearchClientFactory::getHttpHost)
+      .toArray(HttpHost[]::new);
   }
 
   private static void waitForOpenSearch(final OpenSearchClient osClient,
-                                       final BackoffCalculator backoffCalculator,
-                                       final RequestOptions requestOptions) throws IOException {
+                                        final BackoffCalculator backoffCalculator,
+                                        final RequestOptions requestOptions) throws IOException {
     boolean isConnected = false;
     while (!isConnected) {
       try {
@@ -219,10 +238,8 @@ public class OptimizeOpenSearchClientFactory {
     final HttpAsyncClientBuilder builder, ConfigurationService configurationService) {
     String username = configurationService.getOpenSearchConfiguration().getSecurityUsername();
     String password = configurationService.getOpenSearchConfiguration().getSecurityPassword();
-    if (!StringUtils.hasText(username)
-      || !StringUtils.hasText(password)) {
-      log.warn(
-        "Username and/or password for are empty. Basic authentication for OpenSearch is not used.");
+    if (StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
+      log.warn("Username and/or password for are empty. Basic authentication for OpenSearch is not used.");
       return builder;
     }
 
@@ -263,7 +280,7 @@ public class OptimizeOpenSearchClientFactory {
     final KeyStore truststore = loadCustomTrustStore(configurationService);
     final TrustStrategy trustStrategy =
       Boolean.TRUE.equals(configurationService.getOpenSearchConfiguration()
-        .getSecuritySslSelfSigned()) ? new TrustSelfSignedStrategy() : null;
+                            .getSecuritySslSelfSigned()) ? new TrustSelfSignedStrategy() : null;
     if (truststore.size() > 0) {
       return SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
     } else {
@@ -277,10 +294,8 @@ public class OptimizeOpenSearchClientFactory {
       final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(null);
       // load custom es server certificate if configured
-      final String serverCertificate = configurationService.getOpenSearchConfiguration().getSecuritySSLCertificate();
-      if (serverCertificate != null) {
-        setCertificateInTrustStore(trustStore, serverCertificate);
-      }
+      setCertificateInTrustStore(trustStore, configurationService);
+
       return trustStore;
     } catch (Exception e) {
       final String message =
@@ -289,15 +304,31 @@ public class OptimizeOpenSearchClientFactory {
     }
   }
 
-  private static void setCertificateInTrustStore(
-    final KeyStore trustStore, final String serverCertificate) {
-    try {
-      final Certificate cert = loadCertificateFromPath(serverCertificate);
-      trustStore.setCertificateEntry("opensearch-host", cert);
-    } catch (Exception e) {
-      final String message =
-        "Could not load configured server certificate for the secured OpenSearch Connection!";
-      throw new OptimizeRuntimeException(message, e);
+  private static void setCertificateInTrustStore(final KeyStore trustStore,
+                                                 final ConfigurationService configurationService) {
+    final String serverCertificate = configurationService.getOpenSearchConfiguration().getSecuritySSLCertificate();
+    if (serverCertificate != null) {
+      try {
+        final Certificate cert = loadCertificateFromPath(serverCertificate);
+        trustStore.setCertificateEntry("opensearch-host", cert);
+      } catch (Exception e) {
+        final String message =
+          "Could not load configured server certificate for the secured OpenSearch Connection!";
+        throw new OptimizeRuntimeException(message, e);
+      }
+    }
+
+    // load trusted CA certificates
+    int caCertificateCounter = 0;
+    for (String caCertificatePath : configurationService.getOpenSearchConfiguration().getSecuritySSLCertificateAuthorities()) {
+      try {
+        Certificate cert = loadCertificateFromPath(caCertificatePath);
+        trustStore.setCertificateEntry("custom-opensearch-ca-" + caCertificateCounter, cert);
+        caCertificateCounter++;
+      } catch (Exception e) {
+        String message = "Could not load CA authority certificate for the secured OpenSearch Connection!";
+        throw new OptimizeConfigurationException(message, e);
+      }
     }
   }
 
@@ -329,8 +360,11 @@ public class OptimizeOpenSearchClientFactory {
 
   private static RequestConfig.Builder setTimeouts(
     final RequestConfig.Builder builder, final ConfigurationService configurationService) {
-    builder.setResponseTimeout(Timeout.ofMilliseconds(configurationService.getOpenSearchConfiguration().getConnectionTimeout()));
-    builder.setConnectTimeout(Timeout.ofMilliseconds(configurationService.getOpenSearchConfiguration().getConnectionTimeout()));
+    builder.setResponseTimeout(Timeout.ofMilliseconds(0));
+    builder.setConnectionRequestTimeout(Timeout.ofMilliseconds(
+      configurationService.getOpenSearchConfiguration().getConnectionTimeout()));
+    builder.setConnectTimeout(Timeout.ofMilliseconds(
+      configurationService.getOpenSearchConfiguration().getConnectionTimeout()));
     return builder;
   }
 

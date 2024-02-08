@@ -6,10 +6,10 @@
  */
 
 import React from 'react';
-import {Button} from '@carbon/react';
+import {Button, Loading} from '@carbon/react';
 
 import {withErrorHandling} from 'HOC';
-import {Modal, LoadingIndicator} from 'components';
+import {Modal} from 'components';
 import {showError} from 'notifications';
 import {deleteEntity} from 'services';
 import {t} from 'translation';
@@ -110,7 +110,7 @@ export default withErrorHandling(
           </Modal.Header>
           <Modal.Content>
             {loading ? (
-              <LoadingIndicator />
+              <Loading className="deleter-loading" withOverlay={false} />
             ) : (
               <>
                 <p>

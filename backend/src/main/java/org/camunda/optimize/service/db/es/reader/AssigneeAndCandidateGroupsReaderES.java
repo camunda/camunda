@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
-import org.camunda.optimize.service.db.es.CompositeAggregationScroller;
+import org.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.search.SearchRequest;
@@ -151,7 +151,7 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
       new SearchRequest(indexName).source(searchSourceBuilder);
 
     final List<String> termsBatch = new ArrayList<>();
-    final CompositeAggregationScroller compositeAggregationScroller = CompositeAggregationScroller.create()
+    final ElasticsearchCompositeAggregationScroller compositeAggregationScroller = ElasticsearchCompositeAggregationScroller.create()
       .setEsClient(esClient)
       .setSearchRequest(searchRequest)
       .setPathToAggregation(NESTED_USER_TASKS_AGG, COMPOSITE_AGG)

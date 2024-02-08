@@ -65,8 +65,8 @@ public class ElasticMetadataVersionIT extends AbstractPlatformIT {
   @Test
   public void verifyGetMetadataFailsOnClientException() {
     // given
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
-    esMockServer
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
+    dbMockServer
       .when(request().withPath("/.*-" + METADATA_INDEX_NAME + ".*/_doc/" + MetadataIndex.ID))
       .respond(HttpResponse.response().withStatusCode(HttpStatusCode.INTERNAL_SERVER_ERROR_500.code()));
 
@@ -76,6 +76,6 @@ public class ElasticMetadataVersionIT extends AbstractPlatformIT {
 
   private Optional<MetadataDto> getMetadataDto() {
     return embeddedOptimizeExtension.getBean(ElasticSearchMetadataService.class)
-      .readMetadata(embeddedOptimizeExtension.getOptimizeElasticClient());
+      .readMetadata(embeddedOptimizeExtension.getOptimizeElasticSearchClient());
   }
 }

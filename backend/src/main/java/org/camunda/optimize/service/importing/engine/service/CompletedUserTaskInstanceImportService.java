@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.usertask.CompletedUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -27,11 +28,13 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   private final CompletedUserTaskInstanceWriter completedProcessInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
+  private final DatabaseClient databaseClient;
 
   public CompletedUserTaskInstanceImportService(final ConfigurationService configurationService,
                                                 final CompletedUserTaskInstanceWriter completedProcessInstanceWriter,
                                                 final EngineContext engineContext,
-                                                final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                                final ProcessDefinitionResolverService processDefinitionResolverService,
+                                                final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -39,6 +42,7 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -80,11 +84,12 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   }
 
   private DatabaseImportJob<FlowNodeInstanceDto> createDatabaseImportJob(final List<FlowNodeInstanceDto> userTasks,
-                                                                              final Runnable callback) {
+                                                                         final Runnable callback) {
     final CompletedUserTasksDatabaseImportJob importJob = new CompletedUserTasksDatabaseImportJob(
       completedProcessInstanceWriter,
       configurationService,
-      callback
+      callback,
+      databaseClient
     );
     importJob.setEntitiesToImport(userTasks);
     return importJob;

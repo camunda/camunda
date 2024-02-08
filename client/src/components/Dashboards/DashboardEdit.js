@@ -22,6 +22,7 @@ import {DeleteButton} from './DeleteButton';
 import DragOverlay from './DragOverlay';
 import EditButton from './EditButton';
 import {AutoRefreshSelect} from './AutoRefresh';
+import {CopyButton} from './CopyButton';
 
 import {FiltersEdit, AddFiltersButton} from './filters';
 import {convertFilterToDefaultValues, getDefaultFilter} from './service';
@@ -330,8 +331,9 @@ export class DashboardEdit extends React.Component {
             loadTile={evaluateReport}
             addons={[
               <DragOverlay key="DragOverlay" />,
-              <DeleteButton key="DeleteButton" deleteTile={this.deleteTile} />,
               <EditButton key="EditButton" onClick={this.editOptimizeReportTile} />,
+              <CopyButton key="CopyButton" addTile={this.addTile} />,
+              <DeleteButton key="DeleteButton" deleteTile={this.deleteTile} />,
             ]}
             onLayoutChange={this.updateLayout}
             onTileUpdate={this.updateTile}

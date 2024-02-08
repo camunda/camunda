@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -31,15 +32,18 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final ProcessDefinitionXmlWriter processDefinitionXmlWriter;
+  private final DatabaseClient databaseClient;
 
   public ProcessDefinitionXmlImportService(final ConfigurationService configurationService,
                                            final EngineContext engineContext,
-                                           final ProcessDefinitionXmlWriter processDefinitionXmlWriter) {
+                                           final ProcessDefinitionXmlWriter processDefinitionXmlWriter,
+                                           final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -78,7 +82,7 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
     final List<ProcessDefinitionOptimizeDto> processDefinitions,
     final Runnable importCompleteCallback) {
     ProcessDefinitionXmlDatabaseImportJob procDefImportJob = new ProcessDefinitionXmlDatabaseImportJob(
-      processDefinitionXmlWriter, importCompleteCallback
+      processDefinitionXmlWriter, importCompleteCallback, databaseClient
     );
     procDefImportJob.setEntitiesToImport(processDefinitions);
     return procDefImportJob;

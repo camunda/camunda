@@ -3,7 +3,7 @@ set -ex
 
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-git remote set-url origin "https://${GITHUB_APP_ID}:${GITHUB_TOKEN}@github.com/camunda/camunda-optimize.git"
+git remote set-url origin "https://${GITHUB_APP_ID}:${GITHUB_APP_PRIVATE_KEY}@github.com/camunda/camunda-optimize.git"
 
 if [ "$IS_PATCH" = "false" ]; then
   # only major / minor GA (.0) release versions will trigger an auto-update of previousVersion property.

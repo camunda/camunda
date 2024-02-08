@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.ser.std.DateSerializer;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableSet;
 import jakarta.ws.rs.core.MediaType;
@@ -172,7 +173,7 @@ public class SimpleEngineClient {
 
     return Jackson2ObjectMapperBuilder
       .json()
-      .modules(javaTimeModule)
+      .modules(new Jdk8Module(), javaTimeModule)
       .featuresToDisable(
         SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
         DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,

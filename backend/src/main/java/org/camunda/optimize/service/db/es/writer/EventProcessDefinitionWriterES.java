@@ -41,8 +41,7 @@ public class EventProcessDefinitionWriterES implements EventProcessDefinitionWri
   public void importEventProcessDefinitions(final List<EventProcessDefinitionDto> definitionOptimizeDtos) {
     log.debug("Writing [{}] event process definitions to elastic.", definitionOptimizeDtos.size());
     final String importItemName = "event process definition information";
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       importItemName,
       definitionOptimizeDtos,
       this::addImportProcessDefinitionToRequest,
@@ -53,8 +52,7 @@ public class EventProcessDefinitionWriterES implements EventProcessDefinitionWri
   @Override
   public void deleteEventProcessDefinitions(final Collection<String> definitionIds) {
     final String importItemName = "event process definition ids";
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       importItemName,
       definitionIds,
       this::addDeleteProcessDefinitionToRequest,

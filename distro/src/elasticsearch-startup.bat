@@ -9,7 +9,7 @@
 :: # Note: This script is supposed to be used in a demo environment to
 :: # start Elasticsearch only without starting Optimize.
 :: # For further information please consult
-:: # the documentation: https://docs.camunda.org/optimize/${docs.version}/technical-guide/setup/installation/
+:: # the documentation: https://docs.camunda.io/optimize/${docs.version}/self-managed/optimize-deployment/install-and-start/
 
 echo Setting up environment variables...
 

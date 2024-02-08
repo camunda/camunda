@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.usertask.CompletedUserTaskInstanceWriter;
 import org.camunda.optimize.service.db.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -35,8 +36,9 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
                                                      final ConfigurationService configurationService,
                                                      final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
                                                      final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter,
-                                                     final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                                     final ProcessDefinitionResolverService processDefinitionResolverService,
+                                                     final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.runningUserTaskInstanceWriter = runningUserTaskInstanceWriter;
     this.completedUserTaskInstanceWriter = completedUserTaskInstanceWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
@@ -56,7 +58,7 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
       importIndexHandlerRegistry.getRunningUserTaskInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(RunningUserTaskInstanceFetcher.class, engineContext),
       new RunningUserTaskInstanceImportService(
-        configurationService, runningUserTaskInstanceWriter, engineContext, processDefinitionResolverService
+        configurationService, runningUserTaskInstanceWriter, engineContext, processDefinitionResolverService, databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -69,7 +71,11 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
       importIndexHandlerRegistry.getCompletedUserTaskInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(CompletedUserTaskInstanceFetcher.class, engineContext),
       new CompletedUserTaskInstanceImportService(
-        configurationService, completedUserTaskInstanceWriter, engineContext, processDefinitionResolverService
+        configurationService,
+        completedUserTaskInstanceWriter,
+        engineContext,
+        processDefinitionResolverService,
+        databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)

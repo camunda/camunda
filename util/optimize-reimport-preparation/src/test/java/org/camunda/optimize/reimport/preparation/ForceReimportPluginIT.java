@@ -44,13 +44,13 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
     // given
     String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     // when
     forceReimportOfEngineData();
 
     // then
-    esMockServer.verify(request().withHeader(new Header("Authorization", "Bearer fixedToken")));
+    dbMockServer.verify(request().withHeader(new Header("Authorization", "Bearer fixedToken")));
   }
 
   @Test
@@ -58,19 +58,19 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
     // given
     String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     // when
     forceReimportOfEngineData();
     // clear the version validation request the client does on first use, which bypasses our plugins
     // see RestHighLevelClient#versionValidationFuture
-    esMockServer.clear(request("/").withMethod(GET));
+    dbMockServer.clear(request("/").withMethod(GET));
 
     // then
-    final RequestDefinition[] allRequests = esMockServer.retrieveRecordedRequests(null);
+    final RequestDefinition[] allRequests = dbMockServer.retrieveRecordedRequests(null);
     assertThat(allRequests).hasSizeGreaterThan(1);
     IntStream.range(0, allRequests.length)
-      .forEach(integerSuffix -> esMockServer.verify(
+      .forEach(integerSuffix -> dbMockServer.verify(
         request().withHeader(new Header("Authorization", "Bearer dynamicToken_" + integerSuffix)),
         VerificationTimes.once()
       ));
@@ -84,13 +84,13 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
       "org.camunda.optimize.testplugin.elasticsearch.custom"
     };
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackages);
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     // when
     forceReimportOfEngineData();
 
     // then
-    esMockServer.verify(request().withHeaders(
+    dbMockServer.verify(request().withHeaders(
       new Header("Authorization", "Bearer dynamicToken_0"),
       new Header("CustomHeader", "customValue")
     ),

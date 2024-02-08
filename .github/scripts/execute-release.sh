@@ -4,34 +4,31 @@ echo "DRY_RUN=${DRY_RUN}"
 
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-git remote set-url origin "https://${GITHUB_APP_ID}:${GITHUB_TOKEN}@github.com/camunda/camunda-optimize.git"
+git remote set-url origin "https://${GITHUB_APP_ID}:${GITHUB_APP_PRIVATE_KEY}@github.com/camunda/camunda-optimize.git"
 git fetch
 git checkout $BRANCH
 
 SKIP_PUSH_ARTIFACTS=""
+PUSH_CHANGES=""
 if [ "$DRY_RUN" = "true" ]; then
     SKIP_PUSH_ARTIFACTS="true"
-    echo "Not pushing any artifacts to nexus."
+    PUSH_CHANGES="false"
+    echo "WARNING: You are running the release in DRY RUN mode."
+    echo "No artifacts will be pushed to nexus."
+    echo "No git commits will be pushed to the release branch."
+    echo "No release tags will be pushed to the Optimize repository."
 else
     SKIP_PUSH_ARTIFACTS="false"
+    PUSH_CHANGES="true"
     echo "The generated artifacts will be pushed to nexus."
+    echo "The release commits and release tag will be pushed to github."
 fi
-echo "SKIP_PUSH_ARTIFACTS=${SKIP_PUSH_ARTIFACTS}"
 
+echo "SKIP_PUSH_ARTIFACTS=${SKIP_PUSH_ARTIFACTS}"
+echo "PUSH_CHANGES=${PUSH_CHANGES}"
 
 echo "Starting artifact creation:"
-# We are passing the arguments -DskipTests -DskipNexusStagingDeployMojo=false -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-# twice. Once on the maven command and once on the maven release plugin. Reason for that is because both maven and the maven release pipeline attempt these operations separately
-# upon invokation (eg maven will by default try to run the tests and that's why we use the -dskipTests argument, but also the maven release library is running the tests by default
-# when generating an artifact). Read more info here: https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html
-mvn -DpushChanges=false -DskipTests -Prelease,engine-latest release:prepare release:perform -Dtag="${RELEASE_VERSION}" -DreleaseVersion="${RELEASE_VERSION}" -DdevelopmentVersion="${DEVELOPMENT_VERSION}" -Darguments="-DskipTests -DskipNexusStagingDeployMojo=${SKIP_PUSH_ARTIFACTS} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+mvn -DpushChanges="${PUSH_CHANGES}" -DskipTests -Prelease,engine-latest release:prepare release:perform -Dtag="${RELEASE_VERSION}" -DreleaseVersion="${RELEASE_VERSION}" -DdevelopmentVersion="${DEVELOPMENT_VERSION}" -Darguments="-DskipTests -DskipNexusStagingDeployMojo=${SKIP_PUSH_ARTIFACTS} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
 
 echo "Artifacts created:"
 ls -1 distro/target
-
-if [ "$DRY_RUN" = "true" ]; then
-    echo "Not pushing git commits to release branch!"
-else
-    echo "Pushing git commits to release branch!"
-    git push origin $BRANCH
-fi

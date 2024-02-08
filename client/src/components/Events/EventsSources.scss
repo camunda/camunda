@@ -1,56 +1,29 @@
+@use '@carbon/styles/scss/spacing';
+@import 'shared-styles/shared-styles.scss';
+
 .EventsSources {
   display: flex;
-  align-items: center;
   flex-grow: 1;
   min-width: 100px;
 
   .sourcesList {
     flex-grow: 1;
-    margin: 10px;
+    margin: 8px;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     min-width: 100px;
+    gap: spacing.$spacing-04;
 
-    .Dropdown {
-      margin: 2px 0px 2px 10px;
-      min-width: 100px;
-      max-width: max-content;
-      flex-basis: 0;
-      flex-grow: 1;
-
-      .Button {
-        padding: 2px 30px 2px 10px;
-        background: var(--silver-darken-87);
-        color: var(--grey-darken-36);
-        border-radius: 20px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .SourceMenuButton {
+      button {
+        min-width: 100px;
+        @include overflow-ellipsis(auto, block);
       }
 
-      &.isActive .Button {
-        background: var(--blue-base-65);
-        border-color: var(--blue-darken-55);
-        color: var(--silver-lighten-99);
-        border-radius: 20px;
-        font-size: 0.875em;
-        white-space: nowrap;
-
-        &.isActive,
-        &:hover {
-          background: var(--blue-darken-55);
-        }
+      &.hidden {
+        text-decoration: line-through;
       }
     }
-  }
-
-  .addProcess {
-    align-self: flex-start;
-    margin-top: 9px;
-    margin-right: 10px;
-    height: 32px;
-    min-width: 165px;
-    white-space: nowrap;
   }
 }

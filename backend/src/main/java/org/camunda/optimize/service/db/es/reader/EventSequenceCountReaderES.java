@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponse
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
-import org.camunda.optimize.service.db.es.CompositeAggregationScroller;
+import org.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -124,7 +124,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
     final SearchRequest searchRequest = new SearchRequest(indicesToSearch)
       .source(searchSourceBuilder);
     List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
-    CompositeAggregationScroller.create()
+    ElasticsearchCompositeAggregationScroller.create()
       .setEsClient(esClient)
       .setSearchRequest(searchRequest)
       .setPathToAggregation(COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION)
@@ -232,7 +232,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
     final SearchRequest searchRequest = new SearchRequest(getIndexName())
       .source(searchSourceBuilder);
     List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
-    CompositeAggregationScroller.create()
+    ElasticsearchCompositeAggregationScroller.create()
       .setEsClient(esClient)
       .setSearchRequest(searchRequest)
       .setPathToAggregation(COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION)

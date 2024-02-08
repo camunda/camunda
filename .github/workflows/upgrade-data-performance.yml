@@ -54,7 +54,7 @@ jobs:
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@affa6f04da5c2d55e6e115b7d1b044a6b1af8c74 # v2.7.4
+        uses: hashicorp/vault-action@e3d5714d59e151ca80233142880b9da9d983a48c # v2.7.5
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -145,7 +145,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4
         with:
           name: upgrade-data-performance-tests-logs
           path: |

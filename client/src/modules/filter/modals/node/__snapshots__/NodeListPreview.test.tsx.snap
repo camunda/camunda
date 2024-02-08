@@ -4,19 +4,21 @@ exports[`should create preview of nodes 1`] = `
 <Fragment>
   <Tooltip
     content={
-      <span
+      <Tag
         className="parameterName"
+        type="blue"
       >
         Running, canceled, or completed flow nodes
-      </span>
+      </Tag>
     }
     overflowOnly={true}
   >
-    <span
+    <Tag
       className="parameterName"
+      type="blue"
     >
       Running, canceled, or completed flow nodes
-    </span>
+    </Tag>
   </Tooltip>
   <ul
     className="previewList filterText"
@@ -40,19 +42,21 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
 <Fragment>
   <Tooltip
     content={
-      <span
+      <Tag
         className="parameterName"
+        type="blue"
       >
         Not executed flow nodes
-      </span>
+      </Tag>
     }
     overflowOnly={true}
   >
-    <span
+    <Tag
       className="parameterName"
+      type="blue"
     >
       Not executed flow nodes
-    </span>
+    </Tag>
   </Tooltip>
   <ul
     className="previewList filterText"
@@ -94,19 +98,21 @@ exports[`should create preview of selected nodes linked by or 1`] = `
 <Fragment>
   <Tooltip
     content={
-      <span
+      <Tag
         className="parameterName"
+        type="blue"
       >
         Running, canceled, or completed flow nodes
-      </span>
+      </Tag>
     }
     overflowOnly={true}
   >
-    <span
+    <Tag
       className="parameterName"
+      type="blue"
     >
       Running, canceled, or completed flow nodes
-    </span>
+    </Tag>
   </Tooltip>
   <ul
     className="previewList filterText"

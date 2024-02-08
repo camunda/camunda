@@ -887,11 +887,11 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .getId();
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_update_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -902,7 +902,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .execute();
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     assertThat(reportClient.getAllReportsAsUser())
       .extracting(AuthorizedReportDefinitionResponseDto::getDefinitionDto)
@@ -918,11 +918,11 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     String reportId = addEmptyReportToOptimize(reportType, collectionId);
     alertClient.createAlertForReport(reportId);
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + ALERT_INDEX_NAME + "/_delete_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -930,7 +930,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     Response response = reportClient.deleteReport(reportId, true);
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     assertThat(collectionClient.getReportsForCollection(collectionId))
@@ -953,11 +953,11 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .buildShareReportRequest(sharingDto)
       .execute();
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + REPORT_SHARE_INDEX_NAME + "/_doc/.*")
       .withMethod(DELETE);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -968,7 +968,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .execute();
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     assertThat(reportClient.getAllReportsAsUser())
       .extracting(AuthorizedReportDefinitionResponseDto::getDefinitionDto)

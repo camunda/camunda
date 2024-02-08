@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Table, Switch} from 'components';
+import {Table} from 'components';
 
 import {loadEvents} from './service';
 import EventTableWithErrorHandling from './EventTable';
@@ -88,27 +88,6 @@ it('should disable table if no node is selected', async () => {
   expect(node.find(Table).prop('body')[0].props.className).toContain('disabled');
 });
 
-it('should allow searching for events', async () => {
-  const node = shallow(<EventTable {...props} />);
-
-  node.setState({showSuggested: false});
-
-  loadEvents.mockClear();
-
-  const toolbar = shallow(node.find(Table).prop('toolbar'));
-  toolbar.find('TableToolbarSearch').prop('onChange')({
-    target: {value: 'some String'},
-  });
-
-  await flushPromises();
-
-  expect(loadEvents).toHaveBeenCalledWith(
-    {eventSources: props.eventSources},
-    'some String',
-    defaultSorting
-  );
-});
-
 it('should call callback when changing mapping', async () => {
   const node = shallow(<EventTable {...props} />);
 
@@ -162,9 +141,7 @@ it('should not reload events if suggestions are not activated', () => {
   const node = shallow(<EventTable {...props} />);
 
   const toolbar = shallow(node.find(Table).prop('toolbar'));
-  toolbar.find(Switch).prop('onChange')({
-    target: {checked: false},
-  });
+  toolbar.find('Toggle').simulate('toggle', false);
 
   loadEvents.mockClear();
 

@@ -15,6 +15,7 @@ import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -43,6 +44,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
   private final ObjectVariableService objectVariableService;
+  private final DatabaseClient databaseClient;
 
   public VariableUpdateInstanceImportService(final ConfigurationService configurationService,
                                              final VariableImportAdapterProvider variableImportAdapterProvider,
@@ -50,7 +52,8 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
                                              final CamundaEventImportService camundaEventService,
                                              final EngineContext engineContext,
                                              final ProcessDefinitionResolverService processDefinitionResolverService,
-                                             final ObjectVariableService objectVariableService) {
+                                             final ObjectVariableService objectVariableService,
+                                             final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -62,6 +65,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
     this.objectVariableService = objectVariableService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -257,7 +261,8 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       variableWriter,
       camundaEventService,
       configurationService,
-      callback
+      callback,
+      databaseClient
     );
     importJob.setEntitiesToImport(processVariables);
     return importJob;

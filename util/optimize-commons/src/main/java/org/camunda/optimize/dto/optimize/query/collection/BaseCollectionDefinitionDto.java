@@ -22,4 +22,5 @@ public class BaseCollectionDefinitionDto<DATA_TYPE> {
   protected String lastModifier;
   protected DATA_TYPE data;
   protected boolean automaticallyCreated = false;
+
 }

@@ -1,7 +1,7 @@
 name: Zeebe Compatibility
 on:
   schedule:
-    - cron: '0 23 * * 1-5' # runs every day at 23:00 between Mon - Fri
+    - cron: "0 23 * * 1-5" # runs every day at 23:00 between Mon - Fri
   workflow_dispatch:
     inputs:
       es-version:
@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        zeebe-version: [ 8.1.0, 8.2.0, 8.3.0, latest, snapshot ]
+        zeebe-version: [8.1.0, 8.2.0, 8.3.0, 8.4.0, latest, snapshot]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       # Parses the pom within less than second and exposes every value as an output of the step
@@ -47,7 +47,7 @@ jobs:
           # install xmllint to use in zeebe versions script
           sudo apt-get update -qq 
           sudo apt-get install -y libxml2-utils
-          
+
           zeebe_version_to_use=$(./.github/scripts/get-zeebe-version-from-tag.sh "${{ matrix.zeebe-version }}")
           echo "zeebe-version-to-use=$zeebe_version_to_use" >> "$GITHUB_ENV"
       - name: Run Zeebe IT

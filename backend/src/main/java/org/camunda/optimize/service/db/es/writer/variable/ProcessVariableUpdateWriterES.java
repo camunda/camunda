@@ -11,21 +11,22 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.RequestType;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.db.es.writer.AbstractProcessInstanceDataWriterES;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
+import org.camunda.optimize.service.db.schema.ScriptData;
+import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
+import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -38,11 +39,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.VariableHelper.isProcessVariableTypeSupported;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 @Component
 @Slf4j
@@ -75,12 +75,7 @@ public class ProcessVariableUpdateWriterES extends AbstractProcessInstanceDataWr
     Map<String, List<ProcessVariableDto>> processInstanceIdToVariables = groupVariablesByProcessInstanceIds(variables);
 
     return processInstanceIdToVariables.entrySet().stream()
-      .map(entry -> ImportRequestDto.builder()
-        .importName(importItemName)
-        .client(esClient)
-        .request(createUpdateRequestForProcessInstanceVariables(entry))
-        .build())
-      .filter(update -> Objects.nonNull(update.getRequest()))
+      .map(entry -> createUpdateRequestForProcessInstanceVariables(entry, importItemName))
       .collect(Collectors.toList());
   }
 
@@ -99,16 +94,16 @@ public class ProcessVariableUpdateWriterES extends AbstractProcessInstanceDataWr
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
       )
     );
-    ElasticsearchWriterUtil.doBulkRequest(
-      esClient,
+    esClient.doBulkRequest(
       bulkRequest,
       getProcessInstanceIndexAliasName(processDefinitionKey),
       false
     );
   }
 
-  private UpdateRequest createUpdateRequestForProcessInstanceVariables(
-    final Map.Entry<String, List<ProcessVariableDto>> processInstanceIdToVariables) {
+  private ImportRequestDto createUpdateRequestForProcessInstanceVariables(
+    final Map.Entry<String, List<ProcessVariableDto>> processInstanceIdToVariables,
+    final String importItemName) {
     final List<ProcessVariableDto> variablesWithAllInformation = processInstanceIdToVariables.getValue();
     final String processInstanceId = processInstanceIdToVariables.getKey();
     final String processDefinitionKey = variablesWithAllInformation.get(0).getProcessDefinitionKey();
@@ -116,7 +111,7 @@ public class ProcessVariableUpdateWriterES extends AbstractProcessInstanceDataWr
     List<SimpleProcessVariableDto> variables = mapToSimpleVariables(variablesWithAllInformation);
     Map<String, Object> params = buildParameters(variables);
 
-    final Script updateScript = createDefaultScriptWithSpecificDtoParams(
+    final ScriptData updateScriptData = DatabaseWriterUtil.createScriptData(
       createInlineUpdateScript(),
       params,
       objectMapper
@@ -145,12 +140,15 @@ public class ProcessVariableUpdateWriterES extends AbstractProcessInstanceDataWr
     }
 
     if (newEntryIfAbsent != null) {
-      return new UpdateRequest()
-        .index(getProcessInstanceIndexAliasName(processDefinitionKey))
+      return ImportRequestDto.builder()
+        .indexName(getProcessInstanceIndexAliasName(processDefinitionKey))
+        .importName(importItemName)
+        .type(RequestType.UPDATE)
         .id(processInstanceId)
-        .script(updateScript)
-        .upsert(newEntryIfAbsent, XContentType.JSON)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+        .scriptData(updateScriptData)
+        .source(newEntryIfAbsent)
+        .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+        .build();
     }
     return null;
   }

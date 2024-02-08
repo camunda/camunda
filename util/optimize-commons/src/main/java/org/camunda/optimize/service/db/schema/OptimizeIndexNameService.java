@@ -9,7 +9,7 @@ import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.DatabaseProfile;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
@@ -24,11 +24,11 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   @Autowired
   public OptimizeIndexNameService(final ConfigurationService configurationService,
                                   final Environment environment) {
-    setIndexPrefix(configurationService, ConfigurationService.getDatabaseProfile(environment));
+    setIndexPrefix(configurationService, ConfigurationService.getDatabaseType(environment));
   }
 
   public OptimizeIndexNameService(final ConfigurationService configurationService,
-                                  final DatabaseProfile databaseProfile) {
+                                  final DatabaseType databaseProfile) {
     setIndexPrefix(configurationService, databaseProfile);
   }
 
@@ -85,11 +85,11 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
     ConfigurationService configurationService = context.getBean(ConfigurationService.class);
-    setIndexPrefix(configurationService, ConfigurationService.getDatabaseProfile(context.getEnvironment()));
+    setIndexPrefix(configurationService, ConfigurationService.getDatabaseType(context.getEnvironment()));
   }
 
-  private void setIndexPrefix(ConfigurationService configurationService, DatabaseProfile databaseProfile) {
-    if (databaseProfile.equals(DatabaseProfile.OPENSEARCH)) {
+  private void setIndexPrefix(ConfigurationService configurationService, DatabaseType databaseProfile) {
+    if (databaseProfile.equals(DatabaseType.OPENSEARCH)) {
       this.indexPrefix = configurationService.getOpenSearchConfiguration().getIndexPrefix();
     } else {
       this.indexPrefix = configurationService.getElasticSearchConfiguration().getIndexPrefix();

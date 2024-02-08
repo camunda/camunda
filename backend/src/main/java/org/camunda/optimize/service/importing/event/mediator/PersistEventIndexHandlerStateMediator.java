@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.event.mediator;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -28,8 +29,9 @@ public class PersistEventIndexHandlerStateMediator
 
   protected PersistEventIndexHandlerStateMediator(final ConfigurationService configurationService,
                                                   final ImportIndexWriter importIndexWriter,
-                                                  final EventImportIndexHandlerRegistry importIndexHandlerRegistry) {
-    super(new StoreIndexesEngineImportService(configurationService, importIndexWriter), configurationService);
+                                                  final EventImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                  final DatabaseClient databaseClient) {
+    super(new StoreIndexesEngineImportService(configurationService, importIndexWriter, databaseClient), configurationService);
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
   }
 

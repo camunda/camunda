@@ -41,7 +41,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
     final String versionedIndexName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(versionedIndexName);
-    esMockServer
+    dbMockServer
       // respond with this error 2 times, afterwards the request will be forwarded to elastic again
       .when(indexDeleteRequest, Times.exactly(2))
       .respond(createSnapshotInProgressResponse(versionedIndexName));
@@ -55,7 +55,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     assertThat(upgradeExecution.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 
     // and the mocked delete endpoint was called three times in total
-    esMockServer.verify(indexDeleteRequest, exactly(3));
+    dbMockServer.verify(indexDeleteRequest, exactly(3));
     // and the index is gone
     assertThat(prefixAwareClient.exists(TEST_INDEX_V2)).isFalse();
   }
@@ -68,7 +68,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
     final String versionedIndexName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(versionedIndexName);
-    esMockServer
+    dbMockServer
       // respond with a different error
       .when(indexDeleteRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
@@ -77,7 +77,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
 
     // and the mocked delete endpoint was called one time in total
-    esMockServer.verify(indexDeleteRequest, exactly(1));
+    dbMockServer.verify(indexDeleteRequest, exactly(1));
     // and the index is still there
     assertThat(prefixAwareClient.exists(TEST_INDEX_V2)).isTrue();
   }
@@ -90,7 +90,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
     final String oldIndexToDeleteName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(oldIndexToDeleteName);
-    esMockServer
+    dbMockServer
       // respond with this error 2 times, afterwards the request will be forwarded to elastic again
       .when(indexDeleteRequest, Times.exactly(2))
       .respond(createSnapshotInProgressResponse(oldIndexToDeleteName));
@@ -104,7 +104,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     assertThat(upgradeExecution.awaitTermination(20, TimeUnit.SECONDS)).isTrue();
 
     // and the mocked delete endpoint was called three times in total
-    esMockServer.verify(indexDeleteRequest, exactly(3));
+    dbMockServer.verify(indexDeleteRequest, exactly(3));
     // and the old index is gone
     assertThat(prefixAwareClient.exists(TEST_INDEX_V1)).isFalse();
     // and the new index exists
@@ -118,7 +118,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
     final String oldIndexToDeleteName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(oldIndexToDeleteName);
-    esMockServer
+    dbMockServer
       // respond with a different error
       .when(indexDeleteRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
@@ -127,7 +127,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
 
     // and the mocked delete endpoint was called one time in total
-    esMockServer.verify(indexDeleteRequest, exactly(1));
+    dbMockServer.verify(indexDeleteRequest, exactly(1));
     // and the old index is still there
     assertThat(prefixAwareClient.exists(TEST_INDEX_V1)).isTrue();
     // and the new index as well

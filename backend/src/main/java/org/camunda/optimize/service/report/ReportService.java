@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
@@ -40,6 +41,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponse
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.db.reader.ReportReader;
 import org.camunda.optimize.service.db.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -52,6 +54,7 @@ import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
+import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.stereotype.Component;
@@ -69,6 +72,7 @@ import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_DEFINITION_COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_TENANT_COMPLIANT;
@@ -90,6 +94,7 @@ public class ReportService implements CollectionReferencingService {
   private final ReportRelationService reportRelationService;
   private final AuthorizedCollectionService collectionService;
   private final AbstractIdentityService identityService;
+  private final DefinitionService defintionService;
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(final CollectionDefinitionDto definition) {
@@ -255,6 +260,10 @@ public class ReportService implements CollectionReferencingService {
 
   public List<ReportDefinitionDto> getAllReportsForProcessDefinitionKeyOmitXml(final String processDefinitionKey) {
     return reportReader.getAllReportsForProcessDefinitionKeyOmitXml(processDefinitionKey);
+  }
+
+  public List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(final List<String> reportIds) {
+    return reportReader.getAllSingleProcessReportsForIdsOmitXml(reportIds);
   }
 
   public List<AuthorizedReportDefinitionResponseDto> findAndFilterReports(String userId, String collectionId) {
@@ -434,7 +443,7 @@ public class ReportService implements CollectionReferencingService {
   private <T extends ReportDataDto> ReportDefinitionDto<T> getReportOrFail(final String reportId) {
     return reportReader.getReport(reportId)
       .orElseThrow(() -> new NotFoundException(
-        "Was not able to retrieve report with id [" + reportId + "] from Elasticsearch. Report does not exist."
+        "Was not able to retrieve report with id [" + reportId + "] from database. Report does not exist."
       ));
   }
 
@@ -494,6 +503,29 @@ public class ReportService implements CollectionReferencingService {
         throw new OptimizeValidationException("Report descriptions cannot be non-null and empty");
       }
     }
+  }
+
+  public Optional<String> updateReportDefinitionXmlIfRequiredAndReturn(final ReportDefinitionDto reportDefinition) {
+    // we only need to validate that the stored XML is still up to date for heatmap reports on the latest or all versions to
+    // ensure the report result is visualised correctly in the UI
+    if (reportDefinition.getData() instanceof ProcessReportDataDto reportData
+      && (isHeatmapReportOnVersionAllOrLatest(reportData))) {
+      // retrieve latest version of definition which is cached in definitionService
+      final Optional<String> latestXML = defintionService.getDefinitionWithXmlAsService(
+          DefinitionType.PROCESS,
+          reportData.getDefinitionKey(),
+          List.of(LATEST_VERSION),
+          reportData.getTenantIds()
+        )
+        .map(ProcessDefinitionOptimizeDto.class::cast)
+        .map(ProcessDefinitionOptimizeDto::getBpmn20Xml);
+      if (latestXML.isPresent()
+        && !latestXML.get().equals(reportData.getConfiguration().getXml())) {
+        updateDefinitionXmlOfProcessReports(reportData.getProcessDefinitionKey(), latestXML.get());
+        return latestXML;
+      }
+    }
+    return Optional.empty();
   }
 
   private Set<ConflictedItemDto> mapCombinedReportsToConflictingItems(List<CombinedReportDefinitionRequestDto> combinedReportDtos) {
@@ -872,6 +904,11 @@ public class ReportService implements CollectionReferencingService {
     return reportDefinition instanceof SingleProcessReportDefinitionRequestDto
       && (((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().isManagementReport()
       || ((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().isInstantPreviewReport());
+  }
+
+  private boolean isHeatmapReportOnVersionAllOrLatest(final ProcessReportDataDto reportData) {
+    return ProcessVisualization.HEAT.equals(reportData.getVisualization())
+      && DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest(reportData.getDefinitionVersions());
   }
 
   @FunctionalInterface

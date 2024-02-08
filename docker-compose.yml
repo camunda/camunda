@@ -3,8 +3,8 @@ version: '2.4'
 services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.9.0}
-#    profiles: ["elasticsearch"] TODO leaving this commented out for now so that elastic search boots by default.
-#   This needs to be commented in with ticket OPT-7311
+    # By leaving the first profile entry blank, this container will also start if no profile is defined (default)
+    profiles: ["", "elasticsearch", "setup-integration-test"]
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch
@@ -29,8 +29,8 @@ services:
       timeout: 5s
       retries: 3
   opensearch:
-    image: opensearchproject/opensearch:2.11.1@sha256:68039e76c8c60c0488b8906945b2efd5179bb29a9ae8d71ec64981ab5772b796
-    profiles: ["opensearch"]
+    image: opensearchproject/opensearch:${OS_VERSION:-2.11.1@sha256:68039e76c8c60c0488b8906945b2efd5179bb29a9ae8d71ec64981ab5772b796}
+    profiles: ["opensearch", "setup-integration-test"]
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -50,6 +50,14 @@ services:
     ports:
       - 9205:9200
       - 9305:9300
+    restart: always
+    cpu_count: 4
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
   cambpm:
     image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.18.0}
     container_name: cambpm

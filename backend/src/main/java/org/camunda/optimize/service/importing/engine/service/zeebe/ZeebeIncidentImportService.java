@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentDataDto;
 import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -39,8 +40,9 @@ public class ZeebeIncidentImportService extends ZeebeProcessInstanceSubEntityImp
   public ZeebeIncidentImportService(final ConfigurationService configurationService,
                                     final ZeebeProcessInstanceWriter processInstanceWriter,
                                     final int partitionId,
-                                    final ProcessDefinitionReader processDefinitionReader) {
-    super(configurationService, processInstanceWriter, partitionId, processDefinitionReader);
+                                    final ProcessDefinitionReader processDefinitionReader,
+                                    final DatabaseClient databaseClient) {
+    super(configurationService, processInstanceWriter, partitionId, processDefinitionReader, databaseClient);
   }
 
   @Override

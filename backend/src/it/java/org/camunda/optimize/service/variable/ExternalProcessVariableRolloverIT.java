@@ -36,8 +36,8 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
   @AfterEach
   public void cleanUpExternalVariableIndices() {
     databaseIntegrationTestExtension.deleteAllExternalVariableIndices();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeElasticClient(),
+    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
+      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
       new ExternalProcessVariableIndexES()
     );
   }
@@ -155,11 +155,11 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
 
   @SneakyThrows
   private Map<String, Set<AliasMetadata>> getAllExternalVariableIndexAliasInfo() {
-    final String aliasNameWithPrefix = embeddedOptimizeExtension.getOptimizeElasticClient()
+    final String aliasNameWithPrefix = embeddedOptimizeExtension.getOptimizeDatabaseClient()
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME);
     final GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    return embeddedOptimizeExtension.getOptimizeElasticClient().getAlias(aliasesRequest).getAliases();
+    return embeddedOptimizeExtension.getOptimizeElasticSearchClient().getAlias(aliasesRequest).getAliases();
   }
 
   private List<String> extractIndicesWithWriteAlias(final Map<String, Set<AliasMetadata>> indexNameToAliasMap) {

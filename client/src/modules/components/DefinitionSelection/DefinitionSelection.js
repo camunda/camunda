@@ -300,8 +300,7 @@ export class DefinitionSelection extends React.Component {
       isLoadingVersions,
       isLoadingTenants,
     } = this.state;
-    const {expanded, type, disableDefinition, selectedDefinitions, onChange, versionTooltip} =
-      this.props;
+    const {expanded, type, disableDefinition, selectedDefinitions, onChange} = this.props;
     const collectionId = getCollection(this.props.location.pathname);
     const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
     const selectedKey = selection.key;
@@ -322,8 +321,12 @@ export class DefinitionSelection extends React.Component {
       ? t(`common.definitionSelection.select.${type}`)
       : t('common.name');
 
+    const wrapperProps = expanded
+      ? {}
+      : {trigger: <Popover.ListBox>{this.createTitle()}</Popover.ListBox>};
+
     return (
-      <Wrapper className="DefinitionSelection" title={this.createTitle()}>
+      <Wrapper className="DefinitionSelection" {...wrapperProps}>
         <div
           className={classnames('container', {
             large: this.canRenderDiagram(),
@@ -358,8 +361,11 @@ export class DefinitionSelection extends React.Component {
                   }}
                   itemToString={(item) => (item ? item.name || item.key : '')}
                   titleText={processSelectLabel}
-                  shouldFilterItem={(data) => {
-                    const {inputValue, item} = data;
+                  shouldFilterItem={({inputValue, item}) => {
+                    // when definition is selected we dont want to filter the items, to show user the whole list of definitions
+                    if (inputValue && (def?.name || def?.key) === inputValue) {
+                      return true;
+                    }
                     return (
                       typeof inputValue !== 'undefined' &&
                       (item.name || item.key).toLowerCase().includes(inputValue?.toLowerCase())
@@ -369,7 +375,6 @@ export class DefinitionSelection extends React.Component {
               )}
               <div className="version entry">
                 <VersionPopover
-                  tooltip={versionTooltip}
                   disabled={!this.hasDefinition()}
                   versions={this.getAvailableVersions()}
                   selected={this.getSelectedVersions()}
@@ -404,6 +409,10 @@ export class DefinitionSelection extends React.Component {
               {selectedDefinitions?.length >= 10 && (
                 <Message error>{t('common.definitionSelection.limitReached')}</Message>
               )}
+              {selectedDefinitions?.length > 1 && (
+                <Message>{t('templates.disabledMessage.editReport')}</Message>
+              )}
+
               {this.props.infoMessage && <Message>{this.props.infoMessage}</Message>}
             </div>
           </div>

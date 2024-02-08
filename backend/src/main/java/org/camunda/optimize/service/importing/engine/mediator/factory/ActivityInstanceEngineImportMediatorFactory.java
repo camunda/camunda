@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.activity.CompletedActivityInstanceWriter;
 import org.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -37,8 +38,9 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
                                                      final BeanFactory beanFactory,
                                                      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
-                                                     final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                                     final ProcessDefinitionResolverService processDefinitionResolverService,
+                                                     final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
@@ -64,7 +66,8 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         engineContext,
         configurationService,
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -81,7 +84,8 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         engineContext,
         configurationService,
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)

@@ -92,7 +92,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
             .build()
         );
 
-        ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, indexName, 0);
+        prefixAwareClient.triggerRollover( indexName, 0);
       },
       new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)
     );
@@ -122,7 +122,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
             .build()
         );
 
-        ElasticsearchWriterUtil.triggerRollover(prefixAwareClient, indexName, 0);
+        prefixAwareClient.triggerRollover( indexName, 0);
       },
       () -> {
         // when creating the second rolled over index fails the upgrade
@@ -130,7 +130,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
         final HttpRequest createRolledOverIndex2Request = request()
           .withPath("/" + targetIndexName + "-000002")
           .withMethod(PUT);
-        esMockServer
+        dbMockServer
           .when(createRolledOverIndex2Request, Times.exactly(1))
           .error(HttpError.error().withDropConnection(true));
         return createRolledOverIndex2Request;
@@ -169,7 +169,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
       prepareFunction,
       () -> {
         final HttpRequest stepOneLogUpsertRequest = createUpdateLogUpsertRequest(upgradeStep);
-        esMockServer
+        dbMockServer
           .when(stepOneLogUpsertRequest, Times.exactly(1))
           .error(HttpError.error().withDropConnection(true));
         return stepOneLogUpsertRequest;
@@ -197,7 +197,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
     final HttpRequest mockRequest = mockServerFailPreparation.get();
     // the upgrade is executed and failed due to the error on writing the step log
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
-    esMockServer.verify(mockRequest, exactly(1));
+    dbMockServer.verify(mockRequest, exactly(1));
 
     // when it is retried
     final OffsetDateTime frozenDate2 = DateCreationFreezer.dateFreezer()

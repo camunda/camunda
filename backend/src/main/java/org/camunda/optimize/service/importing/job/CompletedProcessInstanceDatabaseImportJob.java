@@ -8,9 +8,9 @@ package org.camunda.optimize.service.importing.job;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.CamundaEventImportService;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
@@ -25,8 +25,9 @@ public class CompletedProcessInstanceDatabaseImportJob extends DatabaseImportJob
   public CompletedProcessInstanceDatabaseImportJob(final CompletedProcessInstanceWriter completedProcessInstanceWriter,
                                                    final CamundaEventImportService camundaEventService,
                                                    final ConfigurationService configurationService,
-                                                   final Runnable importCompleteCallback) {
-    super(importCompleteCallback);
+                                                   final Runnable importCompleteCallback,
+                                                   final DatabaseClient databaseClient) {
+    super(importCompleteCallback, databaseClient);
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
     this.configurationService = configurationService;
@@ -37,11 +38,8 @@ public class CompletedProcessInstanceDatabaseImportJob extends DatabaseImportJob
     List<ImportRequestDto> imports = new ArrayList<>();
     imports.addAll(completedProcessInstanceWriter.generateProcessInstanceImports(completedProcessInstances));
     imports.addAll(camundaEventService.generateCompletedProcessInstanceImports(completedProcessInstances));
-    //todo handle it in the OPT-7228
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
-      "Completed process instances",
-      imports,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
+    databaseClient.executeImportRequestsAsBulk("Completed process instances", imports,
+                                               configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 

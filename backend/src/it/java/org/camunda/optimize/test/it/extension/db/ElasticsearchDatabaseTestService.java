@@ -7,13 +7,11 @@ package org.camunda.optimize.test.it.extension.db;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import jakarta.ws.rs.NotFoundException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.text.StringSubstitutor;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
@@ -35,7 +33,7 @@ import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DatabaseHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.DatabaseProfile;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
@@ -92,14 +90,9 @@ import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_IN
 import static org.camunda.optimize.service.db.es.OptimizeElasticsearchClient.INDICES_EXIST_OPTIONS;
 import static org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
-import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithoutPercentileInterpolation;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -122,16 +115,13 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   private static final Map<String, OptimizeElasticsearchClient> CLIENT_CACHE = new HashMap<>();
   private static final ClientAndServer mockServerClient = initMockServer();
 
-  private final String customIndexPrefix;
-  private boolean haveToClean;
   private String elasticsearchDatabaseVersion;
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
 
   public ElasticsearchDatabaseTestService(final String customIndexPrefix,
                                           final boolean haveToClean) {
-    this.customIndexPrefix = customIndexPrefix;
-    this.haveToClean = haveToClean;
+    super(customIndexPrefix, haveToClean);
     initEsClient();
   }
 
@@ -143,10 +133,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public OptimizeElasticsearchClient getOptimizeElasticsearchClient() {
     return prefixAwareRestHighLevelClient;
-  }
-
-  public void disableCleanup() {
-    this.haveToClean = false;
   }
 
   @Override
@@ -243,10 +229,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
         .count(new CountRequest(indexName).query(matchAllQuery()));
       return Long.valueOf(countResponse.getCount()).intValue();
     } catch (IOException | ElasticsearchStatusException e) {
-      throw new OptimizeIntegrationTestException(
-        "Cannot evaluate document count for index " + indexName,
-        e
-      );
+      throw new OptimizeIntegrationTestException("Cannot evaluate document count for index " + indexName, e);
     }
   }
 
@@ -476,29 +459,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void updateUserTaskDurations(final String processInstanceId, final String processDefinitionKey,
                                       final long duration) {
-    final StringSubstitutor substitutor = new StringSubstitutor(
-      ImmutableMap.<String, String>builder()
-        .put("flowNodesField", FLOW_NODE_INSTANCES)
-        .put("flowNodeTypeField", FLOW_NODE_TYPE)
-        .put("totalDurationField", FLOW_NODE_TOTAL_DURATION)
-        .put("idleDurationField", USER_TASK_IDLE_DURATION)
-        .put("workDurationField", USER_TASK_WORK_DURATION)
-        .put("userTaskFlowNodeType", FLOW_NODE_TYPE_USER_TASK)
-        .put("newDuration", String.valueOf(duration))
-        .build()
-    );
-    // @formatter:off
-    final String updateScript = substitutor.replace(
-      "for (def flowNode : ctx._source.${flowNodesField}) {" +
-          "if (flowNode.${flowNodeTypeField}.equals(\"${userTaskFlowNodeType}\")) {" +
-            "flowNode.${totalDurationField} = ${newDuration};" +
-            "flowNode.${workDurationField} = ${newDuration};" +
-            "flowNode.${idleDurationField} = ${newDuration};" +
-          "}" +
-        "}"
-    );
-    // @formatter:on
-
+    final String updateScript = buildUpdateScript(duration);
     final UpdateRequest update = new UpdateRequest()
       .index(getProcessInstanceIndexAliasName(processDefinitionKey))
       .id(processInstanceId)
@@ -561,14 +522,11 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   private static ClientAndServer initMockServer() {
-    log.debug("Setting up ES MockServer on port {}", IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
-    final DatabaseConnectionNodeConfiguration esConfig =
-      IntegrationTestConfigurationUtil.createItConfigurationService().getElasticSearchConfiguration().getFirstConnectionNode();
-    return MockServerUtil.createProxyMockServer(
-      esConfig.getHost(),
-      esConfig.getHttpPort(),
-      IntegrationTestConfigurationUtil.getElasticsearchMockServerPort()
-    );
+    return DatabaseTestService.initMockServer(
+      IntegrationTestConfigurationUtil
+        .createItConfigurationService()
+        .getElasticSearchConfiguration()
+        .getFirstConnectionNode());
   }
 
   private void createClientAndAddToCache(String clientKey, ConfigurationService configurationService) {
@@ -577,7 +535,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     log.info("Creating ES Client with host {} and port {}", esConfig.getHost(), esConfig.getHttpPort());
     prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH)
+      new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH)
     );
     adjustClusterSettings();
     CLIENT_CACHE.put(clientKey, prefixAwareRestHighLevelClient);
@@ -639,7 +597,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   private <T> List<T> getAllDocumentsOfIndicesAs(final String[] indexNames, final Class<T> type,
                                                  final QueryBuilder query) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
+      .query(query)
       .trackTotalHits(true)
       .size(100);
 

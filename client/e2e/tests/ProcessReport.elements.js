@@ -45,7 +45,7 @@ export const badge = (id) =>
 export const targetValueButton = Selector('.toggleButton');
 export const targetValueInput = (name) => Selector('.Modal tbody tr').withText(name).find('input');
 export const nodeFilterOperator = (name) =>
-  Selector('.Modal tbody tr').withText(name).find('.Dropdown:first-child');
+  Selector('.Modal tbody tr').withText(name).find('.CarbonSelect:first-child');
 export const warning = Selector('.Message--warning');
 export const processPartButton = Selector('.ReportControlPanel button').withText(
   'Process instance part'
@@ -108,7 +108,7 @@ export const removeMeasureButton = Selector('.Measure').nth(1).find('.SelectionP
 export const heatDropdown = Selector('.Heatmap .Select');
 export const sectionToggle = (sectionName) =>
   Selector('button.cds--accordion__heading').withText(sectionName);
-export const deselectAllButton = Selector('.Button').withText('Deselect all');
+export const deselectAllButton = Selector('button').withText('Deselect all');
 export const addDefinitionButton = Selector('.AddDefinition');
 export const definitionEntry = (name) => Selector('.Checklist tr').withText(name);
 export const lineButton = Selector('.cds--radio-button-wrapper').withText('Line');

@@ -7,11 +7,41 @@ package org.camunda.optimize.service.db.writer.incident;
 
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public interface AbstractIncidentWriter {
 
-  List<ImportRequestDto> generateIncidentImports(List<IncidentDto> incidents);
+  Logger log = LoggerFactory.getLogger(AbstractIncidentWriter.class);
+
+  default List<ImportRequestDto> generateIncidentImports(List<IncidentDto> incidents) {
+    final String importItemName = "incidents";
+    log.debug("Creating imports for {} [{}].", incidents.size(), importItemName);
+
+    createInstanceIndicesFromIncidentsIfMissing(incidents);
+
+    Map<String, List<IncidentDto>> processInstanceToEvents = new HashMap<>();
+    for (IncidentDto e : incidents) {
+      processInstanceToEvents.putIfAbsent(e.getProcessInstanceId(), new ArrayList<>());
+      processInstanceToEvents.get(e.getProcessInstanceId()).add(e);
+    }
+
+    return processInstanceToEvents.entrySet().stream()
+      .map(entry -> createImportRequestForIncident(entry, importItemName))
+      .collect(Collectors.toList());
+  }
+
+  void createInstanceIndicesFromIncidentsIfMissing(final List<IncidentDto> incidents);
+
+  ImportRequestDto createImportRequestForIncident(Map.Entry<String, List<IncidentDto>> incidentsByProcessInstance,
+                                                  final String importName);
+
+  String createInlineUpdateScript();
 
 }

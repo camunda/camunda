@@ -1,22 +1,12 @@
 .DateFilter {
-  .Form {
-    padding-inline: 10%;
-
-    .selectGroup {
-      .PickerDateInput input {
-        width: 100%;
-        min-width: 110px;
-      }
-    }
-
-    .previewContainer {
-      min-height: 50px;
-    }
+  .CarbonSelect {
+    width: fit-content;
+  }
+  .FilterDefinitionSelection {
+    margin-bottom: 0;
   }
 
   .DateFilterPreview {
-    font-size: 0.875em;
-    align-items: center;
     white-space: nowrap;
 
     .filterText {

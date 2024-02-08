@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.importing.job.RunningProcessInstanceDatabaseImportJob;
@@ -29,8 +30,9 @@ public class RunningProcessInstanceImportService extends AbstractProcessInstance
                                              final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
                                              final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                              final CamundaEventImportService camundaEventService,
-                                             final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(configurationService, engineContext, businessKeyImportAdapterProvider, processDefinitionResolverService);
+                                             final ProcessDefinitionResolverService processDefinitionResolverService,
+                                             final DatabaseClient databaseClient) {
+    super(configurationService, engineContext, businessKeyImportAdapterProvider, processDefinitionResolverService, databaseClient);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
   }
@@ -44,7 +46,8 @@ public class RunningProcessInstanceImportService extends AbstractProcessInstance
         runningProcessInstanceWriter,
         camundaEventService,
         configurationService,
-        callback
+        callback,
+        databaseClient
       );
     importJob.setEntitiesToImport(processInstances);
     return importJob;

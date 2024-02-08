@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.incident.CompletedIncidentWriter;
 import org.camunda.optimize.service.db.writer.incident.OpenIncidentWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -37,8 +38,9 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
                                              final BeanFactory beanFactory,
                                              final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                              final ConfigurationService configurationService,
-                                             final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                             final ProcessDefinitionResolverService processDefinitionResolverService,
+                                             final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.completedIncidentWriter = completedIncidentWriter;
     this.openIncidentWriter = openIncidentWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
@@ -58,7 +60,7 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
       importIndexHandlerRegistry.getCompletedIncidentImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(CompletedIncidentFetcher.class, engineContext),
       new CompletedIncidentImportService(
-        configurationService, completedIncidentWriter, engineContext, processDefinitionResolverService
+        configurationService, completedIncidentWriter, engineContext, processDefinitionResolverService, databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -71,7 +73,7 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
       importIndexHandlerRegistry.getOpenIncidentImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(OpenIncidentFetcher.class, engineContext),
       new OpenIncidentImportService(
-        configurationService, openIncidentWriter, engineContext, processDefinitionResolverService
+        configurationService, openIncidentWriter, engineContext, processDefinitionResolverService, databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)

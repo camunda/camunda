@@ -193,11 +193,11 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
     final String collectionId = collectionClient.createNewCollection();
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_doc/.*")
       .withMethod(PUT);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -206,7 +206,7 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
       dashboardId, collectionId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(copyResponse.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
     assertThat(oldDashboard.getCollectionId()).isNull();
@@ -227,11 +227,11 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
     dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
     final String collectionId = collectionClient.createNewCollection();
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + SINGLE_PROCESS_REPORT_INDEX_NAME + "/_doc/.*")
       .withMethod(PUT);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -240,7 +240,7 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
       dashboardId, collectionId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(copyResponse.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     DashboardDefinitionRestDto oldDashboard = dashboardClient.getDashboard(dashboardId);
     assertThat(oldDashboard.getCollectionId()).isNull();

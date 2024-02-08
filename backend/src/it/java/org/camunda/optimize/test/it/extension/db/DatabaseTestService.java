@@ -10,13 +10,18 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
+import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
+import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
@@ -32,17 +37,30 @@ import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_C
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 
 @Slf4j
 public abstract class DatabaseTestService {
 
   protected static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
 
+  protected boolean haveToClean;
+  protected final String customIndexPrefix;
+
+  protected DatabaseTestService(final String customIndexPrefix,
+                                final boolean haveToClean) {
+    this.customIndexPrefix = customIndexPrefix;
+    this.haveToClean = haveToClean;
+  }
+
   public ObjectMapper getObjectMapper() {
     return OBJECT_MAPPER;
   }
-
-  public abstract void disableCleanup();
 
   public abstract void beforeEach();
 
@@ -127,6 +145,36 @@ public abstract class DatabaseTestService {
     }
   }
 
+  public void disableCleanup() {
+    this.haveToClean = false;
+  }
+
+  protected String buildUpdateScript(final long duration) {
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("flowNodesField", FLOW_NODE_INSTANCES)
+        .put("flowNodeTypeField", FLOW_NODE_TYPE)
+        .put("totalDurationField", FLOW_NODE_TOTAL_DURATION)
+        .put("idleDurationField", USER_TASK_IDLE_DURATION)
+        .put("workDurationField", USER_TASK_WORK_DURATION)
+        .put("userTaskFlowNodeType", FLOW_NODE_TYPE_USER_TASK)
+        .put("newDuration", String.valueOf(duration))
+        .build()
+    );
+    // @formatter:off
+    final String updateScript = substitutor.replace(
+      "for (def flowNode : ctx._source.${flowNodesField}) {" +
+        "if (flowNode.${flowNodeTypeField}.equals(\"${userTaskFlowNodeType}\")) {" +
+        "flowNode.${totalDurationField} = ${newDuration};" +
+        "flowNode.${workDurationField} = ${newDuration};" +
+        "flowNode.${idleDurationField} = ${newDuration};" +
+        "}" +
+        "}"
+    );
+    // @formatter:on
+    return updateScript;
+  }
+
   protected void deleteCamundaEventIndicesAndEventCountsAndTraces() {
     deleteIndicesStartingWithPrefix(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX);
     deleteIndicesStartingWithPrefix(EVENT_SEQUENCE_COUNT_INDEX_PREFIX);
@@ -161,6 +209,15 @@ public abstract class DatabaseTestService {
         SerializationFeature.INDENT_OUTPUT
       )
       .build();
+  }
+
+  protected static ClientAndServer initMockServer(final DatabaseConnectionNodeConfiguration dbConfig) {
+    log.debug("Setting up DB MockServer on port {}", IntegrationTestConfigurationUtil.getDatabaseMockServerPort());
+    return MockServerUtil.createProxyMockServer(
+      dbConfig.getHost(),
+      dbConfig.getHttpPort(),
+      IntegrationTestConfigurationUtil.getDatabaseMockServerPort()
+    );
   }
 
 }

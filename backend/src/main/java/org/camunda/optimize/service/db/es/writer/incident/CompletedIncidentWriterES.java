@@ -25,17 +25,4 @@ public class CompletedIncidentWriterES extends AbstractIncidentWriterES implemen
     super(esClient, elasticSearchSchemaManager, objectMapper);
   }
 
-  @Override
-  protected String createInlineUpdateScript() {
-    // new import incidents should win over already
-    // imported incidents, since those might be open incidents
-    // @formatter:off
-    return
-      "def existingIncidentsById = ctx._source.incidents.stream().collect(Collectors.toMap(e -> e.id, e -> e, (e1, e2) -> e1));" +
-      "def incidentsToAddById = params.incidents.stream().collect(Collectors.toMap(e -> e.id, e -> e, (e1, e2) -> e1));" +
-      "existingIncidentsById.putAll(incidentsToAddById);" +
-      "ctx._source.incidents = existingIncidentsById.values();";
-    // @formatter:on
-  }
-
 }

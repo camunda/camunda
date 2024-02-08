@@ -72,22 +72,14 @@
             }
 
             .Popover {
-              .buttonWrapper .Button {
-                width: 20px;
-                height: 20px;
+              margin-left: 10px;
+
+              .colorPickerBtn {
                 padding: 0px;
-                margin: 5px;
-                border: 0;
-
-                .Icon {
-                  display: none;
-                }
-                .colorBox {
-                  display: block;
-                  height: 100%;
-                }
+                width: 20px;
+                min-height: 20px;
+                margin-top: 5px;
               }
-
               .popoverContent {
                 padding: 5px;
               }

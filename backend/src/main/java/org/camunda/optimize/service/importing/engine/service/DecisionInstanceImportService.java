@@ -22,6 +22,7 @@ import org.camunda.optimize.plugin.importing.variable.DecisionOutputImportAdapte
 import org.camunda.optimize.plugin.importing.variable.PluginDecisionInputDto;
 import org.camunda.optimize.plugin.importing.variable.PluginDecisionOutputDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -38,19 +39,22 @@ import static org.camunda.optimize.service.util.VariableHelper.isDecisionVariabl
 
 @Slf4j
 public class DecisionInstanceImportService implements ImportService<HistoricDecisionInstanceDto> {
+
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final DecisionInstanceWriter decisionInstanceWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
   private final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
   private final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
+  private final DatabaseClient databaseClient;
 
   public DecisionInstanceImportService(final ConfigurationService configurationService,
                                        final EngineContext engineContext,
                                        final DecisionInstanceWriter decisionInstanceWriter,
                                        final DecisionDefinitionResolverService decisionDefinitionResolverService,
                                        final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider,
-                                       final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider) {
+                                       final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider,
+                                       final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -59,6 +63,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     this.decisionDefinitionResolverService = decisionDefinitionResolverService;
     this.decisionInputImportAdapterProvider = decisionInputImportAdapterProvider;
     this.decisionOutputImportAdapterProvider = decisionOutputImportAdapterProvider;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -125,10 +130,11 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   }
 
   private DatabaseImportJob<DecisionInstanceDto> createDatabaseImportJob(List<DecisionInstanceDto> decisionInstanceDtos,
-                                                                              Runnable callback) {
+                                                                         Runnable callback) {
     final DecisionInstanceDatabaseImportJob importJob = new DecisionInstanceDatabaseImportJob(
       decisionInstanceWriter,
-      callback
+      callback,
+      databaseClient
     );
     importJob.setEntitiesToImport(decisionInstanceDtos);
     return importJob;

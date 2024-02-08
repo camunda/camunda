@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,13 +39,16 @@ public class ProcessDefinitionResolverServiceTest {
   private ProcessDefinitionReader processDefinitionReader;
 
   @Mock
+  private DatabaseClient databaseClient;
+
+  @Mock
   private EngineContext engineContext;
 
   private ProcessDefinitionResolverService underTest;
 
   @BeforeEach
   public void init() {
-    this.underTest = new ProcessDefinitionResolverService(processDefinitionReader);
+    this.underTest = new ProcessDefinitionResolverService(databaseClient, processDefinitionReader);
   }
 
   @Test

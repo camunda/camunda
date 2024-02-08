@@ -255,13 +255,13 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   @Test
   public void deleteDashboardWithShares_shareGetsDeleted_despiteDashboardDeleteFail() {
     // given
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     final String dashboardId = dashboardClient.createDashboard(generateDashboardDefinitionDto());
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_doc/" + dashboardId)
       .withMethod(DELETE);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -277,7 +277,7 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
       .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(dashboardClient.getDashboard(dashboardId)).isNotNull();
     assertThat(documentShareExists(shareId)).isFalse();
   }
@@ -285,14 +285,14 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   @Test
   public void deleteDashboardWithShares_shareDeleteFails_dashboardNotDeleted() {
     // given
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     final String dashboardId = dashboardClient.createDashboard(generateDashboardDefinitionDto());
     final String shareId = dashboardClient.createDashboardShareForDashboard(dashboardId);
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_SHARE_INDEX_NAME + "/_doc/" + shareId)
       .withMethod(DELETE);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -306,7 +306,7 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
       .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(dashboardClient.getDashboard(dashboardId)).isNotNull();
     assertThat(documentShareExists(shareId)).isTrue();
   }

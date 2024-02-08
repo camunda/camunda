@@ -11,9 +11,9 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.usertask.IdentityLinkLogWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
@@ -33,8 +33,9 @@ public class IdentityLinkLogImportJob extends DatabaseImportJob<IdentityLinkLogE
   public IdentityLinkLogImportJob(final IdentityLinkLogWriter identityLinkLogWriter,
                                   final AssigneeCandidateGroupService assigneeCandidateGroupService,
                                   final ConfigurationService configurationService,
-                                  final Runnable callback) {
-    super(callback);
+                                  final Runnable callback,
+                                  final DatabaseClient databaseClient) {
+    super(callback, databaseClient);
     this.identityLinkLogWriter = identityLinkLogWriter;
     this.assigneeCandidateGroupService = assigneeCandidateGroupService;
     this.configurationService = configurationService;
@@ -44,8 +45,7 @@ public class IdentityLinkLogImportJob extends DatabaseImportJob<IdentityLinkLogE
   protected void persistEntities(final List<IdentityLinkLogEntryDto> newOptimizeEntities) {
     final List<ImportRequestDto> importRequests = identityLinkLogWriter.generateIdentityLinkLogImports(
       newOptimizeEntities);
-    //todo handle in the OPT OPT-7228
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+    databaseClient.executeImportRequestsAsBulk(
       "identity link logs",
       importRequests,
       configurationService.getSkipDataAfterNestedDocLimitReached()

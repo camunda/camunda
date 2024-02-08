@@ -23,6 +23,7 @@ import java.util.Optional;
 @Data
 @FieldNameConstants(asEnum = true)
 public class SettingsResponseDto {
+
   private Boolean metadataTelemetryEnabled;
   private Boolean sharingEnabled;
 
@@ -41,4 +42,5 @@ public class SettingsResponseDto {
   public Optional<Boolean> getSharingEnabled() {
     return Optional.ofNullable(sharingEnabled);
   }
+
 }

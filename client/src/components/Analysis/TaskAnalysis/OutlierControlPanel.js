@@ -7,7 +7,7 @@
 
 import React, {useCallback, useEffect, useState} from 'react';
 import update from 'immutability-helper';
-import {Tooltip} from '@carbon/react';
+import {Layer, Tooltip} from '@carbon/react';
 import {Information} from '@carbon/icons-react';
 
 import {DefinitionSelection} from 'components';
@@ -61,8 +61,8 @@ export default function OutlierControlPanel({
 
   return (
     <div className="OutlierControlPanel">
-      <ul className="list">
-        <li className="item">
+      <Layer as="ul" className="list">
+        <li className="item definitionSelection">
           <DefinitionSelection
             type="process"
             infoMessage={t('analysis.task.onlyCompletedHint')}
@@ -102,7 +102,7 @@ export default function OutlierControlPanel({
             variables={variables}
           />
         </li>
-      </ul>
+      </Layer>
     </div>
   );
 }

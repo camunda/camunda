@@ -152,21 +152,6 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  @Test
-  public void getEntityNames_usingMagicLinkReturnsOnlyDashboardName() {
-    // given
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("aDefinitionKey"));
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final EntityNameResponseDto response =
-      entitiesClient.getEntityNames("aDefinitionKey", "aDefinitionKey", null, null);
-
-    // then
-    assertThat(response.getCollectionName()).isNull();
-    assertThat(response.getDashboardName()).isNotBlank();
-  }
-
   @ParameterizedTest
   @MethodSource("templatesAndExpectedLocalizedNames")
   public void getEntityNames_localizesInstantPreviewDashboardContent(final String template, final String locale,

@@ -4,11 +4,12 @@ exports[`show display a definition selection and an info message 1`] = `
 <div
   className="OutlierControlPanel"
 >
-  <ul
+  <ForwardRef(Layer)
+    as="ul"
     className="list"
   >
     <li
-      className="item"
+      className="item definitionSelection"
     >
       <withRouter(DefinitionSelectionErrorHandler)
         definitionKey="aKey"
@@ -62,6 +63,6 @@ exports[`show display a definition selection and an info message 1`] = `
         variables={Array []}
       />
     </li>
-  </ul>
+  </ForwardRef(Layer)>
 </div>
 `;

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
@@ -16,8 +17,9 @@ public class StoreIndexesDatabaseImportJob extends DatabaseImportJob<EngineImpor
   private final ImportIndexWriter importIndexWriter;
 
   public StoreIndexesDatabaseImportJob(final ImportIndexWriter importIndexWriter,
-                                       final Runnable importCompleteCallback) {
-    super(importCompleteCallback);
+                                       final Runnable importCompleteCallback,
+                                       final DatabaseClient databaseClient) {
+    super(importCompleteCallback, databaseClient);
     this.importIndexWriter = importIndexWriter;
   }
 

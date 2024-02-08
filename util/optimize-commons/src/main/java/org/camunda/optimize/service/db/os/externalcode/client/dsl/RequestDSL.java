@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.os.externalcode.client.dsl;
 
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
@@ -58,7 +59,11 @@ public interface RequestDSL {
   }
 
   static DeleteRequest.Builder deleteRequestBuilder(String index, String id) {
-    return new DeleteRequest.Builder().index(index).id(id);
+    return new DeleteRequest.Builder().index(index).id(id).refresh(Refresh.True);
+  }
+
+  static DeleteByQueryRequest.Builder deleteByQueryRequestBuilder(String index) {
+    return new DeleteByQueryRequest.Builder().index(List.of(index));
   }
 
   static DeleteByQueryRequest.Builder deleteByQueryRequestBuilder(List<String> indexes) {
@@ -91,7 +96,8 @@ public interface RequestDSL {
       .dest(Destination.of(b -> b.index(dstIndex)));
   }
 
-  static ReindexRequest.Builder reindexRequestBuilder(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) {
+  static ReindexRequest.Builder reindexRequestBuilder(String srcIndex, String dstIndex, String script,
+                                                      Map<String, Object> scriptParams) {
     var jsonParams = scriptParams.entrySet().stream().collect(Collectors.toMap(
       Map.Entry::getKey,
       e -> JsonData.of(e.getValue())
@@ -107,15 +113,15 @@ public interface RequestDSL {
     return new GetRepositoryRequest.Builder().name(name);
   }
 
-  static SearchRequest.Builder searchRequestBuilder(String index) {
-    return new SearchRequest.Builder().index(index);
+  static SearchRequest.Builder searchRequestBuilder(String... index) {
+    return new SearchRequest.Builder().index(List.of(index));
   }
 
   static GetSnapshotRequest.Builder getSnapshotRequestBuilder(String repository, String snapshot) {
     return new GetSnapshotRequest.Builder().repository(repository).snapshot(snapshot);
   }
 
-  static <A, R> UpdateRequest.Builder<R, A> updateRequestBuilder(String index) {
+  static <R, A> UpdateRequest.Builder<R, A> updateRequestBuilder(String index) {
     return new UpdateRequest.Builder<R, A>().index(index);
   }
 

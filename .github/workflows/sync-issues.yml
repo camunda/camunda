@@ -7,7 +7,7 @@ name: sync-issues
 
 on:
   issues:
-    types: [closed, deleted, edited, labeled, reopened, unlabeled]
+    types: [created, closed, deleted, edited, labeled, reopened, unlabeled]
   issue_comment:
     types: [created, edited, deleted]
 
@@ -18,7 +18,7 @@ jobs:
     steps:
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@v2.7.4
+      uses: hashicorp/vault-action@e3d5714d59e151ca80233142880b9da9d983a48c # v2.7.5
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle

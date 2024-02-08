@@ -110,7 +110,7 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
       .endDate(OffsetDateTime.now())
       .flowNodeInstances(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}))
       .build();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager()
+    embeddedOptimizeExtension.getDatabaseSchemaManager()
       .createIndexIfMissing(
         databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
         new ProcessInstanceIndexES(PROCESS_DEFINITION_KEY)

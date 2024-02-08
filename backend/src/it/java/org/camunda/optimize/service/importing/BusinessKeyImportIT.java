@@ -60,7 +60,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void importOfBusinessKeyForRunningProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws
+  public void importOfBusinessKeyForRunningProcess_isImportedOnNextSuccessfulAttemptAfterDbFailures() throws
                                                                                                       JsonProcessingException {
     // given
     importAllEngineEntitiesFromScratch();
@@ -68,16 +68,16 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     // then
     assertThat(getAllStoredBusinessKeys()).isEmpty();
 
-    // when updates to ES fail
+    // when updates to DB fail
     ProcessInstanceEngineDto runningProcess = deployAndStartUserTaskProcess();
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest businessKeyImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + BUSINESS_KEY_INDEX_NAME + "\""));
-    esMockServer
+    dbMockServer
       .when(businessKeyImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
     importAllEngineEntitiesFromLastIndex();
@@ -85,11 +85,11 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     // then the key gets stored after successful write
     assertThat(getAllStoredBusinessKeys())
       .containsExactlyInAnyOrder(new BusinessKeyDto(runningProcess.getId(), runningProcess.getBusinessKey()));
-    esMockServer.verify(businessKeyImportMatcher);
+    dbMockServer.verify(businessKeyImportMatcher);
   }
 
   @Test
-  public void importOfBusinessKeyForCompletedProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws
+  public void importOfBusinessKeyForCompletedProcess_isImportedOnNextSuccessfulAttemptAfterDbFailures() throws
                                                                                                         JsonProcessingException {
     // given
     importAllEngineEntitiesFromScratch();
@@ -97,18 +97,18 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     // then
     assertThat(getAllStoredBusinessKeys()).isEmpty();
 
-    // when updates to ES fail
+    // when updates to DB fail
     ProcessInstanceEngineDto process = deployAndStartUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(process.getId());
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest businessKeyImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + BUSINESS_KEY_INDEX_NAME + "\""));
-    esMockServer
+    dbMockServer
       .when(businessKeyImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
     importAllEngineEntitiesFromLastIndex();
@@ -116,7 +116,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     // then the key gets stored after successful write
     assertThat(getAllStoredBusinessKeys())
       .containsExactlyInAnyOrder(new BusinessKeyDto(process.getId(), process.getBusinessKey()));
-    esMockServer.verify(businessKeyImportMatcher);
+    dbMockServer.verify(businessKeyImportMatcher);
   }
 
   @Test

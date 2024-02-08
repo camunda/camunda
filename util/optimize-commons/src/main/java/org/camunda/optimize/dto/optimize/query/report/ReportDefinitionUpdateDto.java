@@ -22,4 +22,5 @@ public class ReportDefinitionUpdateDto {
   protected String owner;
   protected String lastModifier;
   protected String collectionId;
+
 }

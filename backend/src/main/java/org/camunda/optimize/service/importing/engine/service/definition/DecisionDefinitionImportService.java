@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -31,17 +32,20 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
   private final EngineContext engineContext;
   private final DecisionDefinitionWriter decisionDefinitionWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
+  private final DatabaseClient databaseClient;
 
   public DecisionDefinitionImportService(final ConfigurationService configurationService,
                                          final EngineContext engineContext,
                                          final DecisionDefinitionWriter decisionDefinitionWriter,
-                                         final DecisionDefinitionResolverService decisionDefinitionResolverService) {
+                                         final DecisionDefinitionResolverService decisionDefinitionResolverService,
+                                         final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
     this.decisionDefinitionWriter = decisionDefinitionWriter;
     this.decisionDefinitionResolverService = decisionDefinitionResolverService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -101,7 +105,7 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
     final List<DecisionDefinitionOptimizeDto> optimizeDtos,
     final Runnable importCompleteCallback) {
     final DecisionDefinitionDatabaseImportJob importJob = new DecisionDefinitionDatabaseImportJob(
-      decisionDefinitionWriter, importCompleteCallback
+      decisionDefinitionWriter, importCompleteCallback, databaseClient
     );
     importJob.setEntitiesToImport(optimizeDtos);
     return importJob;

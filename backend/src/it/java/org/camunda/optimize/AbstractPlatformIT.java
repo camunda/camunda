@@ -61,12 +61,12 @@ public abstract class AbstractPlatformIT extends AbstractIT {
     return engineIntegrationExtension.useEngineMockServer();
   }
 
-  protected ClientAndServer useAndGetElasticsearchMockServer() {
-    final ClientAndServer esMockServer = databaseIntegrationTestExtension.useDbMockServer();
-    embeddedOptimizeExtension.configureEsHostAndPort(MOCKSERVER_HOST, esMockServer.getLocalPort());
+  protected ClientAndServer useAndGetDbMockServer() {
+    final ClientAndServer dbMockServer = databaseIntegrationTestExtension.useDbMockServer();
+    embeddedOptimizeExtension.configureDbHostAndPort(MOCKSERVER_HOST, dbMockServer.getLocalPort());
     // clear any requests that might have been recorded during configuration reload
-    esMockServer.clear(HttpRequest.request());
-    return esMockServer;
+    dbMockServer.clear(HttpRequest.request());
+    return dbMockServer;
   }
 
   protected void importAllEngineEntitiesFromScratch() {

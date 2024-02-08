@@ -61,8 +61,7 @@ public class DecisionInstanceWriterES implements ConfigurationReloadable, Decisi
     final String importItemName = "decision instances";
     log.debug("Writing [{}] {} to ES.", decisionInstanceDtos.size(), importItemName);
     createInstanceIndicesIfMissing(decisionInstanceDtos);
-    ElasticsearchWriterUtil.doImportBulkRequestWithList(
-      esClient,
+    esClient.doImportBulkRequestWithList(
       importItemName,
       decisionInstanceDtos,
       this::addImportDecisionInstanceRequest,

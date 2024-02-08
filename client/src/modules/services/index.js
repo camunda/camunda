@@ -29,7 +29,7 @@ export {
   copyReport,
 } from './entityService';
 
-export {loadEntities} from './entityService.ts';
+export {loadEntities, copyEntity} from './entityService.ts';
 
 export {
   evaluateReport,

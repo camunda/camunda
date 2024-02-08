@@ -4,8 +4,9 @@ exports[`should combine multiple variable values with or 1`] = `
 <Fragment>
   <Tooltip
     content={
-      <span
+      <Tag
         className="parameterName"
+        type="blue"
       >
          
         Var
@@ -13,12 +14,13 @@ exports[`should combine multiple variable values with or 1`] = `
         <b>
           varName
         </b>
-      </span>
+      </Tag>
     }
     overflowOnly={true}
   >
-    <span
+    <Tag
       className="parameterName"
+      type="blue"
     >
        
       Var
@@ -26,7 +28,7 @@ exports[`should combine multiple variable values with or 1`] = `
       <b>
         varName
       </b>
-    </span>
+    </Tag>
   </Tooltip>
   <span
     className="filterText"
@@ -65,8 +67,9 @@ exports[`should combine multiple variable values with or 2`] = `
 <Fragment>
   <Tooltip
     content={
-      <span
+      <Tag
         className="parameterName"
+        type="blue"
       >
          
         Var
@@ -74,12 +77,13 @@ exports[`should combine multiple variable values with or 2`] = `
         <b>
           varName
         </b>
-      </span>
+      </Tag>
     }
     overflowOnly={true}
   >
-    <span
+    <Tag
       className="parameterName"
+      type="blue"
     >
        
       Var
@@ -87,7 +91,7 @@ exports[`should combine multiple variable values with or 2`] = `
       <b>
         varName
       </b>
-    </span>
+    </Tag>
   </Tooltip>
   <span
     className="filterText"
@@ -150,8 +154,9 @@ exports[`should display correct preview even if no operator is defined 1`] = `
 <Fragment>
   <Tooltip
     content={
-      <span
+      <Tag
         className="parameterName"
+        type="blue"
       >
          
         Var
@@ -159,12 +164,13 @@ exports[`should display correct preview even if no operator is defined 1`] = `
         <b>
           varName
         </b>
-      </span>
+      </Tag>
     }
     overflowOnly={true}
   >
-    <span
+    <Tag
       className="parameterName"
+      type="blue"
     >
        
       Var
@@ -172,7 +178,7 @@ exports[`should display correct preview even if no operator is defined 1`] = `
       <b>
         varName
       </b>
-    </span>
+    </Tag>
   </Tooltip>
   <span
     className="filterText"
@@ -211,8 +217,9 @@ exports[`should use contains operators 1`] = `
 <Fragment>
   <Tooltip
     content={
-      <span
+      <Tag
         className="parameterName"
+        type="blue"
       >
          
         Var
@@ -220,12 +227,13 @@ exports[`should use contains operators 1`] = `
         <b>
           varName
         </b>
-      </span>
+      </Tag>
     }
     overflowOnly={true}
   >
-    <span
+    <Tag
       className="parameterName"
+      type="blue"
     >
        
       Var
@@ -233,7 +241,7 @@ exports[`should use contains operators 1`] = `
       <b>
         varName
       </b>
-    </span>
+    </Tag>
   </Tooltip>
   <span
     className="filterText"
@@ -258,8 +266,9 @@ exports[`should use less/greater for comparison operators 1`] = `
 <Fragment>
   <Tooltip
     content={
-      <span
+      <Tag
         className="parameterName"
+        type="blue"
       >
          
         Var
@@ -267,12 +276,13 @@ exports[`should use less/greater for comparison operators 1`] = `
         <b>
           varName
         </b>
-      </span>
+      </Tag>
     }
     overflowOnly={true}
   >
-    <span
+    <Tag
       className="parameterName"
+      type="blue"
     >
        
       Var
@@ -280,7 +290,7 @@ exports[`should use less/greater for comparison operators 1`] = `
       <b>
         varName
       </b>
-    </span>
+    </Tag>
   </Tooltip>
   <span
     className="filterText"

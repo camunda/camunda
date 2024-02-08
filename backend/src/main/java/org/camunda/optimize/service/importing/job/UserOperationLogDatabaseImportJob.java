@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.job;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationType;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
@@ -27,8 +28,9 @@ public class UserOperationLogDatabaseImportJob extends DatabaseImportJob<UserOpe
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
 
   public UserOperationLogDatabaseImportJob(final RunningProcessInstanceWriter runningProcessInstanceWriter,
-                                           Runnable callback) {
-    super(callback);
+                                           final Runnable callback,
+                                           final DatabaseClient databaseClient) {
+    super(callback, databaseClient);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
   }
 

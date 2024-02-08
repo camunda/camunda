@@ -10,18 +10,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
+import org.camunda.optimize.dto.optimize.RequestType;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
-import org.camunda.optimize.service.db.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
+import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
+import org.camunda.optimize.service.db.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -54,13 +53,9 @@ public class VariableUpdateInstanceWriterES implements VariableUpdateInstanceWri
     log.debug("Creating imports for {} [{}].", variableUpdates.size(), importItemName);
 
     return variableUpdateInstances.stream()
-      .map(this::createIndexRequestForVariableUpdate)
+      .map(variableUpdateInstanceDto -> createIndexRequestForVariableUpdate(variableUpdateInstanceDto, importItemName))
       .filter(Optional::isPresent)
-      .map(request -> ImportRequestDto.builder()
-        .importName(importItemName)
-        .client(esClient)
-        .request(request.get())
-        .build())
+      .map(Optional::get)
       .toList();
   }
 
@@ -96,11 +91,16 @@ public class VariableUpdateInstanceWriterES implements VariableUpdateInstanceWri
       .build();
   }
 
-  private Optional<IndexRequest> createIndexRequestForVariableUpdate(VariableUpdateInstanceDto variableUpdateInstanceDto) {
+  private Optional<ImportRequestDto> createIndexRequestForVariableUpdate(VariableUpdateInstanceDto variableUpdateInstanceDto,
+                                                                         final String importItemName) {
     try {
-      return Optional.of(new IndexRequest(VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
+      return Optional.of(ImportRequestDto.builder()
+                           .indexName(VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
                            .id(IdGenerator.getNextId())
-                           .source(objectMapper.writeValueAsString(variableUpdateInstanceDto), XContentType.JSON));
+                           .source(objectMapper.writeValueAsString(variableUpdateInstanceDto))
+                           .type(RequestType.INDEX)
+                           .importName(importItemName)
+                           .build());
     } catch (JsonProcessingException e) {
       log.warn("Could not serialize Variable Instance: {}", variableUpdateInstanceDto, e);
       return Optional.empty();

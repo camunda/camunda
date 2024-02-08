@@ -5,13 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
+import {Tag} from '@carbon/react';
+
 import {format} from 'dates';
 import {t} from 'translation';
 import {Filter} from 'types';
 
 import {convertFilterToState} from './service';
-
-import './DateFilterPreview.scss';
 
 type VariableDateFilterPreviewProps = {
   filter: Filter;
@@ -101,7 +101,9 @@ export default function DateFilterPreview({
 
     return (
       <div className="DateFilterPreview">
-        <span className="parameterName">{variableName}</span>
+        <Tag type="blue" className="parameterName">
+          {variableName}
+        </Tag>
         <span className="filterText">
           {createOperator(
             excludeUndefined
@@ -123,7 +125,9 @@ export default function DateFilterPreview({
   } else {
     return (
       <div className="DateFilterPreview">
-        <span className="parameterName">{t(`common.filter.types.${filterType}`)} </span>
+        <Tag type="blue" className="parameterName">
+          {t(`common.filter.types.${filterType}`)}{' '}
+        </Tag>
         <span className="filterText">
           {t('common.filter.list.operators.occurs')} {previewText}
         </span>

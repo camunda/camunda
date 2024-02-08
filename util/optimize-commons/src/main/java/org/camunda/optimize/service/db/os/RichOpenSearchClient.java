@@ -64,4 +64,8 @@ public class RichOpenSearchClient {
     return openSearchTemplateOperations;
   }
 
+  public String getIndexAliasFor(String indexName) {
+    return indexNameService.getOptimizeIndexAliasForIndex(indexName);
+  }
+
 }

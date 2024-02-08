@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
@@ -26,11 +27,13 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
   protected final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   protected final ConfigurationService configurationService;
+  protected final DatabaseClient databaseClient;
 
   public AbstractProcessInstanceImportService(final ConfigurationService configurationService,
                                               final EngineContext engineContext,
                                               final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
-                                              final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                              final ProcessDefinitionResolverService processDefinitionResolverService,
+                                              final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -38,6 +41,7 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
     this.businessKeyImportAdapterProvider = businessKeyImportAdapterProvider;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
+    this.databaseClient = databaseClient;
   }
 
   protected abstract DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(

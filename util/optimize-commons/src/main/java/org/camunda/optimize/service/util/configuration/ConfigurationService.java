@@ -9,7 +9,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jayway.jsonpath.ReadContext;
 import com.jayway.jsonpath.TypeRef;
+import lombok.NonNull;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.SchedulerConfig;
 import org.camunda.optimize.dto.optimize.ZeebeConfigDto;
@@ -44,6 +46,8 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationParse
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ANALYTICS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EXTERNAL_VARIABLE_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
@@ -51,11 +55,11 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.M2M_CLIENT_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ONBOARDING_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_DATABASE_PROPERTY;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_API_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PANEL_NOTIFICATION_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeDatabaseProfiles;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeModeProfiles;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
@@ -63,6 +67,7 @@ import static org.camunda.optimize.util.SuppressionConstants.OPTIONAL_ASSIGNED_T
 import static org.camunda.optimize.util.SuppressionConstants.OPTIONAL_FIELD_OR_PARAM;
 
 @Setter
+@Slf4j
 public class ConfigurationService {
 
   private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
@@ -135,6 +140,7 @@ public class ConfigurationService {
   private Boolean containerEnableSniCheck;
   private Integer containerHttpsPort;
   private Integer actuatorPort;
+  private Boolean containerHttp2Enabled;
 
   // we use optional field here in order to allow restoring defaults with BeanUtils.copyProperties
   // if only the getter is of type Optional the value won't get reset properly
@@ -238,17 +244,20 @@ public class ConfigurationService {
     }
   }
 
-  public static DatabaseProfile getDatabaseProfile(Environment environment) {
-    final List<DatabaseProfile> specifiedProfiles = Arrays.stream(environment.getActiveProfiles())
-      .filter(optimizeDatabaseProfiles::contains)
-      .map(DatabaseProfile::toProfile)
-      .toList();
-    if (specifiedProfiles.size() > 1) {
-      throw new OptimizeConfigurationException("Cannot configure more than one Database profile");
-    } else if (specifiedProfiles.isEmpty()) {
-      return DatabaseProfile.ELASTICSEARCH;
+  public static DatabaseType getDatabaseType(Environment environment) {
+    final String configuredProperty = environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE, ELASTICSEARCH_DATABASE_PROPERTY);
+    return convertToDatabaseProperty(configuredProperty);
+  }
+
+  public static DatabaseType convertToDatabaseProperty(final @NonNull String configuredProperty) {
+    if (configuredProperty.equalsIgnoreCase(ELASTICSEARCH_DATABASE_PROPERTY)) {
+      return DatabaseType.ELASTICSEARCH;
+    } else if (configuredProperty.equalsIgnoreCase(OPENSEARCH_DATABASE_PROPERTY)) {
+      return DatabaseType.OPENSEARCH;
     } else {
-      return specifiedProfiles.get(0);
+      final String reason = String.format("Cannot start Optimize. Invalid database configured %s", configuredProperty);
+      log.error(reason);
+      throw new OptimizeConfigurationException(reason);
     }
   }
 
@@ -701,6 +710,15 @@ public class ConfigurationService {
     return containerEnableSniCheck;
   }
 
+  public Boolean getContainerHttp2Enabled() {
+    if (containerHttp2Enabled == null) {
+      containerHttp2Enabled = configJsonContext.read(
+              ConfigurationServiceConstants.CONTAINER_HTTP2_ENABLED, Boolean.class
+      );
+    }
+    return containerHttp2Enabled;
+  }
+
   public Integer getContainerHttpsPort() {
     if (containerHttpsPort == null) {
       containerHttpsPort = configJsonContext.read(
@@ -905,7 +923,7 @@ public class ConfigurationService {
 
   public Boolean getNotificationEmailCheckServerIdentity() {
     return Optional.ofNullable(notificationEmailCheckServerIdentity)
-            .orElse(configJsonContext.read(ConfigurationServiceConstants.CHECK_SERVER_IDENTITY, Boolean.class));
+      .orElse(configJsonContext.read(ConfigurationServiceConstants.CHECK_SERVER_IDENTITY, Boolean.class));
   }
 
   public String getNotificationEmailCompanyBranding() {

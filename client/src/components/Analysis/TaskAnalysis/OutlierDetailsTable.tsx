@@ -5,8 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {Button, Table, TableBody} from 'components';
+import {Table, TableBody} from 'components';
 import {t} from 'translation';
+import {Button} from '@carbon/react';
+
 import {getOutlierSummary} from './service';
 
 import './OutlierDetailsTable.scss';
@@ -65,7 +67,9 @@ export default function OutlierDetailsTable({
         totalCount.toString(),
         getOutlierSummary(count, relation),
         getVariablesList(variables),
-        <Button onClick={() => onDetailsClick(taskId, taskData)}>{t('common.viewDetails')}</Button>,
+        <Button kind="tertiary" size="sm" onClick={() => onDetailsClick(taskId, taskData)}>
+          {t('common.viewDetails')}
+        </Button>,
       ]);
 
       return result;

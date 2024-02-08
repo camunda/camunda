@@ -57,6 +57,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,7 +95,7 @@ public abstract class AbstractUpgradeIT {
   protected static final IndexMappingCreator TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2 =
     new UserTestWithTemplateUpdatedMappingIndex();
 
-  protected ClientAndServer esMockServer;
+  protected ClientAndServer dbMockServer;
   protected ObjectMapper objectMapper;
   protected OptimizeElasticsearchClient prefixAwareClient;
   protected OptimizeIndexNameService indexNameService;
@@ -109,9 +110,9 @@ public abstract class AbstractUpgradeIT {
     final DatabaseConnectionNodeConfiguration elasticConfig =
       this.configurationService.getElasticSearchConfiguration().getFirstConnectionNode();
 
-    this.esMockServer = createElasticMock(elasticConfig);
+    this.dbMockServer = createElasticMock(elasticConfig);
     elasticConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
-    elasticConfig.setHttpPort(IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
+    elasticConfig.setHttpPort(IntegrationTestConfigurationUtil.getDatabaseMockServerPort());
 
     setUpUpgradeDependenciesWithConfiguration(configurationService);
     cleanAllDataFromElasticsearch();
@@ -141,10 +142,10 @@ public abstract class AbstractUpgradeIT {
   public void after() throws Exception {
     cleanAllDataFromElasticsearch();
     deleteEnvConfig();
-    this.esMockServer.close();
+    this.dbMockServer.close();
   }
 
-  protected void initSchema(List<IndexMappingCreator<?>> mappingCreators) {
+  protected void initSchema(List<IndexMappingCreator<XContentBuilder>> mappingCreators) {
     final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
       metadataService, createDefaultConfiguration(), indexNameService, mappingCreators
     );
@@ -259,7 +260,7 @@ public abstract class AbstractUpgradeIT {
     return MockServerUtil.createProxyMockServer(
       elasticConfig.getHost(),
       elasticConfig.getHttpPort(),
-      IntegrationTestConfigurationUtil.getElasticsearchMockServerPort()
+      IntegrationTestConfigurationUtil.getDatabaseMockServerPort()
     );
   }
 

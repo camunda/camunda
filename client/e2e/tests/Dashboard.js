@@ -47,23 +47,35 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await t.takeScreenshot('img/dashboard-dashboardEditActions.png', {fullPage: true});
 
+  // Micro images for docs
+  await t.takeElementScreenshot(e.reportEditButton.nth(9).find('svg'), 'img/tile-edit-button.png');
+  await t.takeElementScreenshot(e.reportCopyButton.nth(9).find('svg'), 'img/tile-copy-button.png');
+  await t.takeElementScreenshot(
+    e.reportDeleteButton.nth(9).find('svg'),
+    'img/tile-delete-button.png'
+  );
+
   await addAnnotation(
     e.reportTile.nth(3),
-    'Press and hold to\nmove your report\naround the\ndashboard area.'
+    'Press and hold to\nmove your tile\naround the\ndashboard area.'
   );
+  await addAnnotation(e.reportEditButton.nth(9), 'Use the edit button to\nedit the tile.', {
+    x: -50,
+    y: 0,
+  });
   await addAnnotation(
-    e.reportEditButton.nth(9),
-    'Use the edit button to switch to\nthe Report Edit View',
+    e.reportCopyButton.nth(9),
+    'Use the copy button to copy\nthe tile and place it\non the dashboard.',
     {x: 0, y: -50}
   );
   await addAnnotation(
     e.reportDeleteButton.nth(9),
-    'Use the delete button to remove\nthe report from the dashboard.',
+    'Use the delete button to remove\nthe tile from the dashboard.',
     {x: 50, y: 0}
   );
   await addAnnotation(
     e.reportResizeHandle.nth(9),
-    'Use the resize handle to change the\nsize of the report.',
+    'Use the resize handle to change the\nsize of the tile.',
     {x: 50, y: 0}
   );
 
@@ -598,4 +610,51 @@ test('copy instant preview dashboard', async (t) => {
   await t.expect(Common.collectionItem.count).eql(2);
   await t.expect(Common.collectionItem.nth(0).textContent).contains('Analysis Testing Process');
   await t.expect(Common.collectionItem.nth(1).textContent).contains('another Collection Name');
+});
+
+test('copy dashboard tiles', async (t) => {
+  await t.click(Common.createNewButton);
+  await t.click(Common.menuOption('Dashboard'));
+
+  await t.click(Common.templateModalProcessField);
+  await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
+  await t.click(e.templateOption('Improve productivity'));
+  await t.click(Common.modalConfirmButton);
+
+  // Text tile
+  await t.expect(e.textTile.count).eql(6);
+
+  await t.click(e.textTile.nth(0).find('.CopyButton'));
+  await t.click('.DashboardRenderer');
+  await t.expect(e.textTile.count).eql(7);
+
+  // External URL tile
+  await t.expect(e.externalUrlTile.count).eql(0);
+
+  await t.click(Common.addButton);
+  await t.click(e.externalSourceLink);
+  await t.typeText(e.externalSourceInput, 'http://example.com/');
+  await t.click(e.addTileButton);
+  await t.click('.DashboardRenderer');
+
+  await t.expect(e.externalUrlTile.count).eql(1);
+
+  await t.click(e.externalUrlTile.nth(0).find('.CopyButton'));
+  await t.click('.DashboardRenderer');
+
+  await t.expect(e.externalUrlTile.count).eql(2);
+
+  // Optimize report tile
+  await t.expect(e.reportTile.count).eql(8);
+
+  await t.click(e.reportTile.nth(0).find('.CopyButton'));
+  await t.click('.DashboardRenderer');
+  await t.expect(e.reportTile.count).eql(9);
+
+  await u.save(t);
+  await t.click(Common.editButton);
+
+  await t.click(e.reportTile.nth(0).find('.CopyButton'));
+  await t.click('.DashboardRenderer');
+  await t.expect(e.reportTile.count).eql(10);
 });

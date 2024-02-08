@@ -17,6 +17,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
 import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
@@ -43,6 +44,9 @@ public class DecisionInstanceImportServiceTest {
 
   @Mock
   private DecisionInstanceWriter decisionInstanceWriter;
+
+  @Mock
+  private DatabaseClient databaseClient;
 
   @Mock
   private ConfigurationService configurationService;
@@ -81,7 +85,8 @@ public class DecisionInstanceImportServiceTest {
       decisionInstanceWriter,
       decisionDefinitionResolverService,
       decisionInputImportAdapterProvider,
-      decisionOutputImportAdapterProvider
+      decisionOutputImportAdapterProvider,
+      databaseClient
     );
   }
 

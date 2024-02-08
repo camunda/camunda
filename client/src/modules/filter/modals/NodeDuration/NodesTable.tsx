@@ -7,8 +7,9 @@
 
 import {useRef, useEffect} from 'react';
 import update from 'immutability-helper';
+import {TextInput} from '@carbon/react';
 
-import {Table, Select, Input} from 'components';
+import {Table, CarbonSelect} from 'components';
 import {t} from 'translation';
 import {FilterData} from 'types';
 
@@ -71,7 +72,9 @@ export default function NodesTable({
         return [
           nodeName,
           <div className="selection">
-            <Select
+            <CarbonSelect
+              size="sm"
+              id={`flow-node-${id}-more-less-selector`}
               className="operator"
               value={settings.operator}
               onChange={(value) => {
@@ -79,19 +82,25 @@ export default function NodesTable({
                 updateFocus(id);
               }}
             >
-              <Select.Option value=">">{t('common.filter.durationModal.moreThan')}</Select.Option>
-              <Select.Option value="<">{t('common.filter.durationModal.lessThan')}</Select.Option>
-            </Select>
-            <Input
+              <CarbonSelect.Option value=">" label={t('common.filter.durationModal.moreThan')} />
+              <CarbonSelect.Option value="<" label={t('common.filter.durationModal.lessThan')} />
+            </CarbonSelect>
+            <TextInput
+              size="sm"
+              id={`flow-node-${id}-duration-value-input`}
+              labelText={t('common.value')}
+              hideLabel
               value={settings.value}
               type="number"
-              ref={(el) => (inputsRef.current[id] = el)}
+              ref={(el: HTMLInputElement) => (inputsRef.current[id] = el)}
               onChange={(evt) => setTarget('value', id, evt.target.value)}
               onFocus={() => updateFocus(id)}
               onBlur={() => updateFocus(null)}
-              isInvalid={!isValidInput(settings.value)}
+              invalid={!isValidInput(settings.value)}
             />
-            <Select
+            <CarbonSelect
+              size="sm"
+              id={`flow-node-${id}-unit-selector`}
               className="unit"
               value={settings.unit}
               onChange={(value) => {
@@ -99,15 +108,15 @@ export default function NodesTable({
                 updateFocus(id);
               }}
             >
-              <Select.Option value="millis">{t('common.unit.milli.label-plural')}</Select.Option>
-              <Select.Option value="seconds">{t('common.unit.second.label-plural')}</Select.Option>
-              <Select.Option value="minutes">{t('common.unit.minute.label-plural')}</Select.Option>
-              <Select.Option value="hours">{t('common.unit.hour.label-plural')}</Select.Option>
-              <Select.Option value="days">{t('common.unit.day.label-plural')}</Select.Option>
-              <Select.Option value="weeks">{t('common.unit.week.label-plural')}</Select.Option>
-              <Select.Option value="months">{t('common.unit.month.label-plural')}</Select.Option>
-              <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
-            </Select>
+              <CarbonSelect.Option value="millis" label={t('common.unit.milli.label-plural')} />
+              <CarbonSelect.Option value="seconds" label={t('common.unit.second.label-plural')} />
+              <CarbonSelect.Option value="minutes" label={t('common.unit.minute.label-plural')} />
+              <CarbonSelect.Option value="hours" label={t('common.unit.hour.label-plural')} />
+              <CarbonSelect.Option value="days" label={t('common.unit.day.label-plural')} />
+              <CarbonSelect.Option value="weeks" label={t('common.unit.week.label-plural')} />
+              <CarbonSelect.Option value="months" label={t('common.unit.month.label-plural')} />
+              <CarbonSelect.Option value="years" label={t('common.unit.year.label-plural')} />
+            </CarbonSelect>
           </div>,
         ];
       })}

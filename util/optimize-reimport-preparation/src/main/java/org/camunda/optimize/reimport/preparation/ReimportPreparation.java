@@ -28,10 +28,11 @@ import org.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImpor
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.configuration.DatabaseProfile;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.xcontent.XContentBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -56,7 +57,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE
 public class ReimportPreparation {
 
   // TODO deal with this with OPT-7438
-  private static final List<IndexMappingCreator<?>> STATIC_INDICES_TO_DELETE = List.of(
+  private static final List<IndexMappingCreator<XContentBuilder>> STATIC_INDICES_TO_DELETE = List.of(
     new ImportIndexIndexES(),
     new TimestampBasedImportIndexES(),
     new ProcessDefinitionIndexES(),
@@ -88,7 +89,7 @@ public class ReimportPreparation {
       customHeaderProvider.initPlugins();
       final OptimizeElasticsearchClient prefixAwareClient = new OptimizeElasticsearchClient(
         restHighLevelClient,
-        new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH),
+        new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH),
         new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService)
       );
 

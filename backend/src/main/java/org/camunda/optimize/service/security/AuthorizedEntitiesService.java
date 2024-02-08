@@ -34,7 +34,7 @@ public class AuthorizedEntitiesService {
     if (identityService.isSuperUserIdentity(userId)) {
       collectionEntities = entitiesReader.getAllPrivateEntities();
     } else {
-      collectionEntities = entitiesReader.getAllPrivateEntities(userId);
+      collectionEntities = entitiesReader.getAllPrivateEntitiesForOwnerId(userId);
     }
 
     RoleType roleForUser = identityService.getUserAuthorizations(userId)

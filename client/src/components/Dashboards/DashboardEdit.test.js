@@ -112,7 +112,7 @@ it('should save the dashboard when going to the report edit mode', async () => {
     />
   );
 
-  node.find('DashboardRenderer').prop('addons')[2].props.onClick(report);
+  node.find('DashboardRenderer').prop('addons')[1].props.onClick(report);
 
   await flushPromises();
 
@@ -150,7 +150,7 @@ it('should not prompt to save the dashboard when going to the edit mode when the
   );
 
   isDirty.mockReturnValueOnce(false);
-  node.find('DashboardRenderer').prop('addons')[2].props.onClick(report);
+  node.find('DashboardRenderer').prop('addons')[1].props.onClick(report);
 
   expect(showPrompt).not.toHaveBeenCalled();
   expect(historySpy).toHaveBeenCalledWith('report/1/edit?returnTo=dashboard/1/edit');
@@ -231,7 +231,7 @@ it('should delete tile', () => {
   };
   const node = shallow(<DashboardEdit initialTiles={[textTile]} />);
 
-  const deleteButton = shallow(node.find('DashboardRenderer').prop('addons')[1]);
+  const deleteButton = shallow(node.find('DashboardRenderer').prop('addons')[3]);
   deleteButton.setProps({tile: textTile});
   deleteButton.find('Button').simulate('click', textTile);
 

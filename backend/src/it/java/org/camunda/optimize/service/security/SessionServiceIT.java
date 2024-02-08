@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 
@@ -248,8 +247,8 @@ public class SessionServiceIT extends AbstractPlatformIT {
 
       assertThat(getPrivateReportsResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     } finally {
-      embeddedOptimizeExtension.getElasticSearchSchemaManager().initializeSchema(
-        embeddedOptimizeExtension.getOptimizeElasticClient()
+      embeddedOptimizeExtension.getDatabaseSchemaManager().initializeSchema(
+        embeddedOptimizeExtension.getOptimizeDatabaseClient()
       );
     }
   }

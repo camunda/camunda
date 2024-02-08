@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.usertask.IdentityLinkLogWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -34,8 +35,9 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractEngineIm
                                                     final ConfigurationService configurationService,
                                                     final IdentityLinkLogWriter identityLinkLogWriter,
                                                     final AssigneeCandidateGroupService assigneeCandidateGroupService,
-                                                    final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                                    final ProcessDefinitionResolverService processDefinitionResolverService,
+                                                    final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.identityLinkLogWriter = identityLinkLogWriter;
     this.assigneeCandidateGroupService = assigneeCandidateGroupService;
     this.processDefinitionResolverService = processDefinitionResolverService;
@@ -57,7 +59,8 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractEngineIm
         identityLinkLogWriter,
         assigneeCandidateGroupService,
         engineContext,
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)

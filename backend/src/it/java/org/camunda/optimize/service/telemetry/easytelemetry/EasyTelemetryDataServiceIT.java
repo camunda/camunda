@@ -16,9 +16,9 @@ import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
+import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -102,11 +102,11 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   @Test
   public void retrieveTelemetryData_elasticsearchVersionRequestFails_returnsUnavailableString() {
     // given
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/")
       .withMethod(GET);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -117,7 +117,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
     // then
     final Optional<MetadataDto> metadata = getMetadata();
     assertThat(metadata).isPresent();
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(telemetryData.getProduct().getInternals().getDatabase().getVersion())
       .isEqualTo(INFORMATION_UNAVAILABLE_STRING);
   }
@@ -125,10 +125,10 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   @Test
   public void retrieveTelemetryData_elasticsearchMetadataRequestFails_returnsUnavailableString() {
     // given
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + METADATA_INDEX_NAME + "/_doc/" + MetadataIndex.ID);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -137,7 +137,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
       embeddedOptimizeExtension.getBean(EasyTelemetryDataService.class).getTelemetryData();
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(telemetryData.getInstallation()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
   }
 
@@ -321,8 +321,8 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   }
 
   private Optional<MetadataDto> getMetadata() {
-    return embeddedOptimizeExtension.getBean(ElasticSearchMetadataService.class)
-      .readMetadata(embeddedOptimizeExtension.getOptimizeElasticClient());
+    return embeddedOptimizeExtension.getBean(DatabaseMetadataService.class)
+      .readMetadata(embeddedOptimizeExtension.getOptimizeDatabaseClient());
   }
 
   @SneakyThrows

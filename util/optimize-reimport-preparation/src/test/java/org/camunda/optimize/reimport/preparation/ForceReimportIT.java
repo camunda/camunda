@@ -346,8 +346,8 @@ public class ForceReimportIT extends AbstractEventProcessIT {
   }
 
   private boolean indexExists(final String indexAlias) {
-    return embeddedOptimizeExtension.getElasticSearchSchemaManager()
-      .indexExists(embeddedOptimizeExtension.getOptimizeElasticClient(), indexAlias);
+    return embeddedOptimizeExtension.getDatabaseSchemaManager()
+      .indexExists(embeddedOptimizeExtension.getOptimizeDatabaseClient(), indexAlias);
   }
 
   private void runEventProcessing() {

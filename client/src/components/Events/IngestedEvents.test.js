@@ -8,10 +8,10 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Deleter, Dropdown} from 'components';
+import {Deleter} from 'components';
 
 import {deleteEvents, loadIngestedEvents} from './service';
-import {IngestedEvents} from './IngestedEvents';
+import IngestedEvents from './IngestedEvents';
 
 jest.mock('./service', () => ({
   loadIngestedEvents: jest.fn().mockReturnValue({
@@ -48,6 +48,12 @@ jest.mock(
       fn(...args)
 );
 jest.mock('debounce', () => (fn) => fn);
+
+jest.mock('hooks', () => ({
+  useErrorHandling: () => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  }),
+}));
 
 jest.useFakeTimers();
 
@@ -106,7 +112,7 @@ it('should be possible to delete multiple events from the table', async () => {
 
   await flushPromises();
 
-  node.find('Table').dive().find('DataTable').dive().find(Dropdown.Option).simulate('click');
+  node.find('Table').dive().find('DataTable').dive().find('TableBatchAction').simulate('click');
 
   expect(node.find(Deleter).prop('entity')).toBe(true);
   node.find(Deleter).prop('deleteEntity')();
@@ -130,6 +136,15 @@ it('should select all events in view', async () => {
   await flushPromises();
 
   expect(
-    node.find('Table').dive().find('DataTable').dive().find('.selectionActions').prop('label')
-  ).toBe('2 Selected');
+    node
+      .find('Table')
+      .dive()
+      .find('DataTable')
+      .dive()
+      .find('TableBatchActions')
+      .dive()
+      .find('Text')
+      .dive()
+      .text()
+  ).toBe('2 selected');
 });

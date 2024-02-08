@@ -153,7 +153,7 @@ public class BackupWriterES implements BackupWriter {
 
   private String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex) {
     MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
-    return mappingUtil.getAllMappings()
+    return mappingUtil.getAllMappings(indexNameService.getIndexPrefix())
       .stream()
       .filter(mapping -> isImportIndex == mapping.isImportIndex())
       .map(indexNameService::getOptimizeIndexAliasForIndex)

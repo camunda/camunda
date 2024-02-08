@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.engine;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.util.Optional;
@@ -15,6 +16,7 @@ public class TenantEngineDto implements TenantSpecificEngineDto {
   private String name;
 
   @Override
+  @JsonIgnore
   public Optional<String> getTenantId() {
     return Optional.of(id);
   }

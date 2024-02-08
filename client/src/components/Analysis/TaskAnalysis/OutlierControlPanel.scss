@@ -1,21 +1,29 @@
+@use '@carbon/styles/scss/spacing' as *;
+
 .OutlierControlPanel {
-  background-color: var(--silver-base-97);
-  border-radius: 8px;
-  border: 1px solid var(--silver-darken-87);
-  padding: 12px;
+  background-color: var(--cds-layer);
+  padding: $spacing-04;
   margin-bottom: 1em;
 
-  .list .item {
-    display: inline;
+  .list {
+    margin-top: calc(-1 * $spacing-04);
 
-    .DefinitionSelection {
-      display: inline-block;
-      line-height: normal;
-      width: 220px;
-    }
+    > .item {
+      display: inline;
 
-    &:not(:last-of-type) {
-      padding-right: 20px;
+      &.definitionSelection {
+        width: 220px;
+        display: inline-block;
+        margin-top: $spacing-04;
+
+        .buttonWrapper {
+          line-height: 30px;
+        }
+      }
+
+      &:not(:last-of-type) {
+        padding-right: $spacing-06;
+      }
     }
   }
 
@@ -23,9 +31,10 @@
     .filterHeader {
       display: inline-flex;
       margin: 0;
+      margin-top: $spacing-04;
 
       .dropdownLabel {
-        margin-right: 10px;
+        margin-right: $spacing-04;
         flex-grow: 1;
       }
 
@@ -45,7 +54,7 @@
       > .listItem {
         display: inline-flex;
         width: auto;
-        margin: 12px 12px 0 0;
+        margin: $spacing-04 $spacing-04 0 0;
       }
     }
   }
