@@ -18,18 +18,22 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext.State;
+import io.atomix.raft.protocol.ForceConfigureRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TransferRequest;
+import io.atomix.raft.storage.system.Configuration;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import java.net.ConnectException;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
@@ -166,6 +170,124 @@ public final class ReconfigurationHelper {
             threadContext);
   }
 
+  public CompletableFuture<Void> forceConfigure(final Collection<MemberId> newMembersIds) {
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+
+    threadContext.execute(() -> triggerForceConfigure(newMembersIds, future));
+    return future;
+  }
+
+  private void triggerForceConfigure(
+      final Collection<MemberId> newMembersIds, final CompletableFuture<Void> future) {
+    final var currentConfiguration = raftContext.getCluster().getConfiguration();
+    final Collection<RaftMember> newMembers =
+        newMembersIds.stream()
+            // We can also take the type of the member as input. But so far we do not support
+            // PASSIVE members yet. So we can safely assume they are all ACTIVE.
+            .map(m -> new DefaultRaftMember(m, Type.ACTIVE, Instant.now()))
+            .collect(Collectors.toSet());
+
+    if (!currentConfiguration.force()) {
+      // No need to overwrite if it is already in force configure and this is a retry
+      if (raftContext.getRaftRole().role() == Role.LEADER) {
+        // Optimization: If the current configuration is already the same as new forced, we
+        // can skip reconfiguring. It is most likely a retry of a previous force request,
+        // which was interpreted as failure because of a request timeout.
+        raftContext.transition(Role.FOLLOWER);
+      }
+
+      logger.info(
+          "Current configuration is '{}'. Forcing configuration with members '{}'",
+          currentConfiguration,
+          newMembers);
+      final var newConfiguration =
+          new Configuration(
+              currentConfiguration.index() + 1,
+              raftContext.getTerm(),
+              Instant.now().toEpochMilli(),
+              newMembers,
+              Set.of(),
+              true);
+
+      raftContext.getCluster().configure(newConfiguration);
+    } else if (!(currentConfiguration.allMembers().containsAll(newMembers)
+        && newMembers.containsAll(currentConfiguration.allMembers()))) {
+      // This is not expected. When force configuration is retried, we expect that they are
+      // retried with the same state. If this is not the case, it is likely that there are two
+      // force configuration requested at the same time.
+      // Reject the request. There is possibly no way out to recover from this.
+      future.completeExceptionally(
+          new IllegalStateException(
+              String.format(
+                  "Expected to force configure with members '%s', but the member is already in force configuration with a different set of members '%s'",
+                  newMembers, currentConfiguration.allMembers())));
+      return;
+    }
+
+    sendForceConfigureRequestToAllMembers(future);
+  }
+
+  private void sendForceConfigureRequestToAllMembers(final CompletableFuture<Void> future) {
+    final Configuration configuration = raftContext.getCluster().getConfiguration();
+    final var otherMembers =
+        configuration.newMembers().stream()
+            .map(RaftMember::memberId)
+            .filter(m -> !m.equals(raftContext.getCluster().getLocalMember().memberId()))
+            .collect(Collectors.toSet());
+
+    final var quorum =
+        new ForceConfigureQuorum(
+            success -> {
+              if (Boolean.TRUE.equals(success)) {
+                future.complete(null);
+              } else {
+                future.completeExceptionally(
+                    new ProtocolException(
+                        "Failed to force configure because not all members acknowledged the request."));
+              }
+            },
+            otherMembers);
+
+    final ForceConfigureRequest request =
+        ForceConfigureRequest.builder()
+            .withTerm(configuration.term())
+            .withIndex(configuration.index())
+            .withTime(configuration.time())
+            .withNewMembers(configuration.newMembers())
+            .from(raftContext.getCluster().getLocalMember().memberId())
+            .build();
+
+    otherMembers.forEach(memberId -> sendForceConfigurationRequest(memberId, request, quorum));
+  }
+
+  private void sendForceConfigurationRequest(
+      final MemberId memberId,
+      final ForceConfigureRequest request,
+      final ForceConfigureQuorum quorum) {
+    logger.trace("Sending '{}' request to member '{}'", request, memberId);
+
+    raftContext
+        .getProtocol()
+        .forceConfigure(memberId, request)
+        .whenComplete(
+            (response, error) -> {
+              if (error != null) {
+                logger.warn(
+                    "Failed to send force configure request to member '{}'", memberId, error);
+                quorum.fail(memberId);
+              } else if (response.status() == Status.OK) {
+                logger.debug("Successfully sent force configure request to member '{}'", memberId);
+                quorum.succeed(memberId);
+              } else {
+                logger.warn(
+                    "Failed to send force configure request to member '{}': {}",
+                    memberId,
+                    response.error());
+                quorum.fail(memberId);
+              }
+            });
+  }
+
   /** Attempts to become the leader. */
   public CompletableFuture<Void> anoint() {
     if (raftContext.getRaftRole().role() == Role.LEADER) {
@@ -216,6 +338,64 @@ public final class ReconfigurationHelper {
               threadContext);
     } else {
       raftContext.transition(Role.CANDIDATE);
+    }
+  }
+
+  private static final class ForceConfigureQuorum {
+    private Consumer<Boolean> callback;
+    private boolean complete;
+    private final Set<MemberId> members;
+    private int succeeded;
+    private int failed;
+    private final int quorum;
+    private final int acceptedFailures;
+
+    /**
+     * @param callback will be called when all members have acknowledged success to this request or
+     *     when atleast one failed.
+     * @param members All members excluding the local member
+     */
+    public ForceConfigureQuorum(
+        final Consumer<Boolean> callback, final Collection<MemberId> members) {
+      this.callback = callback;
+      this.members = new HashSet<>(members);
+      quorum = members.size(); // TODO: Is it enough to have a majority of remaining members?
+      acceptedFailures = 0;
+    }
+
+    public void succeed(final MemberId member) {
+      if (members.remove(member)) {
+        succeeded++;
+        checkComplete();
+      }
+    }
+
+    public void fail(final MemberId member) {
+      if (members.remove(member)) {
+        failed++;
+        checkComplete();
+      }
+    }
+
+    /**
+     * Cancels the quorum. Once this method has been called, the quorum will be marked complete and
+     * the handler will never be called.
+     */
+    public void cancel() {
+      callback = null;
+      complete = true;
+    }
+
+    private void checkComplete() {
+      if (!complete && callback != null) {
+        if (succeeded >= quorum) {
+          complete = true;
+          callback.accept(true);
+        } else if (failed > acceptedFailures) {
+          complete = true;
+          callback.accept(false);
+        }
+      }
     }
   }
 }
