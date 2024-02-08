@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Conditional;
 
 import java.time.Instant;
 
+@Conditional(ElasticsearchCondition.class)
 public class OperateZeebeRule extends TestWatcher {
   @Autowired
   public OperateZeebeRuleProvider operateZeebeRuleProvider;
