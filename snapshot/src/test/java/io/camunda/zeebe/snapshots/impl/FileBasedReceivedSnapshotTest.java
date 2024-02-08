@@ -69,7 +69,7 @@ public class FileBasedReceivedSnapshotTest {
 
     // when
     final ReceivedSnapshot receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot("1-0-123-121");
+        receiverSnapshotStore.newReceivedSnapshot("1-0-123-121").join();
 
     // then
     assertThat(receivedSnapshot.getPath())
@@ -97,7 +97,7 @@ public class FileBasedReceivedSnapshotTest {
     // given
     final var persistedSnapshot = takePersistedSnapshot(1L);
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
 
     // when
     final SnapshotChunk expectedChunk;
@@ -224,7 +224,7 @@ public class FileBasedReceivedSnapshotTest {
 
     // when
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
 
     final SnapshotChunk firstChunk;
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
@@ -251,7 +251,7 @@ public class FileBasedReceivedSnapshotTest {
     // when
     final SnapshotChunk firstChunk;
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       firstChunk = snapshotChunkReader.next();
       receivedSnapshot.apply(firstChunk).join();
@@ -276,7 +276,7 @@ public class FileBasedReceivedSnapshotTest {
     // when
     final SnapshotChunk firstChunk;
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       firstChunk = snapshotChunkReader.next();
       receivedSnapshot.apply(firstChunk).join();
@@ -303,7 +303,7 @@ public class FileBasedReceivedSnapshotTest {
     // when
     final SnapshotChunk firstChunk;
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       firstChunk = snapshotChunkReader.next();
       receivedSnapshot.apply(firstChunk).join();
@@ -342,7 +342,7 @@ public class FileBasedReceivedSnapshotTest {
 
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
 
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       while (snapshotChunkReader.hasNext()) {

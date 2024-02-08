@@ -28,7 +28,9 @@ public class PersistedSnapshotStoreTest {
     final var partitionId = 1;
     final var root = temporaryFolder.getRoot();
 
-    persistedSnapshotStore = new FileBasedSnapshotStore(partitionId, root.toPath());
+    final var snapshotStore = new FileBasedSnapshotStore(partitionId, root.toPath());
+    scheduler.submitActor(snapshotStore).join();
+    persistedSnapshotStore = snapshotStore;
   }
 
   @Test
@@ -70,7 +72,7 @@ public class PersistedSnapshotStoreTest {
     final var index = 1L;
 
     // when
-    final var transientSnapshot = persistedSnapshotStore.newReceivedSnapshot("1-0-123-121");
+    final var transientSnapshot = persistedSnapshotStore.newReceivedSnapshot("1-0-123-121").join();
 
     // then
     assertThat(transientSnapshot.index()).isEqualTo(index);
