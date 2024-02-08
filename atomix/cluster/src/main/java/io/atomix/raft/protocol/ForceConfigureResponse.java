@@ -21,11 +21,25 @@ import io.atomix.raft.RaftError;
 /** Force Configuration response. */
 public class ForceConfigureResponse extends AbstractRaftResponse {
 
-  // TODO: To check if we have to do reject request to ensure that receiver do not overwrite it's
-  // latest configuration with an outdated configuration from the requests. May be respond with the
-  // current the configuration if the requester has an older configuration.
-  public ForceConfigureResponse(final Status status, final RaftError error) {
+  /** Updated configuration index of this member */
+  private final long index;
+
+  /** Current term of this member */
+  private final long term;
+
+  public ForceConfigureResponse(
+      final Status status, final RaftError error, final long index, final long term) {
     super(status, error);
+    this.index = index;
+    this.term = term;
+  }
+
+  public long index() {
+    return index;
+  }
+
+  public long term() {
+    return term;
   }
 
   /**
@@ -40,9 +54,34 @@ public class ForceConfigureResponse extends AbstractRaftResponse {
   public static class Builder
       extends AbstractRaftResponse.Builder<Builder, ForceConfigureResponse> {
 
+    private long index;
+    private long term;
+
+    /**
+     * Sets the response index.
+     *
+     * @param index updated configuration index
+     * @return The response builder.
+     */
+    public Builder withIndex(final long index) {
+      this.index = index;
+      return this;
+    }
+
+    /**
+     * Sets the response term.
+     *
+     * @param term current term of this member
+     * @return The response builder.
+     */
+    public Builder withTerm(final long term) {
+      this.term = term;
+      return this;
+    }
+
     @Override
     public ForceConfigureResponse build() {
-      return new ForceConfigureResponse(status, error);
+      return new ForceConfigureResponse(status, error, index, term);
     }
   }
 }

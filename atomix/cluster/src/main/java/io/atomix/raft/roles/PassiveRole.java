@@ -22,6 +22,8 @@ import io.atomix.raft.RaftServer;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.SnapshotReplicationMetrics;
 import io.atomix.raft.protocol.AppendResponse;
+import io.atomix.raft.protocol.ForceConfigureRequest;
+import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
@@ -43,6 +45,7 @@ import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.storage.system.Configuration;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
@@ -52,6 +55,7 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsExcepti
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -314,6 +318,43 @@ public class PassiveRole extends InactiveRole {
                       .build())
           .thenApply(this::logResponse);
     }
+  }
+
+  @Override
+  public CompletableFuture<ForceConfigureResponse> onForceConfigure(
+      final ForceConfigureRequest request) {
+    logRequest(request);
+    updateTermAndLeader(request.term(), null);
+
+    final var currentConfiguration = raft.getCluster().getConfiguration();
+
+    // No need to overwrite if already in force configuration. This can happen due to retry.
+    if (currentConfiguration == null
+        || !currentConfiguration.force()
+        || request.index() > currentConfiguration.index()) {
+      final var configurationIndex =
+          Math.max(request.index(), raft.getCurrentConfigurationIndex() + 1);
+      raft.getCluster()
+          .configure(
+              new Configuration(
+                  configurationIndex, // use the latest index instead of one from the request
+                  raft.getTerm(), // use the latest term instead of one from the request
+                  request.timestamp(),
+                  request.newMembers(),
+                  List.of(), // Skip joint consensus
+                  true));
+      raft.getCluster().commitCurrentConfiguration();
+    }
+    // TODO: else verify if the new members are the same as the current configuration
+
+    final var result =
+        logResponse(
+            ForceConfigureResponse.builder()
+                .withStatus(Status.OK)
+                .withIndex(raft.getCluster().getConfiguration().index())
+                .withTerm(raft.getTerm())
+                .build());
+    return CompletableFuture.completedFuture(result);
   }
 
   @Override
