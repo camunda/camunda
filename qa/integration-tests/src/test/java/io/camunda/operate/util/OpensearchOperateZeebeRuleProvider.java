@@ -50,7 +50,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
 
   @Autowired
-  private static TestContainerUtil testContainerUtil;
+  private TestContainerUtil testContainerUtil;
 
   protected ZeebeContainer zeebeContainer;
   private ZeebeClient client;
