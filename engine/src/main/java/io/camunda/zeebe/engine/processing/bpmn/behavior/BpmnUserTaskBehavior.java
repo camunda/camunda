@@ -117,6 +117,7 @@ public final class BpmnUserTaskBehavior {
         .setTenantId(context.getTenantId())
         .setCreationTimestamp(ActorClock.currentTimeMillis());
 
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
   }
 
@@ -212,9 +213,9 @@ public final class BpmnUserTaskBehavior {
     }
   }
 
-  public void appendFollowUpEvent(
-      final long userTaskKey, final UserTaskIntent intent, final UserTaskRecord userTaskRecord) {
-    stateWriter.appendFollowUpEvent(userTaskKey, intent, userTaskRecord);
+  public void userTaskCreated(final UserTaskRecord userTaskRecord) {
+    final long userTaskKey = userTaskRecord.getUserTaskKey();
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
   }
 
   public static final class UserTaskProperties {
