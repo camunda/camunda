@@ -28,6 +28,7 @@ class RaftMessageContext {
   final String metadataSubject;
   final String configureSubject;
   final String reconfigureSubject;
+  final String forceConfigureSubject;
   final String joinSubject;
   final String leaveSubject;
   final String installSubject;
@@ -48,6 +49,7 @@ class RaftMessageContext {
     metadataSubject = getSubject(prefix, "metadata");
     configureSubject = getSubject(prefix, "configure");
     reconfigureSubject = getSubject(prefix, "reconfigure");
+    forceConfigureSubject = getSubject(prefix, "force-configure");
     joinSubject = getSubject(prefix, "join");
     leaveSubject = getSubject(prefix, "leave");
     installSubject = getSubject(prefix, "install");

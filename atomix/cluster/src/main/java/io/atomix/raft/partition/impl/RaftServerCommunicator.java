@@ -24,6 +24,8 @@ import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
+import io.atomix.raft.protocol.ForceConfigureRequest;
+import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinRequest;
@@ -85,6 +87,12 @@ public class RaftServerCommunicator implements RaftServerProtocol {
       final MemberId memberId, final ReconfigureRequest request) {
     return sendAndReceive(
         context.reconfigureSubject, request, memberId, configurationChangeTimeout);
+  }
+
+  @Override
+  public CompletableFuture<ForceConfigureResponse> forceConfigure(
+      final MemberId memberId, final ForceConfigureRequest request) {
+    return sendAndReceive(context.forceConfigureSubject, request, memberId, requestTimeout);
   }
 
   @Override
@@ -175,6 +183,21 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   @Override
   public void unregisterReconfigureHandler() {
     clusterCommunicator.unsubscribe(context.reconfigureSubject);
+  }
+
+  @Override
+  public void registerForceConfigureHandler(
+      final Function<ForceConfigureRequest, CompletableFuture<ForceConfigureResponse>> handler) {
+    clusterCommunicator.replyTo(
+        context.forceConfigureSubject,
+        serializer::decode,
+        handler.<ForceConfigureRequest>compose(this::recordReceivedMetrics),
+        serializer::encode);
+  }
+
+  @Override
+  public void unregisterForceConfigureHandler() {
+    clusterCommunicator.unsubscribe(context.forceConfigureSubject);
   }
 
   @Override
