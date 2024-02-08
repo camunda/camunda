@@ -366,7 +366,7 @@ public final class FileBasedSnapshotStore extends Actor
       if (!buildSnapshotsChecksumPath(parsedSnapshotId).toFile().exists()) {
         try {
           // old pending/incomplete received snapshots which we can delete
-          deleteFolder(directory);
+          FileUtil.deleteFolderIfExists(directory);
         } catch (final IOException e) {
           throw new IllegalStateException(
               "Expected to delete pending received snapshot, but failed.", e);
