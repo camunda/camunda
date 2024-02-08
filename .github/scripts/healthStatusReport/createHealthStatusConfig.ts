@@ -131,21 +131,21 @@ async function createHealthStatusConfig() {
       prs: [
         {
           author: 'renovate[bot]',
-          labels: ['renovate', 'component:frontend'],
+          labels: ['dependencies', 'component:frontend'],
           resultType: 'count',
           title: 'Open renovate FE PRs',
           state: 'open',
         },
         {
           author: 'renovate[bot]',
-          labels: ['renovate', 'component:backend'],
+          labels: ['dependencies', 'component:backend'],
           resultType: 'count',
           title: 'Open renovate BE PRs',
           state: 'open',
         },
         {
           author: 'renovate[bot]',
-          labels: ['renovate', 'component:infra'],
+          labels: ['dependencies', 'component:infra'],
           resultType: 'count',
           title: 'Open renovate Infra PRs',
           state: 'open',
