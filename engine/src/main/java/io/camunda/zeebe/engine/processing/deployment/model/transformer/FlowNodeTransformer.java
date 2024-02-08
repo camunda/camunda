@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
@@ -45,7 +46,14 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
     Optional.ofNullable(parentElement.getAttributeValue(BpmnModelConstants.BPMN_ATTRIBUTE_ID))
         .map(BufferUtil::wrapString)
         .map(process::getElementById)
-        .ifPresent(element::setFlowScope);
+        .ifPresent(
+            parent -> {
+              element.setFlowScope(parent);
+
+              if (parent instanceof final ExecutableFlowElementContainer container) {
+                container.addChildElement(element);
+              }
+            });
   }
 
   private void transformIoMappings(

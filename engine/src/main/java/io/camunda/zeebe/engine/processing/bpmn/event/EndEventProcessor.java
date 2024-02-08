@@ -331,7 +331,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
 
       final var isCompensationTriggered =
-          compensationSubscriptionBehaviour.triggerCompensation(activating);
+          compensationSubscriptionBehaviour.triggerCompensation(element, activating);
 
       if (!isCompensationTriggered) {
         final var completing = stateTransitionBehavior.transitionToCompleting(activated);

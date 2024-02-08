@@ -1,18 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1x2c0k1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.15.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1x2c0k1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.19.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
   <bpmn:process id="compensation-process" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_0m7yk26</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:userTask id="ActivityToCompensate" name="A">
-      <bpmn:incoming>Flow_1keydsx</bpmn:incoming>
-      <bpmn:outgoing>Flow_13spwoi</bpmn:outgoing>
-    </bpmn:userTask>
     <bpmn:sequenceFlow id="Flow_13spwoi" sourceRef="ActivityToCompensate" targetRef="Gateway_1jqriiv" />
     <bpmn:boundaryEvent id="CompensationBoundaryEvent" attachedToRef="ActivityToCompensate">
       <bpmn:compensateEventDefinition id="CompensateEventDefinition_0o178oi" />
     </bpmn:boundaryEvent>
-    <bpmn:userTask id="CompensationHandler" name="undo A" isForCompensation="true" />
     <bpmn:endEvent id="CompensationEndEvent">
       <bpmn:incoming>Flow_1kt3dm3</bpmn:incoming>
       <bpmn:compensateEventDefinition id="CompensateEventDefinition_1n06ebt" />
@@ -25,7 +20,6 @@
     </bpmn:boundaryEvent>
     <bpmn:sequenceFlow id="Flow_1kt3dm3" sourceRef="Gateway_1jqriiv" targetRef="CompensationEndEvent" />
     <bpmn:sequenceFlow id="Flow_0o9ojsl" sourceRef="ActivityToCompensate2" targetRef="Gateway_1jqriiv" />
-    <bpmn:userTask id="CompensationHandler2" name="undo B" isForCompensation="true" />
     <bpmn:parallelGateway id="Gateway_0ezjfu3">
       <bpmn:incoming>Flow_0m7yk26</bpmn:incoming>
       <bpmn:outgoing>Flow_1keydsx</bpmn:outgoing>
@@ -36,10 +30,30 @@
       <bpmn:incoming>Flow_0o9ojsl</bpmn:incoming>
       <bpmn:outgoing>Flow_1kt3dm3</bpmn:outgoing>
     </bpmn:parallelGateway>
-    <bpmn:userTask id="ActivityToCompensate2" name="B">
+    <bpmn:serviceTask id="ActivityToCompensate" name="A">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="compensableActivity" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1keydsx</bpmn:incoming>
+      <bpmn:outgoing>Flow_13spwoi</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="CompensationHandler" name="undo A" isForCompensation="true">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="compensationHandler" />
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="ActivityToCompensate2" name="B">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="compensableActivity2" />
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_14pwp31</bpmn:incoming>
       <bpmn:outgoing>Flow_0o9ojsl</bpmn:outgoing>
-    </bpmn:userTask>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="CompensationHandler2" name="undo B" isForCompensation="true">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="compensationHandler2" />
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
     <bpmn:association id="Association_1jwpcsv" associationDirection="One" sourceRef="CompensationBoundaryEvent" targetRef="CompensationHandler" />
     <bpmn:association id="Association_0c1akqn" associationDirection="One" sourceRef="CompensationBoundaryEvent2" targetRef="CompensationHandler2" />
   </bpmn:process>
@@ -48,19 +62,8 @@
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="152" y="99" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1761rwu_di" bpmnElement="ActivityToCompensate">
-        <dc:Bounds x="460" y="77" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1en6ywx_di" bpmnElement="CompensationHandler">
-        <dc:Bounds x="610" y="200" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_00v7ezm_di" bpmnElement="CompensationEndEvent">
         <dc:Bounds x="1092" y="99" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_0aao4o7" bpmnElement="CompensationHandler2">
-        <dc:Bounds x="470" y="480" width="100" height="80" />
-        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1jau318_di" bpmnElement="Gateway_0ezjfu3">
         <dc:Bounds x="245" y="92" width="50" height="50" />
@@ -68,9 +71,24 @@
       <bpmndi:BPMNShape id="Gateway_0dq9t6b_di" bpmnElement="Gateway_1jqriiv">
         <dc:Bounds x="905" y="92" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1g7dzaj_di" bpmnElement="ActivityToCompensate2">
+      <bpmndi:BPMNShape id="Activity_0as9ley_di" bpmnElement="ActivityToCompensate">
+        <dc:Bounds x="460" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_00z528o_di" bpmnElement="CompensationHandler">
+        <dc:Bounds x="610" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0y6n6g6_di" bpmnElement="ActivityToCompensate2">
         <dc:Bounds x="310" y="350" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_17lqmb9_di" bpmnElement="CompensationHandler2">
+        <dc:Bounds x="470" y="480" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1jwpcsv_di" bpmnElement="Association_1jwpcsv">
+        <di:waypoint x="542" y="157" />
+        <di:waypoint x="510" y="157" />
+        <di:waypoint x="510" y="240" />
+        <di:waypoint x="610" y="240" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Association_0c1akqn_di" bpmnElement="Association_0c1akqn">
         <di:waypoint x="410" y="448" />
         <di:waypoint x="410" y="520" />
@@ -107,12 +125,6 @@
         <di:waypoint x="410" y="390" />
         <di:waypoint x="930" y="390" />
         <di:waypoint x="930" y="142" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Association_1jwpcsv_di" bpmnElement="Association_1jwpcsv">
-        <di:waypoint x="540" y="157" />
-        <di:waypoint x="510" y="157" />
-        <di:waypoint x="510" y="240" />
-        <di:waypoint x="610" y="240" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

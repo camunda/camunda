@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
@@ -30,6 +31,7 @@ public final class SubProcessProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public SubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -39,6 +41,7 @@ public final class SubProcessProcessor
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
 
   @Override
@@ -68,12 +71,13 @@ public final class SubProcessProcessor
   @Override
   public void onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
-
     variableMappingBehavior
         .applyOutputMappings(completing, element)
         .flatMap(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(completing);
+              compensationSubscriptionBehaviour.createCompensationSubscriptionForSubprocess(
+                  element, completing);
               return stateTransitionBehavior.transitionToCompleted(element, completing);
             })
         .ifRightOrLeft(

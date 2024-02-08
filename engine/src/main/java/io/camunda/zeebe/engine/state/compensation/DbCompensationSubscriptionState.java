@@ -27,25 +27,25 @@ import java.util.Set;
 public class DbCompensationSubscriptionState implements MutableCompensationSubscriptionState {
 
   private final DbLong processInstanceKey;
-  private final DbString compensableActivityIdKey;
+  private final DbLong recordKey;
   private final DbString tenantIdKey;
   private final DbTenantAwareKey<DbLong> tenantAwareProcessInstanceKey;
-  private final DbCompositeKey<DbTenantAwareKey<DbLong>, DbString>
+  private final DbCompositeKey<DbTenantAwareKey<DbLong>, DbLong>
       tenantAwareProcessInstanceKeyCompensableActivityId;
   private final ColumnFamily<
-          DbCompositeKey<DbTenantAwareKey<DbLong>, DbString>, CompensationSubscription>
+          DbCompositeKey<DbTenantAwareKey<DbLong>, DbLong>, CompensationSubscription>
       compensationSubscriptionColumnFamily;
   private final CompensationSubscription compensationSubscription = new CompensationSubscription();
 
   public DbCompensationSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     processInstanceKey = new DbLong();
-    compensableActivityIdKey = new DbString();
+    recordKey = new DbLong();
     tenantIdKey = new DbString();
     tenantAwareProcessInstanceKey =
         new DbTenantAwareKey<>(tenantIdKey, processInstanceKey, PlacementType.PREFIX);
     tenantAwareProcessInstanceKeyCompensableActivityId =
-        new DbCompositeKey<>(tenantAwareProcessInstanceKey, compensableActivityIdKey);
+        new DbCompositeKey<>(tenantAwareProcessInstanceKey, recordKey);
     compensationSubscriptionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.COMPENSATION_SUBSCRIPTION,
@@ -56,8 +56,8 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
 
   @Override
   public CompensationSubscription get(
-      final String tenantId, final long processInstanceKey, final String compensableActivityId) {
-    wrapCompensationKeys(processInstanceKey, compensableActivityId, tenantId);
+      final String tenantId, final long processInstanceKey, final long recordKey) {
+    wrapCompensationKeys(processInstanceKey, recordKey, tenantId);
     return compensationSubscriptionColumnFamily
         .get(tenantAwareProcessInstanceKeyCompensableActivityId)
         .copy();
@@ -69,13 +69,13 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
     tenantIdKey.wrapString(tenantId);
     processInstanceKey.wrapLong(piKey);
 
-    final Set<CompensationSubscription> completedActivities = new HashSet<>();
+    final Set<CompensationSubscription> subscriptions = new HashSet<>();
     compensationSubscriptionColumnFamily.whileEqualPrefix(
         new DbCompositeKey<>(tenantIdKey, processInstanceKey),
         ((key, value) -> {
-          completedActivities.add(value.copy());
+          subscriptions.add(value.copy());
         }));
-    return completedActivities;
+    return subscriptions;
   }
 
   @Override
@@ -117,10 +117,7 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   public void put(final long key, final CompensationSubscriptionRecord compensation) {
     compensationSubscription.setKey(key).setRecord(compensation);
 
-    wrapCompensationKeys(
-        compensation.getProcessInstanceKey(),
-        compensation.getCompensableActivityId(),
-        compensation.getTenantId());
+    wrapCompensationKeys(compensation.getProcessInstanceKey(), key, compensation.getTenantId());
 
     compensationSubscriptionColumnFamily.upsert(
         tenantAwareProcessInstanceKeyCompensableActivityId, compensationSubscription);
@@ -129,27 +126,23 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   @Override
   public void update(final long key, final CompensationSubscriptionRecord compensation) {
     compensationSubscription.setKey(key).setRecord(compensation);
-    wrapCompensationKeys(
-        compensation.getProcessInstanceKey(),
-        compensation.getCompensableActivityId(),
-        compensation.getTenantId());
+    wrapCompensationKeys(compensation.getProcessInstanceKey(), key, compensation.getTenantId());
     compensationSubscriptionColumnFamily.update(
         tenantAwareProcessInstanceKeyCompensableActivityId, compensationSubscription);
   }
 
   @Override
-  public void delete(
-      final String tenantId, final long processInstanceKey, final String compensableActivityId) {
-    wrapCompensationKeys(processInstanceKey, compensableActivityId, tenantId);
+  public void delete(final String tenantId, final long processInstanceKey, final long recordKey) {
+    wrapCompensationKeys(processInstanceKey, recordKey, tenantId);
 
     compensationSubscriptionColumnFamily.deleteExisting(
         tenantAwareProcessInstanceKeyCompensableActivityId);
   }
 
   private void wrapCompensationKeys(
-      final long processInstance, final String compensableActivityId, final String tenantId) {
+      final long processInstance, final long key, final String tenantId) {
     processInstanceKey.wrapLong(processInstance);
-    compensableActivityIdKey.wrapString(compensableActivityId);
+    recordKey.wrapLong(key);
     tenantIdKey.wrapString(tenantId);
   }
 }
