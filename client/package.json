@@ -88,7 +88,7 @@
     "husky": "8.0.3",
     "jsdom": "24.0.0",
     "lint-staged": "15.2.2",
-    "monaco-editor": "0.45.0",
+    "monaco-editor": "0.46.0",
     "msw": "2.1.7",
     "prettier": "3.2.5",
     "serve": "14.2.1",
