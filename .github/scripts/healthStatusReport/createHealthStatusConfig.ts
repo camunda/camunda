@@ -145,9 +145,9 @@ async function createHealthStatusConfig() {
         },
         {
           author: 'renovate[bot]',
-          labels: ['dependencies', 'component:infra'],
+          labels: ['dependencies', 'component:ci'],
           resultType: 'count',
-          title: 'Open renovate Infra PRs',
+          title: 'Open renovate Ci PRs',
           state: 'open',
         },
       ],
