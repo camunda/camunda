@@ -581,10 +581,17 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                         .max(Comparator.comparing(RaftMemberContext::getMatchIndex))
                         .map(context -> context.getMember().memberId()));
     if (next.isPresent()) {
+      log.info("Transferring leadership to {}", next.get());
       return protocol
           .transfer(next.get(), TransferRequest.builder().withMember(localMemberId).build())
+          .exceptionally(
+              error -> {
+                log.warn("Failed to transfer leadership to {}", next.get(), error);
+                return null;
+              })
           .thenApply(ignored -> null);
     } else {
+      log.debug("No suitable target found for leadership transfer");
       return CompletableFuture.completedFuture(null);
     }
   }
