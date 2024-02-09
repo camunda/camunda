@@ -490,7 +490,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     }
 
     if (processingStateMachine != null && !processingStateMachine.isMakingProgress()) {
-      return HealthReport.unhealthy(this).withMessage("not making progress");
+      return HealthReport.unhealthy(this)
+          .withMessage("Processing not making progress. It is in an error handling loop.");
     }
 
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
