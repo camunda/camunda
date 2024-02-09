@@ -333,6 +333,7 @@ components:
             - PARTITION_JOIN
             - PARTITION_LEAVE
             - PARTITION_RECONFIGURE_PRIORITY
+            - PARTITION_FORCE_RECONFIGURE
         brokerId:
           $ref: "#/components/schemas/BrokerId"
         partitionId:
@@ -342,6 +343,10 @@ components:
           format: int32
           description: The priority of the partition
           example: 3
+        brokers:
+          type: array
+          items:
+            $ref: "#/components/schemas/BrokerId"
 
     BrokerState:
       title: BrokerState

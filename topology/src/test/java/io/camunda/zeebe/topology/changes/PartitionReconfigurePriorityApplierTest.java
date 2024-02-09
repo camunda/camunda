@@ -99,7 +99,7 @@ class PartitionReconfigurePriorityApplierTest {
 
     // then
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get().apply(initialClusterTopology.getMember(memberId)))
+    assertThat(result.get().apply(initialClusterTopology).getMember(memberId))
         .isEqualTo(initialClusterTopology.getMember(memberId));
   }
 
@@ -122,7 +122,8 @@ class PartitionReconfigurePriorityApplierTest {
         partitionReconfigurePriorityApplier
             .apply()
             .join()
-            .apply(initialClusterTopology.getMember(memberId));
+            .apply(initialClusterTopology)
+            .getMember(memberId);
 
     // then
     assertThat(newMemberState.getPartition(partitionId).priority()).isEqualTo(3);

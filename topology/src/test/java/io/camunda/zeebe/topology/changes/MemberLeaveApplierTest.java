@@ -70,8 +70,7 @@ final class MemberLeaveApplierTest {
 
     // when
     final var result = memberLeaveApplier.init(clusterTopologyWithMember);
-    final var updateTopologyAfterInit =
-        clusterTopologyWithMember.updateMember(memberId, result.get());
+    final var updateTopologyAfterInit = result.get().apply(clusterTopologyWithMember);
 
     // then
     ClusterTopologyAssert.assertThatClusterTopology(updateTopologyAfterInit)
@@ -88,11 +87,11 @@ final class MemberLeaveApplierTest {
     final ClusterTopology clusterTopologyWithMember =
         ClusterTopology.init().addMember(memberId, MemberState.initializeAsActive(Map.of()));
     final var updater = memberLeaveApplier.init(clusterTopologyWithMember).get();
-    final var topologyWithLeaving = clusterTopologyWithMember.updateMember(memberId, updater);
+    final var topologyWithLeaving = updater.apply(clusterTopologyWithMember);
 
     // when
-    final var result = memberLeaveApplier.apply().join();
-    final var updateTopologyAfterApply = topologyWithLeaving.updateMember(memberId, result);
+    final var updateTopologyAfterApply =
+        memberLeaveApplier.apply().join().apply(topologyWithLeaving);
 
     // then
     ClusterTopologyAssert.assertThatClusterTopology(updateTopologyAfterApply)

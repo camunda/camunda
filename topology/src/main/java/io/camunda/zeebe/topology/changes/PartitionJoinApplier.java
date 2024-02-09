@@ -10,7 +10,7 @@ package io.camunda.zeebe.topology.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.OperationApplier;
+import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.MemberState.State;
@@ -25,7 +25,7 @@ import java.util.function.UnaryOperator;
  * A Partition Join operation is executed when a member wants to start replicating a partition. This
  * is allowed only when the member is active, and the partition is not already active.
  */
-final class PartitionJoinApplier implements OperationApplier {
+final class PartitionJoinApplier implements MemberOperationApplier {
   private final int partitionId;
   private final int priority;
   private final PartitionChangeExecutor partitionChangeExecutor;
@@ -44,7 +44,12 @@ final class PartitionJoinApplier implements OperationApplier {
   }
 
   @Override
-  public Either<Exception, UnaryOperator<MemberState>> init(
+  public MemberId memberId() {
+    return localMemberId;
+  }
+
+  @Override
+  public Either<Exception, UnaryOperator<MemberState>> initMemberState(
       final ClusterTopology currentClusterTopology) {
 
     final boolean localMemberIsActive =
@@ -100,7 +105,7 @@ final class PartitionJoinApplier implements OperationApplier {
   }
 
   @Override
-  public ActorFuture<UnaryOperator<MemberState>> apply() {
+  public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
     final CompletableActorFuture<UnaryOperator<MemberState>> result =
         new CompletableActorFuture<>();
 

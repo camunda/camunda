@@ -10,14 +10,14 @@ package io.camunda.zeebe.topology.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.OperationApplier;
+import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 /** A Member join operation is applied when the member is not already part of the topology. */
-final class MemberJoinApplier implements OperationApplier {
+final class MemberJoinApplier implements MemberOperationApplier {
 
   private final MemberId memberId;
   private final TopologyMembershipChangeExecutor topologyMembershipChangeExecutor;
@@ -30,7 +30,12 @@ final class MemberJoinApplier implements OperationApplier {
   }
 
   @Override
-  public Either<Exception, UnaryOperator<MemberState>> init(
+  public MemberId memberId() {
+    return memberId;
+  }
+
+  @Override
+  public Either<Exception, UnaryOperator<MemberState>> initMemberState(
       final ClusterTopology currentClusterTopology) {
     if (currentClusterTopology.hasMember(memberId)) {
       return Either.left(
@@ -47,7 +52,7 @@ final class MemberJoinApplier implements OperationApplier {
   }
 
   @Override
-  public ActorFuture<UnaryOperator<MemberState>> apply() {
+  public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
     final var future = new CompletableActorFuture<UnaryOperator<MemberState>>();
     topologyMembershipChangeExecutor
         .addBroker(memberId)

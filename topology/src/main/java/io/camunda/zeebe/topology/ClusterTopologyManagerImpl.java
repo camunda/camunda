@@ -14,7 +14,6 @@ import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
 import io.camunda.zeebe.topology.metrics.TopologyMetrics;
 import io.camunda.zeebe.topology.metrics.TopologyMetrics.OperationObserver;
 import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
@@ -230,22 +229,24 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     final var observer = TopologyMetrics.observeOperation(operation);
     LOG.info("Applying topology change operation {}", operation);
     final var operationApplier = changeAppliers.getApplier(operation);
-    final var initialized =
+    final var operationInitialized =
         operationApplier
             .init(mergedTopology)
-            .map(transformer -> mergedTopology.updateMember(localMemberId, transformer))
+            .map(transformer -> transformer.apply(mergedTopology))
             .flatMap(this::updateLocalTopology);
 
-    if (initialized.isLeft()) {
-      // TODO: What should we do here? Retry?
+    if (operationInitialized.isLeft()) {
+      // TODO: Mark ClusterChangePlan as failed
       observer.failed();
       onGoingTopologyChangeOperation = false;
       LOG.error(
-          "Failed to initialize topology change operation {}", operation, initialized.getLeft());
+          "Failed to initialize topology change operation {}",
+          operation,
+          operationInitialized.getLeft());
       return;
     }
 
-    final var initializedTopology = initialized.get();
+    final var initializedTopology = operationInitialized.get();
     operationApplier
         .apply()
         .onComplete(
@@ -272,7 +273,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   private void onOperationApplied(
       final ClusterTopology topologyOnWhichOperationIsApplied,
       final TopologyChangeOperation operation,
-      final UnaryOperator<MemberState> transformer,
+      final UnaryOperator<ClusterTopology> transformer,
       final Throwable error,
       final OperationObserver observer) {
     onGoingTopologyChangeOperation = false;
@@ -289,7 +290,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
         return;
       }
       updateLocalTopology(
-          persistedClusterTopology.getTopology().advanceTopologyChange(localMemberId, transformer));
+          persistedClusterTopology.getTopology().advanceTopologyChange(transformer));
       LOG.info(
           "Operation {} applied. Updated local topology to {}",
           operation,

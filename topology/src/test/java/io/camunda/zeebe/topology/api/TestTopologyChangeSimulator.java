@@ -13,11 +13,8 @@ import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.topology.changes.NoopTopologyMembershipChangeExecutor;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliersImpl;
 import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.function.UnaryOperator;
 
 final class TestTopologyChangeSimulator {
 
@@ -33,12 +30,12 @@ final class TestTopologyChangeSimulator {
     while (newTopology.hasPendingChanges()) {
       final var operation = newTopology.nextPendingOperation();
       final var applier = topologyChangeSimulator.getApplier(operation);
-      final Either<Exception, UnaryOperator<MemberState>> init = applier.init(newTopology);
+      final var init = applier.init(newTopology);
       if (init.isLeft()) {
         fail("Failed to init operation ", init.getLeft());
       }
-      newTopology = newTopology.updateMember(operation.memberId(), init.get());
-      newTopology = newTopology.advanceTopologyChange(operation.memberId(), applier.apply().join());
+      newTopology = init.get().apply(newTopology);
+      newTopology = newTopology.advanceTopologyChange(applier.apply().join());
     }
     return newTopology;
   }

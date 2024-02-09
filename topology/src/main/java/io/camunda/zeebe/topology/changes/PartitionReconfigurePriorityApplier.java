@@ -10,7 +10,7 @@ package io.camunda.zeebe.topology.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.OperationApplier;
+import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.MemberState.State;
@@ -18,7 +18,7 @@ import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
-public class PartitionReconfigurePriorityApplier implements OperationApplier {
+public class PartitionReconfigurePriorityApplier implements MemberOperationApplier {
 
   private final int partitionId;
   private final int newPriority;
@@ -37,7 +37,12 @@ public class PartitionReconfigurePriorityApplier implements OperationApplier {
   }
 
   @Override
-  public Either<Exception, UnaryOperator<MemberState>> init(
+  public MemberId memberId() {
+    return localMemberId;
+  }
+
+  @Override
+  public Either<Exception, UnaryOperator<MemberState>> initMemberState(
       final ClusterTopology currentClusterTopology) {
     final boolean localMemberIsActive =
         currentClusterTopology.hasMember(localMemberId)
@@ -71,7 +76,7 @@ public class PartitionReconfigurePriorityApplier implements OperationApplier {
   }
 
   @Override
-  public ActorFuture<UnaryOperator<MemberState>> apply() {
+  public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
     final CompletableActorFuture<UnaryOperator<MemberState>> result =
         new CompletableActorFuture<>();
 

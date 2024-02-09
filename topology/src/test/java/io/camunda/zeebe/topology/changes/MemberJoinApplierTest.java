@@ -73,7 +73,8 @@ final class MemberJoinApplierTest {
     // then
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get()).isNotNull();
-    assertThat(result.get().apply(null).state()).isEqualTo(JOINING);
+    assertThat(result.get().apply(clusterTopologyWithMember).getMember(memberId).state())
+        .isEqualTo(JOINING);
   }
 
   @Test
@@ -85,14 +86,14 @@ final class MemberJoinApplierTest {
 
     final ClusterTopology clusterTopologyWithMember = ClusterTopology.init();
     final var updater = memberJoinApplier.init(clusterTopologyWithMember).get();
-    final var topologyWithJoining = clusterTopologyWithMember.updateMember(memberId, updater);
+    final var topologyWithJoining = updater.apply(clusterTopologyWithMember);
 
     // when
     final var result = memberJoinApplier.apply();
 
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
-    final var finalTopology = topologyWithJoining.updateMember(memberId, result.join());
+    final var finalTopology = result.join().apply(topologyWithJoining);
     assertThat(finalTopology.getMember(memberId).state()).isEqualTo(ACTIVE);
   }
 

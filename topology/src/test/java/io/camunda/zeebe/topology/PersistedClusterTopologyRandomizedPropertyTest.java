@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.topology;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.atomix.cluster.MemberId;
@@ -48,9 +49,10 @@ final class PersistedClusterTopologyRandomizedPropertyTest {
     persistedClusterTopology.update(updatedTopology);
 
     // then
-    assertEquals(updatedTopology, persistedClusterTopology.getTopology());
-    assertEquals(
-        updatedTopology, PersistedClusterTopology.ofFile(topologyFile, serializer).getTopology());
+    assertThat(updatedTopology).isEqualTo(persistedClusterTopology.getTopology());
+    assertThat(PersistedClusterTopology.ofFile(topologyFile, serializer).getTopology())
+        .usingRecursiveComparison()
+        .isEqualTo(updatedTopology);
   }
 
   /**

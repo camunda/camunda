@@ -22,12 +22,10 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.PartitionState.State;
-import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.function.UnaryOperator;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +43,7 @@ final class PartitionJoinApplierTest {
             .updateMember(localMemberId, m -> m.addPartition(1, PartitionState.active(1)));
 
     // when
-    final Either<Exception, UnaryOperator<MemberState>> result =
+    final var result =
         new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
             .init(topologyWithPartitionJoined);
 
@@ -70,7 +68,7 @@ final class PartitionJoinApplierTest {
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
 
     // when - then
-    final Either<Exception, UnaryOperator<MemberState>> result =
+    final var result =
         new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
             .init(topologyWithPartitionLeaving);
     assertThat(result).isLeft();
@@ -89,7 +87,7 @@ final class PartitionJoinApplierTest {
             .updateMember(localMemberId, MemberState::toLeaving);
 
     // when
-    final Either<Exception, UnaryOperator<MemberState>> result =
+    final var result =
         new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
             .init(topologyWithMemberNotActive);
 
@@ -106,7 +104,7 @@ final class PartitionJoinApplierTest {
     // given
     final ClusterTopology topologyWithoutMember = ClusterTopology.init();
     // when
-    final Either<Exception, UnaryOperator<MemberState>> result =
+    final var result =
         new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
             .init(topologyWithoutMember);
 
@@ -150,7 +148,7 @@ final class PartitionJoinApplierTest {
         new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
             .init(initialTopology)
             .get();
-    final var resultingTopology = initialTopology.updateMember(localMemberId, updater);
+    final var resultingTopology = updater.apply(initialTopology);
 
     // then
     ClusterTopologyAssert.assertThatClusterTopology(resultingTopology)
@@ -171,14 +169,12 @@ final class PartitionJoinApplierTest {
     final var partitionJoinApplier =
         new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor);
     final var updatedTopology =
-        initialTopology.updateMember(
-            localMemberId, partitionJoinApplier.init(initialTopology).get());
+        partitionJoinApplier.init(initialTopology).get().apply(initialTopology);
     when(partitionChangeExecutor.join(anyInt(), any()))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
-    final var updater = partitionJoinApplier.apply().join();
-    final var resultingTopology = updatedTopology.updateMember(localMemberId, updater);
+    final var resultingTopology = partitionJoinApplier.apply().join().apply(updatedTopology);
 
     // then
     verify(partitionChangeExecutor, times(1)).join(anyInt(), any());
