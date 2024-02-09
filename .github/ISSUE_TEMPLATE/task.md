@@ -11,15 +11,12 @@ assignees: ''
 ### Context
 <!-- Please, describe the context or the need for this task -->
 
-
 ### ATs
 <!-- The assignee will fill the Acceptance Criteria. -->
 - 
 
-
 ### Testing Notes
 <!-- Add any other information about the task here. -->
-
 
 ### Additional information
 <!-- Add any other information about the task here. -->
