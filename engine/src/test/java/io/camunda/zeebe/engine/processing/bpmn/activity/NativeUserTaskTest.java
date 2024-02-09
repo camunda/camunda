@@ -356,7 +356,7 @@ public final class NativeUserTaskTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(userTask.getValue()).hasCandidateGroups("[\"alice\",\"bob\"]");
+    Assertions.assertThat(userTask.getValue()).hasCandidateGroupsList("alice", "bob");
   }
 
   @Test
@@ -381,7 +381,7 @@ public final class NativeUserTaskTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(userTask.getValue()).hasCandidateGroups("[\"alice\",\"bob\"]");
+    Assertions.assertThat(userTask.getValue()).hasCandidateGroupsList("alice", "bob");
   }
 
   @Test
@@ -398,7 +398,7 @@ public final class NativeUserTaskTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(userTask.getValue()).hasCandidateUsers("[\"jack\",\"rose\"]");
+    Assertions.assertThat(userTask.getValue()).hasCandidateUsersList("jack", "rose");
   }
 
   @Test
@@ -423,7 +423,7 @@ public final class NativeUserTaskTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(userTask.getValue()).hasCandidateUsers("[\"jack\",\"rose\"]");
+    Assertions.assertThat(userTask.getValue()).hasCandidateUsersList("jack", "rose");
   }
 
   @Test
@@ -745,8 +745,8 @@ public final class NativeUserTaskTest {
             tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED));
 
     Assertions.assertThat(createdUserTask)
-        .hasCandidateGroups("[\"foo\",\"bar\"]")
-        .hasCandidateUsers("[\"oof\",\"rab\"]")
+        .hasCandidateGroupsList("foo", "bar")
+        .hasCandidateUsersList("oof", "rab")
         .hasDueDate("2023-03-02T16:35+02:00")
         .hasFollowUpDate("2023-03-02T15:35+02:00")
         .hasNoChangedAttributes();
@@ -756,8 +756,8 @@ public final class NativeUserTaskTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst()
                 .getValue())
-        .hasCandidateGroups("")
-        .hasCandidateUsers("")
+        .hasNoCandidateGroupsList()
+        .hasNoCandidateUsersList()
         .hasDueDate("")
         .hasFollowUpDate("")
         .hasChangedAttributes(
@@ -767,8 +767,8 @@ public final class NativeUserTaskTest {
             UserTaskRecord.FOLLOW_UP_DATE);
 
     Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
-        .hasCandidateGroups("")
-        .hasCandidateUsers("")
+        .hasNoCandidateGroupsList()
+        .hasNoCandidateUsersList()
         .hasDueDate("")
         .hasFollowUpDate("")
         .hasNoChangedAttributes();

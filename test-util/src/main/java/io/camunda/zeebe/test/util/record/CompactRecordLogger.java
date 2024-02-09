@@ -778,8 +778,8 @@ public class CompactRecordLogger {
     }
 
     addIfNotEmpty(result, value.getAssignee(), " assignee");
-    addIfNotEmpty(result, value.getCandidateUsers(), " candidateUsers");
-    addIfNotEmpty(result, value.getCandidateGroups(), " candidateGroups");
+    addIfNotEmpty(result, value.getCandidateUsersList(), " candidateUsersList");
+    addIfNotEmpty(result, value.getCandidateGroupsList(), " candidateGroupsList");
     addIfNotEmpty(result, value.getDueDate(), " dueDate");
     addIfNotEmpty(result, value.getFollowUpDate(), " followUpDate");
 
@@ -905,6 +905,14 @@ public class CompactRecordLogger {
   // add non-empty String elements
   private void addIfNotEmpty(final StringBuilder result, final String value, final String name) {
     if (StringUtils.isNotEmpty(value)) {
+      result.append(name).append(" \"").append(value).append("\"");
+    }
+  }
+
+  // add non-empty String list elements
+  private void addIfNotEmpty(
+      final StringBuilder result, final List<String> value, final String name) {
+    if (value != null && !value.isEmpty()) {
       result.append(name).append(" \"").append(value).append("\"");
     }
   }
