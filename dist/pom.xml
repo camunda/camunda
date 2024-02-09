@@ -476,7 +476,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.2.0</version>
+        <version>7.3.0</version>
         <executions>
           <execution>
             <id>backups</id>
