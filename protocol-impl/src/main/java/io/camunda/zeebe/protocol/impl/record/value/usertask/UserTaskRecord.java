@@ -74,7 +74,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
 
   public UserTaskRecord() {
-    super(18);
+    super(19);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsProp)
@@ -268,16 +268,6 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     return this;
   }
 
-  public UserTaskRecord setAction(final String action) {
-    actionProp.setValue(action);
-    return this;
-  }
-
-  public UserTaskRecord setAction(final DirectBuffer action) {
-    actionProp.setValue(action);
-    return this;
-  }
-
   public UserTaskRecord setExternalFormReference(final DirectBuffer externalFormReference) {
     externalFormReferenceProp.setValue(externalFormReference);
     return this;
@@ -285,6 +275,16 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setExternalFormReference(final String externalFormReference) {
     externalFormReferenceProp.setValue(externalFormReference);
+    return this;
+  }
+
+  public UserTaskRecord setAction(final String action) {
+    actionProp.setValue(action);
+    return this;
+  }
+
+  public UserTaskRecord setAction(final DirectBuffer action) {
+    actionProp.setValue(action);
     return this;
   }
 

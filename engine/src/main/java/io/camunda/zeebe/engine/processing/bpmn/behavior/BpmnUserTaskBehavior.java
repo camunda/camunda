@@ -108,6 +108,7 @@ public final class BpmnUserTaskBehavior {
         .setDueDate(userTaskProperties.getDueDate())
         .setFollowUpDate(userTaskProperties.getFollowUpDate())
         .setFormKey(userTaskProperties.getFormKey())
+        .setExternalFormReference(userTaskProperties.getExternalFormReference())
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessDefinitionVersion(context.getProcessVersion())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
