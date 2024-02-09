@@ -69,9 +69,9 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
         .ifRightOrLeft(
             userTaskProperties -> {
-              final var userTaskKey =
+              final var userTaskRecord =
                   userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
-              userTaskBehavior.userTaskCreated(userTaskKey, context, element, userTaskProperties);
+              userTaskBehavior.userTaskCreated(userTaskRecord);
               stateTransitionBehavior.transitionToActivated(context, element.getEventType());
             },
             failure -> incidentBehavior.createIncident(failure, context));

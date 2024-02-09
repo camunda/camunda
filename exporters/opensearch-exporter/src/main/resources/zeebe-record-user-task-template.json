@@ -49,6 +49,9 @@
             "externalFormReference": {
               "type": "keyword"
             },
+            "creationTimestamp": {
+              "type": "long"
+            },
             "elementId": {
               "type": "text"
             },
