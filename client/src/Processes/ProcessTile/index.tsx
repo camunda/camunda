@@ -10,7 +10,7 @@ import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {notificationsStore} from 'modules/stores/notifications';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {useState} from 'react';
-import {Container, Title, Subtitle} from './styled';
+import {Container, Title, Subtitle, ButtonRow} from './styled';
 import {useNavigate, useMatch, useLocation} from 'react-router-dom';
 import {pages} from 'modules/routing';
 import {logger} from 'modules/utils/logger';
@@ -19,8 +19,11 @@ import {useStartProcess} from 'modules/mutations/useStartProcess';
 import {Process, Task} from 'modules/types';
 import {FormModal} from './FormModal';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
+import {ProcessTag} from './ProcessTag';
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';
+
+type ProcessTagVariant = React.ComponentProps<typeof ProcessTag>['variant'];
 
 function convertStatus(status: LoadingStatus): InlineLoadingStatus {
   if (status === 'active-tasks') {
@@ -48,6 +51,16 @@ function getAsyncButtonDescription(status: LoadingStatus) {
   }
 
   return '';
+}
+
+function getTags(process: Process): ProcessTagVariant[] {
+  const tags: ProcessTagVariant[] = [];
+
+  if (process.startEventFormId !== null) {
+    tags.push('start-form');
+  }
+
+  return tags;
 }
 
 const isMultiTenancyEnabled =
@@ -151,79 +164,89 @@ const ProcessTile: React.FC<Props> = ({
   const startFormModalRoute = pages.interalStartProcessFromForm(bpmnProcessId);
   const match = useMatch(startFormModalRoute);
   const isFormModalOpen = match !== null;
+  const tags = getTags(process);
 
   return (
     <Container {...props}>
-      <Stack>
+      <Stack data-testid="process-tile-content">
         <Title>{displayName}</Title>
         <Subtitle>
           {displayName === bpmnProcessId ? '' : bpmnProcessId}
         </Subtitle>
-        <AsyncActionButton
-          status={convertStatus(status)}
-          buttonProps={{
-            type: 'button',
-            kind: 'tertiary',
-            size: 'sm',
-            id: isFirst ? 'main-content' : '',
-            autoFocus: isFirst,
-            disabled: isStartButtonDisabled,
-            onClick: async () => {
-              if (startEventFormId === null) {
-                setStatus('active');
-                tracking.track({
-                  eventName: 'process-start-clicked',
-                });
-                try {
-                  await startProcess({
-                    bpmnProcessId,
-                    tenantId,
+        <ButtonRow>
+          <ul title="Process Attributes" aria-hidden={tags.length === 0}>
+            {tags.map((type) => (
+              <li key={type}>
+                <ProcessTag variant={type} />
+              </li>
+            ))}
+          </ul>
+          <AsyncActionButton
+            status={convertStatus(status)}
+            buttonProps={{
+              type: 'button',
+              kind: 'tertiary',
+              size: 'sm',
+              id: isFirst ? 'main-content' : '',
+              autoFocus: isFirst,
+              disabled: isStartButtonDisabled,
+              onClick: async () => {
+                if (startEventFormId === null) {
+                  setStatus('active');
+                  tracking.track({
+                    eventName: 'process-start-clicked',
                   });
-                } catch (error) {
-                  logger.error(error);
-                  setStatus('error');
+                  try {
+                    await startProcess({
+                      bpmnProcessId,
+                      tenantId,
+                    });
+                  } catch (error) {
+                    logger.error(error);
+                    setStatus('error');
+                  }
+                } else {
+                  navigate({
+                    ...location,
+                    pathname: startFormModalRoute,
+                  });
                 }
+              },
+            }}
+            onError={() => {
+              tracking.track({
+                eventName: 'process-start-failed',
+              });
+              setStatus('inactive');
+              if (isMultiTenancyEnabled && tenantId === undefined) {
+                notificationsStore.displayNotification({
+                  isDismissable: false,
+                  kind: 'error',
+                  title: 'Process start failed. Please select a tenant.',
+                  subtitle: displayName,
+                });
               } else {
-                navigate({
-                  ...location,
-                  pathname: startFormModalRoute,
+                notificationsStore.displayNotification({
+                  isDismissable: false,
+                  kind: 'error',
+                  title: 'Process start failed',
+                  subtitle: displayName,
                 });
               }
-            },
-          }}
-          onError={() => {
-            tracking.track({
-              eventName: 'process-start-failed',
-            });
-            setStatus('inactive');
-            if (isMultiTenancyEnabled && tenantId === undefined) {
-              notificationsStore.displayNotification({
-                isDismissable: false,
-                kind: 'error',
-                title: 'Process start failed. Please select a tenant.',
-                subtitle: displayName,
-              });
-            } else {
-              notificationsStore.displayNotification({
-                isDismissable: false,
-                kind: 'error',
-                title: 'Process start failed',
-                subtitle: displayName,
-              });
-            }
-          }}
-          inlineLoadingProps={{
-            description: getAsyncButtonDescription(status),
-            'aria-live': ['error', 'finished'].includes(status)
-              ? 'assertive'
-              : 'polite',
-            onSuccess: () => {
-              setStatus('inactive');
-            },
-          }}
-        >
-          Start process
-        </AsyncActionButton>
+            }}
+            inlineLoadingProps={{
+              description: getAsyncButtonDescription(status),
+              'aria-live': ['error', 'finished'].includes(status)
+                ? 'assertive'
+                : 'polite',
+              onSuccess: () => {
+                setStatus('inactive');
+              },
+            }}
+          >
+            Start process
+          </AsyncActionButton>
+        </ButtonRow>
       </Stack>
 
       {startEventFormId === null ? null : (

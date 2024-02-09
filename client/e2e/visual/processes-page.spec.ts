@@ -183,4 +183,35 @@ test.describe('processes page', () => {
 
     await expect(page).toHaveScreenshot();
   });
+
+  test('should show a start form tag', async ({page}) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    });
+    await page.route(
+      /^.*\/v1.*$/i,
+      mockResponses([
+        {
+          id: '2251799813685285',
+          name: 'startForm',
+          bpmnProcessId: 'startForm',
+          version: 1,
+          startEventFormId: 'startFormForm',
+        },
+        {
+          id: '2251799813685271',
+          name: 'Order process',
+          bpmnProcessId: 'orderProcess',
+          version: 1,
+          startEventFormId: null,
+        },
+      ]),
+    );
+
+    await page.goto('/processes', {
+      waitUntil: 'networkidle',
+    });
+
+    await expect(page).toHaveScreenshot();
+  });
 });

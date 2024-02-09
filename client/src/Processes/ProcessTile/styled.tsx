@@ -39,4 +39,11 @@ const Subtitle = styled.span`
   `}
 `;
 
-export {Container, Title, Subtitle};
+const ButtonRow = styled.div`
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  gap: var(--cds-spacing-05);
+`;
+
+export {Container, Title, Subtitle, ButtonRow};
