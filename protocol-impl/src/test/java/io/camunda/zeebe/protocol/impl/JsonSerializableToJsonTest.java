@@ -2076,8 +2076,8 @@ final class JsonSerializableToJsonTest {
                 new UserTaskRecord()
                     .setUserTaskKey(123)
                     .setAssignee("myAssignee")
-                    .setCandidateGroups("myCandidateGroups")
-                    .setCandidateUsers("myCandidateUsers")
+                    .setCandidateGroupsList(List.of("myCandidateGroups"))
+                    .setCandidateUsersList(List.of("myCandidateUsers"))
                     .setCreationTimestamp(1699633748000L)
                     .setDueDate("2023-11-11T11:11:00+01:00")
                     .setFollowUpDate("2023-11-12T11:11:00+01:00")
@@ -2101,8 +2101,8 @@ final class JsonSerializableToJsonTest {
         "elementId": "activity",
         "elementInstanceKey": 5678,
         "assignee": "myAssignee",
-        "candidateGroups": "myCandidateGroups",
-        "candidateUsers": "myCandidateUsers",
+        "candidateGroupsList": ["myCandidateGroups"],
+        "candidateUsersList": ["myCandidateUsers"],
         "creationTimestamp": 1699633748000,
         "dueDate": "2023-11-11T11:11:00+01:00",
         "followUpDate": "2023-11-12T11:11:00+01:00",
@@ -2134,8 +2134,8 @@ final class JsonSerializableToJsonTest {
         "elementId": "",
         "elementInstanceKey": -1,
         "assignee": "",
-        "candidateGroups": "",
-        "candidateUsers": "",
+        "candidateGroupsList": [],
+        "candidateUsersList": [],
         "creationTimestamp": -1,
         "dueDate": "",
         "followUpDate": "",
@@ -2168,8 +2168,8 @@ final class JsonSerializableToJsonTest {
         "elementId": "",
         "elementInstanceKey": -1,
         "assignee": "",
-        "candidateGroups": "",
-        "candidateUsers": "",
+        "candidateGroupsList": [],
+        "candidateUsersList": [],
         "creationTimestamp": -1,
         "dueDate": "",
         "followUpDate": "",
