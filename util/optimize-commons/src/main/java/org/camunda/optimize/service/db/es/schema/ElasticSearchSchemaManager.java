@@ -99,8 +99,8 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
   }
 
   @Override
-  public void validateExistingSchemaVersion(final OptimizeElasticsearchClient esClient) {
-    metadataService.validateSchemaVersionCompatibility(esClient);
+  public void validateDatabaseMetadata(final OptimizeElasticsearchClient esClient) {
+    metadataService.validateMetadata(esClient);
   }
 
   @Override
@@ -113,7 +113,12 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
     } else {
       updateAllMappingsAndDynamicSettings(esClient);
     }
-    metadataService.initMetadataIfMissing(esClient);
+    if (mappings.stream().anyMatch(MetadataIndexES.class::isInstance)) {
+      metadataService.initMetadataIfMissing(esClient);
+    } else {
+      // TODO - This call should be removed after 3.13, it is only used in upgrading 3.12 -> 3.13
+      metadataService.initMetadataV3IfMissing(esClient);
+    }
   }
 
   @Override

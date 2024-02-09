@@ -5,14 +5,17 @@
  */
 package org.camunda.optimize.service.db.es.schema;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
+import org.camunda.optimize.dto.optimize.query.MetadataDtoV3;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse;
@@ -23,7 +26,9 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -38,16 +43,21 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @Conditional(ElasticSearchCondition.class)
 public class ElasticSearchMetadataService extends DatabaseMetadataService<OptimizeElasticsearchClient> {
 
+  @Autowired
+  public ElasticSearchMetadataService(final ObjectMapper objectMapper, final Environment environment) {
+    super(objectMapper, environment);
+  }
+
   public ElasticSearchMetadataService(final ObjectMapper objectMapper) {
-    super(objectMapper);
+    this(objectMapper, null);
   }
 
   @Override
   protected void upsertMetadataWithScript(final OptimizeElasticsearchClient esClient,
                                           final String schemaVersion,
                                           final String newInstallationId,
+                                          final OptimizeProfile optimizeProfile,
                                           final ScriptData scriptData) {
-    final MetadataDto newMetadataIfAbsent = new MetadataDto(schemaVersion, newInstallationId);
     Script updateScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
@@ -59,7 +69,14 @@ public class ElasticSearchMetadataService extends DatabaseMetadataService<Optimi
         .index(METADATA_INDEX_NAME)
         .id(MetadataIndex.ID)
         .script(updateScript)
-        .upsert(objectMapper.writeValueAsString(newMetadataIfAbsent), XContentType.JSON)
+        .upsert(
+          objectMapper.writeValueAsString(
+            optimizeProfile != null
+              ? new MetadataDto(schemaVersion, newInstallationId, optimizeProfile)
+              : new MetadataDtoV3(schemaVersion, newInstallationId)
+          ),
+          XContentType.JSON
+        )
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
@@ -74,6 +91,14 @@ public class ElasticSearchMetadataService extends DatabaseMetadataService<Optimi
       log.error(ERROR_MESSAGE_REQUEST, e);
       throw new OptimizeRuntimeException(ERROR_MESSAGE_REQUEST, e);
     }
+  }
+
+  @Override
+  protected void upsertMetadataWithScript(final OptimizeElasticsearchClient esClient,
+                                          final String schemaVersion,
+                                          final String newInstallationId,
+                                          final ScriptData scriptData) {
+    upsertMetadataWithScript(esClient, schemaVersion, newInstallationId, null, scriptData);
   }
 
   @Override

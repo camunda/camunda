@@ -46,7 +46,7 @@ public class OptimizeElasticsearchClientFactory {
       esClient, optimizeIndexNameService, requestOptionsProvider
     );
 
-    elasticSearchSchemaManager.validateExistingSchemaVersion(prefixedClient);
+    elasticSearchSchemaManager.validateDatabaseMetadata(prefixedClient);
     elasticSearchSchemaManager.initializeSchema(prefixedClient);
     return prefixedClient;
   }

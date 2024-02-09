@@ -31,7 +31,7 @@ public abstract class MyUpdatedEventIndex<TBuilder> implements IndexMappingCreat
 
   @Override
   public int getVersion() {
-    return 3;
+    return 4;
   }
 
   @Override

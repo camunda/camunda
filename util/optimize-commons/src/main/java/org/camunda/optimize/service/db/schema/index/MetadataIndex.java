@@ -14,11 +14,12 @@ import java.io.IOException;
 
 public abstract class MetadataIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 4;
   public static final String ID = "1";
 
   public static final String SCHEMA_VERSION = MetadataDto.Fields.schemaVersion.name();
-  private static final String INSTALLATION_ID = MetadataDto.Fields.installationId.name();
+  protected static final String INSTALLATION_ID = MetadataDto.Fields.installationId.name();
+  private static final String OPTIMIZE_MODE = MetadataDto.Fields.optimizeProfile.name();
 
   @Override
   public String getIndexName() {
@@ -38,6 +39,9 @@ public abstract class MetadataIndex<TBuilder> extends DefaultIndexMappingCreator
         .field("type", "keyword")
       .endObject()
       .startObject(INSTALLATION_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(OPTIMIZE_MODE)
         .field("type", "keyword")
       .endObject();
     // @formatter:on

@@ -256,7 +256,7 @@ public abstract class AbstractUpgradeIT {
     return request().withPath("/" + versionedIndexName).withMethod(DELETE);
   }
 
-  private ClientAndServer createElasticMock(final DatabaseConnectionNodeConfiguration elasticConfig) {
+  protected ClientAndServer createElasticMock(final DatabaseConnectionNodeConfiguration elasticConfig) {
     return MockServerUtil.createProxyMockServer(
       elasticConfig.getHost(),
       elasticConfig.getHttpPort(),

@@ -33,7 +33,7 @@ public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILD
     this.mappings = mappings;
   }
 
-  public abstract void validateExistingSchemaVersion(final CLIENT dbClient);
+  public abstract void validateDatabaseMetadata(final CLIENT dbClient);
 
   public abstract void initializeSchema(final CLIENT dbClient);
 

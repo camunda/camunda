@@ -96,8 +96,8 @@ public class OpenSearchSchemaManager extends DatabaseSchemaManager<OptimizeOpenS
   }
 
   @Override
-  public void validateExistingSchemaVersion(final OptimizeOpenSearchClient osClient) {
-    metadataService.validateSchemaVersionCompatibility(osClient);
+  public void validateDatabaseMetadata(final OptimizeOpenSearchClient osClient) {
+    metadataService.validateMetadata(osClient);
   }
 
   @Override

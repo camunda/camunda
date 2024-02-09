@@ -105,7 +105,7 @@ public class OptimizeOpenSearchClientFactory {
       optimizeIndexNameService,
       requestOptionsProvider
     );
-    openSearchSchemaManager.validateExistingSchemaVersion(osClient);
+    openSearchSchemaManager.validateDatabaseMetadata(osClient);
     openSearchSchemaManager.initializeSchema(osClient);
 
     return osClient;
