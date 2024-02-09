@@ -4699,10 +4699,10 @@ bpmn-js-disable-collapsed-subprocess@^0.1.7:
   dependencies:
     min-dash "^4.0.0"
 
-bpmn-js@16.3.2:
-  version "16.3.2"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-16.3.2.tgz#9bdd1da816c77ef09a6009b91f751bed4297aec7"
-  integrity sha512-8jWzcagdNPtnnng3S2VvhweuD1R4UNRYslfkkPNlI37Qe2yJArnZF1Z8poMr9U9bRgzhQQ82M2q3ybCT36WJ2g==
+bpmn-js@16.5.0:
+  version "16.5.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-16.5.0.tgz#8fd119ed7a364e4008e5eac08af4a27fb961bf9d"
+  integrity sha512-thQM7EaTfzek1jnqo8emBn3nyZQSi4k2UOIzwKeIUgX2Mry3qrjraNHpSOWBJbLZ8Re2V4IBPvaZJ7c9EHKlmw==
   dependencies:
     bpmn-moddle "^8.1.0"
     diagram-js "^13.4.0"
