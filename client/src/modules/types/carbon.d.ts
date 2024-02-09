@@ -299,4 +299,5 @@ declare module '@carbon/react/icons' {
   export const Maximize: Icon;
   export const Minimize: Icon;
   export const MigrateAlt: Icon;
+  export const Move: Icon;
 }

@@ -14,6 +14,8 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {MigrateAction} from './MigrateAction';
+import {MoveAction} from './MoveAction';
+import {IS_BATCH_MOVE_MODIFICATION_ENABLED} from 'modules/feature-flags';
 
 type Props = {
   selectedInstancesCount: number;
@@ -82,6 +84,7 @@ const Toolbar: React.FC<Props> = ({selectedInstancesCount}) => {
             }
           }}
         >
+          {IS_BATCH_MOVE_MODIFICATION_ENABLED && <MoveAction />}
           <MigrateAction />
           <TableBatchAction
             renderIcon={Error}

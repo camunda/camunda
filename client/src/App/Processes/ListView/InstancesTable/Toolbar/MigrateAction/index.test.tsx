@@ -5,14 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect} from 'react';
-import {observer} from 'mobx-react';
-import {MemoryRouter} from 'react-router-dom';
 import {act} from '@testing-library/react';
-import {UserEvent, render, screen, waitFor} from 'modules/testing-library';
-import {Paths} from 'modules/Routes';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstancesStore} from 'modules/stores/processInstances';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {
   mockCalledProcessInstances,
@@ -25,8 +20,8 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
 import {tracking} from 'modules/tracking';
+import {fetchProcessInstances, getProcessInstance, getWrapper} from '../mocks';
 
 const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'eventBasedGatewayProcess';
@@ -42,68 +37,6 @@ jest.mock('modules/stores/processes/processes.list', () => ({
     },
   },
 }));
-
-const fetchProcessInstances = async (user: UserEvent) => {
-  await user.click(
-    screen.getByRole('button', {name: /fetch process instances/i}),
-  );
-  await waitFor(() =>
-    expect(processInstancesStore.state.status).toBe('fetched'),
-  );
-};
-
-const getProcessInstance = (
-  state: ProcessInstanceEntity['state'],
-  mockData: ProcessInstancesDto,
-) => {
-  const instance = mockData.processInstances.find(
-    (instance) => instance.state === state,
-  );
-
-  if (instance === undefined) {
-    throw new Error(`please make sure there is a ${state} in mockData`);
-  }
-
-  return instance;
-};
-
-function getWrapper(initialPath: string = Paths.processes()) {
-  const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
-    ({children}) => {
-      useEffect(() => {
-        return () => {
-          processInstancesSelectionStore.reset();
-          processInstancesStore.reset();
-          processInstanceMigrationStore.reset();
-          processStatisticsStore.reset();
-          processXmlStore.reset();
-        };
-      }, []);
-      return (
-        <MemoryRouter initialEntries={[initialPath]}>
-          {children}
-          <button
-            onClick={processInstancesSelectionStore.selectAllProcessInstances}
-          >
-            Select all instances
-          </button>
-          <button
-            onClick={() =>
-              processInstancesStore.fetchInstances({
-                fetchType: 'initial',
-                payload: {query: {}},
-              })
-            }
-          >
-            Fetch process instances
-          </button>
-        </MemoryRouter>
-      );
-    },
-  );
-
-  return Wrapper;
-}
 
 describe('<MigrateAction />', () => {
   it('should disable migrate button, when no process version is selected', () => {
@@ -131,7 +64,7 @@ describe('<MigrateAction />', () => {
       ),
     });
 
-    await fetchProcessInstances(user);
+    await fetchProcessInstances(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
@@ -153,7 +86,7 @@ describe('<MigrateAction />', () => {
       ),
     });
 
-    await fetchProcessInstances(user);
+    await fetchProcessInstances(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockCalledProcessInstances);
 
@@ -177,7 +110,7 @@ describe('<MigrateAction />', () => {
     await waitFor(() => processXmlStore.fetchProcessXml('1'));
     expect(processXmlStore.state.status).toBe('error');
 
-    await fetchProcessInstances(user);
+    await fetchProcessInstances(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
@@ -197,7 +130,7 @@ describe('<MigrateAction />', () => {
       ),
     });
 
-    await fetchProcessInstances(user);
+    await fetchProcessInstances(screen, user);
 
     const instance = getProcessInstance('CANCELED', mockProcessInstances);
 
@@ -219,7 +152,7 @@ describe('<MigrateAction />', () => {
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
 
-    await fetchProcessInstances(user);
+    await fetchProcessInstances(screen, user);
 
     act(() => {
       processInstancesSelectionStore.selectAllProcessInstances();
@@ -237,7 +170,7 @@ describe('<MigrateAction />', () => {
       ),
     });
 
-    await fetchProcessInstances(user);
+    await fetchProcessInstances(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
@@ -282,7 +215,7 @@ describe('<MigrateAction />', () => {
     });
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    await fetchProcessInstances(user);
+    await fetchProcessInstances(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockProcessInstances);
     act(() => {
@@ -323,7 +256,7 @@ describe('<MigrateAction />', () => {
     });
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    await fetchProcessInstances(user);
+    await fetchProcessInstances(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockProcessInstances);
     act(() => {

@@ -29,18 +29,11 @@ const MigrateAction: React.FC = observer(() => {
   const {version, process, tenant} = getProcessInstanceFilters(location.search);
   const {
     selectedProcessInstanceIds,
+    hasSelectedRunningInstances,
     state: {isAllChecked},
   } = processInstancesSelectionStore;
 
   const isVersionSelected = version !== undefined && version !== 'all';
-  const hasSelectedFinishedInstances =
-    processInstancesSelectionStore.state.isAllChecked ||
-    processInstancesStore.state.processInstances.some((processInstance) => {
-      return (
-        selectedProcessInstanceIds.includes(processInstance.id) &&
-        ['ACTIVE', 'INCIDENT'].includes(processInstance.state)
-      );
-    });
 
   const isChildProcess = (() => {
     if (processInstancesSelectionStore.state.isAllChecked) {
@@ -65,7 +58,7 @@ const MigrateAction: React.FC = observer(() => {
 
   const isDisabled =
     !isVersionSelected ||
-    !hasSelectedFinishedInstances ||
+    !hasSelectedRunningInstances ||
     isChildProcess ||
     hasXmlError;
 
@@ -78,7 +71,7 @@ const MigrateAction: React.FC = observer(() => {
       return 'Issue fetching diagram, contact admin if problem persists.';
     }
 
-    if (!hasSelectedFinishedInstances) {
+    if (!hasSelectedRunningInstances) {
       return 'You can only migrate instances in active or incident state.';
     }
 

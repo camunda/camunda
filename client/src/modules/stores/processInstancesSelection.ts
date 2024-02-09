@@ -167,6 +167,23 @@ class ProcessInstancesSelection {
     }
   }
 
+  get hasSelectedRunningInstances() {
+    const {
+      selectedProcessInstanceIds,
+      state: {isAllChecked},
+    } = this;
+
+    return (
+      isAllChecked ||
+      processInstancesStore.state.processInstances.some((processInstance) => {
+        return (
+          selectedProcessInstanceIds.includes(processInstance.id) &&
+          ['ACTIVE', 'INCIDENT'].includes(processInstance.state)
+        );
+      })
+    );
+  }
+
   get selectedProcessInstanceIds() {
     const {selectionMode, selectedProcessInstanceIds} = this.state;
 
