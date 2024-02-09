@@ -323,6 +323,18 @@ public interface RaftServer {
   CompletableFuture<RaftServer> promote();
 
   /**
+   * Force configure the partition to remove all members which are not part of the given
+   * membersToRetain.
+   *
+   * <p>This method is typically called to remove a set of unreachable members when there is no
+   * leader.
+   *
+   * @param membersToRetain The members to retain in the partition
+   * @return a future to be completed once the server has been force configured
+   */
+  CompletableFuture<RaftServer> forceConfigure(Collection<MemberId> membersToRetain);
+
+  /**
    * Update priority of this server used for priority election. If priority election is not enabled,
    * this method has no effect. To get the desired result, priority of all replicas must be updated
    * accordingly. This method only updates the local server's priority.
