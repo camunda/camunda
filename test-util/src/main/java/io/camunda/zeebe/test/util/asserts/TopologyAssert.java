@@ -19,6 +19,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractObjectAssert;
 import org.assertj.core.condition.VerboseCondition;
@@ -257,6 +258,33 @@ public final class TopologyAssert extends AbstractObjectAssert<TopologyAssert, T
             .map(p -> p.brokerInfo.getNodeId())
             .findFirst();
     return has(hasLeaderForPartition(partitionId, expectedLeaderId, leader));
+  }
+
+  public TopologyAssert hasLeaderForPartition(
+      final int partitionId, final Predicate<BrokerInfo> matching) {
+    isNotNull();
+
+    final var partitionMap = buildPartitionsMap();
+    has(hasPartitionId(partitionId, partitionMap));
+    final var partitionBrokers = partitionMap.get(partitionId);
+
+    final var leader =
+        partitionBrokers.stream()
+            .filter(p -> p.partitionInfo.isLeader())
+            .map(PartitionBroker::brokerInfo)
+            .findFirst();
+
+    if (leader.isEmpty()) {
+      throw failure("Expected partition <%d> to have a leader, but it has none", partitionId);
+    }
+
+    if (!matching.test(leader.get())) {
+      throw failure(
+          "Expected leader <%d> for partition <%d> to match the given predicate, but it did not.",
+          leader.get(), partitionId);
+    }
+
+    return myself;
   }
 
   /**
