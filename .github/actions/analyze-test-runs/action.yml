@@ -11,6 +11,13 @@ inputs:
 runs:
   using: composite
   steps:
+  - name: Test Summary
+    uses: test-summary/action@v2
+    if: always()
+    with:
+      paths: |
+        **/target/failsafe-reports/TEST-*.xml
+        **/target/surefire-reports/TEST-*.xml
   - name: Duplicate test runs
     shell: bash
     env:
@@ -61,7 +68,3 @@ runs:
         cat $unfinished >> $GITHUB_STEP_SUMMARY
       fi
       exit 0
-  - name: Test Summary
-    uses: test-summary/action@v2
-    with:
-      paths: "target/**/TEST-*.xml"
