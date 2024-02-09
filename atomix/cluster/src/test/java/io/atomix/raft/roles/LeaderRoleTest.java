@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -92,6 +93,9 @@ public class LeaderRoleTest {
     when(context.getPersistedSnapshotStore()).thenReturn(persistedSnapshotStore);
     when(context.getEntryValidator()).thenReturn((a, b) -> ValidationResult.ok());
     when(context.getStorage()).thenReturn(RaftStorage.builder().withMaxSegmentSize(1024).build());
+
+    // Called during shutdown, needs to return a completed future so that shutdown completes
+    when(context.transferLeadership()).thenReturn(CompletableFuture.completedFuture(null));
 
     leaderRole = new LeaderRole(context);
     // since we mock RaftContext we should simulate leader close on transition
