@@ -486,12 +486,12 @@ public final class ProcessingStateMachine {
         switch (errorHandlingPhase) {
           case NO_ERROR -> ErrorHandlingPhase.NO_ERROR; // First switch is explicit
           case PROCESSING_FAILED -> ErrorHandlingPhase.PROCESSING_ERROR_FAILED;
-          case USER_COMMAND_PROCESSING_FAILED ->
-              ErrorHandlingPhase.USER_COMMAND_PROCESSING_ERROR_FAILED;
-          case USER_COMMAND_PROCESSING_ERROR_FAILED ->
-              ErrorHandlingPhase.USER_COMMAND_REJECT_FAILED;
-          case ErrorHandlingPhase.USER_COMMAND_REJECT_FAILED ->
-              ErrorHandlingPhase.USER_COMMAND_REJECT_SIMPLE_REJECT_FAILED;
+          case USER_COMMAND_PROCESSING_FAILED -> ErrorHandlingPhase
+              .USER_COMMAND_PROCESSING_ERROR_FAILED;
+          case USER_COMMAND_PROCESSING_ERROR_FAILED -> ErrorHandlingPhase
+              .USER_COMMAND_REJECT_FAILED;
+          case USER_COMMAND_REJECT_FAILED -> ErrorHandlingPhase
+              .USER_COMMAND_REJECT_SIMPLE_REJECT_FAILED;
           case PROCESSING_ERROR_FAILED, USER_COMMAND_REJECT_SIMPLE_REJECT_FAILED -> {
             LOG.error(
                 "Failed to process command '{} {}' retries. Entering endless error loop.",
