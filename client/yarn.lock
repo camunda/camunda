@@ -1898,14 +1898,14 @@
     htm "^3.1.1"
     preact "^10.11.2"
 
-"@bpmn-io/dmn-migrate@^0.4.3":
-  version "0.4.3"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/dmn-migrate/-/dmn-migrate-0.4.3.tgz#a4d81cc46022ad40987764daf0f57f70059e174e"
-  integrity sha512-l4VOUoqGV9Me13EFDJZVOmw+lM0+gKaafzhXpK2z6gcqiwJhsBQ4J4AFHkJmCeZqpZaOUQLAG2klieIJVG5q6w==
+"@bpmn-io/dmn-migrate@^0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/dmn-migrate/-/dmn-migrate-0.5.0.tgz#b1ef55978339c6a2ed5d8b3ed40786d71d779fc3"
+  integrity sha512-wTK3a634Z+6wRsz7+DmMLmxaweXGZ0mnC4+6jLTw5VuwCPKJsRfaaBlVR/ge6HUikQRODGHgbXzjwJ2nivxAOA==
   dependencies:
-    dmn-moddle "^8.0.0"
-    ids "^1.0.0"
-    min-dash "^3.5.2"
+    dmn-moddle "^10.0.0"
+    ids "^1.0.5"
+    min-dash "^4.1.1"
 
 "@bpmn-io/dmn-variable-resolver@^0.4.0":
   version "0.4.0"
@@ -6209,15 +6209,6 @@ dmn-moddle@^10.0.0:
     min-dash "^3.0.0"
     moddle "^5.0.1"
     moddle-xml "^9.0.5"
-
-dmn-moddle@^8.0.0:
-  version "8.0.4"
-  resolved "https://registry.yarnpkg.com/dmn-moddle/-/dmn-moddle-8.0.4.tgz#96e2f69aedd441fa88ed66ef7087aa00341b6689"
-  integrity sha512-7pVmt6Jr44cEleQeaitYx1InSEgU993LBbskEug/UUwfoR72ZdszHiSwfDIP5hUnc+dJylIgMbz10MXbQSld7g==
-  dependencies:
-    min-dash "^3.0.0"
-    moddle "^5.0.1"
-    moddle-xml "^8.0.1"
 
 dns-equal@^1.0.0:
   version "1.0.0"
@@ -10866,15 +10857,6 @@ moddle-xml@^10.1.0:
   dependencies:
     min-dash "^4.0.0"
     moddle "^6.0.0"
-    saxen "^8.1.2"
-
-moddle-xml@^8.0.1:
-  version "8.0.8"
-  resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-8.0.8.tgz#f14193394be8e1c5f6d1c0f892dee57523d41416"
-  integrity sha512-JzW8wUCH7Qze7eh0T8A1exi7QJg6hRgq+uw8goHNP5Q7pWTGrLj83S+NgA/94M2I0JmqnK9hw3sCbyiKVOjc4Q==
-  dependencies:
-    min-dash "^3.0.0"
-    moddle "^5.0.1"
     saxen "^8.1.2"
 
 moddle-xml@^9.0.5, moddle-xml@^9.0.6:
