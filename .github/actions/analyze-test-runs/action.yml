@@ -61,3 +61,7 @@ runs:
         cat $unfinished >> $GITHUB_STEP_SUMMARY
       fi
       exit 0
+  - name: Test Summary
+    uses: test-summary/action@v2
+    with:
+      paths: "target/**/TEST-*.xml"
