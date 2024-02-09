@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
@@ -73,8 +74,11 @@ class StreamProcessorErrorHandlingTest {
     final var successResult = new BufferedProcessingResultBuilder((c, s) -> true);
     successResult.appendRecordReturnEither(
         1,
-        Records.processInstance(1),
-        new RecordMetadata().recordType(RecordType.EVENT).intent(ELEMENT_ACTIVATED));
+        RecordType.EVENT,
+        ELEMENT_ACTIVATED,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
 
     when(defaultMockedRecordProcessor.process(any(), any()))
         .thenThrow(new RuntimeException())
