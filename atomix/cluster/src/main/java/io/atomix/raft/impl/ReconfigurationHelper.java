@@ -170,6 +170,52 @@ public final class ReconfigurationHelper {
             threadContext);
   }
 
+  /**
+   * Force configuration works as follows. Assume current members are 0,1,3,4, and we want to force
+   * remove 2 and 3.
+   *
+   * <pre>
+   *
+   *   External                        Raft 0 (follower)                     Raft 1 (follower)             Raft 2/3
+   *      |                                 |                                     |                        (Members to be removed)
+   *      |    forceConfigure([0,1])        |                                     |                                    |
+   *      |-------------------------------->|                                     |                                    |
+   *      |                                 |                                     |                                    |
+   *      |               Configuration={   |                                     |                                    |
+   *      |                newMembers=[0,1],|                                     |                                    |
+   *      |                oldMembers=[]    |                                     |                                    |
+   *      |                force=TRUE       |                                     |                                    |
+   *      |               Commit new config |   ForceConfigureRequest(newMembers) |                                    |
+   *      |                                 |------------------------------------>|                                    |
+   *      |                                 |               OK                    |Commit new Configuration            |
+   *      |         OK                      |<------------------------------------|                                    |
+   *      |<--------------------------------|                                     |        Poll/Vote/Append            |
+   *      |                                 |                                     |<-----------------------------------|
+   *      |                        election |             poll/vote               |----------------------------------->|
+   *      |                        timeout  ------------------------------------->|     Reject because Force==TRUE     |
+   *      |                                 |               OK                    |                                    |
+   *      |                                 |<------------------------------------|                                    |
+   *      |                    Become leader|                                     |                                    |
+   *      |                                 |                                     |                                    |
+   *      |             Append InitialEntry |                                     |                                    |
+   *      |       Append ConfigurationEntry |                                     |                                    |
+   *      |               Configuration={   |           AppendEntry               |                                    |
+   *      |                newMembers=[0,1] |------------------------------------>|                                    |
+   *      |                force=FALSE      |<------------------------------------|                                    |
+   *      |               }                 |                                     |                                    |
+   *      |                                 |------------------------------------>|                                    |
+   *      |                                 |<------------------------------------|                                    |
+   *      |                                 |                                     |                                    |
+   *      |                Commit new config|            AppendEntry              |On commitIndex update               |
+   *      |                                 |------------------------------------>|Commit new config                   |
+   *      |                                 |                                     |                                    |
+   *      |                                 |                                     |      Poll/Vote                     |
+   *      |                                 |                                     |<-----------------------------------|
+   *      |                                 |                                     |  Reject because log not uptodate   |
+   *      |                                 |                                     |----------------------------------->|
+   *      |                                 |                                     |                                    |
+   * </pre>
+   */
   public CompletableFuture<Void> forceConfigure(final Collection<MemberId> newMembersIds) {
     final CompletableFuture<Void> future = new CompletableFuture<>();
 
