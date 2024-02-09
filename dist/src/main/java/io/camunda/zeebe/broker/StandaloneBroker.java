@@ -33,7 +33,11 @@ import org.springframework.context.event.ContextClosedEvent;
  */
 @SpringBootApplication(
     proxyBeanMethods = false,
-    scanBasePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
+    scanBasePackages = {
+      "io.camunda.zeebe.broker",
+      "io.camunda.zeebe.shared",
+      "io.camunda.zeebe.gateway.rest"
+    })
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
 public class StandaloneBroker
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {

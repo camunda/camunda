@@ -437,15 +437,16 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-cluster-topology</artifactId>
+        <artifactId>zeebe-gateway-rest</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-gateway-protocol-rest</artifactId>
+        <artifactId>zeebe-cluster-topology</artifactId>
         <version>${project.version}</version>
       </dependency>
+
       <!-- sibling projects -->
 
       <dependency>
