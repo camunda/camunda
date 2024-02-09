@@ -77,6 +77,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private long configuring;
   private CompletableFuture<Void> commitInitialEntriesFuture;
   private ApplicationEntry lastZbEntry = null;
+  // Set to true when a follower requests leadership, to prevent interference with the proactive
+  // leadership transfer on shutdown.
+  private boolean transferring;
 
   public LeaderRole(final RaftContext context) {
     super(context);
@@ -119,7 +122,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
         .thenRun(appender::close)
         .thenRun(this::cancelTimers)
         .thenRun(this::stepDown)
-        .thenCompose(ignored -> raft.transferLeadership());
+        .thenCompose(
+            ignored -> {
+              if (transferring) {
+                // This shutdown is the result of a follower requesting leadership. In that case we
+                // don't want to pick another member as next leader and can just skip the proactive
+                // leadership transfer.
+                return CompletableFuture.completedFuture(null);
+              } else {
+                return raft.transferLeadership();
+              }
+            });
   }
 
   @Override
@@ -480,6 +493,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     }
 
     final CompletableFuture<TransferResponse> future = new CompletableFuture<>();
+    // Another member has requested leadership. Set a flag indicating that leadership is being
+    // transferred so that the leader doesn't try to transfer leadership to another node when it
+    // transitions to follower.
+    transferring = true;
+
     appender
         .appendEntries(raft.getLog().getLastIndex())
         .whenComplete(
