@@ -26,9 +26,12 @@ jobs:
       )
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BACKPORT_ACTION_PAT }}
       - name: Create backport pull requests
         uses: korthout/backport-action@v2
         with:
+          github_token: ${{ secrets.BACKPORT_ACTION_PAT }}
           pull_title: "${pull_title} [Backport ${target_branch}]"
           experimental: >
             {
