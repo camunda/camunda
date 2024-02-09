@@ -388,16 +388,43 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   }
 
   private Query addFilterIsStartedByForm(final Query query, final Boolean isStartedByForm) {
-    if (isStartedByForm != null) {
-      final Query tenantQuery =
+    // Construct queries to check if FORM_KEY or FORM_ID is not null
+    // This is in order to consider a process as started by form but not public
+    if (Boolean.TRUE.equals(isStartedByForm)) {
+      final Query existsFormKeyQuery =
+          new Query.Builder().exists(e -> e.field(ProcessIndex.FORM_KEY)).build();
+      final Query existsFormIdQuery =
+          new Query.Builder().exists(e -> e.field(ProcessIndex.FORM_ID)).build();
+
+      final Query boolQuery =
           new Query.Builder()
-              .term(
-                  term ->
-                      term.field(ProcessIndex.IS_STARTED_BY_FORM)
-                          .value(FieldValue.of(isStartedByForm)))
+              .bool(
+                  b ->
+                      b.should(existsFormKeyQuery)
+                          .should(existsFormIdQuery)
+                          .minimumShouldMatch("1"))
               .build();
-      return OpenSearchUtil.joinWithAnd(tenantQuery, query);
+
+      return OpenSearchUtil.joinWithAnd(boolQuery, query);
     }
+    if (Boolean.FALSE.equals(isStartedByForm)) {
+      final Query notExistsFormKeyQuery =
+          new Query.Builder()
+              .bool(b -> b.mustNot(mn -> mn.exists(e -> e.field(ProcessIndex.FORM_KEY))))
+              .build();
+      final Query notExistsFormIdQuery =
+          new Query.Builder()
+              .bool(b -> b.mustNot(mn -> mn.exists(e -> e.field(ProcessIndex.FORM_ID))))
+              .build();
+
+      final Query boolQuery =
+          new Query.Builder()
+              .bool(b -> b.must(notExistsFormKeyQuery).must(notExistsFormIdQuery))
+              .build();
+
+      return OpenSearchUtil.joinWithAnd(boolQuery, query);
+    }
+    // No filter is applied if isStartedByForm is null
     return query;
   }
 

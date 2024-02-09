@@ -23,6 +23,8 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -269,11 +271,29 @@ public class ProcessStoreElasticSearch implements ProcessStore {
 
   private QueryBuilder enhanceQueryByIsStartedByForm(
       QueryBuilder qb, final Boolean isStartedByForm) {
-    if (isStartedByForm != null) {
-      return ElasticsearchUtil.joinWithAnd(
-          QueryBuilders.termQuery(ProcessIndex.IS_STARTED_BY_FORM, isStartedByForm), qb);
-    }
+    // Construct queries to check if FORM_KEY or FORM_ID is not null
+    // This is in order to consider a process as started by form but not public
+    final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+    if (Boolean.TRUE.equals(isStartedByForm)) {
+      final ExistsQueryBuilder formKeyExistsQuery =
+          QueryBuilders.existsQuery(ProcessIndex.FORM_KEY);
+      final ExistsQueryBuilder formIdExistsQuery = QueryBuilders.existsQuery(ProcessIndex.FORM_ID);
 
+      boolQuery.should(formKeyExistsQuery);
+      boolQuery.should(formIdExistsQuery);
+      boolQuery.minimumShouldMatch(1);
+
+      return ElasticsearchUtil.joinWithAnd(boolQuery, qb);
+    }
+    if (Boolean.FALSE.equals(isStartedByForm)) {
+      final BoolQueryBuilder mustNotQuery = QueryBuilders.boolQuery();
+      mustNotQuery.mustNot(QueryBuilders.existsQuery(ProcessIndex.FORM_KEY));
+      mustNotQuery.mustNot(QueryBuilders.existsQuery(ProcessIndex.FORM_ID));
+
+      boolQuery.must(mustNotQuery);
+      return ElasticsearchUtil.joinWithAnd(boolQuery, qb);
+    }
+    // No filter is applied if isStartedByForm is null
     return qb;
   }
 
