@@ -85,7 +85,12 @@ public final class BpmnUserTaskBehavior {
         .flatMap(
             p ->
                 evaluateFormIdExpressionToFormKey(userTaskProps.getFormId(), scopeKey, tenantId)
-                    .map(p::formKey));
+                    .map(p::formKey))
+        .flatMap(
+            p ->
+                evaluateExternalFormReferenceExpression(
+                        userTaskProps.getExternalFormReference(), scopeKey)
+                    .map(p::externalFormReference));
   }
 
   public long createNewUserTask(
@@ -172,6 +177,14 @@ public final class BpmnUserTaskBehavior {
             });
   }
 
+  public Either<Failure, String> evaluateExternalFormReferenceExpression(
+      final Expression externalFormReference, final long scopeKey) {
+    if (externalFormReference == null) {
+      return Either.right(null);
+    }
+    return expressionBehavior.evaluateStringExpression(externalFormReference, scopeKey);
+  }
+
   public void cancelUserTask(final BpmnElementContext context) {
     final var elementInstance = stateBehavior.getElementInstance(context);
     cancelUserTask(elementInstance);
@@ -204,6 +217,7 @@ public final class BpmnUserTaskBehavior {
         .setDueDate(props.getDueDate())
         .setFollowUpDate(props.getFollowUpDate())
         .setFormKey(props.getFormKey())
+        .setExternalFormReference(props.getExternalFormReference())
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessDefinitionVersion(context.getProcessVersion())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
@@ -221,6 +235,7 @@ public final class BpmnUserTaskBehavior {
     private String candidateGroups;
     private String candidateUsers;
     private String dueDate;
+    private String externalFormReference;
     private String followUpDate;
     private Long formKey;
 
@@ -257,6 +272,15 @@ public final class BpmnUserTaskBehavior {
 
     public UserTaskProperties dueDate(final String dueDate) {
       this.dueDate = dueDate;
+      return this;
+    }
+
+    public String getExternalFormReference() {
+      return getOrEmpty(externalFormReference);
+    }
+
+    public UserTaskProperties externalFormReference(final String externalFormReference) {
+      this.externalFormReference = externalFormReference;
       return this;
     }
 

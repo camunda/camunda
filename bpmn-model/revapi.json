@@ -33,6 +33,14 @@
           }
         },
         {
+          "justification": "Ignore new methods for builders, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
+          "code": "java.method.addedToInterface",
+          "new": {
+            "matcher": "java",
+            "match": "interface * { * io.camunda.zeebe.model.bpmn.builder.**::^*(**); }"
+          }
+        },
+        {
           "justification": "Validators are used only internally; they should not used or referenced from outside of the module",
           "code": "java.class.removed",
           "old": {

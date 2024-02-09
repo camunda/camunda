@@ -43,6 +43,7 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_FORM_KEY = "formKey";
   public static final String ATTRIBUTE_FORM_ID = "formId";
+  public static final String ATTRIBUTE_EXTERNAL_REFERENCE = "externalReference";
 
   public static final String ATTRIBUTE_ASSIGNEE = "assignee";
   public static final String ATTRIBUTE_CANDIDATE_GROUPS = "candidateGroups";

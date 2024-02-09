@@ -2081,6 +2081,7 @@ final class JsonSerializableToJsonTest {
                     .setDueDate("2023-11-11T11:11:00+01:00")
                     .setFollowUpDate("2023-11-12T11:11:00+01:00")
                     .setFormKey(456)
+                    .setExternalFormReference("myReference")
                     .setVariables(VARIABLES_MSGPACK)
                     .setChangedAttributes(List.of("foo", "bar"))
                     .setAction("complete")
@@ -2104,6 +2105,7 @@ final class JsonSerializableToJsonTest {
         "dueDate": "2023-11-11T11:11:00+01:00",
         "followUpDate": "2023-11-12T11:11:00+01:00",
         "changedAttributes": ["foo", "bar"],
+        "externalFormReference": "myReference",
         "variables": {
           "foo": "bar"
         },
@@ -2135,6 +2137,7 @@ final class JsonSerializableToJsonTest {
         "dueDate": "",
         "followUpDate": "",
         "changedAttributes": [],
+        "externalFormReference": "",
         "variables": {},
         "action": "",
         "formKey": -1,
@@ -2167,6 +2170,7 @@ final class JsonSerializableToJsonTest {
         "dueDate": "",
         "followUpDate": "",
         "changedAttributes": [],
+        "externalFormReference": "",
         "variables": {
           "foo": null
         },

@@ -46,6 +46,9 @@
             "action": {
               "type": "text"
             },
+            "externalFormReference": {
+              "type": "keyword"
+            },
             "elementId": {
               "type": "text"
             },
