@@ -7,7 +7,9 @@ package org.camunda.optimize.service.db.schema.index;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceArchiveIndexES;
 import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.os.schema.index.ProcessInstanceArchiveIndexOS;
 import org.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
@@ -18,6 +20,7 @@ import java.util.function.Function;
 @AllArgsConstructor
 @Getter
 public enum IndexMappingCreatorBuilder {
+  PROCESS_INSTANCE_ARCHIVE_INDEX(ProcessInstanceArchiveIndexES::new, ProcessInstanceArchiveIndexOS::new),
   PROCESS_INSTANCE_INDEX(ProcessInstanceIndexES::new, ProcessInstanceIndexOS::new);
 
   private final Function<String, IndexMappingCreator<XContentBuilder>> elasticsearch;
