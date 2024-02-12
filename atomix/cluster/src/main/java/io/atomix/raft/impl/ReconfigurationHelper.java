@@ -69,7 +69,7 @@ public final class ReconfigurationHelper {
                     "Cannot join cluster, because there are no other members in the cluster."));
             return;
           }
-          joinWithRetry(joining, assistingMembers, result);
+          threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
         });
     return result;
   }
@@ -91,83 +91,79 @@ public final class ReconfigurationHelper {
       final RaftMember joining,
       final Queue<MemberId> assistingMembers,
       final CompletableFuture<Void> result) {
-    threadContext.execute(
-        () -> {
-          final var receiver = assistingMembers.poll();
-          if (receiver == null) {
-            result.completeExceptionally(
-                new IllegalStateException(
-                    "Sent join request to all known members, but all failed. No more members left."));
-            return;
-          }
-          raftContext
-              .getProtocol()
-              .join(receiver, JoinRequest.builder().withJoiningMember(joining).build())
-              .whenCompleteAsync(
-                  (response, error) -> {
-                    if (error != null) {
-                      final var cause = error.getCause();
-                      if (cause instanceof NoSuchMemberException
-                          || cause instanceof NoRemoteHandler
-                          || cause instanceof TimeoutException
-                          || cause instanceof ConnectException) {
-                        logger.debug("Join request was not acknowledged, retrying", cause);
-                        joinWithRetry(joining, assistingMembers, result);
-                      } else {
-                        logger.error(
-                            "Join request failed with an unexpected error, not retrying", error);
-                        result.completeExceptionally(error);
-                      }
-                    } else if (response.status() == Status.OK) {
-                      logger.debug("Join request accepted");
-                      result.complete(null);
-                    } else if (response.error().type() == RaftError.Type.NO_LEADER
-                        || response.error().type() == RaftError.Type.UNAVAILABLE) {
-                      logger.debug(
-                          "Join request failed, retrying", response.error().createException());
-                      joinWithRetry(joining, assistingMembers, result);
-                    } else {
-                      final var errorAsException = response.error().createException();
-                      logger.error("Join request rejected, not retrying", errorAsException);
-                      result.completeExceptionally(errorAsException);
-                    }
-                  },
-                  threadContext);
-        });
+
+    final var receiver = assistingMembers.poll();
+    if (receiver == null) {
+      result.completeExceptionally(
+          new IllegalStateException(
+              "Sent join request to all known members, but all failed. No more members left."));
+      return;
+    }
+    raftContext
+        .getProtocol()
+        .join(receiver, JoinRequest.builder().withJoiningMember(joining).build())
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error != null) {
+                final var cause = error.getCause();
+                if (cause instanceof NoSuchMemberException
+                    || cause instanceof NoRemoteHandler
+                    || cause instanceof TimeoutException
+                    || cause instanceof ConnectException) {
+                  logger.debug("Join request was not acknowledged, retrying", cause);
+                  threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
+                } else {
+                  logger.error("Join request failed with an unexpected error, not retrying", error);
+                  result.completeExceptionally(error);
+                }
+              } else if (response.status() == Status.OK) {
+                logger.debug("Join request accepted");
+                result.complete(null);
+              } else if (response.error().type() == RaftError.Type.NO_LEADER
+                  || response.error().type() == RaftError.Type.UNAVAILABLE) {
+                logger.debug("Join request failed, retrying", response.error().createException());
+                threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
+              } else {
+                final var errorAsException = response.error().createException();
+                logger.error("Join request rejected, not retrying", errorAsException);
+                result.completeExceptionally(errorAsException);
+              }
+            },
+            threadContext);
   }
 
   public CompletableFuture<Void> leave() {
     final CompletableFuture<Void> future = new CompletableFuture<>();
-
-    threadContext.execute(
-        () -> {
-          final var leaving = raftContext.getCluster().getLocalMember();
-          final var receiver =
-              Optional.ofNullable(raftContext.getLeader())
-                  .map(DefaultRaftMember::memberId)
-                  .or(
-                      () ->
-                          raftContext.getCluster().getVotingMembers().stream()
-                              .map(RaftMember::memberId)
-                              .findAny())
-                  .orElseThrow();
-          raftContext
-              .getProtocol()
-              .leave(receiver, LeaveRequest.builder().withLeavingMember(leaving).build())
-              .whenCompleteAsync(
-                  (response, error) -> {
-                    if (error != null) {
-                      future.completeExceptionally(error);
-                    } else if (response.status() == Status.OK) {
-                      future.complete(null);
-                      raftContext.updateState(State.LEFT);
-                    } else {
-                      future.completeExceptionally(response.error().createException());
-                    }
-                  },
-                  threadContext);
-        });
+    threadContext.execute(() -> leaveInternal(future));
     return future;
+  }
+
+  private void leaveInternal(final CompletableFuture<Void> future) {
+    final var leaving = raftContext.getCluster().getLocalMember();
+    final var receiver =
+        Optional.ofNullable(raftContext.getLeader())
+            .map(DefaultRaftMember::memberId)
+            .or(
+                () ->
+                    raftContext.getCluster().getVotingMembers().stream()
+                        .map(RaftMember::memberId)
+                        .findAny())
+            .orElseThrow();
+    raftContext
+        .getProtocol()
+        .leave(receiver, LeaveRequest.builder().withLeavingMember(leaving).build())
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error != null) {
+                future.completeExceptionally(error);
+              } else if (response.status() == Status.OK) {
+                future.complete(null);
+                raftContext.updateState(State.LEFT);
+              } else {
+                future.completeExceptionally(response.error().createException());
+              }
+            },
+            threadContext);
   }
 
   /** Attempts to become the leader. */
@@ -177,53 +173,49 @@ public final class ReconfigurationHelper {
     }
 
     final CompletableFuture<Void> future = new CompletableFuture<>();
-
-    threadContext.execute(
-        () -> {
-          // Register a leader election listener to wait for the election of this node.
-          final Consumer<RaftMember> electionListener =
-              new Consumer<>() {
-                @Override
-                public void accept(final RaftMember member) {
-                  if (member
-                      .memberId()
-                      .equals(raftContext.getCluster().getLocalMember().memberId())) {
-                    future.complete(null);
-                  } else {
-                    future.completeExceptionally(
-                        new ProtocolException("Failed to transfer leadership"));
-                  }
-                  raftContext.removeLeaderElectionListener(this);
-                }
-              };
-          raftContext.addLeaderElectionListener(electionListener);
-
-          // If a leader already exists, request a leadership transfer from it. Otherwise,
-          // transition to the candidate
-          // state and attempt to get elected.
-          final RaftMember member = raftContext.getCluster().getLocalMember();
-          final RaftMember leader = raftContext.getLeader();
-          if (leader != null) {
-            raftContext
-                .getProtocol()
-                .transfer(
-                    leader.memberId(),
-                    TransferRequest.builder().withMember(member.memberId()).build())
-                .whenCompleteAsync(
-                    (response, error) -> {
-                      if (error != null) {
-                        future.completeExceptionally(error);
-                      } else if (response.status() == Status.ERROR) {
-                        future.completeExceptionally(response.error().createException());
-                      } else {
-                        raftContext.transition(Role.CANDIDATE);
-                      }
-                    },
-                    threadContext);
-          } else {
-            raftContext.transition(Role.CANDIDATE);
-          }
-        });
+    threadContext.execute(() -> anointInternal(future));
     return future;
+  }
+
+  private void anointInternal(final CompletableFuture<Void> future) {
+    // Register a leader election listener to wait for the election of this node.
+    final Consumer<RaftMember> electionListener =
+        new Consumer<>() {
+          @Override
+          public void accept(final RaftMember member) {
+            if (member.memberId().equals(raftContext.getCluster().getLocalMember().memberId())) {
+              future.complete(null);
+            } else {
+              future.completeExceptionally(new ProtocolException("Failed to transfer leadership"));
+            }
+            raftContext.removeLeaderElectionListener(this);
+          }
+        };
+    raftContext.addLeaderElectionListener(electionListener);
+
+    // If a leader already exists, request a leadership transfer from it. Otherwise,
+    // transition to the candidate
+    // state and attempt to get elected.
+    final RaftMember member = raftContext.getCluster().getLocalMember();
+    final RaftMember leader = raftContext.getLeader();
+    if (leader != null) {
+      raftContext
+          .getProtocol()
+          .transfer(
+              leader.memberId(), TransferRequest.builder().withMember(member.memberId()).build())
+          .whenCompleteAsync(
+              (response, error) -> {
+                if (error != null) {
+                  future.completeExceptionally(error);
+                } else if (response.status() == Status.ERROR) {
+                  future.completeExceptionally(response.error().createException());
+                } else {
+                  raftContext.transition(Role.CANDIDATE);
+                }
+              },
+              threadContext);
+    } else {
+      raftContext.transition(Role.CANDIDATE);
+    }
   }
 }
