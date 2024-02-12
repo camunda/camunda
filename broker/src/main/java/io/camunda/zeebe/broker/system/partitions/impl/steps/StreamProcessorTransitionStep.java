@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
@@ -147,6 +148,8 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
             JobIntent.TIME_OUT,
             JobIntent.RECUR_AFTER_BACKOFF,
             MessageIntent.EXPIRE);
+    final var processingFilter =
+        SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 
     return StreamProcessor.builder()
         .logStream(context.getLogStream())
@@ -156,6 +159,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .nodeId(context.getNodeId())
         .commandResponseWriter(context.getCommandResponseWriter())
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
+        .processingFilter(processingFilter)
         .listener(
             new StreamProcessorListener() {
               @Override
