@@ -18,12 +18,10 @@ import org.camunda.optimize.service.db.es.writer.AbstractProcessInstanceDataWrit
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.db.writer.incident.AbstractIncidentWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,37 +55,27 @@ public abstract class AbstractIncidentWriterES extends AbstractProcessInstanceDa
 
     final Map<String, Object> params = new HashMap<>();
 
-    try {
-      params.put(INCIDENTS, incidents);
-      final ScriptData updateScript = DatabaseWriterUtil.createScriptData(
-        createInlineUpdateScript(),
-        params,
-        objectMapper
-      );
+    params.put(INCIDENTS, incidents);
+    final ScriptData updateScript = DatabaseWriterUtil.createScriptData(
+      createInlineUpdateScript(),
+      params,
+      objectMapper
+    );
 
-      final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
-        .processInstanceId(processInstanceId)
-        .dataSource(new EngineDataSourceDto(incidents.get(0).getEngineAlias()))
-        .incidents(incidents)
-        .build();
-      String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-      return ImportRequestDto.builder()
-        .indexName(getProcessInstanceIndexAliasName(processDefinitionKey))
-        .id(processInstanceId)
-        .importName(importName)
-        .type(RequestType.UPDATE)
-        .scriptData(updateScript)
-        .source(newEntryIfAbsent)
-        .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-        .build();
-    } catch (IOException e) {
-      String reason = String.format(
-        "Error while processing JSON for incidents for process instance with ID [%s].",
-        processInstanceId
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+    final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
+      .processInstanceId(processInstanceId)
+      .dataSource(new EngineDataSourceDto(incidents.get(0).getEngineAlias()))
+      .incidents(incidents)
+      .build();
+    return ImportRequestDto.builder()
+      .indexName(getProcessInstanceIndexAliasName(processDefinitionKey))
+      .id(processInstanceId)
+      .importName(importName)
+      .type(RequestType.UPDATE)
+      .scriptData(updateScript)
+      .source(procInst)
+      .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+      .build();
   }
 
   @Override

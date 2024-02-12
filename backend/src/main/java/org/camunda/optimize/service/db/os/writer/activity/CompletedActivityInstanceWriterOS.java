@@ -5,14 +5,11 @@
  */
 package org.camunda.optimize.service.db.os.writer.activity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.db.writer.activity.CompletedActivityInstanceWriter;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -25,12 +22,6 @@ import java.util.List;
 @Conditional(OpenSearchCondition.class)
 public class CompletedActivityInstanceWriterOS extends AbstractActivityInstanceWriterOS
   implements CompletedActivityInstanceWriter {
-
-  public CompletedActivityInstanceWriterOS(final OptimizeOpenSearchClient osClient,
-                                           final OpenSearchSchemaManager openSearchSchemaManager,
-                                           final ObjectMapper objectMapper) {
-    super(osClient, openSearchSchemaManager, objectMapper);
-  }
 
   @Override
   public List<ImportRequestDto> generateActivityInstanceImports(final List<FlowNodeEventDto> activityInstances) {

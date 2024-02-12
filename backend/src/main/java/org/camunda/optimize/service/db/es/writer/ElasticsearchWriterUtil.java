@@ -14,8 +14,6 @@ import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
-import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.es.TaskResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -34,7 +32,7 @@ import java.util.Set;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.createFieldUpdateScriptParams;
 import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.createUpdateFieldsScript;
-import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.dateTimeFormatter;
+import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -207,11 +205,7 @@ public class ElasticsearchWriterUtil {
                                              final String taskId) throws IOException {
     final Request request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
     final Response response = esClient.performRequest(request);
-    final ObjectMapper objectMapper = new ObjectMapperFactory(
-      dateTimeFormatter,
-      ConfigurationServiceBuilder.createDefaultConfiguration()
-    ).createOptimizeMapper();
-    return objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
+    return OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), TaskResponse.class);
   }
 
   public static void validateTaskResponse(final TaskResponse taskResponse) {

@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface BusinessKeyWriter {
 
@@ -20,7 +19,7 @@ public interface BusinessKeyWriter {
 
   void deleteByProcessInstanceIds(final List<String> processInstanceIds);
 
-  Optional<ImportRequestDto> createIndexRequestForBusinessKey(final BusinessKeyDto businessKeyDto,
+  ImportRequestDto createIndexRequestForBusinessKey(final BusinessKeyDto businessKeyDto,
                                                               final String importItemName);
 
   default List<ImportRequestDto> generateBusinessKeyImports(List<ProcessInstanceDto> processInstanceDtos) {
@@ -31,11 +30,7 @@ public interface BusinessKeyWriter {
     String importItemName = "business keys";
     log.debug("Creating imports for {} [{}].", businessKeysToSave.size(), importItemName);
 
-    return businessKeysToSave.stream()
-      .map(entry -> createIndexRequestForBusinessKey(entry, importItemName))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .toList();
+    return businessKeysToSave.stream().map(entry -> createIndexRequestForBusinessKey(entry, importItemName)).toList();
   }
 
   default BusinessKeyDto extractBusinessKey(final ProcessInstanceDto processInstance) {

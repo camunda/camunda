@@ -5,13 +5,14 @@
  */
 package org.camunda.optimize.service.db.es;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -24,6 +25,7 @@ import org.springframework.context.annotation.Conditional;
 import java.io.IOException;
 
 import static org.camunda.optimize.service.util.DatabaseVersionChecker.checkESVersionSupport;
+import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -43,7 +45,7 @@ public class OptimizeElasticsearchClientFactory {
     log.info("Elasticsearch client has successfully been started");
 
     final OptimizeElasticsearchClient prefixedClient = new OptimizeElasticsearchClient(
-      esClient, optimizeIndexNameService, requestOptionsProvider
+      esClient, optimizeIndexNameService, requestOptionsProvider, OPTIMIZE_MAPPER
     );
 
     elasticSearchSchemaManager.validateDatabaseMetadata(prefixedClient);

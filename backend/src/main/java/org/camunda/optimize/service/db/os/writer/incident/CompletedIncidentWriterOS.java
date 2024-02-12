@@ -7,6 +7,7 @@ package org.camunda.optimize.service.db.os.writer.incident;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.db.repository.IndexRepository;
 import org.camunda.optimize.service.db.writer.incident.CompletedIncidentWriter;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
@@ -19,10 +20,9 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class CompletedIncidentWriterOS extends AbstractIncidentWriterOS implements CompletedIncidentWriter {
 
-  public CompletedIncidentWriterOS(final OptimizeOpenSearchClient osClient,
-                                   final OpenSearchSchemaManager openSearchSchemaManager,
+  public CompletedIncidentWriterOS(final IndexRepository indexRepository,
                                    final ObjectMapper objectMapper) {
-    super(osClient, openSearchSchemaManager, objectMapper);
+    super(indexRepository, objectMapper);
   }
 
 }

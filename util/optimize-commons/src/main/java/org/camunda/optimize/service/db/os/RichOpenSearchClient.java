@@ -7,6 +7,7 @@ package org.camunda.optimize.service.db.os;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.db.os.externalcode.client.async.OpenSearchAsyncDocumentOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchClusterOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchIndexOperations;
@@ -14,10 +15,22 @@ import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchPip
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchTaskOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchTemplateOperations;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
 @Slf4j
 public class RichOpenSearchClient {
+  public static class AsyncOperations {
+    final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
+
+    public AsyncOperations(OpenSearchAsyncClient openSearchAsyncClient, OptimizeIndexNameService indexNameService) {
+      this.openSearchAsyncDocumentOperations = new OpenSearchAsyncDocumentOperations(indexNameService, openSearchAsyncClient);
+    }
+
+    public OpenSearchAsyncDocumentOperations doc() {
+      return openSearchAsyncDocumentOperations;
+    }
+  }
 
   @Getter
   private final OptimizeIndexNameService indexNameService;
@@ -30,14 +43,23 @@ public class RichOpenSearchClient {
   private final OpenSearchTaskOperations openSearchTaskOperations;
   private final OpenSearchTemplateOperations openSearchTemplateOperations;
 
-  public RichOpenSearchClient(OpenSearchClient openSearchClient, OptimizeIndexNameService indexNameService) {
+  private final AsyncOperations asyncOperations;
+
+  public RichOpenSearchClient(
+    OpenSearchClient openSearchClient, OpenSearchAsyncClient openSearchAsyncClient, OptimizeIndexNameService indexNameService
+  ) {
     this.indexNameService = indexNameService;
+    asyncOperations = new AsyncOperations(openSearchAsyncClient, indexNameService);
     openSearchClusterOperations = new OpenSearchClusterOperations(openSearchClient, indexNameService);
     openSearchDocumentOperations = new OpenSearchDocumentOperations(openSearchClient, indexNameService);
     openSearchIndexOperations = new OpenSearchIndexOperations(openSearchClient, indexNameService);
     openSearchPipelineOperations = new OpenSearchPipelineOperations(openSearchClient, indexNameService);
     openSearchTaskOperations = new OpenSearchTaskOperations(openSearchClient, indexNameService);
     openSearchTemplateOperations = new OpenSearchTemplateOperations(openSearchClient, indexNameService);
+  }
+
+  public AsyncOperations async() {
+    return asyncOperations;
   }
 
   public OpenSearchClusterOperations cluster() {

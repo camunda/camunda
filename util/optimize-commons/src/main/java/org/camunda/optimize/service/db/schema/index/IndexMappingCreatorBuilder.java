@@ -1,0 +1,25 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
+ */
+package org.camunda.optimize.service.db.schema.index;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
+import org.opensearch.client.opensearch.indices.IndexSettings;
+
+import java.util.function.Function;
+
+@AllArgsConstructor
+@Getter
+public enum IndexMappingCreatorBuilder {
+  PROCESS_INSTANCE_INDEX(ProcessInstanceIndexES::new, ProcessInstanceIndexOS::new);
+
+  private final Function<String, IndexMappingCreator<XContentBuilder>> elasticsearch;
+  private final Function<String, IndexMappingCreator<IndexSettings.Builder>> opensearch;
+}

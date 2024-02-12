@@ -5,15 +5,13 @@
  */
 package org.camunda.optimize.service.db.os.writer.usertask;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
-import org.camunda.optimize.service.db.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
+import org.camunda.optimize.service.db.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -21,15 +19,10 @@ import java.util.List;
 
 @Component
 @Slf4j
+@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class RunningUserTaskInstanceWriterOS extends AbstractUserTaskWriterOS implements RunningUserTaskInstanceWriter {
-
-  @Autowired
-  public RunningUserTaskInstanceWriterOS(final OptimizeOpenSearchClient osClient,
-                                         final OpenSearchSchemaManager openSearchSchemaManager,
-                                         final ObjectMapper objectMapper) {
-    super(osClient, openSearchSchemaManager, objectMapper);
-  }
+  private final OptimizeOpenSearchClient osClient;
 
   @Override
   public List<ImportRequestDto> generateUserTaskImports(final List<FlowNodeInstanceDto> userTaskInstances) {

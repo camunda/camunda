@@ -18,12 +18,15 @@ import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDoc
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Script;
@@ -44,6 +47,7 @@ import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.MgetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
@@ -58,6 +62,8 @@ import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.opensearch.client.opensearch.indices.RolloverRequest;
 import org.opensearch.client.opensearch.indices.RolloverResponse;
 import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
+import org.opensearch.client.opensearch.tasks.GetTasksResponse;
+import org.opensearch.client.opensearch.tasks.Status;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
@@ -71,16 +77,18 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.lang.String.format;
 import static org.camunda.optimize.service.db.DatabaseConstants.GB_UNIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.getRequestBuilder;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
+import static org.camunda.optimize.service.exceptions.ExceptionHelper.safe;
 
 @Slf4j
 public class OptimizeOpenSearchClient extends DatabaseClient {
 
-  private final String NESTED_DOC_LIMIT_MESSAGE = "nested";
+  private final static String NESTED_DOC_LIMIT_MESSAGE = "nested";
 
   @Getter
   private final OpenSearchClient openSearchClient;
@@ -91,17 +99,19 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   private final RichOpenSearchClient richOpenSearchClient;
 
   public OptimizeOpenSearchClient(final OpenSearchClient openSearchClient,
+                                  final OpenSearchAsyncClient openSearchAsyncClient,
                                   final OptimizeIndexNameService indexNameService) {
-    this(openSearchClient, indexNameService, new RequestOptionsProvider());
+    this(openSearchClient, openSearchAsyncClient, indexNameService, new RequestOptionsProvider());
   }
 
   public OptimizeOpenSearchClient(final OpenSearchClient openSearchClient,
+                                  final OpenSearchAsyncClient openSearchAsyncClient,
                                   final OptimizeIndexNameService indexNameService,
                                   final RequestOptionsProvider requestOptionsProvider) {
     this.openSearchClient = openSearchClient;
     this.indexNameService = indexNameService;
     this.requestOptionsProvider = requestOptionsProvider;
-    this.richOpenSearchClient = new RichOpenSearchClient(openSearchClient, indexNameService);
+    this.richOpenSearchClient = new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
   }
 
   public final void close() {
@@ -259,9 +269,9 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   //todo rename it in scope of OPT-7469
-  public <T> OpenSearchDocumentOperations.AggregatedResult<Hit<T>> retrieveAllScrollResults(final SearchRequest.Builder requestBuilder,
-                                                                                            Class<T> responseType) throws
-                                                                                                                   IOException {
+  public <T> OpenSearchDocumentOperations.AggregatedResult<Hit<T>> retrieveAllScrollResults(
+    final SearchRequest.Builder requestBuilder, Class<T> responseType
+  ) throws IOException {
     return richOpenSearchClient.doc().scrollHits(requestBuilder, responseType);
   }
 
@@ -281,8 +291,9 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
-  public org.elasticsearch.action.search.SearchResponse search(final org.elasticsearch.action.search.SearchRequest searchRequest) throws
-                                                                                                                                  IOException {
+  public org.elasticsearch.action.search.SearchResponse search(
+    final org.elasticsearch.action.search.SearchRequest searchRequest
+  ) throws IOException {
     //todo will be handle in the OPT-7469
     return new org.elasticsearch.action.search.SearchResponse(null);
   }
@@ -354,7 +365,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                         .params()
                         .entrySet()
                         .stream()
-                        .collect(Collectors.toMap(Map.Entry::getKey, JsonData::of))
+                        .collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonData.of(entry.getValue())))
                     ))
                     .retryOnConflict(requestDto.getRetryNumberOnConflict())
                     .build())
@@ -581,4 +592,100 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
+  public List<String> applyIndexPrefixes(final String... indices) {
+    return Arrays.asList(convertToPrefixedAliasNames(indices));
+  }
+
+  public boolean updateByQueryTask(String updateItemIdentifier, Script updateScript, Query filterQuery, String... indices) {
+    log.debug("Updating {}", updateItemIdentifier);
+    UpdateByQueryRequest.Builder requestBuilder = new UpdateByQueryRequest.Builder()
+      .index(applyIndexPrefixes(indices))
+      .query(filterQuery)
+      .conflicts(Conflicts.Proceed)
+      .script(updateScript)
+      .refresh(true);
+    Function<Exception, String> errorMessage = e ->
+      format("Failed to create updateByQuery task for [%s] with query [%s]!", updateItemIdentifier, filterQuery);
+
+    final String taskId = safe(
+      () -> richOpenSearchClient.async().doc().updateByQuery(requestBuilder, errorMessage).get().task(),
+      errorMessage,
+      log
+    );
+
+    waitUntilTaskIsFinished(taskId, updateItemIdentifier);
+
+    final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
+    log.debug("Updated [{}] {}.", taskStatus.updated(), updateItemIdentifier);
+    return taskStatus.updated() > 0L;
+  }
+
+  private static Optional<Integer> taskProgress(GetTasksResponse taskResponse) {
+    try {
+      Status status = taskResponse.task().status();
+      int progress = (int) Math.round(
+        (status.updated() + status.deleted() + status.created() + status.noops()) * 100.0 / status.total()
+      );
+      return Optional.of(progress);
+    } catch (Exception e) {
+      log.error(format("Failed to compute task (ID:%s) progress!", taskResponse.task().id()), e);
+      return Optional.empty();
+    }
+  }
+
+  private void waitUntilTaskIsFinished(final String taskId, final String taskItemIdentifier) {
+    final BackoffCalculator backoffCalculator = new BackoffCalculator(1000, 10);
+    boolean finished = false;
+    int progress = -1;
+    while (!finished) {
+      try {
+        final GetTasksResponse taskResponse = richOpenSearchClient.task().task(taskId);
+        validateTaskResponse(taskResponse);
+
+        int currentProgress = taskProgress(taskResponse).orElse(-1);
+        if (currentProgress != progress) {
+          final Status taskStatus = taskResponse.response();
+          progress = currentProgress;
+          log.info(
+            "Progress of task (ID:{}) on {}: {}% (total: {}, updated: {}, created: {}, deleted: {}). Completed: {}",
+            taskId,
+            taskItemIdentifier,
+            progress,
+            taskStatus.total(),
+            taskStatus.updated(),
+            taskStatus.created(),
+            taskStatus.deleted(),
+            taskResponse.completed()
+          );
+        }
+        if (taskResponse.completed()) {
+          finished = true;
+        } else {
+          Thread.sleep(backoffCalculator.calculateSleepTime());
+        }
+      } catch (InterruptedException e) {
+        log.error("Waiting for Opensearch task (ID: {}) completion was interrupted!", taskId, e);
+        Thread.currentThread().interrupt();
+      } catch (Exception e) {
+        throw new OptimizeRuntimeException(
+          format("Error while trying to read Opensearch task (ID: %s) progress!", taskId), e
+        );
+      }
+    }
+  }
+
+  private static void validateTaskResponse(final GetTasksResponse taskResponse) {
+    if (taskResponse.error() != null) {
+      log.error("An Opensearch task failed with error: {}", taskResponse.error());
+      throw new OptimizeRuntimeException(taskResponse.error().toString());
+    }
+
+    if (taskResponse.response() != null) {
+      final List<String> failures = taskResponse.response().failures();
+      if (failures != null && !failures.isEmpty()) {
+        log.error("Opensearch task contains failures: {}", failures);
+        throw new OptimizeRuntimeException(failures.toString());
+      }
+    }
+  }
 }

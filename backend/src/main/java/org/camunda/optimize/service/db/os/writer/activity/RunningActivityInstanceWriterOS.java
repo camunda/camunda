@@ -19,12 +19,6 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class RunningActivityInstanceWriterOS extends AbstractActivityInstanceWriterOS implements RunningActivityInstanceWriter {
 
-  public RunningActivityInstanceWriterOS(final OptimizeOpenSearchClient osClient,
-                                         final OpenSearchSchemaManager openSearchSchemaManager,
-                                         final ObjectMapper objectMapper) {
-    super(osClient, openSearchSchemaManager, objectMapper);
-  }
-
   @Override
   protected String createInlineUpdateScript() {
     //todo will be handled in the OPT-7376

@@ -97,24 +97,12 @@ public class AbstractProcessInstanceWriterES extends AbstractProcessInstanceData
                                                   final ScriptData updateScriptData,
                                                   final ObjectMapper objectMapper,
                                                   final String importItemName) {
-    String newEntryIfAbsent = "";
-    try {
-      newEntryIfAbsent = objectMapper.writeValueAsString(processInstanceDto);
-    } catch (JsonProcessingException e) {
-      String reason =
-        String.format(
-          "Error while processing JSON for process instance DTO with ID [%s].",
-          processInstanceDto.getProcessInstanceId()
-        );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
     return ImportRequestDto.builder()
       .indexName(getProcessInstanceIndexAliasName(processInstanceDto.getProcessDefinitionKey()))
       .id(processInstanceDto.getProcessInstanceId())
       .scriptData(updateScriptData)
       .importName(importItemName)
-      .source(newEntryIfAbsent)
+      .source(processInstanceDto)
       .type(RequestType.UPDATE)
       .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
       .build();

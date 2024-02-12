@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.data.upgrade;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
@@ -66,6 +67,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
 @Slf4j
 public class Generator {
@@ -87,7 +89,8 @@ public class Generator {
     final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH)
+      new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH),
+      OPTIMIZE_MAPPER
     );
 
     final OptimizeRequestExecutor requestExecutor = new OptimizeRequestExecutor(

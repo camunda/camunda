@@ -5,13 +5,10 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -21,17 +18,7 @@ import java.util.List;
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
-public class ZeebeProcessInstanceWriterOS extends AbstractProcessInstanceDataWriterOS<ProcessInstanceDto> implements ZeebeProcessInstanceWriter {
-
-  private final ObjectMapper objectMapper;
-
-  public ZeebeProcessInstanceWriterOS(final OptimizeOpenSearchClient osClient,
-                                      final OpenSearchSchemaManager openSearchSchemaManager,
-                                      final ObjectMapper objectMapper) {
-    super(osClient, openSearchSchemaManager);
-    this.objectMapper = objectMapper;
-  }
-
+public class ZeebeProcessInstanceWriterOS implements ZeebeProcessInstanceWriter {
   @Override
   public List<ImportRequestDto> generateProcessInstanceImports(final List<ProcessInstanceDto> processInstances) {
     //todo will be handled in the OPT-7376

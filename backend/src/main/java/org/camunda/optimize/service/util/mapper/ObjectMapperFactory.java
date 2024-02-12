@@ -19,7 +19,9 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
+import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +34,11 @@ import java.util.Date;
 
 @Configuration
 public class ObjectMapperFactory {
+  public static final ObjectMapper OPTIMIZE_MAPPER = new ObjectMapperFactory(
+    new OptimizeDateTimeFormatterFactory().getObject(),
+    ConfigurationServiceBuilder.createDefaultConfiguration()
+  ).createOptimizeMapper();
+
   private final DateTimeFormatter optimizeDateTimeFormatter;
   private final ConfigurationService configurationService;
 

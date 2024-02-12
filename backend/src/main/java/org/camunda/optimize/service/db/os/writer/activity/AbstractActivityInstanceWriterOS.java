@@ -5,14 +5,10 @@
  */
 package org.camunda.optimize.service.db.os.writer.activity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.db.writer.activity.AbstractActivityInstanceWriter;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
-import org.camunda.optimize.service.db.os.writer.AbstractProcessInstanceDataWriterOS;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -22,16 +18,7 @@ import java.util.List;
 
 @Component
 @Conditional(OpenSearchCondition.class)
-public abstract class AbstractActivityInstanceWriterOS extends AbstractProcessInstanceDataWriterOS<FlowNodeEventDto> implements AbstractActivityInstanceWriter {
-
-  private final ObjectMapper objectMapper;
-
-  protected AbstractActivityInstanceWriterOS(final OptimizeOpenSearchClient osClient,
-                                             final OpenSearchSchemaManager openSearchSchemaManager,
-                                             final ObjectMapper objectMapper) {
-    super(osClient, openSearchSchemaManager);
-    this.objectMapper = objectMapper;
-  }
+public abstract class AbstractActivityInstanceWriterOS implements AbstractActivityInstanceWriter {
 
   @Override
   public List<ImportRequestDto> generateActivityInstanceImports(List<FlowNodeEventDto> activityInstances) {

@@ -463,6 +463,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     log.info("Creating OS Client with host {} and port {}", osConfig.getHost(), osConfig.getHttpPort());
     prefixAwareOptimizeOpenSearchClient = new OptimizeOpenSearchClient(
       OptimizeOpenSearchClientFactory.buildOpenSearchClientFromConfig(configurationService),
+      OptimizeOpenSearchClientFactory.buildOpenSearchAsyncClientFromConfig(configurationService),
       new OptimizeIndexNameService(configurationService, DatabaseType.OPENSEARCH)
     );
     adjustClusterSettings();

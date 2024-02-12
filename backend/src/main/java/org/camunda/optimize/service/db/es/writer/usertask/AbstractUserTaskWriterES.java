@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.db.es.writer.usertask;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
@@ -64,24 +63,13 @@ public abstract class AbstractUserTaskWriterES extends AbstractProcessInstanceDa
       .dataSource(new EngineDataSourceDto(firstUserTaskInstance.getEngine()))
       .flowNodeInstances(userTasks)
       .build();
-    String newEntryIfAbsent;
-    try {
-      newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-    } catch (JsonProcessingException e) {
-      String reason = String.format(
-        "Error while processing JSON for user tasks of process instance with ID [%s].",
-        processInstanceId
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
 
     return ImportRequestDto.builder()
       .indexName(getProcessInstanceIndexAliasName(firstUserTaskInstance.getDefinitionKey()))
       .id(processInstanceId)
       .scriptData(updateScriptData)
       .importName(importName)
-      .source(newEntryIfAbsent)
+      .source(procInst)
       .type(RequestType.UPDATE)
       .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
       .build();

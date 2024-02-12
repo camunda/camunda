@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.db.es.writer.variable;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
@@ -21,7 +20,6 @@ import org.camunda.optimize.service.db.es.writer.AbstractProcessInstanceDataWrit
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.support.WriteRequest;
@@ -122,35 +120,22 @@ public class ProcessVariableUpdateWriterES extends AbstractProcessInstanceDataWr
       return null;
     }
     final ProcessVariableDto firstVariable = variablesWithAllInformation.get(0);
-    String newEntryIfAbsent;
-    try {
-      newEntryIfAbsent = getNewProcessInstanceRecordString(
-        processInstanceId,
-        firstVariable.getEngineAlias(),
-        firstVariable.getTenantId(),
-        variables
-      );
-    } catch (JsonProcessingException e) {
-      String reason = String.format(
-        "Error while processing JSON for activity instances with ID [%s].",
-        processInstanceId
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+    ProcessInstanceDto processInstanceDto = getNewProcessInstanceRecord(
+      processInstanceId,
+      firstVariable.getEngineAlias(),
+      firstVariable.getTenantId(),
+      variables
+    );
 
-    if (newEntryIfAbsent != null) {
-      return ImportRequestDto.builder()
-        .indexName(getProcessInstanceIndexAliasName(processDefinitionKey))
-        .importName(importItemName)
-        .type(RequestType.UPDATE)
-        .id(processInstanceId)
-        .scriptData(updateScriptData)
-        .source(newEntryIfAbsent)
-        .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-        .build();
-    }
-    return null;
+    return ImportRequestDto.builder()
+      .indexName(getProcessInstanceIndexAliasName(processDefinitionKey))
+      .importName(importItemName)
+      .type(RequestType.UPDATE)
+      .id(processInstanceId)
+      .scriptData(updateScriptData)
+      .source(processInstanceDto)
+      .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+      .build();
   }
 
   private Map<String, List<ProcessVariableDto>> groupVariablesByProcessInstanceIds(List<ProcessVariableDto> variableUpdates) {
@@ -222,11 +207,10 @@ public class ProcessVariableUpdateWriterES extends AbstractProcessInstanceDataWr
     return builder.toString();
   }
 
-  private String getNewProcessInstanceRecordString(final String processInstanceId,
-                                                   final String engineAlias,
-                                                   final String tenantId,
-                                                   final List<SimpleProcessVariableDto> variables)
-    throws JsonProcessingException {
+  private ProcessInstanceDto getNewProcessInstanceRecord(final String processInstanceId,
+                                                         final String engineAlias,
+                                                         final String tenantId,
+                                                         final List<SimpleProcessVariableDto> variables) {
     final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
       .processInstanceId(processInstanceId)
       .dataSource(new EngineDataSourceDto(engineAlias))
@@ -234,7 +218,7 @@ public class ProcessVariableUpdateWriterES extends AbstractProcessInstanceDataWr
       .build();
     procInst.getVariables().addAll(variables);
 
-    return objectMapper.writeValueAsString(procInst);
+    return procInst;
   }
 
   private boolean isVariableFromCaseDefinition(final ProcessVariableDto variable) {

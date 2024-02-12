@@ -14,12 +14,10 @@ import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,24 +53,15 @@ public class ZeebeProcessInstanceWriterES extends AbstractProcessInstanceDataWri
              final Map<String, Object> params = new HashMap<>();
              params.put(NEW_INSTANCE, procInst);
              params.put(FORMATTER, OPTIMIZE_DATE_FORMAT);
-             try {
-               String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-               return ImportRequestDto.builder()
-                 .importName(importItemName)
-                 .type(RequestType.UPDATE)
-                 .id(procInst.getProcessInstanceId())
-                 .indexName(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
-                 .source(newEntryIfAbsent)
-                 .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-                 .scriptData(DatabaseWriterUtil.createScriptData(createProcessInstanceUpdateScript(), params, objectMapper))
-                 .build();
-             } catch (IOException e) {
-               String reason = String.format(
-                 "Error while processing JSON for zeebe process instance with ID [%s].",
-                 procInst.getProcessInstanceId()
-               );
-               throw new OptimizeRuntimeException(reason, e);
-             }
+             return ImportRequestDto.builder()
+               .importName(importItemName)
+               .type(RequestType.UPDATE)
+               .id(procInst.getProcessInstanceId())
+               .indexName(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
+               .source(procInst)
+               .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+               .scriptData(DatabaseWriterUtil.createScriptData(createProcessInstanceUpdateScript(), params, objectMapper))
+               .build();
            }
       )
       .collect(Collectors.toList());

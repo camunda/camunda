@@ -5,12 +5,9 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
@@ -22,14 +19,7 @@ import java.util.List;
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
-public class CompletedProcessInstanceWriterOS extends AbstractProcessInstanceWriterOS implements CompletedProcessInstanceWriter {
-
-  public CompletedProcessInstanceWriterOS(final OptimizeOpenSearchClient osClient,
-                                          final OpenSearchSchemaManager elasticSearchSchemaManager,
-                                          final ObjectMapper objectMapper) {
-    super(osClient, elasticSearchSchemaManager, objectMapper);
-  }
-
+public class CompletedProcessInstanceWriterOS implements CompletedProcessInstanceWriter {
   @Override
   public List<ImportRequestDto> generateProcessInstanceImports(final List<ProcessInstanceDto> processInstances) {
     //todo will be handled in the OPT-7376

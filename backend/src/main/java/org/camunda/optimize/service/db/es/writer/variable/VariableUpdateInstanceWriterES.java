@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.db.es.writer.variable;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +26,6 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
@@ -54,8 +52,6 @@ public class VariableUpdateInstanceWriterES implements VariableUpdateInstanceWri
 
     return variableUpdateInstances.stream()
       .map(variableUpdateInstanceDto -> createIndexRequestForVariableUpdate(variableUpdateInstanceDto, importItemName))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
       .toList();
   }
 
@@ -91,20 +87,15 @@ public class VariableUpdateInstanceWriterES implements VariableUpdateInstanceWri
       .build();
   }
 
-  private Optional<ImportRequestDto> createIndexRequestForVariableUpdate(VariableUpdateInstanceDto variableUpdateInstanceDto,
+  private ImportRequestDto createIndexRequestForVariableUpdate(VariableUpdateInstanceDto variableUpdateInstanceDto,
                                                                          final String importItemName) {
-    try {
-      return Optional.of(ImportRequestDto.builder()
-                           .indexName(VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
-                           .id(IdGenerator.getNextId())
-                           .source(objectMapper.writeValueAsString(variableUpdateInstanceDto))
-                           .type(RequestType.INDEX)
-                           .importName(importItemName)
-                           .build());
-    } catch (JsonProcessingException e) {
-      log.warn("Could not serialize Variable Instance: {}", variableUpdateInstanceDto, e);
-      return Optional.empty();
-    }
+    return ImportRequestDto.builder()
+      .indexName(VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
+      .id(IdGenerator.getNextId())
+      .source(variableUpdateInstanceDto)
+      .type(RequestType.INDEX)
+      .importName(importItemName)
+      .build();
   }
 
 }

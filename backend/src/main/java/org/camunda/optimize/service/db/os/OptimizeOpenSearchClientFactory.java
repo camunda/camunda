@@ -55,6 +55,7 @@ import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.service.util.mapper.CustomReportDefinitionDeserializer;
 import org.elasticsearch.client.RequestOptions;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
@@ -97,11 +98,13 @@ public class OptimizeOpenSearchClientFactory {
     final RequestOptionsProvider requestOptionsProvider =
       new RequestOptionsProvider(Collections.emptyList(), configurationService);
     final OpenSearchClient openSearchClient = buildOpenSearchClientFromConfig(configurationService);
+    final OpenSearchAsyncClient openSearchAsyncClient = buildOpenSearchAsyncClientFromConfig(configurationService);
     waitForOpenSearch(openSearchClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
     log.info("OpenSearch cluster successfully started");
 
     OptimizeOpenSearchClient osClient = new OptimizeOpenSearchClient(
       openSearchClient,
+      openSearchAsyncClient,
       optimizeIndexNameService,
       requestOptionsProvider
     );
@@ -111,43 +114,30 @@ public class OptimizeOpenSearchClientFactory {
     return osClient;
   }
 
-  public static OpenSearchClient buildOpenSearchClientFromConfig(final ConfigurationService configurationService) {
-    final HttpHost[] hosts = buildOpenSearchConnectionNodes(configurationService);
-    final ApacheHttpClient5TransportBuilder builder =
-      ApacheHttpClient5TransportBuilder.builder(hosts);
-
-    builder.setHttpClientConfigCallback(
-      httpClientBuilder -> {
-        configureHttpClient(httpClientBuilder, configurationService);
-        return httpClientBuilder;
-      });
-
-    builder.setRequestConfigCallback(
-      requestConfigBuilder -> {
-        setTimeouts(requestConfigBuilder, configurationService);
-        return requestConfigBuilder;
-      });
-
-    if (StringUtils.isNotBlank(configurationService.getOpenSearchConfiguration().getPathPrefix())) {
-      builder.setPathPrefix(configurationService.getOpenSearchConfiguration().getPathPrefix());
-    }
-
+  private static JavaTimeModule buildJavaTimeModule() {
     DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
     JavaTimeModule javaTimeModule = new JavaTimeModule();
+
     javaTimeModule.addSerializer(
       OffsetDateTime.class,
       new CustomOffsetDateTimeSerializer(dateTimeFormatter)
     );
+
     javaTimeModule.addSerializer(Date.class, new DateSerializer(false, new StdDateFormat().withColonInTimeZone(false)));
+
     javaTimeModule.addDeserializer(
       OffsetDateTime.class,
       new CustomOffsetDateTimeDeserializer(dateTimeFormatter)
     );
 
+    return javaTimeModule;
+  }
+
+  private static ObjectMapper buildObjectMapper() {
     ObjectMapper mapper = Jackson2ObjectMapperBuilder
       .json()
-      .modules(new Jdk8Module(), javaTimeModule)
+      .modules(new Jdk8Module(), buildJavaTimeModule())
       .featuresToDisable(
         SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
         DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
@@ -174,11 +164,40 @@ public class OptimizeOpenSearchClientFactory {
     module.addDeserializer(CollectionEntity.class, new CustomCollectionEntityDeserializer(mapper));
     mapper.registerModule(module);
 
-    final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(mapper);
-    builder.setMapper(jsonpMapper);
+    return mapper;
+  }
 
-    final OpenSearchTransport transport = builder.build();
-    return new OpenSearchClient(transport);
+  private static OpenSearchTransport buildOpenSearchTransport(final ConfigurationService configurationService) {
+    final HttpHost[] hosts = buildOpenSearchConnectionNodes(configurationService);
+    final ApacheHttpClient5TransportBuilder builder = ApacheHttpClient5TransportBuilder.builder(hosts);
+
+    builder.setHttpClientConfigCallback(
+      httpClientBuilder -> {
+        configureHttpClient(httpClientBuilder, configurationService);
+        return httpClientBuilder;
+      });
+
+    builder.setRequestConfigCallback(
+      requestConfigBuilder -> {
+        setTimeouts(requestConfigBuilder, configurationService);
+        return requestConfigBuilder;
+      });
+
+    if (StringUtils.isNotBlank(configurationService.getOpenSearchConfiguration().getPathPrefix())) {
+      builder.setPathPrefix(configurationService.getOpenSearchConfiguration().getPathPrefix());
+    }
+
+    builder.setMapper(new JacksonJsonpMapper(buildObjectMapper()));
+
+    return builder.build();
+  }
+
+  public static OpenSearchClient buildOpenSearchClientFromConfig(final ConfigurationService configurationService) {
+    return new OpenSearchClient(buildOpenSearchTransport(configurationService));
+  }
+
+  public static OpenSearchAsyncClient buildOpenSearchAsyncClientFromConfig(final ConfigurationService configurationService) {
+    return new OpenSearchAsyncClient(buildOpenSearchTransport(configurationService));
   }
 
   private static HttpHost[] buildOpenSearchConnectionNodes(ConfigurationService configurationService) {

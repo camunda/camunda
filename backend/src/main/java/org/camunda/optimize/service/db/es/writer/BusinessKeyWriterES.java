@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.db.es.writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
 
@@ -43,20 +41,15 @@ public class BusinessKeyWriterES implements BusinessKeyWriter {
   }
 
   @Override
-  public Optional<ImportRequestDto> createIndexRequestForBusinessKey(final BusinessKeyDto businessKeyDto,
+  public ImportRequestDto createIndexRequestForBusinessKey(final BusinessKeyDto businessKeyDto,
                                                                      final String importItemName) {
-    try {
-      return Optional.of(ImportRequestDto.builder()
-                           .indexName(BUSINESS_KEY_INDEX_NAME)
-                           .id(businessKeyDto.getProcessInstanceId())
-                           .source(objectMapper.writeValueAsString(businessKeyDto))
-                           .importName(importItemName)
-                           .type(RequestType.INDEX)
-                           .build());
-    } catch (JsonProcessingException e) {
-      log.warn("Could not serialize Business Key: {}", businessKeyDto, e);
-      return Optional.empty();
-    }
+    return ImportRequestDto.builder()
+      .indexName(BUSINESS_KEY_INDEX_NAME)
+      .id(businessKeyDto.getProcessInstanceId())
+      .source(businessKeyDto)
+      .importName(importItemName)
+      .type(RequestType.INDEX)
+      .build();
   }
 
 }

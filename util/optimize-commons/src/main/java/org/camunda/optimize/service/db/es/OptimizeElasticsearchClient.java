@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -152,22 +153,29 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   @Getter
   private RestHighLevelClient highLevelClient;
 
+  private final ObjectMapper objectMapper;
+
   private RequestOptionsProvider requestOptionsProvider;
 
   @Setter
   private int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
 
   public OptimizeElasticsearchClient(final RestHighLevelClient highLevelClient,
-                                     final OptimizeIndexNameService indexNameService) {
-    this(highLevelClient, indexNameService, new RequestOptionsProvider());
+                                     final OptimizeIndexNameService indexNameService,
+                                     final ObjectMapper objectMapper
+  ) {
+    this(highLevelClient, indexNameService, new RequestOptionsProvider(), objectMapper);
   }
 
   public OptimizeElasticsearchClient(final RestHighLevelClient highLevelClient,
                                      final OptimizeIndexNameService indexNameService,
-                                     final RequestOptionsProvider requestOptionsProvider) {
+                                     final RequestOptionsProvider requestOptionsProvider,
+                                     final ObjectMapper objectMapper
+  ) {
     this.highLevelClient = highLevelClient;
     this.indexNameService = indexNameService;
     this.requestOptionsProvider = requestOptionsProvider;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -419,12 +427,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     switch (requestDto.getType()) {
       case INDEX -> bulkRequest.add(new IndexRequest()
                                       .id(requestDto.getId())
-                                      .source(castSourceToStringJson(requestDto), XContentType.JSON)
+                                      .source(serializeToJson(requestDto), XContentType.JSON)
                                       .index(requestDto.getIndexName()));
       case UPDATE -> bulkRequest.add(new UpdateRequest()
                                        .id(requestDto.getId())
                                        .index(requestDto.getIndexName())
-                                       .upsert(castSourceToStringJson(requestDto), XContentType.JSON)
+                                       .upsert(serializeToJson(requestDto), XContentType.JSON)
                                        .script(createDefaultScriptWithPrimitiveParams(
                                          requestDto.getScriptData().scriptString(),
                                          requestDto.getScriptData().params()
@@ -433,18 +441,19 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     }
   }
 
-  private String castSourceToStringJson(final ImportRequestDto requestDto) {
-    if (requestDto.getSource() instanceof String converted) {
-      return converted;
-    } else {
-      final String errorMessage = String.format(
-        "Received object of type %s as source for the importRequestDto with name %s and id %s. " +
-          "ElasticSearch requires a source of type String.",
+  private String serializeToJson(final ImportRequestDto requestDto) {
+    try{
+      return objectMapper.writeValueAsString(requestDto.getSource());
+    } catch (Exception e) {
+      final String error = String.format(
+        "Failed to serialize source of type %s for ImportRequestDto(name=%s, id=%s, source=%s)!",
         requestDto.getSource() != null ? requestDto.getSource().getClass() : "null",
         requestDto.getImportName(),
-        requestDto.getId()
+        requestDto.getId(),
+        requestDto.getSource()
       );
-      throw new OptimizeRuntimeException(errorMessage);
+      log.error(error, e);
+      throw new OptimizeRuntimeException(error, e);
     }
   }
 

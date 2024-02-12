@@ -89,9 +89,6 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.jetty.OptimizeResourceConstants;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.security.AuthCookieService;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
-import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.glassfish.jersey.client.ClientProperties;
 
@@ -148,6 +145,7 @@ import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURAT
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.BACKUP_ENDPOINT;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Slf4j
@@ -2012,10 +2010,7 @@ public class OptimizeRequestExecutor {
   }
 
   private static ObjectMapper getDefaultObjectMapper() {
-    return new ObjectMapperFactory(
-      new OptimizeDateTimeFormatterFactory().getObject(),
-      ConfigurationServiceBuilder.createDefaultConfiguration()
-    ).createOptimizeMapper();
+    return OPTIMIZE_MAPPER;
   }
 
 }

@@ -19,7 +19,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
 
@@ -52,15 +51,15 @@ public class BusinessKeyWriterOS implements BusinessKeyWriter {
   }
 
   @Override
-  public Optional<ImportRequestDto> createIndexRequestForBusinessKey(final BusinessKeyDto businessKeyDto,
+  public ImportRequestDto createIndexRequestForBusinessKey(final BusinessKeyDto businessKeyDto,
                                                                      final String importItemName) {
-    return Optional.ofNullable(ImportRequestDto.builder()
-                                 .indexName(BUSINESS_KEY_INDEX_NAME)
-                                 .id(businessKeyDto.getProcessInstanceId())
-                                 .source(businessKeyDto)
-                                 .importName(importItemName)
-                                 .type(RequestType.INDEX)
-                                 .build());
+    return ImportRequestDto.builder()
+      .indexName(BUSINESS_KEY_INDEX_NAME)
+      .id(businessKeyDto.getProcessInstanceId())
+      .source(businessKeyDto)
+      .importName(importItemName)
+      .type(RequestType.INDEX)
+      .build();
   }
 
 }

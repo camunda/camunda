@@ -23,8 +23,8 @@ import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService
 import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService
 import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException
 import org.camunda.optimize.service.util.ProcessReportDataType
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder
@@ -52,6 +52,7 @@ import java.util.stream.Collectors
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
+import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER
 
 class PostMigrationTest {
 
@@ -72,7 +73,8 @@ class PostMigrationTest {
     requestExecutor = new OptimizeRequestExecutor(DEFAULT_USER, DEFAULT_USER, "http://localhost:8090/api/");
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH)
+      new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH),
+      OPTIMIZE_MAPPER
     );
 
     alertClient = new AlertClient(() -> requestExecutor);

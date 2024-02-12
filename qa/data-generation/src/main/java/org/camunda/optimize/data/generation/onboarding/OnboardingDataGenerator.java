@@ -68,7 +68,8 @@ public class OnboardingDataGenerator {
     );
     this.elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      optimizeIndexNameService
+      optimizeIndexNameService,
+      OBJECT_MAPPER
     );
     elasticSearchSchemaManager.initializeSchema(elasticsearchClient);
   }

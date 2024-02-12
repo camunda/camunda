@@ -18,12 +18,10 @@ import org.camunda.optimize.service.db.es.writer.AbstractProcessInstanceDataWrit
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.db.writer.activity.AbstractActivityInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -96,37 +94,28 @@ public abstract class AbstractActivityInstanceWriterES extends AbstractProcessIn
     final List<FlowNodeInstanceDto> flowNodeInstanceDtos = convertToFlowNodeInstanceDtos(activityInstances);
     final Map<String, Object> params = new HashMap<>();
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
-    try {
-      params.put(FLOW_NODE_INSTANCES, flowNodeInstanceDtos);
-      final ScriptData updateScript = DatabaseWriterUtil.createScriptData(
-        createInlineUpdateScript(),
-        params,
-        objectMapper
-      );
+    params.put(FLOW_NODE_INSTANCES, flowNodeInstanceDtos);
+    final ScriptData updateScript = DatabaseWriterUtil.createScriptData(
+      createInlineUpdateScript(),
+      params,
+      objectMapper
+    );
 
-      final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
-        .processInstanceId(processInstanceId)
-        .dataSource(new EngineDataSourceDto(activityInstances.get(0).getEngineAlias()))
-        .processDefinitionKey(activityInstances.get(0).getProcessDefinitionKey())
-        .flowNodeInstances(flowNodeInstanceDtos)
-        .build();
-      String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-      return ImportRequestDto.builder()
-        .indexName(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
-        .id(processInstanceId)
-        .scriptData(updateScript)
-        .type(RequestType.UPDATE)
-        .importName(importItemName)
-        .source(newEntryIfAbsent)
-        .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-        .build();
-    } catch (IOException e) {
-      String reason = String.format(
-        "Error while processing JSON for activity instances for process instance ID [%s].",
-        processInstanceId
-      );
-      throw new OptimizeRuntimeException(reason, e);
-    }
+    final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
+      .processInstanceId(processInstanceId)
+      .dataSource(new EngineDataSourceDto(activityInstances.get(0).getEngineAlias()))
+      .processDefinitionKey(activityInstances.get(0).getProcessDefinitionKey())
+      .flowNodeInstances(flowNodeInstanceDtos)
+      .build();
+    return ImportRequestDto.builder()
+      .indexName(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
+      .id(processInstanceId)
+      .scriptData(updateScript)
+      .type(RequestType.UPDATE)
+      .importName(importItemName)
+      .source(procInst)
+      .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+      .build();
   }
 
   private List<FlowNodeInstanceDto> convertToFlowNodeInstanceDtos(List<FlowNodeEventDto> activityInstances) {

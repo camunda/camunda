@@ -26,12 +26,6 @@ import java.util.List;
 @Conditional(OpenSearchCondition.class)
 public class IdentityLinkLogWriterOS extends AbstractUserTaskWriterOS implements IdentityLinkLogWriter {
 
-  public IdentityLinkLogWriterOS(final OptimizeOpenSearchClient osClient,
-                                 final OpenSearchSchemaManager openSearchSchemaManager,
-                                 final ObjectMapper objectMapper) {
-    super(osClient, openSearchSchemaManager, objectMapper);
-  }
-
   @Override
   protected String createInlineUpdateScript() {
     //todo will be handled in the OPT-7376

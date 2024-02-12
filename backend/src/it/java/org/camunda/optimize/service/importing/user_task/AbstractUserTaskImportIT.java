@@ -10,15 +10,13 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
-import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
+import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
@@ -29,10 +27,7 @@ public abstract class AbstractUserTaskImportIT extends AbstractPlatformIT {
   @BeforeEach
   public void setUp() {
     if (objectMapper == null) {
-      objectMapper = new ObjectMapperFactory(
-        new OptimizeDateTimeFormatterFactory().getObject(),
-        ConfigurationServiceBuilder.createDefaultConfiguration()
-      ).createOptimizeMapper();
+      objectMapper = OPTIMIZE_MAPPER;
     }
   }
 

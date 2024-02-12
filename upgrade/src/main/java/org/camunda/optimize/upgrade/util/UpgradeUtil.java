@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.upgrade.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,19 +12,19 @@ import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.plugin.PluginJarFileLoader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.configuration.DatabaseType;
-import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
+import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
 /**
  * Bunch of utility methods that might be required during upgrade
@@ -53,24 +52,22 @@ public class UpgradeUtil {
 
   public static UpgradeExecutionDependencies createUpgradeDependenciesWithAConfigurationService(
     final ConfigurationService configurationService) {
-    ObjectMapper objectMapper = new ObjectMapperFactory(
-      new OptimizeDateTimeFormatterFactory().getObject(),
-      ConfigurationServiceBuilder.createDefaultConfiguration()
-    ).createOptimizeMapper();
     OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH);
     ElasticsearchCustomHeaderProvider customHeaderProvider = new ElasticsearchCustomHeaderProvider(
       configurationService, new PluginJarFileLoader(configurationService));
     customHeaderProvider.initPlugins();
     OptimizeElasticsearchClient esClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      indexNameService, new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService)
+      indexNameService,
+      new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService),
+      OPTIMIZE_MAPPER
     );
-    ElasticSearchMetadataService metadataService = new ElasticSearchMetadataService(objectMapper);
+    ElasticSearchMetadataService metadataService = new ElasticSearchMetadataService(OPTIMIZE_MAPPER);
     return new UpgradeExecutionDependencies(
       configurationService,
       indexNameService,
       esClient,
-      objectMapper,
+      OPTIMIZE_MAPPER,
       metadataService
     );
   }

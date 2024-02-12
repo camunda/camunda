@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.db.es.writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +24,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -55,11 +53,7 @@ public class CamundaActivityEventWriterES implements CamundaActivityEventWriter 
 
     createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
 
-    return camundaActivityEvents.stream()
-      .map(entry -> createIndexRequestForActivityEvent(entry, importItemName))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .collect(Collectors.toList());
+    return camundaActivityEvents.stream().map(entry -> createIndexRequestForActivityEvent(entry, importItemName)).toList();
   }
 
   @Override
@@ -80,19 +74,14 @@ public class CamundaActivityEventWriterES implements CamundaActivityEventWriter 
     );
   }
 
-  private Optional<ImportRequestDto> createIndexRequestForActivityEvent(CamundaActivityEventDto camundaActivityEventDto, final String importName) {
-    try {
-      return Optional.of(ImportRequestDto.builder()
-                           .indexName(CamundaActivityEventIndex.constructIndexName(camundaActivityEventDto.getProcessDefinitionKey()))
-                           .id(IdGenerator.getNextId())
-                           .type(RequestType.INDEX)
-                           .source(objectMapper.writeValueAsString(camundaActivityEventDto))
-                           .importName(importName)
-                           .build());
-    } catch (JsonProcessingException e) {
-      log.warn("Could not serialize Camunda Activity Event: {}", camundaActivityEventDto, e);
-      return Optional.empty();
-    }
+  private ImportRequestDto createIndexRequestForActivityEvent(CamundaActivityEventDto camundaActivityEventDto, final String importName) {
+    return ImportRequestDto.builder()
+      .indexName(CamundaActivityEventIndex.constructIndexName(camundaActivityEventDto.getProcessDefinitionKey()))
+      .id(IdGenerator.getNextId())
+      .type(RequestType.INDEX)
+      .source(camundaActivityEventDto)
+      .importName(importName)
+      .build();
   }
 
   private void createMissingActivityIndicesForProcessDefinitions(List<String> processDefinitionKeys) {

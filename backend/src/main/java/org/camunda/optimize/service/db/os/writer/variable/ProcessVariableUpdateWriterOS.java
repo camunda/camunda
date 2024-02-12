@@ -8,9 +8,6 @@ package org.camunda.optimize.service.db.os.writer.variable;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
-import org.camunda.optimize.service.db.os.writer.AbstractProcessInstanceDataWriterOS;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
@@ -22,13 +19,8 @@ import java.util.List;
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
-public class ProcessVariableUpdateWriterOS extends AbstractProcessInstanceDataWriterOS<ProcessVariableDto>
+public class ProcessVariableUpdateWriterOS
   implements ProcessVariableUpdateWriter {
-
-  public ProcessVariableUpdateWriterOS(final OptimizeOpenSearchClient osClient, final OpenSearchSchemaManager openSearchSchemaManager) {
-    super(osClient, openSearchSchemaManager);
-  }
-
   @Override
   public List<ImportRequestDto> generateVariableUpdateImports(final List<ProcessVariableDto> variables) {
     //todo will be handled in the OPT-7376

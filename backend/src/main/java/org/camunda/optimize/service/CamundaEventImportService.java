@@ -23,6 +23,7 @@ import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -76,11 +77,11 @@ public class CamundaEventImportService {
     List<ProcessInstanceDto> runningProcessInstances) {
     final String engineAlias = runningProcessInstances.get(0).getDataSource().getName();
     if (shouldImport(engineAlias)) {
-      final List<ImportRequestDto> imports =
+      final List<ImportRequestDto> imports = new ArrayList<>(
         generateCamundaActivityEventsImports(
           runningProcessInstances,
           this::convertRunningProcessInstanceToCamundaActivityEvents
-        );
+        ));
       imports.addAll(businessKeyWriter.generateBusinessKeyImports(runningProcessInstances));
       return imports;
     }
@@ -90,11 +91,11 @@ public class CamundaEventImportService {
   public List<ImportRequestDto> generateCompletedProcessInstanceImports(List<ProcessInstanceDto> completedProcessInstances) {
     final String engineAlias = completedProcessInstances.get(0).getDataSource().getName();
     if (shouldImport(engineAlias)) {
-      final List<ImportRequestDto> imports =
+      final List<ImportRequestDto> imports = new ArrayList<>(
         generateCamundaActivityEventsImports(
           completedProcessInstances,
           this::convertCompletedProcessInstanceToCamundaActivityEvents
-        );
+        ));
       imports.addAll(businessKeyWriter.generateBusinessKeyImports(completedProcessInstances));
       return imports;
     }

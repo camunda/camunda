@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
@@ -37,6 +38,8 @@ public class OptimizeElasticsearchClientTest {
   private RestHighLevelClient highLevelRestClient;
   @Mock
   private OptimizeIndexNameService indexNameService;
+  @Mock
+  private ObjectMapper objectMapper;
 
   private OptimizeElasticsearchClient underTest;
 
@@ -44,7 +47,7 @@ public class OptimizeElasticsearchClientTest {
   public void indexDeleteIsRetriedOnPendingSnapshot() throws IOException, InterruptedException {
     // given
     RequestOptionsProvider requestOptionsProvider = new RequestOptionsProvider();
-    underTest = new OptimizeElasticsearchClient(highLevelRestClient, indexNameService, requestOptionsProvider);
+    underTest = new OptimizeElasticsearchClient(highLevelRestClient, indexNameService, requestOptionsProvider, objectMapper);
     underTest.setSnapshotInProgressRetryDelaySeconds(1);
     given(highLevelRestClient.indices()
             .delete(any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions())))
