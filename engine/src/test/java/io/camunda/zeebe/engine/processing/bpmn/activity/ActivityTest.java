@@ -78,6 +78,8 @@ public final class ActivityTest {
                       .zeebeInput("https://github.com/{{orgId}}/{{repoId}}", "urlStatic")
                       .zeebeInputExpression(
                           "\"https://github.com/{{orgId}}/{{repoId}}\"", "urlExpression")
+                      .zeebeInput(
+                          "My Name is &#34;Zeebe&#34;, nice to meet you", "quotesStaticModeler")
                       .zeebeInput("My Name is \"Zeebe\", nice to meet you", "quotesStatic")
                       .zeebeInputExpression(
                           "\"My Name is \\\"Zeebe\\\", nice to meet you\"", "quotesExpression"))
@@ -143,8 +145,9 @@ public final class ActivityTest {
             entry("nullExpression", "\"null\""),
             entry("urlStatic", "\"https://github.com/{{orgId}}/{{repoId}}\""),
             entry("urlExpression", "\"https://github.com/{{orgId}}/{{repoId}}\""),
-            entry("quotesStatic", "\"My Name is \\\\\\\"Zeebe\\\\\\\", nice to meet you\""),
-            entry("quotesExpression", "\"My Name is \\\\\\\"Zeebe\\\\\\\", nice to meet you\""));
+            entry("quotesStaticModeler", "\"My Name is &#34;Zeebe&#34;, nice to meet you\""),
+            entry("quotesStatic", "\"My Name is \\\"Zeebe\\\", nice to meet you\""),
+            entry("quotesExpression", "\"My Name is \\\"Zeebe\\\", nice to meet you\""));
   }
 
   @Test
@@ -226,6 +229,45 @@ public final class ActivityTest {
   @Test
   public void shouldIgnoreTaskHeadersIfNull() {
     createProcessAndAssertIgnoredHeaders(null);
+  }
+
+  // regression test for https://github.com/camunda/zeebe/issues/16043
+  @Test
+  public void shouldEscapeDoubleQuotesInStaticExpression() {
+    final var process = createModelFromClasspathResource("/regression-variable-mapping.bpmn");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("regressionProcess")
+            .withVariable("key", 123)
+            .create();
+
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords()
+            .withElementId("send-email")
+            .withIntent(ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> variables =
+        ProcessInstances.getCurrentVariables(processInstanceKey, record.getPosition());
+
+    assertThat(variables)
+        .contains(
+            entry("unMappedFieldNotUseInModel", "{\"mailType\":\"mail\"}"),
+            entry("apiKey", "123"),
+            entry("from", "{\"name\":\"Me\",\"email\":\"me@camunda.com\"}"),
+            entry("to", "{\"name\":\"\\\"You\\\"\",\"email\":\"you@camunda.com\"}"),
+            entry(
+                "content",
+                "{\"subject\":\"Hello\",\"type\":\"text/plain\",\"value\":\"This \\\"is a\\\" test.\"}"));
+  }
+
+  private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
+    final var resourceAsStream = getClass().getResourceAsStream(classpath);
+    return Bpmn.readModelFromStream(resourceAsStream);
   }
 
   private void createProcessAndAssertIgnoredHeaders(final String testValue) {
