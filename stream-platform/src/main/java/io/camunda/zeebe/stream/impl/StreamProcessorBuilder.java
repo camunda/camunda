@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -151,6 +152,11 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder setEnableAsyncScheduledTasks(final boolean enabled) {
     streamProcessorContext.setEnableAsyncScheduledTasks(enabled);
+    return this;
+  }
+
+  public StreamProcessorBuilder processingFilter(final EventFilter processingFilter) {
+    streamProcessorContext.processingFilter(processingFilter);
     return this;
   }
 }
