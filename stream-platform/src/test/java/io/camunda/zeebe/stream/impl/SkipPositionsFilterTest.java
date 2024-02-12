@@ -41,4 +41,17 @@ final class SkipPositionsFilterTest {
     // then
     assertThat(filter.applies(event)).isTrue();
   }
+
+  @Test
+  void shouldNotSkipEventWhenSetIsEmpty() {
+    // given
+    final var filter = SkipPositionsFilter.of(Set.of());
+    final var event = mock(LoggedEventImpl.class);
+
+    // when
+    when(event.getPosition()).thenReturn(4L);
+
+    // then
+    assertThat(filter.applies(event)).isTrue();
+  }
 }
