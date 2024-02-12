@@ -25,6 +25,7 @@ import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.impl.ReconfigurationHelper;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.JointConsensusVoteQuorum;
 import io.atomix.raft.utils.SimpleVoteQuorum;
@@ -91,7 +92,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public CompletableFuture<Void> join(final Collection<MemberId> cluster) {
-    return raft.join(cluster)
+    return new ReconfigurationHelper(raft)
+        .join(cluster)
         // Usually the transition is triggered by `onConfigure` when the leader sends the updated
         // configuration. If the join is attempted again, it can be accepted without a configuration
         // change and nothing triggers the transition.
