@@ -336,54 +336,6 @@
           "code": "java.method.removed",
           "old":  "method io.camunda.zeebe.protocol.record.value.ImmutableCompensationSubscriptionRecordValue io.camunda.zeebe.protocol.record.value.ImmutableCompensationSubscriptionRecordValue::withCompensableActivityScopeId(long)",
           "justification": "This functionality is not yet released"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue.Builder::withCandidateGroups(java.lang.String)",
-          "justification": "This functionality is not yet released"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue.Builder::withCandidateUsers(java.lang.String)",
-          "justification": "This functionality is not yet released"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method java.lang.String io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue::getCandidateGroups()",
-          "justification": "This functionality is not yet released"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method java.lang.String io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue::getCandidateUsers()",
-          "justification": "This functionality is not yet released"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue::withCandidateGroups(java.lang.String)",
-          "justification": "This functionality is not yet released"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue::withCandidateUsers(java.lang.String)",
-          "justification": "This functionality is not yet released"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method java.lang.String io.camunda.zeebe.protocol.record.value.UserTaskRecordValue::getCandidateGroups()",
-          "justification": "This functionality is not yet released"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old":  "method java.lang.String io.camunda.zeebe.protocol.record.value.UserTaskRecordValue::getCandidateUsers()",
-          "justification": "This functionality is not yet released"
         }
       ]
     }
