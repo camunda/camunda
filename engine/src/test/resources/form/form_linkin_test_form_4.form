@@ -1,0 +1,23 @@
+{
+  "components": [
+    {
+      "label": "Number",
+      "type": "number",
+      "layout": {
+        "row": "Row_10jh79k",
+        "columns": null
+      },
+      "id": "Field_159g72z",
+      "key": "number_kxisdj"
+    }
+  ],
+  "type": "default",
+  "id": "Form_1oavfz5",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.3.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.17.0"
+  },
+  "schemaVersion": 12
+}

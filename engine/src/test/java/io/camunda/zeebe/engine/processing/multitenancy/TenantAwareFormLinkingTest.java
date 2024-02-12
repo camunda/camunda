@@ -12,10 +12,15 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -93,5 +98,87 @@ public class TenantAwareFormLinkingTest {
                 form with the same id"""
                     .formatted(FORM_ID),
                 TENANT));
+  }
+
+  @Test
+  public void shouldActivateUserTaskWithCorrectFormKey() {
+    // when
+    final Record<DeploymentRecordValue> deploy =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("form_linking_test")
+                    .startEvent()
+                    .userTask("A")
+                    .zeebeFormId("Form_1mmjkgz")
+                    .endEvent()
+                    .done())
+            .withXmlClasspathResource("/form/form_linkin_test_form_1.form")
+            .withXmlClasspathResource("/form/form_linkin_test_form_2.form")
+            .deploy();
+
+    final Map<String, Long> formNameToKey = new HashMap<>();
+
+    deploy
+        .getValue()
+        .getFormMetadata()
+        .forEach(
+            formMetadataValue -> {
+              formNameToKey.put(
+                  formMetadataValue.getResourceName(), formMetadataValue.getFormKey());
+            });
+
+    final int processInstanceCount = 10;
+    for (int i = 1; i <= processInstanceCount; i++) {
+      engine.processInstance().ofBpmnProcessId("form_linking_test").create();
+
+      if (i == 5) {
+        final Record<DeploymentRecordValue> deploy1 =
+            engine
+                .deployment()
+                .withXmlResource(
+                    Bpmn.createExecutableProcess("form_linking_test_2")
+                        .startEvent()
+                        .userTask("A")
+                        .zeebeFormId("Form_1cqi2h1")
+                        .endEvent()
+                        .done())
+                .withXmlClasspathResource("/form/form_linkin_test_form_3.form")
+                .deploy();
+
+        engine.processInstance().ofBpmnProcessId("form_linking_test_2").create();
+
+        deploy1
+            .getValue()
+            .getFormMetadata()
+            .forEach(
+                formMetadataValue -> {
+                  formNameToKey.put(
+                      formMetadataValue.getResourceName(), formMetadataValue.getFormKey());
+                });
+      }
+    }
+
+    System.out.println("+++++++++++++");
+    System.out.println(formNameToKey);
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withElementId("A")
+                .limit(processInstanceCount))
+        .describedAs("Expect that all jobs are created.")
+        .hasSize(processInstanceCount);
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withElementId("A")
+                .limit(processInstanceCount))
+        .extracting(jobRecord -> jobRecord.getValue().getCustomHeaders())
+        .isNotNull()
+        .allMatch(
+            headers ->
+                headers.containsValue(
+                    formNameToKey.get("/form/form_linkin_test_form_1.form").toString()));
   }
 }
