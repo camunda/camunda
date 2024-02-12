@@ -40,6 +40,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
       new LongProperty("throwEventInstanceKey", -1);
   private final StringProperty compensationHandlerIdProperty =
       new StringProperty("compensationHandlerId", EMPTY_STRING);
+
+  private final LongProperty scopeInstanceKeyProperty = new LongProperty("scopeInstanceKey", -1);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public CompensationSubscriptionRecord() {
@@ -52,6 +54,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(throwEventIdProperty)
         .declareProperty(throwEventInstanceKeyProperty)
         .declareProperty(compensationHandlerIdProperty)
+        .declareProperty(scopeInstanceKeyProperty)
         .declareProperty(variablesProperty);
   }
 
@@ -64,6 +67,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     throwEventIdProperty.setValue(record.getThrowEventId());
     throwEventInstanceKeyProperty.setValue(record.getThrowEventInstanceKey());
     compensationHandlerIdProperty.setValue(record.getCompensationHandlerId());
+    scopeInstanceKeyProperty.setValue(record.getScopeInstanceKey());
     variablesProperty.setValue(record.getVariablesBuffer());
   }
 
@@ -123,12 +127,22 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
+  public long getScopeInstanceKey() {
+    return scopeInstanceKeyProperty.getValue();
+  }
+
+  @Override
   public Map<String, Object> getVariables() {
     return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
   public CompensationSubscriptionRecord setVariables(final DirectBuffer variables) {
     variablesProperty.setValue(variables);
+    return this;
+  }
+
+  public CompensationSubscriptionRecord setScopeInstanceKey(final long scopeInstanceKey) {
+    scopeInstanceKeyProperty.setValue(scopeInstanceKey);
     return this;
   }
 

@@ -66,6 +66,11 @@ public interface CompensationSubscriptionRecordValue extends RecordValue {
   String getCompensationHandlerId();
 
   /**
+   * @return the instance key of the process containing the element
+   */
+  long getScopeInstanceKey();
+
+  /**
    * @return the local variables of activity with compensation handler
    */
   Map<String, Object> getVariables();

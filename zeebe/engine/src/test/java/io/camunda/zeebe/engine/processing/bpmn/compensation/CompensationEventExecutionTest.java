@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -801,11 +802,11 @@ public class CompensationEventExecutionTest {
             tuple(
                 ValueType.COMPENSATION_SUBSCRIPTION,
                 CompensationSubscriptionIntent.DELETED,
-                "ActivityToCompensate"),
+                "embedded-subprocess"),
             tuple(
                 ValueType.COMPENSATION_SUBSCRIPTION,
                 CompensationSubscriptionIntent.DELETED,
-                "embedded-subprocess"));
+                "ActivityToCompensate"));
   }
 
   @Test
@@ -901,6 +902,152 @@ public class CompensationEventExecutionTest {
                 BpmnElementType.PROCESS,
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldInvokeCompensationHandlerTheSameAmountAsExecuted() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-multi-instance.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .jobs()
+        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
+        .activate()
+        .getValue()
+        .getJobKeys()
+        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("CompensationHandler")
+        .map(Record::getKey)
+        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+
+    // then
+    assertThat(
+            RecordingExporter.jobBatchRecords()
+                .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
+                .withIntent(JobBatchIntent.ACTIVATED)
+                .getFirst()
+                .getValue()
+                .getJobs()
+                .size())
+        .isEqualTo(3);
+
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(12))
+        .extracting(
+            Record::getValueType, Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .containsSubsequence(
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION,
+                CompensationSubscriptionIntent.TRIGGERED,
+                "CompensationHandler"),
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION,
+                CompensationSubscriptionIntent.TRIGGERED,
+                "CompensationHandler"),
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION,
+                CompensationSubscriptionIntent.TRIGGERED,
+                "CompensationHandler"));
+  }
+
+  @Test
+  public void shouldTriggerOnlyCorrectHandlerForMultiInstance() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-throw-error.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .jobs()
+        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
+        .activate()
+        .getValue()
+        .getJobKeys()
+        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+
+    final AtomicInteger i = new AtomicInteger(1);
+
+    ENGINE
+        .jobs()
+        .withType("activity")
+        .activate()
+        .getValue()
+        .getJobKeys()
+        .forEach(
+            jobKey -> {
+              if (i.get() != 3) {
+                ENGINE.job().withKey(jobKey).complete();
+              } else {
+                ENGINE.job().withKey(jobKey).throwError();
+              }
+              i.getAndIncrement();
+            });
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(8))
+        .extracting(
+            Record::getValueType, Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .containsSubsequence(
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION,
+                CompensationSubscriptionIntent.TRIGGERED,
+                "CompensationHandler"),
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION,
+                CompensationSubscriptionIntent.COMPLETED,
+                "CompensationHandler"),
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED, ""));
+  }
+
+  @Test
+  public void shouldTriggerCompensationHandlerOnlyOnce() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-multi-throw-event.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
+        .complete();
+
+    // When
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(6))
+        .extracting(Record::getIntent)
+        .filteredOn(intent -> intent.equals(CompensationSubscriptionIntent.TRIGGERED))
+        .size()
+        .isEqualTo(2);
   }
 
   @Test
@@ -1057,9 +1204,9 @@ public class CompensationEventExecutionTest {
             .getKey();
 
     assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .variableRecords())
+        RecordingExporter.records()
+            .limitToProcessInstance(processInstanceKey)
+            .variableRecords())
         .extracting(Record::getValue)
         .extracting(
             VariableRecordValue::getScopeKey,

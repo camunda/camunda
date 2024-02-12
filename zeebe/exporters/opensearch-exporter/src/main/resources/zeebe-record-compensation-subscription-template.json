@@ -43,6 +43,9 @@
             "compensationHandlerId": {
               "type": "keyword"
             },
+            "scopeInstanceKey":{
+              "type": "long"
+            },
             "variables": {
               "enabled": false
             }
