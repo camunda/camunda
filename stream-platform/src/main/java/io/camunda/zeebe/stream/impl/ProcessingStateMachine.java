@@ -114,10 +114,7 @@ public final class ProcessingStateMachine {
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
   private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
       "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
-  private final EventFilter processingFilter =
-      new MetadataEventFilter(
-              recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND)
-          .and(record -> !record.shouldSkipProcessing());
+  private final EventFilter processingFilter;
   private final EventFilter isEventOrRejection =
       new MetadataEventFilter(
           recordMetadata -> {
@@ -191,6 +188,12 @@ public final class ProcessingStateMachine {
     streamProcessorListener = context.getStreamProcessorListener();
 
     processingMetrics = new ProcessingMetrics(Integer.toString(partitionId));
+
+    processingFilter =
+        new MetadataEventFilter(
+                recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND)
+            .and(record -> !record.shouldSkipProcessing())
+            .and(context.processingFilter());
   }
 
   private void skipRecord() {
