@@ -10,19 +10,22 @@ package io.camunda.zeebe.stream.impl;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.stream.api.EventFilter;
 import java.util.Set;
+import org.agrona.collections.LongHashSet;
 
 /** A filter that skips events with positions in a given set of positions. */
 public final class SkipPositionsFilter implements EventFilter {
 
-  private final Set<Long> positionsToSkip;
+  private final LongHashSet positionsToSkip;
 
-  private SkipPositionsFilter(final Set<Long> positionsToSkip) {
+  private SkipPositionsFilter(final LongHashSet positionsToSkip) {
 
     this.positionsToSkip = positionsToSkip;
   }
 
   public static SkipPositionsFilter of(final Set<Long> positionsToSkip) {
-    return new SkipPositionsFilter(positionsToSkip);
+    final LongHashSet longHashSet = new LongHashSet(positionsToSkip.size());
+    longHashSet.addAll(positionsToSkip);
+    return new SkipPositionsFilter(longHashSet);
   }
 
   /**
@@ -30,6 +33,6 @@ public final class SkipPositionsFilter implements EventFilter {
    */
   @Override
   public boolean applies(final LoggedEvent event) {
-    return !positionsToSkip.contains(event.getPosition());
+    return positionsToSkip.isEmpty() || !positionsToSkip.contains(event.getPosition());
   }
 }
