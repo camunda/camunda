@@ -51,7 +51,7 @@
     <netty.version>4.1.106.Final</netty.version>
     <lombok.version>1.18.30</lombok.version>
     <logback.version>1.4.14</logback.version>
-    <slf4j.version>2.0.11</slf4j.version>
+    <slf4j.version>2.0.12</slf4j.version>
     <commons.io.version>2.15.1</commons.io.version>
 
     <version.node>v20.9.0</version.node>
@@ -62,10 +62,10 @@
     <postgres.version>42.7.1</postgres.version>
     <mockito.version>5.10.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <junit.jupiter.version>5.10.1</junit.jupiter.version>
-    <junit.platform.version>1.10.1</junit.platform.version>
+    <junit.jupiter.version>5.10.2</junit.jupiter.version>
+    <junit.platform.version>1.10.2</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
-    <assertj.version>3.25.2</assertj.version>
+    <assertj.version>3.25.3</assertj.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
@@ -499,7 +499,7 @@
         <plugin>
           <groupId>org.codehaus.cargo</groupId>
           <artifactId>cargo-maven3-plugin</artifactId>
-          <version>1.10.11</version>
+          <version>1.10.12</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
