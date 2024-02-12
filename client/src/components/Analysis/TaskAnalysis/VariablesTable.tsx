@@ -14,32 +14,34 @@ import {
   loadCommonOutliersVariables,
   OutliersVariable,
   AnalysisProcessDefinitionParameters,
-  SelectedNode,
+  OutlierNode,
 } from './service';
 
 interface VariablesTableProps {
-  selectedNode: SelectedNode;
+  selectedOutlierNode: OutlierNode;
   config: AnalysisProcessDefinitionParameters;
 }
 
-export default function VariablesTable({selectedNode, config}: VariablesTableProps) {
-  const [data, setData] = useState<OutliersVariable[]>();
+export default function VariablesTable({selectedOutlierNode, config}: VariablesTableProps) {
+  const [outlierVariables, setOutlierVariables] = useState<OutliersVariable[]>();
 
   useEffect(() => {
-    const loadData = async () => {
-      const {id, higherOutlier} = selectedNode;
-      const data = await loadCommonOutliersVariables({
+    const loadOutliersVariablesData = async () => {
+      const {id, higherOutlier} = selectedOutlierNode;
+      const commonSignificantOutliersVariables = await loadCommonOutliersVariables({
         ...config,
         flowNodeId: id,
         higherOutlierBound: higherOutlier.boundValue,
       });
-      setData(data);
+      setOutlierVariables(commonSignificantOutliersVariables);
     };
-    loadData();
-  }, [selectedNode, config]);
+    loadOutliersVariablesData();
+  }, [selectedOutlierNode, config]);
 
-  const constructTableBody = (data: OutliersVariable[]): (string | JSX.Element)[][] => {
-    return data.map((row) => [
+  const constructTableBody = (
+    outliersVariables: OutliersVariable[]
+  ): (string | JSX.Element)[][] => {
+    return outliersVariables.map((row) => [
       row.variableName + '=' + row.variableTerm,
       row.instanceCount.toString(),
       (+(row.outlierToAllInstancesRatio * 100).toFixed(2)).toString(),
@@ -48,7 +50,7 @@ export default function VariablesTable({selectedNode, config}: VariablesTablePro
   };
 
   let tableData;
-  if (data?.length) {
+  if (outlierVariables?.length) {
     tableData = {
       head: [
         t('report.variables.default').toString(),
@@ -56,13 +58,13 @@ export default function VariablesTable({selectedNode, config}: VariablesTablePro
         t('analysis.task.detailsModal.table.ofTotalPercentage').toString(),
         t('analysis.task.detailsModal.table.ofOutliersPercentage').toString(),
       ],
-      body: constructTableBody(data),
+      body: constructTableBody(outlierVariables),
     };
   } else {
     tableData = {
       head: [],
       body: [],
-      noData: data ? (
+      noData: outlierVariables ? (
         <NoDataNotice>{t('analysis.task.detailsModal.table.emptyTableMessage')}</NoDataNotice>
       ) : (
         <LoadingIndicator />

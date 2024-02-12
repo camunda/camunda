@@ -11,9 +11,9 @@ import {AnalysisDurationChartEntry} from 'types';
 
 import VariablesTable from './VariablesTable';
 import OutlierDetailsModal from './OutlierDetailsModal';
-import {SelectedNode, AnalysisProcessDefinitionParameters} from './service';
+import {OutlierNode, AnalysisProcessDefinitionParameters} from './service';
 
-const selectedNode = {
+const selectedOutlierNode = {
   name: 'test',
   higherOutlier: {
     count: 4,
@@ -24,10 +24,10 @@ const selectedNode = {
     {key: 2, value: 2, outlier: true},
   ] as AnalysisDurationChartEntry[],
   totalCount: 123,
-} as SelectedNode;
+} as OutlierNode;
 
 const props = {
-  selectedNode,
+  selectedOutlierNode,
   onClose: jest.fn(),
   config: {} as AnalysisProcessDefinitionParameters,
 };
@@ -35,7 +35,7 @@ const props = {
 it('should pass outlier data to DurationChart and VariablesTable', () => {
   const node = shallow(<OutlierDetailsModal {...props} />);
 
-  expect(node.find('DurationChart').prop('data')).toEqual(selectedNode.data);
+  expect(node.find('DurationChart').prop('data')).toEqual(selectedOutlierNode.data);
   expect(node.find('DurationChart').prop('colors')).toEqual(['#eeeeee', '#1991c8']);
-  expect(node.find(VariablesTable).prop('selectedNode')).toEqual(selectedNode);
+  expect(node.find(VariablesTable).prop('selectedOutlierNode')).toEqual(selectedOutlierNode);
 });

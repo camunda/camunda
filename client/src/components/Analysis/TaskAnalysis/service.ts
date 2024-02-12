@@ -31,7 +31,7 @@ export interface AnalysisFlowNodeOutlierParameters extends AnalysisProcessDefini
   higherOutlierBound: number;
 }
 
-export type SelectedNode = {
+export type OutlierNode = {
   id: string;
   name: string;
   higherOutlier: {
