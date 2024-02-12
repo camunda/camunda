@@ -14,6 +14,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -57,6 +58,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
   private boolean enableAsyncScheduledTasks = true;
+  private EventFilter processingFilter = e -> true;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -76,6 +78,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public int getPartitionId() {
     return getLogStream().getPartitionId();
+  }
+
+  @Override
+  public boolean enableAsyncScheduledTasks() {
+    return enableAsyncScheduledTasks;
   }
 
   public LogStream getLogStream() {
@@ -209,11 +216,16 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   public StreamProcessorContext setEnableAsyncScheduledTasks(final boolean enabled) {
-    this.enableAsyncScheduledTasks = enabled;
+    enableAsyncScheduledTasks = enabled;
     return this;
   }
 
-  public boolean enableAsyncScheduledTasks() {
-    return enableAsyncScheduledTasks;
+  public EventFilter processingFilter() {
+    return processingFilter;
+  }
+
+  public StreamProcessorContext processingFilter(final EventFilter processingFilter) {
+    this.processingFilter = processingFilter;
+    return this;
   }
 }
