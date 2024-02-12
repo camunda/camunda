@@ -24,13 +24,13 @@ import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.storage.system.Configuration;
+import io.atomix.raft.utils.ForceConfigureQuorum;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import java.net.ConnectException;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
@@ -384,64 +384,6 @@ public final class ReconfigurationHelper {
               threadContext);
     } else {
       raftContext.transition(Role.CANDIDATE);
-    }
-  }
-
-  private static final class ForceConfigureQuorum {
-    private Consumer<Boolean> callback;
-    private boolean complete;
-    private final Set<MemberId> members;
-    private int succeeded;
-    private int failed;
-    private final int quorum;
-    private final int acceptedFailures;
-
-    /**
-     * @param callback will be called when all members have acknowledged success to this request or
-     *     when atleast one failed.
-     * @param members All members excluding the local member
-     */
-    public ForceConfigureQuorum(
-        final Consumer<Boolean> callback, final Collection<MemberId> members) {
-      this.callback = callback;
-      this.members = new HashSet<>(members);
-      quorum = members.size(); // TODO: Is it enough to have a majority of remaining members?
-      acceptedFailures = 0;
-    }
-
-    public void succeed(final MemberId member) {
-      if (members.remove(member)) {
-        succeeded++;
-        checkComplete();
-      }
-    }
-
-    public void fail(final MemberId member) {
-      if (members.remove(member)) {
-        failed++;
-        checkComplete();
-      }
-    }
-
-    /**
-     * Cancels the quorum. Once this method has been called, the quorum will be marked complete and
-     * the handler will never be called.
-     */
-    public void cancel() {
-      callback = null;
-      complete = true;
-    }
-
-    private void checkComplete() {
-      if (!complete && callback != null) {
-        if (succeeded >= quorum) {
-          complete = true;
-          callback.accept(true);
-        } else if (failed > acceptedFailures) {
-          complete = true;
-          callback.accept(false);
-        }
-      }
     }
   }
 }
