@@ -99,7 +99,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     commitInitialEntriesFuture = commitInitialEntries();
     lastZbEntry = findLastZeebeEntry();
 
-    if (jointConsensus()) {
+    if (jointConsensus() || forcedConfiguration()) {
+      // Come out of joint consensus or forced configuration
       raft.getThreadContext()
           .execute(
               () -> {
@@ -449,6 +450,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   private boolean jointConsensus() {
     return raft.getCluster().inJointConsensus();
+  }
+
+  private boolean forcedConfiguration() {
+    return raft.getCluster().getConfiguration().force();
   }
 
   /** Commits the given configuration. */
