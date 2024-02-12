@@ -77,6 +77,7 @@ public class EvaluateDecisionTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // assert DecisionEvaluationRecord mapping
+    assertThat(response.getDecisionInstanceKey()).isGreaterThan(DECISION_RECORD.getDecisionKey());
     assertThat(response.getDecisionId()).isEqualTo(DECISION_RECORD.getDecisionId());
     assertThat(response.getDecisionKey()).isEqualTo(DECISION_RECORD.getDecisionKey());
     assertThat(response.getDecisionName()).isEqualTo(DECISION_RECORD.getDecisionName());
