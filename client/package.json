@@ -89,7 +89,7 @@
     "jsdom": "24.0.0",
     "lint-staged": "15.2.2",
     "monaco-editor": "0.46.0",
-    "msw": "2.1.7",
+    "msw": "2.2.0",
     "prettier": "3.2.5",
     "serve": "14.2.1",
     "source-map-explorer": "2.5.3",
