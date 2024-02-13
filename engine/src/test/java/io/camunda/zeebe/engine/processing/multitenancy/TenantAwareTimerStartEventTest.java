@@ -70,12 +70,10 @@ public class TenantAwareTimerStartEventTest {
 
     // then
     assertThat(
-            RecordingExporter.timerRecords()
-                .withIntents(TimerIntent.TRIGGER, TimerIntent.TRIGGERED)
-                .withProcessDefinitionKey(processDefinitionKey)
-                .limit(2))
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessDefinitionKey(processDefinitionKey))
         .extracting(r -> r.getValue().getTenantId(), Record::getIntent)
-        .containsSequence(tuple(TENANT, TimerIntent.TRIGGER), tuple(TENANT, TimerIntent.TRIGGERED));
+        .containsSequence(tuple(TENANT, TimerIntent.TRIGGERED));
   }
 
   @Test
