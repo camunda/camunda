@@ -6,9 +6,9 @@
  */
 
 import {shallow} from 'enzyme';
+import {Tab, TabPanels, Tabs as CarbonTabs, TabList, TabsSkeleton} from '@carbon/react';
 
 import Tabs from './Tabs';
-import {Tab, TabPanels, Tabs as CarbonTabs, TabList} from '@carbon/react';
 
 it('should display tabs properly', () => {
   const node = shallow(
@@ -81,4 +81,20 @@ it('should use index values if no value prop is provided', () => {
   expect(tabs.prop('selectedIndex')).toBe(0);
   node.simulate('change', {selectedIndex: 1});
   expect(spy).toHaveBeenCalledWith(1);
+});
+
+it('should show tabs skeleton if isLoading is set to true', () => {
+  const node = shallow(
+    <Tabs isLoading>
+      <Tabs.Tab value={'a'} title="tab1 title">
+        Tab1 content
+      </Tabs.Tab>
+      <Tabs.Tab value={'b'} title="tab2 title">
+        Tab2 content
+      </Tabs.Tab>
+    </Tabs>
+  );
+
+  expect(node.find(TabList)).not.toExist();
+  expect(node.find(TabsSkeleton)).toExist();
 });

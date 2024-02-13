@@ -6,7 +6,7 @@
  */
 
 import {useState, useEffect, ComponentPropsWithoutRef, ReactNode} from 'react';
-import {Tabs as CarbonTabs, TabList, Tab, TabPanels, TabPanel} from '@carbon/react';
+import {Tabs as CarbonTabs, TabList, Tab, TabPanels, TabPanel, TabsSkeleton} from '@carbon/react';
 
 import {ignoreFragments} from 'services';
 
@@ -17,6 +17,7 @@ interface TabsProps<T extends string | number>
   value?: T;
   onChange?: (value: T) => void;
   showButtons?: boolean;
+  isLoading?: boolean;
 }
 
 interface TabProps<T extends string | number>
@@ -31,6 +32,7 @@ export default function Tabs<T extends string | number>({
   onChange,
   children,
   showButtons = true,
+  isLoading,
 }: TabsProps<T>) {
   const tabs = ignoreFragments(children);
   const values = tabs.map<T>(({props: {value}}, idx) => (value || idx) as T);
@@ -49,7 +51,7 @@ export default function Tabs<T extends string | number>({
         setSelected(value);
       }}
     >
-      {showButtons && (
+      {showButtons && !isLoading && (
         <TabList aria-label="tabs">
           {tabs.map(({props: {value, title, disabled, ...rest}}, idx) => (
             <Tab {...rest} key={getIndex(values, value || idx)} disabled={disabled}>
@@ -58,6 +60,7 @@ export default function Tabs<T extends string | number>({
           ))}
         </TabList>
       )}
+      {isLoading && <TabsSkeleton />}
       <TabPanels>{tabs}</TabPanels>
     </CarbonTabs>
   );

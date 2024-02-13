@@ -8,7 +8,7 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Redirect} from 'react-router-dom';
 import {parseISO} from 'date-fns';
-import {Button, Grid, Column, Loading} from '@carbon/react';
+import {Button, Grid, Column} from '@carbon/react';
 import {CopyFile, Edit, Save, TrashCan} from '@carbon/icons-react';
 
 import {format} from 'dates';
@@ -109,16 +109,13 @@ export function Home({mightFail, user}) {
 
   const isEditor = user?.authorizations.includes('entity_editor');
 
-  const showEmptyStateComponent = !entities?.length && isEditor;
-
   return (
     <Grid condensed className="Home" fullWidth>
       <Column sm={4} md={8} lg={16}>
-        {showEmptyStateComponent && (
-          <>
-            {isLoading ? (
-              <Loading className="loadingIndicator" withOverlay={false} />
-            ) : (
+        <CarbonEntityList
+          isLoading={isLoading}
+          emptyStateComponent={
+            isEditor && (
               <EmptyState
                 title={t('home.emptyState.title')}
                 description={t('home.emptyState.description')}
@@ -135,115 +132,110 @@ export function Home({mightFail, user}) {
                   </>
                 }
               />
-            )}
-          </>
-        )}
-        {!showEmptyStateComponent && (
-          <CarbonEntityList
-            isLoading={isLoading}
-            title={t('home.title')}
-            action={
-              isEditor && (
-                <CreateNewButton
-                  size="lg"
-                  kind="primary"
-                  importEntity={() => fileInput.current.click()}
-                  create={setCreating}
-                />
-              )
-            }
-            bulkActions={
-              isEditor && [
-                <BulkDeleter
-                  type="delete"
-                  deleteEntities={removeEntities}
-                  checkConflicts={checkConflicts}
-                  conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
-                  useCarbonAction
-                />,
-              ]
-            }
-            headers={[
-              {name: t('common.entity.type'), key: 'entityType', defaultOrder: 'asc', hidden: true},
-              {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
-              t('common.description'),
-              t('home.contents'),
-              {name: t('common.entity.modifiedBy'), key: 'lastModifier', defaultOrder: 'asc'},
-              {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
-            ]}
-            rows={
-              entities &&
-              entities.map((entity) => {
-                const {
-                  id,
-                  entityType,
-                  currentUserRole,
-                  lastModified,
-                  lastModifier,
-                  name,
+            )
+          }
+          title={t('home.title')}
+          action={
+            isEditor && (
+              <CreateNewButton
+                size="lg"
+                kind="primary"
+                create={setCreating}
+                importEntity={() => fileInput.current.click()}
+              />
+            )
+          }
+          bulkActions={
+            isEditor && [
+              <BulkDeleter
+                type="delete"
+                deleteEntities={removeEntities}
+                checkConflicts={checkConflicts}
+                conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
+                useCarbonAction
+              />,
+            ]
+          }
+          headers={[
+            {name: t('common.entity.type'), key: 'entityType', defaultOrder: 'asc', hidden: true},
+            {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
+            t('common.description'),
+            t('home.contents'),
+            {name: t('common.entity.modifiedBy'), key: 'lastModifier', defaultOrder: 'asc'},
+            {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
+          ]}
+          rows={
+            entities &&
+            entities.map((entity) => {
+              const {
+                id,
+                entityType,
+                currentUserRole,
+                lastModified,
+                lastModifier,
+                name,
+                description,
+                data,
+                reportType,
+                combined,
+              } = entity;
+
+              const actions = [];
+              if (
+                currentUserRole === 'manager' ||
+                (currentUserRole === 'editor' && entityType !== 'collection')
+              ) {
+                actions.push(
+                  {
+                    icon: <Edit />,
+                    text: t('common.edit'),
+                    action: () => edit(entity),
+                  },
+                  {
+                    icon: <CopyFile />,
+                    text: t('common.copy'),
+                    action: () => setCopying(entity),
+                  },
+                  {
+                    icon: <TrashCan />,
+                    text: t('common.delete'),
+                    action: () => setDeleting(entity),
+                  }
+                );
+              }
+
+              if (currentUserRole === 'editor' && entityType !== 'collection') {
+                actions.push({
+                  icon: <Save />,
+                  text: t('common.export'),
+                  action: () => {
+                    window.location.href = `api/export/${entityType}/json/${
+                      entity.id
+                    }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
+                  },
+                });
+              }
+
+              return {
+                id,
+                entityType,
+                link: formatLink(id, entityType),
+                icon: getEntityIcon(entityType),
+                type: formatType(entityType, reportType, combined),
+                name,
+                meta: [
                   description,
-                  data,
-                  reportType,
-                  combined,
-                } = entity;
-
-                const actions = [];
-                if (
-                  currentUserRole === 'manager' ||
-                  (currentUserRole === 'editor' && entityType !== 'collection')
-                ) {
-                  actions.push(
-                    {
-                      icon: <Edit />,
-                      text: t('common.edit'),
-                      action: () => edit(entity),
-                    },
-                    {
-                      icon: <CopyFile />,
-                      text: t('common.copy'),
-                      action: () => setCopying(entity),
-                    },
-                    {
-                      icon: <TrashCan />,
-                      text: t('common.delete'),
-                      action: () => setDeleting(entity),
-                    }
-                  );
-                }
-
-                if (currentUserRole === 'editor' && entityType !== 'collection') {
-                  actions.push({
-                    icon: <Save />,
-                    text: t('common.export'),
-                    action: () => {
-                      window.location.href = `api/export/${entityType}/json/${
-                        entity.id
-                      }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
-                    },
-                  });
-                }
-
-                return {
-                  id,
-                  entityType,
-                  link: formatLink(id, entityType),
-                  icon: getEntityIcon(entityType),
-                  type: formatType(entityType, reportType, combined),
-                  name,
-                  meta: [
-                    description,
-                    formatSubEntities(data.subEntityCounts),
-                    lastModifier,
-                    format(parseISO(lastModified), 'PP'),
-                  ],
-                  actions,
-                };
-              })
-            }
-            sorting={sorting}
-            onChange={loadList}
-          />
-        )}
+                  formatSubEntities(data.subEntityCounts),
+                  lastModifier,
+                  format(parseISO(lastModified), 'PP'),
+                ],
+                actions,
+              };
+            })
+          }
+          sorting={sorting}
+          onChange={loadList}
+        />
         <Deleter
           entity={deleting}
           type={deleting && deleting.entityType}

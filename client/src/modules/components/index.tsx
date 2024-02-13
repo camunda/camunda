@@ -52,6 +52,7 @@ export {DefinitionSelection} from './DefinitionSelection';
 export {ReportRenderer} from './ReportRenderer';
 export {Loading} from './Loading';
 export {CarbonEntityList} from './CarbonEntityList';
+export {EmptyState} from './EmptyState';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

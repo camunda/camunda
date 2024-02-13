@@ -62,6 +62,25 @@ it('should show nothing if headers are empty', () => {
   expect(node).toBeEmptyRender();
 });
 
+it('should show an empty table if rows are empty', () => {
+  const node = shallow(<EntityList {...props} headers={['Name', 'Meta 1']} rows={[]} />);
+
+  expect(node.find('DataTable')).toExist();
+});
+
+it('should show provided empty state if rows are empty', () => {
+  const node = shallow(
+    <EntityList
+      {...props}
+      headers={['Name', 'Meta 1']}
+      rows={[]}
+      emptyStateComponent={<div className="emptyState" />}
+    />
+  );
+
+  expect(node.find('.emptyState')).toExist();
+});
+
 it('should disable the sorting if no sorting is applied', () => {
   const node = shallow(
     <EntityList {...props} headers={[{name: 'Name', key: 'name', defaultOrder: 'asc'}, 'Meta 1']} />

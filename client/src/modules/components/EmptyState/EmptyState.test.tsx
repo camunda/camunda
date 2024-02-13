@@ -21,7 +21,13 @@ it('should render properly', () => {
 
 it('should render actions', () => {
   const spy = jest.fn();
-  const node = shallow(<EmptyState actions={<button onClick={spy}>Click Me</button>} />);
+  const node = shallow(
+    <EmptyState
+      title="test"
+      description="test description"
+      actions={<button onClick={spy}>Click Me</button>}
+    />
+  );
 
   node.find('button').simulate('click');
 

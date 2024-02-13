@@ -214,15 +214,15 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(Common.confirmButton);
 
-  // await t.expect(Common.listItem('dashboard').visible).ok();
-  // await t.expect(Common.listItem('dashboard').textContent).contains('Sales Dashboard (copy)');
+  await t.expect(Common.listItem('dashboard').visible).ok();
+  await t.expect(Common.listItem('dashboard').textContent).contains('Sales Dashboard (copy)');
 
-  // await t.expect(Common.listItem('report').visible).ok();
-  // await t.expect(Common.listItem('report').textContent).contains('Invoice Evaluation count – Copy');
+  await t.expect(Common.listItem('report').visible).ok();
+  await t.expect(Common.listItem('report').textContent).contains('Invoice Evaluation count – Copy');
 
-  // // bulk deleting home entities
-  // await bulkDeleteAllItems(t);
-  // await t.expect(Common.listItem.exists).notOk();
+  // bulk deleting home entities
+  await bulkDeleteAllItems(t);
+  await t.expect(Common.listItem.exists).notOk();
 });
 
 test('multi definition selection', async (t) => {

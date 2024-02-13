@@ -8,14 +8,24 @@
 import {Component, createRef} from 'react';
 import {Redirect} from 'react-router-dom';
 import {parseISO} from 'date-fns';
-import {OverflowMenu, OverflowMenuItem, Stack, Tag} from '@carbon/react';
-import {Folder} from '@carbon/icons-react';
+import {
+  Button,
+  Column,
+  Grid,
+  OverflowMenu,
+  OverflowMenuItem,
+  Stack,
+  Tag,
+  TagSkeleton,
+  SkeletonText,
+  SkeletonIcon,
+} from '@carbon/react';
+import {CopyFile, Edit, Folder, Save, TrashCan} from '@carbon/icons-react';
 
 import {format} from 'dates';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {
-  EntityList,
   Deleter,
   BulkDeleter,
   Tooltip,
@@ -24,8 +34,10 @@ import {
   PageTitle,
   Tabs,
   KpiCreationModal,
+  CarbonEntityList,
+  EmptyState,
 } from 'components';
-import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
+import {formatters, loadEntity, updateEntity, checkDeleteConflict, getEntityIcon} from 'services';
 import {showError, addNotification} from 'notifications';
 import {isUserSearchAvailable} from 'config';
 
@@ -145,228 +157,252 @@ export class Collection extends Component {
     const hasEditRights = collection && collection.currentUserRole !== 'viewer';
 
     return (
-      <div className="Collection">
+      <Grid className="Collection" fullWidth>
         <PageTitle pageName={t('common.collection.label')} resourceName={collection?.name} />
-        <Stack gap={6} className="header" orientation="horizontal">
-          <Folder size="24" />
-          {collection && (
-            <>
-              <Tooltip content={collection.name} position="bottom" overflowOnly>
-                <span className="text">{collection.name}</span>
-              </Tooltip>
-              {collection.currentUserRole === 'manager' && (
-                <OverflowMenu>
-                  <OverflowMenuItem
-                    itemText={t('common.edit')}
-                    onClick={this.startEditingCollection}
-                  />
-                  <OverflowMenuItem
-                    itemText={t('common.copy')}
-                    onClick={() => this.setState({copying: collectionEntity})}
-                  />
-                  <OverflowMenuItem
-                    isDelete
-                    itemText={t('common.delete')}
-                    onClick={() => this.setState({deleting: collectionEntity})}
-                  />
-                </OverflowMenu>
+        <Column sm={4} md={8} lg={16}>
+          <Stack className="layoutContainer" gap={6} orientation="vertical">
+            <Stack gap={6} className="header" orientation="horizontal">
+              <Folder size="24" />
+              {collection && (
+                <>
+                  <Tooltip content={collection.name} position="bottom" overflowOnly>
+                    <span className="text">{collection.name}</span>
+                  </Tooltip>
+                  {collection.currentUserRole === 'manager' && (
+                    <OverflowMenu>
+                      <OverflowMenuItem
+                        itemText={t('common.edit')}
+                        onClick={this.startEditingCollection}
+                      />
+                      <OverflowMenuItem
+                        itemText={t('common.copy')}
+                        onClick={() => this.setState({copying: collectionEntity})}
+                      />
+                      <OverflowMenuItem
+                        isDelete
+                        itemText={t('common.delete')}
+                        onClick={() => this.setState({deleting: collectionEntity})}
+                      />
+                    </OverflowMenu>
+                  )}
+                  <Tag className="role" type="blue">
+                    {formatRole(collection.currentUserRole)}
+                  </Tag>
+                </>
               )}
-              <Tag className="role" type="blue">
-                {formatRole(collection.currentUserRole)}
-              </Tag>
-            </>
-          )}
-        </Stack>
-        <div className="content">
-          <Tabs value={currentTab}>
-            <Tabs.Tab
-              key="home"
-              value="home"
-              title={t('home.collectionTitleWithAmpersand')}
-              onClick={() => this.props.history.push('.')}
-            >
-              <EntityList
-                name={t('home.collectionTitle')}
-                action={(bulkActive) =>
-                  hasEditRights && (
-                    <CreateNewButton
-                      kind={bulkActive ? 'tertiary' : 'primary'}
-                      collection={collection.id}
-                      importEntity={() => this.fileInput.current.click()}
-                      create={(type) => this.setState({creating: type})}
-                    />
-                  )
-                }
-                bulkActions={
-                  hasEditRights && [
-                    <BulkDeleter
-                      type="delete"
-                      deleteEntities={async (selected) =>
-                        await removeEntities(selected, collection)
-                      }
-                      checkConflicts={async (selected) =>
-                        await checkConflicts(selected, collection)
-                      }
-                      conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
-                    />,
-                  ]
-                }
-                empty={
-                  <>
-                    {t('home.empty')}
-                    {!hasEditRights && (
-                      <>
-                        <br />
-                        {t('home.contactManager')}
-                      </>
-                    )}
-                  </>
-                }
-                isLoading={isLoading}
-                sorting={sorting}
-                onChange={this.loadEntities}
-                columns={[
-                  {
-                    name: t('common.entity.type'),
-                    key: 'entityType',
-                    defaultOrder: 'asc',
-                    hidden: true,
-                  },
-                  {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
-                  {name: t('common.description')},
-                  t('home.contents'),
-                  {name: t('common.entity.modifiedBy'), key: 'lastModifier', defaultOrder: 'asc'},
-                  {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
-                ]}
-                data={
-                  entities &&
-                  entities.map((entity) => {
-                    const {
-                      id,
-                      entityType,
-                      currentUserRole,
-                      lastModified,
-                      lastModifier,
-                      name,
-                      description,
-                      data,
-                      reportType,
-                      combined,
-                    } = entity;
-
-                    const actions = [
-                      {
-                        icon: 'copy-document',
-                        text: t('common.copy'),
-                        action: () => this.setState({copying: entity}),
-                      },
-                    ];
-
-                    if (currentUserRole === 'editor') {
-                      actions.unshift({
-                        icon: 'edit',
-                        text: t('common.edit'),
-                        action: () =>
-                          this.setState({redirect: formatLink(id, entityType) + 'edit'}),
-                      });
-
-                      actions.push(
-                        {
-                          icon: 'delete',
-                          text: t('common.delete'),
-                          action: () => this.setState({deleting: entity}),
-                        },
-                        {
-                          icon: 'save',
-                          text: t('common.export'),
-                          action: () => {
-                            window.location.href = `api/export/${entityType}/json/${
-                              entity.id
-                            }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
-                          },
-                        }
-                      );
-                    }
-
-                    return {
-                      id,
-                      entityType,
-                      className: entityType,
-                      link: formatLink(id, entityType),
-                      icon: entityType,
-                      type: formatType(entityType, reportType, combined),
-                      name,
-                      meta: [
-                        description,
-                        formatSubEntities(data.subEntityCounts),
-                        lastModifier,
-                        format(parseISO(lastModified), 'PP'),
-                      ],
-                      actions,
-                    };
-                  })
-                }
-              />
-            </Tabs.Tab>
-            {userSearchAvailable && collection && (
-              <>
-                <Tabs.Tab
-                  key="alerts"
-                  value="alerts"
-                  title={t('alert.label-plural')}
-                  onClick={() => this.props.history.push('alerts')}
-                >
-                  <AlertList
-                    readOnly={collection.currentUserRole === 'viewer'}
-                    collection={collection.id}
-                  />
-                </Tabs.Tab>
-                <Tabs.Tab
-                  key="users"
-                  value="users"
-                  title={t('common.user.label-plural')}
-                  onClick={() => this.props.history.push('users')}
-                >
-                  <UserList
-                    readOnly={collection.currentUserRole !== 'manager'}
-                    onChange={this.loadCollection}
-                    collection={collection.id}
-                  />
-                </Tabs.Tab>
-              </>
-            )}
-            {collection && (
+              {!collection && isLoading && (
+                <>
+                  <SkeletonText className="skeletonText" heading width="200px" />
+                  <SkeletonIcon />
+                  <TagSkeleton />
+                </>
+              )}
+            </Stack>
+            <Tabs value={currentTab} isLoading={!collection && isLoading}>
               <Tabs.Tab
-                key="sources"
-                value="sources"
-                title={t('home.sources.title')}
-                onClick={() => this.props.history.push('sources')}
+                key="home"
+                value="home"
+                title={t('home.collectionTitleWithAmpersand')}
+                onClick={() => this.props.history.push('.')}
               >
-                {collection && (
-                  <SourcesList
-                    onChange={this.loadEntities}
-                    readOnly={collection.currentUserRole !== 'manager'}
-                    collection={collection.id}
-                  />
-                )}
+                <CarbonEntityList
+                  emptyStateComponent={
+                    hasEditRights ? (
+                      <EmptyState
+                        title={t('home.emptyState.title')}
+                        description={t('home.emptyState.description')}
+                        icon="dashboard-optimize-accent"
+                        actions={
+                          <>
+                            <Button
+                              size="md"
+                              onClick={() => this.setState({creatingDashboard: true})}
+                            >
+                              {t('dashboard.createNew')}
+                            </Button>
+                            <CreateNewButton
+                              collection={collection.id}
+                              create={(type) => this.setState({creating: type})}
+                              importEntity={() => this.fileInput.current.click()}
+                            />
+                          </>
+                        }
+                      />
+                    ) : (
+                      <EmptyState title={t('home.empty')} description={t('home.contactManager')} />
+                    )
+                  }
+                  action={
+                    hasEditRights && (
+                      <CreateNewButton
+                        kind="primary"
+                        size="lg"
+                        collection={collection.id}
+                        create={(type) => this.setState({creating: type})}
+                        importEntity={() => this.fileInput.current.click()}
+                      />
+                    )
+                  }
+                  bulkActions={
+                    hasEditRights && [
+                      <BulkDeleter
+                        type="delete"
+                        deleteEntities={async (selected) =>
+                          await removeEntities(selected, collection)
+                        }
+                        checkConflicts={async (selected) =>
+                          await checkConflicts(selected, collection)
+                        }
+                        conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
+                        useCarbonAction
+                      />,
+                    ]
+                  }
+                  isLoading={isLoading}
+                  sorting={sorting}
+                  onChange={this.loadEntities}
+                  headers={[
+                    {
+                      name: t('common.entity.type'),
+                      key: 'entityType',
+                      defaultOrder: 'asc',
+                      hidden: true,
+                    },
+                    {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
+                    t('common.description'),
+                    t('home.contents'),
+                    {name: t('common.entity.modifiedBy'), key: 'lastModifier', defaultOrder: 'asc'},
+                    {
+                      name: t('common.entity.modified'),
+                      key: 'lastModified',
+                      defaultOrder: 'desc',
+                    },
+                  ]}
+                  rows={
+                    entities &&
+                    entities.map((entity) => {
+                      const {
+                        id,
+                        entityType,
+                        currentUserRole,
+                        lastModified,
+                        lastModifier,
+                        name,
+                        description,
+                        data,
+                        reportType,
+                        combined,
+                      } = entity;
+                      const actions = [
+                        {
+                          icon: <CopyFile />,
+                          text: t('common.copy'),
+                          action: () => this.setState({copying: entity}),
+                        },
+                      ];
+                      if (currentUserRole === 'editor') {
+                        actions.unshift({
+                          icon: <Edit />,
+                          text: t('common.edit'),
+                          action: () =>
+                            this.setState({redirect: formatLink(id, entityType) + 'edit'}),
+                        });
+                        actions.push(
+                          {
+                            icon: <TrashCan />,
+                            text: t('common.delete'),
+                            action: () => this.setState({deleting: entity}),
+                          },
+                          {
+                            icon: <Save />,
+                            text: t('common.export'),
+                            action: () => {
+                              window.location.href = `api/export/${entityType}/json/${
+                                entity.id
+                              }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
+                            },
+                          }
+                        );
+                      }
+                      return {
+                        id,
+                        entityType,
+                        link: formatLink(id, entityType),
+                        icon: getEntityIcon(entityType),
+                        type: formatType(entityType, reportType, combined),
+                        name,
+                        meta: [
+                          description,
+                          formatSubEntities(data.subEntityCounts),
+                          lastModifier,
+                          format(parseISO(lastModified), 'PP'),
+                        ],
+                        actions,
+                      };
+                    })
+                  }
+                />
               </Tabs.Tab>
-            )}
-          </Tabs>
-        </div>
-        {editingCollection && (
-          <CollectionModal
-            title={t('common.collection.modal.title.edit')}
-            initialName={collection.name}
-            confirmText={t('common.collection.modal.editBtn')}
-            onClose={this.stopEditingCollection}
-            onConfirm={async (name) => {
-              await updateEntity('collection', collection.id, {name});
-              this.loadCollection();
-              this.stopEditingCollection();
-              refreshBreadcrumbs();
-            }}
-          />
-        )}
+              {userSearchAvailable && collection && (
+                <>
+                  <Tabs.Tab
+                    key="alerts"
+                    value="alerts"
+                    title={t('alert.label-plural')}
+                    onClick={() => this.props.history.push('alerts')}
+                  >
+                    <AlertList
+                      readOnly={collection.currentUserRole === 'viewer'}
+                      collection={collection.id}
+                    />
+                  </Tabs.Tab>
+                  <Tabs.Tab
+                    key="users"
+                    value="users"
+                    title={t('common.user.label-plural')}
+                    onClick={() => this.props.history.push('users')}
+                  >
+                    <UserList
+                      readOnly={collection.currentUserRole !== 'manager'}
+                      onChange={this.loadCollection}
+                      collection={collection.id}
+                    />
+                  </Tabs.Tab>
+                </>
+              )}
+              {collection && (
+                <Tabs.Tab
+                  key="sources"
+                  value="sources"
+                  title={t('home.sources.title')}
+                  onClick={() => this.props.history.push('sources')}
+                >
+                  {collection && (
+                    <SourcesList
+                      onChange={this.loadEntities}
+                      readOnly={collection.currentUserRole !== 'manager'}
+                      collection={collection.id}
+                    />
+                  )}
+                </Tabs.Tab>
+              )}
+            </Tabs>
+          </Stack>
+          {editingCollection && (
+            <CollectionModal
+              title={t('common.collection.modal.title.edit')}
+              initialName={collection.name}
+              confirmText={t('common.collection.modal.editBtn')}
+              onClose={this.stopEditingCollection}
+              onConfirm={async (name) => {
+                await updateEntity('collection', collection.id, {name});
+                this.loadCollection();
+                this.stopEditingCollection();
+                refreshBreadcrumbs();
+              }}
+            />
+          )}
+        </Column>
         <Deleter
           entity={deleting}
           type={deleting && deleting.entityType}
@@ -415,7 +451,7 @@ export class Collection extends Component {
           accept=".json"
           ref={this.fileInput}
         />
-      </div>
+      </Grid>
     );
   }
 }

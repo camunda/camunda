@@ -103,8 +103,8 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await t.click(e.collectionLink);
 
-  await t.expect(Common.reportItem.visible).ok();
-  await t.expect(Common.dashboardItem.visible).ok();
+  await t.expect(Common.listItem('report').visible).ok();
+  await t.expect(Common.listItem('dashboard').visible).ok();
 });
 
 test('create a report and add it to the Dashboard', async (t) => {
@@ -569,8 +569,8 @@ test('copy instant preview dashboard', async (t) => {
   await t.expect(Common.listItem('collection').textContent).contains('Analysis Testing Process');
 
   await t.click(Common.listItemLink('collection'));
-  await t.expect(Common.dashboardItem.count).eql(1);
-  await t.expect(Common.dashboardItem.textContent).contains('Process dashboard');
+  await t.expect(Common.listItem('dashboard').count).eql(1);
+  await t.expect(Common.listItem('dashboard').textContent).contains('Process dashboard');
 
   // Create another copy to check if only one collection is created
   await t.click(e.dashboardsLink);
@@ -583,9 +583,9 @@ test('copy instant preview dashboard', async (t) => {
 
   await u.gotoOverview(t);
   await t.click(Common.listItemLink('collection'));
-  await t.expect(Common.dashboardItem.count).eql(2);
-  await t.expect(Common.dashboardItem.nth(0).textContent).contains('New Name');
-  await t.expect(Common.dashboardItem.nth(1).textContent).contains('Process dashboard');
+  await t.expect(Common.listItem('dashboard').count).eql(2);
+  await t.expect(Common.listItem('dashboard').nth(0).textContent).contains('New Name');
+  await t.expect(Common.listItem('dashboard').nth(1).textContent).contains('Process dashboard');
 
   // Create a new collection if the first one was renamed
   await t.click(Collection.collectionContextMenu);

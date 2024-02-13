@@ -55,9 +55,9 @@ test('create a collection and entities inside it', async (t) => {
   await save(t);
   await t.click(e.collectionBreadcrumb);
 
-  await t.expect(Common.dashboardItem.visible).ok();
-  await t.expect(Common.dashboardItem.textContent).contains('Blank dashboard');
-  await t.expect(Common.dashboardItem.textContent).contains(description);
+  await t.expect(Common.listItem('dashboard').visible).ok();
+  await t.expect(Common.listItem('dashboard').textContent).contains('Blank dashboard');
+  await t.expect(Common.listItem('dashboard').textContent).contains(description);
 });
 
 test('renaming a collection', async (t) => {
@@ -157,7 +157,7 @@ test('user permissions', async (t) => {
   await t.expect(e.addButton.exists).notOk();
 
   await t.click(e.entityTab);
-  await t.click(Common.dashboardItem);
+  await t.click(Common.listItemLink('dashboard', true));
 
   await t.expect(Common.editButton.exists).notOk();
 

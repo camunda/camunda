@@ -36,11 +36,12 @@ export const contextMenu = (entity) => entity.find('button.cds--overflow-menu');
 export const selectAllCheckbox = Selector('thead .cds--checkbox--inline');
 export const bulkMenu = Selector('.bulkMenu');
 export const bulkDelete = Selector('.cds--action-list button').withText('Delete');
-export const listItem = (type) =>
-  Selector('.CarbonEntityList tbody tr td:nth-child(2) span')
+export const listItem = (type, viewerMode = false) =>
+  Selector(`.CarbonEntityList tbody tr td:nth-child(${viewerMode ? 1 : 2}) span`)
     .withText(new RegExp(type, 'i'))
     .parent('tr');
-export const listItemLink = (type) => listItem(type).find('td:nth-child(2) a');
+export const listItemLink = (type, viewerMode = false) =>
+  listItem(type, viewerMode).find(`td:nth-child(${viewerMode ? 1 : 2}) a`);
 export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
 export const newReportOption = Selector('.cds--menu--shown .cds--menu-item[aria-haspopup=true]');
 export const templateModalProcessField = Selector('.Modal .DefinitionSelection input');

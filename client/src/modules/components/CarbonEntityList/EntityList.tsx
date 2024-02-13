@@ -26,6 +26,7 @@ import {
   MenuItemSelectable,
   DataTableSkeleton,
   Stack,
+  Loading,
 } from '@carbon/react';
 import {MenuButton} from '@camunda/camunda-optimize-composite-components';
 
@@ -74,6 +75,7 @@ interface EntityListProps {
   isLoading?: boolean;
   sorting?: {key: string; order: 'asc' | 'desc'};
   onChange: (key?: string, order?: 'asc' | 'desc') => void;
+  emptyStateComponent?: ReactNode;
 }
 
 export default function EntityList({
@@ -85,13 +87,21 @@ export default function EntityList({
   isLoading,
   sorting,
   onChange,
+  emptyStateComponent,
 }: EntityListProps) {
-  if (
-    !Array.isArray(rows) ||
-    !Array.isArray(headers) ||
-    headers?.length <= 0 ||
-    rows?.length <= 0
-  ) {
+  if ((!Array.isArray(rows) || rows?.length === 0) && emptyStateComponent) {
+    if (isLoading) {
+      return (
+        <div className="CarbonEntityList">
+          <Loading className="loadingIndicator" withOverlay={false} />
+        </div>
+      );
+    }
+
+    return emptyStateComponent;
+  }
+
+  if (!Array.isArray(rows) || !Array.isArray(headers) || headers?.length <= 0) {
     return null;
   }
 

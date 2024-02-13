@@ -8,7 +8,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {ReportTemplateModal, KpiCreationModal} from 'components';
+import {ReportTemplateModal, KpiCreationModal, CarbonEntityList} from 'components';
 import {loadEntities} from 'services';
 
 import {Home} from './Home';
@@ -102,43 +102,7 @@ it('should pass loading state to entitylist', async () => {
   expect(node.find('EntityList').prop('isLoading')).toBe(false);
 });
 
-it('should show loading indicator before displaying empty state', async () => {
-  loadEntities.mockReturnValueOnce([]);
-  const node = shallow(
-    <Home
-      {...props}
-      mightFail={async (data, cb, err, final) => {
-        cb(await data);
-        final();
-      }}
-    />
-  );
-
-  runAllEffects();
-
-  expect(node.find('Loading')).toExist();
-});
-
-it('should show empty state component', async () => {
-  loadEntities.mockReturnValueOnce([]);
-  const node = shallow(<Home {...props} />);
-
-  runAllEffects();
-
-  await flushPromises();
-
-  const emptyState = node.find('EmptyState');
-
-  expect(emptyState.prop('title')).toBe('Start by creating a dashboard');
-  expect(emptyState.prop('description')).toBe(
-    'Click Create New Dashboard to get insights into business processes'
-  );
-  expect(emptyState.prop('icon')).toBe('dashboard-optimize-accent');
-
-  expect(node.find('EntityList')).not.toExist();
-});
-
-it('should show entity list component when user is not editor and there no entities', async () => {
+it('should not pass empty state component if user is not an editor', async () => {
   loadEntities.mockReturnValueOnce([]);
   const node = shallow(<Home {...props} user={{name: 'John Doe', authorizations: []}} />);
 
@@ -146,8 +110,7 @@ it('should show entity list component when user is not editor and there no entit
 
   await flushPromises();
 
-  expect(node.find('EntityList')).toExist();
-  expect(node.find('EmptyState')).not.toExist();
+  expect(node.find(CarbonEntityList).prop('emptyStateComponent')).toBe(false);
 });
 
 it('should hide edit options for read only users', () => {
