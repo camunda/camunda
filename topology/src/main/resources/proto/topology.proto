@@ -54,6 +54,7 @@ message TopologyChangeOperation {
     MemberLeaveOperation memberLeave = 5;
     PartitionReconfigurePriorityOperation partitionReconfigurePriority = 6;
     PartitionForceReconfigureOperation partitionForceReconfigure = 7;
+    MemberRemoveOperation memberRemove = 8;
   }
 }
 
@@ -84,6 +85,10 @@ message PartitionForceReconfigureOperation {
 message MemberJoinOperation {}
 
 message MemberLeaveOperation {}
+
+message MemberRemoveOperation {
+  string memberToRemove = 1;
+}
 
 enum State {
   UNKNOWN = 0;

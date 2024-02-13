@@ -35,6 +35,7 @@ import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -311,6 +312,11 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
                   .addAllMembers(
                       forceReconfigureOperation.members().stream().map(MemberId::id).toList())
                   .build());
+      case final MemberRemoveOperation memberRemoveOperation ->
+          builder.setMemberRemove(
+              Topology.MemberRemoveOperation.newBuilder()
+                  .setMemberToRemove(memberRemoveOperation.memberToRemove().id())
+                  .build());
       default ->
           throw new IllegalArgumentException(
               "Unknown operation type: " + operation.getClass().getSimpleName());
@@ -392,6 +398,10 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
           topologyChangeOperation.getPartitionForceReconfigure().getMembersList().stream()
               .map(MemberId::from)
               .toList());
+    } else if (topologyChangeOperation.hasMemberRemove()) {
+      return new MemberRemoveOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          MemberId.from(topologyChangeOperation.getMemberRemove().getMemberToRemove()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any

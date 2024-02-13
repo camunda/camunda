@@ -32,6 +32,16 @@ public sealed interface TopologyChangeOperation {
    */
   record MemberLeaveOperation(MemberId memberId) implements TopologyChangeOperation {}
 
+  /**
+   * Operation to remove a member from the ClusterTopology. This operation is used to force remove a
+   * (unreachable) member.
+   *
+   * @param memberId the id of the member that applies this operations
+   * @param memberToRemove the id of the member to remove
+   */
+  record MemberRemoveOperation(MemberId memberId, MemberId memberToRemove)
+      implements TopologyChangeOperation {}
+
   sealed interface PartitionChangeOperation extends TopologyChangeOperation {
     int partitionId();
 
