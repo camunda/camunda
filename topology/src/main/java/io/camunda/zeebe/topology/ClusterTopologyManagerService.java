@@ -91,8 +91,7 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
           new TopologyRequestServer(
               communicationService,
               new ProtoBufSerializer(),
-              new TopologyManagementRequestsHandler(topologyChangeCoordinator, managerActor),
-              managerActor);
+              new TopologyManagementRequestsHandler(topologyChangeCoordinator, managerActor));
     }
     clusterTopologyManager.setTopologyGossiper(clusterTopologyGossiper::updateClusterTopology);
   }

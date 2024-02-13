@@ -72,8 +72,7 @@ final class TopologyManagementApiTest {
             coordinator.getCommunicationService(),
             new ProtoBufSerializer(),
             new TopologyManagementRequestsHandler(
-                recordingCoordinator, new TestConcurrencyControl()),
-            new TestConcurrencyControl());
+                recordingCoordinator, new TestConcurrencyControl()));
 
     requestServer.start();
   }
