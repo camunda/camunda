@@ -49,6 +49,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Applies state changes from events to the {@link MutableProcessingState}.
@@ -371,7 +372,22 @@ public final class EventAppliers implements EventApplier {
 
   <I extends Intent> void register(
       final I intent, final int version, final TypedEventApplier<I, ?> applier) {
-    mapping.computeIfAbsent(intent, unused -> new HashMap<>()).put(version, applier);
+    Objects.requireNonNull(intent, "Intent must not be null");
+    Objects.requireNonNull(applier, "Applier must not be null");
+    if (version < 1) {
+      throw new IllegalArgumentException("Version must be greater than 0");
+    }
+    if (!intent.isEvent()) {
+      throw new IllegalArgumentException("Only event intents can be registered");
+    }
+
+    final var previousApplier =
+        mapping.computeIfAbsent(intent, unused -> new HashMap<>()).putIfAbsent(version, applier);
+    if (previousApplier != null) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Applier for intent '%s' and version '%d' is already registered", intent, version));
+    }
   }
 
   @Override
