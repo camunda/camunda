@@ -22,6 +22,7 @@ import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.camunda.optimize.test.repository.TestIndexRepository;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
@@ -77,6 +78,8 @@ public abstract class DatabaseTestService {
   public abstract <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type);
 
   public abstract DatabaseClient getDatabaseClient();
+
+  public abstract TestIndexRepository getTestIndexRepository();
 
   // TODO OPT-7455 - remove this coupling to the ES client from the abstract test service
   public abstract OptimizeElasticsearchClient getOptimizeElasticsearchClient();

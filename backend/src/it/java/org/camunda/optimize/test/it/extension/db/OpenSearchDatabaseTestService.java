@@ -38,6 +38,8 @@ import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.camunda.optimize.test.repository.TestIndexRepository;
+import org.camunda.optimize.test.repository.TestIndexRepositoryOS;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
 import org.opensearch.client.json.JsonData;
@@ -87,16 +89,23 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   private String opensearchDatabaseVersion;
 
   private OptimizeOpenSearchClient prefixAwareOptimizeOpenSearchClient;
+  private TestIndexRepository testIndexRepository;
 
   public OpenSearchDatabaseTestService(final String customIndexPrefix,
                                        final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
     initOsClient();
+    this.testIndexRepository = new TestIndexRepositoryOS(prefixAwareOptimizeOpenSearchClient);
   }
 
   @Override
   public DatabaseClient getDatabaseClient() {
     return prefixAwareOptimizeOpenSearchClient;
+  }
+
+  @Override
+  public TestIndexRepository getTestIndexRepository() {
+    return testIndexRepository;
   }
 
   @Override

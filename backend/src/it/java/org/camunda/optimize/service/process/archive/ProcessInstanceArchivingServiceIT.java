@@ -8,14 +8,11 @@ package org.camunda.optimize.service.process.archive;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
-import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceArchiveIndexES;
 import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.client.indices.GetIndexRequest;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceArchiveIndexES;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -86,14 +83,11 @@ public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
 
   @SneakyThrows
   private List<String> getAllProcessInstanceArchiveIndexNames() {
-    return Arrays.stream(
-        databaseIntegrationTestExtension.getOptimizeElasticsearchClient().getHighLevelClient()
-          .indices().get(
-            new GetIndexRequest("*"),
-            databaseIntegrationTestExtension.getOptimizeElasticsearchClient().requestOptions()
-          ).getIndices())
+    return databaseIntegrationTestExtension.getTestIndexRepository()
+      .getAllIndexNames()
+      .stream()
       .filter(index -> index.contains(DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX))
-      .collect(Collectors.toList());
+      .toList();
   }
 
 }
