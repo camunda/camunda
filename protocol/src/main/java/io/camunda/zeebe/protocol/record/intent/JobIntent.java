@@ -102,6 +102,23 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   }
 
   @Override
+  public boolean isEvent() {
+    switch (this) {
+      case CREATED:
+      case COMPLETED:
+      case TIMED_OUT:
+      case FAILED:
+      case RETRIES_UPDATED:
+      case CANCELED:
+      case ERROR_THROWN:
+      case RECURRED_AFTER_BACKOFF:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  @Override
   public boolean shouldBanInstanceOnError() {
     return shouldBanInstance;
   }
