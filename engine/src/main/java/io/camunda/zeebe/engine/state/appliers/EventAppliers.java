@@ -329,4 +329,8 @@ public final class EventAppliers implements EventApplier {
 
     applierForIntent.applyState(key, value);
   }
+
+  public TypedEventApplier getApplierForIntent(final Intent intent) {
+    return mapping.get(intent);
+  }
 }
