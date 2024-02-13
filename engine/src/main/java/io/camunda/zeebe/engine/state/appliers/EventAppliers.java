@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.HashMap;
 import java.util.Map;
+
 /**
  * Applies state changes from events to the {@link MutableProcessingState}.
  *
@@ -268,5 +269,9 @@ public final class EventAppliers implements EventApplier {
       throw new NoApplierForIntent(intent);
     }
     applierForIntent.applyState(key, value);
+  }
+
+  public TypedEventApplier getApplierForIntent(final Intent intent) {
+    return mapping.get(intent);
   }
 }
