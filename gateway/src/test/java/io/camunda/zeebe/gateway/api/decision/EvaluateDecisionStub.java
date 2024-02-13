@@ -66,7 +66,9 @@ public class EvaluateDecisionStub
   @Override
   public BrokerResponse<DecisionEvaluationRecord> handle(
       final BrokerEvaluateDecisionRequest request) throws Exception {
-    return new BrokerResponse<>(DECISION_RECORD, request.getPartitionId(), request.getKey());
+    // In practise the decision instance key is generated newly by the broker
+    final long decisionInstanceKey = DECISION_RECORD.getDecisionKey() + 1;
+    return new BrokerResponse<>(DECISION_RECORD, request.getPartitionId(), decisionInstanceKey);
   }
 
   private static DirectBuffer toMessagePack(final String json) {

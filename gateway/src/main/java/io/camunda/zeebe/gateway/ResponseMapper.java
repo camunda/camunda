@@ -201,6 +201,7 @@ public final class ResponseMapper {
 
     final EvaluateDecisionResponse.Builder responseBuilder =
         EvaluateDecisionResponse.newBuilder()
+            .setDecisionInstanceKey(key)
             .setDecisionId(brokerResponse.getDecisionId())
             .setDecisionKey(brokerResponse.getDecisionKey())
             .setDecisionName(brokerResponse.getDecisionName())

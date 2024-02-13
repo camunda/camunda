@@ -444,6 +444,11 @@
                 "id": 11,
                 "name": "tenantId",
                 "type": "string"
+              },
+              {
+                "id": 12,
+                "name": "decisionInstanceKey",
+                "type": "int64"
               }
             ]
           },
