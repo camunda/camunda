@@ -43,6 +43,7 @@ public final class TopologyRequestServer implements AutoCloseable {
     registerScaleRequestHandler();
     registerGetTopologyQueryHandler();
     registerTopologyCancelHandler();
+    registerForceScaleDownHandler();
   }
 
   @Override
@@ -113,6 +114,14 @@ public final class TopologyRequestServer implements AutoCloseable {
         TopologyRequestTopics.SCALE_MEMBERS.topic(),
         serializer::decodeScaleRequest,
         request -> mapResponse(topologyManagementApi.scaleMembers(request)),
+        this::encodeResponse);
+  }
+
+  private void registerForceScaleDownHandler() {
+    communicationService.replyTo(
+        TopologyRequestTopics.FORCE_SCALE_DOWN.topic(),
+        serializer::decodeScaleRequest,
+        request -> mapResponse(topologyManagementApi.forceScaleDown(request)),
         this::encodeResponse);
   }
 

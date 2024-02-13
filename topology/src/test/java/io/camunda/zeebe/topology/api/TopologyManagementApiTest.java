@@ -25,6 +25,8 @@ import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import java.util.Collection;
@@ -40,12 +42,15 @@ import org.junit.jupiter.api.Test;
 // communicationService to ensure that request subscription and handling is done correctly.
 final class TopologyManagementApiTest {
   private TopologyManagementRequestSender clientApi;
-
   private final RecordingChangeCoordinator recordingCoordinator = new RecordingChangeCoordinator();
   private TopologyRequestServer requestServer;
   private AtomixCluster gateway;
   private AtomixCluster coordinator;
   private final ClusterTopology initialTopology = ClusterTopology.init();
+  private final MemberId id0 = MemberId.from("0");
+  private final MemberId id1 = MemberId.from("1");
+  private final MemberId id2 = MemberId.from("2");
+  private final MemberId id3 = MemberId.from("3");
 
   @BeforeEach
   void setup() {
@@ -72,7 +77,7 @@ final class TopologyManagementApiTest {
             coordinator.getCommunicationService(),
             new ProtoBufSerializer(),
             new TopologyManagementRequestsHandler(
-                recordingCoordinator, new TestConcurrencyControl()));
+                recordingCoordinator, id0, new TestConcurrencyControl()));
 
     requestServer.start();
   }
@@ -219,6 +224,34 @@ final class TopologyManagementApiTest {
             new MemberJoinOperation(MemberId.from("2")),
             new PartitionJoinOperation(MemberId.from("2"), 2, 1),
             new PartitionLeaveOperation(MemberId.from("1"), 2));
+  }
+
+  @Test
+  void shouldForceScaleDown() {
+    // given
+    final var request = new TopologyManagementRequest.ScaleRequest(Set.of(id0, id2), false);
+    final ClusterTopology currentTopology =
+        ClusterTopology.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()))
+            .addMember(id1, MemberState.initializeAsActive(Map.of()))
+            .addMember(id2, MemberState.initializeAsActive(Map.of()))
+            .addMember(id3, MemberState.initializeAsActive(Map.of()))
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1)))
+            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2)))
+            .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1)))
+            .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2)));
+    recordingCoordinator.setCurrentTopology(currentTopology);
+
+    // when
+    final var changeStatus = clientApi.forceScaleDown(request).join().get();
+
+    // then
+    assertThat(changeStatus.plannedChanges())
+        .containsExactlyInAnyOrder(
+            new PartitionForceReconfigureOperation(id0, 1, List.of(id0)),
+            new PartitionForceReconfigureOperation(id2, 2, List.of(id2)),
+            new MemberRemoveOperation(id0, id1),
+            new MemberRemoveOperation(id0, id3));
   }
 
   @Test
