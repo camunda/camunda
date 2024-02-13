@@ -53,4 +53,15 @@ public enum DeploymentDistributionIntent implements Intent {
   public short value() {
     return value;
   }
+
+  @Override
+  public boolean isEvent() {
+    switch (this) {
+      case COMPLETED:
+      case DISTRIBUTING:
+        return true;
+      default:
+        return false;
+    }
+  }
 }
