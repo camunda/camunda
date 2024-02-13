@@ -10,13 +10,16 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceArchiveIndexES;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+@Tag(OPENSEARCH_PASSING)
 public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
 
   @Test
@@ -42,6 +45,7 @@ public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
     }
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void processInstanceArchiverCreatesMissingArchiveIndices() {
     // given
