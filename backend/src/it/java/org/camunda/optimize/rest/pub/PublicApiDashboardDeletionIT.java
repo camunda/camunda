@@ -12,9 +12,10 @@ import org.junit.jupiter.api.Test;
 import jakarta.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class PublicApiDashboardDeletionIT extends AbstractPlatformIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 

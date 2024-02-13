@@ -19,6 +19,7 @@ import jakarta.ws.rs.core.Response;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_RESOURCE_PATH;
@@ -35,7 +36,7 @@ import static org.camunda.optimize.rest.SharingRestService.REPORT_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.SHARE_PATH;
 
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class SharingPublicReaderRestServiceIT extends AbstractSharingIT {
 
   private static final String EXTERNAL_API_PATH = REST_API_PATH + EXTERNAL_SUB_PATH;

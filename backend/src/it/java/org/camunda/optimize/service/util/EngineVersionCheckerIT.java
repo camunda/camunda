@@ -13,7 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.event.Level;
 
-@Tag("openSearchPassing")
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
+@Tag(OPENSEARCH_PASSING)
 public class EngineVersionCheckerIT extends AbstractPlatformIT {
 
   @RegisterExtension

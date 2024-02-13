@@ -17,9 +17,10 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class ProcessVariableRestServiceIT extends AbstractPlatformIT {
 
   @Test

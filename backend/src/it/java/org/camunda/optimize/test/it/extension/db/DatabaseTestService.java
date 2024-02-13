@@ -212,7 +212,7 @@ public abstract class DatabaseTestService {
   }
 
   protected static ClientAndServer initMockServer(final DatabaseConnectionNodeConfiguration dbConfig) {
-    log.debug("Setting up DB MockServer on port {}", IntegrationTestConfigurationUtil.getDatabaseMockServerPort());
+    log.info("Setting up DB MockServer on port {}", IntegrationTestConfigurationUtil.getDatabaseMockServerPort());
     return MockServerUtil.createProxyMockServer(
       dbConfig.getHost(),
       dbConfig.getHttpPort(),

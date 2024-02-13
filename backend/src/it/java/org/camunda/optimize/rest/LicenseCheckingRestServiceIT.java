@@ -25,11 +25,12 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class LicenseCheckingRestServiceIT extends AbstractPlatformIT {
 
   private static final String CUSTOMER_ID = "schrottis inn";

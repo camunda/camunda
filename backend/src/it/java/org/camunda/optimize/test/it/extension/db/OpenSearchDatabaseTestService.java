@@ -38,6 +38,7 @@ import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
 import org.opensearch.client.json.JsonData;
@@ -127,7 +128,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public ClientAndServer useDBMockServer() {
-    log.debug("Using OpenSearch MockServer");
+    log.info("Using OpenSearch MockServer");
     if (CLIENT_CACHE.containsKey(MOCKSERVER_CLIENT_KEY)) {
       prefixAwareOptimizeOpenSearchClient = CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY);
     } else {
@@ -462,8 +463,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       configurationService.getOpenSearchConfiguration().getFirstConnectionNode();
     log.info("Creating OS Client with host {} and port {}", osConfig.getHost(), osConfig.getHttpPort());
     prefixAwareOptimizeOpenSearchClient = new OptimizeOpenSearchClient(
-      OptimizeOpenSearchClientFactory.buildOpenSearchClientFromConfig(configurationService),
-      OptimizeOpenSearchClientFactory.buildOpenSearchAsyncClientFromConfig(configurationService),
+      OpenSearchClientBuilder.buildOpenSearchClientFromConfig(configurationService),
+      OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(configurationService),
       new OptimizeIndexNameService(configurationService, DatabaseType.OPENSEARCH)
     );
     adjustClusterSettings();

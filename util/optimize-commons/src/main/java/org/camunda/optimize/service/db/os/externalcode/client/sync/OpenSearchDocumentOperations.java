@@ -342,15 +342,18 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   public long deleteByQuery(final Query query, boolean refresh, final String... indexes) {
     List<String> listIndexes = List.of(indexes);
-    Long status = executeWithRetries(
-      () -> {
-        final DeleteByQueryRequest request = applyIndexPrefix(deleteByQueryRequestBuilder(listIndexes))
-          .query(query)
-          .refresh(refresh)
-          .build();
-        final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
-        return response.deleted();
-      });
+    final DeleteByQueryRequest request = applyIndexPrefix(deleteByQueryRequestBuilder(listIndexes))
+      .query(query)
+      .refresh(refresh)
+      .build();
+    final DeleteByQueryResponse response;
+    Long status;
+    try {
+      response = openSearchClient.deleteByQuery(request);
+      status = response.deleted();
+    } catch (IOException e) {
+      status = null;
+    }
 
     if (status == null) {
       String message = String.format("Could not delete any record from the indexes [%s]", listIndexes);

@@ -14,9 +14,10 @@ import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.providers.GenericExceptionMapper.NOT_FOUND_ERROR_CODE;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class LocalizedErrorResponseRestIT extends AbstractPlatformIT {
 
   @Test

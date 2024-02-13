@@ -23,10 +23,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildMissingPluginVersionMessage;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildUnsupportedPluginVersionMessage;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class PluginLoadingIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;

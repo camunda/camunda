@@ -23,8 +23,9 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class PublicApiDashboardDefinitionExportIT extends AbstractDashboardDefinitionExportIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 

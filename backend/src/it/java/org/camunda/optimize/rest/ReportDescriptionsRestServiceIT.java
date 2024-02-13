@@ -27,10 +27,11 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
 import static org.camunda.optimize.dto.optimize.ReportType.PROCESS;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class ReportDescriptionsRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
@@ -195,7 +196,7 @@ public class ReportDescriptionsRestServiceIT extends AbstractReportRestServiceIT
 
   @ParameterizedTest
   @MethodSource("validDescription")
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void updateSingleProcessReportWithValidDescription(final String description) {
     // given
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
@@ -217,7 +218,7 @@ public class ReportDescriptionsRestServiceIT extends AbstractReportRestServiceIT
 
   @ParameterizedTest
   @MethodSource("validDescription")
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void updateSingleDecisionReportWithValidDescription(final String description) {
     // given
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
@@ -239,7 +240,7 @@ public class ReportDescriptionsRestServiceIT extends AbstractReportRestServiceIT
 
   @ParameterizedTest
   @MethodSource("validDescription")
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void updateCombinedReportWithValidDescription(final String description) {
     // given
     CombinedReportDefinitionRequestDto combinedReportDefinitionDto = new CombinedReportDefinitionRequestDto();

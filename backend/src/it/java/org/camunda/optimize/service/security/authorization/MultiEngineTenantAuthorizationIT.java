@@ -15,11 +15,12 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
 
   private final AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);

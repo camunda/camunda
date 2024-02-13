@@ -18,10 +18,11 @@ import jakarta.ws.rs.core.Response;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class ContextPathIT extends AbstractPlatformIT {
 
   @AfterAll

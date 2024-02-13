@@ -27,14 +27,10 @@ import static org.camunda.optimize.service.exceptions.ExceptionHelper.withIOExce
 
 @Slf4j
 public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
-  public static final int UPDATE_RETRY_COUNT = 3;
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
 
-  public static final int DEFAULT_NUMBER_OF_RETRIES =
-    30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
+  public static final int DEFAULT_NUMBER_OF_EXECUTIONS = 5; // 5 attempts * 2s backoff = 10s maximum
   private final int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
-
-  private final int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
 
   protected OpenSearchRetryOperation(OpenSearchClient openSearchClient,
                                   final OptimizeIndexNameService indexNameService) {
@@ -51,7 +47,7 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
 
   protected <T> T executeWithRetries(
     String operationName, CheckedSupplier<T> supplier, Predicate<T> retryPredicate) {
-    return executeWithGivenRetries(numberOfRetries, operationName, supplier, retryPredicate);
+    return executeWithGivenRetries(DEFAULT_NUMBER_OF_EXECUTIONS, operationName, supplier, retryPredicate);
   }
 
   protected <T> T executeWithGivenRetries(

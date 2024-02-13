@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.entities;
 
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
@@ -12,13 +15,10 @@ import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportD
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class EntityDefinitionImportIT extends AbstractExportImportEntityDefinitionIT {
 
   @Test

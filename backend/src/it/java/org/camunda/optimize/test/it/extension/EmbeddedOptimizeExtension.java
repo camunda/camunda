@@ -221,11 +221,11 @@ public class EmbeddedOptimizeExtension
     }
   }
 
-  public void configureDbHostAndPort(final String host, final int esPort) {
+  public void configureDbHostAndPort(final String host, final int dbPort) {
     getConfigurationService().getElasticSearchConfiguration().getConnectionNodes().get(0).setHost(host);
-    getConfigurationService().getElasticSearchConfiguration().getConnectionNodes().get(0).setHttpPort(esPort);
+    getConfigurationService().getElasticSearchConfiguration().getConnectionNodes().get(0).setHttpPort(dbPort);
     getConfigurationService().getOpenSearchConfiguration().getConnectionNodes().get(0).setHost(host);
-    getConfigurationService().getOpenSearchConfiguration().getConnectionNodes().get(0).setHttpPort(esPort);
+    getConfigurationService().getOpenSearchConfiguration().getConnectionNodes().get(0).setHttpPort(dbPort);
     reloadConfiguration();
   }
 

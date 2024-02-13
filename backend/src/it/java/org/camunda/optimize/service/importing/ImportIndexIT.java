@@ -7,13 +7,16 @@ package org.camunda.optimize.service.importing;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
 
+@Tag(OPENSEARCH_PASSING)
 public class ImportIndexIT extends AbstractImportIT {
 
   @Test
