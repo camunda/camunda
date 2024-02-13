@@ -7,15 +7,20 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import java.util.Arrays;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -135,5 +140,34 @@ public class EventAppliersTest {
 
     // then
     Assertions.assertEquals(expectedVersion, actualVersion);
+  }
+
+  @Test
+  void shouldRegisterApplierForAllIntents() {
+    // given
+    final var events =
+        Intent.INTENT_CLASSES.stream()
+            .flatMap(c -> Arrays.stream(c.getEnumConstants()))
+            // Heuristic to detect event intents which are generally in past or present tense
+            // instead of the imperative used for commands.
+            .filter(intent -> intent.name().endsWith("ED") || intent.name().endsWith("ING"))
+            // CheckpointIntent is not handled by the engine
+            .filter(intent -> !(intent instanceof CheckpointIntent))
+            // ProcessInstanceResultIntent is only used for client responses and does not appear on
+            // the log
+            .filter(intent -> !(intent instanceof ProcessInstanceResultIntent));
+
+    // when
+    eventAppliers.registerEventAppliers(Mockito.mock(MutableProcessingState.class));
+
+    // then
+    assertThat(events)
+        .allSatisfy(
+            intent ->
+                assertThat(eventAppliers.getLatestVersion(intent))
+                    .describedAs(
+                        "Intent %s.%s has a registered event applier",
+                        intent.getClass().getSimpleName(), intent.name())
+                    .isNotEqualTo(-1));
   }
 }
