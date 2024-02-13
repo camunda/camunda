@@ -25,13 +25,13 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
 
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
-  private final CompletedUserTaskInstanceWriter completedProcessInstanceWriter;
+  private final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
   private final DatabaseClient databaseClient;
 
   public CompletedUserTaskInstanceImportService(final ConfigurationService configurationService,
-                                                final CompletedUserTaskInstanceWriter completedProcessInstanceWriter,
+                                                final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter,
                                                 final EngineContext engineContext,
                                                 final ProcessDefinitionResolverService processDefinitionResolverService,
                                                 final DatabaseClient databaseClient) {
@@ -39,7 +39,7 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
-    this.completedProcessInstanceWriter = completedProcessInstanceWriter;
+    this.completedUserTaskInstanceWriter = completedUserTaskInstanceWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
     this.databaseClient = databaseClient;
@@ -86,7 +86,7 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   private DatabaseImportJob<FlowNodeInstanceDto> createDatabaseImportJob(final List<FlowNodeInstanceDto> userTasks,
                                                                          final Runnable callback) {
     final CompletedUserTasksDatabaseImportJob importJob = new CompletedUserTasksDatabaseImportJob(
-      completedProcessInstanceWriter,
+      completedUserTaskInstanceWriter,
       configurationService,
       callback,
       databaseClient

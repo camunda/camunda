@@ -14,7 +14,9 @@ public interface ZeebeProcessInstanceWriter {
 
   String NEW_INSTANCE = "instance";
   String FORMATTER = "dateFormatPattern";
+  String SOURCE_EXPORT_INDEX = "sourceExportIndex";
 
-  List<ImportRequestDto> generateProcessInstanceImports(List<ProcessInstanceDto> processInstances);
+  List<ImportRequestDto> generateProcessInstanceImports(List<ProcessInstanceDto> processInstances,
+                                                        final String sourceExportIndex);
 
 }

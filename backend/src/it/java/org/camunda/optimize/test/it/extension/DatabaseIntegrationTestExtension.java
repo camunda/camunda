@@ -330,6 +330,11 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
   }
 
   @SneakyThrows
+  public void deleteAllOtherZeebeRecordsWithPrefix(final String zeebeRecordPrefix, final String recordsToKeep) {
+    databaseTestService.deleteAllOtherZeebeRecordsWithPrefix(zeebeRecordPrefix, recordsToKeep);
+  }
+
+  @SneakyThrows
   public void updateZeebeRecordsWithPositionForPrefix(final String zeebeRecordPrefix, final String indexName,
                                                       final long position, final String updateScript) {
     databaseTestService.updateZeebeRecordsWithPositionForPrefix(zeebeRecordPrefix, indexName, position, updateScript);

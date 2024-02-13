@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.job;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
+import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -18,20 +19,23 @@ public class ZeebeProcessInstanceDatabaseImportJob extends DatabaseImportJob<Pro
 
   private final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter;
   private final ConfigurationService configurationService;
+  private final String sourceExportIndex;
 
   public ZeebeProcessInstanceDatabaseImportJob(final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
                                                final ConfigurationService configurationService,
                                                final Runnable importCompleteCallback,
+                                               final String sourceExportIndex,
                                                final DatabaseClient databaseClient) {
     super(importCompleteCallback, databaseClient);
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.configurationService = configurationService;
+    this.sourceExportIndex = sourceExportIndex;
   }
 
   @Override
-  protected void persistEntities(List<ProcessInstanceDto> completedProcessInstances) {
+  protected void persistEntities(List<ProcessInstanceDto> processInstances) {
     final List<ImportRequestDto> importRequests =
-      zeebeProcessInstanceWriter.generateProcessInstanceImports(newOptimizeEntities);
+      zeebeProcessInstanceWriter.generateProcessInstanceImports(processInstances, sourceExportIndex);
     databaseClient.executeImportRequestsAsBulk(
       "Zeebe process instances",
       importRequests,

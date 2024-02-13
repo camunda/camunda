@@ -69,7 +69,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
       embeddedOptimizeExtension.getAllPositionBasedImportHandlers();
 
     // then
-    assertThat(positionBasedHandlers).hasSize(8)
+    assertThat(positionBasedHandlers).hasSize(10)
       .allSatisfy(handler -> {
         assertThat(handler.getPersistedPositionOfLastEntity()).isZero();
         assertThat(handler.getPendingSequenceOfLastEntity()).isZero();
@@ -167,7 +167,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     waitUntilMinimumDataExportedCount(
       3, // need all records up to the startEvent completing
       DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
-      getQueryForProcessableEvents()
+      getQueryForProcessableProcessInstanceEvents()
     );
     // change the process start/end records to have no sequence, so we can check that fetcher queries correctly based on position
     removeSequenceFieldOfProcessRecords();
@@ -347,7 +347,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     waitUntilMinimumDataExportedCount(
       8,
       DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
-      getQueryForProcessableEvents()
+      getQueryForProcessableProcessInstanceEvents()
     );
   }
 

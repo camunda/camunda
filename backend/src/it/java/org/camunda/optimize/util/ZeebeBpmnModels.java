@@ -38,10 +38,10 @@ public class ZeebeBpmnModels {
   public static final String SIGNAL_PROCESS_WAIT_FOR_FIRST_SIGNAL_TASK = "signalProcessServiceTask1";
   public static final String SIGNAL_PROCESS_WAIT_FOR_SECOND_SIGNAL_TASK = "signalProcessServiceTask2";
   public static final String SIGNAL_PROCESS_WAIT_FOR_THIRD_SIGNAL_GATEWAY = "eventBasedGateway";
-  public static final String SIGNAL_PROCESS_END= "signalEndEvent";
-  public static final String SIGNAL_PROCESS_FIRST_SIGNAL= "nonInterruptingBoundarySignal";
-  public static final String SIGNAL_PROCESS_SECOND_SIGNAL= "interruptingBoundarySignal";
-  public static final String SIGNAL_PROCESS_THIRD_SIGNAL= "eventBasedGatewaySignal";
+  public static final String SIGNAL_PROCESS_END = "signalEndEvent";
+  public static final String SIGNAL_PROCESS_FIRST_SIGNAL = "nonInterruptingBoundarySignal";
+  public static final String SIGNAL_PROCESS_SECOND_SIGNAL = "interruptingBoundarySignal";
+  public static final String SIGNAL_PROCESS_THIRD_SIGNAL = "eventBasedGatewaySignal";
 
   public static BpmnModelInstance createStartEndProcess(final String processName) {
     return createStartEndProcess(processName, null);
@@ -104,6 +104,15 @@ public class ZeebeBpmnModels {
       .name(processName)
       .startEvent(START_EVENT).name(START_EVENT)
       .userTask(USER_TASK).id(USER_TASK).name(USER_TASK)
+      .endEvent(END_EVENT).name(null)
+      .done();
+  }
+
+  public static BpmnModelInstance createSimpleNativeUserTaskProcess(final String processName, final String dueDate) {
+    return Bpmn.createExecutableProcess()
+      .name(processName)
+      .startEvent(START_EVENT).name(START_EVENT)
+      .userTask(USER_TASK).zeebeUserTask().id(USER_TASK).name(USER_TASK).zeebeDueDate(dueDate)
       .endEvent(END_EVENT).name(null)
       .done();
   }

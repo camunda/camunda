@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
+
 @Slf4j
 public class ZeebeIncidentImportService extends ZeebeProcessInstanceSubEntityImportService<ZeebeIncidentRecordDto> {
 
@@ -42,7 +44,14 @@ public class ZeebeIncidentImportService extends ZeebeProcessInstanceSubEntityImp
                                     final int partitionId,
                                     final ProcessDefinitionReader processDefinitionReader,
                                     final DatabaseClient databaseClient) {
-    super(configurationService, processInstanceWriter, partitionId, processDefinitionReader, databaseClient);
+    super(
+      configurationService,
+      processInstanceWriter,
+      partitionId,
+      processDefinitionReader,
+      databaseClient,
+      ZEEBE_INCIDENT_INDEX_NAME
+    );
   }
 
   @Override

@@ -115,6 +115,8 @@ public abstract class DatabaseTestService {
 
   public abstract void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix);
 
+  public abstract void deleteAllOtherZeebeRecordsWithPrefix(final String zeebeRecordPrefix, final String recordsToKeep);
+
   public abstract void updateZeebeRecordsForPrefix(final String zeebeRecordPrefix, final String indexName,
                                                    final String updateScript);
 

@@ -18,6 +18,9 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 
 @EqualsAndHashCode
@@ -56,6 +59,10 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
   @Override
   public int getRecordVersion() {
     throw new UnsupportedOperationException("Operation not supported");
+  }
+
+  public OffsetDateTime getDateForTimestamp() {
+    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
   }
 
 }

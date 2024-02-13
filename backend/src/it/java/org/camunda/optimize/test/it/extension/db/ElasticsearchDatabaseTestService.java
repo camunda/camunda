@@ -416,6 +416,22 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @SneakyThrows
   @Override
+  public void deleteAllOtherZeebeRecordsWithPrefix(final String zeebeRecordPrefix, final String recordsToKeep) {
+    final String[] indicesToDelete = Arrays.stream(
+        getOptimizeElasticClient().getHighLevelClient().indices().get(
+            new GetIndexRequest("*").indicesOptions(INDICES_EXIST_OPTIONS),
+            getOptimizeElasticClient().requestOptions()
+          )
+          .getIndices())
+      .filter(indexName -> indexName.contains(zeebeRecordPrefix) && !indexName.contains(recordsToKeep))
+      .toArray(String[]::new);
+    if (indicesToDelete.length > 1) {
+      getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
+    }
+  }
+
+  @SneakyThrows
+  @Override
   public void updateZeebeRecordsForPrefix(final String zeebeRecordPrefix, final String indexName,
                                           final String updateScript) {
     final UpdateByQueryRequest update = new UpdateByQueryRequest(zeebeRecordPrefix + "_" + indexName + "*")

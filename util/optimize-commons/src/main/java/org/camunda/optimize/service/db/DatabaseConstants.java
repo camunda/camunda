@@ -98,6 +98,7 @@ public class DatabaseConstants {
   public static final String ZEEBE_PROCESS_INSTANCE_INDEX_NAME = "process-instance";
   public static final String ZEEBE_VARIABLE_INDEX_NAME = "variable";
   public static final String ZEEBE_INCIDENT_INDEX_NAME = "incident";
+  public static final String ZEEBE_USER_TASK_INDEX_NAME = "user-task";
 
   public static final String EVENT_PROCESS_DEFINITION_INDEX_NAME = "event-process-definition";
   public static final String EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME = "event-process-publish-state";

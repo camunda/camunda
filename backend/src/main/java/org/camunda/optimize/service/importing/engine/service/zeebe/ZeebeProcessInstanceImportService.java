@@ -19,9 +19,6 @@ import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +32,7 @@ import java.util.stream.Collectors;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
 
 @Slf4j
 public class ZeebeProcessInstanceImportService
@@ -55,7 +53,14 @@ public class ZeebeProcessInstanceImportService
                                            final int partitionId,
                                            final ProcessDefinitionReader processDefinitionReader,
                                            final DatabaseClient databaseClient) {
-    super(configurationService, processInstanceWriter, partitionId, processDefinitionReader, databaseClient);
+    super(
+      configurationService,
+      processInstanceWriter,
+      partitionId,
+      processDefinitionReader,
+      databaseClient,
+      ZEEBE_PROCESS_INSTANCE_INDEX_NAME
+    );
   }
 
   @Override
@@ -110,20 +115,20 @@ public class ZeebeProcessInstanceImportService
         switch (processInstance.getIntent()) {
           case ELEMENT_COMPLETED:
             updateStateIfValidTransition(instanceToAdd, ProcessInstanceConstants.COMPLETED_STATE);
-            instanceToAdd.setEndDate(dateForTimestamp(processInstance));
+            instanceToAdd.setEndDate(processInstance.getDateForTimestamp());
             break;
           case ELEMENT_TERMINATED:
             updateStateIfValidTransition(instanceToAdd, ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE);
-            instanceToAdd.setEndDate(dateForTimestamp(processInstance));
+            instanceToAdd.setEndDate(processInstance.getDateForTimestamp());
             break;
           case ELEMENT_ACTIVATING:
             updateStateIfValidTransition(instanceToAdd, ProcessInstanceConstants.ACTIVE_STATE);
-            instanceToAdd.setStartDate(dateForTimestamp(processInstance));
+            instanceToAdd.setStartDate(processInstance.getDateForTimestamp());
             break;
           default:
             throw new OptimizeRuntimeException("Unsupported intent: " + processInstance.getIntent());
         }
-        updateDurationIfMissing(instanceToAdd);
+        updateDurationIfCompleted(instanceToAdd);
       });
   }
 
@@ -131,22 +136,22 @@ public class ZeebeProcessInstanceImportService
                                               final List<ZeebeProcessInstanceRecordDto> recordsForInstance) {
     Map<Long, FlowNodeInstanceDto> flowNodeInstancesByRecordKey = new HashMap<>();
     recordsForInstance.stream()
-      .filter(zeebeRecord -> !BpmnElementType.PROCESS.equals(zeebeRecord.getValue().getBpmnElementType()))
       .filter(zeebeRecord -> zeebeRecord.getValue().getBpmnElementType().getElementTypeName().isPresent())
+      .filter(zeebeRecord -> !BpmnElementType.PROCESS.equals(zeebeRecord.getValue().getBpmnElementType()))
       .forEach(zeebeFlowNodeInstanceRecord -> {
         final long recordKey = zeebeFlowNodeInstanceRecord.getKey();
         FlowNodeInstanceDto flowNodeForKey = flowNodeInstancesByRecordKey.getOrDefault(
           recordKey, createSkeletonFlowNodeInstance(zeebeFlowNodeInstanceRecord));
         final ProcessInstanceIntent instanceIntent = zeebeFlowNodeInstanceRecord.getIntent();
         if (instanceIntent == ELEMENT_COMPLETED) {
-          flowNodeForKey.setEndDate(dateForTimestamp(zeebeFlowNodeInstanceRecord));
+          flowNodeForKey.setEndDate(zeebeFlowNodeInstanceRecord.getDateForTimestamp());
         } else if (instanceIntent == ELEMENT_TERMINATED) {
           flowNodeForKey.setCanceled(true);
-          flowNodeForKey.setEndDate(dateForTimestamp(zeebeFlowNodeInstanceRecord));
+          flowNodeForKey.setEndDate(zeebeFlowNodeInstanceRecord.getDateForTimestamp());
         } else if (instanceIntent == ELEMENT_ACTIVATING) {
-          flowNodeForKey.setStartDate(dateForTimestamp(zeebeFlowNodeInstanceRecord));
+          flowNodeForKey.setStartDate(zeebeFlowNodeInstanceRecord.getDateForTimestamp());
         }
-        updateDurationIfMissing(flowNodeForKey);
+        updateDurationIfCompleted(flowNodeForKey);
         flowNodeInstancesByRecordKey.put(recordKey, flowNodeForKey);
       });
     instanceToAdd.setFlowNodeInstances(new ArrayList<>(flowNodeInstancesByRecordKey.values()));
@@ -168,25 +173,20 @@ public class ZeebeProcessInstanceImportService
     ).setCanceled(false);
   }
 
-  private OffsetDateTime dateForTimestamp(final ZeebeProcessInstanceRecordDto zeebeRecord) {
-    return OffsetDateTime.ofInstant(
-      Instant.ofEpochMilli(zeebeRecord.getTimestamp()), ZoneId.systemDefault());
-  }
-
   private void updateStateIfValidTransition(ProcessInstanceDto instance, String targetState) {
     if (instance.getState() == null || instance.getState().equals(ProcessInstanceConstants.ACTIVE_STATE)) {
       instance.setState(targetState);
     }
   }
 
-  private void updateDurationIfMissing(final ProcessInstanceDto instanceToAdd) {
-    if (instanceToAdd.getDuration() == null && instanceToAdd.getStartDate() != null && instanceToAdd.getEndDate() != null) {
+  private void updateDurationIfCompleted(final ProcessInstanceDto instanceToAdd) {
+    if (instanceToAdd.getStartDate() != null && instanceToAdd.getEndDate() != null) {
       instanceToAdd.setDuration(instanceToAdd.getStartDate().until(instanceToAdd.getEndDate(), ChronoUnit.MILLIS));
     }
   }
 
-  private void updateDurationIfMissing(final FlowNodeInstanceDto flowNodeToAdd) {
-    if (flowNodeToAdd.getTotalDurationInMs() == null && flowNodeToAdd.getStartDate() != null && flowNodeToAdd.getEndDate() != null) {
+  private void updateDurationIfCompleted(final FlowNodeInstanceDto flowNodeToAdd) {
+    if (flowNodeToAdd.getStartDate() != null && flowNodeToAdd.getEndDate() != null) {
       flowNodeToAdd.setTotalDurationInMs(
         flowNodeToAdd.getStartDate().until(flowNodeToAdd.getEndDate(), ChronoUnit.MILLIS));
     }

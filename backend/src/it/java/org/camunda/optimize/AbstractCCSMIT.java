@@ -9,23 +9,32 @@ import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import lombok.SneakyThrows;
 import org.awaitility.Awaitility;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
+import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.ZeebeExtension;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -34,10 +43,17 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.io.InputStream;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
@@ -51,6 +67,9 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   @RegisterExtension
   @Order(4)
   protected static ZeebeExtension zeebeExtension = new ZeebeExtension();
+
+  protected final Supplier<OptimizeIntegrationTestException> eventNotFoundExceptionSupplier =
+    () -> new OptimizeIntegrationTestException("Cannot find exported event");
 
   @BeforeEach
   public void setupZeebeImportAndReloadConfiguration() {
@@ -85,7 +104,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
   }
 
-  protected BoolQueryBuilder getQueryForProcessableEvents() {
+  protected BoolQueryBuilder getQueryForProcessableProcessInstanceEvents() {
     return boolQuery().must(termsQuery(
       ZeebeProcessInstanceRecordDto.Fields.intent,
       ProcessInstanceIntent.ELEMENT_ACTIVATING.name(),
@@ -107,7 +126,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     waitUntilMinimumDataExportedCount(
       minExportedEventCount,
       DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
-      getQueryForProcessableEvents()
+      getQueryForProcessableProcessInstanceEvents()
     );
   }
 
@@ -131,6 +150,16 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected void waitUntilInstanceRecordWithElementIdExported(final String instanceElementId) {
     waitUntilRecordMatchingQueryExported(
       DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      boolQuery().must(termQuery(
+        ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
+        instanceElementId
+      ))
+    );
+  }
+
+  protected void waitUntilUserTaskRecordWithElementIdExported(final String instanceElementId) {
+    waitUntilRecordMatchingQueryExported(
+      DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME,
       boolQuery().must(termQuery(
         ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
         instanceElementId
@@ -225,6 +254,60 @@ public abstract class AbstractCCSMIT extends AbstractIT {
           .count(countRequest, esClient.requestOptions())
           .getCount())
         .isGreaterThanOrEqualTo(minimumCount));
+  }
+
+  protected Map<String, List<ZeebeUserTaskRecordDto>> getZeebeExportedUserTaskEventsByElementId() {
+    return getZeebeExportedProcessableEvents(
+      zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME,
+      getQueryForProcessableUserTaskEvents(),
+      ZeebeUserTaskRecordDto.class
+    ).stream()
+      .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
+  }
+
+  @SneakyThrows
+  protected Map<String, List<ZeebeProcessInstanceRecordDto>> getZeebeExportedProcessInstanceEventsByElementId() {
+    return getZeebeExportedProcessableEvents(
+      zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      getQueryForProcessableProcessInstanceEvents(),
+      ZeebeProcessInstanceRecordDto.class
+    ).stream()
+      .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
+  }
+
+  protected OffsetDateTime getTimestampForZeebeEventsWithIntent(final List<? extends ZeebeRecordDto> eventsForElement, final Intent intent) {
+    final ZeebeRecordDto startOfElement = eventsForElement.stream()
+      .filter(event -> event.getIntent().equals(intent))
+      .findFirst().orElseThrow(eventNotFoundExceptionSupplier);
+    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(startOfElement.getTimestamp()), ZoneId.systemDefault());
+  }
+
+  @SneakyThrows
+  private <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex,
+                                                        final QueryBuilder queryForProcessableEvents,
+                                                        final Class<T> zeebeRecordClass) {
+    final OptimizeElasticsearchClient esClient =
+      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(exportIndex)
+      .source(new SearchSourceBuilder()
+                .query(queryForProcessableEvents)
+                .trackTotalHits(true)
+                .size(100));
+    final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
+    return ElasticsearchReaderUtil.mapHits(
+      searchResponse.getHits(),
+      zeebeRecordClass,
+      embeddedOptimizeExtension.getObjectMapper()
+    );
+  }
+
+  private BoolQueryBuilder getQueryForProcessableUserTaskEvents() {
+    return boolQuery().must(termsQuery(
+      ZeebeUserTaskRecordDto.Fields.intent,
+      UserTaskIntent.CREATING.name(),
+      UserTaskIntent.COMPLETED.name()
+    ));
   }
 
 }

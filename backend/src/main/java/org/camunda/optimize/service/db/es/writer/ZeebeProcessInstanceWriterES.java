@@ -30,7 +30,8 @@ import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInst
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
-public class ZeebeProcessInstanceWriterES extends AbstractProcessInstanceDataWriterES<ProcessInstanceDto> implements ZeebeProcessInstanceWriter {
+public class ZeebeProcessInstanceWriterES extends AbstractProcessInstanceDataWriterES<ProcessInstanceDto>
+  implements ZeebeProcessInstanceWriter {
 
   private final ObjectMapper objectMapper;
 
@@ -42,7 +43,8 @@ public class ZeebeProcessInstanceWriterES extends AbstractProcessInstanceDataWri
   }
 
   @Override
-  public List<ImportRequestDto> generateProcessInstanceImports(List<ProcessInstanceDto> processInstances) {
+  public List<ImportRequestDto> generateProcessInstanceImports(List<ProcessInstanceDto> processInstances,
+                                                               final String sourceExportIndex) {
     String importItemName = "zeebe process instances";
     log.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
 
@@ -53,6 +55,7 @@ public class ZeebeProcessInstanceWriterES extends AbstractProcessInstanceDataWri
              final Map<String, Object> params = new HashMap<>();
              params.put(NEW_INSTANCE, procInst);
              params.put(FORMATTER, OPTIMIZE_DATE_FORMAT);
+             params.put(SOURCE_EXPORT_INDEX, sourceExportIndex);
              return ImportRequestDto.builder()
                .importName(importItemName)
                .type(RequestType.UPDATE)
@@ -119,13 +122,14 @@ public class ZeebeProcessInstanceWriterES extends AbstractProcessInstanceDataWri
       "def flowNodesById = existingInstance.flowNodeInstances.stream()\n" +
       "  .collect(Collectors.toMap(flowNode -> flowNode.flowNodeInstanceId, flowNode -> flowNode, (f1, f2) -> f1));\n" +
       "def newFlowNodes = params.instance.flowNodeInstances;\n" +
+      "def isUserTaskImport = \"user-task\".equals(params.sourceExportIndex);\n" + // userTask import is allowed to overwrite flownode import values
       "for (def newFlowNode : newFlowNodes) {\n" +
       "  def existingFlowNode = flowNodesById.get(newFlowNode.flowNodeInstanceId);\n" +
       "  if (existingFlowNode != null) {\n" +
-      "    if (newFlowNode.endDate != null) {\n" +
+      "    if (newFlowNode.endDate != null && (existingFlowNode.endDate == null || isUserTaskImport)) {\n" +
       "      existingFlowNode.endDate = newFlowNode.endDate;\n" +
       "    }\n" +
-      "    if (newFlowNode.startDate != null) {\n" +
+      "    if (newFlowNode.startDate != null && (existingFlowNode.startDate == null || isUserTaskImport)) {\n" +
       "      existingFlowNode.startDate = newFlowNode.startDate;\n" +
       "    }\n" +
       "    if (existingFlowNode.startDate != null && existingFlowNode.endDate != null) {\n" +

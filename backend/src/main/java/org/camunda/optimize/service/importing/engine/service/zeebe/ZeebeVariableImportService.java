@@ -39,6 +39,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.OBJECT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_VARIABLE_INDEX_NAME;
 import static org.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex.SERIALIZATION_DATA_FORMAT;
 
 @Slf4j
@@ -63,7 +64,14 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
                                     final ProcessDefinitionReader processDefinitionReader,
                                     final ObjectVariableService objectVariableService,
                                     final DatabaseClient databaseClient) {
-    super(configurationService, processInstanceWriter, partitionId, processDefinitionReader, databaseClient);
+    super(
+      configurationService,
+      processInstanceWriter,
+      partitionId,
+      processDefinitionReader,
+      databaseClient,
+      ZEEBE_VARIABLE_INDEX_NAME
+    );
     this.objectMapper = objectMapper;
     this.objectVariableService = objectVariableService;
   }

@@ -374,6 +374,22 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @SneakyThrows
   @Override
+  public void deleteAllOtherZeebeRecordsWithPrefix(final String zeebeRecordPrefix, final String recordsToKeep) {
+    final GetIndexResponse allIndices = getOptimizeOpenSearchClient().getRichOpenSearchClient()
+      .index()
+      .get(RequestDSL.getIndexRequestBuilder("*").ignoreUnavailable(true));
+
+    final String[] indicesToDelete = allIndices.result().keySet().stream()
+      .filter(indexName -> indexName.contains(zeebeRecordPrefix) && !indexName.contains(recordsToKeep))
+      .toArray(String[]::new);
+
+    if (indicesToDelete.length > 1) {
+      deleteIndices(indicesToDelete);
+    }
+  }
+
+  @SneakyThrows
+  @Override
   public void updateZeebeRecordsForPrefix(final String zeebeRecordPrefix, final String indexName,
                                           final String updateScript) {
     updateZeebeRecordsByQuery(zeebeRecordPrefix, indexName, QueryDSL.matchAll(), updateScript);

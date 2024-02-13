@@ -20,7 +20,8 @@ import java.util.List;
 @Conditional(OpenSearchCondition.class)
 public class ZeebeProcessInstanceWriterOS implements ZeebeProcessInstanceWriter {
   @Override
-  public List<ImportRequestDto> generateProcessInstanceImports(final List<ProcessInstanceDto> processInstances) {
+  public List<ImportRequestDto> generateProcessInstanceImports(final List<ProcessInstanceDto> processInstances,
+                                                               final String sourceExportIndex) {
     //todo will be handled in the OPT-7376
     return null;
   }

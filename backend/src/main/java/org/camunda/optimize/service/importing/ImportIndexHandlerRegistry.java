@@ -29,6 +29,7 @@ import org.camunda.optimize.service.importing.zeebe.handler.ZeebeImportIndexHand
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeIncidentImportIndexHandler;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.zeebe.handler.ZeebeUserTaskImportIndexHandler;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeVariableImportIndexHandler;
 import org.springframework.stereotype.Component;
 
@@ -170,6 +171,10 @@ public class ImportIndexHandlerRegistry {
 
   public ZeebeVariableImportIndexHandler getZeebeVariableImportIndexHandler(Integer partitionId) {
     return getZeebeImportIndexHandler(partitionId, ZeebeVariableImportIndexHandler.class);
+  }
+
+  public ZeebeUserTaskImportIndexHandler getZeebeUserTaskImportIndexHandler(Integer partitionId) {
+    return getZeebeImportIndexHandler(partitionId, ZeebeUserTaskImportIndexHandler.class);
   }
 
   public ExternalVariableUpdateImportIndexHandler getExternalVariableUpdateImportIndexHandler() {
