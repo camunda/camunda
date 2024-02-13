@@ -161,7 +161,7 @@ const ProcessTile: React.FC<Props> = ({
   const displayName = getProcessDisplayName(process);
   const location = useLocation();
   const navigate = useNavigate();
-  const startFormModalRoute = pages.interalStartProcessFromForm(bpmnProcessId);
+  const startFormModalRoute = pages.internalStartProcessFromForm(bpmnProcessId);
   const match = useMatch(startFormModalRoute);
   const isFormModalOpen = match !== null;
   const tags = getTags(process);

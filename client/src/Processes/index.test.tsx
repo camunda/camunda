@@ -177,7 +177,7 @@ describe('Processes', () => {
     ).toBeInTheDocument();
     expect(await screen.findByText('A sample text')).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      pages.interalStartProcessFromForm(mockProcess.bpmnProcessId),
+      pages.internalStartProcessFromForm(mockProcess.bpmnProcessId),
     );
   });
 
@@ -353,7 +353,7 @@ describe('Processes', () => {
 
     render(<Component />, {
       wrapper: getWrapper([
-        pages.interalStartProcessFromForm(mockProcess.bpmnProcessId),
+        pages.internalStartProcessFromForm(mockProcess.bpmnProcessId),
       ]),
     });
 
@@ -368,7 +368,7 @@ describe('Processes', () => {
     ).toBeInTheDocument();
     expect(await screen.findByText('A sample text')).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      pages.interalStartProcessFromForm(mockProcess.bpmnProcessId),
+      pages.internalStartProcessFromForm(mockProcess.bpmnProcessId),
     );
   });
 
@@ -383,7 +383,7 @@ describe('Processes', () => {
 
     render(<Component />, {
       wrapper: getWrapper([
-        pages.interalStartProcessFromForm(wrongBpmnProcessId),
+        pages.internalStartProcessFromForm(wrongBpmnProcessId),
       ]),
     });
 

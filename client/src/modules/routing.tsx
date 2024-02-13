@@ -16,12 +16,12 @@ const pages = {
     return `/${id}`;
   },
   processes(
-    options: {tenantId?: string; matchAllChilren?: boolean} = {
-      matchAllChilren: false,
+    options: {tenantId?: string; matchAllChildren?: boolean} = {
+      matchAllChildren: false,
     },
   ) {
-    const {tenantId, matchAllChilren = false} = options;
-    const baseRoute = matchAllChilren ? 'processes/*' : 'processes';
+    const {tenantId, matchAllChildren: matchAllChildren = false} = options;
+    const baseRoute = matchAllChildren ? 'processes/*' : 'processes';
     if (tenantId !== undefined && window.clientConfig?.isMultiTenancyEnabled) {
       return `${baseRoute}?tenantId=${tenantId}`;
     }
@@ -29,7 +29,7 @@ const pages = {
     return baseRoute;
   },
   startProcessFromForm: '/new/:bpmnProcessId',
-  interalStartProcessFromForm(bpmnProcessId: string = ':bpmnProcessId') {
+  internalStartProcessFromForm(bpmnProcessId: string = ':bpmnProcessId') {
     return `/processes/${bpmnProcessId}/start`;
   },
 } as const;

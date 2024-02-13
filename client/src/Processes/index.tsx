@@ -85,7 +85,7 @@ const Processes: React.FC = observer(() => {
   );
   const isFiltered = data?.query !== undefined && data.query !== '';
   const processes = data?.processes ?? [];
-  const match = useMatch(pages.interalStartProcessFromForm());
+  const match = useMatch(pages.internalStartProcessFromForm());
 
   useEffect(() => {
     if (error !== null) {
