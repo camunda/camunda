@@ -52,6 +52,11 @@ public final class RecordToWrite {
     this.recordMetadata = recordMetadata;
   }
 
+  public static RecordToWrite userCommand() {
+    final RecordMetadata recordMetadata = new RecordMetadata().requestId(100).requestStreamId(1000);
+    return new RecordToWrite(recordMetadata.recordType(RecordType.COMMAND));
+  }
+
   public static RecordToWrite command() {
     final RecordMetadata recordMetadata = new RecordMetadata();
     return new RecordToWrite(recordMetadata.recordType(RecordType.COMMAND));

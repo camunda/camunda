@@ -25,6 +25,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -106,6 +107,8 @@ public final class ProcessingStateMachine {
       "Expected to invoke processed listener for record {} successfully, but exception was thrown.";
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke skipped listener for record '{} {}' successfully, but exception was thrown.";
+  private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
+      "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
   private static final MetadataFilter PROCESSING_FILTER =
       recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND;
@@ -137,7 +140,7 @@ public final class ProcessingStateMachine {
   private long writtenPosition = StreamProcessor.UNSET_POSITION;
   private long lastSuccessfulProcessedRecordPosition = StreamProcessor.UNSET_POSITION;
   private long lastWrittenPosition = StreamProcessor.UNSET_POSITION;
-  private volatile boolean onErrorHandlingLoop;
+  private volatile ErrorHandlingPhase errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
   private int onErrorRetries;
   // Used for processing duration metrics
   private Histogram.Timer processingTimer;
@@ -195,7 +198,7 @@ public final class ProcessingStateMachine {
 
   void readNextRecord() {
     if (onErrorRetries > 0) {
-      onErrorHandlingLoop = false;
+      errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
       onErrorRetries = 0;
     }
 
@@ -295,9 +298,10 @@ public final class ProcessingStateMachine {
             maxCommandsInBatch,
             exceededBatchRecordSizeException);
         processingMetrics.countRetry();
-        onError(() -> processCommand(loggedEvent));
+        onError(exceededBatchRecordSizeException, () -> processCommand(loggedEvent));
       } else {
         onError(
+            exceededBatchRecordSizeException,
             () -> {
               errorHandlingInTransaction(exceededBatchRecordSizeException);
               writeRecords();
@@ -305,6 +309,7 @@ public final class ProcessingStateMachine {
       }
     } catch (final Exception e) {
       onError(
+          e,
           () -> {
             errorHandlingInTransaction(e);
             writeRecords();
@@ -424,11 +429,10 @@ public final class ProcessingStateMachine {
     return commandsToProcess;
   }
 
-  private void onError(final NextProcessingStep nextStep) {
+  private void onError(final Throwable error, final NextProcessingStep nextStep) {
     onErrorRetries++;
-    if (onErrorRetries > 1) {
-      onErrorHandlingLoop = true;
-    }
+    switchErrorPhase();
+
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
@@ -444,14 +448,127 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentRecord, metadata, throwable);
           }
           try {
+            if (tryExitOutOfErrorLoop(error)) {
+              // Exit from error loop
+              return;
+            }
             nextStep.run();
           } catch (final Exception ex) {
-            onError(nextStep);
+            onError(ex, nextStep);
           }
         });
   }
 
+  private boolean tryExitOutOfErrorLoop(final Throwable error) {
+    try {
+      // If in error loop and the processing record is a user command
+      if (errorHandlingPhase == ErrorHandlingPhase.USER_COMMAND_PROCESSING_ERROR_FAILED) {
+        // First try to reject with proper error message
+        LOG.debug(ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED, currentRecord, metadata, error);
+        tryRejectingIfUserCommand(error.getMessage());
+        return true;
+      } else if (errorHandlingPhase == ErrorHandlingPhase.USER_COMMAND_REJECT_FAILED) {
+        LOG.warn(ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED, currentRecord, metadata, error);
+        // try to reject with a generic error message
+        tryRejectingIfUserCommand(
+            String.format(
+                "Expected to process command, but caught an exception. Check broker logs (partition %s) for details.",
+                context.getPartitionId()));
+        return true;
+      }
+    } catch (final Exception e) {
+      // Unexpected error, so we just fail back to endless loop
+      LOG.error(
+          "Expected to write rejection for command '{} {}', but failed with unexpected error.",
+          currentRecord,
+          metadata,
+          e);
+      pendingResponses.clear();
+    }
+    return false;
+  }
+
+  private void startErrorLoop(final boolean isUserCommand) {
+    if (errorHandlingPhase == ErrorHandlingPhase.NO_ERROR) {
+      errorHandlingPhase =
+          isUserCommand
+              ? ErrorHandlingPhase.USER_COMMAND_PROCESSING_FAILED
+              : ErrorHandlingPhase.PROCESSING_FAILED;
+    }
+  }
+
+  private void switchErrorPhase() {
+    errorHandlingPhase =
+        switch (errorHandlingPhase) {
+          case NO_ERROR -> ErrorHandlingPhase.NO_ERROR; // First switch is explicit
+          case PROCESSING_FAILED -> ErrorHandlingPhase.PROCESSING_ERROR_FAILED;
+          case USER_COMMAND_PROCESSING_FAILED -> ErrorHandlingPhase
+              .USER_COMMAND_PROCESSING_ERROR_FAILED;
+          case USER_COMMAND_PROCESSING_ERROR_FAILED -> ErrorHandlingPhase
+              .USER_COMMAND_REJECT_FAILED;
+          case USER_COMMAND_REJECT_FAILED -> ErrorHandlingPhase
+              .USER_COMMAND_REJECT_SIMPLE_REJECT_FAILED;
+          case PROCESSING_ERROR_FAILED, USER_COMMAND_REJECT_SIMPLE_REJECT_FAILED -> {
+            LOG.error(
+                "Failed to process command '{} {}' retries. Entering endless error loop.",
+                currentRecord,
+                metadata);
+            yield ErrorHandlingPhase.ENDLESS_ERROR_LOOP;
+          }
+          case ENDLESS_ERROR_LOOP -> ErrorHandlingPhase.ENDLESS_ERROR_LOOP;
+        };
+  }
+
+  private void tryRejectingIfUserCommand(final String errorMessage) {
+    final var rejectionReason = errorMessage != null ? errorMessage : "";
+    final ProcessingResultBuilder processingResultBuilder =
+        new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
+    // reset value to minimize any potential error loop that can be caused by writing the full
+    // record.
+    typedCommand.getValue().reset();
+    final var rejectionMetadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND_REJECTION)
+            .intent(typedCommand.getIntent())
+            .rejectionType(RejectionType.PROCESSING_ERROR)
+            .rejectionReason(rejectionReason);
+    processingResultBuilder.appendRecord(
+        currentRecord.getKey(),
+        rejectionMetadata.getRecordType(),
+        rejectionMetadata.getIntent(),
+        rejectionMetadata.getRejectionType(),
+        rejectionMetadata.getRejectionReason(),
+        typedCommand.getValue());
+    processingResultBuilder.withResponse(
+        RecordType.COMMAND_REJECTION,
+        typedCommand.getKey(),
+        typedCommand.getIntent(),
+        typedCommand.getValue(),
+        typedCommand.getValueType(),
+        RejectionType.PROCESSING_ERROR,
+        rejectionReason,
+        typedCommand.getRequestId(),
+        typedCommand.getRequestStreamId());
+    currentProcessingResult = processingResultBuilder.build();
+
+    final var entries = currentProcessingResult.getRecordBatch().entries();
+    entries.forEach(
+        entry ->
+            logStreamBatchWriter
+                .event()
+                .key(entry.key())
+                .metadataWriter(entry.recordMetadata())
+                .sourceIndex(entry.sourceIndex())
+                .valueWriter(entry.recordValue())
+                .done());
+    pendingResponses = currentProcessingResult.getProcessingResponse().stream().toList();
+
+    finalizeCommandProcessing();
+    writeRecords();
+  }
+
   private void errorHandlingInTransaction(final Throwable processingException) throws Exception {
+    startErrorLoop(typedCommand.hasRequestMetadata());
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
@@ -498,6 +615,7 @@ public final class ProcessingStateMachine {
           if (t != null) {
             LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
             onError(
+                t,
                 () -> {
                   errorHandlingInTransaction(t);
                   writeRecords();
@@ -531,6 +649,7 @@ public final class ProcessingStateMachine {
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
             onError(
+                throwable,
                 () -> {
                   errorHandlingInTransaction(throwable);
                   updateState();
@@ -619,7 +738,7 @@ public final class ProcessingStateMachine {
   }
 
   public boolean isMakingProgress() {
-    return !onErrorHandlingLoop;
+    return errorHandlingPhase != ErrorHandlingPhase.ENDLESS_ERROR_LOOP;
   }
 
   public void startProcessing(final LastProcessingPositions lastProcessingPositions) {
@@ -643,5 +762,23 @@ public final class ProcessingStateMachine {
   @FunctionalInterface
   private interface NextProcessingStep {
     void run() throws Exception;
+  }
+
+  private enum ErrorHandlingPhase {
+    NO_ERROR,
+    // external commands failed in processRecord
+    USER_COMMAND_PROCESSING_FAILED,
+    // internal commands and events failed in processRecord
+    PROCESSING_FAILED,
+    // internal commands and events failed when handling the error from processing failure
+    PROCESSING_ERROR_FAILED,
+    // external commands failed when handling the error from processing failure
+    USER_COMMAND_PROCESSING_ERROR_FAILED,
+    // external commands failed when trying to reject with a proper error message
+    USER_COMMAND_REJECT_FAILED,
+    // external commands failed when trying to reject with a generic error message
+    USER_COMMAND_REJECT_SIMPLE_REJECT_FAILED,
+    // All attempted error handling failed.
+    ENDLESS_ERROR_LOOP
   }
 }
