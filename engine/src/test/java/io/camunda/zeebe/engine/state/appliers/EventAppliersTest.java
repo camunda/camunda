@@ -35,9 +35,7 @@ public class EventAppliersTest {
     final var events =
         Intent.INTENT_CLASSES.stream()
             .flatMap(c -> Arrays.stream(c.getEnumConstants()))
-            // Heuristic to detect event intents which are generally in past or present tense
-            // instead of the imperative used for commands.
-            .filter(intent -> intent.name().endsWith("ED") || intent.name().endsWith("ING"))
+            .filter(Intent::isEvent)
             // CheckpointIntent is not handled by the engine
             .filter(intent -> !(intent instanceof CheckpointIntent));
 
@@ -50,5 +48,31 @@ public class EventAppliersTest {
                         "Intent %s.%s has a registered event applier",
                         intent.getClass().getSimpleName(), intent.name())
                     .isNotNull());
+  }
+
+  @Test
+  void shouldOnlyRegisterAppliersForEvents() {
+    // given
+    final var intents =
+        Intent.INTENT_CLASSES.stream()
+            .flatMap(c -> Arrays.stream(c.getEnumConstants()))
+            // CheckpointIntent is not handled by the engine
+            .filter(intent -> !(intent instanceof CheckpointIntent));
+
+    // when
+    eventAppliers.registerEventAppliers(Mockito.mock(MutableProcessingState.class));
+
+    // then
+    assertThat(intents)
+        .allSatisfy(
+            intent -> {
+              if (!intent.isEvent()) {
+                assertThat(eventAppliers.getLatestVersion(intent))
+                    .describedAs(
+                        "Intent %s.%s is not an event but has a registered event applier",
+                        intent.getClass().getSimpleName(), intent.name())
+                    .isEqualTo(-1);
+              }
+            });
   }
 }
