@@ -20,6 +20,7 @@ import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
@@ -91,12 +92,15 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   private final static String NESTED_DOC_LIMIT_MESSAGE = "nested";
 
   @Getter
-  private final OpenSearchClient openSearchClient;
+  private OpenSearchClient openSearchClient;
+
+  @Getter
+  private OpenSearchAsyncClient openSearchAsyncClient;
 
   private RequestOptionsProvider requestOptionsProvider;
 
   @Getter
-  private final RichOpenSearchClient richOpenSearchClient;
+  private RichOpenSearchClient richOpenSearchClient;
 
   public OptimizeOpenSearchClient(final OpenSearchClient openSearchClient,
                                   final OpenSearchAsyncClient openSearchAsyncClient,
@@ -111,16 +115,25 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     this.openSearchClient = openSearchClient;
     this.indexNameService = indexNameService;
     this.requestOptionsProvider = requestOptionsProvider;
+    this.openSearchAsyncClient = openSearchAsyncClient;
     this.richOpenSearchClient = new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
   }
 
   public final void close() {
     Optional.of(openSearchClient).ifPresent(OpenSearchClient::shutdown);
+    Optional.of(openSearchAsyncClient).ifPresent(OpenSearchAsyncClient::shutdown);
   }
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
+    close();
     final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
+    this.openSearchClient = OpenSearchClientBuilder.buildOpenSearchClientFromConfig(configurationService);
+    this.openSearchAsyncClient = OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(configurationService);
+    this.richOpenSearchClient =
+      new RichOpenSearchClient(openSearchClient,
+                               openSearchAsyncClient,
+                               indexNameService);
     this.indexNameService = context.getBean(OptimizeIndexNameService.class);
     // For now we are descoping the custom header provider, to be evaluated with OPT-7400
     this.requestOptionsProvider = new RequestOptionsProvider(List.of(), configurationService);

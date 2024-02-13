@@ -5,22 +5,23 @@
  */
 package org.camunda.optimize.service.security;
 
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.NewCookie;
-import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_SESSION_INDEX_NAME;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class SessionServiceIT extends AbstractPlatformIT {
 
   @Test

@@ -18,8 +18,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class CleanupSchedulerIT extends AbstractPlatformIT {
 
   @Test

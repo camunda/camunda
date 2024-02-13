@@ -59,6 +59,7 @@ import static jakarta.ws.rs.HttpMethod.DELETE;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
@@ -84,7 +85,7 @@ import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWoName
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.mockserver.model.HttpRequest.request;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
@@ -878,7 +879,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void forceDeleteReport_notDeletedIfEsFailsWhenRemovingFromDashboards(final ReportType reportType) {
     // given
     String reportId = addEmptyReportToOptimize(reportType);
@@ -915,7 +916,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingAlertsForReport(final ReportType reportType) {
     // given
     String collectionId = collectionClient.createNewCollection();
@@ -947,7 +948,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingSharesForReport(final ReportType reportType) {
     // given
     String reportId = addEmptyReportToOptimize(reportType);

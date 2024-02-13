@@ -72,6 +72,7 @@ import static jakarta.ws.rs.HttpMethod.PUT;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
@@ -87,7 +88,7 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT
 import static org.mockserver.model.HttpError.error;
 import static org.mockserver.model.HttpRequest.request;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class CollectionHandlingIT extends AbstractPlatformIT {
 
   private static Stream<DefinitionType> definitionTypes() {
@@ -95,7 +96,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void collectionIsWrittenToDatabase() throws IOException {
     // TODO resolve with OPT-7455 #10085
     // given
@@ -489,8 +490,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
-  public void collectionNotDeletedIfEsFailsWhenDeletingContainedAlerts() {
+  public void collectionNotDeletedIfDbFailsWhenDeletingContainedAlerts() {
     // given
     final String collectionId = collectionClient.createNewCollection();
     final String reportId1 = reportClient.createEmptySingleProcessReportInCollection(collectionId);
@@ -518,8 +518,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
-  public void collectionNotDeletedIfEsFailsWhenDeletingContainedReport() {
+  public void collectionNotDeletedIfDbFailsWhenDeletingContainedReport() {
     // given
     final String collectionId = collectionClient.createNewCollection();
     final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
@@ -542,8 +541,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
-  public void collectionNotDeletedIfEsFailsWhenDeletingContainedDashboard() {
+  public void collectionNotDeletedIfDbFailsWhenDeletingContainedDashboard() {
     // given
     final String collectionId = collectionClient.createNewCollection();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
@@ -778,8 +776,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
-  public void copyCollectionWithAReport_entitiesNotCopiedIfCollectionCreationFailsOnEsFailure() {
+  public void copyCollectionWithAReport_entitiesNotCopiedIfCollectionCreationFailsOnDbFailure() {
     // given
     final String collectionId = collectionClient.createNewCollection();
     final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
@@ -873,7 +870,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void deleteSingleScopeOverrulesCombinedReportConflictsOnForceSet() {
     // given
     String collectionId = collectionClient.createNewCollection();

@@ -213,7 +213,7 @@ it('display load chart data and display details modal when loadChartData is call
 
   expect(loadDurationData).toHaveBeenCalled();
 
-  expect(node.find(OutlierDetailsModal).prop('selectedNode')).toEqual({
+  expect(node.find(OutlierDetailsModal).prop('selectedOutlierNode')).toEqual({
     name: 'nodeName',
     id: 'nodeKey',
     ...nodeData,

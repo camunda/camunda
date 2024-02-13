@@ -22,12 +22,13 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class CollectionRestServiceIT extends AbstractPlatformIT {
 
   @Test

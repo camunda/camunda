@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.util.SuperUserType;
@@ -13,14 +14,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import jakarta.ws.rs.core.Response;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class SettingsAuthorizationIT extends AbstractPlatformIT {
   @ParameterizedTest
   @EnumSource(SuperUserType.class)

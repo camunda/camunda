@@ -19,7 +19,7 @@ type Variable = {variableName: string; variableTerm: string | number | boolean};
 
 interface OutlierDetailsTableProps {
   loading?: boolean;
-  tasksData: Record<string, TaskData | undefined>;
+  nodeOutliers: Record<string, TaskData | undefined>;
   outlierVariables: Record<string, Variable[]>;
   flowNodeNames: Record<string, string>;
   onDetailsClick: (taskId: string, taskData: TaskData) => string;
@@ -27,7 +27,7 @@ interface OutlierDetailsTableProps {
 
 export default function OutlierDetailsTable({
   loading,
-  tasksData,
+  nodeOutliers,
   outlierVariables,
   flowNodeNames,
   onDetailsClick,
@@ -47,33 +47,40 @@ export default function OutlierDetailsTable({
   }
 
   function parseTableBody(): TableBody[] {
-    if (!tasksData) {
+    if (!nodeOutliers) {
       return [];
     }
 
-    return Object.entries(tasksData).reduce<TableBody[]>((result, [taskId, taskData]) => {
-      if (!taskData || !taskData.higherOutlier) {
-        return result;
-      }
+    return Object.entries(nodeOutliers).reduce<TableBody[]>(
+      (tableRows, [nodeOutlierId, nodeOutlierData]) => {
+        if (!nodeOutlierData || !nodeOutlierData.higherOutlier) {
+          return tableRows;
+        }
 
-      const {
-        higherOutlier: {count, relation},
-        totalCount,
-      } = taskData;
-      const variables = outlierVariables[taskId];
+        const {
+          higherOutlier: {count, relation},
+          totalCount,
+        } = nodeOutlierData;
+        const variables = outlierVariables[nodeOutlierId];
 
-      result.push([
-        flowNodeNames[taskId] || taskId,
-        totalCount.toString(),
-        getOutlierSummary(count, relation),
-        getVariablesList(variables),
-        <Button kind="tertiary" size="sm" onClick={() => onDetailsClick(taskId, taskData)}>
-          {t('common.viewDetails')}
-        </Button>,
-      ]);
+        tableRows.push([
+          flowNodeNames[nodeOutlierId] || nodeOutlierId,
+          totalCount.toString(),
+          getOutlierSummary(count, relation),
+          getVariablesList(variables),
+          <Button
+            kind="tertiary"
+            size="sm"
+            onClick={() => onDetailsClick(nodeOutlierId, nodeOutlierData)}
+          >
+            {t('common.viewDetails')}
+          </Button>,
+        ]);
 
-      return result;
-    }, []);
+        return tableRows;
+      },
+      []
+    );
   }
 
   return (

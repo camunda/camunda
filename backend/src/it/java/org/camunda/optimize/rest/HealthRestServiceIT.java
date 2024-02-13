@@ -22,9 +22,10 @@ import jakarta.ws.rs.core.Response;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.mockserver.model.HttpRequest.request;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class HealthRestServiceIT extends AbstractMultiEngineIT {
 
   @Test
@@ -100,7 +101,7 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void getReadiness_elasticsearchNotConnected() {
     // TODO resolve with OPT-7455 #10085
     // given

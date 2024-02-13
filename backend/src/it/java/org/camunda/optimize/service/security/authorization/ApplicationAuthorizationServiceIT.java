@@ -5,15 +5,16 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GLOBAL;
@@ -22,7 +23,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHOR
 import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class ApplicationAuthorizationServiceIT extends AbstractPlatformIT {
 
   @Test

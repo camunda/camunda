@@ -50,6 +50,7 @@ import java.util.List;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -62,7 +63,7 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.mockserver.model.HttpRequest.request;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
   public static final String DEFAULT_DEFINITION_KEY = "_KEY_";
@@ -419,7 +420,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void updateDefinitionScopeEntry_removeTenant_reportXmlNotAffected() {
     // given
     final String definitionXml = "someXml";
@@ -556,7 +557,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void forceRemoveScopeFailsIfEsFailsToRemoveReports() {
     // given
     String collectionId = collectionClient.createNewCollection();
@@ -755,7 +756,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void bulkDeleteOfScopesSkipsEntryIfEsFailsToRemoveAssociatedReports() {
     // given
     String collectionId = collectionClient.createNewCollection();

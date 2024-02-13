@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import io.github.netmikey.logunit.api.LogCapturer;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -27,7 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.event.Level;
 
-import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_GROUP;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
@@ -43,7 +44,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class CollectionRestServiceRoleIT extends AbstractPlatformIT {
 
   private static final String USER_KERMIT_ID = "kermit";
@@ -715,7 +716,7 @@ public class CollectionRestServiceRoleIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void updatingNonPresentRoleFails() {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -876,7 +877,7 @@ public class CollectionRestServiceRoleIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void bulkDeleteDoesNotDeleteLastManager() {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -906,7 +907,7 @@ public class CollectionRestServiceRoleIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void bulkDeleteDoesNotAbortWhenRoleIdDoesNotExist() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();

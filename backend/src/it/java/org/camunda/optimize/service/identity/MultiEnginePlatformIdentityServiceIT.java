@@ -20,12 +20,13 @@ import org.slf4j.event.Level;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.atLeast;
 import static org.mockserver.verify.VerificationTimes.once;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class MultiEnginePlatformIdentityServiceIT extends AbstractMultiEngineIT {
 
   @RegisterExtension

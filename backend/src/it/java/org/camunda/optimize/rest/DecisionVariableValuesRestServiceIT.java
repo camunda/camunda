@@ -18,8 +18,9 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class DecisionVariableValuesRestServiceIT extends AbstractPlatformIT {
 
   private static final String TEST_VARIANT_INPUTS = "inputs";

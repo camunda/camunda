@@ -16,10 +16,11 @@ import jakarta.ws.rs.core.Response;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESOURCES;
 import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class NoCachingIT extends AbstractPlatformIT {
 
   @ParameterizedTest

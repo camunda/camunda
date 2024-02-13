@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -53,7 +54,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAM
 import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class DefinitionRestServiceIT extends AbstractPlatformIT {
   private static final TenantDto SIMPLE_TENANT_NOT_DEFINED_DTO = TenantDto.builder()
     .id(TENANT_NOT_DEFINED.getId())
@@ -163,7 +164,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getEventDefinitionByTypeAndKey() {
     // given
     final DefinitionOptimizeResponseDto expectedDefinition = createEventBasedDefinition("key", "the name");
@@ -305,7 +306,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitions() {
     // given
     final DefinitionOptimizeResponseDto processDefinition1 = createDefinitionAndAddToDatabase(
@@ -506,7 +507,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitions_multiTenant_sharedDefinitions() {
     // given
     createTenant(TENANT_1);
@@ -552,7 +553,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitions_multiTenant_sharedAndSpecificDefinitions() {
     // given
     createTenant(TENANT_1);
@@ -725,7 +726,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getProcessDefinitionKeys_camundaImportedEventProcessesOnly() {
     // given
     toggleCamundaEventImportsConfiguration(true);
@@ -836,7 +837,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitionVersionsByTypeAndKey_eventBasedProcess() {
     // given
     final DefinitionOptimizeResponseDto eventProcessDefinition1 = createEventBasedDefinition(
@@ -1289,7 +1290,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
 
   @Test
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_eventBasedProcess() {
     // given
     final DefinitionOptimizeResponseDto eventProcessDefinition1 = createEventBasedDefinition(
@@ -1458,7 +1459,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitionsGroupedByTenant_multiTenant_sharedDefinitions() {
     // given
     createTenant(TENANT_1);
@@ -1519,7 +1520,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitionsGroupedByTenant_multiTenant_sharedAndSpecificDefinitions() {
     // given
     createTenant(TENANT_1);

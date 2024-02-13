@@ -25,10 +25,11 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test

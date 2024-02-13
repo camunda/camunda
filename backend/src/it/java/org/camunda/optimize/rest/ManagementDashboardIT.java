@@ -54,6 +54,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_DESCRIPTION_LOCALIZATION_CODE;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.ENDED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE;
@@ -67,7 +68,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_
 import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class ManagementDashboardIT extends AbstractPlatformIT {
 
   private static final Map<String, ExpectedReportConfigurationAndLocation> expectedReportsAndLocationsByName =

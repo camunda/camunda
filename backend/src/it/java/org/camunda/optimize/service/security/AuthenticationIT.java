@@ -7,6 +7,8 @@ package org.camunda.optimize.service.security;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.AbstractPlatformIT;
@@ -15,16 +17,15 @@ import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class AuthenticationIT extends AbstractPlatformIT {
 
   @Test

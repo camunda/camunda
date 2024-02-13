@@ -255,7 +255,7 @@ jobs:
         # TODO with #11449 once OS project is completed remove this "includedGroups" section and the "exclude"
         # section below
         - includedGroups: 'openSearchPassing'
-          excludedGroups: 'openSearchSingleTestFailOK'
+          excludedGroups: 'openSearchSingleTestFailOK,openSearchShouldBePassing'
           profiles: 'it,engine-latest'
           requiresCambpm: true
           database: 'opensearch'

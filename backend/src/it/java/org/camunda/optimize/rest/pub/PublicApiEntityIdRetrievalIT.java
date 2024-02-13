@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
@@ -30,7 +31,7 @@ import static org.camunda.optimize.service.util.ProcessReportDataType.RAW_DATA;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class PublicApiEntityIdRetrievalIT extends AbstractPlatformIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 

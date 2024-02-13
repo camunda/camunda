@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
@@ -42,7 +43,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.mockserver.model.HttpRequest.request;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class DashboardHandlingIT extends AbstractPlatformIT {
 
   @AfterEach
@@ -51,7 +52,7 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void dashboardIsWrittenToElasticsearch() throws IOException {
     // TODO resolve with OPT-7455 #10085
     // given
@@ -190,7 +191,6 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
   public void copyPrivateDashboardAndMoveToCollection_reportsAreCopiedDespiteDashboardCreationFailureWithEsDown() {
     // given
     String dashboardId = addEmptyPrivateDashboard();
@@ -225,7 +225,6 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
   public void copyPrivateDashboardAndMoveToCollection_dashboardNotCreatedIfReportCopyFailsWithEsDown() {
     // given
     String dashboardId = addEmptyPrivateDashboard();

@@ -12,7 +12,7 @@ const props = {
   flowNodeNames: {
     task1: 'Task 1',
   },
-  tasksData: {
+  nodeOutliers: {
     task1: {
       totalCount: 10,
       higherOutlier: {count: 1, relation: 0.5},
@@ -49,7 +49,7 @@ it('should render the table properly', () => {
 
 it('should ommit tasks without data', () => {
   const node = shallow(
-    <OutlierDetailsTable {...props} tasksData={{...props.tasksData, task: undefined}} />
+    <OutlierDetailsTable {...props} nodeOutliers={{...props.nodeOutliers, task: undefined}} />
   );
 
   const tableBody = node.find('Table').prop<(string | JSX.Element)[][]>('body');
@@ -59,7 +59,10 @@ it('should ommit tasks without data', () => {
 
 it('should ommit tasks without higher outlier', () => {
   const node = shallow(
-    <OutlierDetailsTable {...props} tasksData={{...props.tasksData, task: {totalCount: 10}}} />
+    <OutlierDetailsTable
+      {...props}
+      nodeOutliers={{...props.nodeOutliers, task: {totalCount: 10}}}
+    />
   );
 
   const tableBody = node.find('Table').prop<(string | JSX.Element)[][]>('body');

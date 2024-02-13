@@ -48,6 +48,7 @@ import java.util.stream.Stream;
 import static jakarta.ws.rs.HttpMethod.DELETE;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.name;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
@@ -62,7 +63,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_R
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.mockserver.model.HttpRequest.request;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
@@ -362,7 +363,8 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Probable cause is implementation error in EntitiesReaderOS.countEntitiesForCollections
   public void getEntities_IncludesCollectionSubEntityCountsIfThereAreNoEntities() {
     // given
     collectionClient.createNewCollection();
@@ -385,7 +387,8 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Probable cause is implementation error in EntitiesReaderOS.countEntitiesForCollections
   public void getEntities_IncludesCollectionSubEntityCounts() {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -820,8 +823,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
-  public void bulkDeleteEntities_skipsEntryWhenESfailsToDeleteReport() {
+  public void bulkDeleteEntities_skipsEntryWhenDBfailsToDeleteReport() {
     // given
     String reportId1 = reportClient.createEmptySingleProcessReport();
     String reportId2 = reportClient.createEmptySingleProcessReport();
@@ -851,8 +853,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
-  public void bulkDeleteEntities_skipsEntryWhenESfailsToDeleteCollection() {
+  public void bulkDeleteEntities_skipsEntryWhenDBfailsToDeleteCollection() {
     // given
     String collectionId1 = collectionClient.createNewCollection();
     String collectionId2 = collectionClient.createNewCollection();
@@ -884,8 +885,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
-  public void bulkDeleteEntities_skipsEntryWhenESfailsToDeleteDashboard() {
+  public void bulkDeleteEntities_skipsEntryWhenDBfailsToDeleteDashboard() {
     // given
     String dashboardId1 = dashboardClient.createEmptyDashboard(null);
     String dashboardId2 = dashboardClient.createEmptyDashboard(null);

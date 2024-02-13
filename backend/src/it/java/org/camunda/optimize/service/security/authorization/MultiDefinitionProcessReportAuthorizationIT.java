@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.security.authorization;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -21,15 +22,15 @@ import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class MultiDefinitionProcessReportAuthorizationIT extends AbstractPlatformIT {
   private static final String DEFINITION_KEY_1 = "key1";
   private static final String DEFINITION_KEY_2 = "key2";

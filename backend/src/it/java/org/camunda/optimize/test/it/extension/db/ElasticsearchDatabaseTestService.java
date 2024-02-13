@@ -167,7 +167,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public ClientAndServer useDBMockServer() {
-    log.debug("Using ElasticSearch MockServer");
+    log.info("Using ElasticSearch MockServer");
     if (CLIENT_CACHE.containsKey(MOCKSERVER_CLIENT_KEY)) {
       prefixAwareRestHighLevelClient = CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY);
     } else {

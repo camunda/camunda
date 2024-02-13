@@ -19,12 +19,12 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 
+import static org.camunda.optimize.upgrade.os.OpenSearchClientBuilder.getCurrentOSVersion;
 import static org.camunda.optimize.service.metadata.Version.getMajorAndMinor;
 import static org.camunda.optimize.service.metadata.Version.getMajorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
-import static org.camunda.optimize.service.db.os.OptimizeOpenSearchClientFactory.getCurrentOSVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder.getCurrentESVersion;
 
 @Slf4j

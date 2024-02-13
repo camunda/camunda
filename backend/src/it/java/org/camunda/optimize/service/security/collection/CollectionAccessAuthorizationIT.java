@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.security.collection;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
@@ -18,15 +19,15 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 
-import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test

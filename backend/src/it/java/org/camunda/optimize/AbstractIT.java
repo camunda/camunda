@@ -56,6 +56,14 @@ import static org.camunda.optimize.service.util.configuration.EnvironmentPropert
 @Configuration
 public abstract class AbstractIT {
 
+  // All tests marked with this tag are passing with OpenSearch
+  public static final String OPENSEARCH_PASSING = "openSearchPassing";
+  // Tests marked with this tag are known to not be working with OpenSearch and are not expected to be working yet
+  public static final String OPENSEARCH_SINGLE_TEST_FAIL_OK = "openSearchSingleTestFailOK";
+  // Tests marked with this tag are tests that should be working with OpenSearch, but are failing due to a bug. They
+  // are ignored by the 'OpenSearch passing' CI pipeline, but need to be addressed soon
+  public static final String OPENSEARCH_SHOULD_BE_PASSING = "openSearchShouldBePassing";
+
   @RegisterExtension
   @Order(1)
   public static DatabaseIntegrationTestExtension databaseIntegrationTestExtension =

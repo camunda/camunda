@@ -18,11 +18,12 @@ import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class SettingsRestServiceIT extends AbstractPlatformIT {
   public final String GROUP_ID = "someGroup";
 

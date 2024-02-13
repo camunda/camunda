@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.security.collection;
 
 import com.google.common.collect.ImmutableList;
+import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.AuthorizedEntityDto;
@@ -29,13 +30,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -46,7 +47,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleIT {
 
   private static final String PROCESS_KEY = "aProcess";
@@ -305,7 +306,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
   @ParameterizedTest
   @MethodSource(ACCESS_IDENTITY_ROLES_AND_REPORT_TYPES)
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateAccessGrantedToCollectionReportByCollectionRole(final IdentityRoleAndReportScenario identityAndReport) {
     // given
     final int engineDefinitionResourceType = getEngineResourceTypeForReportType(identityAndReport);

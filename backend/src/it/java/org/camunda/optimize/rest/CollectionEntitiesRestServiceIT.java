@@ -18,8 +18,9 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   public static final Comparator<EntityResponseDto> DEFAULT_ENTITIES_COMPARATOR =

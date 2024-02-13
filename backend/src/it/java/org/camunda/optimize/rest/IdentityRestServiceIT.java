@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.rest.AuthorizationType.CSV_EXPORT;
 import static org.camunda.optimize.dto.optimize.rest.AuthorizationType.ENTITY_EDITOR;
 import static org.camunda.optimize.dto.optimize.rest.AuthorizationType.TELEMETRY;
@@ -48,7 +49,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class IdentityRestServiceIT extends AbstractPlatformIT {
 
   @Test

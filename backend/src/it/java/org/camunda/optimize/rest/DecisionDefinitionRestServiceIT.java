@@ -15,12 +15,13 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServiceIT {
 
   private static final String ALL_VERSIONS_STRING = "ALL";
@@ -96,7 +97,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDecisionDefinitionsWithXml() {
     // given
     final DecisionDefinitionOptimizeDto expectedDecisionDefinition = createDecisionDefinitionDto();
@@ -132,7 +133,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
   }
 
   @Test
-  @Tag("openSearchSingleTestFailOK")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getLatestDecisionDefinitionXml() {
     // given
     final String key = "aKey";

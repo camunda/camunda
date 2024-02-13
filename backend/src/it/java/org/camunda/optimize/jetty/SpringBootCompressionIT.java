@@ -12,8 +12,10 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.Collections;
 
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+
 @DirtiesContext
-@Tag("openSearchPassing")
+@Tag(OPENSEARCH_PASSING)
 public class SpringBootCompressionIT extends AbstractPlatformIT {
 
   @Test

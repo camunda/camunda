@@ -32,14 +32,14 @@ export default function TaskAnalysis() {
     filters: [],
   });
   const [xml, setXml] = useState(null);
-  const [data, setData] = useState({});
-  const [heatData, setHeatData] = useState({});
+  const [nodeOutliers, setNodeOutliers] = useState({});
+  const [higherNodeOutliersHeatData, setHigherNodeOutliersHeatData] = useState({});
   const [flowNodeNames, setFlowNodeNames] = useState({});
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [outlierVariables, setOutlierVariables] = useState({});
+  const [selectedOutlierNode, setSelectedOutlierNode] = useState(null);
+  const [higherNodeOutlierVariables, setHigherNodeOutlierVariables] = useState({});
   const [loading, setLoading] = useState(false);
   const {mightFail} = useErrorHandling();
-  const dataRef = useRef();
+  const nodeOutliersRef = useRef();
 
   const loadFlowNodeNames = useCallback(
     (config) => {
@@ -86,16 +86,16 @@ export default function TaskAnalysis() {
     });
   }
 
-  const loadOutlierVariables = useCallback(async (heatData, data, config) => {
-    return Object.keys(heatData).reduce(async (acc, id) => {
+  const loadOutlierVariables = useCallback(async (outliersHeatData, nodeOutliers, config) => {
+    return Object.keys(outliersHeatData).reduce(async (nodeOutlierVariables, nodeOutlierId) => {
       const outlierVariables = await loadCommonOutliersVariables({
         ...config,
-        flowNodeId: id,
-        higherOutlierBound: data[id].higherOutlier.boundValue,
+        flowNodeId: nodeOutlierId,
+        higherOutlierBound: nodeOutliers[nodeOutlierId].higherOutlier.boundValue,
       });
 
-      acc[id] = outlierVariables;
-      return acc;
+      nodeOutlierVariables[nodeOutlierId] = outlierVariables;
+      return nodeOutlierVariables;
     }, {});
   }, []);
 
@@ -105,21 +105,34 @@ export default function TaskAnalysis() {
       loadFlowNodeNames(config);
       mightFail(
         loadNodesOutliers(config),
-        async (data) => {
-          const heatData = Object.keys(data).reduce((acc, key) => {
+        async (nodeOutliers) => {
+          const higherOutliersHeatData = Object.keys(nodeOutliers).reduce(
             // taking only high outliers into consideration
-            if (data[key].higherOutlierHeat && data[key].higherOutlier) {
-              return {...acc, [key]: data[key].higherOutlierHeat};
-            }
-            return acc;
-          }, {});
+            (nodeOutliersHeats, nodeOutlierId) => {
+              if (
+                nodeOutliers[nodeOutlierId].higherOutlierHeat &&
+                nodeOutliers[nodeOutlierId].higherOutlier
+              ) {
+                return {
+                  ...nodeOutliersHeats,
+                  [nodeOutlierId]: nodeOutliers[nodeOutlierId].higherOutlierHeat,
+                };
+              }
+              return nodeOutliersHeats;
+            },
+            {}
+          );
 
-          const outlierVariables = await loadOutlierVariables(heatData, data, config);
+          const higherNodeOutlierVariables = await loadOutlierVariables(
+            higherOutliersHeatData,
+            nodeOutliers,
+            config
+          );
 
-          setData(data);
-          dataRef.current = data;
-          setHeatData(heatData);
-          setOutlierVariables(outlierVariables);
+          setNodeOutliers(nodeOutliers);
+          nodeOutliersRef.current = nodeOutliers;
+          setHigherNodeOutliersHeatData(higherOutliersHeatData);
+          setHigherNodeOutlierVariables(higherNodeOutlierVariables);
         },
         showError,
         () => setLoading(false)
@@ -130,11 +143,11 @@ export default function TaskAnalysis() {
 
   function onNodeClick({element: {id}}) {
     // we need to use a ref here because this will create a closure
-    const nodeData = dataRef.current[id];
-    if (!nodeData?.higherOutlier) {
+    const clickedNodeOutlier = nodeOutliersRef.current[id];
+    if (!clickedNodeOutlier?.higherOutlier) {
       return;
     }
-    loadChartData(id, nodeData);
+    loadChartData(id, clickedNodeOutlier);
   }
 
   function loadChartData(id, nodeData) {
@@ -146,7 +159,7 @@ export default function TaskAnalysis() {
         higherOutlierBound: nodeData.higherOutlier.boundValue,
       }),
       (data) => {
-        setSelectedNode({
+        setSelectedOutlierNode({
           name: flowNodeNames[id] || id,
           id,
           data,
@@ -165,14 +178,17 @@ export default function TaskAnalysis() {
     }
   }, [config, loadOutlierData]);
 
-  const empty = xml && !loading && Object.keys(heatData).length === 0;
-  const matchingInstancesCount = Object.values(data).reduce((result, data) => {
-    if (data?.totalCount) {
-      result += data.totalCount;
-    }
-    return result;
-  }, 0);
-  const hasData = !!Object.keys(data).length;
+  const empty = xml && !loading && Object.keys(higherNodeOutliersHeatData).length === 0;
+  const matchingInstancesCount = Object.values(nodeOutliers).reduce(
+    (matchingInstancesCount, nodeOutlierData) => {
+      if (nodeOutlierData?.totalCount) {
+        matchingInstancesCount += nodeOutlierData.totalCount;
+      }
+      return matchingInstancesCount;
+    },
+    0
+  );
+  const hasData = !!Object.keys(nodeOutliers).length;
 
   return (
     <div className="TaskAnalysis">
@@ -185,15 +201,15 @@ export default function TaskAnalysis() {
       <div className={classnames('TaskAnalysis__diagram', {empty})}>
         {xml && hasData && (
           <BPMNDiagram xml={xml} loading={loading}>
-            <HeatmapOverlay data={heatData} onNodeClick={onNodeClick} />
+            <HeatmapOverlay data={higherNodeOutliersHeatData} onNodeClick={onNodeClick} />
           </BPMNDiagram>
         )}
         {empty && <div className="noOutliers">{t('analysis.task.notFound')}</div>}
       </div>
-      {selectedNode && (
+      {selectedOutlierNode && (
         <OutlierDetailsModal
-          onClose={() => setSelectedNode(null)}
-          selectedNode={selectedNode}
+          onClose={() => setSelectedOutlierNode(null)}
+          selectedOutlierNode={selectedOutlierNode}
           config={config}
         />
       )}
@@ -204,8 +220,8 @@ export default function TaskAnalysis() {
             flowNodeNames={flowNodeNames}
             loading={loading}
             onDetailsClick={loadChartData}
-            outlierVariables={outlierVariables}
-            tasksData={data}
+            outlierVariables={higherNodeOutlierVariables}
+            nodeOutliers={nodeOutliers}
           />
         </>
       )}
