@@ -12,7 +12,6 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,10 +39,7 @@ public class EventAppliersTest {
             // instead of the imperative used for commands.
             .filter(intent -> intent.name().endsWith("ED") || intent.name().endsWith("ING"))
             // CheckpointIntent is not handled by the engine
-            .filter(intent -> !(intent instanceof CheckpointIntent))
-            // ProcessInstanceResultIntent is only used for client responses and does not appear on
-            // the log
-            .filter(intent -> !(intent instanceof ProcessInstanceResultIntent));
+            .filter(intent -> !(intent instanceof CheckpointIntent));
 
     // then
     assertThat(events)
