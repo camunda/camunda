@@ -37,6 +37,16 @@ public enum ProcessInstanceCreationIntent implements Intent, ProcessInstanceRela
     return value;
   }
 
+  @Override
+  public boolean isEvent() {
+    switch (this) {
+      case CREATED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   public static Intent from(final short value) {
     switch (value) {
       case 0:

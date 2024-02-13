@@ -44,4 +44,14 @@ public enum JobBatchIntent implements Intent {
   public short value() {
     return value;
   }
+
+  @Override
+  public boolean isEvent() {
+    switch (this) {
+      case ACTIVATED:
+        return true;
+      default:
+        return false;
+    }
+  }
 }

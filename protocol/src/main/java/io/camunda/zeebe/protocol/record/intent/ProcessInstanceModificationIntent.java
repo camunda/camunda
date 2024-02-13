@@ -31,6 +31,16 @@ public enum ProcessInstanceModificationIntent implements Intent, ProcessInstance
   }
 
   @Override
+  public boolean isEvent() {
+    switch (this) {
+      case MODIFIED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  @Override
   public boolean shouldBanInstanceOnError() {
     return true;
   }

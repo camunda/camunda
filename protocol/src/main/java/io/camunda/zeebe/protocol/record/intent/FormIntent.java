@@ -44,4 +44,9 @@ public enum FormIntent implements Intent {
   public short value() {
     return value;
   }
+
+  @Override
+  public boolean isEvent() {
+    return true;
+  }
 }

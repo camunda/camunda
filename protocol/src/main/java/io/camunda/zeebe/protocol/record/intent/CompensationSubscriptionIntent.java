@@ -46,4 +46,9 @@ public enum CompensationSubscriptionIntent implements Intent {
   public short value() {
     return value;
   }
+
+  @Override
+  public boolean isEvent() {
+    return true;
+  }
 }
