@@ -69,6 +69,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Component
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
+  private static final OffsetDateTime MIN_PARSER_COMPLIANT_DATE =
+      OffsetDateTime.parse("0000-01-01T00:00:00Z");
   private final TopologyManagementRequestSender requestSender;
 
   @Autowired
@@ -350,7 +352,12 @@ public class ClusterEndpoint {
   }
 
   private static OffsetDateTime mapInstantToDateTime(final Instant timestamp) {
-    return timestamp.equals(Instant.MIN) ? OffsetDateTime.MIN : timestamp.atOffset(ZoneOffset.UTC);
+    // Instant.MIN ("-1000000000-01-01T00:00Z") is not compliant with rfc3339 parsers
+    // as year field has is not 4 digits, so we replace here with the min possible.
+    // see: https://github.com/camunda/zeebe/issues/16256
+    return timestamp.equals(Instant.MIN)
+        ? MIN_PARSER_COMPLIANT_DATE
+        : timestamp.atOffset(ZoneOffset.UTC);
   }
 
   private static BrokerStateCode mapBrokerState(final MemberState.State state) {
