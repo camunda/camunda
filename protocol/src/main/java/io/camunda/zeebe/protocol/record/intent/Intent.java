@@ -59,11 +59,21 @@ public interface Intent {
         public String name() {
           return "UNKNOWN";
         }
+
+        @Override
+        public boolean isEvent() {
+          return false;
+        }
       };
 
   short value();
 
   String name();
+
+  /**
+   * @return true if this intent is used as an event, i.e. it's not a command or command rejection.
+   */
+  boolean isEvent();
 
   @SuppressWarnings("checkstyle:MissingSwitchDefault")
   static Intent fromProtocolValue(final ValueType valueType, final short intent) {

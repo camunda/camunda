@@ -55,4 +55,16 @@ public enum DeploymentIntent implements Intent {
   public short value() {
     return value;
   }
+
+  @Override
+  public boolean isEvent() {
+    switch (this) {
+      case CREATED:
+      case DISTRIBUTED:
+      case FULLY_DISTRIBUTED:
+        return true;
+      default:
+        return false;
+    }
+  }
 }
