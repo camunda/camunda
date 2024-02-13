@@ -52,6 +52,7 @@ public abstract class DatabaseTestService {
 
   protected boolean haveToClean;
   protected final String customIndexPrefix;
+  private TestIndexRepository testIndexRepository;
 
   protected DatabaseTestService(final String customIndexPrefix,
                                 final boolean haveToClean) {
@@ -78,8 +79,6 @@ public abstract class DatabaseTestService {
   public abstract <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type);
 
   public abstract DatabaseClient getDatabaseClient();
-
-  public abstract TestIndexRepository getTestIndexRepository();
 
   // TODO OPT-7455 - remove this coupling to the ES client from the abstract test service
   public abstract OptimizeElasticsearchClient getOptimizeElasticsearchClient();
@@ -150,6 +149,14 @@ public abstract class DatabaseTestService {
 
   public void disableCleanup() {
     this.haveToClean = false;
+  }
+
+  public TestIndexRepository getTestIndexRepository() {
+    return testIndexRepository;
+  }
+
+  protected void setTestIndexRepository(final TestIndexRepository testIndexRepository) {
+    this.testIndexRepository = testIndexRepository;
   }
 
   protected String buildUpdateScript(final long duration) {

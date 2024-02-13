@@ -37,7 +37,6 @@ import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
-import org.camunda.optimize.test.repository.TestIndexRepository;
 import org.camunda.optimize.test.repository.TestIndexRepositoryES;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -121,23 +120,17 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   private String elasticsearchDatabaseVersion;
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
-  private final TestIndexRepository testIndexRepository;
 
   public ElasticsearchDatabaseTestService(final String customIndexPrefix,
                                           final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
     initEsClient();
-    this.testIndexRepository = new TestIndexRepositoryES(prefixAwareRestHighLevelClient);
+    setTestIndexRepository(new TestIndexRepositoryES(prefixAwareRestHighLevelClient));
   }
 
   @Override
   public DatabaseClient getDatabaseClient() {
     return prefixAwareRestHighLevelClient;
-  }
-
-  @Override
-  public TestIndexRepository getTestIndexRepository() {
-    return testIndexRepository;
   }
 
   @Override
