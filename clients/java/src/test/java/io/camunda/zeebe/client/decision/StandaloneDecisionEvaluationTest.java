@@ -42,6 +42,7 @@ import org.junit.Test;
 public class StandaloneDecisionEvaluationTest extends ClientTest {
 
   private static final long DECISION_KEY = 123L;
+  private static final long DECISION_INSTANCE_KEY = 234L;
   private static final String TENANT_ID = "foo";
   private static GatewayOuterClass.EvaluatedDecisionOutput evaluatedOutput;
   private static GatewayOuterClass.MatchedDecisionRule matchedRule;
@@ -97,6 +98,7 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
             .setFailedDecisionId("my-decision")
             .setFailureMessage("decision-evaluation-failure")
             .setTenantId(TENANT_ID)
+            .setDecisionInstanceKey(DECISION_INSTANCE_KEY)
             .addEvaluatedDecisions(evaluatedDecision)
             .build();
   }
@@ -315,6 +317,8 @@ public class StandaloneDecisionEvaluationTest extends ClientTest {
     assertThat(response.getFailureMessage())
         .isEqualTo(evaluateDecisionResponse.getFailureMessage());
     assertThat(response.getTenantId()).isEqualTo(evaluateDecisionResponse.getTenantId());
+    assertThat(response.getDecisionInstanceKey())
+        .isEqualTo(evaluateDecisionResponse.getDecisionInstanceKey());
 
     // assert EvaluatedDecision
     assertThat(response.getEvaluatedDecisions()).hasSize(1);
