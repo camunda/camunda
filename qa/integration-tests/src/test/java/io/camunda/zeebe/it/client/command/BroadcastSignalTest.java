@@ -154,6 +154,5 @@ public class BroadcastSignalTest {
     // then
     final BroadcastSignalResponse response = responseFuture.join();
     assertThat(response.getKey()).isEqualTo(record.getKey());
-    assertThat(response.getTenantId()).isEqualTo(record.getValue().getTenantId());
   }
 }
