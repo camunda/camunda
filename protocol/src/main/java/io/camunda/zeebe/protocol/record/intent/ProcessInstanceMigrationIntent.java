@@ -30,6 +30,16 @@ public enum ProcessInstanceMigrationIntent implements Intent, ProcessInstanceRel
     return value;
   }
 
+  @Override
+  public boolean isEvent() {
+    switch (this) {
+      case MIGRATED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   public static Intent from(final short value) {
     switch (value) {
       case 0:
