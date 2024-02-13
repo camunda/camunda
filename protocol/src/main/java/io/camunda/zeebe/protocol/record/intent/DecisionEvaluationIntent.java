@@ -44,4 +44,15 @@ public enum DecisionEvaluationIntent implements Intent {
   public short value() {
     return value;
   }
+
+  @Override
+  public boolean isEvent() {
+    switch (this) {
+      case EVALUATED:
+      case FAILED:
+        return true;
+      default:
+        return false;
+    }
+  }
 }
