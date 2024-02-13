@@ -3,32 +3,25 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.db.os.writer;
+package org.camunda.optimize.test.repository;
 
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.db.writer.ArchiveProcessInstanceWriter;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import org.springframework.context.ApplicationContext;
+import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
-@AllArgsConstructor
 @Component
-@Slf4j
+@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
-public class ArchiveProcessInstanceWriterOS implements ArchiveProcessInstanceWriter {
-
+public class TestIndexRepositoryOS implements TestIndexRepository {
+  private final OptimizeOpenSearchClient osClient;
   @Override
-  public void createInstanceIndicesIfMissing(final Set<String> processDefinitionKeys) {
-    //todo will be handled in the OPT-7376
+  public Set<String> getAllIndexNames() {
+    GetIndexRequest.Builder requestBuilder = new GetIndexRequest.Builder().index("*");
+    return osClient.getRichOpenSearchClient().index().get(requestBuilder).result().keySet();
   }
-
-  @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    //todo will be handled in the OPT-7376
-  }
-
 }

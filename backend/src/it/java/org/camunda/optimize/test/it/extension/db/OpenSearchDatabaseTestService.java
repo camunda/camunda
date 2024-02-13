@@ -18,7 +18,6 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClientFactory;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import org.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
@@ -38,6 +37,7 @@ import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.camunda.optimize.test.repository.TestIndexRepositoryOS;
 import org.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
@@ -93,6 +93,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
                                        final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
     initOsClient();
+    setTestIndexRepository(new TestIndexRepositoryOS(prefixAwareOptimizeOpenSearchClient));
   }
 
   @Override

@@ -3,14 +3,10 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.db.writer;
-
-import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
+package org.camunda.optimize.test.repository;
 
 import java.util.Set;
 
-public interface ArchiveProcessInstanceWriter extends ConfigurationReloadable {
-
-  void createInstanceIndicesIfMissing(final Set<String> processDefinitionKeys);
-
+public interface TestIndexRepository {
+  Set<String> getAllIndexNames();
 }

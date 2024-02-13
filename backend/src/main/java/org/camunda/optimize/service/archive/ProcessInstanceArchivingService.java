@@ -5,11 +5,13 @@
  */
 package org.camunda.optimize.service.archive;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.db.reader.ProcessInstanceReader;
-import org.camunda.optimize.service.db.writer.ArchiveProcessInstanceWriter;
+import org.camunda.optimize.service.db.repository.IndexRepository;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
@@ -17,10 +19,11 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-
 import java.time.Duration;
+import java.util.Set;
+
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.PROCESS_INSTANCE_ARCHIVE_INDEX;
 
 @RequiredArgsConstructor
 @Component
@@ -29,7 +32,7 @@ public class ProcessInstanceArchivingService extends AbstractScheduledService im
 
   private final ConfigurationService configurationService;
   private final ProcessInstanceReader processInstanceReader;
-  private final ArchiveProcessInstanceWriter archiveProcessInstanceWriter;
+  private final IndexRepository indexRepository;
 
   @PostConstruct
   public void init() {
@@ -73,8 +76,11 @@ public class ProcessInstanceArchivingService extends AbstractScheduledService im
   public void archiveCompletedProcessInstances() {
     log.debug("Archiving completed process instances.");
 
-    archiveProcessInstanceWriter.createInstanceIndicesIfMissing(
-      processInstanceReader.getExistingProcessDefinitionKeysFromInstances());
+    indexRepository.createMissingIndices(
+      PROCESS_INSTANCE_ARCHIVE_INDEX,
+      Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
+      processInstanceReader.getExistingProcessDefinitionKeysFromInstances()
+    );
   }
 
 }

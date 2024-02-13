@@ -37,6 +37,7 @@ import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.camunda.optimize.test.repository.TestIndexRepositoryES;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
@@ -124,6 +125,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                                           final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
     initEsClient();
+    setTestIndexRepository(new TestIndexRepositoryES(prefixAwareRestHighLevelClient));
   }
 
   @Override

@@ -22,6 +22,7 @@ import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.camunda.optimize.test.repository.TestIndexRepository;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
@@ -51,6 +52,7 @@ public abstract class DatabaseTestService {
 
   protected boolean haveToClean;
   protected final String customIndexPrefix;
+  private TestIndexRepository testIndexRepository;
 
   protected DatabaseTestService(final String customIndexPrefix,
                                 final boolean haveToClean) {
@@ -147,6 +149,14 @@ public abstract class DatabaseTestService {
 
   public void disableCleanup() {
     this.haveToClean = false;
+  }
+
+  public TestIndexRepository getTestIndexRepository() {
+    return testIndexRepository;
+  }
+
+  protected void setTestIndexRepository(final TestIndexRepository testIndexRepository) {
+    this.testIndexRepository = testIndexRepository;
   }
 
   protected String buildUpdateScript(final long duration) {

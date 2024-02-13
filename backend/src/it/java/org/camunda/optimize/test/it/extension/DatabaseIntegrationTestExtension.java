@@ -31,6 +31,7 @@ import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.test.it.extension.db.DatabaseTestService;
 import org.camunda.optimize.test.it.extension.db.ElasticsearchDatabaseTestService;
 import org.camunda.optimize.test.it.extension.db.OpenSearchDatabaseTestService;
+import org.camunda.optimize.test.repository.TestIndexRepository;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -202,6 +203,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
 
   public OptimizeElasticsearchClient getOptimizeElasticsearchClient() {
     return databaseTestService.getOptimizeElasticsearchClient();
+  }
+
+  public TestIndexRepository getTestIndexRepository() {
+    return databaseTestService.getTestIndexRepository();
   }
 
   public void cleanAndVerify() {
