@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.topology.api;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
@@ -34,11 +35,15 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
 
   private final TopologyChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
+  private final MemberId localMemberId;
 
   public TopologyManagementRequestsHandler(
-      final TopologyChangeCoordinator coordinator, final ConcurrencyControl executor) {
+      final TopologyChangeCoordinator coordinator,
+      final MemberId localMemberId,
+      final ConcurrencyControl executor) {
     this.coordinator = coordinator;
     this.executor = executor;
+    this.localMemberId = localMemberId;
   }
 
   @Override
@@ -94,6 +99,14 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   public ActorFuture<TopologyChangeResponse> scaleMembers(final ScaleRequest scaleRequest) {
     return handleRequest(
         scaleRequest.dryRun(), new ScaleRequestTransformer(scaleRequest.members()));
+  }
+
+  @Override
+  public ActorFuture<TopologyChangeResponse> forceScaleDown(
+      final ScaleRequest forceScaleDownRequest) {
+    return handleRequest(
+        forceScaleDownRequest.dryRun(),
+        new ForceScaleDownRequestTransformer(forceScaleDownRequest.members(), localMemberId));
   }
 
   @Override
