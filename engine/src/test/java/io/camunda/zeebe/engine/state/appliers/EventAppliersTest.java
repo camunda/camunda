@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
@@ -44,10 +46,12 @@ public class EventAppliersTest {
   @Test
   void shouldApplyStateUsingRegisteredApplier() {
     // given
-    eventAppliers.register(Intent.UNKNOWN, 1, mockedApplier);
+    final var intent = mock(Intent.class);
+    when(intent.isEvent()).thenReturn(true);
+    eventAppliers.register(intent, 1, mockedApplier);
 
     // when
-    eventAppliers.applyState(1, Intent.UNKNOWN, null, 1);
+    eventAppliers.applyState(1, intent, null, 1);
 
     // then
     Mockito.verify(mockedApplier).applyState(anyLong(), any());
@@ -66,22 +70,28 @@ public class EventAppliersTest {
   @Test
   void shouldNotApplyStateUsingRegisteredApplierForOlderVersion() {
     // given
-    eventAppliers.register(Intent.UNKNOWN, 1, mockedApplier);
+    final var intent = mock(Intent.class);
+    when(intent.isEvent()).thenReturn(true);
+
+    // when
+    eventAppliers.register(intent, 1, mockedApplier);
 
     // then
     assertThatExceptionOfType(NoSuchEventApplier.NoApplierForVersion.class)
-        .isThrownBy(() -> eventAppliers.applyState(1, Intent.UNKNOWN, null, 2));
+        .isThrownBy(() -> eventAppliers.applyState(1, intent, null, 2));
     Mockito.verify(mockedApplier, Mockito.never()).applyState(anyLong(), any());
   }
 
   @Test
   void shouldApplyStateUsingRegisteredApplierForSpecificVersion() {
     // given
-    eventAppliers.register(Intent.UNKNOWN, 1, mockedApplier);
-    eventAppliers.register(Intent.UNKNOWN, 2, anotherMockedApplier);
+    final var intent = mock(Intent.class);
+    when(intent.isEvent()).thenReturn(true);
+    eventAppliers.register(intent, 1, mockedApplier);
+    eventAppliers.register(intent, 2, anotherMockedApplier);
 
     // when
-    eventAppliers.applyState(1, Intent.UNKNOWN, null, 2);
+    eventAppliers.applyState(1, intent, null, 2);
 
     // then
     Mockito.verify(mockedApplier, Mockito.never()).applyState(anyLong(), any());
@@ -91,11 +101,14 @@ public class EventAppliersTest {
   @Test
   void shouldGetLatestVersionOfOnlyRegisteredVersion() {
     // given
+    final var intent = mock(Intent.class);
+    when(intent.isEvent()).thenReturn(true);
+
     final var expectedVersion = 1;
-    eventAppliers.register(Intent.UNKNOWN, expectedVersion, mockedApplier);
+    eventAppliers.register(intent, expectedVersion, mockedApplier);
 
     // when
-    final var actualVersion = eventAppliers.getLatestVersion(Intent.UNKNOWN);
+    final var actualVersion = eventAppliers.getLatestVersion(intent);
 
     // then
     Assertions.assertEquals(expectedVersion, actualVersion);
@@ -104,12 +117,15 @@ public class EventAppliersTest {
   @Test
   void shouldGetLatestVersionOfTwoRegisteredVersions() {
     // given
+    final var intent = mock(Intent.class);
+    when(intent.isEvent()).thenReturn(true);
+
     final var expectedVersion = 2;
-    eventAppliers.register(Intent.UNKNOWN, 1, mockedApplier);
-    eventAppliers.register(Intent.UNKNOWN, expectedVersion, mockedApplier);
+    eventAppliers.register(intent, 1, mockedApplier);
+    eventAppliers.register(intent, expectedVersion, mockedApplier);
 
     // when
-    final var actualVersion = eventAppliers.getLatestVersion(Intent.UNKNOWN);
+    final var actualVersion = eventAppliers.getLatestVersion(intent);
 
     // then
     Assertions.assertEquals(expectedVersion, actualVersion);
@@ -130,12 +146,14 @@ public class EventAppliersTest {
   @Test
   void shouldGetLatestVersionWhenMultipleRegisteredEventAppliersWithDifferentIntents() {
     // given
+    final var intent = mock(Intent.class);
+    when(intent.isEvent()).thenReturn(true);
     final var expectedVersion = 1;
-    eventAppliers.register(Intent.UNKNOWN, expectedVersion, mockedApplier);
+    eventAppliers.register(intent, expectedVersion, mockedApplier);
     eventAppliers.register(ProcessIntent.CREATED, expectedVersion, mockedApplier);
 
     // when
-    final var actualVersion = eventAppliers.getLatestVersion(Intent.UNKNOWN);
+    final var actualVersion = eventAppliers.getLatestVersion(intent);
 
     // then
     Assertions.assertEquals(expectedVersion, actualVersion);
@@ -152,7 +170,7 @@ public class EventAppliersTest {
             .filter(intent -> !(intent instanceof CheckpointIntent));
 
     // when
-    eventAppliers.registerEventAppliers(Mockito.mock(MutableProcessingState.class));
+    eventAppliers.registerEventAppliers(mock(MutableProcessingState.class));
 
     // then
     assertThat(events)
@@ -166,6 +184,59 @@ public class EventAppliersTest {
   }
 
   @Test
+  void cannotRegisterNullApplier() {
+    // given
+    final var intent = mock(Intent.class);
+
+    // then
+    assertThatExceptionOfType(NullPointerException.class)
+        .isThrownBy(() -> eventAppliers.register(intent, 1, null));
+  }
+
+  @Test
+  void cannotRegisterApplierForNullIntent() {
+    assertThatExceptionOfType(NullPointerException.class)
+        .isThrownBy(() -> eventAppliers.register(null, 1, mockedApplier));
+  }
+
+  @Test
+  void cannotRegisterApplierForNegativeVersion() {
+    // given
+    final var intent = mock(Intent.class);
+
+    // then
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> eventAppliers.register(intent, -1, mockedApplier));
+  }
+
+  @Test
+  void cannotRegisterApplierForNonEvent() {
+    // given
+    final var nonEvent = mock(Intent.class);
+
+    // when
+    when(nonEvent.isEvent()).thenReturn(false);
+
+    // then
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> eventAppliers.register(nonEvent, 1, mockedApplier));
+  }
+
+  @Test
+  void cannotOverrideApplierForSameIntentAndVersion() {
+    // given
+    final var intent = mock(Intent.class);
+    when(intent.isEvent()).thenReturn(true);
+
+    // when
+    eventAppliers.register(intent, 1, mockedApplier);
+
+    // then
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> eventAppliers.register(intent, 1, anotherMockedApplier));
+  }
+
+  @Test
   void shouldOnlyRegisterAppliersForEvents() {
     // given
     final var intents =
@@ -175,7 +246,7 @@ public class EventAppliersTest {
             .filter(intent -> !(intent instanceof CheckpointIntent));
 
     // when
-    eventAppliers.registerEventAppliers(Mockito.mock(MutableProcessingState.class));
+    eventAppliers.registerEventAppliers(mock(MutableProcessingState.class));
 
     // then
     assertThat(intents)
