@@ -10,5 +10,6 @@ package io.camunda.zeebe.broker.exporter.stream;
 public enum ExporterPhase {
   EXPORTING,
   PAUSED,
+  SOFT_PAUSED,
   CLOSED
 }
