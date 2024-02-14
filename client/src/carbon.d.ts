@@ -615,6 +615,8 @@ declare module '@carbon/react' {
     disabled?: boolean;
     selectionFeedback?: 'top' | 'top-after-reopen' | 'fixed';
     size?: 'sm' | 'md' | 'lg';
+    invalid?: boolean;
+    invalidText?: ReactNode;
   }
 
   declare function FilterableMultiSelect<T>(

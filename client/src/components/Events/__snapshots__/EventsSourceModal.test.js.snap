@@ -1,65 +1,73 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should apply the source to the state when editing a source 1`] = `
-Object {
-  "eventScope": Array [
-    "start_end",
-  ],
-  "processDefinitionKey": "foo",
-  "processDefinitionName": "Foo",
-  "tenants": Array [
-    "a",
-    "b",
-  ],
-  "traceVariable": "var",
-  "tracedByBusinessKey": false,
-  "versions": Array [
-    "1",
-  ],
-}
-`;
-
 exports[`should contain a change warning and not contain event scope selection 1`] = `
 <Form
   className="sourceOptions"
 >
-  <FormGroup>
-    <h4>
-      Trace ID location
-    </h4>
-    <ForwardRef(LabeledInput)
-      checked={true}
-      label="Variable"
-      onChange={[Function]}
-      type="radio"
-    />
-    <Typeahead
-      disabled={false}
-      noValuesMessage="No variables found"
-      onChange={[Function]}
-      onClose={[Function]}
-      onOpen={[Function]}
-      onSearch={[Function]}
-      placeholder="Select or search for a variable here"
-      value="var"
-    />
-    <ForwardRef(LabeledInput)
-      checked={false}
-      label="Business key"
-      onChange={[Function]}
-      type="radio"
-    />
-  </FormGroup>
-  <MessageBox
-    type="warning"
+  <ForwardRef(Stack)
+    gap={6}
   >
-    Changing the process definition may add or remove events. Existing event mappings may be removed.
-     
-    <DocsLink
-      location="components/userguide/additional-features/event-based-processes/#camunda-events"
+    <FormGroup
+      invalid={false}
+      legendText="Trace ID location"
+      message={false}
+      messageText=""
     >
-      Learn more
-    </DocsLink>
-  </MessageBox>
+      <ForwardRef(Stack)
+        gap={6}
+      >
+        <RadioButtonGroup
+          name="variable-or-business-key-selector"
+          orientation="vertical"
+        >
+          <RadioButton
+            checked={false}
+            labelText="Business key"
+            onClick={[Function]}
+            value="true"
+          />
+          <RadioButton
+            checked={true}
+            labelText="Variable"
+            onClick={[Function]}
+            value="false"
+          />
+        </RadioButtonGroup>
+        <ComboBox
+          aria-label="Choose an item"
+          className="variablesSelector"
+          direction="bottom"
+          disabled={false}
+          id="variable-selector"
+          itemToElement={null}
+          itemToString={[Function]}
+          items={Array []}
+          onChange={[Function]}
+          placeholder="Select or search for a variable here"
+          selectedItem={null}
+          shouldFilterItem={[Function]}
+          type="default"
+        />
+      </ForwardRef(Stack)>
+    </FormGroup>
+    <ActionableNotification
+      className="editingWarning"
+      closeOnEscape={true}
+      hasFocus={true}
+      hideCloseButton={true}
+      inline={false}
+      kind="warning"
+      onCloseButtonClick={[Function]}
+      role="alertdialog"
+    >
+      Changing the process definition may add or remove events. Existing event mappings may be removed.
+       
+      <DocsLink
+        location="components/userguide/additional-features/event-based-processes/#camunda-events"
+      >
+        Learn more
+      </DocsLink>
+    </ActionableNotification>
+  </ForwardRef(Stack)>
 </Form>
 `;

@@ -7,7 +7,7 @@
 
 import {get, post, put, del} from 'request';
 
-export {getUsers, updateUsers, publish} from './service.ts';
+export {getUsers, updateUsers, publish, loadExternalGroups} from './service.ts';
 
 export async function loadProcesses() {
   const response = await get('api/eventBasedProcess');
@@ -78,12 +78,6 @@ export async function loadIngestedEvents(params) {
 
 export async function deleteEvents(eventsIds) {
   return await post('api/event/delete', eventsIds);
-}
-
-export async function loadExternalGroups(query) {
-  const response = await get('api/event/groups', query);
-
-  return await response.json();
 }
 
 export async function deleteProcesses(processes) {

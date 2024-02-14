@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runAllEffects, runLastEffect} from 'react';
+import {runAllEffects, runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
-import {ExternalSource} from './ExternalSource';
+import ExternalSource from './ExternalSource';
 import {loadExternalGroups} from './service';
 
 jest.mock('./service', () => ({
@@ -19,20 +19,26 @@ jest.mock(
   'debouncePromise',
   () =>
     () =>
-    (fn, delay, ...args) =>
+    (fn: (...args: any[]) => void, delay: number, ...args: any[]) =>
       fn(...args)
 );
-jest.mock('debounce', () => (fn) => fn);
+jest.mock('debounce', () => (fn: Function) => fn);
+
+jest.mock('hooks', () => ({
+  useErrorHandling: () => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  }),
+}));
 
 const props = {
   empty: false,
   externalSources: [{type: 'external', configuration: {group: 'group 1'}}],
   existingExternalSources: [],
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  onChange: jest.fn(),
 };
 
 beforeEach(() => {
-  loadExternalGroups.mockClear();
+  (loadExternalGroups as jest.Mock).mockClear();
 });
 
 it('should match snapshot', async () => {
@@ -48,7 +54,7 @@ it('should invoke onChange when selecting a group', () => {
   const spy = jest.fn();
   const node = shallow(<ExternalSource {...props} onChange={spy} />);
 
-  node.find('Checklist').prop('onChange')(['testGroup']);
+  node.find('Checklist').prop<(values: string[]) => void>('onChange')(['testGroup']);
 
   expect(spy).toHaveBeenCalledWith([
     {type: 'external', configuration: {group: 'testGroup', includeAllGroups: false}},
@@ -59,7 +65,7 @@ it('should invoke onChange when selecting a group', () => {
   const spy = jest.fn();
   const node = shallow(<ExternalSource {...props} onChange={spy} />);
 
-  node.find('Checklist').prop('onChange')(['testGroup']);
+  node.find('Checklist').prop<(values: string[]) => void>('onChange')(['testGroup']);
 
   expect(spy).toHaveBeenCalledWith([
     {type: 'external', configuration: {group: 'testGroup', includeAllGroups: false}},
@@ -70,9 +76,9 @@ it('should invoke onChange with one source to include all groups', () => {
   const spy = jest.fn();
   const node = shallow(<ExternalSource {...props} onChange={spy} />);
 
-  const preItems = node.find('Checklist').prop('preItems');
+  const preItems = node.find('Checklist').prop('preItems') as {content: JSX.Element[]};
 
-  preItems.content[0].props.onSelect({target: {checked: true}});
+  preItems.content[0]?.props.onSelect({target: {checked: true}});
 
   expect(spy).toHaveBeenCalledWith([
     {configuration: {group: null, includeAllGroups: true}, type: 'external'},
@@ -87,7 +93,9 @@ it('should select and disable all items if inlude all groups is selected', () =>
     />
   );
 
-  expect(node.find('Checklist').prop('formatter')(['testGroup'])).toEqual([
+  expect(
+    node.find('Checklist').prop<(...values: string[][]) => object>('formatter')(['testGroup'])
+  ).toEqual([
     {
       id: 'testGroup',
       label: 'testGroup',
@@ -106,7 +114,7 @@ it('should display empty state with link to docs', () => {
 it('should add search params to the load groups request', () => {
   const node = shallow(<ExternalSource {...props} />);
 
-  node.find('Checklist').prop('onSearch')('group 1');
+  node.find('Checklist').prop<(value: string) => void>('onSearch')('group 1');
   runAllEffects();
   runLastEffect();
 
@@ -115,7 +123,7 @@ it('should add search params to the load groups request', () => {
 
 it('should increase the limit by 10 when clicking loadMore button', async () => {
   const groups = Array(11).fill('testGroup');
-  loadExternalGroups.mockReturnValue(groups);
+  (loadExternalGroups as jest.Mock).mockReturnValue(groups);
   const node = shallow(<ExternalSource {...props} />);
 
   runAllEffects();
@@ -129,10 +137,18 @@ it('should increase the limit by 10 when clicking loadMore button', async () => 
 
 it('should disable deselection of existing groups', () => {
   const node = shallow(
-    <ExternalSource {...props} existingExternalSources={[{configuration: {group: 'group 1'}}]} />
+    <ExternalSource
+      {...props}
+      existingExternalSources={[{type: '', configuration: {group: 'group 1'}}]}
+    />
   );
 
-  expect(node.find('Checklist').prop('formatter')(['group 1'], ['group 1'])).toEqual([
+  expect(
+    node.find('Checklist').prop<(...values: string[][]) => object>('formatter')(
+      ['group 1'],
+      ['group 1']
+    )
+  ).toEqual([
     {
       id: 'group 1',
       label: 'group 1',
@@ -146,13 +162,18 @@ it('should disable deselection of all events group if it exists', () => {
   const node = shallow(
     <ExternalSource
       {...props}
-      existingExternalSources={[{configuration: {includeAllGroups: true}}]}
+      existingExternalSources={[{type: '', configuration: {includeAllGroups: true, group: null}}]}
     />
   );
-  const preItems = node.find('Checklist').prop('preItems');
-  expect(preItems.content[0].props.checked).toBe(true);
-  expect(preItems.content[0].props.disabled).toBe(true);
-  expect(node.find('Checklist').prop('formatter')(['group 1'], ['group 1'])).toEqual([
+  const preItems = node.find('Checklist').prop('preItems') as {content: JSX.Element[]};
+  expect(preItems.content[0]?.props.checked).toBe(true);
+  expect(preItems.content[0]?.props.disabled).toBe(true);
+  expect(
+    node.find('Checklist').prop<(...values: string[][]) => object>('formatter')(
+      ['group 1'],
+      ['group 1']
+    )
+  ).toEqual([
     {
       id: 'group 1',
       label: 'group 1',

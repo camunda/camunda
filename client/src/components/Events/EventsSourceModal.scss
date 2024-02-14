@@ -1,34 +1,23 @@
 .EventsSourceModal {
-  .ButtonGroup {
-    margin-bottom: 30px;
-  }
-
   .DefinitionSelection {
-    min-height: 82px;
-
     .info {
       display: none;
     }
-  }
 
-  .Message.error {
-    margin-top: -10px;
+    .container .selectionPanel {
+      margin-bottom: 0;
+    }
   }
 
   .sourceOptions {
-    > .FormGroup {
-      .label.after {
-        padding: 10px 0;
-      }
-      .displayHeader {
-        display: flex;
+    .label.after {
+      padding: 10px 0;
+    }
+    .displayHeader {
+      display: flex;
 
-        h4 {
-          font-weight: bold;
-          margin-bottom: 10px;
-          color: var(--grey-darken-36);
-          margin-right: 10px;
-        }
+      h4 {
+        margin-right: 10px;
       }
     }
   }
@@ -36,5 +25,9 @@
   .addExternalInfo {
     font-size: 0.875em;
     color: var(--grey-lighten-56);
+  }
+
+  .editingWarning {
+    max-width: 100%;
   }
 }

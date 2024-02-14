@@ -21,3 +21,9 @@ export async function updateUsers(id: string, newUsers: User[]) {
 export async function publish(id: string) {
   return await post(`api/eventBasedProcess/${id}/_publish`);
 }
+
+export async function loadExternalGroups(query?: Record<string, unknown>) {
+  const response = await get('api/event/groups', query);
+
+  return await response.json();
+}
