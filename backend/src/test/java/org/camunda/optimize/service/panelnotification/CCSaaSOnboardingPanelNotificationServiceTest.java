@@ -48,7 +48,6 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
   @BeforeEach
   public void setup() {
     final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
-    configurationService.getAuthConfiguration().getCloudAuthConfiguration().setClusterId(CLUSTER_ID);
     configurationService.getAuthConfiguration().getCloudAuthConfiguration().setOrganizationId(ORG_ID);
     underTest = new CCSaaSOnboardingPanelNotificationService(
       notificationClient,
@@ -64,7 +63,7 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
     final DefinitionOptimizeResponseDto returnedDefWithName = new ProcessDefinitionOptimizeDto();
     returnedDefWithName.setName(PROCESS_NAME);
     when(definitionService.getDefinition(any(), any(), any(), any())).thenReturn(Optional.of(returnedDefWithName));
-    when(rootUrlGenerator.getRootUrl()).thenReturn("http://localhost:8090");
+    when(rootUrlGenerator.getRootUrl()).thenReturn("http://localhost:8090/" + CLUSTER_ID);
 
     // when
     ArgumentCaptor<PanelNotificationRequestDto> actualNotification = ArgumentCaptor.forClass(PanelNotificationRequestDto.class);

@@ -89,11 +89,7 @@ public class CCSaaSOnboardingPanelNotificationService {
 
   public String generateRootDashboardLink() {
     String rootUrl = rootUrlGenerator.getRootUrl();
-    return String.format(
-      "%s/%s/#",
-      rootUrl,
-      configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId()
-    );
+    return String.format("%s/#",rootUrl);
   }
 
   private String getProcessName(final String processKey) {
