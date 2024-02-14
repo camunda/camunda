@@ -116,6 +116,11 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
+  public CompletableFuture<RaftServer> forceConfigure(final Collection<MemberId> membersToRetain) {
+    return new ReconfigurationHelper(context).forceConfigure(membersToRetain).thenApply(v -> this);
+  }
+
+  @Override
   public CompletableFuture<Void> reconfigurePriority(final int newPriority) {
     return context.reconfigurePriority(newPriority);
   }

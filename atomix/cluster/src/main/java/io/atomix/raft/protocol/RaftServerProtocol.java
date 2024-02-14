@@ -42,6 +42,16 @@ public interface RaftServerProtocol {
   CompletableFuture<ReconfigureResponse> reconfigure(MemberId memberId, ReconfigureRequest request);
 
   /**
+   * Sends a force configure request to the given node.
+   *
+   * @param memberId the node to which to send the request
+   * @param request the request to send
+   * @return a future to be completed with the response
+   */
+  CompletableFuture<ForceConfigureResponse> forceConfigure(
+      MemberId memberId, ForceConfigureRequest request);
+
+  /**
    * Sends a join request to the given node.
    *
    * @param memberId the node to which to send the request
@@ -138,6 +148,11 @@ public interface RaftServerProtocol {
 
   /** Unregisters the reconfigure request handler. */
   void unregisterReconfigureHandler();
+
+  void registerForceConfigureHandler(
+      Function<ForceConfigureRequest, CompletableFuture<ForceConfigureResponse>> handler);
+
+  void unregisterForceConfigureHandler();
 
   void registerJoinHandler(Function<JoinRequest, CompletableFuture<JoinResponse>> handler);
 

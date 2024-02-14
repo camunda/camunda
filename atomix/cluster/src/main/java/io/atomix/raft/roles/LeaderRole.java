@@ -30,6 +30,8 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
+import io.atomix.raft.protocol.ForceConfigureRequest;
+import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
@@ -97,7 +99,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     commitInitialEntriesFuture = commitInitialEntries();
     lastZbEntry = findLastZeebeEntry();
 
-    if (jointConsensus()) {
+    if (jointConsensus() || forcedConfiguration()) {
+      // Come out of joint consensus or forced configuration
       raft.getThreadContext()
           .execute(
               () -> {
@@ -222,6 +225,28 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               }
             });
     return future;
+  }
+
+  @Override
+  public CompletableFuture<ForceConfigureResponse> onForceConfigure(
+      final ForceConfigureRequest request) {
+    final Configuration currentConfiguration = raft.getCluster().getConfiguration();
+    if (currentConfiguration != null // this is not expected in a leader
+        && request.newMembers().equals(currentConfiguration.allMembers())) {
+      // It is likely that the previous force configure was successfully completed, and this is a
+      // retry. So just respond success.
+      return CompletableFuture.completedFuture(
+          logResponse(
+              ForceConfigureResponse.builder()
+                  .withStatus(Status.OK)
+                  .withIndex(currentConfiguration.index())
+                  .withTerm(currentConfiguration.term())
+                  .build()));
+    }
+
+    // Do not force-configure when you are leader.
+    raft.transition(Role.FOLLOWER);
+    return super.onForceConfigure(request);
   }
 
   @Override
@@ -424,6 +449,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   private boolean jointConsensus() {
     return raft.getCluster().inJointConsensus();
+  }
+
+  private boolean forcedConfiguration() {
+    return raft.getCluster().getConfiguration().force();
   }
 
   /** Commits the given configuration. */

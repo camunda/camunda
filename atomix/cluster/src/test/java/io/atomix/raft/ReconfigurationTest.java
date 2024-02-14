@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -583,6 +584,142 @@ final class ReconfigurationTest {
       // then -- remaining three can elect a leader and commit entries
       final var leader = awaitLeader(m1, m2);
       assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(1));
+    }
+  }
+
+  @Nested
+  class ForceConfigureTest {
+    final MemberId id1 = MemberId.from("1");
+    final MemberId id2 = MemberId.from("2");
+    final MemberId id3 = MemberId.from("3");
+    final MemberId id4 = MemberId.from("4");
+    @TempDir private Path tmp;
+    private RaftServer m1;
+    private RaftServer m2;
+    private RaftServer m3;
+    private RaftServer m4;
+
+    @BeforeEach
+    void startServers() {
+      m1 = createServer(tmp, createMembershipService(id1, id2, id3, id4));
+      m2 = createServer(tmp, createMembershipService(id2, id1, id3, id4));
+      m3 = createServer(tmp, createMembershipService(id3, id1, id2, id4));
+      m4 = createServer(tmp, createMembershipService(id4, id1, id2, id3));
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3, id4),
+              m2.bootstrap(id1, id2, id3, id4),
+              m3.bootstrap(id1, id2, id3, id4),
+              m4.bootstrap(id1, id2, id3, id4))
+          .join();
+      awaitLeader(m1, m2, m3, m4);
+    }
+
+    @Test
+    void shouldForceConfigureWhenMembersToRemoveAreActive() {
+      // when
+      m2.forceConfigure(Set.of(id1, id2)).join();
+
+      // then
+      // leader must be one of m1 or m2
+      awaitLeader(m1, m2);
+      assertThat(List.of(m1, m2))
+          .allSatisfy(
+              m ->
+                  assertThat(m.cluster().getMembers())
+                      .describedAs("Force configuration should have only two members")
+                      .containsExactlyInAnyOrderElementsOf(
+                          Set.of(
+                              new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
+                              new DefaultRaftMember(id2, Type.ACTIVE, Instant.now()))));
+    }
+
+    @Test
+    void shouldForceConfigureWhenRemovedMembersAreUnreachable() {
+      // when
+      m3.shutdown().join();
+      m4.shutdown().join();
+      m2.forceConfigure(Set.of(id1, id2)).join();
+
+      // then
+      // leader must be one of m1 or m2
+      awaitLeader(m1, m2);
+      assertThat(List.of(m1, m2))
+          .allSatisfy(
+              m ->
+                  assertThat(m.cluster().getMembers())
+                      .describedAs("Force configuration should have only two members")
+                      .containsExactlyInAnyOrderElementsOf(
+                          Set.of(
+                              new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
+                              new DefaultRaftMember(id2, Type.ACTIVE, Instant.now()))));
+    }
+
+    @Test
+    void shouldFailForceConfigurationIfOneMemberUnreachable() {
+      // when
+      m2.shutdown().join();
+
+      // then
+      assertThat(m1.forceConfigure(Set.of(id1, id2)))
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableOfType(ExecutionException.class)
+          .withMessageContaining(
+              "Failed to force configure because not all members acknowledged the request.");
+    }
+
+    @Test
+    void shouldForceConfigureWhenRetriedAfterFailure() {
+      // given
+      m2.shutdown().join();
+      final CompletableFuture<RaftServer> firstAttempt = m1.forceConfigure(Set.of(id1, id2));
+      assertThat(firstAttempt)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableOfType(ExecutionException.class)
+          .withMessageContaining(
+              "Failed to force configure because not all members acknowledged the request.");
+
+      // when
+
+      // restart m2
+      final var m2Restarted = createServer(tmp, createMembershipService(id2, id1, id3, id4));
+      m2Restarted.bootstrap(id1, id2, id3, id4).join();
+
+      // then
+      final CompletableFuture<RaftServer> secondAttempt = m1.forceConfigure(Set.of(id1, id2));
+      assertThat(secondAttempt).succeedsWithin(Duration.ofSeconds(10));
+    }
+
+    @Test
+    void canCommitNewEventsAfterForceConfigure() {
+      // when
+      m2.forceConfigure(Set.of(id1, id2)).join();
+      m3.shutdown().join();
+      m4.shutdown().join();
+      final var leader = awaitLeader(m1, m2);
+      final var commitFuture = appendEntry(leader).commit();
+
+      // then
+      assertThat(commitFuture).succeedsWithin(Duration.ofMillis(1000));
+    }
+
+    @Test
+    void shouldReconfigureViaAnOutDatedFollower() {
+      // given
+      m2.shutdown().join();
+      final var leader = awaitLeader(m1, m3, m4);
+      appendEntry(leader).commit().join();
+      m3.shutdown().join();
+      m4.shutdown().join();
+
+      // when
+      // no leader when m2 restarts. So its state is outdated
+      final var m2Restarted = createServer(tmp, createMembershipService(id2, id1, id3, id4));
+      m2Restarted.bootstrap(id1, id2, id3, id4);
+      m2Restarted.forceConfigure(Set.of(id1, id2)).join();
+
+      // then
+      awaitLeader(m1, m2);
+      assertThat(m1.getContext().isLeader()).isTrue();
     }
   }
 }

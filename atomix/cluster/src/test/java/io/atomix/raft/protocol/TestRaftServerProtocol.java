@@ -32,6 +32,8 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
 
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
+  private Function<ForceConfigureRequest, CompletableFuture<ForceConfigureResponse>>
+      forceConfigureHandler;
   private Function<JoinRequest, CompletableFuture<JoinResponse>> joinHandler;
   private Function<LeaveRequest, CompletableFuture<LeaveResponse>> leaveHandler;
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
@@ -78,6 +80,13 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
       final MemberId memberId, final ReconfigureRequest request) {
     return scheduleTimeout(
         getServer(memberId).thenCompose(listener -> listener.reconfigure(request)));
+  }
+
+  @Override
+  public CompletableFuture<ForceConfigureResponse> forceConfigure(
+      final MemberId memberId, final ForceConfigureRequest request) {
+    return scheduleTimeout(
+        getServer(memberId).thenCompose(listener -> listener.forceConfigure(request)));
   }
 
   @Override
@@ -156,6 +165,17 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   @Override
   public void unregisterReconfigureHandler() {
     reconfigureHandler = null;
+  }
+
+  @Override
+  public void registerForceConfigureHandler(
+      final Function<ForceConfigureRequest, CompletableFuture<ForceConfigureResponse>> handler) {
+    forceConfigureHandler = handler;
+  }
+
+  @Override
+  public void unregisterForceConfigureHandler() {
+    forceConfigureHandler = null;
   }
 
   @Override
@@ -295,6 +315,14 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   CompletableFuture<ReconfigureResponse> reconfigure(final ReconfigureRequest request) {
     if (reconfigureHandler != null) {
       return reconfigureHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<ForceConfigureResponse> forceConfigure(final ForceConfigureRequest request) {
+    if (forceConfigureHandler != null) {
+      return forceConfigureHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }

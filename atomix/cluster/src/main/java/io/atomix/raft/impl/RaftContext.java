@@ -42,6 +42,7 @@ import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureResponse;
+import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.LeaveResponse;
@@ -324,6 +325,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         request ->
             handleRequestOnContext(
                 request, () -> role.onReconfigure(request), ReconfigureResponse::builder));
+    protocol.registerForceConfigureHandler(
+        request ->
+            handleRequestOnContext(
+                request, () -> role.onForceConfigure(request), ForceConfigureResponse::builder));
     protocol.registerJoinHandler(
         request ->
             handleRequestOnContext(request, () -> role.onJoin(request), JoinResponse::builder));
@@ -821,6 +826,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     protocol.unregisterConfigureHandler();
     protocol.unregisterInstallHandler();
     protocol.unregisterReconfigureHandler();
+    protocol.unregisterForceConfigureHandler();
     protocol.unregisterJoinHandler();
     protocol.unregisterLeaveHandler();
     protocol.unregisterTransferHandler();

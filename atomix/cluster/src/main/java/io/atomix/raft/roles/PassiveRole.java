@@ -22,6 +22,8 @@ import io.atomix.raft.RaftServer;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.SnapshotReplicationMetrics;
 import io.atomix.raft.protocol.AppendResponse;
+import io.atomix.raft.protocol.ForceConfigureRequest;
+import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
@@ -43,6 +45,7 @@ import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.storage.system.Configuration;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
@@ -52,6 +55,7 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsExcepti
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -314,6 +318,58 @@ public class PassiveRole extends InactiveRole {
                       .build())
           .thenApply(this::logResponse);
     }
+  }
+
+  @Override
+  public CompletableFuture<ForceConfigureResponse> onForceConfigure(
+      final ForceConfigureRequest request) {
+    logRequest(request);
+    updateTermAndLeader(request.term(), null);
+
+    final var currentConfiguration = raft.getCluster().getConfiguration();
+
+    // No need to overwrite if already in force configuration. This can happen due to retry.
+    if (currentConfiguration == null || !currentConfiguration.force()) {
+      final var configurationIndex =
+          Math.max(request.index(), raft.getCurrentConfigurationIndex() + 1);
+      raft.getCluster()
+          .configure(
+              new Configuration(
+                  configurationIndex, // use the latest index instead of one from the request
+                  raft.getTerm(), // use the latest term instead of one from the request
+                  request.timestamp(),
+                  request.newMembers(),
+                  List.of(), // Skip joint consensus
+                  true));
+      raft.getCluster().commitCurrentConfiguration();
+    } else if (!currentConfiguration.allMembers().equals(request.newMembers())) {
+      // This is not expected. When force configuration is retried, we expect that they are retried
+      // with the same state. If this is not the case, it is likely that there are two force
+      // configuration requested at the same time.
+      // Reject the request. There is possibly no way out to recover from this.
+
+      // TODO: This can happen if this follower was disconnected after the previous force request
+      // and never received the new configuration after that.
+      return CompletableFuture.completedFuture(
+          logResponse(
+              ForceConfigureResponse.builder()
+                  .withStatus(Status.ERROR)
+                  .withError(
+                      Type.CONFIGURATION_ERROR,
+                      String.format(
+                          "Expected to force configure with members '%s', but the member is already in force configuration with a different set of members '%s'",
+                          request.newMembers(), currentConfiguration.allMembers()))
+                  .build()));
+    }
+
+    final var result =
+        logResponse(
+            ForceConfigureResponse.builder()
+                .withStatus(Status.OK)
+                .withIndex(raft.getCluster().getConfiguration().index())
+                .withTerm(raft.getTerm())
+                .build());
+    return CompletableFuture.completedFuture(result);
   }
 
   @Override

@@ -40,6 +40,8 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
 
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
+  private Function<ForceConfigureRequest, CompletableFuture<ForceConfigureResponse>>
+      forceConfigureHandler;
   private Function<JoinRequest, CompletableFuture<JoinResponse>> joinHandler;
   private Function<LeaveRequest, CompletableFuture<LeaveResponse>> leaveHandler;
 
@@ -167,6 +169,21 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
         () ->
             getServer(memberId)
                 .thenCompose(listener -> listener.reconfigure(request))
+                .thenAccept(
+                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
+        responseFuture);
+    return responseFuture;
+  }
+
+  @Override
+  public CompletableFuture<ForceConfigureResponse> forceConfigure(
+      final MemberId memberId, final ForceConfigureRequest request) {
+    final var responseFuture = new CompletableFuture<ForceConfigureResponse>();
+    send(
+        memberId,
+        () ->
+            getServer(memberId)
+                .thenCompose(listener -> listener.forceConfigure(request))
                 .thenAccept(
                     response -> send(localMemberId, () -> responseFuture.complete(response), null)),
         responseFuture);
@@ -315,6 +332,13 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public void registerForceConfigureHandler(
+      final Function<ForceConfigureRequest, CompletableFuture<ForceConfigureResponse>> handler) {}
+
+  @Override
+  public void unregisterForceConfigureHandler() {}
+
+  @Override
   public void registerJoinHandler(
       final Function<JoinRequest, CompletableFuture<JoinResponse>> handler) {
     joinHandler = handler;
@@ -436,6 +460,14 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   CompletableFuture<ReconfigureResponse> reconfigure(final ReconfigureRequest request) {
     if (reconfigureHandler != null) {
       return reconfigureHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<ForceConfigureResponse> forceConfigure(final ForceConfigureRequest request) {
+    if (forceConfigureHandler != null) {
+      return forceConfigureHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }

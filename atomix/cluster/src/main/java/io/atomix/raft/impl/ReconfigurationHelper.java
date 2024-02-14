@@ -18,10 +18,13 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext.State;
+import io.atomix.raft.protocol.ForceConfigureRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TransferRequest;
+import io.atomix.raft.storage.system.Configuration;
+import io.atomix.raft.utils.ForceConfigureQuorum;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
@@ -30,6 +33,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
@@ -161,6 +165,170 @@ public final class ReconfigurationHelper {
                 raftContext.updateState(State.LEFT);
               } else {
                 future.completeExceptionally(response.error().createException());
+              }
+            },
+            threadContext);
+  }
+
+  /**
+   * Force configuration works as follows. Assume current members are 0,1,3,4, and we want to force
+   * remove 2 and 3.
+   *
+   * <pre>
+   *
+   *   External                        Raft 0 (follower)                     Raft 1 (follower)             Raft 2/3
+   *      |                                 |                                     |                        (Members to be removed)
+   *      |    forceConfigure([0,1])        |                                     |                                    |
+   *      |-------------------------------->|                                     |                                    |
+   *      |                                 |                                     |                                    |
+   *      |               Configuration={   |                                     |                                    |
+   *      |                newMembers=[0,1],|                                     |                                    |
+   *      |                oldMembers=[]    |                                     |                                    |
+   *      |                force=TRUE       |                                     |                                    |
+   *      |               Commit new config |   ForceConfigureRequest(newMembers) |                                    |
+   *      |                                 |------------------------------------>|                                    |
+   *      |                                 |               OK                    |Commit new Configuration            |
+   *      |         OK                      |<------------------------------------|                                    |
+   *      |<--------------------------------|                                     |        Poll/Vote/Append            |
+   *      |                                 |                                     |<-----------------------------------|
+   *      |                        election |             poll/vote               |----------------------------------->|
+   *      |                        timeout  ------------------------------------->|     Reject because Force==TRUE     |
+   *      |                                 |               OK                    |                                    |
+   *      |                                 |<------------------------------------|                                    |
+   *      |                    Become leader|                                     |                                    |
+   *      |                                 |                                     |                                    |
+   *      |             Append InitialEntry |                                     |                                    |
+   *      |       Append ConfigurationEntry |                                     |                                    |
+   *      |               Configuration={   |           AppendEntry               |                                    |
+   *      |                newMembers=[0,1] |------------------------------------>|                                    |
+   *      |                force=FALSE      |<------------------------------------|                                    |
+   *      |               }                 |                                     |                                    |
+   *      |                                 |------------------------------------>|                                    |
+   *      |                                 |<------------------------------------|                                    |
+   *      |                                 |                                     |                                    |
+   *      |                Commit new config|            AppendEntry              |On commitIndex update               |
+   *      |                                 |------------------------------------>|Commit new config                   |
+   *      |                                 |                                     |                                    |
+   *      |                                 |                                     |      Poll/Vote                     |
+   *      |                                 |                                     |<-----------------------------------|
+   *      |                                 |                                     |  Reject because log not uptodate   |
+   *      |                                 |                                     |----------------------------------->|
+   *      |                                 |                                     |                                    |
+   * </pre>
+   */
+  public CompletableFuture<Void> forceConfigure(final Collection<MemberId> newMembersIds) {
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+
+    threadContext.execute(() -> triggerForceConfigure(newMembersIds, future));
+    return future;
+  }
+
+  private void triggerForceConfigure(
+      final Collection<MemberId> newMembersIds, final CompletableFuture<Void> future) {
+    final var currentConfiguration = raftContext.getCluster().getConfiguration();
+    final Set<RaftMember> newMembers =
+        newMembersIds.stream()
+            // We can also take the type of the member as input. But so far we do not support
+            // PASSIVE members yet. So we can safely assume they are all ACTIVE.
+            .map(m -> new DefaultRaftMember(m, Type.ACTIVE, Instant.now()))
+            .collect(Collectors.toSet());
+
+    if (currentConfiguration == null || !currentConfiguration.force()) {
+      // No need to overwrite if it is already in force configure and this is a retry
+      if (raftContext.getRaftRole().role() == Role.LEADER) {
+        // Optimization: If the current configuration is already the same as new forced, we
+        // can skip reconfiguring. It is most likely a retry of a previous force request,
+        // which was interpreted as failure because of a request timeout.
+        raftContext.transition(Role.FOLLOWER);
+      }
+
+      logger.info(
+          "Current configuration is '{}'. Forcing configuration with members '{}'",
+          currentConfiguration,
+          newMembers);
+      final var newConfiguration =
+          new Configuration(
+              raftContext.getCurrentConfigurationIndex() + 1,
+              raftContext.getTerm(),
+              Instant.now().toEpochMilli(),
+              newMembers,
+              Set.of(),
+              true);
+
+      raftContext.getCluster().configure(newConfiguration);
+    } else if (!(currentConfiguration.allMembers().equals(newMembers))) {
+      // This is not expected. When force configuration is retried, we expect that they are
+      // retried with the same state. If this is not the case, it is likely that there are two
+      // force configuration requested at the same time.
+      // Reject the request. There is possibly no way out to recover from this.
+      future.completeExceptionally(
+          new IllegalStateException(
+              String.format(
+                  "Expected to force configure with members '%s', but the member is already in force configuration with a different set of members '%s'",
+                  newMembers, currentConfiguration.allMembers())));
+      return;
+    }
+
+    sendForceConfigureRequestToAllMembers(future);
+  }
+
+  private void sendForceConfigureRequestToAllMembers(final CompletableFuture<Void> future) {
+    final Configuration configuration = raftContext.getCluster().getConfiguration();
+    final var otherMembers =
+        configuration.newMembers().stream()
+            .map(RaftMember::memberId)
+            .filter(m -> !m.equals(raftContext.getCluster().getLocalMember().memberId()))
+            .collect(Collectors.toSet());
+
+    final var quorum =
+        new ForceConfigureQuorum(
+            success -> {
+              if (Boolean.TRUE.equals(success)) {
+                future.complete(null);
+              } else {
+                future.completeExceptionally(
+                    new ProtocolException(
+                        "Failed to force configure because not all members acknowledged the request."));
+              }
+            },
+            otherMembers);
+
+    final ForceConfigureRequest request =
+        ForceConfigureRequest.builder()
+            .withTerm(configuration.term())
+            .withIndex(configuration.index())
+            .withTime(configuration.time())
+            .withNewMembers(Set.copyOf(configuration.newMembers()))
+            .from(raftContext.getCluster().getLocalMember().memberId())
+            .build();
+
+    otherMembers.forEach(memberId -> sendForceConfigurationRequest(memberId, request, quorum));
+  }
+
+  private void sendForceConfigurationRequest(
+      final MemberId memberId,
+      final ForceConfigureRequest request,
+      final ForceConfigureQuorum quorum) {
+    logger.trace("Sending '{}' request to member '{}'", request, memberId);
+
+    raftContext
+        .getProtocol()
+        .forceConfigure(memberId, request)
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error != null) {
+                logger.warn(
+                    "Failed to send force configure request to member '{}'", memberId, error);
+                quorum.fail(memberId);
+              } else if (response.status() == Status.OK) {
+                logger.debug("Successfully sent force configure request to member '{}'", memberId);
+                quorum.succeed(memberId);
+              } else {
+                logger.warn(
+                    "Failed to send force configure request to member '{}': {}",
+                    memberId,
+                    response.error());
+                quorum.fail(memberId);
               }
             },
             threadContext);

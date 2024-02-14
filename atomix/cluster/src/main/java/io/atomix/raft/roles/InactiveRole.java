@@ -23,6 +23,8 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
+import io.atomix.raft.protocol.ForceConfigureRequest;
+import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
@@ -103,6 +105,19 @@ public class InactiveRole extends AbstractRole {
     final var result =
         logResponse(
             ReconfigureResponse.builder()
+                .withStatus(Status.ERROR)
+                .withError(RaftError.Type.UNAVAILABLE)
+                .build());
+    return CompletableFuture.completedFuture(result);
+  }
+
+  @Override
+  public CompletableFuture<ForceConfigureResponse> onForceConfigure(
+      final ForceConfigureRequest request) {
+    logRequest(request);
+    final var result =
+        logResponse(
+            ForceConfigureResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
                 .build());
