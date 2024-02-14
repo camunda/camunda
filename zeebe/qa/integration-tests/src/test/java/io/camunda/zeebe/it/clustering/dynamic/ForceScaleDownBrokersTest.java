@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.clustering.dynamic;
 
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertThatAllJobsCanBeCompleted;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJobOnAllPartitions;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
@@ -17,8 +18,10 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import java.time.Duration;
+import java.util.List;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -97,5 +100,29 @@ class ForceScaleDownBrokersTest {
             .start();
     cluster.awaitCompleteTopology();
     return cluster;
+  }
+
+  @Test
+  void shouldForceRemoveBrokerWhenBrokerIsUp() {
+    // given
+    try (final var cluster = createCluster(2, 2)) {
+      final var brokerToRemove = cluster.brokers().get(MemberId.from("1"));
+      final var actuator = ClusterActuator.of(cluster.anyGateway());
+
+      // when
+      final var response = actuator.scaleBrokers(List.of(0), false, true);
+      Awaitility.await()
+          .timeout(Duration.ofMinutes(2))
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response));
+
+      // then
+      // Changes are reflected in the topology returned by grpc query
+      cluster.awaitCompleteTopology(1, PARTITIONS_COUNT, 1, Duration.ofSeconds(20));
+
+      assertThat(brokerToRemove.isStarted())
+          .describedAs("Broker is shutdown because inconsistent topology is detected.")
+          .isFalse();
+    }
   }
 }

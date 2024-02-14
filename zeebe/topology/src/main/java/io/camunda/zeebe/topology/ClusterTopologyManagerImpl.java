@@ -55,6 +55,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   private Consumer<ClusterTopology> topologyGossiper;
   private final ActorFuture<Void> startFuture;
   private TopologyChangeAppliers changeAppliers;
+  private TopologyChangedListener onInconsistentTopologyDetected;
   private final MemberId localMemberId;
   // Indicates whether there is a topology change operation in progress on this member.
   private boolean onGoingTopologyChangeOperation = false;
@@ -189,7 +190,18 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
                     "Received new topology {}. Updating local topology to {}",
                     receivedTopology,
                     mergedTopology);
+
+                final var oldTopology = persistedClusterTopology.getTopology();
+                final var isConflictingTopology =
+                    !mergedTopology
+                        .getMember(localMemberId)
+                        .equals(oldTopology.getMember(localMemberId));
                 persistedClusterTopology.update(mergedTopology);
+
+                if (isConflictingTopology && onInconsistentTopologyDetected != null) {
+                  onInconsistentTopologyDetected.onTopologyChanged(mergedTopology, oldTopology);
+                }
+
                 topologyGossiper.accept(mergedTopology);
                 applyTopologyChangeOperation(mergedTopology);
               }
@@ -331,7 +343,15 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
         });
   }
 
-  public void removeTopologyChangeAppliers() {
+  void removeTopologyChangeAppliers() {
     executor.run(() -> changeAppliers = null);
+  }
+
+  void registerTopologyChangedListener(final TopologyChangedListener listener) {
+    executor.run(() -> onInconsistentTopologyDetected = listener);
+  }
+
+  void removeTopologyChangedListener() {
+    executor.run(() -> onInconsistentTopologyDetected = null);
   }
 }

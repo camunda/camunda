@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.ClusterTopologyManager.TopologyChangedListener;
 import io.camunda.zeebe.topology.TopologyInitializer.FileInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.GossipInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.InitializerError.PersistedTopologyIsBroken;
@@ -215,6 +216,14 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
 
   public void removePartitionChangeExecutor() {
     clusterTopologyManager.removeTopologyChangeAppliers();
+  }
+
+  public void registerTopologyChangedListener(final TopologyChangedListener listener) {
+    clusterTopologyManager.registerTopologyChangedListener(listener);
+  }
+
+  public void removeTopologyChangedListener() {
+    clusterTopologyManager.removeTopologyChangedListener();
   }
 
   @Override
