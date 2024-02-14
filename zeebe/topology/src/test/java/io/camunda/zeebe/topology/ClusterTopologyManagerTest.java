@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.topology.ClusterTopologyManager.TopologyChangedListener;
 import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
@@ -30,6 +31,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -255,6 +257,33 @@ final class ClusterTopologyManagerTest {
     assertThat(gossipState.get())
         .describedAs("Updated topology is gossiped")
         .isEqualTo(clusterTopologyManager.getClusterTopology().join());
+  }
+
+  @Test
+  void shouldCallListenerWhenInconsistentLocalStateDetected() {
+    // given
+    final AtomicReference<ClusterTopology> newTopology = new AtomicReference<>();
+    final AtomicReference<ClusterTopology> oldTopology = new AtomicReference<>();
+    final CompletableFuture<Void> listenerCalled = new CompletableFuture<>();
+    final TopologyChangedListener listener =
+        (received, old) -> {
+          newTopology.set(received);
+          oldTopology.set(old);
+          listenerCalled.complete(null);
+        };
+    final ClusterTopologyManagerImpl clusterTopologyManager =
+        startTopologyManager(successInitializer).join();
+    clusterTopologyManager.registerTopologyChangedListener(listener);
+
+    // when
+    final var conflictingTopology =
+        initialTopology.updateMember(localMemberId, MemberState::toLeft);
+    clusterTopologyManager.onGossipReceived(conflictingTopology);
+
+    // then
+    assertThat(listenerCalled).succeedsWithin(Duration.ofMillis(1000));
+    assertThat(newTopology.get()).isEqualTo(conflictingTopology);
+    assertThat(oldTopology.get()).isEqualTo(initialTopology);
   }
 
   private static final class TestMemberLeaver implements TopologyChangeAppliers {
