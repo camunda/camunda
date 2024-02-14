@@ -434,13 +434,31 @@ public final class ProcessingStateMachine {
             },
             abortCondition);
 
+    actor.runOnCompletion(
+        retryFuture,
+        (bool, throwable) -> {
+          if (throwable != null) {
+            LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentRecord, metadata, throwable);
+          }
+          try {
+            if (tryExitOutOfErrorLoop(error)) {
+              return;
+            }
+            nextStep.run();
+          } catch (final Exception ex) {
+            onError(ex, nextStep);
+          }
+        });
+  }
+
+  private boolean tryExitOutOfErrorLoop(final Throwable error) {
     try {
       // If in error loop and the processing record is a user command
       if (errorHandlingPhase == ErrorHandlingPhase.USER_COMMAND_PROCESSING_ERROR_FAILED) {
         // First try to reject with proper error message
         LOG.debug(ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED, currentRecord, metadata, error);
         tryRejectingIfUserCommand(error.getMessage());
-        return;
+        return true;
       } else if (errorHandlingPhase == ErrorHandlingPhase.USER_COMMAND_REJECT_FAILED) {
         LOG.warn(ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED, currentRecord, metadata, error);
         // try to reject with a generic error message
@@ -448,7 +466,7 @@ public final class ProcessingStateMachine {
             String.format(
                 "Expected to process command, but caught an exception. Check broker logs (partition %s) for details.",
                 context.getPartitionId()));
-        return;
+        return true;
       }
     } catch (final Exception e) {
       // Unexpected error, so we just fail back to endless loop
@@ -459,21 +477,8 @@ public final class ProcessingStateMachine {
           e);
       pendingResponses.clear();
       pendingWrites.clear();
-      onError(e, nextStep);
     }
-
-    actor.runOnCompletion(
-        retryFuture,
-        (bool, throwable) -> {
-          if (throwable != null) {
-            LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentRecord, metadata, throwable);
-          }
-          try {
-            nextStep.run();
-          } catch (final Exception ex) {
-            onError(ex, nextStep);
-          }
-        });
+    return false;
   }
 
   private void startErrorLoop(final boolean isUserCommand) {
