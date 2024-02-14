@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -617,7 +618,7 @@ final class ReconfigurationTest {
     @Test
     void shouldForceConfigureWhenMembersToRemoveAreActive() {
       // when
-      m2.forceConfigure(Set.of(id1, id2)).join();
+      m2.forceConfigure(newMembers()).join();
 
       // then
       // leader must be one of m1 or m2
@@ -638,7 +639,7 @@ final class ReconfigurationTest {
       // when
       m3.shutdown().join();
       m4.shutdown().join();
-      m2.forceConfigure(Set.of(id1, id2)).join();
+      m2.forceConfigure(newMembers()).join();
 
       // then
       // leader must be one of m1 or m2
@@ -660,7 +661,7 @@ final class ReconfigurationTest {
       m2.shutdown().join();
 
       // then
-      assertThat(m1.forceConfigure(Set.of(id1, id2)))
+      assertThat(m1.forceConfigure(newMembers()))
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableOfType(ExecutionException.class)
           .withMessageContaining(
@@ -671,7 +672,7 @@ final class ReconfigurationTest {
     void shouldForceConfigureWhenRetriedAfterFailure() {
       // given
       m2.shutdown().join();
-      final CompletableFuture<RaftServer> firstAttempt = m1.forceConfigure(Set.of(id1, id2));
+      final CompletableFuture<RaftServer> firstAttempt = m1.forceConfigure(newMembers());
       assertThat(firstAttempt)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableOfType(ExecutionException.class)
@@ -685,14 +686,14 @@ final class ReconfigurationTest {
       m2Restarted.bootstrap(id1, id2, id3, id4).join();
 
       // then
-      final CompletableFuture<RaftServer> secondAttempt = m1.forceConfigure(Set.of(id1, id2));
+      final CompletableFuture<RaftServer> secondAttempt = m1.forceConfigure(newMembers());
       assertThat(secondAttempt).succeedsWithin(Duration.ofSeconds(10));
     }
 
     @Test
     void canCommitNewEventsAfterForceConfigure() {
       // when
-      m2.forceConfigure(Set.of(id1, id2)).join();
+      m2.forceConfigure(newMembers()).join();
       m3.shutdown().join();
       m4.shutdown().join();
       final var leader = awaitLeader(m1, m2);
@@ -715,11 +716,15 @@ final class ReconfigurationTest {
       // no leader when m2 restarts. So its state is outdated
       final var m2Restarted = createServer(tmp, createMembershipService(id2, id1, id3, id4));
       m2Restarted.bootstrap(id1, id2, id3, id4);
-      m2Restarted.forceConfigure(Set.of(id1, id2)).join();
+      m2Restarted.forceConfigure(newMembers()).join();
 
       // then
       awaitLeader(m1, m2);
       assertThat(m1.getContext().isLeader()).isTrue();
+    }
+
+    private Map<MemberId, Type> newMembers() {
+      return Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE);
     }
   }
 }

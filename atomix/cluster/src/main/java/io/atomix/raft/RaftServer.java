@@ -23,6 +23,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.DefaultRaftServer;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftElectionConfig;
@@ -38,6 +39,7 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -332,7 +334,7 @@ public interface RaftServer {
    * @param membersToRetain The members to retain in the partition
    * @return a future to be completed once the server has been force configured
    */
-  CompletableFuture<RaftServer> forceConfigure(Collection<MemberId> membersToRetain);
+  CompletableFuture<RaftServer> forceConfigure(Map<MemberId, Type> membersToRetain);
 
   /**
    * Update priority of this server used for priority election. If priority election is not enabled,
