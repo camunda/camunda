@@ -137,8 +137,9 @@ public class DbFormState implements MutableFormState {
       return Optional.empty();
     }
 
-    formByTenantAndIdCache.put(new TenantIdAndFormId(tenantId, formId), persistedForm);
-    return Optional.of(persistedForm).map(PersistedForm::copy);
+    final PersistedForm copiedForm = persistedForm.copy();
+    formByTenantAndIdCache.put(new TenantIdAndFormId(tenantId, formId), copiedForm);
+    return Optional.of(copiedForm);
   }
 
   @Override
