@@ -298,7 +298,7 @@ public final class ReconfigurationHelper {
             .withTerm(configuration.term())
             .withIndex(configuration.index())
             .withTime(configuration.time())
-            .withNewMembers(configuration.newMembers())
+            .withNewMembers(Set.copyOf(configuration.newMembers()))
             .from(raftContext.getCluster().getLocalMember().memberId())
             .build();
 

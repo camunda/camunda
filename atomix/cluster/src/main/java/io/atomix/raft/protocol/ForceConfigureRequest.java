@@ -23,6 +23,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Request to change configuration forcefully without going through the joint consensus.
@@ -36,14 +37,14 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
   private final long term;
   private final long index;
   private final long timestamp;
-  private final Collection<RaftMember> members;
+  private final Set<RaftMember> members;
   private final String from;
 
   public ForceConfigureRequest(
       final long term,
       final long index,
       final long timestamp,
-      final Collection<RaftMember> newMembers,
+      final Set<RaftMember> newMembers,
       final String from) {
     this.term = term;
     this.index = index;
@@ -146,7 +147,7 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
     private long term;
     private long index;
     private long timestamp;
-    private Collection<RaftMember> newMembers;
+    private Set<RaftMember> newMembers;
     private String from;
 
     /**
@@ -193,7 +194,7 @@ public class ForceConfigureRequest extends AbstractRaftRequest {
      * @return The request builder.
      * @throws NullPointerException if {@code member} is null
      */
-    public Builder withNewMembers(final Collection<RaftMember> newMembers) {
+    public Builder withNewMembers(final Set<RaftMember> newMembers) {
       this.newMembers = checkNotNull(newMembers, "members cannot be null");
       return this;
     }

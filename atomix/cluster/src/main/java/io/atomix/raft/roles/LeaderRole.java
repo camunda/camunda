@@ -232,8 +232,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       final ForceConfigureRequest request) {
     final Configuration currentConfiguration = raft.getCluster().getConfiguration();
     if (currentConfiguration != null // this is not expected in a leader
-        && request.newMembers().containsAll(currentConfiguration.allMembers())
-        && currentConfiguration.allMembers().containsAll(request.newMembers())) {
+        && request.newMembers().equals(currentConfiguration.allMembers())) {
       // It is likely that the previous force configure was successfully completed, and this is a
       // retry. So just respond success.
       return CompletableFuture.completedFuture(
