@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.ClusterTopologyManager.TopologyChangedListener;
 import io.camunda.zeebe.topology.ClusterTopologyManagerService;
 import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
@@ -84,6 +85,23 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
           }
         });
     return started;
+  }
+
+  @Override
+  public void registerTopologyChangeListener(final TopologyChangedListener listener) {
+    if (clusterTopologyManagerService != null) {
+      clusterTopologyManagerService.registerTopologyChangedListener(listener);
+    } else {
+      throw new IllegalStateException(
+          "Cannot register topology change listener before the topology manager is started");
+    }
+  }
+
+  @Override
+  public void removeTopologyChangeListener() {
+    if (clusterTopologyManagerService != null) {
+      clusterTopologyManagerService.removeTopologyChangedListener();
+    }
   }
 
   @Override

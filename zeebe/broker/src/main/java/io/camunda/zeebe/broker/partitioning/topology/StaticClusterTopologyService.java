@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.ClusterTopologyManager.TopologyChangedListener;
 import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 
 public class StaticClusterTopologyService implements ClusterTopologyService {
@@ -52,6 +53,16 @@ public class StaticClusterTopologyService implements ClusterTopologyService {
     }
 
     return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public void registerTopologyChangeListener(final TopologyChangedListener listener) {
+    // do nothing. Static cluster topology cannot be changed.
+  }
+
+  @Override
+  public void removeTopologyChangeListener() {
+    // do nothing. Static cluster topology cannot be changed.
   }
 
   @Override
