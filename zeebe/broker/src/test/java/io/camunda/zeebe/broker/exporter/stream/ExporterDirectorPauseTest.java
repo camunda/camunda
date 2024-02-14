@@ -59,6 +59,69 @@ public final class ExporterDirectorPauseTest {
   }
 
   @Test
+  public void shouldSoftPauseActiveExporter() {
+    // given
+    activeExporter.startExporterDirector(List.of(descriptor));
+    activeExporter.getDirector().softPauseExporting().join();
+
+    // when
+
+    activeExporter.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+    assertThat(activeExporter.getDirector().getPhase().join()).isEqualTo(ExporterPhase.SOFT_PAUSED);
+
+    // then
+    verify(exporter, timeout(TIMEOUT).times(1)).export(any());
+  }
+
+  @Test
+  public void shouldResumeSoftPausedExporter() {
+    // given
+    activeExporter.startExporterDirector(List.of(descriptor));
+    activeExporter.getDirector().softPauseExporting().join();
+    activeExporter.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+    assertThat(activeExporter.getDirector().getPhase().join()).isEqualTo(ExporterPhase.SOFT_PAUSED);
+
+    // when
+    activeExporter.getDirector().resumeExporting().join();
+    assertThat(activeExporter.getDirector().getPhase().join()).isEqualTo(ExporterPhase.EXPORTING);
+
+    // then
+    verify(exporter, timeout(TIMEOUT).times(1)).export(any());
+  }
+
+  @Test
+  public void shouldPauseAfterSoftPausedExporter() {
+    // given
+    activeExporter.startExporterDirector(List.of(descriptor));
+    activeExporter.getDirector().softPauseExporting().join();
+    assertThat(activeExporter.getDirector().getPhase().join()).isEqualTo(ExporterPhase.SOFT_PAUSED);
+
+    // when
+    activeExporter.getDirector().pauseExporting().join();
+    activeExporter.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+    assertThat(activeExporter.getDirector().getPhase().join()).isEqualTo(ExporterPhase.PAUSED);
+
+    // then
+    verify(exporter, timeout(TIMEOUT).times(0)).export(any());
+  }
+
+  @Test
+  public void shouldSoftPauseAfterPausedExporter() {
+    // given
+    activeExporter.startExporterDirector(List.of(descriptor));
+    activeExporter.getDirector().pauseExporting().join();
+    assertThat(activeExporter.getDirector().getPhase().join()).isEqualTo(ExporterPhase.PAUSED);
+
+    // when
+    activeExporter.getDirector().softPauseExporting().join();
+    activeExporter.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+    assertThat(activeExporter.getDirector().getPhase().join()).isEqualTo(ExporterPhase.SOFT_PAUSED);
+
+    // then
+    verify(exporter, timeout(TIMEOUT).times(1)).export(any());
+  }
+
+  @Test
   public void shouldResumeActiveExporter() {
     // given
     activeExporter.startExporterDirector(List.of(descriptor));
@@ -106,6 +169,8 @@ public final class ExporterDirectorPauseTest {
 
     // then
     assertThatCode(() -> activeExporter.getDirector().pauseExporting().join())
+        .doesNotThrowAnyException();
+    assertThatCode(() -> activeExporter.getDirector().softPauseExporting().join())
         .doesNotThrowAnyException();
     assertThatCode(() -> activeExporter.getDirector().resumeExporting().join())
         .doesNotThrowAnyException();
