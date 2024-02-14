@@ -72,36 +72,34 @@ public final class ScriptTaskProcessor
   }
 
   @Override
-  protected void onActivateInternal(
+  protected Either<Failure, ?> onActivateInternal(
       final ExecutableScriptTask element, final BpmnElementContext context) {
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> evaluateScript(element, context))
-        .ifRightOrLeft(
+        .thenDo(
             ok -> {
               final var activated =
                   stateTransitionBehavior.transitionToActivated(context, element.getEventType());
               stateTransitionBehavior.completeElement(activated);
-            },
-            failure -> incidentBehavior.createIncident(failure, context));
+            });
   }
 
   @Override
-  protected void onCompleteInternal(
+  protected Either<Failure, ?> onCompleteInternal(
       final ExecutableScriptTask element, final BpmnElementContext context) {
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
             ok -> {
               compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
-        .ifRightOrLeft(
+        .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
-            },
-            failure -> incidentBehavior.createIncident(failure, context));
+            });
   }
 
   @Override

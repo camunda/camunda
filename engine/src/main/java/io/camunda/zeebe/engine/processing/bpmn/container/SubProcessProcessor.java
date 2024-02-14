@@ -17,8 +17,10 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.util.Either;
 
 public final class SubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -50,12 +52,12 @@ public final class SubProcessProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, ?> onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
 
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyInputMappings(activating, element)
-        .ifRightOrLeft(
+        .thenDo(
             ok -> {
               final var activated =
                   stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
@@ -64,14 +66,13 @@ public final class SubProcessProcessor
                 throw new BpmnProcessingException(activated, NO_NONE_START_EVENT_ERROR_MSG);
               }
               stateTransitionBehavior.activateChildInstance(activated, startEvent);
-            },
-            failure -> incidentBehavior.createIncident(failure, activating));
+            });
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, ?> onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyOutputMappings(completing, element)
         .flatMap(
             ok -> {
@@ -80,9 +81,7 @@ public final class SubProcessProcessor
                   element, completing);
               return stateTransitionBehavior.transitionToCompleted(element, completing);
             })
-        .ifRightOrLeft(
-            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-            failure -> incidentBehavior.createIncident(failure, completing));
+        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 
   @Override

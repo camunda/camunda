@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn;
 
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.util.Either;
 
 /**
  * The business logic of a BPMN element.
@@ -20,6 +22,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
  */
 public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
 
+  Either<Failure, Void> SUCCESS = Either.right(null);
+
   /**
    * @return the class that represents the BPMN element
    */
@@ -28,6 +32,10 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   /**
    * The element is about to be entered. Perform every action to initialize and activate the
    * element.
+   *
+   * <p>This method returns an Either<Failure, ?> type, indicating the outcome of the activation
+   * attempt. A right value indicates success, while a left value (Failure) indicates that an error
+   * occurred during activation.
    *
    * <p>If the element is a wait-state (i.e. it is waiting for an event or an external trigger) then
    * it is waiting after this step to continue. Otherwise, it continues directly to the next step.
@@ -50,12 +58,19 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context process instance-related data of the element that is executed
+   * @return Either<Failure, ?> indicating the outcome of the activation attempt
    */
-  default void onActivate(final T element, final BpmnElementContext context) {}
+  default Either<Failure, ?> onActivate(final T element, final BpmnElementContext context) {
+    return SUCCESS;
+  }
 
   /**
    * The element is going to be left. Perform every action to leave the element and continue with
    * the next element.
+   *
+   * <p>This method returns an Either<Failure, ?> type, indicating the outcome of the completion
+   * attempt. A right value indicates success, while a left value (Failure) indicates that an error
+   * occurred during the element's completion.
    *
    * <p>Possible actions:
    *
@@ -71,8 +86,11 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *
    * @param element the instance of the BPMN element that is executed
    * @param context process instance-related data of the element that is executed
+   * @return Either<Failure, ?> indicating the outcome of the completion attempt
    */
-  default void onComplete(final T element, final BpmnElementContext context) {}
+  default Either<Failure, ?> onComplete(final T element, final BpmnElementContext context) {
+    return SUCCESS;
+  }
 
   /**
    * The element is going to be terminated. Perform every action to terminate the element and

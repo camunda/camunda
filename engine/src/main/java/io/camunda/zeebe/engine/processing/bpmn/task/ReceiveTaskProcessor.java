@@ -15,7 +15,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableReceiveTask;
+import io.camunda.zeebe.util.Either;
 
 public final class ReceiveTaskProcessor implements BpmnElementProcessor<ExecutableReceiveTask> {
 
@@ -40,29 +42,28 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onActivate(final ExecutableReceiveTask element, final BpmnElementContext context) {
+  public Either<Failure, ?> onActivate(
+      final ExecutableReceiveTask element, final BpmnElementContext context) {
 
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
-        .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()),
-            failure -> incidentBehavior.createIncident(failure, context));
+        .thenDo(
+            ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()));
   }
 
   @Override
-  public void onComplete(final ExecutableReceiveTask element, final BpmnElementContext context) {
+  public Either<Failure, ?> onComplete(
+      final ExecutableReceiveTask element, final BpmnElementContext context) {
 
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
-        .ifRightOrLeft(
-            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-            failure -> incidentBehavior.createIncident(failure, context));
+        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 
   @Override

@@ -46,31 +46,29 @@ public final class InclusiveGatewayProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, ?> onActivate(
       final ExecutableInclusiveGateway element, final BpmnElementContext activating) {
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
-    findSequenceFlowsToTake(element, activating)
-        .ifRightOrLeft(
+    return findSequenceFlowsToTake(element, activating)
+        .flatMap(
             optFlows -> {
               final var activated =
                   stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
               final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-              stateTransitionBehavior
+              return stateTransitionBehavior
                   .transitionToCompleted(element, completing)
-                  .ifRightOrLeft(
+                  .thenDo(
                       completed -> {
                         if (optFlows != null) {
                           optFlows.forEach(
                               flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow));
                         }
-                      },
-                      failure -> incidentBehavior.createIncident(failure, completing));
-            },
-            failure -> incidentBehavior.createIncident(failure, activating));
+                      });
+            });
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, ?> onComplete(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
     throw new UnsupportedOperationException(
         String.format(

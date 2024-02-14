@@ -14,7 +14,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
+import io.camunda.zeebe.util.Either;
 
 public final class EventSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -39,30 +41,26 @@ public final class EventSubProcessProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, ?> onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyInputMappings(activating, element)
-        .ifRightOrLeft(
+        .thenDo(
             ok -> {
               final var activated =
                   stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
               stateTransitionBehavior.activateChildInstance(
-                  activated, element.getStartEvents().get(0));
-            },
-            failure -> {
-              incidentBehavior.createIncident(failure, activating);
+                  activated, element.getStartEvents().getFirst());
             });
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, ?> onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
 
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyOutputMappings(completing, element)
-        .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
-        .ifLeft(failure -> incidentBehavior.createIncident(failure, completing));
+        .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing));
   }
 
   @Override

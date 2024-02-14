@@ -270,4 +270,39 @@ class EitherTest {
               collection.stream().filter(Either::isLeft).map(Either::getLeft).toList().get(0));
     }
   }
+
+  @DisplayName("`thenDo` method tests")
+  @Nested
+  class ThenDoMethodTests {
+
+    @DisplayName(
+        "Executes the consumer action and returns the original `Either` when it is a `Right`")
+    @ParameterizedTest
+    @MethodSource("io.camunda.zeebe.util.EitherTest#parameters")
+    void thenDoExecutesActionAndReturnsOriginalEitherWhenRight(final Object value) {
+      final var verifiableConsumer = new VerifiableConsumer();
+      final Either<Object, Object> originalRight = Either.right(value);
+
+      final Either<Object, Object> result = originalRight.thenDo(verifiableConsumer);
+
+      assertThat(verifiableConsumer.hasBeenExecuted).isTrue();
+      assertThat(result).as("Should return the original `Either` instance").isSameAs(originalRight);
+      assertThat(result.get()).isEqualTo(value);
+    }
+
+    @DisplayName(
+        "Does not execute the consumer action and returns the original `Either` when it is a `Left`")
+    @ParameterizedTest
+    @MethodSource("io.camunda.zeebe.util.EitherTest#parameters")
+    void thenDoDoesNotExecuteActionAndReturnsOriginalEitherWhenLeft(final Object value) {
+      final var verifiableConsumer = new VerifiableConsumer();
+      final Either<Object, Object> originalLeft = Either.left(value);
+
+      final Either<Object, Object> result = originalLeft.thenDo(verifiableConsumer);
+
+      assertThat(verifiableConsumer.hasBeenExecuted).isFalse();
+      assertThat(result).as("Should return the original `Either` instance").isSameAs(originalLeft);
+      assertThat(result.getLeft()).isEqualTo(value);
+    }
+  }
 }

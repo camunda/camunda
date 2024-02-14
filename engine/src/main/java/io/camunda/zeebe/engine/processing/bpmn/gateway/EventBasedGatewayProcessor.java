@@ -14,7 +14,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEventBasedGateway;
+import io.camunda.zeebe.util.Either;
 
 public final class EventBasedGatewayProcessor
     implements BpmnElementProcessor<ExecutableEventBasedGateway> {
@@ -37,18 +39,16 @@ public final class EventBasedGatewayProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, ?> onActivate(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior
+    return eventSubscriptionBehavior
         .subscribeToEvents(element, context)
-        .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()),
-            failure -> incidentBehavior.createIncident(failure, context));
+        .thenDo(
+            ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()));
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, ?> onComplete(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
@@ -64,16 +64,15 @@ public final class EventBasedGatewayProcessor
 
     // transition to completed and continue on the event of the gateway that was triggered
     // - according to the BPMN specification, the sequence flow to this event is not taken
-    stateTransitionBehavior
+    return stateTransitionBehavior
         .transitionToCompleted(element, context)
-        .ifRightOrLeft(
+        .thenDo(
             completed ->
                 eventSubscriptionBehavior.activateTriggeredEvent(
                     context.getElementInstanceKey(),
                     completed.getFlowScopeKey(),
                     eventTrigger,
-                    completed),
-            failure -> incidentBehavior.createIncident(failure, context));
+                    completed));
   }
 
   @Override

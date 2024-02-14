@@ -17,7 +17,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.util.Either;
 
 /**
  * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
@@ -50,22 +52,23 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onActivate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    variableMappingBehavior
+  public Either<Failure, ?> onActivate(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    return variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> jobBehavior.evaluateJobExpressions(element, context))
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
-        .ifRightOrLeft(
+        .thenDo(
             jobProperties -> {
               jobBehavior.createNewJob(context, element, jobProperties);
               stateTransitionBehavior.transitionToActivated(context, element.getEventType());
-            },
-            failure -> incidentBehavior.createIncident(failure, context));
+            });
   }
 
   @Override
-  public void onComplete(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    variableMappingBehavior
+  public Either<Failure, ?> onComplete(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    return variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
             ok -> {
@@ -73,12 +76,11 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
               compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
-        .ifRightOrLeft(
+        .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
-            },
-            failure -> incidentBehavior.createIncident(failure, context));
+            });
   }
 
   @Override

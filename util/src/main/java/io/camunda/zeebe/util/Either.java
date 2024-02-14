@@ -286,6 +286,41 @@ public sealed interface Either<L, R> {
   <T> Either<L, T> flatMap(Function<? super R, ? extends Either<L, T>> right);
 
   /**
+   * Executes the given action with the right value if this is a {@link Right}, otherwise does
+   * nothing. This method facilitates side-effect operations on the right value without altering the
+   * state or the type of the {@code Either}. After executing the action, the original {@code
+   * Either<L, R>} is returned, allowing for further chaining of operations in a fluent API style.
+   *
+   * <p>When the instance is a {@link Right}, the action is executed, and the original {@code
+   * Either<L, R>} is returned. This maintains the right value's type and allows the action to be
+   * performed as a side-effect without changing the outcome. When the instance is a {@link Left},
+   * no action is performed, and the {@code Left} instance is returned unchanged, preserving the
+   * error information.
+   *
+   * <p>Usage example when {@code Either} is a {@link Right}:
+   *
+   * <pre>{@code
+   * Either<Exception, String> rightEither = Either.right("Success");
+   * Either<Exception, String> result = rightEither.thenDo(value -> System.out.println("Processed value: " + value));
+   * // Output: Processed value: Success
+   * // result remains a Right<Exception, String>, with the value "Success"
+   * }</pre>
+   *
+   * <p>Usage example when {@code Either} is a {@link Left}:
+   *
+   * <pre>{@code
+   * Either<String, Integer> leftEither = Either.left("Error occurred");
+   * Either<String, Integer> result = leftEither.thenDo(value -> System.out.println("This will not be printed"));
+   * // No output as the action is not executed
+   * // result remains an unchanged Left<String, Integer>, containing the original error message
+   * }</pre>
+   *
+   * @param action the consuming function to perform with the right value, if present
+   * @return Either<L, R> the original Either instance, allowing further operations.
+   */
+  Either<L, R> thenDo(Consumer<R> action);
+
+  /**
    * Performs the given action with the value if this is a {@link Right}, otherwise does nothing.
    *
    * @param action the consuming function for the right value
@@ -359,6 +394,12 @@ public sealed interface Either<L, R> {
     }
 
     @Override
+    public Either<L, R> thenDo(final Consumer<R> action) {
+      action.accept(value);
+      return this;
+    }
+
+    @Override
     public void ifRight(final Consumer<R> right) {
       right.accept(value);
     }
@@ -423,6 +464,11 @@ public sealed interface Either<L, R> {
     @SuppressWarnings("unchecked")
     public <T> Either<L, T> flatMap(final Function<? super R, ? extends Either<L, T>> right) {
       return (Either<L, T>) this;
+    }
+
+    @Override
+    public Either<L, R> thenDo(final Consumer<R> action) {
+      return this;
     }
 
     @Override

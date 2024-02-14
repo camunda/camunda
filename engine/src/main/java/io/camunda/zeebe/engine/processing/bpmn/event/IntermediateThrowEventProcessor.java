@@ -69,15 +69,15 @@ public class IntermediateThrowEventProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, ?> onActivate(
       final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
-    eventBehaviorOf(element).onActivate(element, activating);
+    return eventBehaviorOf(element).onActivate(element, activating);
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, ?> onComplete(
       final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {
-    eventBehaviorOf(element).onComplete(element, completing);
+    return eventBehaviorOf(element).onComplete(element, completing);
   }
 
   @Override
@@ -107,11 +107,13 @@ public class IntermediateThrowEventProcessor
 
     boolean isSuitableForEvent(final ExecutableIntermediateThrowEvent element);
 
-    void onActivate(
+    Either<Failure, ?> onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating);
 
-    default void onComplete(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {}
+    default Either<Failure, ?> onComplete(
+        final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {
+      return SUCCESS;
+    }
 
     default void onTerminate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext terminating) {}
@@ -125,22 +127,22 @@ public class IntermediateThrowEventProcessor
     }
 
     @Override
-    public void onActivate(
+    public Either<Failure, ?> onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
       final var activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
       stateTransitionBehavior.completeElement(activated);
+      return SUCCESS;
     }
 
     @Override
-    public void onComplete(
+    public Either<Failure, ?> onComplete(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {
-      variableMappingBehavior
+      return variableMappingBehavior
           .applyOutputMappings(completing, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
-          .ifRightOrLeft(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-              failure -> incidentBehavior.createIncident(failure, completing));
+          .thenDo(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
   }
 
@@ -153,30 +155,29 @@ public class IntermediateThrowEventProcessor
     }
 
     @Override
-    public void onActivate(
+    public Either<Failure, ?> onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
-      if (element.getJobWorkerProperties() != null) {
-        variableMappingBehavior
-            .applyInputMappings(activating, element)
-            .flatMap(ok -> jobBehavior.evaluateJobExpressions(element, activating))
-            .ifRightOrLeft(
-                jobProperties -> {
-                  jobBehavior.createNewJob(activating, element, jobProperties);
-                  stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
-                },
-                failure -> incidentBehavior.createIncident(failure, activating));
-      }
+      return element.getJobWorkerProperties() == null
+          ? SUCCESS
+          : variableMappingBehavior
+              .applyInputMappings(activating, element)
+              .flatMap(ok -> jobBehavior.evaluateJobExpressions(element, activating))
+              .thenDo(
+                  jobProperties -> {
+                    jobBehavior.createNewJob(activating, element, jobProperties);
+                    stateTransitionBehavior.transitionToActivated(
+                        activating, element.getEventType());
+                  });
     }
 
     @Override
-    public void onComplete(
+    public Either<Failure, ?> onComplete(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {
-      variableMappingBehavior
+      return variableMappingBehavior
           .applyOutputMappings(completing, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
-          .ifRightOrLeft(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-              failure -> incidentBehavior.createIncident(failure, completing));
+          .thenDo(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
 
     @Override
@@ -195,25 +196,25 @@ public class IntermediateThrowEventProcessor
     }
 
     @Override
-    public void onActivate(
+    public Either<Failure, ?> onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
       final var activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
       stateTransitionBehavior.completeElement(activated);
+      return SUCCESS;
     }
 
     @Override
-    public void onComplete(
+    public Either<Failure, ?> onComplete(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {
       final var link = element.getLink();
-      variableMappingBehavior
+      return variableMappingBehavior
           .applyOutputMappings(completing, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
-          .ifRightOrLeft(
+          .thenDo(
               completed ->
                   stateTransitionBehavior.activateElementInstanceInFlowScope(
-                      completed, link.getCatchEventElement()),
-              failure -> incidentBehavior.createIncident(failure, completing));
+                      completed, link.getCatchEventElement()));
     }
   }
 
@@ -225,10 +226,10 @@ public class IntermediateThrowEventProcessor
     }
 
     @Override
-    public void onActivate(
+    public Either<Failure, ?> onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
-      evaluateEscalationCode(element, activating)
-          .ifRightOrLeft(
+      return evaluateEscalationCode(element, activating)
+          .thenDo(
               escalationCode -> {
                 final var activated =
                     stateTransitionBehavior.transitionToActivated(
@@ -240,19 +241,17 @@ public class IntermediateThrowEventProcessor
                 if (canBeCompleted) {
                   stateTransitionBehavior.completeElement(activated);
                 }
-              },
-              failure -> incidentBehavior.createIncident(failure, activating));
+              });
     }
 
     @Override
-    public void onComplete(
+    public Either<Failure, ?> onComplete(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {
-      variableMappingBehavior
+      return variableMappingBehavior
           .applyOutputMappings(completing, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
-          .ifRightOrLeft(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-              failure -> incidentBehavior.createIncident(failure, completing));
+          .thenDo(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
 
     private Either<Failure, DirectBuffer> evaluateEscalationCode(
@@ -277,30 +276,28 @@ public class IntermediateThrowEventProcessor
     }
 
     @Override
-    public void onActivate(
+    public Either<Failure, ?> onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
-      variableMappingBehavior
+      return variableMappingBehavior
           .applyInputMappings(activating, element)
           .flatMap(ok -> signalBehavior.broadcastNewSignal(activating, element.getSignal()))
-          .ifRightOrLeft(
+          .thenDo(
               ok -> {
                 final var activated =
                     stateTransitionBehavior.transitionToActivated(
                         activating, element.getEventType());
                 stateTransitionBehavior.completeElement(activated);
-              },
-              failure -> incidentBehavior.createIncident(failure, activating));
+              });
     }
 
     @Override
-    public void onComplete(
+    public Either<Failure, ?> onComplete(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {
-      variableMappingBehavior
+      return variableMappingBehavior
           .applyOutputMappings(completing, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
-          .ifRightOrLeft(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-              failure -> incidentBehavior.createIncident(failure, completing));
+          .thenDo(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
   }
 
@@ -312,7 +309,7 @@ public class IntermediateThrowEventProcessor
     }
 
     @Override
-    public void onActivate(
+    public Either<Failure, ?> onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
       final BpmnElementContext activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
@@ -320,20 +317,21 @@ public class IntermediateThrowEventProcessor
       final var isCompensationTriggered =
           compensationSubscriptionBehaviour.triggerCompensation(element, activating);
 
-      if (!isCompensationTriggered) {
-        final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-        onComplete(element, completing);
+      if (isCompensationTriggered) {
+        return SUCCESS;
       }
+
+      final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+      return onComplete(element, completing);
     }
 
     @Override
-    public void onComplete(
+    public Either<Failure, ?> onComplete(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {
-      stateTransitionBehavior
+      return stateTransitionBehavior
           .transitionToCompleted(element, completing)
-          .ifRightOrLeft(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-              failure -> incidentBehavior.createIncident(failure, completing));
+          .thenDo(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
   }
 }
