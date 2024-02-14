@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -21,12 +20,12 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Optional;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 @AutoCloseResources
 @ZeebeIntegration
@@ -41,11 +40,9 @@ final class FormLinkingIT {
     client = zeebe.newClientBuilder().build();
   }
 
-  @Test
+  @RegressionTest("https://github.com/camunda/zeebe/issues/16311")
   public void shouldActivateUserTaskWithCorrectFormKey() {
     // given
-    final String form1Path = "form/form-linking-test-form-1.form";
-
     final DeploymentEvent deployment =
         client
             .newDeployResourceCommand()
@@ -57,11 +54,21 @@ final class FormLinkingIT {
                     .endEvent()
                     .done(),
                 "form_linking_test.bpmn")
-            .addResourceFromClasspath(form1Path)
+            .addProcessModel(
+                Bpmn.createExecutableProcess("form_linking_test2")
+                    .startEvent()
+                    .userTask()
+                    .zeebeFormId("formId2")
+                    .endEvent()
+                    .done(),
+                "form_linking_test2.bpmn")
+            .addResourceFromClasspath("form/form-linking-test-form-1.form")
+            .addResourceFromClasspath("form/form-linking-test-form-2.form")
             .send()
             .join();
 
-    final Long formKey = deployment.getForm().getFirst().getFormKey();
+    final var formKey = deployment.getForm().getFirst().getFormKey();
+    final var formKey2 = deployment.getForm().getLast().getFormKey();
 
     // take snapshot and start the engine from snapshot
     partitions.takeSnapshot();
@@ -78,11 +85,23 @@ final class FormLinkingIT {
     // when
     zeebe.withRecordingExporter(true).start().awaitCompleteTopology();
 
-    // create a process instance to trigger form linking where the actual caching issue exists
+    // then
+
+    // fills the cache correctly
+    assertCorrectFormLinkedForProcess("form_linking_test", formKey);
+
+    // previously corrupted the cache
+    assertCorrectFormLinkedForProcess("form_linking_test2", formKey2);
+
+    // failed previously because of corrupted cache
+    assertCorrectFormLinkedForProcess("form_linking_test", formKey);
+  }
+
+  private void assertCorrectFormLinkedForProcess(final String processId, final long formKey) {
     final long processInstanceKey =
         client
             .newCreateInstanceCommand()
-            .bpmnProcessId("form_linking_test")
+            .bpmnProcessId(processId)
             .latestVersion()
             .send()
             .join()
@@ -93,31 +112,6 @@ final class FormLinkingIT {
                 .getFirst()
                 .getValue()
                 .getCustomHeaders())
-        .containsValue(formKey.toString());
-
-    // deploy another form to update form object referenced by formId1 in the cache (the wrong
-    // behaviour)
-    final String form2Path = "form/form-linking-test-form-2.form";
-    client.newDeployResourceCommand().addResourceFromClasspath(form2Path).send().join();
-    RecordingExporter.formRecords().withIntent(FormIntent.CREATED).withFormId("formId2").await();
-
-    // create another process instance to verify it works as expected (e.g. cache data is not
-    // changed)
-    final long processInstanceKey2 =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("form_linking_test")
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-
-    assertThat(
-            RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey2)
-                .getFirst()
-                .getValue()
-                .getCustomHeaders())
-        .containsValue(formKey.toString());
+        .containsValue(String.valueOf(formKey));
   }
 }
