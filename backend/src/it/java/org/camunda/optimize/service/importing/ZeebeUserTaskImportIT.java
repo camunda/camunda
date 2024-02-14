@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
 import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -25,6 +26,7 @@ import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_D
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleNativeUserTaskProcess;
 
+@DisabledIf("isZeebeVersionPre84")
 public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
   @Test
