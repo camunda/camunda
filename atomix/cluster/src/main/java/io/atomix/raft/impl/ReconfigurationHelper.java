@@ -314,7 +314,7 @@ public final class ReconfigurationHelper {
     raftContext
         .getProtocol()
         .forceConfigure(memberId, request)
-        .whenComplete(
+        .whenCompleteAsync(
             (response, error) -> {
               if (error != null) {
                 logger.warn(
@@ -330,7 +330,8 @@ public final class ReconfigurationHelper {
                     response.error());
                 quorum.fail(memberId);
               }
-            });
+            },
+            threadContext);
   }
 
   /** Attempts to become the leader. */
