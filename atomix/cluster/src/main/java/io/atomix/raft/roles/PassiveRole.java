@@ -329,9 +329,7 @@ public class PassiveRole extends InactiveRole {
     final var currentConfiguration = raft.getCluster().getConfiguration();
 
     // No need to overwrite if already in force configuration. This can happen due to retry.
-    if (currentConfiguration == null
-        || !currentConfiguration.force()
-        || request.index() > currentConfiguration.index()) {
+    if (currentConfiguration == null || !currentConfiguration.force()) {
       final var configurationIndex =
           Math.max(request.index(), raft.getCurrentConfigurationIndex() + 1);
       raft.getCluster()
@@ -344,12 +342,14 @@ public class PassiveRole extends InactiveRole {
                   List.of(), // Skip joint consensus
                   true));
       raft.getCluster().commitCurrentConfiguration();
-    } else if (!(currentConfiguration.allMembers().containsAll(request.newMembers())
-        && request.newMembers().containsAll(currentConfiguration.allMembers()))) {
+    } else if (!currentConfiguration.allMembers().equals(request.newMembers())) {
       // This is not expected. When force configuration is retried, we expect that they are retried
       // with the same state. If this is not the case, it is likely that there are two force
       // configuration requested at the same time.
       // Reject the request. There is possibly no way out to recover from this.
+
+      // TODO: This can happen if this follower was disconnected after the previous force request
+      // and never received the new configuration after that.
       return CompletableFuture.completedFuture(
           logResponse(
               ForceConfigureResponse.builder()
