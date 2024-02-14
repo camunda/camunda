@@ -233,7 +233,7 @@ public final class ReconfigurationHelper {
             .map(m -> new DefaultRaftMember(m, Type.ACTIVE, Instant.now()))
             .collect(Collectors.toSet());
 
-    if (!currentConfiguration.force()) {
+    if (currentConfiguration == null || !currentConfiguration.force()) {
       // No need to overwrite if it is already in force configure and this is a retry
       if (raftContext.getRaftRole().role() == Role.LEADER) {
         // Optimization: If the current configuration is already the same as new forced, we
@@ -248,7 +248,7 @@ public final class ReconfigurationHelper {
           newMembers);
       final var newConfiguration =
           new Configuration(
-              currentConfiguration.index() + 1,
+              raftContext.getCurrentConfigurationIndex() + 1,
               raftContext.getTerm(),
               Instant.now().toEpochMilli(),
               newMembers,
