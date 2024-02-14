@@ -226,7 +226,7 @@ public final class ReconfigurationHelper {
   private void triggerForceConfigure(
       final Collection<MemberId> newMembersIds, final CompletableFuture<Void> future) {
     final var currentConfiguration = raftContext.getCluster().getConfiguration();
-    final Collection<RaftMember> newMembers =
+    final Set<RaftMember> newMembers =
         newMembersIds.stream()
             // We can also take the type of the member as input. But so far we do not support
             // PASSIVE members yet. So we can safely assume they are all ACTIVE.
@@ -256,8 +256,7 @@ public final class ReconfigurationHelper {
               true);
 
       raftContext.getCluster().configure(newConfiguration);
-    } else if (!(currentConfiguration.allMembers().containsAll(newMembers)
-        && newMembers.containsAll(currentConfiguration.allMembers()))) {
+    } else if (!(currentConfiguration.allMembers().equals(newMembers))) {
       // This is not expected. When force configuration is retried, we expect that they are
       // retried with the same state. If this is not the case, it is likely that there are two
       // force configuration requested at the same time.
