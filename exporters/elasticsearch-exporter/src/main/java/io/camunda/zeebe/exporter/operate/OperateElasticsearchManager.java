@@ -68,6 +68,8 @@ public class OperateElasticsearchManager implements SchemaManager {
 
   private static final String NUMBER_OF_SHARDS = "index.number_of_shards";
   private static final String NUMBER_OF_REPLICAS = "index.number_of_replicas";
+  private static final String MAX_INNER_RESULT_WINDOW = "index.max_inner_result_window";
+  private static final Integer MAX_INNER_RESULT_WINDOW_VALUE = 500;
 
   protected NoSpringRetryElasticsearchClient retryElasticsearchClient;
   protected OperateProperties operateProperties;
@@ -210,6 +212,7 @@ public class OperateElasticsearchManager implements SchemaManager {
     return Settings.builder()
         .put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
         .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas())
+        .put(MAX_INNER_RESULT_WINDOW, MAX_INNER_RESULT_WINDOW_VALUE)
         .build();
   }
 
