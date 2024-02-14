@@ -24,12 +24,14 @@ import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftThreadContextFactory;
 import io.atomix.raft.cluster.RaftCluster;
+import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext.State;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.camunda.zeebe.util.health.FailureListener;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -116,7 +118,7 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
-  public CompletableFuture<RaftServer> forceConfigure(final Collection<MemberId> membersToRetain) {
+  public CompletableFuture<RaftServer> forceConfigure(final Map<MemberId, Type> membersToRetain) {
     return new ReconfigurationHelper(context).forceConfigure(membersToRetain).thenApply(v -> this);
   }
 

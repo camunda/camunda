@@ -31,6 +31,7 @@ import io.atomix.utils.logging.LoggerContext;
 import java.net.ConnectException;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
@@ -216,7 +217,7 @@ public final class ReconfigurationHelper {
    *      |                                 |                                     |                                    |
    * </pre>
    */
-  public CompletableFuture<Void> forceConfigure(final Collection<MemberId> newMembersIds) {
+  public CompletableFuture<Void> forceConfigure(final Map<MemberId, Type> newMembersIds) {
     final CompletableFuture<Void> future = new CompletableFuture<>();
 
     threadContext.execute(() -> triggerForceConfigure(newMembersIds, future));
@@ -224,13 +225,14 @@ public final class ReconfigurationHelper {
   }
 
   private void triggerForceConfigure(
-      final Collection<MemberId> newMembersIds, final CompletableFuture<Void> future) {
+      final Map<MemberId, Type> newMembersIds, final CompletableFuture<Void> future) {
     final var currentConfiguration = raftContext.getCluster().getConfiguration();
     final Set<RaftMember> newMembers =
-        newMembersIds.stream()
-            // We can also take the type of the member as input. But so far we do not support
-            // PASSIVE members yet. So we can safely assume they are all ACTIVE.
-            .map(m -> new DefaultRaftMember(m, Type.ACTIVE, Instant.now()))
+        newMembersIds.entrySet().stream()
+            .map(
+                memberEntry ->
+                    new DefaultRaftMember(
+                        memberEntry.getKey(), memberEntry.getValue(), Instant.now()))
             .collect(Collectors.toSet());
 
     if (currentConfiguration == null || !currentConfiguration.force()) {
