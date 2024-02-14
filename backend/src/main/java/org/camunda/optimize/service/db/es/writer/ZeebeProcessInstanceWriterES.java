@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.RequestType;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.es.writer.usertask.UserTaskDurationScriptUtil;
 import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 @Component
@@ -56,6 +58,7 @@ public class ZeebeProcessInstanceWriterES extends AbstractProcessInstanceDataWri
              params.put(NEW_INSTANCE, procInst);
              params.put(FORMATTER, OPTIMIZE_DATE_FORMAT);
              params.put(SOURCE_EXPORT_INDEX, sourceExportIndex);
+        params.put(FLOW_NODE_INSTANCES, procInst.getFlowNodeInstances());
              return ImportRequestDto.builder()
                .importName(importItemName)
                .type(RequestType.UPDATE)
@@ -145,6 +148,7 @@ public class ZeebeProcessInstanceWriterES extends AbstractProcessInstanceDataWri
       "  }\n" +
       "}\n" +
       "existingInstance.flowNodeInstances = flowNodesById.values();\n" +
+      UserTaskDurationScriptUtil.createUpdateUserTaskMetricsScript() +
 
     // Update the incidents
     "def incidentsById = existingInstance.incidents.stream()\n" +

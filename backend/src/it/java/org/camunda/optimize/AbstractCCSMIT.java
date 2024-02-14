@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
+import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
 import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.DatabaseConstants;
@@ -161,9 +162,20 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     waitUntilRecordMatchingQueryExported(
       DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME,
       boolQuery().must(termQuery(
-        ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
+        ZeebeUserTaskRecordDto.Fields.value + "." + ZeebeUserTaskDataDto.Fields.elementId,
         instanceElementId
       ))
+    );
+  }
+
+  protected void waitUntilUserTaskRecordWithElementIdAndIntentExported(final String instanceElementId, final String intent) {
+    waitUntilRecordMatchingQueryExported(
+      DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME,
+      boolQuery().must(termQuery(
+          ZeebeUserTaskRecordDto.Fields.value + "." + ZeebeUserTaskDataDto.Fields.elementId,
+          instanceElementId
+        ))
+        .must(termQuery(ZeebeRecordDto.Fields.intent, intent))
     );
   }
 
@@ -280,7 +292,8 @@ public abstract class AbstractCCSMIT extends AbstractIT {
       .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
   }
 
-  protected OffsetDateTime getTimestampForZeebeEventsWithIntent(final List<? extends ZeebeRecordDto> eventsForElement, final Intent intent) {
+  protected OffsetDateTime getTimestampForZeebeEventsWithIntent(final List<? extends ZeebeRecordDto> eventsForElement,
+                                                                final Intent intent) {
     final ZeebeRecordDto startOfElement = eventsForElement.stream()
       .filter(event -> event.getIntent().equals(intent))
       .findFirst().orElseThrow(eventNotFoundExceptionSupplier);
@@ -311,7 +324,8 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return boolQuery().must(termsQuery(
       ZeebeUserTaskRecordDto.Fields.intent,
       UserTaskIntent.CREATING.name(),
-      UserTaskIntent.COMPLETED.name()
+      UserTaskIntent.COMPLETED.name(),
+      UserTaskIntent.CANCELED.name()
     ));
   }
 

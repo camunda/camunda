@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.zeebe.usertask;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldNameConstants;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @EqualsAndHashCode
 @Data
+@FieldNameConstants
 public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
 
   private long userTaskKey;

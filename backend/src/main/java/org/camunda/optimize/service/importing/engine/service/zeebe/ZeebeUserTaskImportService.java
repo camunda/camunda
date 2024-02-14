@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATING;
 import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME;
@@ -34,7 +35,8 @@ public class ZeebeUserTaskImportService extends ZeebeProcessInstanceSubEntityImp
 
   private static final Set<UserTaskIntent> INTENTS_TO_IMPORT = Set.of(
     CREATING,
-    COMPLETED
+    COMPLETED,
+    CANCELED
   );
 
   public ZeebeUserTaskImportService(final ConfigurationService configurationService,
@@ -92,7 +94,11 @@ public class ZeebeUserTaskImportService extends ZeebeProcessInstanceSubEntityImp
           userTaskForKey.setStartDate(zeebeUserTaskInstanceRecord.getDateForTimestamp());
         } else if (userTaskRecordIntent == COMPLETED) {
           userTaskForKey.setEndDate(zeebeUserTaskInstanceRecord.getDateForTimestamp());
-          updateDurationIfCompleted(userTaskForKey);
+          updateDurationsIfCompleted(userTaskForKey);
+        } else if (userTaskRecordIntent == CANCELED) {
+          userTaskForKey.setCanceled(true);
+          userTaskForKey.setEndDate(zeebeUserTaskInstanceRecord.getDateForTimestamp());
+          updateDurationsIfCompleted(userTaskForKey);
         }
         userTaskInstancesByKey.put(recordKey, userTaskForKey);
       });
@@ -113,10 +119,21 @@ public class ZeebeUserTaskImportService extends ZeebeProcessInstanceSubEntityImp
       .setDueDate(userTaskData.getDateForDueDate());
   }
 
-  private void updateDurationIfCompleted(final FlowNodeInstanceDto flowNodeToAdd) {
+  private void updateDurationsIfCompleted(final FlowNodeInstanceDto flowNodeToAdd) {
     if (flowNodeToAdd.getStartDate() != null && flowNodeToAdd.getEndDate() != null) {
-      flowNodeToAdd.setTotalDurationInMs(
-        flowNodeToAdd.getStartDate().until(flowNodeToAdd.getEndDate(), ChronoUnit.MILLIS));
+      flowNodeToAdd.setTotalDurationInMs(flowNodeToAdd.getStartDate().until(flowNodeToAdd.getEndDate(), ChronoUnit.MILLIS));
+      if (Boolean.TRUE.equals(flowNodeToAdd.getCanceled())) {
+        // Since we do not yet import assignee operations, idle duration of cancelled tasks is always equal to the total duration
+        // TODO with issue#11240
+        flowNodeToAdd.setIdleDurationInMs(flowNodeToAdd.getTotalDurationInMs());
+        // Since we do not yet import assignee operations, work duration of cancelled tasks is always 0
+        flowNodeToAdd.setWorkDurationInMs(0L);
+      } else {
+        // Since we do not yet import assignee operations, idle duration of completed tasks is always 0
+        flowNodeToAdd.setIdleDurationInMs(0L);
+        // Since we do not yet import assignee operations, work duration of completed tasks is always equal to the total duration
+        flowNodeToAdd.setWorkDurationInMs(flowNodeToAdd.getTotalDurationInMs());
+      }
     }
   }
 
