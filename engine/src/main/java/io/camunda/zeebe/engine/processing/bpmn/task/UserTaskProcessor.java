@@ -17,7 +17,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.util.Either;
 
 public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
 
@@ -61,26 +63,25 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   }
 
   @Override
-  protected void onActivateInternal(
+  protected Either<Failure, ?> onActivateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> userTaskBehavior.evaluateUserTaskExpressions(element, context))
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
-        .ifRightOrLeft(
+        .thenDo(
             userTaskProperties -> {
               final var userTaskRecord =
                   userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
               userTaskBehavior.userTaskCreated(userTaskRecord);
               stateTransitionBehavior.transitionToActivated(context, element.getEventType());
-            },
-            failure -> incidentBehavior.createIncident(failure, context));
+            });
   }
 
   @Override
-  protected void onCompleteInternal(
+  protected Either<Failure, ?> onCompleteInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
             ok -> {
@@ -88,12 +89,11 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
               compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
-        .ifRightOrLeft(
+        .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
-            },
-            failure -> incidentBehavior.createIncident(failure, context));
+            });
   }
 
   @Override

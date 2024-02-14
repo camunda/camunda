@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.util.Either;
 
 public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWorkerTask>
     implements BpmnElementProcessor<T> {
@@ -25,21 +27,17 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
   }
 
   @Override
-  public void onActivate(final T element, final BpmnElementContext context) {
-    if (isJobBehavior(element, context)) {
-      delegate.onActivate(element, context);
-    } else {
-      onActivateInternal(element, context);
-    }
+  public Either<Failure, ?> onActivate(final T element, final BpmnElementContext context) {
+    return isJobBehavior(element, context)
+        ? delegate.onActivate(element, context)
+        : onActivateInternal(element, context);
   }
 
   @Override
-  public void onComplete(final T element, final BpmnElementContext context) {
-    if (isJobBehavior(element, context)) {
-      delegate.onComplete(element, context);
-    } else {
-      onCompleteInternal(element, context);
-    }
+  public Either<Failure, ?> onComplete(final T element, final BpmnElementContext context) {
+    return isJobBehavior(element, context)
+        ? delegate.onComplete(element, context)
+        : onCompleteInternal(element, context);
   }
 
   @Override
@@ -53,9 +51,11 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
 
   protected abstract boolean isJobBehavior(final T element, final BpmnElementContext context);
 
-  protected abstract void onActivateInternal(final T element, final BpmnElementContext context);
+  protected abstract Either<Failure, ?> onActivateInternal(
+      final T element, final BpmnElementContext context);
 
-  protected abstract void onCompleteInternal(final T element, final BpmnElementContext context);
+  protected abstract Either<Failure, ?> onCompleteInternal(
+      final T element, final BpmnElementContext context);
 
   protected abstract void onTerminateInternal(final T element, final BpmnElementContext context);
 }

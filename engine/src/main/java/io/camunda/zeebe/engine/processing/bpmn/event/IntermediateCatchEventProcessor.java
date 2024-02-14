@@ -14,7 +14,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBeh
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 
 public class IntermediateCatchEventProcessor
@@ -44,24 +46,22 @@ public class IntermediateCatchEventProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, ?> onActivate(
       final ExecutableCatchEventElement element, final BpmnElementContext activating) {
-    eventBehaviorOf(element).onActivate(element, activating);
+    return eventBehaviorOf(element).onActivate(element, activating);
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, ?> onComplete(
       final ExecutableCatchEventElement element, final BpmnElementContext completing) {
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyOutputMappings(completing, element)
         .flatMap(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(completing);
               return stateTransitionBehavior.transitionToCompleted(element, completing);
             })
-        .ifRightOrLeft(
-            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-            failure -> incidentBehavior.createIncident(failure, completing));
+        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 
   @Override
@@ -90,7 +90,8 @@ public class IntermediateCatchEventProcessor
 
     boolean isSuitableForEvent(final ExecutableCatchEventElement element);
 
-    void onActivate(final ExecutableCatchEventElement element, final BpmnElementContext activating);
+    Either<Failure, ?> onActivate(
+        final ExecutableCatchEventElement element, final BpmnElementContext activating);
   }
 
   private final class DefaultIntermediateCatchEventBehavior
@@ -102,15 +103,15 @@ public class IntermediateCatchEventProcessor
     }
 
     @Override
-    public void onActivate(
+    public Either<Failure, ?> onActivate(
         final ExecutableCatchEventElement element, final BpmnElementContext activating) {
-      variableMappingBehavior
+      return variableMappingBehavior
           .applyInputMappings(activating, element)
           .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating))
-          .ifRightOrLeft(
+          .thenDo(
               ok ->
-                  stateTransitionBehavior.transitionToActivated(activating, element.getEventType()),
-              failure -> incidentBehavior.createIncident(failure, activating));
+                  stateTransitionBehavior.transitionToActivated(
+                      activating, element.getEventType()));
     }
   }
 
@@ -122,11 +123,12 @@ public class IntermediateCatchEventProcessor
     }
 
     @Override
-    public void onActivate(
+    public Either<Failure, ?> onActivate(
         final ExecutableCatchEventElement element, final BpmnElementContext activating) {
       final var activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
       stateTransitionBehavior.completeElement(activated);
+      return SUCCESS;
     }
   }
 }

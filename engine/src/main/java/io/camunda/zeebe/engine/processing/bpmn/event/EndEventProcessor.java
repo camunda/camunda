@@ -68,13 +68,15 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   }
 
   @Override
-  public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
-    eventBehaviorOf(element).onActivate(element, activating);
+  public Either<Failure, ?> onActivate(
+      final ExecutableEndEvent element, final BpmnElementContext activating) {
+    return eventBehaviorOf(element).onActivate(element, activating);
   }
 
   @Override
-  public void onComplete(final ExecutableEndEvent element, final BpmnElementContext context) {
-    eventBehaviorOf(element).onComplete(element, context);
+  public Either<Failure, ?> onComplete(
+      final ExecutableEndEvent element, final BpmnElementContext context) {
+    return eventBehaviorOf(element).onComplete(element, context);
   }
 
   @Override
@@ -102,10 +104,13 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     boolean isSuitableForEvent(final ExecutableEndEvent element);
 
-    void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating);
+    Either<Failure, ?> onActivate(
+        final ExecutableEndEvent element, final BpmnElementContext activating);
 
-    default void onComplete(
-        final ExecutableEndEvent element, final BpmnElementContext completing) {}
+    default Either<Failure, ?> onComplete(
+        final ExecutableEndEvent element, final BpmnElementContext completing) {
+      return SUCCESS;
+    }
 
     default void onTerminate(
         final ExecutableEndEvent element, final BpmnElementContext terminating) {}
@@ -119,21 +124,22 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+    public Either<Failure, ?> onActivate(
+        final ExecutableEndEvent element, final BpmnElementContext activating) {
       final var activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-      onComplete(element, completing);
+      return onComplete(element, completing);
     }
 
     @Override
-    public void onComplete(final ExecutableEndEvent element, final BpmnElementContext completing) {
-      variableMappingBehavior
+    public Either<Failure, ?> onComplete(
+        final ExecutableEndEvent element, final BpmnElementContext completing) {
+      return variableMappingBehavior
           .applyOutputMappings(completing, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
-          .ifRightOrLeft(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-              failure -> incidentBehavior.createIncident(failure, completing));
+          .thenDo(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
   }
 
@@ -145,20 +151,20 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+    public Either<Failure, ?> onActivate(
+        final ExecutableEndEvent element, final BpmnElementContext activating) {
 
       // the error must be caught at the parent or an upper scope (e.g. interrupting boundary event
       // or
       // event sub process). This is also why we don't have to transition to the completing state
       // here
-      evaluateErrorCode(element, activating)
+      return evaluateErrorCode(element, activating)
           .flatMap(errorCode -> eventPublicationBehavior.findErrorCatchEvent(errorCode, activating))
-          .ifRightOrLeft(
+          .thenDo(
               catchEvent -> {
                 stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
                 eventPublicationBehavior.throwErrorEvent(catchEvent);
-              },
-              failure -> incidentBehavior.createIncident(failure, activating));
+              });
     }
 
     private Either<Failure, DirectBuffer> evaluateErrorCode(
@@ -183,26 +189,26 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
-      variableMappingBehavior
+    public Either<Failure, ?> onActivate(
+        final ExecutableEndEvent element, final BpmnElementContext activating) {
+      return variableMappingBehavior
           .applyInputMappings(activating, element)
           .flatMap(ok -> jobBehavior.evaluateJobExpressions(element, activating))
-          .ifRightOrLeft(
+          .thenDo(
               jobProperties -> {
                 jobBehavior.createNewJob(activating, element, jobProperties);
                 stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
-              },
-              failure -> incidentBehavior.createIncident(failure, activating));
+              });
     }
 
     @Override
-    public void onComplete(final ExecutableEndEvent element, final BpmnElementContext completing) {
-      variableMappingBehavior
+    public Either<Failure, ?> onComplete(
+        final ExecutableEndEvent element, final BpmnElementContext completing) {
+      return variableMappingBehavior
           .applyOutputMappings(completing, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
-          .ifRightOrLeft(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-              failure -> incidentBehavior.createIncident(failure, completing));
+          .thenDo(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
 
     @Override
@@ -221,19 +227,19 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+    public Either<Failure, ?> onActivate(
+        final ExecutableEndEvent element, final BpmnElementContext activating) {
       final var activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-      stateTransitionBehavior
+      return stateTransitionBehavior
           .transitionToCompleted(element, completing)
-          .ifRightOrLeft(
+          .thenDo(
               completed -> {
                 // terminate all other element instances of the same flow scope
                 final var flowScopeContext = stateBehavior.getFlowScopeContext(completed);
                 stateTransitionBehavior.terminateChildInstances(flowScopeContext);
-              },
-              failure -> incidentBehavior.createIncident(failure, completing));
+              });
     }
   }
 
@@ -244,9 +250,10 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
-      evaluateEscalationCode(element, activating)
-          .ifRightOrLeft(
+    public Either<Failure, ?> onActivate(
+        final ExecutableEndEvent element, final BpmnElementContext activating) {
+      return evaluateEscalationCode(element, activating)
+          .thenDo(
               escalationCode -> {
                 final var activated =
                     stateTransitionBehavior.transitionToActivated(
@@ -258,18 +265,17 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
                 if (canBeCompleted) {
                   stateTransitionBehavior.completeElement(activated);
                 }
-              },
-              failure -> incidentBehavior.createIncident(failure, activating));
+              });
     }
 
     @Override
-    public void onComplete(final ExecutableEndEvent element, final BpmnElementContext completing) {
-      variableMappingBehavior
+    public Either<Failure, ?> onComplete(
+        final ExecutableEndEvent element, final BpmnElementContext completing) {
+      return variableMappingBehavior
           .applyOutputMappings(completing, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
-          .ifRightOrLeft(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-              failure -> incidentBehavior.createIncident(failure, completing));
+          .thenDo(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
 
     private Either<Failure, DirectBuffer> evaluateEscalationCode(
@@ -293,28 +299,28 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
-      variableMappingBehavior
+    public Either<Failure, ?> onActivate(
+        final ExecutableEndEvent element, final BpmnElementContext activating) {
+      return variableMappingBehavior
           .applyInputMappings(activating, element)
           .flatMap(ok -> signalBehavior.broadcastNewSignal(activating, element.getSignal()))
-          .ifRightOrLeft(
+          .thenDo(
               ok -> {
                 final var activated =
                     stateTransitionBehavior.transitionToActivated(
                         activating, element.getEventType());
                 stateTransitionBehavior.completeElement(activated);
-              },
-              failure -> incidentBehavior.createIncident(failure, activating));
+              });
     }
 
     @Override
-    public void onComplete(final ExecutableEndEvent element, final BpmnElementContext completing) {
-      variableMappingBehavior
+    public Either<Failure, ?> onComplete(
+        final ExecutableEndEvent element, final BpmnElementContext completing) {
+      return variableMappingBehavior
           .applyOutputMappings(completing, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
-          .ifRightOrLeft(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-              failure -> incidentBehavior.createIncident(failure, completing));
+          .thenDo(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
   }
 
@@ -326,26 +332,29 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+    public Either<Failure, ?> onActivate(
+        final ExecutableEndEvent element, final BpmnElementContext activating) {
       final var activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
 
       final var isCompensationTriggered =
           compensationSubscriptionBehaviour.triggerCompensation(element, activating);
 
-      if (!isCompensationTriggered) {
-        final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-        onComplete(element, completing);
+      if (isCompensationTriggered) {
+        return SUCCESS;
       }
+
+      final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+      return onComplete(element, completing);
     }
 
     @Override
-    public void onComplete(final ExecutableEndEvent element, final BpmnElementContext completing) {
-      stateTransitionBehavior
+    public Either<Failure, ?> onComplete(
+        final ExecutableEndEvent element, final BpmnElementContext completing) {
+      return stateTransitionBehavior
           .transitionToCompleted(element, completing)
-          .ifRightOrLeft(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-              failure -> incidentBehavior.createIncident(failure, completing));
+          .thenDo(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
   }
 }

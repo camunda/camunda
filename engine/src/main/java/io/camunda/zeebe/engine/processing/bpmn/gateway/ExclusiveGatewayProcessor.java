@@ -45,28 +45,27 @@ public final class ExclusiveGatewayProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, ?> onActivate(
       final ExecutableExclusiveGateway element, final BpmnElementContext activating) {
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
-    findSequenceFlowToTake(element, activating)
-        .ifRightOrLeft(
+    return findSequenceFlowToTake(element, activating)
+        .flatMap(
             optFlow -> {
               final var activated =
                   stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
               final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-              stateTransitionBehavior
+              return stateTransitionBehavior
                   .transitionToCompleted(element, completing)
-                  .ifRightOrLeft(
-                      completed ->
-                          optFlow.ifPresent(
-                              flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow)),
-                      failure -> incidentBehavior.createIncident(failure, completing));
-            },
-            failure -> incidentBehavior.createIncident(failure, activating));
+                  .thenDo(
+                      completed -> {
+                        optFlow.ifPresent(
+                            flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow));
+                      });
+            });
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, ?> onComplete(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
     throw new UnsupportedOperationException(
         String.format(

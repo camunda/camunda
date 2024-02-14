@@ -80,22 +80,20 @@ public final class MultiInstanceBodyProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, ?> onActivate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     // verify that the input collection variable is present and valid
-    readInputCollectionVariable(element, context)
+    return readInputCollectionVariable(element, context)
         .flatMap(
             inputCollection ->
                 eventSubscriptionBehavior
                     .subscribeToEvents(element, context)
                     .map(ok -> inputCollection))
-        .ifRightOrLeft(
-            inputCollection -> activate(element, context, inputCollection),
-            failure -> incidentBehavior.createIncident(failure, context));
+        .thenDo(inputCollection -> activate(element, context, inputCollection));
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, ?> onComplete(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
@@ -105,11 +103,9 @@ public final class MultiInstanceBodyProcessor
         .getOutputCollection()
         .ifPresent(variableName -> stateBehavior.propagateVariable(context, variableName));
 
-    stateTransitionBehavior
+    return stateTransitionBehavior
         .transitionToCompleted(element, context)
-        .ifRightOrLeft(
-            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-            failure -> incidentBehavior.createIncident(failure, context));
+        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 
   @Override

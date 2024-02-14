@@ -56,15 +56,16 @@ public final class ProcessProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, ?> onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
     final var activatedContext =
         stateTransitionBehavior.transitionToActivated(context, element.getEventType());
     activateStartEvent(element, activatedContext);
+    return SUCCESS;
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, ?> onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
@@ -74,7 +75,7 @@ public final class ProcessProcessor
     // event applier will delete the element instance
     processResultSenderBehavior.sendResult(context);
 
-    transitionTo(
+    return transitionTo(
         element,
         context,
         completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
@@ -184,15 +185,13 @@ public final class ProcessProcessor
     }
   }
 
-  private void transitionTo(
+  private Either<Failure, ?> transitionTo(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext context,
       final Function<BpmnElementContext, Either<Failure, BpmnElementContext>> transitionOperation) {
 
     final var postTransitionAction = getPostTransitionAction(element, context);
-    final var afterTransition = transitionOperation.apply(context);
-    afterTransition.ifRightOrLeft(
-        postTransitionAction, failure -> incidentBehavior.createIncident(failure, context));
+    return transitionOperation.apply(context).thenDo(postTransitionAction);
   }
 
   private Consumer<BpmnElementContext> getPostTransitionAction(

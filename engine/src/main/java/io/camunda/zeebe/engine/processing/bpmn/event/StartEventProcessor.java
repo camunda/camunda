@@ -16,8 +16,10 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.util.Either;
 
 public class StartEventProcessor implements BpmnElementProcessor<ExecutableStartEvent> {
 
@@ -43,27 +45,28 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   }
 
   @Override
-  public void onActivate(final ExecutableStartEvent element, final BpmnElementContext context) {
+  public Either<Failure, ?> onActivate(
+      final ExecutableStartEvent element, final BpmnElementContext context) {
     final var activated =
         stateTransitionBehavior.transitionToActivated(context, element.getEventType());
     stateTransitionBehavior.completeElement(activated);
+    return SUCCESS;
   }
 
   @Override
-  public void onComplete(final ExecutableStartEvent element, final BpmnElementContext context) {
+  public Either<Failure, ?> onComplete(
+      final ExecutableStartEvent element, final BpmnElementContext context) {
     final var flowScope = (ExecutableCatchEventSupplier) element.getFlowScope();
 
     final BpmnElementContextImpl flowScopeInstanceContext =
         buildContextForFlowScopeInstance(context);
 
-    variableMappingBehavior
+    return variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
             ok -> eventSubscriptionBehavior.subscribeToEvents(flowScope, flowScopeInstanceContext))
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
-        .ifRightOrLeft(
-            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-            failure -> incidentBehavior.createIncident(failure, context));
+        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 
   @Override

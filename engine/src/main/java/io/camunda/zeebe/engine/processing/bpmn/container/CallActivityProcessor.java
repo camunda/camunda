@@ -58,14 +58,15 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onActivate(final ExecutableCallActivity element, final BpmnElementContext context) {
-    variableMappingBehavior
+  public Either<Failure, ?> onActivate(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
+    return variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> evaluateProcessId(context, element))
         .flatMap(processId -> getProcessForProcessId(processId, context.getTenantId()))
         .flatMap(this::checkProcessHasNoneStartEvent)
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
-        .ifRightOrLeft(
+        .thenDo(
             process -> {
               final var activated =
                   stateTransitionBehavior.transitionToActivated(context, element.getEventType());
@@ -89,22 +90,20 @@ public final class CallActivityProcessor
                 stateBehavior.copyLocalVariablesToProcessInstance(
                     callActivityInstanceKey, childProcessInstanceKey, process);
               }
-            },
-            failure -> incidentBehavior.createIncident(failure, context));
+            });
   }
 
   @Override
-  public void onComplete(final ExecutableCallActivity element, final BpmnElementContext context) {
-    variableMappingBehavior
+  public Either<Failure, ?> onComplete(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
+    return variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
-        .ifRightOrLeft(
-            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
-            failure -> incidentBehavior.createIncident(failure, context));
+        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 
   @Override
