@@ -469,6 +469,11 @@
                 "id": 7,
                 "name": "partitionForceReconfigure",
                 "type": "PartitionForceReconfigureOperation"
+              },
+              {
+                "id": 8,
+                "name": "memberRemove",
+                "type": "MemberRemoveOperation"
               }
             ]
           },
@@ -548,6 +553,16 @@
           },
           {
             "name": "MemberLeaveOperation"
+          },
+          {
+            "name": "MemberRemoveOperation",
+            "fields": [
+              {
+                "id": 1,
+                "name": "memberToRemove",
+                "type": "string"
+              }
+            ]
           }
         ],
         "imports": [

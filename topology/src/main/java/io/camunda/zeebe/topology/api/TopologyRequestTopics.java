@@ -15,8 +15,8 @@ public enum TopologyRequestTopics {
   REASSIGN_PARTITIONS("topology-partition-reassign"),
   SCALE_MEMBERS("topology-member-scale"),
   QUERY_TOPOLOGY("topology-query"),
-  CANCEL_CHANGE("topology-change-cancel");
-
+  CANCEL_CHANGE("topology-change-cancel"),
+  FORCE_SCALE_DOWN("topology-force-scale-down");
   private final String topic;
 
   TopologyRequestTopics(final String topic) {

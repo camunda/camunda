@@ -8,7 +8,6 @@
 package io.camunda.zeebe.topology.api;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.topology.api.TopologyRequestFailedException.ConcurrentModificationException;
@@ -24,18 +23,15 @@ public final class TopologyRequestServer implements AutoCloseable {
 
   private final TopologyManagementApi topologyManagementApi;
   private final ClusterCommunicationService communicationService;
-  private final ConcurrencyControl executor;
   private final TopologyRequestsSerializer serializer;
 
   public TopologyRequestServer(
       final ClusterCommunicationService communicationService,
       final TopologyRequestsSerializer serializer,
-      final TopologyManagementApi topologyManagementApi,
-      final ConcurrencyControl executor) {
+      final TopologyManagementApi topologyManagementApi) {
     this.topologyManagementApi = topologyManagementApi;
     this.communicationService = communicationService;
     this.serializer = serializer;
-    this.executor = executor;
   }
 
   public void start() {
@@ -47,6 +43,7 @@ public final class TopologyRequestServer implements AutoCloseable {
     registerScaleRequestHandler();
     registerGetTopologyQueryHandler();
     registerTopologyCancelHandler();
+    registerForceScaleDownHandler();
   }
 
   @Override
@@ -117,6 +114,14 @@ public final class TopologyRequestServer implements AutoCloseable {
         TopologyRequestTopics.SCALE_MEMBERS.topic(),
         serializer::decodeScaleRequest,
         request -> mapResponse(topologyManagementApi.scaleMembers(request)),
+        this::encodeResponse);
+  }
+
+  private void registerForceScaleDownHandler() {
+    communicationService.replyTo(
+        TopologyRequestTopics.FORCE_SCALE_DOWN.topic(),
+        serializer::decodeScaleRequest,
+        request -> mapResponse(topologyManagementApi.forceScaleDown(request)),
         this::encodeResponse);
   }
 

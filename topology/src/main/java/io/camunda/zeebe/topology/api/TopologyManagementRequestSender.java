@@ -104,6 +104,17 @@ public final class TopologyManagementRequestSender {
         TIMEOUT);
   }
 
+  public CompletableFuture<Either<ErrorResponse, TopologyChangeResponse>> forceScaleDown(
+      final ScaleRequest forceScaleDownRequest) {
+    return communicationService.send(
+        TopologyRequestTopics.FORCE_SCALE_DOWN.topic(),
+        forceScaleDownRequest,
+        serializer::encodeScaleRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinator,
+        TIMEOUT);
+  }
+
   public CompletableFuture<Either<ErrorResponse, ClusterTopology>> getTopology() {
     return communicationService.send(
         TopologyRequestTopics.QUERY_TOPOLOGY.topic(),

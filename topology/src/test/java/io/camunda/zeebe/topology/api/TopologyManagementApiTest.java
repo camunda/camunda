@@ -25,6 +25,8 @@ import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import java.util.Collection;
@@ -40,12 +42,15 @@ import org.junit.jupiter.api.Test;
 // communicationService to ensure that request subscription and handling is done correctly.
 final class TopologyManagementApiTest {
   private TopologyManagementRequestSender clientApi;
-
   private final RecordingChangeCoordinator recordingCoordinator = new RecordingChangeCoordinator();
   private TopologyRequestServer requestServer;
   private AtomixCluster gateway;
   private AtomixCluster coordinator;
   private final ClusterTopology initialTopology = ClusterTopology.init();
+  private final MemberId id0 = MemberId.from("0");
+  private final MemberId id1 = MemberId.from("1");
+  private final MemberId id2 = MemberId.from("2");
+  private final MemberId id3 = MemberId.from("3");
 
   @BeforeEach
   void setup() {
@@ -72,8 +77,7 @@ final class TopologyManagementApiTest {
             coordinator.getCommunicationService(),
             new ProtoBufSerializer(),
             new TopologyManagementRequestsHandler(
-                recordingCoordinator, new TestConcurrencyControl()),
-            new TestConcurrencyControl());
+                recordingCoordinator, id0, new TestConcurrencyControl()));
 
     requestServer.start();
   }
@@ -98,7 +102,7 @@ final class TopologyManagementApiTest {
   void shouldGetCurrentTopology() {
     // given
     final var expectedTopology =
-        initialTopology.addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
+        initialTopology.addMember(id1, MemberState.initializeAsActive(Map.of()));
     recordingCoordinator.setCurrentTopology(expectedTopology);
 
     // when
@@ -111,14 +115,13 @@ final class TopologyManagementApiTest {
   @Test
   void shouldAddMembers() {
     // given
-    final var request =
-        new TopologyManagementRequest.AddMembersRequest(Set.of(MemberId.from("1")), false);
+    final var request = new TopologyManagementRequest.AddMembersRequest(Set.of(id1), false);
 
     // when
     final var changeStatus = clientApi.addMembers(request).join().get();
 
     // then
-    final var expected = new MemberJoinOperation(MemberId.from("1"));
+    final var expected = new MemberJoinOperation(id1);
     assertThat(changeStatus.plannedChanges()).containsExactly(expected);
   }
 
@@ -127,64 +130,56 @@ final class TopologyManagementApiTest {
     // given
     recordingCoordinator.setCurrentTopology(
         ClusterTopology.init()
-            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
-            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of())));
-    final var request =
-        new TopologyManagementRequest.RemoveMembersRequest(
-            Set.of(MemberId.from("1"), MemberId.from("2")), false);
+            .addMember(id1, MemberState.initializeAsActive(Map.of()))
+            .addMember(id2, MemberState.initializeAsActive(Map.of())));
+    final var request = new TopologyManagementRequest.RemoveMembersRequest(Set.of(id1, id2), false);
 
     // when
     final var changeStatus = clientApi.removeMembers(request).join().get();
 
     // then
     final List<TopologyChangeOperation> expected =
-        List.of(
-            new MemberLeaveOperation(MemberId.from("1")),
-            new MemberLeaveOperation(MemberId.from("2")));
+        List.of(new MemberLeaveOperation(id1), new MemberLeaveOperation(id2));
     assertThat(changeStatus.plannedChanges()).containsExactlyElementsOf(expected);
   }
 
   @Test
   void shouldJoinPartition() {
     // given
-    final var request =
-        new TopologyManagementRequest.JoinPartitionRequest(MemberId.from("1"), 1, 3, false);
+    final var request = new TopologyManagementRequest.JoinPartitionRequest(id1, 1, 3, false);
 
     // when
     final var changeStatus = clientApi.joinPartition(request).join().get();
 
     // then
     assertThat(changeStatus.plannedChanges())
-        .containsExactly(new PartitionJoinOperation(MemberId.from("1"), 1, 3));
+        .containsExactly(new PartitionJoinOperation(id1, 1, 3));
   }
 
   @Test
   void shouldLeavePartition() {
     // given
-    final var request =
-        new TopologyManagementRequest.LeavePartitionRequest(MemberId.from("1"), 1, false);
+    final var request = new TopologyManagementRequest.LeavePartitionRequest(id1, 1, false);
 
     // when
     final var changeStatus = clientApi.leavePartition(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges())
-        .containsExactly(new PartitionLeaveOperation(MemberId.from("1"), 1));
+    assertThat(changeStatus.plannedChanges()).containsExactly(new PartitionLeaveOperation(id1, 1));
   }
 
   @Test
   void shouldReassignPartitions() {
     // given
     final var request =
-        new TopologyManagementRequest.ReassignPartitionsRequest(
-            Set.of(MemberId.from("1"), MemberId.from("2")), false);
+        new TopologyManagementRequest.ReassignPartitionsRequest(Set.of(id1, id2), false);
     final ClusterTopology currentTopology =
         ClusterTopology.init()
             .addMember(
-                MemberId.from("1"),
+                id1,
                 MemberState.initializeAsActive(
                     Map.of(1, PartitionState.active(1), 2, PartitionState.active(1))))
-            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
+            .addMember(id2, MemberState.initializeAsActive(Map.of()));
     recordingCoordinator.setCurrentTopology(currentTopology);
 
     // when
@@ -193,20 +188,17 @@ final class TopologyManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
-            new PartitionJoinOperation(MemberId.from("2"), 2, 1),
-            new PartitionLeaveOperation(MemberId.from("1"), 2));
+            new PartitionJoinOperation(id2, 2, 1), new PartitionLeaveOperation(id1, 2));
   }
 
   @Test
   void shouldScaleBrokers() {
     // given
-    final var request =
-        new TopologyManagementRequest.ScaleRequest(
-            Set.of(MemberId.from("1"), MemberId.from("2")), false);
+    final var request = new TopologyManagementRequest.ScaleRequest(Set.of(id1, id2), false);
     final ClusterTopology currentTopology =
         ClusterTopology.init()
             .addMember(
-                MemberId.from("1"),
+                id1,
                 MemberState.initializeAsActive(
                     Map.of(1, PartitionState.active(1), 2, PartitionState.active(1))));
     recordingCoordinator.setCurrentTopology(currentTopology);
@@ -217,9 +209,37 @@ final class TopologyManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
-            new MemberJoinOperation(MemberId.from("2")),
-            new PartitionJoinOperation(MemberId.from("2"), 2, 1),
-            new PartitionLeaveOperation(MemberId.from("1"), 2));
+            new MemberJoinOperation(id2),
+            new PartitionJoinOperation(id2, 2, 1),
+            new PartitionLeaveOperation(id1, 2));
+  }
+
+  @Test
+  void shouldForceScaleDown() {
+    // given
+    final var request = new TopologyManagementRequest.ScaleRequest(Set.of(id0, id2), false);
+    final ClusterTopology currentTopology =
+        ClusterTopology.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()))
+            .addMember(id1, MemberState.initializeAsActive(Map.of()))
+            .addMember(id2, MemberState.initializeAsActive(Map.of()))
+            .addMember(id3, MemberState.initializeAsActive(Map.of()))
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1)))
+            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2)))
+            .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1)))
+            .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2)));
+    recordingCoordinator.setCurrentTopology(currentTopology);
+
+    // when
+    final var changeStatus = clientApi.forceScaleDown(request).join().get();
+
+    // then
+    assertThat(changeStatus.plannedChanges())
+        .containsExactlyInAnyOrder(
+            new PartitionForceReconfigureOperation(id0, 1, List.of(id0)),
+            new PartitionForceReconfigureOperation(id2, 2, List.of(id2)),
+            new MemberRemoveOperation(id0, id1),
+            new MemberRemoveOperation(id0, id3));
   }
 
   @Test

@@ -40,6 +40,7 @@ import io.camunda.zeebe.topology.state.PartitionState.State;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -368,6 +369,11 @@ public class ClusterEndpoint {
                       .map(MemberId::id)
                       .map(Integer::parseInt)
                       .collect(Collectors.toList()));
+      case final TopologyChangeOperation.MemberRemoveOperation memberRemoveOperation ->
+          new Operation()
+              .operation(OperationEnum.BROKER_REMOVE)
+              .brokerId(Integer.parseInt(memberRemoveOperation.memberId().id()))
+              .brokers(List.of(Integer.parseInt(memberRemoveOperation.memberToRemove().id())));
     };
   }
 
@@ -511,6 +517,11 @@ public class ClusterEndpoint {
                           .map(MemberId::id)
                           .map(Integer::parseInt)
                           .collect(Collectors.toList()));
+          case final MemberRemoveOperation memberRemoveOperation ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
+                  .brokerId(Integer.parseInt(memberRemoveOperation.memberId().id()))
+                  .brokers(List.of(Integer.parseInt(memberRemoveOperation.memberToRemove().id())));
         };
 
     mappedOperation.completedAt(mapInstantToDateTime(operation.completedAt()));

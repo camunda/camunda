@@ -32,6 +32,15 @@ public interface TopologyManagementApi {
 
   ActorFuture<TopologyChangeResponse> scaleMembers(ScaleRequest scaleRequest);
 
+  /**
+   * Forces a scale down of the cluster. The members that are not specified in the request will be
+   * removed forcefully. The replicas of partitions on the removed members won't be re-assigned. As
+   * a result the number of replicas for those partitions will be reduced.
+   *
+   * <p>This is expected to be used to force remove a set of brokers when they are unreachable.
+   */
+  ActorFuture<TopologyChangeResponse> forceScaleDown(ScaleRequest forceScaleDownRequest);
+
   ActorFuture<ClusterTopology> cancelTopologyChange(
       TopologyManagementRequest.CancelChangeRequest cancelChangeRequest);
 
