@@ -38,6 +38,10 @@ public final class TypedRecordImpl implements TypedRecord {
     this.value = value;
   }
 
+  public RecordMetadata getMetadata() {
+    return metadata;
+  }
+
   @Override
   public long getPosition() {
     return rawEvent.getPosition();
