@@ -17,7 +17,7 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import org.slf4j.Logger;
 
 final class PartitionManagerStep extends AbstractBrokerStartupStep {
-  private static final Logger logger = Loggers.SYSTEM_LOGGER;
+  private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
   private static final int ERROR_CODE_ON_INCONSISTENT_TOPOLOGY = 3;
 
   @Override
@@ -103,7 +103,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       final ClusterTopology newTopology,
       final ClusterTopology oldTopology) {
     final MemberId localMemberId = MemberId.from(String.valueOf(localBrokerId));
-    logger.warn(
+    LOGGER.warn(
         """
           Received a newer topology which has a different state for this broker.
           State of this broker in new topology :'{}'
