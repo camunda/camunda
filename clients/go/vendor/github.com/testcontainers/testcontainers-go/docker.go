@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -32,8 +33,7 @@ import (
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/config"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainerssession"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -59,16 +59,19 @@ type DockerContainer struct {
 	isRunning     bool
 	imageWasBuilt bool
 	// keepBuiltImage makes Terminate not remove the image if imageWasBuilt.
-	keepBuiltImage    bool
-	provider          *DockerProvider
-	sessionID         string
-	terminationSignal chan bool
-	consumers         []LogConsumer
-	raw               *types.ContainerJSON
-	stopProducer      chan bool
-	producerDone      chan bool
-	logger            Logging
-	lifecycleHooks    []ContainerLifecycleHooks
+	keepBuiltImage       bool
+	provider             *DockerProvider
+	sessionID            string
+	terminationSignal    chan bool
+	consumers            []LogConsumer
+	raw                  *types.ContainerJSON
+	stopLogProductionCh  chan bool
+	logProductionDone    chan bool
+	logProductionError   chan error
+	logProductionMutex   sync.Mutex
+	logProductionTimeout *time.Duration
+	logger               Logging
+	lifecycleHooks       []ContainerLifecycleHooks
 }
 
 // SetLogger sets the logger for the container
@@ -190,12 +193,19 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 		return err
 	}
 
-	if err := c.provider.client.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
+	if err := c.provider.client.ContainerStart(ctx, c.ID, container.StartOptions{}); err != nil {
 		return err
 	}
 	defer c.provider.Close()
 
 	err = c.startedHook(ctx)
+	if err != nil {
+		return err
+	}
+
+	c.isRunning = true
+
+	err = c.readiedHook(ctx)
 	if err != nil {
 		return err
 	}
@@ -255,12 +265,7 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 		return err
 	}
 
-	err = c.StopLogProducer()
-	if err != nil {
-		return err
-	}
-
-	err = c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
+	err = c.provider.client.ContainerRemove(ctx, c.GetContainerID(), container.RemoveOptions{
 		RemoveVolumes: true,
 		Force:         true,
 	})
@@ -315,7 +320,7 @@ func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.Containe
 func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	const streamHeaderSize = 8
 
-	options := types.ContainerLogsOptions{
+	options := container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	}
@@ -364,9 +369,14 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	return pr, nil
 }
 
-// FollowOutput adds a LogConsumer to be sent logs from the container's
-// STDOUT and STDERR
+// Deprecated: use the ContainerRequest.LogConsumerConfig field instead.
 func (c *DockerContainer) FollowOutput(consumer LogConsumer) {
+	c.followOutput(consumer)
+}
+
+// followOutput adds a LogConsumer to be sent logs from the container's
+// STDOUT and STDERR
+func (c *DockerContainer) followOutput(consumer LogConsumer) {
 	c.consumers = append(c.consumers, consumer)
 }
 
@@ -603,7 +613,7 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 		return err
 	}
 
-	err = c.provider.client.CopyToContainer(ctx, c.ID, filepath.Dir(containerFilePath), buffer, types.CopyToContainerOptions{})
+	err = c.provider.client.CopyToContainer(ctx, c.ID, "/", buffer, types.CopyToContainerOptions{})
 	if err != nil {
 		return err
 	}
@@ -612,49 +622,98 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 	return nil
 }
 
-// StartLogProducer will start a concurrent process that will continuously read logs
-// from the container and will send them to each added LogConsumer
-func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
-	if c.stopProducer != nil {
-		return errors.New("log producer already started")
+type LogProductionOption func(*DockerContainer)
+
+// WithLogProductionTimeout is a functional option that sets the timeout for the log production.
+// If the timeout is lower than 5s or greater than 60s it will be set to 5s or 60s respectively.
+func WithLogProductionTimeout(timeout time.Duration) LogProductionOption {
+	return func(c *DockerContainer) {
+		c.logProductionTimeout = &timeout
+	}
+}
+
+// Deprecated: use the ContainerRequest.LogConsumerConfig field instead.
+func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProductionOption) error {
+	return c.startLogProduction(ctx, opts...)
+}
+
+// startLogProduction will start a concurrent process that will continuously read logs
+// from the container and will send them to each added LogConsumer.
+// Default log production timeout is 5s. It is used to set the context timeout
+// which means that each log-reading loop will last at least the specified timeout
+// and that it cannot be cancelled earlier.
+// Use functional option WithLogProductionTimeout() to override default timeout. If it's
+// lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
+func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogProductionOption) error {
+	{
+		c.logProductionMutex.Lock()
+		defer c.logProductionMutex.Unlock()
+
+		if c.stopLogProductionCh != nil {
+			return errors.New("log production already started")
+		}
 	}
 
-	c.stopProducer = make(chan bool)
-	c.producerDone = make(chan bool)
+	for _, opt := range opts {
+		opt(c)
+	}
 
-	go func(stop <-chan bool, done chan<- bool) {
-		// signal the producer is done once go routine exits, this prevents race conditions around start/stop
-		defer close(done)
+	minLogProductionTimeout := time.Duration(5 * time.Second)
+	maxLogProductionTimeout := time.Duration(60 * time.Second)
+
+	if c.logProductionTimeout == nil {
+		c.logProductionTimeout = &minLogProductionTimeout
+	}
+
+	if *c.logProductionTimeout < minLogProductionTimeout {
+		c.logProductionTimeout = &minLogProductionTimeout
+	}
+
+	if *c.logProductionTimeout > maxLogProductionTimeout {
+		c.logProductionTimeout = &maxLogProductionTimeout
+	}
+
+	c.stopLogProductionCh = make(chan bool)
+	c.logProductionDone = make(chan bool)
+	c.logProductionError = make(chan error, 1)
+
+	go func(stop <-chan bool, done chan<- bool, errorCh chan error) {
+		// signal the log production is done once go routine exits, this prevents race conditions around start/stop
+		// set c.stopLogProductionCh to nil so that it can be started again
+		defer func() {
+			defer c.logProductionMutex.Unlock()
+			close(done)
+			close(errorCh)
+			{
+				c.logProductionMutex.Lock()
+				c.stopLogProductionCh = nil
+			}
+		}()
 
 		since := ""
 		// if the socket is closed we will make additional logs request with updated Since timestamp
 	BEGIN:
-		options := types.ContainerLogsOptions{
+		options := container.LogsOptions{
 			ShowStdout: true,
 			ShowStderr: true,
 			Follow:     true,
 			Since:      since,
 		}
 
-		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		ctx, cancel := context.WithTimeout(ctx, *c.logProductionTimeout)
 		defer cancel()
 
 		r, err := c.provider.client.ContainerLogs(ctx, c.GetContainerID(), options)
 		if err != nil {
-			// if we can't get the logs, panic, we can't return an error to anything
-			// from within this goroutine
-			panic(err)
+			errorCh <- err
+			return
 		}
 		defer c.provider.Close()
 
 		for {
 			select {
 			case <-stop:
-				err := r.Close()
-				if err != nil {
-					// we can't close the read closer, this should never happen
-					panic(err)
-				}
+				errorCh <- r.Close()
 				return
 			default:
 				h := make([]byte, 8)
@@ -710,22 +769,36 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 			}
 		}
-	}(c.stopProducer, c.producerDone)
+	}(c.stopLogProductionCh, c.logProductionDone, c.logProductionError)
 
 	return nil
 }
 
+// Deprecated: it will be removed in the next major release.
+func (c *DockerContainer) StopLogProducer() error {
+	return c.stopLogProduction()
+}
+
 // StopLogProducer will stop the concurrent process that is reading logs
 // and sending them to each added LogConsumer
-func (c *DockerContainer) StopLogProducer() error {
-	if c.stopProducer != nil {
-		c.stopProducer <- true
-		// block until the producer is actually done in order to avoid strange races
-		<-c.producerDone
-		c.stopProducer = nil
-		c.producerDone = nil
+func (c *DockerContainer) stopLogProduction() error {
+	c.logProductionMutex.Lock()
+	defer c.logProductionMutex.Unlock()
+	if c.stopLogProductionCh != nil {
+		c.stopLogProductionCh <- true
+		// block until the log production is actually done in order to avoid strange races
+		<-c.logProductionDone
+		c.stopLogProductionCh = nil
+		c.logProductionDone = nil
+		return <-c.logProductionError
 	}
 	return nil
+}
+
+// GetLogProductionErrorChannel exposes the only way for the consumer
+// to be able to listen to errors and react to them.
+func (c *DockerContainer) GetLogProductionErrorChannel() <-chan error {
+	return c.logProductionError
 }
 
 // DockerNetwork represents a network started using Docker
@@ -877,7 +950,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// the reaper does not need to start a reaper for itself
 	isReaperContainer := strings.HasSuffix(imageName, config.ReaperDefaultImage)
 	if !tcConfig.RyukDisabled && !isReaperContainer {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), testcontainerssession.SessionID(), p)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), core.SessionID(), p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -973,7 +1046,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	if !isReaperContainer {
 		// add the labels that the reaper will use to terminate the container to the request
-		for k, v := range testcontainersdocker.DefaultLabels(testcontainerssession.SessionID()) {
+		for k, v := range core.DefaultLabels(core.SessionID()) {
 			req.Labels[k] = v
 		}
 	}
@@ -1000,51 +1073,13 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// default hooks include logger hook and pre-create hook
 	defaultHooks := []ContainerLifecycleHooks{
 		DefaultLoggingHook(p.Logger),
-		{
-			PreCreates: []ContainerRequestHook{
-				func(ctx context.Context, req ContainerRequest) error {
-					return p.preCreateContainerHook(ctx, req, dockerInput, hostConfig, networkingConfig)
-				},
-			},
-			PostCreates: []ContainerHook{
-				// copy files to container after it's created
-				func(ctx context.Context, c Container) error {
-					for _, f := range req.Files {
-						err := c.CopyFileToContainer(ctx, f.HostFilePath, f.ContainerFilePath, f.FileMode)
-						if err != nil {
-							return fmt.Errorf("can't copy %s to container: %w", f.HostFilePath, err)
-						}
-					}
-
-					return nil
-				},
-			},
-			PostStarts: []ContainerHook{
-				// first post-start hook is to wait for the container to be ready
-				func(ctx context.Context, c Container) error {
-					dockerContainer := c.(*DockerContainer)
-
-					// if a Wait Strategy has been specified, wait before returning
-					if dockerContainer.WaitingFor != nil {
-						dockerContainer.logger.Printf(
-							"🚧 Waiting for container id %s image: %s. Waiting for: %+v",
-							dockerContainer.ID[:12], dockerContainer.Image, dockerContainer.WaitingFor,
-						)
-						if err := dockerContainer.WaitingFor.WaitUntilReady(ctx, c); err != nil {
-							return err
-						}
-					}
-
-					dockerContainer.isRunning = true
-
-					return nil
-				},
-			},
-		},
+		defaultPreCreateHook(ctx, p, req, dockerInput, hostConfig, networkingConfig),
+		defaultCopyFileToContainerHook(req.Files),
+		defaultLogConsumersHook(req.LogConsumerCfg),
+		defaultReadinessHook(),
 	}
 
-	// always prepend default lifecycle hooks to user-defined hooks
-	req.LifecycleHooks = append(defaultHooks, req.LifecycleHooks...)
+	req.LifecycleHooks = []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)}
 
 	err = req.creatingHook(ctx)
 	if err != nil {
@@ -1075,17 +1110,17 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	c := &DockerContainer{
-		ID:                resp.ID,
-		WaitingFor:        req.WaitingFor,
-		Image:             imageName,
-		imageWasBuilt:     req.ShouldBuildImage(),
-		keepBuiltImage:    req.ShouldKeepBuiltImage(),
-		sessionID:         testcontainerssession.SessionID(),
-		provider:          p,
-		terminationSignal: termSignal,
-		stopProducer:      nil,
-		logger:            p.Logger,
-		lifecycleHooks:    req.LifecycleHooks,
+		ID:                  resp.ID,
+		WaitingFor:          req.WaitingFor,
+		Image:               imageName,
+		imageWasBuilt:       req.ShouldBuildImage(),
+		keepBuiltImage:      req.ShouldKeepBuiltImage(),
+		sessionID:           core.SessionID(),
+		provider:            p,
+		terminationSignal:   termSignal,
+		stopLogProductionCh: nil,
+		logger:              p.Logger,
+		lifecycleHooks:      req.LifecycleHooks,
 	}
 
 	err = c.createdHook(ctx)
@@ -1106,7 +1141,7 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 
 	// Note that, 'name' filter will use regex to find the containers
 	filter := filters.NewArgs(filters.Arg("name", fmt.Sprintf("^%s$", name)))
-	containers, err := p.client.ContainerList(ctx, types.ContainerListOptions{Filters: filter})
+	containers, err := p.client.ContainerList(ctx, container.ListOptions{Filters: filter})
 	if err != nil {
 		return nil, err
 	}
@@ -1127,13 +1162,13 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return p.CreateContainer(ctx, req)
 	}
 
-	sessionID := testcontainerssession.SessionID()
+	sessionID := core.SessionID()
 
 	tcConfig := p.Config().Config
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating reaper failed", err)
 		}
@@ -1144,15 +1179,15 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	}
 
 	dc := &DockerContainer{
-		ID:                c.ID,
-		WaitingFor:        req.WaitingFor,
-		Image:             c.Image,
-		sessionID:         sessionID,
-		provider:          p,
-		terminationSignal: termSignal,
-		stopProducer:      nil,
-		logger:            p.Logger,
-		isRunning:         c.State == "running",
+		ID:                  c.ID,
+		WaitingFor:          req.WaitingFor,
+		Image:               c.Image,
+		sessionID:           sessionID,
+		provider:            p,
+		terminationSignal:   termSignal,
+		stopLogProductionCh: nil,
+		logger:              p.Logger,
+		isRunning:           c.State == "running",
 	}
 
 	return dc, nil
@@ -1247,10 +1282,10 @@ func daemonHost(ctx context.Context, p *DockerProvider) (string, error) {
 	case "http", "https", "tcp":
 		p.hostCache = url.Hostname()
 	case "unix", "npipe":
-		if testcontainersdocker.InAContainer() {
+		if core.InAContainer() {
 			ip, err := p.GetGatewayIP(ctx)
 			if err != nil {
-				ip, err = testcontainersdocker.DefaultGatewayIP()
+				ip, err = core.DefaultGatewayIP()
 				if err != nil {
 					ip = "localhost"
 				}
@@ -1298,11 +1333,11 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		IPAM:           req.IPAM,
 	}
 
-	sessionID := testcontainerssession.SessionID()
+	sessionID := core.SessionID()
 
 	var termSignal chan bool
 	if !tcConfig.RyukDisabled {
-		r, err := reuseOrCreateReaper(context.WithValue(ctx, testcontainersdocker.DockerHostContextKey, p.host), sessionID, p)
+		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
 			return nil, fmt.Errorf("%w: creating network reaper failed", err)
 		}
@@ -1313,7 +1348,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	}
 
 	// add the labels that the reaper will use to terminate the network to the request
-	for k, v := range testcontainersdocker.DefaultLabels(sessionID) {
+	for k, v := range core.DefaultLabels(sessionID) {
 		req.Labels[k] = v
 	}
 
@@ -1409,7 +1444,7 @@ func (p *DockerProvider) getDefaultNetwork(ctx context.Context, cli client.APICl
 		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
 			Driver:     Bridge,
 			Attachable: true,
-			Labels:     testcontainersdocker.DefaultLabels(testcontainerssession.SessionID()),
+			Labels:     core.DefaultLabels(core.SessionID()),
 		})
 
 		if err != nil {
@@ -1440,9 +1475,9 @@ func containerFromDockerResponse(ctx context.Context, response types.Container) 
 	}
 	container.provider = provider
 
-	container.sessionID = testcontainerssession.SessionID()
+	container.sessionID = core.SessionID()
 	container.consumers = []LogConsumer{}
-	container.stopProducer = nil
+	container.stopLogProductionCh = nil
 	container.isRunning = response.State == "running"
 
 	// the termination signal should be obtained from the reaper
