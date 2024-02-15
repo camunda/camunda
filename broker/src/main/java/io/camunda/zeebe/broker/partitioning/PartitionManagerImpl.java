@@ -337,4 +337,33 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
 
     return result;
   }
+
+  @Override
+  public ActorFuture<Void> forceReconfigure(
+      final int partitionId, final Collection<MemberId> members) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var partition = partitions.get(partitionId);
+          if (partition == null) {
+            result.completeExceptionally(
+                new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+            return;
+          }
+          LOGGER.info("Force reconfiguring partition {} with members {}", partitionId, members);
+          concurrencyControl.runOnCompletion(
+              partition.forceReconfigure(members),
+              (ok, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+
+                LOGGER.info(
+                    "Force reconfigured partition {} with members {}", partitionId, members);
+                result.complete(null);
+              });
+        });
+    return result;
+  }
 }

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.steps.PartitionDirectoryStep;
@@ -19,7 +21,9 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcess;
 import io.camunda.zeebe.util.FileUtil;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *   partition.stop().join();
  * </pre>
  */
-public final class Partition {
+final class Partition {
   private static final Logger LOGGER = LoggerFactory.getLogger(Partition.class);
 
   private final PartitionStartupContext context;
@@ -57,7 +61,7 @@ public final class Partition {
    * @param context a populated context that the partition can use.
    * @return a partition that can be started.
    */
-  public static Partition bootstrapping(final PartitionStartupContext context) {
+  static Partition bootstrapping(final PartitionStartupContext context) {
     return new Partition(
         context,
         new StartupProcess<>(
@@ -70,7 +74,7 @@ public final class Partition {
                 new PartitionRegistrationStep())));
   }
 
-  public static Partition joining(final PartitionStartupContext context) {
+  static Partition joining(final PartitionStartupContext context) {
     return new Partition(
         context,
         new StartupProcess<>(
@@ -82,7 +86,7 @@ public final class Partition {
                 new PartitionRegistrationStep())));
   }
 
-  public ActorFuture<Partition> start() {
+  ActorFuture<Partition> start() {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Partition>createFuture();
     concurrencyControl.run(
@@ -101,7 +105,7 @@ public final class Partition {
     return result;
   }
 
-  public ActorFuture<Partition> stop() {
+  ActorFuture<Partition> stop() {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Partition>createFuture();
     concurrencyControl.run(
@@ -121,60 +125,62 @@ public final class Partition {
   }
 
   /** Requests to leave the partition and shuts down on success. Partition data is not deleted. */
-  public ActorFuture<Partition> leave() {
+  ActorFuture<Partition> leave() {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Partition>createFuture();
     concurrencyControl.run(
         () -> {
-          final var partitionDirectory = context.partitionDirectory();
           final var raftPartition = raftPartition();
           if (raftPartition == null) {
-            result.completeExceptionally(
-                new IllegalStateException("Raft partition is not available"));
+            result.completeExceptionally(errorPartitionNotAvailable("leave"));
             return;
           }
           raftPartition
               .leave()
               .whenComplete(
                   (leaveOk, leaveError) ->
-                      concurrencyControl.run(
-                          () -> {
-                            if (leaveError != null) {
-                              result.completeExceptionally(leaveError);
-                              return;
-                            }
-                            concurrencyControl.runOnCompletion(
-                                startupProcess.shutdown(concurrencyControl, context),
-                                (shutdownOk, shutdownError) -> {
-                                  if (shutdownError != null) {
-                                    result.completeExceptionally(shutdownError);
-                                    return;
-                                  }
-                                  try {
-                                    FileUtil.deleteFolderIfExists(partitionDirectory);
-                                  } catch (final Exception e) {
-                                    LOGGER.warn(
-                                        "Failed to delete partition directory {} after leaving. Data will remain until manually removed.",
-                                        partitionDirectory,
-                                        e);
-                                  }
-                                  result.complete(this);
-                                });
-                          }));
+                      concurrencyControl.run(() -> onPartitionLeaveCompleted(leaveError, result)));
         });
 
     return result;
   }
 
-  public ActorFuture<Void> reconfigurePriority(final int newPriority) {
+  private void onPartitionLeaveCompleted(
+      final Throwable leaveError, final ActorFuture<Partition> result) {
+    if (leaveError != null) {
+      result.completeExceptionally(leaveError);
+      return;
+    }
+
+    final var concurrencyControl = context.concurrencyControl();
+    final var partitionDirectory = context.partitionDirectory();
+    concurrencyControl.runOnCompletion(
+        startupProcess.shutdown(concurrencyControl, context),
+        (shutdownOk, shutdownError) -> {
+          if (shutdownError != null) {
+            result.completeExceptionally(shutdownError);
+            return;
+          }
+          try {
+            FileUtil.deleteFolderIfExists(partitionDirectory);
+          } catch (final Exception e) {
+            LOGGER.warn(
+                "Failed to delete partition directory {} after leaving. Data will remain until manually removed.",
+                partitionDirectory,
+                e);
+          }
+          result.complete(this);
+        });
+  }
+
+  ActorFuture<Void> reconfigurePriority(final int newPriority) {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(
         () -> {
           final var raftPartition = raftPartition();
           if (raftPartition == null) {
-            result.completeExceptionally(
-                new IllegalStateException("Raft partition is not available"));
+            result.completeExceptionally(errorPartitionNotAvailable("reconfigure priority of"));
             return;
           }
           raftPartition
@@ -193,15 +199,52 @@ public final class Partition {
     return result;
   }
 
-  public ZeebePartition zeebePartition() {
+  ActorFuture<Void> forceReconfigure(final Collection<MemberId> members) {
+    final var concurrencyControl = context.concurrencyControl();
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var raftPartition = raftPartition();
+          if (raftPartition == null) {
+            result.completeExceptionally(errorPartitionNotAvailable("force reconfigure"));
+            return;
+          }
+          // Here we assume that the members are all active, since we do not support PASSIVE members
+          // yet.
+          final var membersWithType =
+              members.stream().collect(Collectors.toMap(m -> m, m -> Type.ACTIVE));
+          raftPartition
+              .getServer()
+              .forceReconfigure(membersWithType)
+              .whenComplete(
+                  (configureOk, configureError) -> {
+                    if (configureError != null) {
+                      result.completeExceptionally(configureError);
+                    } else {
+                      result.complete(null);
+                    }
+                  });
+        });
+
+    return result;
+  }
+
+  private IllegalStateException errorPartitionNotAvailable(final String operation) {
+    return new IllegalStateException(
+        String.format(
+            "Expected to %s partition %s, but raft partition is not available",
+            operation, context.partitionMetadata().id().id()));
+  }
+
+  ZeebePartition zeebePartition() {
     return context.zeebePartition();
   }
 
-  public RaftPartition raftPartition() {
+  RaftPartition raftPartition() {
     return context.raftPartition();
   }
 
-  public int id() {
+  int id() {
     return context.partitionMetadata().id().id();
   }
 }
