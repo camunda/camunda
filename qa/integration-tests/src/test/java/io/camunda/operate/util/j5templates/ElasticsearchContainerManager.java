@@ -22,6 +22,7 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -41,7 +42,7 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
 
   protected final RestHighLevelClient esClient;
 
-  public ElasticsearchContainerManager(RestHighLevelClient esClient,
+  public ElasticsearchContainerManager(@Qualifier("esClient") RestHighLevelClient esClient,
                                        OperateProperties operateProperties, SchemaManager schemaManager) {
     super(operateProperties, schemaManager);
     this.esClient = esClient;

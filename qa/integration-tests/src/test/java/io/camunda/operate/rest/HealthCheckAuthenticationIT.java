@@ -34,6 +34,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -72,6 +73,9 @@ import static org.mockito.BDDMockito.given;
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 @ActiveProfiles(OperateProfileService.AUTH_PROFILE)
 public class HealthCheckAuthenticationIT {
+
+  @MockBean
+  private UserDetailsService userDetailsService;
 
   @Autowired
   private TestRestTemplate testRestTemplate;

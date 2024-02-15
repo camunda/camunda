@@ -382,7 +382,7 @@ public class AuthenticationIT implements AuthenticationTestable {
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
-    HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>(), response.getHeaders());
+    HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>());
     // Step 2 Get Login provider url
     mockPermissionAllowed();
     mockClusterMetadata();
