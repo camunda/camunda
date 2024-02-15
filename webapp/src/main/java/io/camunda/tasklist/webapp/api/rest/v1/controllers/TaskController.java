@@ -198,8 +198,13 @@ public class TaskController extends ApiErrorController {
         task.getCandidateUsers() != null
             && Arrays.asList(task.getCandidateUsers()).contains(userName);
     final boolean assigneeTasks = task.getAssignee() != null && task.getAssignee().equals(userName);
+    final boolean noRestrictions = listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS);
 
-    return candidateUserTasks || assigneeTasks || candidateGroupTasks || allUsersTask;
+    return candidateUserTasks
+        || assigneeTasks
+        || candidateGroupTasks
+        || allUsersTask
+        || noRestrictions;
   }
 
   @Operation(

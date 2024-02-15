@@ -61,19 +61,26 @@ public class IdentityAuthorizationService {
 
   public List<String> getUserGroups() {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String accessToken = null;
+
+    // Extract access token based on authentication type
     if (authentication instanceof IdentityAuthentication) {
-      final IdentityAuthentication identityAuthentication = (IdentityAuthentication) authentication;
-      final Identity identity = SpringContextHolder.getBean(Identity.class);
-      return identity
-          .authentication()
-          .verifyToken(identityAuthentication.getTokens().getAccessToken())
-          .getUserDetails()
-          .getGroups();
+      accessToken = ((IdentityAuthentication) authentication).getTokens().getAccessToken();
+    } else if (authentication instanceof TokenAuthentication) {
+      accessToken = ((TokenAuthentication) authentication).getAccessToken();
+    } else if (authentication instanceof JwtAuthenticationToken) {
+      accessToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
     }
 
-    final List<String> result = new ArrayList<String>();
-    result.add(IdentityProperties.FULL_GROUP_ACCESS);
-    return result;
+    if (accessToken != null) {
+      final Identity identity = SpringContextHolder.getBean(Identity.class);
+      return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
+    }
+
+    // Fallback groups if authentication type is unrecognized or access token is null
+    final List<String> defaultGroups = new ArrayList<>();
+    defaultGroups.add(IdentityProperties.FULL_GROUP_ACCESS);
+    return defaultGroups;
   }
 
   public boolean isAllowedToStartProcess(String processDefinitionKey) {
