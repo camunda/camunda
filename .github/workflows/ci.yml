@@ -634,7 +634,7 @@ jobs:
           # Call the API directly to work around https://github.com/cli/cli/issues/8352
           gh api graphql -f query='mutation PullRequestAutoMerge {enablePullRequestAutoMerge(input: {pullRequestId: "${{ github.event.pull_request.node_id }}"}) {clientMutationId}}'
   # This job will trigger another workflow such that it will trigger a re-run of this failing workflow
-  # We can't automatically do this here, since you can only re-run a workflow iff it has finished,
+  # We can't automatically do this here, since you can only re-run a workflow if it has finished,
   # and while this job is running, the workflow clearly hasn't finished
   #
   # It will only retry if the workflow failed, the run count is < 3 (to avoid infinite loops), and
