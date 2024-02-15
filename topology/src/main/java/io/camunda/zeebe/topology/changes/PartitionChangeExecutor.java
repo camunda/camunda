@@ -58,8 +58,5 @@ public interface PartitionChangeExecutor {
    * @param members members that will be part of the replication group after reconfiguring
    * @return a future that completes when the partition is reconfigured
    */
-  default ActorFuture<Void> forceReconfigure(
-      final int partitionId, final Collection<MemberId> members) {
-    throw new UnsupportedOperationException("Not implemented");
-  }
+  ActorFuture<Void> forceReconfigure(final int partitionId, final Collection<MemberId> members);
 }
