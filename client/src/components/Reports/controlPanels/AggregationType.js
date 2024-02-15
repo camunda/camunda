@@ -185,24 +185,27 @@ export default function AggregationType({report, onChange}) {
             {distributedBy.type !== 'process' && !processPart && (
               <FormGroup legendText={t('report.config.aggregation.percentileLegend')}>
                 <Stack gap={3}>
-                  {orders.percentileAggregations.map((value) => (
-                    <Toggle
-                      key={value}
-                      id={value}
-                      size="sm"
-                      labelA={value === 50 ? t('report.config.aggregation.p50') : 'P' + value}
-                      labelB={value === 50 ? t('report.config.aggregation.p50') : 'P' + value}
-                      toggled={hasAggregation('aggregationTypes', 'percentile', value)}
-                      disabled={isLastAggregation('aggregationTypes', 'percentile', value)}
-                      onToggle={(checked) => {
-                        if (checked) {
-                          addAggregation('aggregationTypes', 'percentile', value);
-                        } else {
-                          removeAggregation('aggregationTypes', 'percentile', value);
-                        }
-                      }}
-                    />
-                  ))}
+                  {orders.percentileAggregations.map((value) => {
+                    const defaultLabel = `P${value}`;
+                    return (
+                      <Toggle
+                        key={defaultLabel}
+                        id={defaultLabel}
+                        size="sm"
+                        labelA={value === 50 ? t('report.config.aggregation.p50') : defaultLabel}
+                        labelB={value === 50 ? t('report.config.aggregation.p50') : defaultLabel}
+                        toggled={hasAggregation('aggregationTypes', 'percentile', value)}
+                        disabled={isLastAggregation('aggregationTypes', 'percentile', value)}
+                        onToggle={(checked) => {
+                          if (checked) {
+                            addAggregation('aggregationTypes', 'percentile', value);
+                          } else {
+                            removeAggregation('aggregationTypes', 'percentile', value);
+                          }
+                        }}
+                      />
+                    );
+                  })}
                 </Stack>
               </FormGroup>
             )}

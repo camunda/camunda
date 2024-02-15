@@ -131,8 +131,8 @@ exports[`should render a user task duration selection for user task duration rep
         >
           <Toggle
             disabled={false}
-            id={99}
-            key="99"
+            id="P99"
+            key="P99"
             labelA="P99"
             labelB="P99"
             onToggle={[Function]}
@@ -141,8 +141,8 @@ exports[`should render a user task duration selection for user task duration rep
           />
           <Toggle
             disabled={false}
-            id={95}
-            key="95"
+            id="P95"
+            key="P95"
             labelA="P95"
             labelB="P95"
             onToggle={[Function]}
@@ -151,8 +151,8 @@ exports[`should render a user task duration selection for user task duration rep
           />
           <Toggle
             disabled={false}
-            id={90}
-            key="90"
+            id="P90"
+            key="P90"
             labelA="P90"
             labelB="P90"
             onToggle={[Function]}
@@ -161,8 +161,8 @@ exports[`should render a user task duration selection for user task duration rep
           />
           <Toggle
             disabled={false}
-            id={75}
-            key="75"
+            id="P75"
+            key="P75"
             labelA="P75"
             labelB="P75"
             onToggle={[Function]}
@@ -171,8 +171,8 @@ exports[`should render a user task duration selection for user task duration rep
           />
           <Toggle
             disabled={true}
-            id={50}
-            key="50"
+            id="P50"
+            key="P50"
             labelA="P50 (median)"
             labelB="P50 (median)"
             onToggle={[Function]}
@@ -181,8 +181,8 @@ exports[`should render a user task duration selection for user task duration rep
           />
           <Toggle
             disabled={false}
-            id={25}
-            key="25"
+            id="P25"
+            key="P25"
             labelA="P25"
             labelB="P25"
             onToggle={[Function]}
@@ -286,8 +286,8 @@ exports[`should render an aggregation selection for duration reports 1`] = `
         >
           <Toggle
             disabled={false}
-            id={99}
-            key="99"
+            id="P99"
+            key="P99"
             labelA="P99"
             labelB="P99"
             onToggle={[Function]}
@@ -296,8 +296,8 @@ exports[`should render an aggregation selection for duration reports 1`] = `
           />
           <Toggle
             disabled={false}
-            id={95}
-            key="95"
+            id="P95"
+            key="P95"
             labelA="P95"
             labelB="P95"
             onToggle={[Function]}
@@ -306,8 +306,8 @@ exports[`should render an aggregation selection for duration reports 1`] = `
           />
           <Toggle
             disabled={false}
-            id={90}
-            key="90"
+            id="P90"
+            key="P90"
             labelA="P90"
             labelB="P90"
             onToggle={[Function]}
@@ -316,8 +316,8 @@ exports[`should render an aggregation selection for duration reports 1`] = `
           />
           <Toggle
             disabled={false}
-            id={75}
-            key="75"
+            id="P75"
+            key="P75"
             labelA="P75"
             labelB="P75"
             onToggle={[Function]}
@@ -326,8 +326,8 @@ exports[`should render an aggregation selection for duration reports 1`] = `
           />
           <Toggle
             disabled={true}
-            id={50}
-            key="50"
+            id="P50"
+            key="P50"
             labelA="P50 (median)"
             labelB="P50 (median)"
             onToggle={[Function]}
@@ -336,8 +336,8 @@ exports[`should render an aggregation selection for duration reports 1`] = `
           />
           <Toggle
             disabled={false}
-            id={25}
-            key="25"
+            id="P25"
+            key="P25"
             labelA="P25"
             labelB="P25"
             onToggle={[Function]}
