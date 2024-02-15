@@ -51,8 +51,8 @@ exports[`should render a user task duration selection for user task duration rep
             disabled={false}
             id="work"
             key="work"
-            labelA="Work"
-            labelB="Work"
+            labelA="Assigned"
+            labelB="Assigned"
             onToggle={[Function]}
             size="sm"
             toggled={false}
@@ -61,8 +61,8 @@ exports[`should render a user task duration selection for user task duration rep
             disabled={true}
             id="idle"
             key="idle"
-            labelA="Idle"
-            labelB="Idle"
+            labelA="Unassigned"
+            labelB="Unassigned"
             onToggle={[Function]}
             size="sm"
             toggled={true}

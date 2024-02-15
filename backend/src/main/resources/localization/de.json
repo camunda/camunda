@@ -622,8 +622,8 @@
         "percentile": "P{value}"
       },
       "userTaskDuration": {
-        "idle": "Wartezeit",
-        "work": "Arbeitszeit",
+        "idle": "Nicht zugewiesen",
+        "work": "Zugewiesen",
         "total": "Summe"
       },
       "colorPicker": {

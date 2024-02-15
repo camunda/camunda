@@ -622,8 +622,8 @@
         "percentile": "P{value}"
       },
       "userTaskDuration": {
-        "idle": "Idle",
-        "work": "Work",
+        "idle": "Unassigned",
+        "work": "Assigned",
         "total": "Total"
       },
       "colorPicker": {
