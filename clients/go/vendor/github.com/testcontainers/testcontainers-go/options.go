@@ -10,7 +10,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
-	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -102,7 +102,7 @@ func (p prependHubRegistry) Description() string {
 //   - if the image is a Docker Hub image where the hub registry is explicitly part of the name
 //     (i.e. anything with a docker.io or registry.hub.docker.com host part), the image is returned as is.
 func (p prependHubRegistry) Substitute(image string) (string, error) {
-	registry := testcontainersdocker.ExtractRegistry(image, "")
+	registry := core.ExtractRegistry(image, "")
 
 	// add the exclusions in the right order
 	exclusions := []func() bool{
@@ -125,6 +125,17 @@ func (p prependHubRegistry) Substitute(image string) (string, error) {
 func WithImageSubstitutors(fn ...ImageSubstitutor) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) {
 		req.ImageSubstitutors = fn
+	}
+}
+
+// WithLogConsumers sets the log consumers for a container
+func WithLogConsumers(consumer ...LogConsumer) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		if req.LogConsumerCfg == nil {
+			req.LogConsumerCfg = &LogConsumerConfig{}
+		}
+
+		req.LogConsumerCfg.Consumers = consumer
 	}
 }
 
@@ -187,6 +198,28 @@ func WithStartupCommand(execs ...Executable) CustomizeRequestOption {
 		}
 
 		req.LifecycleHooks = append(req.LifecycleHooks, startupCommandsHook)
+	}
+}
+
+// WithAfterReadyCommand will execute the command representation of each Executable into the container.
+// It will leverage the container lifecycle hooks to call the command right after the container
+// is ready.
+func WithAfterReadyCommand(execs ...Executable) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) {
+		postReadiesHook := []ContainerHook{}
+
+		for _, exec := range execs {
+			execFn := func(ctx context.Context, c Container) error {
+				_, _, err := c.Exec(ctx, exec.AsCommand(), exec.Options()...)
+				return err
+			}
+
+			postReadiesHook = append(postReadiesHook, execFn)
+		}
+
+		req.LifecycleHooks = append(req.LifecycleHooks, ContainerLifecycleHooks{
+			PostReadies: postReadiesHook,
+		})
 	}
 }
 
