@@ -104,7 +104,7 @@ camunda-platform:
       - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
         value: io.camunda.zeebe.exporter.operate.OperateElasticsearchExporter
       - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
-        value: "{{ .Values.global.elasticsearch.protocol }}://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}"
+        value: "{{ .Values.global.elasticsearch.protocol}}://{{ tpl .Values.global.elasticsearch.host .}}:{{ .Values.global.elasticsearch.port }}"
       - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_WRITETOZEEBEINDEXES
         value: "true"
       - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE
@@ -157,14 +157,16 @@ camunda-platform:
         cpu: 3
         memory: 4Gi
   elasticsearch:
-    resources:
-      requests:
-        cpu: 5
-        memory: 15Gi
-      limits:
-        cpu: 10
-        memory: 20Gi
-    volumeClaimTemplate:
+    master:
+      heapSize: 10g
       resources:
         requests:
-          storage: 128Gi
+          cpu: 5
+          memory: 15Gi
+        limits:
+          cpu: 10
+          memory: 20Gi
+      persistence:
+        storageClass: "ssd"
+        size: 128Gi
+        accessModes: [ "ReadWriteOnce" ]

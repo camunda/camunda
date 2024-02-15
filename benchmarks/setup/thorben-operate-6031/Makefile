@@ -5,7 +5,7 @@ all: benchmark
 
 .PHONY: benchmark
 benchmark:
-	helm install --namespace $(namespace) --version 0.1.22 $(namespace) zeebe-benchmark/zeebe-benchmark -f values.yaml --skip-crds
+	helm install --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark -f values.yaml --skip-crds
 
 # To deploy the Zeebe pods on stable nodes, use this job
 .PHONY: benchmark-stable
