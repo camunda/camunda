@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.steps.PartitionDirectoryStep;
@@ -19,7 +21,9 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcess;
 import io.camunda.zeebe.util.FileUtil;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -180,6 +184,37 @@ public final class Partition {
           raftPartition
               .getServer()
               .reconfigurePriority(newPriority)
+              .whenComplete(
+                  (configureOk, configureError) -> {
+                    if (configureError != null) {
+                      result.completeExceptionally(configureError);
+                    } else {
+                      result.complete(null);
+                    }
+                  });
+        });
+
+    return result;
+  }
+
+  public ActorFuture<Void> forceReconfigure(final Collection<MemberId> members) {
+    final var concurrencyControl = context.concurrencyControl();
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var raftPartition = raftPartition();
+          if (raftPartition == null) {
+            result.completeExceptionally(
+                new IllegalStateException("Raft partition is not available"));
+            return;
+          }
+          // Here we assume that the members are all active, since we do not support PASSIVE members
+          // yet.
+          final var membersWithType =
+              members.stream().collect(Collectors.toMap(m -> m, m -> Type.ACTIVE));
+          raftPartition
+              .getServer()
+              .forceReconfigure(membersWithType)
               .whenComplete(
                   (configureOk, configureError) -> {
                     if (configureError != null) {
