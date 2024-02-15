@@ -132,6 +132,8 @@ public abstract class DatabaseTestService {
 
   public abstract boolean indexExists(final String indexOrAliasName);
 
+  public abstract boolean zeebeIndexExists(final String indexName);
+
   public abstract OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String dbType, final String engine);
 
   public abstract Map<AggregationDto, Double> calculateExpectedValueGivenDurations(final Number... setDuration);
@@ -156,6 +158,13 @@ public abstract class DatabaseTestService {
   public TestIndexRepository getTestIndexRepository() {
     return testIndexRepository;
   }
+
+  public abstract long countRecordsByQuery(final TermsQueryContainer queryContainer,
+                                           final String expectedIndex);
+
+  public abstract <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex,
+                                                                final TermsQueryContainer queryForProcessableEvents,
+                                                                final Class<T> zeebeRecordClass);
 
   protected void setTestIndexRepository(final TestIndexRepository testIndexRepository) {
     this.testIndexRepository = testIndexRepository;

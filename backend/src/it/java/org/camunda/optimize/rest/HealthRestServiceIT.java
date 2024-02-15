@@ -101,9 +101,7 @@ public class HealthRestServiceIT extends AbstractMultiEngineIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
-  public void getReadiness_elasticsearchNotConnected() {
-    // TODO resolve with OPT-7455 #10085
+  public void getReadiness_databaseNotConnected() {
     // given
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
     dbMockServer

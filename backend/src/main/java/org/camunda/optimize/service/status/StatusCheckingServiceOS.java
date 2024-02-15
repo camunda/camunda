@@ -6,12 +6,10 @@
 package org.camunda.optimize.service.status;
 
 import lombok.extern.slf4j.Slf4j;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.HealthStatus;
@@ -19,8 +17,6 @@ import org.opensearch.client.opensearch.cluster.HealthRequest;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.time.Duration;
 
 @Component
 @Slf4j
@@ -45,15 +41,14 @@ public class StatusCheckingServiceOS extends StatusCheckingService {
 
   @Override
   public boolean isConnectedToDatabase() {
-    final RetryPolicy<Boolean> retryPolicy = new RetryPolicy<>();
-    retryPolicy.withDelay(Duration.ofSeconds(1));
-    return Failsafe.with(retryPolicy)
-      .get(
-        () -> {
-          final HealthResponse clusterHealthResponse =
-            osClient.getOpenSearchClient().cluster().health(new HealthRequest.Builder().build());
-          return clusterHealthResponse.status() != HealthStatus.Red;
-        });
+    boolean isConnected = false;
+    try {
+      final HealthResponse clusterHealthResponse =
+        osClient.getOpenSearchClient().cluster().health(new HealthRequest.Builder().build());
+      return clusterHealthResponse.status() != HealthStatus.Red;
+    } catch (Exception ignored) {
+      // do nothing
+    }
+    return isConnected;
   }
-
 }

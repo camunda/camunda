@@ -30,6 +30,7 @@ import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventI
 import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.test.it.extension.db.DatabaseTestService;
 import org.camunda.optimize.test.it.extension.db.ElasticsearchDatabaseTestService;
+import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
 import org.camunda.optimize.test.it.extension.db.OpenSearchDatabaseTestService;
 import org.camunda.optimize.test.repository.TestIndexRepository;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -366,4 +367,15 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     databaseTestService.getDatabaseClient().update(indexName, entityId, script);
   }
 
+  public long countRecordsByQuery(final TermsQueryContainer queryContainer, final String index) {
+    return databaseTestService.countRecordsByQuery(queryContainer, index);
+  }
+
+  public <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex, final TermsQueryContainer queryForProcessableEvents, final Class<T> zeebeRecordClass) {
+    return databaseTestService.getZeebeExportedProcessableEvents(exportIndex, queryForProcessableEvents, zeebeRecordClass);
+  }
+
+  public boolean zeebeIndexExists(final String expectedIndex) {
+    return databaseTestService.zeebeIndexExists(expectedIndex);
+  }
 }

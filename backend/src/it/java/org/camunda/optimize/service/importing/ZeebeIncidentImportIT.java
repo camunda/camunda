@@ -23,6 +23,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -320,13 +321,13 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   }
 
   private void waitUntilIncidentRecordsWithProcessIdExported(final long minRecordCount, final String processId) {
+    final TermsQueryContainer query = new TermsQueryContainer();
+    query.addTermQuery(ZeebeIncidentRecordDto.Fields.value + "." + ZeebeIncidentDataDto.Fields.bpmnProcessId,
+                       processId);
     waitUntilRecordMatchingQueryExported(
       minRecordCount,
       DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME,
-      boolQuery().must(termQuery(
-        ZeebeIncidentRecordDto.Fields.value + "." + ZeebeIncidentDataDto.Fields.bpmnProcessId,
-        processId
-      ))
+      query
     );
   }
 

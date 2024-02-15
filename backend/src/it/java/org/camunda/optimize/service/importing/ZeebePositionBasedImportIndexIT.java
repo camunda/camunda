@@ -21,6 +21,7 @@ import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.importing.zeebe.fetcher.es.AbstractZeebeRecordFetcherES;
+import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -44,7 +45,6 @@ import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -452,18 +452,21 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
   }
 
   private void waitUntilInstanceRecordWithElementTypeAndIntentExported(final BpmnElementType elementType, final Intent intent) {
+    final TermsQueryContainer query = new TermsQueryContainer();
+    query
+      .addTermQuery(
+        ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
+        elementType.name()
+      );
+    query
+      .addTermQuery(
+        ZeebeProcessInstanceRecordDto.Fields.intent,
+        intent.name().toUpperCase()
+      );
     waitUntilMinimumDataExportedCount(
       1,
       DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
-      boolQuery()
-        .must(termQuery(
-          ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
-          elementType
-        ))
-        .must(termQuery(
-          ZeebeProcessInstanceRecordDto.Fields.intent,
-          intent.name().toUpperCase()
-        )),
+      query,
       10
     );
   }

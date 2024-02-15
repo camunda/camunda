@@ -330,6 +330,12 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       .indexExists(indexOrAliasName);
   }
 
+  @Override
+  public boolean zeebeIndexExists(final String indexName) {
+    // TODO #10086
+    throw new NotImplementedException("Not yet implemented for OpenSearch");
+  }
+
   @SneakyThrows
   @Override
   public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String dbType, final String engine) {
@@ -439,6 +445,18 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   @Override
   public Map<AggregationDto, Double> calculateExpectedValueGivenDurations(final Number... setDuration) {
     return calculateExpectedValueGivenDurationsWithPercentileInterpolation(setDuration);
+  }
+
+  @Override
+  public long countRecordsByQuery(final TermsQueryContainer queryContainer, final String expectedIndex) {
+    // TODO #10086
+    throw new NotImplementedException("Not yet implemented for OpenSearch");
+  }
+
+  @Override
+  public <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex, final TermsQueryContainer queryForProcessableEvents, final Class<T> zeebeRecordClass) {
+    // TODO #10086
+    throw new NotImplementedException("Not yet implemented for OpenSearch");
   }
 
   @SneakyThrows

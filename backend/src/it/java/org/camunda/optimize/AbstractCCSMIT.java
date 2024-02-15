@@ -25,17 +25,9 @@ import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
 import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.DatabaseConstants;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.ZeebeExtension;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -58,9 +50,6 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Tag("ccsm-test")
 @ActiveProfiles(CCSM_PROFILE)
@@ -105,13 +94,17 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
   }
 
-  protected BoolQueryBuilder getQueryForProcessableProcessInstanceEvents() {
-    return boolQuery().must(termsQuery(
+  protected TermsQueryContainer getQueryForProcessableProcessInstanceEvents() {
+    final TermsQueryContainer termsQueryContainer = new TermsQueryContainer();
+    termsQueryContainer.addTermQuery(
       ZeebeProcessInstanceRecordDto.Fields.intent,
-      ProcessInstanceIntent.ELEMENT_ACTIVATING.name(),
-      ProcessInstanceIntent.ELEMENT_COMPLETED.name(),
-      ProcessInstanceIntent.ELEMENT_TERMINATED.name()
-    ));
+      List.of(
+        ProcessInstanceIntent.ELEMENT_ACTIVATING.name(),
+        ProcessInstanceIntent.ELEMENT_COMPLETED.name(),
+        ProcessInstanceIntent.ELEMENT_TERMINATED.name()
+      )
+    );
+    return termsQueryContainer;
   }
 
   protected String getConfiguredZeebeName() {
@@ -119,7 +112,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   }
 
   protected void waitUntilMinimumDataExportedCount(final int minExportedEventCount, final String indexName,
-                                                   final BoolQueryBuilder boolQueryBuilder) {
+                                                   final TermsQueryContainer boolQueryBuilder) {
     waitUntilMinimumDataExportedCount(minExportedEventCount, indexName, boolQueryBuilder, 15);
   }
 
@@ -132,63 +125,67 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   }
 
   protected void waitUntilNumberOfDefinitionsExported(final int expectedDefinitionsCount) {
+    final TermsQueryContainer query = new TermsQueryContainer();
+    query.addTermQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, List.of(ProcessIntent.CREATED.name()));
     waitUntilMinimumDataExportedCount(
       expectedDefinitionsCount,
       DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
-      boolQuery().must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
-    );
+      query);
   }
 
-  protected void waitUntilRecordMatchingQueryExported(final String indexName, final BoolQueryBuilder boolQuery) {
+  protected void waitUntilRecordMatchingQueryExported(final String indexName, final TermsQueryContainer boolQuery) {
     waitUntilRecordMatchingQueryExported(1, indexName, boolQuery);
   }
 
   protected void waitUntilRecordMatchingQueryExported(final long minRecordCount, final String indexName,
-                                                      final BoolQueryBuilder boolQuery) {
+                                                      final TermsQueryContainer boolQuery) {
     waitUntilMinimumDataExportedCount(minRecordCount, indexName, boolQuery, 10);
   }
 
   protected void waitUntilInstanceRecordWithElementIdExported(final String instanceElementId) {
+    final TermsQueryContainer query = new TermsQueryContainer();
+    query.addTermQuery(ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
+                       instanceElementId);
     waitUntilRecordMatchingQueryExported(
       DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
-      boolQuery().must(termQuery(
-        ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
-        instanceElementId
-      ))
+      query
     );
   }
 
   protected void waitUntilUserTaskRecordWithElementIdExported(final String instanceElementId) {
+    TermsQueryContainer query = new TermsQueryContainer();
+    query.addTermQuery(
+      ZeebeUserTaskRecordDto.Fields.value + "." + ZeebeUserTaskDataDto.Fields.elementId,
+      instanceElementId);
     waitUntilRecordMatchingQueryExported(
       DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME,
-      boolQuery().must(termQuery(
-        ZeebeUserTaskRecordDto.Fields.value + "." + ZeebeUserTaskDataDto.Fields.elementId,
-        instanceElementId
-      ))
+        query
     );
   }
 
   protected void waitUntilUserTaskRecordWithElementIdAndIntentExported(final String instanceElementId, final String intent) {
+    final TermsQueryContainer query = new TermsQueryContainer();
+    query.addTermQuery(
+      ZeebeUserTaskRecordDto.Fields.value + "." + ZeebeUserTaskDataDto.Fields.elementId,
+      instanceElementId
+    );
+    query.addTermQuery(ZeebeRecordDto.Fields.intent, intent);
     waitUntilRecordMatchingQueryExported(
       DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME,
-      boolQuery().must(termQuery(
-          ZeebeUserTaskRecordDto.Fields.value + "." + ZeebeUserTaskDataDto.Fields.elementId,
-          instanceElementId
-        ))
-        .must(termQuery(ZeebeRecordDto.Fields.intent, intent))
+      query
     );
+
   }
 
   protected void waitUntilDefinitionWithIdExported(final String processDefinitionId) {
+    TermsQueryContainer query = new TermsQueryContainer();
+    query.addTermQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name());
+    query.addTermQuery(ZeebeProcessDefinitionRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
+                       processDefinitionId
+    );
     waitUntilRecordMatchingQueryExported(
       DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
-      boolQuery()
-        .must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
-        .must(termQuery(
-          ZeebeProcessDefinitionRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
-          processDefinitionId
-        ))
-    );
+      query);
   }
 
   protected String getFlowNodeInstanceIdFromProcessInstanceForActivity(final ProcessInstanceDto processInstanceDto,
@@ -251,25 +248,18 @@ public abstract class AbstractCCSMIT extends AbstractIT {
 
   @SneakyThrows
   protected void waitUntilMinimumDataExportedCount(final long minimumCount, final String indexName,
-                                                   final BoolQueryBuilder boolQueryBuilder, final long countTimeoutInSeconds) {
+                                                   final TermsQueryContainer queryContainer,
+                                                   final long countTimeoutInSeconds) {
     final String expectedIndex = zeebeExtension.getZeebeRecordPrefix() + "-" + indexName;
-    final OptimizeElasticsearchClient esClient = databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     Awaitility.given().ignoreExceptions()
       .timeout(15, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
-        esClient
-          .getHighLevelClient()
-          .indices()
-          .exists(new GetIndexRequest(expectedIndex), esClient.requestOptions())
+        databaseIntegrationTestExtension.zeebeIndexExists(expectedIndex)
       ).isTrue());
-    final CountRequest countRequest = new CountRequest(expectedIndex).query(boolQueryBuilder);
     Awaitility.given().ignoreExceptions()
       .timeout(countTimeoutInSeconds, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
-        esClient
-          .getHighLevelClient()
-          .count(countRequest, esClient.requestOptions())
-          .getCount())
+        databaseIntegrationTestExtension.countRecordsByQuery(queryContainer, expectedIndex))
         .isGreaterThanOrEqualTo(minimumCount));
   }
 
@@ -302,31 +292,26 @@ public abstract class AbstractCCSMIT extends AbstractIT {
 
   @SneakyThrows
   private <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex,
-                                                        final QueryBuilder queryForProcessableEvents,
+                                                        final TermsQueryContainer queryForProcessableEvents,
                                                         final Class<T> zeebeRecordClass) {
-    final OptimizeElasticsearchClient esClient =
-      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(exportIndex)
-      .source(new SearchSourceBuilder()
-                .query(queryForProcessableEvents)
-                .trackTotalHits(true)
-                .size(100));
-    final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
-    return ElasticsearchReaderUtil.mapHits(
-      searchResponse.getHits(),
-      zeebeRecordClass,
-      embeddedOptimizeExtension.getObjectMapper()
+    return databaseIntegrationTestExtension.getZeebeExportedProcessableEvents(
+      exportIndex,
+      queryForProcessableEvents,
+      zeebeRecordClass
     );
   }
 
-  private BoolQueryBuilder getQueryForProcessableUserTaskEvents() {
-    return boolQuery().must(termsQuery(
+  private TermsQueryContainer getQueryForProcessableUserTaskEvents() {
+    final TermsQueryContainer query = new TermsQueryContainer();
+    query.addTermQuery(
       ZeebeUserTaskRecordDto.Fields.intent,
-      UserTaskIntent.CREATING.name(),
-      UserTaskIntent.COMPLETED.name(),
-      UserTaskIntent.CANCELED.name()
-    ));
+      List.of(
+        UserTaskIntent.CREATING.name(),
+        UserTaskIntent.COMPLETED.name(),
+        UserTaskIntent.CANCELED.name()
+      )
+    );
+    return query;
   }
 
 }

@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import org.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import org.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
@@ -82,6 +83,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -135,7 +137,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public OptimizeElasticsearchClient getOptimizeElasticsearchClient() {
-    return prefixAwareRestHighLevelClient;
+    return getOptimizeElasticClient();
   }
 
   @Override
@@ -370,6 +372,16 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
+  @Override
+  @SneakyThrows
+  public boolean zeebeIndexExists(final String indexName) {
+    final OptimizeElasticsearchClient esClient = getOptimizeElasticClient();
+    return esClient
+      .getHighLevelClient()
+      .indices()
+      .exists(new GetIndexRequest(indexName), esClient.requestOptions());
+  }
+
   public OptimizeElasticsearchClient getOptimizeElasticClient() {
     return prefixAwareRestHighLevelClient;
   }
@@ -502,6 +514,46 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
+  @Override
+  public long countRecordsByQuery(final TermsQueryContainer termsQueryContainer,
+                                  final String expectedIndex) {
+    final BoolQueryBuilder boolQueryBuilder = termsQueryContainer.toElasticSearchQuery();
+    return countRecordsByQuery(boolQueryBuilder, expectedIndex);
+  }
+
+  private long countRecordsByQuery(final BoolQueryBuilder boolQueryBuilder, final String expectedIndex) {
+    final OptimizeElasticsearchClient esClient = getOptimizeElasticClient();
+    final CountRequest countRequest = new CountRequest(expectedIndex).query(boolQueryBuilder);
+    try {
+      return esClient
+        .getHighLevelClient()
+        .count(countRequest, esClient.requestOptions())
+        .getCount();
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
+  }
+
+  @Override
+  @SneakyThrows
+  public <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex, final TermsQueryContainer intent,
+                                                       final Class<T> zeebeRecordClass) {
+    final OptimizeElasticsearchClient esClient = getOptimizeElasticClient();
+    final BoolQueryBuilder boolQueryBuilder = intent.toElasticSearchQuery();
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(exportIndex)
+      .source(new SearchSourceBuilder()
+                .query(boolQueryBuilder)
+                .trackTotalHits(true)
+                .size(100));
+    final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
+    return ElasticsearchReaderUtil.mapHits(
+      searchResponse.getHits(),
+      zeebeRecordClass,
+      OPTIMIZE_MAPPER
+    );
+  }
+
   @SneakyThrows
   private boolean isDatabaseVersionGreaterThanOrEqualTo(final String dbVersion) {
     if (elasticsearchDatabaseVersion == null) {
@@ -625,7 +677,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       .indices(indexNames)
       .source(searchSourceBuilder);
 
-    final SearchResponse response = getOptimizeElasticsearchClient().search(searchRequest);
+    final SearchResponse response = getOptimizeElasticClient().search(searchRequest);
     return mapHits(response.getHits(), type, getObjectMapper());
   }
 
