@@ -58,7 +58,7 @@ runs:
         exit 1
     - name: Import Secrets
       id: secrets
-      uses: hashicorp/vault-action@v2.8.0
+      uses: hashicorp/vault-action@v2.8.1
       if: |
         inputs.secret_vault_address != ''
         && inputs.secret_vault_roleId != ''
