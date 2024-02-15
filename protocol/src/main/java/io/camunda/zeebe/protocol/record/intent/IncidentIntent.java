@@ -56,6 +56,17 @@ public enum IncidentIntent implements ProcessInstanceRelatedIntent {
   }
 
   @Override
+  public boolean isEvent() {
+    switch (this) {
+      case CREATED:
+      case RESOLVED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  @Override
   public boolean shouldBanInstanceOnError() {
     return shouldBanInstance;
   }

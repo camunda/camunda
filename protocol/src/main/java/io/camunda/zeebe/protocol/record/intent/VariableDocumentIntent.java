@@ -34,6 +34,16 @@ public enum VariableDocumentIntent implements Intent {
     return value;
   }
 
+  @Override
+  public boolean isEvent() {
+    switch (this) {
+      case UPDATED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   public static Intent from(final short value) {
     switch (value) {
       case 0:

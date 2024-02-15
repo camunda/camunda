@@ -33,6 +33,19 @@ public enum CommandDistributionIntent implements Intent {
     return value;
   }
 
+  @Override
+  public boolean isEvent() {
+    switch (this) {
+      case STARTED:
+      case DISTRIBUTING:
+      case ACKNOWLEDGED:
+      case FINISHED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   public static Intent from(final short value) {
     switch (value) {
       case 0:

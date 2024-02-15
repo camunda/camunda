@@ -46,6 +46,20 @@ public enum MessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
     return value;
   }
 
+  @Override
+  public boolean isEvent() {
+    switch (this) {
+      case CREATED:
+      case CORRELATING:
+      case CORRELATED:
+      case REJECTED:
+      case DELETED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   public static Intent from(final short value) {
     switch (value) {
       case 0:

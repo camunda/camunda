@@ -61,6 +61,11 @@ public interface Intent {
 
   String name();
 
+  /**
+   * @return true if this intent is used as an event, i.e. it's not a command or command rejection.
+   */
+  boolean isEvent();
+
   @SuppressWarnings("checkstyle:MissingSwitchDefault")
   static Intent fromProtocolValue(final ValueType valueType, final short intent) {
     switch (valueType) {
@@ -219,6 +224,11 @@ public interface Intent {
     @Override
     public short value() {
       return NULL_VAL;
+    }
+
+    @Override
+    public boolean isEvent() {
+      return false;
     }
   }
 }
