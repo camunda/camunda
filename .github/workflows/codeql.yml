@@ -1,0 +1,56 @@
+name: "CodeQL"
+
+on:
+  schedule:
+    - cron: '30 2 * * *'
+
+jobs:
+  analyze:
+    name: Github Code Scanning
+    runs-on: [ubuntu-latest]
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'java-kotlin', 'javascript-typescript' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        queries: security-extended,security-and-quality
+        config-file: ./.github/codeql/codeql-config.yml
+
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@9f522b85981b491eab9a52c144d15aedbd0bf371
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+    - name: Setup Maven
+      uses: ./.github/actions/setup-maven
+      with:
+        secrets: ${{ toJSON(secrets) }}
+
+    - name: Compile
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: install -DskipTests -Dskip.docker
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"

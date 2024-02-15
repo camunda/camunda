@@ -22,7 +22,6 @@
 
     <!-- maven plugins -->
     <surefire-plugin.version>3.2.5</surefire-plugin.version>
-    <plugin.version.sonar>3.10.0.2594</plugin.version.sonar>
 
     <!-- database config -->
     <elasticsearch.version>7.17.17</elasticsearch.version>
@@ -74,13 +73,6 @@
     <skip.docker>false</skip.docker>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
 
-    <sonar.organization>camunda</sonar.organization>
-    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-    <aggregate.report.dir>test-coverage/target/site/jacoco-aggregate/jacoco.xml</aggregate.report.dir>
-    <sonar.junit.reportPaths>
-      ${project.build.directory}/surefire-reports/,${project.build.directory}/failsafe-reports/,${project.build.directory}/failsafe-reports/1/,${project.build.directory}/failsafe-reports/2/,${project.build.directory}/failsafe-reports/3/,${project.build.directory}/failsafe-reports/4/
-    </sonar.junit.reportPaths>
-
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
   </properties>
@@ -96,7 +88,6 @@
     <module>qa</module>
     <module>distro</module>
     <module>upgrade</module>
-    <module>test-coverage</module>
   </modules>
 
   <dependencyManagement>
@@ -219,25 +210,6 @@
         <skip.unit.tests>true</skip.unit.tests>
       </properties>
     </profile>
-    <profile>
-      <id>coverage</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>prepare-agent</id>
-                <goals>
-                  <goal>prepare-agent</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
 
     <!-- database profiles-->
     <profile>
@@ -255,37 +227,6 @@
       <properties>
         <database.type>opensearch</database.type>
       </properties>
-    </profile>
-
-    <!-- profile to perform only static code analysis using sonar scanner -->
-    <profile>
-      <id>sonar</id>
-      <properties>
-        <!-- sonarscanner integration -->
-        <!-- sonar.login token must be passed at runtime to avoid sharing token -->
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.organization>camunda</sonar.organization>
-        <sonar.projectKey>camunda_camunda-optimize</sonar.projectKey>
-        <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
-        <sonar.token>${env.SONARCLOUD_TOKEN}</sonar.token>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.sonarsource.scanner.maven</groupId>
-            <artifactId>sonar-maven-plugin</artifactId>
-            <version>${plugin.version.sonar}</version>
-            <executions>
-              <execution>
-                <phase>verify</phase>
-                <goals>
-                  <goal>sonar</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
 
   </profiles>
@@ -526,17 +467,6 @@
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
           <version>4.3</version>
-        </plugin>
-        <!-- sonar relevant stuff -->
-        <plugin>
-          <groupId>org.sonarsource.scanner.maven</groupId>
-          <artifactId>sonar-maven-plugin</artifactId>
-          <version>${plugin.version.sonar}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.jacoco</groupId>
-          <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.11</version>
         </plugin>
       </plugins>
     </pluginManagement>
