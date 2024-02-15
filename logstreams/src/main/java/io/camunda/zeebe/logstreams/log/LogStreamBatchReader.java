@@ -63,5 +63,10 @@ public interface LogStreamBatchReader extends Iterator<Batch>, CloseableSilently
      * the whole batch again.
      */
     void head();
+
+    /**
+     * @return the current head of the batch without moving to the next event.
+     */
+    LoggedEvent current();
   }
 }
