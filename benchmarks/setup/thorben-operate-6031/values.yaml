@@ -100,7 +100,7 @@ camunda-platform:
       # Image.repository defines which image repository to use
       repository: gcr.io/zeebe-io/zeebe
       tag: operate-6031
-    env: 
+    env:
       - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
         value: io.camunda.zeebe.exporter.operate.OperateElasticsearchExporter
       - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
@@ -139,10 +139,16 @@ camunda-platform:
         value: "false"
       - name: CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING
         value: "1m"
-      - name: CAMUNDA_OPERATE_ARCHIVER_THREADSCOUNT
-        value: "3"
       - name: CAMUNDA_OPERATE_ARCHIVERENABLED
         value: "false"
+      # Archiver:
+      # - name: CAMUNDA_OPERATE_ARCHIVERENABLED
+      #  value: "true"
+      # - name: CAMUNDA_OPERATE_ARCHIVER_ROLLOVERBATCHSIZE
+      #  value: "300"
+      # number of threads = number of Zeebe partitions
+      # - name: CAMUNDA_OPERATE_ARCHIVER_THREADSCOUNT
+      #  value: "3"
     resources:
       limits:
         cpu: 5
