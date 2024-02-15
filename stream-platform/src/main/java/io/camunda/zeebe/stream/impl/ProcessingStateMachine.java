@@ -361,22 +361,21 @@ public final class ProcessingStateMachine {
           recordProcessors.stream()
               .filter(p -> p.accepts(command.getValueType()))
               .findFirst()
-              .orElse(null);
-      if (currentProcessor != null) {
-        currentProcessingResult = currentProcessor.process(command, processingResultBuilder);
+              .orElseThrow(() -> new NoSuchProcessorException(command));
 
-        final BatchProcessingStepResult batchProcessingStepResult =
-            collectBatchProcessingStepResult(
-                currentProcessingResult,
-                lastProcessingResultSize,
-                // +1 since we already need include the current command in the calculation
-                pendingCommands.size() + processedCommandsCount + 1,
-                currentProcessingBatchLimit);
+      currentProcessingResult = currentProcessor.process(command, processingResultBuilder);
 
-        pendingCommands.addAll(batchProcessingStepResult.toProcess());
-        pendingWrites.addAll(batchProcessingStepResult.toWrite());
-        currentProcessingResult.getProcessingResponse().ifPresent(pendingResponses::add);
-      }
+      final BatchProcessingStepResult batchProcessingStepResult =
+          collectBatchProcessingStepResult(
+              currentProcessingResult,
+              lastProcessingResultSize,
+              // +1 since we already need include the current command in the calculation
+              pendingCommands.size() + processedCommandsCount + 1,
+              currentProcessingBatchLimit);
+
+      pendingCommands.addAll(batchProcessingStepResult.toProcess());
+      pendingWrites.addAll(batchProcessingStepResult.toWrite());
+      currentProcessingResult.getProcessingResponse().ifPresent(pendingResponses::add);
 
       lastProcessingResultSize = currentProcessingResult.getRecordBatch().entries().size();
       processedCommandsCount++;
