@@ -37,6 +37,7 @@ public final class TypedRecordImpl implements TypedRecord {
     this.value = value;
   }
 
+  @JsonIgnore
   public RecordMetadata getMetadata() {
     return metadata;
   }
