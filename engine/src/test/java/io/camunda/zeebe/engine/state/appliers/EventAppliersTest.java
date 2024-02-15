@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
@@ -166,6 +167,9 @@ public class EventAppliersTest {
         Intent.INTENT_CLASSES.stream()
             .flatMap(c -> Arrays.stream(c.getEnumConstants()))
             .filter(Intent::isEvent)
+            // `CompensationSubscriptionIntent` exists but isn't implemented yet, so we can't have a
+            // registered applier for it yet.
+            .filter(intent -> !(intent instanceof CompensationSubscriptionIntent))
             // CheckpointIntent is not handled by the engine
             .filter(intent -> !(intent instanceof CheckpointIntent));
 
