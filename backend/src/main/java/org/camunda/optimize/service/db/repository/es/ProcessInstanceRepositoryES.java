@@ -92,7 +92,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
   @Override
   public void bulkImport(final String bulkRequestName, final List<ImportRequestDto> importRequests) {
     esClient.executeImportRequestsAsBulk(
-      "Completed process instances",
+      bulkRequestName,
       importRequests,
       configurationService.getSkipDataAfterNestedDocLimitReached()
     );

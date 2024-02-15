@@ -74,14 +74,12 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
     osClient.doImportBulkRequestWithList(
       importItemName,
       processInstanceDtos,
-      dto -> UpdateOperation.<ProcessInstanceDto>of(operation ->
-                                                      operation.index(
-                                                        getProcessInstanceIndexAliasName(dto.getProcessDefinitionKey())
-                                                        )
-                                                        .id(dto.getProcessInstanceId())
-                                                        .script(createUpdateStateScript(dto.getState()))
-                                                        .upsert(dto)
-                                                        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+      dto -> UpdateOperation.<ProcessInstanceDto>of(
+        operation -> operation.index(getProcessInstanceIndexAliasName(dto.getProcessDefinitionKey()))
+          .id(dto.getProcessInstanceId())
+          .script(createUpdateStateScript(dto.getState()))
+          .upsert(dto)
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
       )._toBulkOperation(),
       configurationService.getSkipDataAfterNestedDocLimitReached(),
       importItemName
@@ -91,13 +89,12 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   @Override
   public void deleteByIds(final String index, String itemName, final List<String> processInstanceIds) {
     List<BulkOperation> bulkOperations = processInstanceIds.stream()
-      .map(id ->
-             BulkOperation.of(op ->
-                                op.delete(d ->
-                                            d.index(index)
-                                              .id(id)
-                                )
-             )
+      .map(
+        id -> BulkOperation.of(
+          op -> op.delete(
+            d -> d.index(index).id(id)
+          )
+        )
       )
       .toList();
 
