@@ -28,6 +28,7 @@ import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.metrics.RaftStartupMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartition;
@@ -49,6 +50,7 @@ import io.camunda.zeebe.util.health.HealthReport;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -142,6 +144,11 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   public CompletableFuture<RaftPartitionServer> leave() {
     return server.leave().thenApply(v -> this);
+  }
+
+  public CompletableFuture<RaftPartitionServer> forceReconfigure(
+      final Map<MemberId, Type> members) {
+    return server.forceConfigure(members).thenApply(v -> this);
   }
 
   public CompletableFuture<Void> stop() {
