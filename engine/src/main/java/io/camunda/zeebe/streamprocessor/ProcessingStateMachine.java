@@ -357,7 +357,7 @@ public final class ProcessingStateMachine {
           recordProcessors.stream()
               .filter(p -> p.accepts(command.getValueType()))
               .findFirst()
-              .orElseThrow(() -> new NoSuchProcessorException(command));
+              .orElseThrow(() -> NoSuchProcessorException.forRecord(command));
 
       currentProcessingResult = currentProcessor.process(command, processingResultBuilder);
 
