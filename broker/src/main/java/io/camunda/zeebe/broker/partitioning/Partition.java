@@ -130,44 +130,47 @@ final class Partition {
     final var result = concurrencyControl.<Partition>createFuture();
     concurrencyControl.run(
         () -> {
-          final var partitionDirectory = context.partitionDirectory();
           final var raftPartition = raftPartition();
           if (raftPartition == null) {
-            result.completeExceptionally(
-                new IllegalStateException("Raft partition is not available"));
+            result.completeExceptionally(errorPartitionNotAvailable("leave"));
             return;
           }
           raftPartition
               .leave()
               .whenComplete(
                   (leaveOk, leaveError) ->
-                      concurrencyControl.run(
-                          () -> {
-                            if (leaveError != null) {
-                              result.completeExceptionally(leaveError);
-                              return;
-                            }
-                            concurrencyControl.runOnCompletion(
-                                startupProcess.shutdown(concurrencyControl, context),
-                                (shutdownOk, shutdownError) -> {
-                                  if (shutdownError != null) {
-                                    result.completeExceptionally(shutdownError);
-                                    return;
-                                  }
-                                  try {
-                                    FileUtil.deleteFolderIfExists(partitionDirectory);
-                                  } catch (final Exception e) {
-                                    LOGGER.warn(
-                                        "Failed to delete partition directory {} after leaving. Data will remain until manually removed.",
-                                        partitionDirectory,
-                                        e);
-                                  }
-                                  result.complete(this);
-                                });
-                          }));
+                      concurrencyControl.run(() -> onPartitionLeaveCompleted(leaveError, result)));
         });
 
     return result;
+  }
+
+  private void onPartitionLeaveCompleted(
+      final Throwable leaveError, final ActorFuture<Partition> result) {
+    if (leaveError != null) {
+      result.completeExceptionally(leaveError);
+      return;
+    }
+
+    final var concurrencyControl = context.concurrencyControl();
+    final var partitionDirectory = context.partitionDirectory();
+    concurrencyControl.runOnCompletion(
+        startupProcess.shutdown(concurrencyControl, context),
+        (shutdownOk, shutdownError) -> {
+          if (shutdownError != null) {
+            result.completeExceptionally(shutdownError);
+            return;
+          }
+          try {
+            FileUtil.deleteFolderIfExists(partitionDirectory);
+          } catch (final Exception e) {
+            LOGGER.warn(
+                "Failed to delete partition directory {} after leaving. Data will remain until manually removed.",
+                partitionDirectory,
+                e);
+          }
+          result.complete(this);
+        });
   }
 
   ActorFuture<Void> reconfigurePriority(final int newPriority) {
@@ -177,8 +180,7 @@ final class Partition {
         () -> {
           final var raftPartition = raftPartition();
           if (raftPartition == null) {
-            result.completeExceptionally(
-                new IllegalStateException("Raft partition is not available"));
+            result.completeExceptionally(errorPartitionNotAvailable("reconfigure priority of"));
             return;
           }
           raftPartition
@@ -204,8 +206,7 @@ final class Partition {
         () -> {
           final var raftPartition = raftPartition();
           if (raftPartition == null) {
-            result.completeExceptionally(
-                new IllegalStateException("Raft partition is not available"));
+            result.completeExceptionally(errorPartitionNotAvailable("force reconfigure"));
             return;
           }
           // Here we assume that the members are all active, since we do not support PASSIVE members
@@ -226,6 +227,13 @@ final class Partition {
         });
 
     return result;
+  }
+
+  private IllegalStateException errorPartitionNotAvailable(final String operation) {
+    return new IllegalStateException(
+        String.format(
+            "Expected to %s partition %s, but raft partition is not available",
+            operation, context.partitionMetadata().id().id()));
   }
 
   ZeebePartition zeebePartition() {
