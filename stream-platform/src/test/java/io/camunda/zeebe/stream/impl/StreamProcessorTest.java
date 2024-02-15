@@ -205,6 +205,22 @@ public final class StreamProcessorTest {
         .untilAsserted(() -> assertThat(streamPlatform.getStreamProcessor().isFailed()).isTrue());
   }
 
+  @Test
+  void shouldFailOnEventWithoutProcessor() {
+    // given
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultRecordProcessor.accepts(any())).thenReturn(false);
+    streamPlatform.startStreamProcessorInReplayOnlyMode();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, Records.processInstance(1)));
+
+    // then
+    Awaitility.await("StreamProcessor fails eventually")
+        .untilAsserted(() -> assertThat(streamPlatform.getStreamProcessor().isFailed()).isTrue());
+  }
+
   @RegressionTest("https://github.com/camunda/zeebe/issues/13101")
   public void shouldUpdateLastProcessPositionEvenWhenProcessingFails() {
     // given
