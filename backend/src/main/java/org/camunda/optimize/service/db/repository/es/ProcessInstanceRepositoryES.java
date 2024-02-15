@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
@@ -18,6 +19,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
@@ -71,6 +73,28 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
       createUpdateStateScript(state),
       matchAllQuery(),
       getProcessInstanceIndexAliasName(definitionKey)
+    );
+  }
+
+  @Override
+  public void deleteByIds(final String index, final String itemName, final List<String> processInstanceIds) {
+    final BulkRequest bulkRequest = new BulkRequest();
+    processInstanceIds.forEach(
+      id -> bulkRequest.add(new DeleteRequest(index, id))
+    );
+    esClient.doBulkRequest(
+      bulkRequest,
+      index,
+      false
+    );
+  }
+
+  @Override
+  public void bulkImport(final String bulkRequestName, final List<ImportRequestDto> importRequests) {
+    esClient.executeImportRequestsAsBulk(
+      bulkRequestName,
+      importRequests,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 

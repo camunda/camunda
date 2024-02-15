@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.repository;
 
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 
 import java.util.List;
@@ -23,4 +24,8 @@ public interface ProcessInstanceRepository {
     final String definitionKey,
     final String state
   );
+
+  void deleteByIds(final String index, final String itemName, final List<String> processInstanceIds);
+
+  void bulkImport(final String bulkRequestName, final List<ImportRequestDto> importRequests);
 }

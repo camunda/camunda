@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.service.db.DatabaseClient;
+import org.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
@@ -46,7 +46,7 @@ public class CustomerOnboardingDataImportService {
   private final ConfigurationService configurationService;
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
-  private final DatabaseClient databaseClient;
+  private final ProcessInstanceRepository processInstanceRepository;
   private final Environment environment;
 
   private static final String CUSTOMER_ONBOARDING_DEFINITION = "customer_onboarding_definition.json";
@@ -171,19 +171,11 @@ public class CustomerOnboardingDataImportService {
       .collect(Collectors.toList());
     List<ImportRequestDto> completedProcessInstanceImports =
       completedProcessInstanceWriter.generateProcessInstanceImports(completedProcessInstances);
-    databaseClient.executeImportRequestsAsBulk(
-      "Completed process instances",
-      completedProcessInstanceImports,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+    processInstanceRepository.bulkImport("Completed process instances", completedProcessInstanceImports);
     List<ImportRequestDto> runningProcessInstanceImports =
       runningProcessInstanceWriter.generateProcessInstanceImports(runningProcessInstances);
     if (!runningProcessInstanceImports.isEmpty()) {
-      databaseClient.executeImportRequestsAsBulk(
-        "Running process instances",
-        runningProcessInstanceImports,
-        configurationService.getSkipDataAfterNestedDocLimitReached()
-      );
+      processInstanceRepository.bulkImport("Running process instances", runningProcessInstanceImports);
     }
   }
 

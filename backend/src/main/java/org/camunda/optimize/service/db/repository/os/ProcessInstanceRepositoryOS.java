@@ -7,6 +7,7 @@ package org.camunda.optimize.service.db.repository.os;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.repository.ProcessInstanceRepository;
@@ -14,6 +15,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -71,17 +74,39 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
     osClient.doImportBulkRequestWithList(
       importItemName,
       processInstanceDtos,
-      dto -> UpdateOperation.<ProcessInstanceDto>of(operation ->
-                                                      operation.index(
-                                                        getProcessInstanceIndexAliasName(dto.getProcessDefinitionKey())
-                                                        )
-                                                        .id(dto.getProcessInstanceId())
-                                                        .script(createUpdateStateScript(dto.getState()))
-                                                        .upsert(dto)
-                                                        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+      dto -> UpdateOperation.<ProcessInstanceDto>of(
+        operation -> operation.index(getProcessInstanceIndexAliasName(dto.getProcessDefinitionKey()))
+          .id(dto.getProcessInstanceId())
+          .script(createUpdateStateScript(dto.getState()))
+          .upsert(dto)
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
       )._toBulkOperation(),
       configurationService.getSkipDataAfterNestedDocLimitReached(),
       importItemName
+    );
+  }
+
+  @Override
+  public void deleteByIds(final String index, String itemName, final List<String> processInstanceIds) {
+    List<BulkOperation> bulkOperations = processInstanceIds.stream()
+      .map(
+        id -> BulkOperation.of(
+          op -> op.delete(
+            d -> d.index(index).id(id)
+          )
+        )
+      )
+      .toList();
+
+    osClient.doBulkRequest(new BulkRequest.Builder(), bulkOperations, itemName, false);
+  }
+
+  @Override
+  public void bulkImport(final String bulkRequestName, final List<ImportRequestDto> importRequests) {
+    osClient.executeImportRequestsAsBulk(
+      bulkRequestName,
+      importRequests,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 

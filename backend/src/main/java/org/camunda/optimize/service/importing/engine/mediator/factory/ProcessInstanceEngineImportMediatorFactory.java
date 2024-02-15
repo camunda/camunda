@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.DatabaseClient;
+import org.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -35,6 +36,7 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineIm
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ProcessInstanceRepository processInstanceRepository;
 
   public ProcessInstanceEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
@@ -44,13 +46,15 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineIm
                                                     final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                                     final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
                                                     final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                    final DatabaseClient databaseClient) {
+                                                    final DatabaseClient databaseClient,
+                                                    final ProcessInstanceRepository processInstanceRepository) {
     super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.businessKeyImportAdapterProvider = businessKeyImportAdapterProvider;
     this.processDefinitionResolverService = processDefinitionResolverService;
+    this.processInstanceRepository = processInstanceRepository;
   }
 
   @Override
@@ -73,7 +77,8 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineIm
         completedProcessInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         processDefinitionResolverService,
-        databaseClient
+        databaseClient,
+        processInstanceRepository
       ),
       configurationService,
       new BackoffCalculator(configurationService)
