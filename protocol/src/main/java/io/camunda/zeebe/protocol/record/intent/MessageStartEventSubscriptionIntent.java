@@ -31,6 +31,11 @@ public enum MessageStartEventSubscriptionIntent implements Intent {
     return value;
   }
 
+  @Override
+  public boolean isEvent() {
+    return true;
+  }
+
   public static Intent from(final short value) {
     switch (value) {
       case 0:

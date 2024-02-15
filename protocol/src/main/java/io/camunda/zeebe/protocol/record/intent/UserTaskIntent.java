@@ -83,6 +83,23 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   }
 
   @Override
+  public boolean isEvent() {
+    switch (this) {
+      case CREATING:
+      case CREATED:
+      case COMPLETING:
+      case COMPLETED:
+      case CANCELING:
+      case CANCELED:
+      case ASSIGNING:
+      case ASSIGNED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  @Override
   public boolean shouldBanInstanceOnError() {
     return shouldBanInstance;
   }

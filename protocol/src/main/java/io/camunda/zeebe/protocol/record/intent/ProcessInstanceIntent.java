@@ -93,6 +93,23 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
   }
 
   @Override
+  public boolean isEvent() {
+    switch (this) {
+      case SEQUENCE_FLOW_TAKEN:
+      case ELEMENT_ACTIVATING:
+      case ELEMENT_ACTIVATED:
+      case ELEMENT_COMPLETING:
+      case ELEMENT_COMPLETED:
+      case ELEMENT_TERMINATING:
+      case ELEMENT_TERMINATED:
+      case ELEMENT_MIGRATED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  @Override
   public boolean shouldBanInstanceOnError() {
     return shouldBanInstance;
   }

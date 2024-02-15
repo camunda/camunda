@@ -8,17 +8,21 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
+import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForVersion;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -30,16 +34,22 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Applies state changes from events to the {@link MutableProcessingState}.
@@ -57,6 +67,8 @@ public final class EventAppliers implements EventApplier {
     registerProcessInstanceEventAppliers(state);
     registerProcessInstanceCreationAppliers(state);
     registerProcessInstanceModificationAppliers(state);
+    registerProcessInstanceMigrationAppliers();
+    register(ProcessInstanceResultIntent.COMPLETED, NOOP_EVENT_APPLIER);
 
     registerProcessAppliers(state);
     register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBannedInstanceState()));
@@ -76,14 +88,17 @@ public final class EventAppliers implements EventApplier {
 
     registerDecisionAppliers(state);
     registerDecisionRequirementsAppliers(state);
+    registerDecisionEvaluationAppliers();
 
     registerFormAppliers(state);
 
     registerUserTaskAppliers(state);
 
-    registerSignalSubscriptionAppliers(state);
+    registerSignalAppliers(state);
 
     registerCommandDistributionAppliers(state);
+    registerEscalationAppliers();
+    registerResourceDeletionAppliers();
     return this;
   }
 
@@ -120,6 +135,7 @@ public final class EventAppliers implements EventApplier {
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
     register(VariableIntent.MIGRATED, new VariableMigratedApplier());
+    register(VariableDocumentIntent.UPDATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessInstanceEventAppliers(final MutableProcessingState state) {
@@ -177,6 +193,10 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceModificationIntent.MODIFIED,
         new ProcessInstanceModifiedEventApplier(
             state.getElementInstanceState(), state.getProcessState()));
+  }
+
+  private void registerProcessInstanceMigrationAppliers() {
+    register(ProcessInstanceMigrationIntent.MIGRATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerJobIntentEventAppliers(final MutableProcessingState state) {
@@ -275,13 +295,14 @@ public final class EventAppliers implements EventApplier {
         new ProcessEventTriggeredApplier(state.getEventScopeInstanceState()));
   }
 
-  private void registerSignalSubscriptionAppliers(final MutableProcessingState state) {
+  private void registerSignalAppliers(final MutableProcessingState state) {
     register(
         SignalSubscriptionIntent.CREATED,
         new SignalSubscriptionCreatedApplier(state.getSignalSubscriptionState()));
     register(
         SignalSubscriptionIntent.DELETED,
         new SignalSubscriptionDeletedApplier(state.getSignalSubscriptionState()));
+    register(SignalIntent.BROADCASTED, NOOP_EVENT_APPLIER);
   }
 
   private void registerDecisionAppliers(final MutableProcessingState state) {
@@ -296,6 +317,11 @@ public final class EventAppliers implements EventApplier {
     register(
         DecisionRequirementsIntent.DELETED,
         new DecisionRequirementsDeletedApplier(state.getDecisionState()));
+  }
+
+  private void registerDecisionEvaluationAppliers() {
+    register(DecisionEvaluationIntent.EVALUATED, NOOP_EVENT_APPLIER);
+    register(DecisionEvaluationIntent.FAILED, NOOP_EVENT_APPLIER);
   }
 
   private void registerFormAppliers(final MutableProcessingState state) {
@@ -330,13 +356,38 @@ public final class EventAppliers implements EventApplier {
         new CommandDistributionFinishedApplier(distributionState));
   }
 
+  private void registerEscalationAppliers() {
+    register(EscalationIntent.ESCALATED, NOOP_EVENT_APPLIER);
+    register(EscalationIntent.NOT_ESCALATED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerResourceDeletionAppliers() {
+    register(ResourceDeletionIntent.DELETING, NOOP_EVENT_APPLIER);
+    register(ResourceDeletionIntent.DELETED, NOOP_EVENT_APPLIER);
+  }
+
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
     register(intent, RecordMetadata.DEFAULT_RECORD_VERSION, applier);
   }
 
   <I extends Intent> void register(
       final I intent, final int version, final TypedEventApplier<I, ?> applier) {
-    mapping.computeIfAbsent(intent, unused -> new HashMap<>()).put(version, applier);
+    Objects.requireNonNull(intent, "Intent must not be null");
+    Objects.requireNonNull(applier, "Applier must not be null");
+    if (version < 1) {
+      throw new IllegalArgumentException("Version must be greater than 0");
+    }
+    if (!intent.isEvent()) {
+      throw new IllegalArgumentException("Only event intents can be registered");
+    }
+
+    final var previousApplier =
+        mapping.computeIfAbsent(intent, unused -> new HashMap<>()).putIfAbsent(version, applier);
+    if (previousApplier != null) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Applier for intent '%s' and version '%d' is already registered", intent, version));
+    }
   }
 
   @Override
@@ -348,11 +399,17 @@ public final class EventAppliers implements EventApplier {
 
   @Override
   public void applyState(
-      final long key, final Intent intent, final RecordValue value, final int recordVersion) {
-    final var eventApplier =
-        mapping
-            .getOrDefault(intent, new HashMap<>())
-            .getOrDefault(recordVersion, NOOP_EVENT_APPLIER);
-    eventApplier.applyState(key, value);
+      final long key, final Intent intent, final RecordValue value, final int recordVersion)
+      throws NoSuchEventApplier {
+    final var applierForIntent = mapping.get(intent);
+    if (applierForIntent == null) {
+      throw new NoApplierForIntent(intent);
+    }
+    final var applierForVersion = applierForIntent.get(recordVersion);
+    if (applierForVersion == null) {
+      throw new NoApplierForVersion(intent, recordVersion, getLatestVersion(intent));
+    }
+
+    applierForVersion.applyState(key, value);
   }
 }
