@@ -129,6 +129,7 @@ it('should evaluate the report on mount if the config is complete, but the resul
   evaluateReport.mockReturnValue(report);
 
   const node = shallow(<ReportEdit {...props} report={{...report, result: null}} />);
+  node.setState({shouldAutoReloadPreview: true});
 
   expect(node.find('.loading')).toExist();
   expect(evaluateReport).toHaveBeenCalled();
@@ -335,6 +336,7 @@ it('should go back to a custom route after canceling if provided as URL Search P
 
 it('should show loading indicator if specified by children components', () => {
   const node = shallow(<ReportEdit {...props} />);
+  node.setState({shouldAutoReloadPreview: true});
 
   node.find(ReportControlPanel).prop('setLoading')(true);
 
