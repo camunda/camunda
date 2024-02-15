@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *   partition.stop().join();
  * </pre>
  */
-public final class Partition {
+final class Partition {
   private static final Logger LOGGER = LoggerFactory.getLogger(Partition.class);
 
   private final PartitionStartupContext context;
@@ -61,7 +61,7 @@ public final class Partition {
    * @param context a populated context that the partition can use.
    * @return a partition that can be started.
    */
-  public static Partition bootstrapping(final PartitionStartupContext context) {
+  static Partition bootstrapping(final PartitionStartupContext context) {
     return new Partition(
         context,
         new StartupProcess<>(
@@ -74,7 +74,7 @@ public final class Partition {
                 new PartitionRegistrationStep())));
   }
 
-  public static Partition joining(final PartitionStartupContext context) {
+  static Partition joining(final PartitionStartupContext context) {
     return new Partition(
         context,
         new StartupProcess<>(
@@ -86,7 +86,7 @@ public final class Partition {
                 new PartitionRegistrationStep())));
   }
 
-  public ActorFuture<Partition> start() {
+  ActorFuture<Partition> start() {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Partition>createFuture();
     concurrencyControl.run(
@@ -105,7 +105,7 @@ public final class Partition {
     return result;
   }
 
-  public ActorFuture<Partition> stop() {
+  ActorFuture<Partition> stop() {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Partition>createFuture();
     concurrencyControl.run(
@@ -125,7 +125,7 @@ public final class Partition {
   }
 
   /** Requests to leave the partition and shuts down on success. Partition data is not deleted. */
-  public ActorFuture<Partition> leave() {
+  ActorFuture<Partition> leave() {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Partition>createFuture();
     concurrencyControl.run(
@@ -170,7 +170,7 @@ public final class Partition {
     return result;
   }
 
-  public ActorFuture<Void> reconfigurePriority(final int newPriority) {
+  ActorFuture<Void> reconfigurePriority(final int newPriority) {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(
@@ -197,7 +197,7 @@ public final class Partition {
     return result;
   }
 
-  public ActorFuture<Void> forceReconfigure(final Collection<MemberId> members) {
+  ActorFuture<Void> forceReconfigure(final Collection<MemberId> members) {
     final var concurrencyControl = context.concurrencyControl();
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(
@@ -228,15 +228,15 @@ public final class Partition {
     return result;
   }
 
-  public ZeebePartition zeebePartition() {
+  ZeebePartition zeebePartition() {
     return context.zeebePartition();
   }
 
-  public RaftPartition raftPartition() {
+  RaftPartition raftPartition() {
     return context.raftPartition();
   }
 
-  public int id() {
+  int id() {
     return context.partitionMetadata().id().id();
   }
 }
