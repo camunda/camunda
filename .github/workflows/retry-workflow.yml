@@ -1,6 +1,8 @@
 # This workflow receives a run ID and triggers a retry of its failed jobs.
 # This is useful, for example, to retry dependency update PRs automatically in case of network
 # errors, flaky tests, etc.
+name: Retry Workflow Run
+
 on:
   workflow_dispatch:
     inputs:
