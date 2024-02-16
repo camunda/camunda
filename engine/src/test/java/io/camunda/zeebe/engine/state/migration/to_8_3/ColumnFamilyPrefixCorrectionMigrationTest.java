@@ -295,6 +295,22 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       Assertions.assertThat(
               correctPiKeyByProcDefKeyColumnFamily.exists(processInstanceKeyByProcessDefinitionKey))
           .isTrue();
+
+      decisionRequirementsId.wrapString("drg");
+      decisionRequirementsVersion.wrapInt(1);
+      Assertions.assertThat(
+              correctDecisionRequirementsKeyColumnFamily.get(decisionRequirementsIdAndVersion))
+          .isNotNull()
+          .extracting(DbLong::getValue)
+          .isEqualTo(543L);
+
+      decisionRequirementsId.wrapString("drg2");
+      decisionRequirementsVersion.wrapInt(2);
+      Assertions.assertThat(
+              correctDecisionRequirementsKeyColumnFamily.get(decisionRequirementsIdAndVersion))
+          .isNotNull()
+          .extracting(DbLong::getValue)
+          .isEqualTo(987L);
     }
   }
 
