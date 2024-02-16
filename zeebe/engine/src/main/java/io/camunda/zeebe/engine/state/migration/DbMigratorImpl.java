@@ -94,24 +94,22 @@ public class DbMigratorImpl implements DbMigrator {
     LOGGER.info(
         "Starting processing of migration tasks (use LogLevel.DEBUG for more details) ... ");
     LOGGER.debug(
-        "Found "
-            + migrationTasks.size()
-            + " migration tasks: "
-            + migrationTasks.stream()
-                .map(MigrationTask::getIdentifier)
-                .collect(Collectors.joining(", ")));
+        "Found {} migration tasks: {}",
+        migrationTasks.size(),
+        migrationTasks.stream()
+            .map(MigrationTask::getIdentifier)
+            .collect(Collectors.joining(", ")));
   }
 
   private void logSummary(final List<MigrationTask> migrationTasks) {
     LOGGER.info(
         "Completed processing of migration tasks (use LogLevel.DEBUG for more details) ... ");
     LOGGER.debug(
-        "Executed "
-            + migrationTasks.size()
-            + " migration tasks: "
-            + migrationTasks.stream()
-                .map(MigrationTask::getIdentifier)
-                .collect(Collectors.joining(", ")));
+        "Executed {} migration tasks: {}",
+        migrationTasks.size(),
+        migrationTasks.stream()
+            .map(MigrationTask::getIdentifier)
+            .collect(Collectors.joining(", ")));
   }
 
   private boolean handleMigrationTask(
@@ -128,24 +126,19 @@ public class DbMigratorImpl implements DbMigrator {
   private void logMigrationSkipped(
       final MigrationTask migrationTask, final int index, final int total) {
     LOGGER.info(
-        "Skipping "
-            + migrationTask.getIdentifier()
-            + " migration ("
-            + index
-            + "/"
-            + total
-            + ").  It was determined it does not need to run right now.");
+        "Skipping {} migration ({}/{}).  It was determined it does not need to run right now.",
+        migrationTask.getIdentifier(),
+        index,
+        total);
   }
 
   private void runMigration(final MigrationTask migrationTask, final int index, final int total) {
-    LOGGER.info(
-        "Starting " + migrationTask.getIdentifier() + " migration (" + index + "/" + total + ")");
+    LOGGER.info("Starting {} migration ({}/{})", migrationTask.getIdentifier(), index, total);
     final var startTime = System.currentTimeMillis();
     migrationTask.runMigration(processingState);
     final var duration = System.currentTimeMillis() - startTime;
 
-    LOGGER.debug(migrationTask.getIdentifier() + " migration completed in " + duration + " ms.");
-    LOGGER.info(
-        "Finished " + migrationTask.getIdentifier() + " migration (" + index + "/" + total + ")");
+    LOGGER.debug("{} migration completed in {} ms.", migrationTask.getIdentifier(), duration);
+    LOGGER.info("Finished {} migration ({}/{})", migrationTask.getIdentifier(), index, total);
   }
 }
