@@ -71,7 +71,9 @@ class MetricsExporterTest {
   @Test
   void shouldCleanupProcessInstancesWithSameStartTime() {
     // given
-    final var exporter = new MetricsExporter(new ExecutionLatencyMetrics());
+    final var processCache = new TtlKeyCache();
+    final var exporter =
+        new MetricsExporter(new ExecutionLatencyMetrics(), processCache, new TtlKeyCache());
     final var controller = new ExporterTestController();
     exporter.open(controller);
     exporter.export(
@@ -97,13 +99,15 @@ class MetricsExporterTest {
     controller.runScheduledTasks(Duration.ofHours(1));
 
     // then
-    assertThat(exporter.cachedProcessInstanceCount()).isZero();
+    assertThat(processCache.isEmpty()).isTrue();
   }
 
   @Test
   void shouldCleanupJobWithSameStartTime() {
     // given
-    final var exporter = new MetricsExporter(new ExecutionLatencyMetrics());
+    final var jobCache = new TtlKeyCache();
+    final var exporter =
+        new MetricsExporter(new ExecutionLatencyMetrics(), new TtlKeyCache(), jobCache);
     final var controller = new ExporterTestController();
     exporter.open(controller);
     exporter.export(
@@ -127,7 +131,7 @@ class MetricsExporterTest {
     controller.runScheduledTasks(Duration.ofHours(1));
 
     // then
-    assertThat(exporter.cachedJobCount()).isZero();
+    assertThat(jobCache.isEmpty()).isTrue();
   }
 
   @Nested
