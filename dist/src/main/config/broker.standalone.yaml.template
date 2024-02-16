@@ -899,6 +899,12 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_PROCESSING_ENABLEASYNCSCHEDULEDTASKS
       # enableAsyncScheduledTasks: true
 
+      # Allows to skip certain commands by their position. This is useful for debugging and data recovery.
+      # It is not recommended to use this in production.
+      # The value is a comma-separated list of positions to skip. Whitespace is ignored.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_PROCESSING_SKIPPOSITIONS
+      # skipPositions: ""
+
     # experimental
       # Be aware that all configuration's which are part of the experimental section
       # are subject to change and can be dropped at any time.
