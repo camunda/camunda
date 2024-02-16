@@ -54,6 +54,21 @@
       <artifactId>zeebe-broker-client</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-auth</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-value</artifactId>
+    </dependency>
+
     <!-- rest api dependencies -->
     <dependency>
       <groupId>org.springframework</groupId>
@@ -73,6 +88,11 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
     </dependency>
 
     <dependency>
@@ -126,6 +146,30 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-asserts</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.reactivestreams</groupId>
+      <artifactId>reactive-streams</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- required due to ArchUnit presence -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -175,6 +219,7 @@
               <generatorName>spring</generatorName>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.gateway.protocol.rest</modelPackage>
+              <schemaMappings>ProblemDetail=org.springframework.http.ProblemDetail</schemaMappings>
               <generateApis>false</generateApis>
               <generateSupportingFiles>false</generateSupportingFiles>
               <generateModels>true</generateModels>
