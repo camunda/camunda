@@ -628,7 +628,6 @@ jobs:
       - uses: actions/checkout@v4
       - id: approve-and-merge-backport-renovate
         name: Approve and merge backport PR
-        if: github.actor == 'backport-action' || github.actor == 'renovate[bot]'
         run: |
           gh pr review ${{ github.event.pull_request.number }} --approve
           # Call the API directly to work around https://github.com/cli/cli/issues/8352
