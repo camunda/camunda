@@ -25,6 +25,7 @@ import io.camunda.zeebe.topology.state.CompletedChange;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.util.Either;
@@ -33,26 +34,26 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 
 final class TopologyChangeCoordinatorImplTest {
   private final TestClusterTopologyManager clusterTopologyManager =
       new TestClusterTopologyManager();
-  private final Function<MemberId, ActorFuture<ClusterTopology>> syncRequester =
-      ignore ->
-          TestActorFuture.failedFuture(new UnsupportedOperationException("Not implemented yet"));
+  final TopologyChangeCoordinatorImpl coordinator =
+      new TopologyChangeCoordinatorImpl(
+          clusterTopologyManager, MemberId.from("0"), new TestConcurrencyControl());
+
+  private final ClusterTopology initialTopology =
+      ClusterTopology.init()
+          .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()));
 
   @Test
   void shouldFailOnInvalidChanges() {
     // given
-    clusterTopologyManager.setClusterTopology(ClusterTopology.init());
-    final var coordinator =
-        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
+    clusterTopologyManager.setClusterTopology(initialTopology);
 
     // when
-
     final var applyFuture =
         coordinator.applyOperations(
             getTransformer(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
@@ -73,14 +74,13 @@ final class TopologyChangeCoordinatorImplTest {
   @Test
   void shouldFailOnSecondInvalidOperation() {
     // given
+
     clusterTopologyManager.setClusterTopology(
-        ClusterTopology.init()
+        initialTopology
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .updateMember(MemberId.from("1"), m -> m.addPartition(1, PartitionState.active(1)))
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()))
             .updateMember(MemberId.from("2"), m -> m.addPartition(1, PartitionState.active(1))));
-    final var coordinator =
-        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
 
     // when
 
@@ -105,10 +105,8 @@ final class TopologyChangeCoordinatorImplTest {
   void shouldFailIfAnotherTopologyChangeIsInProgress() {
     // given
     clusterTopologyManager.setClusterTopology(
-        ClusterTopology.init()
-            .startTopologyChange(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
-    final var coordinator =
-        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
+        initialTopology.startTopologyChange(
+            List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
 
     // when
     final var applyFuture =
@@ -125,19 +123,16 @@ final class TopologyChangeCoordinatorImplTest {
   @Test
   void shouldStartTopologyChanges() {
     // given
-    final ClusterTopology initialTopology =
-        ClusterTopology.init()
+    final ClusterTopology topology =
+        initialTopology
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(
                 MemberId.from("2"),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
-    clusterTopologyManager.setClusterTopology(initialTopology);
+    clusterTopologyManager.setClusterTopology(topology);
 
     final List<TopologyChangeOperation> operations =
         List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
-
-    final var coordinator =
-        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
 
     // when
     final var applyFuture = coordinator.applyOperations(getTransformer(operations));
@@ -152,19 +147,16 @@ final class TopologyChangeCoordinatorImplTest {
   @Test
   void shouldNotStartOnDryRun() {
     // given
-    final ClusterTopology initialTopology =
-        ClusterTopology.init()
+    final ClusterTopology topology =
+        initialTopology
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(
                 MemberId.from("2"),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
-    clusterTopologyManager.setClusterTopology(initialTopology);
+    clusterTopologyManager.setClusterTopology(topology);
 
     final List<TopologyChangeOperation> operations =
         List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
-
-    final var coordinator =
-        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
 
     // when
     final var simulationResult = coordinator.simulateOperations(getTransformer(operations));
@@ -173,15 +165,13 @@ final class TopologyChangeCoordinatorImplTest {
     assertThat(simulationResult).succeedsWithin(Duration.ofMillis(100));
     ClusterTopologyAssert.assertThatClusterTopology(
             clusterTopologyManager.getClusterTopology().join())
-        .hasSameTopologyAs(initialTopology);
+        .hasSameTopologyAs(topology);
   }
 
   @Test
   void shouldFailDryRunWithValidationError() {
     // given
-    clusterTopologyManager.setClusterTopology(ClusterTopology.init());
-    final var coordinator =
-        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
+    clusterTopologyManager.setClusterTopology(initialTopology);
 
     // when
 
@@ -201,19 +191,17 @@ final class TopologyChangeCoordinatorImplTest {
   @Test
   void shouldCancelOngoingChange() {
     // given
-    final ClusterTopology initialTopology =
-        ClusterTopology.init()
+    final ClusterTopology topology =
+        initialTopology
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(
                 MemberId.from("2"),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
-    clusterTopologyManager.setClusterTopology(initialTopology);
+    clusterTopologyManager.setClusterTopology(topology);
 
     final List<TopologyChangeOperation> operations =
         List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
 
-    final var coordinator =
-        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
     final var applyResult = coordinator.applyOperations(getTransformer(operations)).join();
 
     // when
@@ -231,25 +219,23 @@ final class TopologyChangeCoordinatorImplTest {
     assertThat(cancelledTopology.members())
         .usingRecursiveComparison()
         .ignoringFieldsOfTypes(Instant.class)
-        .isEqualTo(initialTopology.members());
+        .isEqualTo(topology.members());
   }
 
   @Test
   void shouldNotCancelOngoingChangeIdIsDifferent() {
     // given
-    final ClusterTopology initialTopology =
-        ClusterTopology.init()
+    final ClusterTopology topology =
+        initialTopology
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(
                 MemberId.from("2"),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
-    clusterTopologyManager.setClusterTopology(initialTopology);
+    clusterTopologyManager.setClusterTopology(topology);
 
     final List<TopologyChangeOperation> operations =
         List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
 
-    final var coordinator =
-        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
     final var applyResult = coordinator.applyOperations(getTransformer(operations)).join();
 
     // when
@@ -261,6 +247,29 @@ final class TopologyChangeCoordinatorImplTest {
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(InvalidRequest.class)
         .withMessageContaining("it is not the current change");
+  }
+
+  @Test
+  void shouldRejectIfTheMemberIsNotTheCoordinator() {
+    // given
+    final ClusterTopology topologyWithoutMember0 =
+        ClusterTopology.init()
+            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
+    clusterTopologyManager.setClusterTopology(topologyWithoutMember0);
+
+    final List<TopologyChangeOperation> operations =
+        List.of(new MemberJoinOperation(MemberId.from("3")));
+
+    // when
+    final var applyFuture = coordinator.applyOperations(getTransformer(operations));
+
+    // then
+    assertThat(applyFuture)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(TopologyRequestFailedException.InternalError.class)
+        .withMessageContaining("The broker '0' is not the coordinator.");
   }
 
   private static final class TestClusterTopologyManager implements ClusterTopologyManager {
