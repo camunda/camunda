@@ -830,11 +830,11 @@
               },
               {
                 "color": "yellow",
-                "value": 0.2
+                "value": 0.4
               },
               {
                 "color": "red",
-                "value": 0.3
+                "value": 0.6
               }
             ]
           },
@@ -918,11 +918,11 @@
               },
               {
                 "color": "yellow",
-                "value": 0.3
+                "value": 0.6
               },
               {
                 "color": "red",
-                "value": 0.6
+                "value": 0.8
               }
             ]
           },
@@ -2178,11 +2178,11 @@
               },
               {
                 "color": "yellow",
-                "value": 0.3
+                "value": 0.4
               },
               {
                 "color": "red",
-                "value": 0.5
+                "value": 0.6
               }
             ]
           },
@@ -2266,11 +2266,11 @@
               },
               {
                 "color": "yellow",
-                "value": 0.3
+                "value": 0.6
               },
               {
                 "color": "red",
-                "value": 0.6
+                "value": 0.8
               }
             ]
           },
