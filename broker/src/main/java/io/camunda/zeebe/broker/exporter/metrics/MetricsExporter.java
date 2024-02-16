@@ -56,7 +56,10 @@ public class MetricsExporter implements Exporter {
   }
 
   public MetricsExporter(final ExecutionLatencyMetrics executionLatencyMetrics) {
-    this(executionLatencyMetrics, new TtlKeyCache(), new TtlKeyCache());
+    this(
+        executionLatencyMetrics,
+        new TtlKeyCache(TIME_TO_LIVE.toMillis()),
+        new TtlKeyCache(TIME_TO_LIVE.toMillis()));
   }
 
   @VisibleForTesting
