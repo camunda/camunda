@@ -20,6 +20,7 @@ import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
@@ -328,8 +329,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
-  public String getElasticsearchVersion() throws IOException {
-    return null;
+  public String getDatabaseVersion() throws IOException {
+    return getOpenSearchClient().info().version().number();
   }
 
   @Override
@@ -631,6 +632,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
     log.debug("Updated [{}] {}.", taskStatus.updated(), updateItemIdentifier);
     return taskStatus.updated() > 0L;
+  }
+
+  @Override
+  public DatabaseType getDatabaseVendor() {
+    return DatabaseType.OPENSEARCH;
   }
 
   private static Optional<Integer> taskProgress(GetTasksResponse taskResponse) {

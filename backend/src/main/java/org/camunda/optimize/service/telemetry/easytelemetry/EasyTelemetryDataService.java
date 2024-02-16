@@ -91,13 +91,19 @@ public class EasyTelemetryDataService {
   }
 
   private DatabaseDto getDatabaseData() {
-    String esVersion = null;
+    String dbVersion = null;
+    String dbVendor = null;
     try {
-      esVersion = databaseClient.getElasticsearchVersion();
+      dbVersion = databaseClient.getDatabaseVersion();
+      dbVendor = databaseClient.getDatabaseVendor().toString();
     } catch (IOException e) {
-      log.info("Failed to retrieve Elasticsearch version for telemetry data.");
+      log.info("Failed to retrieve Database version and vendor for telemetry data.");
     }
-    return DatabaseDto.builder().version(Optional.ofNullable(esVersion).orElse(INFORMATION_UNAVAILABLE_STRING)).build();
+    return DatabaseDto.builder()
+      .version(Optional.ofNullable(dbVersion).orElse(INFORMATION_UNAVAILABLE_STRING))
+      .vendor(Optional.ofNullable(dbVendor)
+                .orElse(INFORMATION_UNAVAILABLE_STRING))
+      .build();
   }
 
   private LicenseKeyDto getLicenseKeyData() {

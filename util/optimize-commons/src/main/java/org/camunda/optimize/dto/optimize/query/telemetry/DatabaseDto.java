@@ -19,8 +19,7 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 @Data
 public class DatabaseDto implements OptimizeDto {
   @NonNull
-  @Builder.Default
-  private String vendor = "elasticsearch";
+  private String vendor;
   @NonNull
   private String version;
 }

@@ -29,6 +29,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -46,6 +47,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
@@ -59,6 +61,7 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
+@Tag(OPENSEARCH_PASSING)
 public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
 
   private static final String SECOND_TENANT = "secondTenant";
@@ -169,6 +172,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void changeInTemplateCausesRefreshOfDashboard() {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
@@ -278,6 +282,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void instantPreviewReportsRespectPermissions() {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
@@ -438,6 +443,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
 
   @ParameterizedTest
   @MethodSource("templateAndExpectedLocalizedReportNames")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void instantPreviewDashboardAndReportNamesAreLocalized(final String template, final String locale,
                                                                 final String expectedDashboardName,
                                                                 final Set<String> expectedReportNames) {
@@ -543,6 +549,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void savedInstantPreviewReportCanBeEvaluatedAndIncludesAllTenants() {
     // given
     engineIntegrationExtension.createTenant(FIRST_TENANT);
@@ -610,6 +617,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void savedInstantPreviewReportCanBeEvaluatedAndExcludesUnauthorizedTenants() {
     // given
     engineIntegrationExtension.createTenant(FIRST_TENANT);
@@ -658,6 +666,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void allDashboardTemplatesAreValid() {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));

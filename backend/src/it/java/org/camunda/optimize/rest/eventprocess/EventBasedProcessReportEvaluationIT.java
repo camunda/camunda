@@ -58,7 +58,7 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .singleElement()
       .satisfies(processInstanceDto -> assertProcessInstance(
@@ -114,7 +114,7 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
     executeImportCycle();
 
     // when a report that uses the definition for that instance is evaluated
-    final EventProcessInstanceDto savedInstance = getEventProcessInstancesFromElasticsearch().get(0);
+    final EventProcessInstanceDto savedInstance = getEventProcessInstancesFromDatabase().get(0);
     ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder.createReportData()
       .setProcessDefinitionKey(savedInstance.getProcessDefinitionKey())
       .setProcessDefinitionVersion(savedInstance.getProcessDefinitionVersion())

@@ -67,7 +67,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)).isNotEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId)).isNotEmpty();
   }
 
   @Test
@@ -96,8 +96,8 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
 
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId1)).isNotEmpty();
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId2)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId1)).isNotEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId2)).isEmpty();
   }
 
   @ParameterizedTest(name = "Event process publish state is deleted on {0}.")
@@ -121,7 +121,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId)).isEmpty();
   }
 
   @ParameterizedTest(name = "Only expected event publish state is deleted on {0}, other is still present.")
@@ -147,7 +147,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId2)).isNotEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId2)).isNotEmpty();
   }
 
   @Test
@@ -163,7 +163,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // then
     final EventProcessMappingResponseDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessMappingId);
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
       .usingRecursiveComparison()
@@ -229,7 +229,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when the first import cycle completes the status has not been updated yet
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
@@ -239,7 +239,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // so the publish progress is updated accordingly
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 25.0D);
@@ -248,7 +248,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // publish progress is updated accordingly
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 66.6D);
@@ -256,7 +256,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when the fourth import cycle completes the status is updated to Published as all events have been processed
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISHED)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 100.0D);
@@ -300,7 +300,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // then
     final EventProcessMappingResponseDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessMappingId);
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
       .usingRecursiveComparison()
@@ -358,7 +358,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // then
     final EventProcessMappingResponseDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessMappingId);
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
       .usingRecursiveComparison()
@@ -438,7 +438,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when the first import cycle completes the status has not been updated yet
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
@@ -448,7 +448,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // so the publish progress is updated accordingly
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 50.0);
@@ -456,7 +456,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when the third import cycle completes the status is updated to Published as all events have been processed
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISHED)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 100.0D);
@@ -509,17 +509,17 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when the first import cycle completes the status has not been updated yet
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
 
     // when the second import cycle completes the publish state will be updated
     executeImportCycle();
-    final EventProcessPublishStateDto publishState = getEventProcessPublishStateDtoFromElasticsearch(
+    final EventProcessPublishStateDto publishState = getEventProcessPublishStateDtoFromDatabase(
       eventProcessMappingId).get();
     // then no events have been correlated
-    assertThat(getEventProcessInstancesFromElasticsearchForProcessPublishStateId(publishState.getId())).isEmpty();
+    assertThat(getEventProcessInstancesFromDatabaseForProcessPublishStateId(publishState.getId())).isEmpty();
     // then the import source last imported timestamp reflects the latest imported event
     assertThat(publishState.getEventImportSources()
                  .get(0)
@@ -555,7 +555,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // then
     final EventProcessMappingResponseDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
       eventProcessMappingId);
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
       .usingRecursiveComparison()
@@ -651,7 +651,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when the first import cycle completes the status has not been updated yet
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
@@ -661,7 +661,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // so the publish progress is updated accordingly
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       // The camunda event source is 50% published and the external event source is 33.3% published, so the average
@@ -672,7 +672,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // each source so the publish progress is updated accordingly
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       // The camunda event source is 100% published and the external event source is 66.6% published, so the average
@@ -682,7 +682,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when the fourth import cycle completes the status is updated to Published as all events have been processed
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISHED)
       // both sources are now 100% published so the average will be 100%
@@ -735,7 +735,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when the first import cycle completes the status has not been updated yet
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
@@ -745,7 +745,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // so the publish progress is updated accordingly
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 50.0D);
@@ -756,7 +756,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     executeImportCycle();
     // then
     final EventProcessPublishStateDto finalPublishState =
-      getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)
+      getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId)
         .orElseThrow(() -> new OptimizeIntegrationTestException("Cannot get publish state"));
     assertThat(finalPublishState)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISHED)
@@ -764,7 +764,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .extracting(EventProcessPublishStateDto::getEventImportSources).asList().hasSize(1);
     // and the event instance has all expected correlated events
     final List<EventProcessInstanceDto> eventInstances =
-      getEventProcessInstancesFromElasticsearchForProcessPublishStateId(finalPublishState.getId());
+      getEventProcessInstancesFromDatabaseForProcessPublishStateId(finalPublishState.getId());
     assertThat(eventInstances)
       .singleElement()
       .extracting(ProcessInstanceDto::getFlowNodeInstances)
@@ -845,7 +845,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // one for the camunda source, and another for the two external group event sources
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
@@ -855,7 +855,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // so the publish progress is updated accordingly
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       // The camunda event source is 25% published and the external event source is 33.3% published, so the average
@@ -866,7 +866,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // each source so the publish progress is updated accordingly
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       // The camunda event source is 50% published and the external event source is 66.6% published, so the average
@@ -877,7 +877,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     executeImportCycle();
     // then
     final EventProcessPublishStateDto publishedMapping =
-      getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)
+      getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId)
         .orElseThrow(() -> new OptimizeIntegrationTestException("Cannot get published state"));
     assertThat(publishedMapping.getEventImportSources()).hasSize(2);
     assertThat(publishedMapping)
@@ -886,7 +886,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 100.0D);
     // and the event instance has all expected correlated events
     final List<EventProcessInstanceDto> eventInstances =
-      getEventProcessInstancesFromElasticsearchForProcessPublishStateId(publishedMapping.getId());
+      getEventProcessInstancesFromDatabaseForProcessPublishStateId(publishedMapping.getId());
     assertThat(eventInstances)
       .singleElement()
       .extracting(ProcessInstanceDto::getFlowNodeInstances)

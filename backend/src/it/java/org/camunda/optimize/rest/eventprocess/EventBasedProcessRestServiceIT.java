@@ -900,7 +900,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(storedEventProcessMapping.getPublishingProgress()).isEqualTo(0.0D);
 
     final Optional<EventProcessPublishStateDto> publishStateDto =
-      getEventProcessPublishStateDtoFromElasticsearch(
+      getEventProcessPublishStateDtoFromDatabase(
         eventProcessId);
     assertThat(publishStateDto).get()
       .usingRecursiveComparison().ignoringFields(
@@ -970,7 +970,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(republishedEventProcessMapping.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
     assertThat(republishedEventProcessMapping.getPublishingProgress()).isEqualTo(0.0D);
 
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).get()
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessId)).get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.xml, updateDto.getXml())
       .hasFieldOrPropertyWithValue(
         EventProcessPublishStateDto.Fields.publishDateTime,
@@ -998,7 +998,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(actual.getState()).isEqualTo(EventProcessState.UNMAPPED);
     assertThat(actual.getPublishingProgress()).isNull();
 
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessId)).isEmpty();
   }
 
   @Test
@@ -1024,7 +1024,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(actual.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
     assertThat(actual.getPublishingProgress()).isEqualTo(0.0D);
 
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).get()
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessId)).get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishDateTime, firstPublishDate);
   }
 
@@ -1059,7 +1059,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(actual.getState()).isEqualTo(EventProcessState.MAPPED);
     assertThat(actual.getPublishingProgress()).isNull();
 
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessId)).isEmpty();
   }
 
   @Test
@@ -1109,7 +1109,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
   @NonNull
   private OffsetDateTime getPublishedDateForEventProcessMappingOrFail(final String eventProcessId) {
-    return getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)
+    return getEventProcessPublishStateDtoFromDatabase(eventProcessId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Failed reading first publish date"))
       .getPublishDateTime();
   }

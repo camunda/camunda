@@ -45,8 +45,6 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,12 +55,12 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,20 +94,16 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
-  public void collectionIsWrittenToDatabase() throws IOException {
-    // TODO resolve with OPT-7455 #10085
+  public void collectionIsWrittenToDatabase() {
     // given
     String id = collectionClient.createNewCollection();
 
-    // then
-    GetRequest getRequest = new GetRequest()
-      .index(COLLECTION_INDEX_NAME)
-      .id(id);
-    GetResponse getResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient().get(getRequest);
+    // when
+    Optional<CollectionDefinitionDto> result = databaseIntegrationTestExtension
+      .getDatabaseEntryById(COLLECTION_INDEX_NAME, id, CollectionDefinitionDto.class);
 
     // then
-    assertThat(getResponse.isExists()).isTrue();
+    assertThat(result).isPresent();
   }
 
   @Test

@@ -16,7 +16,6 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,10 +29,10 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 
 public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
@@ -52,7 +51,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
       eventProcessMappingId);
 
     final Map<String, List<AliasMetadata>> eventProcessInstanceIndicesAndAliases =
-      getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
+      getEventProcessInstanceIndicesWithAliasesFromDatabase();
     assertThat(eventProcessInstanceIndicesAndAliases)
       .hasSize(1)
       .hasEntrySatisfying(
@@ -91,7 +90,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final String eventProcessPublishStateId1 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId1);
     final String eventProcessPublishStateId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
 
-    assertThat(getEventProcessInstanceIndicesWithAliasesFromElasticsearch())
+    assertThat(getEventProcessInstanceIndicesWithAliasesFromDatabase())
       .hasSize(2)
       .containsKeys(
         getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId1),
@@ -141,7 +140,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    assertThat(getEventProcessInstanceIndicesWithAliasesFromElasticsearch())
+    assertThat(getEventProcessInstanceIndicesWithAliasesFromDatabase())
       .containsOnlyKeys(getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId2));
   }
 
@@ -168,7 +167,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -232,9 +231,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final String eventProcessPublishStateId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
 
     final List<EventProcessInstanceDto> eventProcess1ProcessInstances =
-      getEventProcessInstancesFromElasticsearchForProcessPublishStateId(eventProcessPublishStateId1);
+      getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishStateId1);
     final List<EventProcessInstanceDto> eventProcess2ProcessInstances =
-      getEventProcessInstancesFromElasticsearchForProcessPublishStateId(eventProcessPublishStateId2);
+      getEventProcessInstancesFromDatabaseForProcessPublishStateId(eventProcessPublishStateId2);
 
     assertThat(eventProcess1ProcessInstances).hasSize(1);
     assertThat(eventProcess2ProcessInstances).hasSize(1);
@@ -261,7 +260,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    assertThat(getEventProcessInstancesFromElasticsearch())
+    assertThat(getEventProcessInstancesFromDatabase())
       .singleElement()
       .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getFlowNodeInstances())
@@ -293,7 +292,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then all flow nodes for the process are not canceled
-    assertThat(getEventProcessInstancesFromElasticsearch())
+    assertThat(getEventProcessInstancesFromDatabase())
       .singleElement()
       .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getFlowNodeInstances())
@@ -310,7 +309,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then the user task is marked as canceled on the event process
-    assertThat(getEventProcessInstancesFromElasticsearch())
+    assertThat(getEventProcessInstancesFromDatabase())
       .singleElement()
       .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getFlowNodeInstances())
@@ -346,7 +345,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -415,7 +414,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -487,7 +486,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -551,7 +550,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -610,7 +609,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -673,7 +672,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -735,24 +734,25 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   }
 
   private String getVersionedEventProcessInstanceIndexNameForPublishedStateId(final String eventProcessPublishStateId) {
-    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
+    // Since we're not really creating a new index here, but just instantiating it in order to get the name, it's not
+    // a database dependency that we are instantiating the ES index here.
+    return databaseIntegrationTestExtension
       .getIndexNameService()
       .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndexES(eventProcessPublishStateId));
   }
 
   private String getOptimizeIndexAliasForIndexName(final String indexName) {
-    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
+    return databaseIntegrationTestExtension
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(indexName);
   }
 
   @SneakyThrows
   private boolean eventProcessInstanceIndicesExist() {
-    final String indexAlias = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
+    final String indexAlias = databaseIntegrationTestExtension
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX) + "*";
-    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
-      .exists(new GetIndexRequest(indexAlias));
+    return databaseIntegrationTestExtension.indexExists(indexAlias);
   }
 
 }

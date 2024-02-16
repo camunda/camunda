@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
-public class ElasticMetadataVersionIT extends AbstractPlatformIT {
+public class DatabaseMetadataVersionIT extends AbstractPlatformIT {
 
   private static final String SCHEMA_VERSION = "testVersion";
   private static final String INSTALLATION_ID = "testId";
@@ -97,6 +97,6 @@ public class ElasticMetadataVersionIT extends AbstractPlatformIT {
 
   private Optional<MetadataDto> getMetadataDto() {
     return embeddedOptimizeExtension.getBean(ElasticSearchMetadataService.class)
-      .readMetadata(embeddedOptimizeExtension.getOptimizeElasticSearchClient());
+      .readMetadata(databaseIntegrationTestExtension.getOptimizeElasticsearchClient());
   }
 }

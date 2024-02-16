@@ -49,7 +49,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromDatabase();
     assertThat(eventProcessInstances)
       .extracting(EventProcessInstanceDto::getProcessInstanceId)
       .containsExactly(instanceIdToKeep);
@@ -81,7 +81,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromElasticsearch()
+    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromDatabase()
       .stream().collect(groupingBy(ProcessInstanceDto::getProcessDefinitionKey));
     assertThat(eventProcessInstances.get(publishedProcessWithNoSpecialConfiguration))
       .extracting(EventProcessInstanceDto::getProcessInstanceId)
@@ -104,7 +104,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromDatabase();
     assertThat(eventProcessInstances)
       .extracting(EventProcessInstanceDto::getProcessInstanceId)
       .containsExactly(instanceIdToKeep);
@@ -124,7 +124,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromDatabase();
     assertThat(eventProcessInstances)
       .extracting(EventProcessInstanceDto::getProcessInstanceId)
       .containsExactlyInAnyOrder(instanceIdWithKeptVariables, instanceIdWithCleanedVariables);
@@ -162,7 +162,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromElasticsearch()
+    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromDatabase()
       .stream().collect(groupingBy(ProcessInstanceDto::getProcessDefinitionKey));
     assertThat(eventProcessInstances.get(publishedProcessWithNoSpecialConfiguration))
       .extracting(ProcessInstanceDto::getProcessInstanceId)
@@ -205,7 +205,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromElasticsearch()
+    final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromDatabase()
       .stream().collect(groupingBy(ProcessInstanceDto::getProcessDefinitionKey));
     assertThat(eventProcessInstances.get(publishedProcessWithNoSpecialConfiguration))
       .allSatisfy(instance -> {
@@ -236,7 +236,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromDatabase();
     assertThat(eventProcessInstances)
       .extracting(ProcessInstanceDto::getVariables)
       .hasSize(1);

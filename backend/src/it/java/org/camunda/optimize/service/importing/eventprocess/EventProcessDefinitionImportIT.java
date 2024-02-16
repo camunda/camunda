@@ -42,7 +42,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
 
     // then
     final Optional<EventProcessDefinitionDto> eventProcessDefinition =
-      getEventProcessDefinitionFromElasticsearch(expectedProcessDefinitionId);
+      getEventProcessDefinitionFromDatabase(expectedProcessDefinitionId);
     assertThat(eventProcessDefinition)
       .get()
       .usingRecursiveComparison()
@@ -84,10 +84,10 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     final String expectedProcessDefinitionId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
 
     // then
-    assertThat(getEventProcessDefinitionFromElasticsearch(expectedProcessDefinitionId1))
+    assertThat(getEventProcessDefinitionFromDatabase(expectedProcessDefinitionId1))
       .isNotEmpty();
 
-    assertThat(getEventProcessDefinitionFromElasticsearch(expectedProcessDefinitionId2))
+    assertThat(getEventProcessDefinitionFromDatabase(expectedProcessDefinitionId2))
       .isNotEmpty();
   }
 
@@ -113,9 +113,9 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
 
     // then
     final Optional<EventProcessDefinitionDto> previousProcessDefinition =
-      getEventProcessDefinitionFromElasticsearch(previousProcessDefinitionId);
+      getEventProcessDefinitionFromDatabase(previousProcessDefinitionId);
     final Optional<EventProcessDefinitionDto> newProcessDefinition =
-      getEventProcessDefinitionFromElasticsearch(newProcessDefinitionId);
+      getEventProcessDefinitionFromDatabase(newProcessDefinitionId);
 
     assertThat(previousProcessDefinition).isEmpty();
 
@@ -212,7 +212,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    assertThat(getEventProcessDefinitionFromElasticsearch(expectedProcessDefinitionId)).isEmpty();
+    assertThat(getEventProcessDefinitionFromDatabase(expectedProcessDefinitionId)).isEmpty();
   }
 
   @ParameterizedTest(name = "Only expected instance index is deleted on {0}, others are still present.")
@@ -240,7 +240,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    assertThat(getEventProcessDefinitionFromElasticsearch(expectedProcessDefinitionId))
+    assertThat(getEventProcessDefinitionFromDatabase(expectedProcessDefinitionId))
       .isNotEmpty();
   }
 

@@ -8,6 +8,8 @@ package org.camunda.optimize.service.telemetry.easytelemetry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -19,11 +21,10 @@ import org.camunda.optimize.dto.optimize.query.telemetry.LicenseKeyDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -106,7 +107,10 @@ public class TelemetrySendingServiceTest {
   }
 
   private TelemetryDataDto getTestTelemetryData() {
-    final DatabaseDto databaseDto = DatabaseDto.builder().version("7.0.0").build();
+    final DatabaseDto databaseDto = DatabaseDto.builder()
+      .version("7.0.0")
+      .vendor(DatabaseType.ELASTICSEARCH.toString())
+      .build();
     final LicenseKeyDto licenseKeyDto = LicenseKeyDto.builder()
       .customer("testCustomer")
       .type("OPTIMIZE")

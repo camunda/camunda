@@ -25,6 +25,7 @@ import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.ActionListener;
@@ -382,7 +383,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     }
   }
 
-  public String getElasticsearchVersion() throws IOException {
+  public String getDatabaseVersion() throws IOException {
     return highLevelClient.info(requestOptions()).getVersion().getNumber();
   }
 
@@ -812,6 +813,11 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       result.add(hit.getId());
     }
     return result;
+  }
+
+  @Override
+  public DatabaseType getDatabaseVendor() {
+    return DatabaseType.ELASTICSEARCH;
   }
 
   private QueryBuilder buildBasicSearchDefinitionQuery(String definitionXml, String engineAlias) {
