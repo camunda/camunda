@@ -13,6 +13,8 @@ import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.LongArrayList;
 
 final class TtlKeyCache {
+  private static final int DEFAULT_MAX_CAPACITY = 10_000;
+
   private final Long2LongHashMap keyToTimestamp = new Long2LongHashMap(-1);
 
   // only used to keep track of how long the entries are existing and to clean up the
@@ -20,19 +22,44 @@ final class TtlKeyCache {
   // maps
   private final NavigableMap<Long, LongArrayList> timestampToKeys = new TreeMap<>();
 
+  private final int maxCapacity;
+
+  TtlKeyCache() {
+    this(DEFAULT_MAX_CAPACITY);
+  }
+
+  /**
+   * @param maxCapacity the maximum number of entries that can be cached, regardless of TTL
+   */
+  TtlKeyCache(final int maxCapacity) {
+    this.maxCapacity = maxCapacity;
+  }
+
   void store(final long key, final long timestamp) {
+    if (keyToTimestamp.size() >= maxCapacity) {
+      evictOldestKey();
+    }
+
     keyToTimestamp.put(key, timestamp);
     timestampToKeys.computeIfAbsent(timestamp, ignored -> new LongArrayList()).add(key);
   }
 
   long remove(final long key) {
-    return keyToTimestamp.remove(key);
+    final var timestamp = keyToTimestamp.remove(key);
+    final var keys = timestampToKeys.get(timestamp);
+
+    if (keys != null) {
+      keys.remove(key);
+      if (keys.isEmpty()) {
+        timestampToKeys.remove(timestamp);
+      }
+    }
+
+    return timestamp;
   }
 
   void cleanup(final long timestamp) {
-    final var deadTime = timestamp - MetricsExporter.TIME_TO_LIVE.toMillis();
-    final var outOfScopeInstances = timestampToKeys.headMap(deadTime);
-
+    final var outOfScopeInstances = timestampToKeys.headMap(timestamp);
     for (final LongArrayList keys : outOfScopeInstances.values()) {
       keys.forEach(keyToTimestamp::remove);
     }
@@ -51,5 +78,15 @@ final class TtlKeyCache {
 
   int size() {
     return keyToTimestamp.size();
+  }
+
+  private void evictOldestKey() {
+    final var oldestEntries = timestampToKeys.firstEntry();
+    if (oldestEntries != null) {
+      final var evictedKey = oldestEntries.getValue().remove(0);
+      if (evictedKey != null) {
+        remove(evictedKey);
+      }
+    }
   }
 }
