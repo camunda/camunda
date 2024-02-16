@@ -21,11 +21,13 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import org.agrona.collections.Long2LongHashMap;
+import org.agrona.collections.LongArrayList;
 
 public class MetricsExporter implements Exporter {
 
@@ -36,8 +38,8 @@ public class MetricsExporter implements Exporter {
 
   // only used to keep track of how long the entries are existing and to clean up the corresponding
   // maps
-  private final NavigableMap<Long, Long> creationTimeToJobKeyNavigableMap;
-  private final NavigableMap<Long, Long> creationTimeToProcessInstanceKeyNavigableMap;
+  private final NavigableMap<Long, LongArrayList> creationTimeToJobKeyNavigableMap;
+  private final NavigableMap<Long, LongArrayList> creationTimeToProcessInstanceKeyNavigableMap;
 
   private Controller controller;
 
@@ -126,7 +128,9 @@ public class MetricsExporter implements Exporter {
 
   private void storeProcessInstanceCreation(final long creationTime, final long recordKey) {
     processInstanceKeyToCreationTimeMap.put(recordKey, creationTime);
-    creationTimeToProcessInstanceKeyNavigableMap.put(creationTime, recordKey);
+    creationTimeToProcessInstanceKeyNavigableMap
+        .computeIfAbsent(creationTime, ignored -> new LongArrayList())
+        .add(recordKey);
   }
 
   private void handleJobRecord(
@@ -156,7 +160,9 @@ public class MetricsExporter implements Exporter {
 
   private void storeJobCreation(final long creationTime, final long recordKey) {
     jobKeyToCreationTimeMap.put(recordKey, creationTime);
-    creationTimeToJobKeyNavigableMap.put(creationTime, recordKey);
+    creationTimeToJobKeyNavigableMap
+        .computeIfAbsent(creationTime, ignored -> new LongArrayList())
+        .add(recordKey);
   }
 
   private void cleanUp() {
@@ -172,14 +178,24 @@ public class MetricsExporter implements Exporter {
     controller.scheduleCancellableTask(TIME_TO_LIVE, this::cleanUp);
   }
 
+  @VisibleForTesting
+  int cachedProcessInstanceCount() {
+    return processInstanceKeyToCreationTimeMap.size();
+  }
+
+  @VisibleForTesting
+  int cachedJobCount() {
+    return jobKeyToCreationTimeMap.size();
+  }
+
   private void clearMaps(
       final long deadTime,
-      final NavigableMap<Long, Long> timeToKeyMap,
+      final NavigableMap<Long, LongArrayList> timeToKeyMap,
       final Long2LongHashMap keyToTimestampMap) {
     final var outOfScopeInstances = timeToKeyMap.headMap(deadTime);
 
-    for (final Long key : outOfScopeInstances.values()) {
-      keyToTimestampMap.remove(key);
+    for (final LongArrayList keys : outOfScopeInstances.values()) {
+      keys.forEach(keyToTimestampMap::remove);
     }
     outOfScopeInstances.clear();
   }
