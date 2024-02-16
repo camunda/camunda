@@ -26,7 +26,6 @@ import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
 import io.camunda.zeebe.stream.api.EventFilter;
-import io.camunda.zeebe.stream.api.MetadataFilter;
 import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
@@ -113,14 +112,15 @@ public final class ProcessingStateMachine {
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke skipped listener for record '{} {}' successfully, but exception was thrown.";
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
-  private static final MetadataFilter PROCESSING_FILTER =
-      recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND;
   private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
       "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
-  private final EventFilter eventFilter = new MetadataEventFilter(PROCESSING_FILTER);
-  private final EventFilter commandFilter =
+  private final EventFilter processingFilter;
+  private final EventFilter isEventOrRejection =
       new MetadataEventFilter(
-          recordMetadata -> recordMetadata.getRecordType() != RecordType.COMMAND);
+          recordMetadata -> {
+            final var recordType = recordMetadata.getRecordType();
+            return recordType == RecordType.EVENT || recordType == RecordType.COMMAND_REJECTION;
+          });
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
   private final ActorControl actor;
@@ -188,6 +188,12 @@ public final class ProcessingStateMachine {
     streamProcessorListener = context.getStreamProcessorListener();
 
     processingMetrics = new ProcessingMetrics(Integer.toString(partitionId));
+
+    processingFilter =
+        new MetadataEventFilter(
+                recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND)
+            .and(record -> !record.shouldSkipProcessing())
+            .and(context.processingFilter());
   }
 
   private void skipRecord() {
@@ -218,7 +224,7 @@ public final class ProcessingStateMachine {
       //  * and this was the last record written (records that have been written to the dispatcher
       //    might not be written to the log yet, which means they will appear shortly after this)
       reachedEnd =
-          commandFilter.applies(previousRecord)
+          isEventOrRejection.applies(previousRecord)
               && !hasNext
               && lastWrittenPosition <= previousRecord.getPosition();
     }
@@ -226,7 +232,7 @@ public final class ProcessingStateMachine {
     if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
       currentRecord = logStreamReader.next();
 
-      if (eventFilter.applies(currentRecord) && !currentRecord.shouldSkipProcessing()) {
+      if (processingFilter.applies(currentRecord)) {
         processCommand(currentRecord);
       } else {
         skipRecord();
