@@ -1366,6 +1366,23 @@ public final class StreamProcessorTest {
         .untilAsserted(() -> assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse());
   }
 
+  @Test
+  void shouldUseProcessingFilter() {
+    // given -- filter that always skips
+    streamPlatform.buildStreamProcessor(
+        streamPlatform.getLogStream(), true, cfg -> cfg.processingFilter(event -> false));
+
+    // when -- writing any command
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then -- command is skipped and processor is not used
+    verify(streamPlatform.getMockStreamProcessorListener(), timeout(TIMEOUT_MILLIS))
+        .onSkipped(any());
+    verify(streamPlatform.getDefaultMockedRecordProcessor(), never()).accepts(any());
+    verify(streamPlatform.getDefaultMockedRecordProcessor(), never()).process(any(), any());
+  }
+
   private static final class TestProcessor implements RecordProcessor {
 
     ProcessingResult processingResult = EmptyProcessingResult.INSTANCE;
