@@ -113,4 +113,9 @@ public interface JobRecordValue
    * @return the process key of the corresponding process definition
    */
   long getProcessDefinitionKey();
+
+  /**
+   * @return the job kind indicating the specific category of the job
+   */
+  JobKind getJobKind();
 }
