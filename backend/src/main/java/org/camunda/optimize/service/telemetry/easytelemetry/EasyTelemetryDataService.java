@@ -20,6 +20,7 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import org.camunda.optimize.service.license.LicenseManager;
+import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.telemetry.TelemetryDataConstants;
 import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.springframework.context.annotation.Conditional;
@@ -34,8 +35,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-
-import static org.camunda.optimize.service.metadata.Version.RAW_VERSION;
 
 @Component
 @Conditional(CamundaPlatformCondition.class)
@@ -70,7 +69,7 @@ public class EasyTelemetryDataService {
 
   private ProductDto getProductData() {
     return ProductDto.builder()
-      .version(RAW_VERSION)
+      .version(Version.RAW_VERSION)
       .internals(getInternalsData())
       .build();
   }
