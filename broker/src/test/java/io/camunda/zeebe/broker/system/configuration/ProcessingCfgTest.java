@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Collections;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 final class ProcessingCfgTest {
@@ -129,5 +130,45 @@ final class ProcessingCfgTest {
 
     // then
     assertThat(enabled).isTrue();
+  }
+
+  @Test
+  void shouldSetSkipPositions() {
+    // given
+    final var cfg = new ProcessingCfg();
+    cfg.setSkipPositions(Set.of(1L, 2L, 3L));
+
+    // when
+    final var skipPositions = cfg.skipPositions();
+
+    // then
+    assertThat(skipPositions).containsExactlyInAnyOrder(1L, 2L, 3L);
+  }
+
+  @Test
+  void shouldSetSkipPositionsFromConfig() {
+    // given
+    final var cfg =
+        TestConfigReader.readConfig("processing-cfg", Collections.emptyMap()).getProcessing();
+
+    // when
+    final var skipPositions = cfg.skipPositions();
+
+    // then
+    assertThat(skipPositions).containsExactlyInAnyOrder(1L, 2L, 3L);
+  }
+
+  @Test
+  void shouldSetSkipPositionsFromEnvironment() {
+    // given
+    final var environment =
+        Collections.singletonMap("zeebe.broker.processing.skipPositions", "4,5,6");
+    final var cfg = TestConfigReader.readConfig("processing-cfg", environment).getProcessing();
+
+    // when
+    final var skipPositions = cfg.skipPositions();
+
+    // then
+    assertThat(skipPositions).containsExactly(4L, 5L, 6L);
   }
 }
