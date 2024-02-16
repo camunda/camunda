@@ -14,8 +14,9 @@ import org.agrona.collections.LongArrayList;
 
 final class TtlKeyCache {
   private static final int DEFAULT_MAX_CAPACITY = 10_000;
+  private static final long DEFAULT_NULL_VALUE = -1L;
 
-  private final Long2LongHashMap keyToTimestamp = new Long2LongHashMap(-1);
+  private final Long2LongHashMap keyToTimestamp;
 
   // only used to keep track of how long the entries are existing and to clean up the
   // corresponding
@@ -28,11 +29,20 @@ final class TtlKeyCache {
     this(DEFAULT_MAX_CAPACITY);
   }
 
+  TtlKeyCache(final int maxCapacity) {
+    this(maxCapacity, DEFAULT_NULL_VALUE);
+  }
+
+  TtlKeyCache(final long nullValue) {
+    this(DEFAULT_MAX_CAPACITY, nullValue);
+  }
+
   /**
    * @param maxCapacity the maximum number of entries that can be cached, regardless of TTL
    */
-  TtlKeyCache(final int maxCapacity) {
+  TtlKeyCache(final int maxCapacity, final long nullValue) {
     this.maxCapacity = maxCapacity;
+    this.keyToTimestamp = new Long2LongHashMap(nullValue);
   }
 
   void store(final long key, final long timestamp) {
