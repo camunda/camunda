@@ -28,7 +28,7 @@ public class EventProcessInstanceWriter {
 
    public void importProcessInstances(final String index, final List<EventProcessInstanceDto> eventProcessInstanceDtos, final List<EventProcessGatewayDto> gatewayLookup) {
       final String importItemName = "event process instances";
-      log.debug("Writing [{}] {} to ES.", eventProcessInstanceDtos.size(), importItemName);
+      log.debug("Writing [{}] {} to Database.", eventProcessInstanceDtos.size(), importItemName);
       processInstanceRepository.bulkImportEvents(index, importItemName, eventProcessInstanceDtos, gatewayLookup);
    }
 

@@ -71,6 +71,8 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
   }
 
   public void deleteEvents(final List<String> eventIdsToDelete) {
+    // it's ok to use the ES index because we are not actually wanting to create an index,
+    // but instead we're just misusing the constructor in order to get the fully qualified index name
     final String index = new EventProcessInstanceIndexES("*").getIndexName();
     eventInstanceWriter.deleteEventsWithIdsInFromAllInstances(index, eventIdsToDelete);
     externalEventWriter.deleteEventsWithIdsIn(eventIdsToDelete);
