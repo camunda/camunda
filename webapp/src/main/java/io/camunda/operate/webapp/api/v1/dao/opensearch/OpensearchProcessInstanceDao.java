@@ -7,8 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OpensearchProperties;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
@@ -21,6 +20,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
+import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,15 +38,15 @@ public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<Proc
 
   private final ProcessInstanceWriter processInstanceWriter;
 
-  private final OpensearchProperties opensearchProperties;
+  private final OperateDateTimeFormatter dateTimeFormatter;
 
   public OpensearchProcessInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
                                       RichOpenSearchClient richOpenSearchClient, ListViewTemplate processInstanceIndex,
-                                      ProcessInstanceWriter processInstanceWriter, OperateProperties operateProperties) {
+                                      ProcessInstanceWriter processInstanceWriter, OperateDateTimeFormatter dateTimeFormatter) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.processInstanceIndex = processInstanceIndex;
     this.processInstanceWriter = processInstanceWriter;
-    this.opensearchProperties = operateProperties.getOpensearch();
+    this.dateTimeFormatter = dateTimeFormatter;
   }
 
 
@@ -137,8 +137,10 @@ public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<Proc
         queryTerms.add(queryDSLWrapper.term(ProcessInstance.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
         queryTerms.add(queryDSLWrapper.term(ProcessInstance.STATE, filter.getState()));
         queryTerms.add(queryDSLWrapper.term(ProcessInstance.TENANT_ID, filter.getTenantId()));
-        queryTerms.add(queryDSLWrapper.matchDateQuery(ProcessInstance.START_DATE, filter.getStartDate(), opensearchProperties.getDateFormat()));
-        queryTerms.add(queryDSLWrapper.matchDateQuery(ProcessInstance.END_DATE, filter.getEndDate(), opensearchProperties.getDateFormat()));
+        queryTerms.add(queryDSLWrapper.matchDateQuery(ProcessInstance.START_DATE,
+            filter.getStartDate(), dateTimeFormatter.getApiDateTimeFormatString()));
+        queryTerms.add(queryDSLWrapper.matchDateQuery(ProcessInstance.END_DATE,
+            filter.getEndDate(), dateTimeFormatter.getApiDateTimeFormatString()));
     }
 
     var nonNullQueryTerms = queryTerms.stream().filter(Objects::nonNull).toList();
@@ -148,6 +150,15 @@ public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<Proc
 
   @Override
   protected ProcessInstance convertInternalToApiResult(ProcessInstance internalResult) {
+    if (internalResult != null) {
+      if (StringUtils.isNotEmpty(internalResult.getEndDate())) {
+        internalResult.setEndDate(dateTimeFormatter.convertGeneralToApiDateTime(internalResult.getEndDate()));
+      }
+
+      if (StringUtils.isNotEmpty(internalResult.getStartDate())) {
+        internalResult.setStartDate(dateTimeFormatter.convertGeneralToApiDateTime(internalResult.getStartDate()));
+      }
+    }
     return internalResult;
   }
 }

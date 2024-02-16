@@ -6,11 +6,12 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.DecisionDefinition;
-import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
@@ -41,10 +42,10 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
   @Override
   public void runAdditionalBeforeAllSetup() throws Exception {
     // Write the decision requirements
-    DecisionRequirements requirementsV1 = new DecisionRequirements().setKey(2251799813685249L)
+    DecisionRequirementsEntity requirementsV1 = new DecisionRequirementsEntity().setKey(2251799813685249L)
         .setId(String.valueOf(2251799813685249L)).setName("Invoice Business Decisions").setVersion(1)
         .setDecisionRequirementsId("invoiceBusinessDecisions");
-    DecisionRequirements requirementsV2 = new DecisionRequirements().setKey(2251799813685253L)
+    DecisionRequirementsEntity requirementsV2 = new DecisionRequirementsEntity().setKey(2251799813685253L)
         .setId(String.valueOf(2251799813685253L)).setName("Invoice Business Decisions").setVersion(2)
         .setDecisionRequirementsId("invoiceBusinessDecisions");
 
@@ -54,22 +55,22 @@ public class DecisionDefinitionDaoIT extends OperateSearchAbstractIT {
     testSearchRepository.createOrUpdateDocumentFromObject(indexName, requirementsV2);
 
     indexName = decisionDefinitionIndex.getFullQualifiedName();
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionDefinition().setId("2251799813685250")
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionDefinitionEntity().setId("2251799813685250")
         .setKey(2251799813685250L).setDecisionId("invoiceAssignApprover").setName("Assign Approver Group")
         .setVersion(requirementsV1.getVersion()).setDecisionRequirementsId(requirementsV1.getDecisionRequirementsId())
         .setDecisionRequirementsKey(requirementsV1.getKey()).setTenantId(DEFAULT_TENANT_ID));
 
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionDefinition().setId("2251799813685251")
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionDefinitionEntity().setId("2251799813685251")
         .setKey(2251799813685251L).setDecisionId("invoiceClassification").setName("Invoice Classification")
         .setVersion(requirementsV1.getVersion()).setDecisionRequirementsId(requirementsV1.getDecisionRequirementsId())
         .setDecisionRequirementsKey(requirementsV1.getKey()).setTenantId(DEFAULT_TENANT_ID));
 
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionDefinition().setId("2251799813685254")
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionDefinitionEntity().setId("2251799813685254")
         .setKey(2251799813685254L).setDecisionId("invoiceAssignApprover").setName("Assign Approver Group")
         .setVersion(requirementsV2.getVersion()).setDecisionRequirementsId(requirementsV2.getDecisionRequirementsId())
         .setDecisionRequirementsKey(requirementsV2.getKey()).setTenantId(DEFAULT_TENANT_ID));
 
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionDefinition().setId("2251799813685255")
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionDefinitionEntity().setId("2251799813685255")
         .setKey(2251799813685255L).setDecisionId("invoiceClassification").setName("Invoice Classification")
         .setVersion(requirementsV2.getVersion()).setDecisionRequirementsId(requirementsV2.getDecisionRequirementsId())
         .setDecisionRequirementsKey(requirementsV2.getKey()).setTenantId(DEFAULT_TENANT_ID));

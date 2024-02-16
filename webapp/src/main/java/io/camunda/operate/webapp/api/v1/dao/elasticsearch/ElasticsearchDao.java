@@ -6,21 +6,12 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
-import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
-
-import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -32,6 +23,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
+import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public abstract class ElasticsearchDao<T> {
 
@@ -48,7 +47,7 @@ public abstract class ElasticsearchDao<T> {
   protected ObjectMapper objectMapper;
 
   @Autowired
-  protected OperateProperties operateProperties;
+  protected OperateDateTimeFormatter dateTimeFormatter;
 
   protected void buildSorting(final Query<T> query, final String uniqueSortKey,
       final SearchSourceBuilder searchSourceBuilder) {
@@ -129,9 +128,8 @@ public abstract class ElasticsearchDao<T> {
         // See: https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
         return rangeQuery(name)
             .gte(dateAsString)
-            .lte(dateAsString).format(operateProperties.getElasticsearch().getDateFormat());
+            .lte(dateAsString).format(dateTimeFormatter.getApiDateTimeFormatString());
       }
       return null;
   }
-
 }

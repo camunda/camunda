@@ -162,11 +162,28 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
     Results<ProcessInstance> results = dao.search(new Query<ProcessInstance>()
         .setFilter(new ProcessInstance().setBpmnProcessId("CalledProcess")));
     assertThat(results.getItems().size()).isEqualTo(1);
-    String filterDateTime = results.getItems().get(0).getStartDate();
+    String filterDateTime = results.getItems().get(0).getEndDate();
 
     // Parent and child process instances should have the same start time
     results = dao.search(new Query<ProcessInstance>()
-        .setFilter(new ProcessInstance().setStartDate(filterDateTime)));
+        .setFilter(new ProcessInstance().setEndDate(filterDateTime)));
+
+    assertThat(results.getItems().size()).isEqualTo(2);
+    assertThat(results.getItems()).extracting(BPMN_PROCESS_ID)
+        .containsExactlyInAnyOrder("CallActivityProcess", "CalledProcess");
+  }
+
+  @Test
+  public void shouldFilterByDateWithDateMath() {
+    // Get the start date of the child process
+    Results<ProcessInstance> results = dao.search(new Query<ProcessInstance>()
+        .setFilter(new ProcessInstance().setBpmnProcessId("CalledProcess")));
+    assertThat(results.getItems().size()).isEqualTo(1);
+    String filterDateTime = results.getItems().get(0).getEndDate() + "||/d";
+
+    // Parent and child process instances should have the same start time
+    results = dao.search(new Query<ProcessInstance>()
+        .setFilter(new ProcessInstance().setEndDate(filterDateTime)));
 
     assertThat(results.getItems().size()).isEqualTo(2);
     assertThat(results.getItems()).extracting(BPMN_PROCESS_ID)

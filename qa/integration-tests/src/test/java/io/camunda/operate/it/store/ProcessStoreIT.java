@@ -6,8 +6,10 @@
  */
 package io.camunda.operate.it.store;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.entities.SequenceFlowEntity;
+import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.ListViewJoinRelation;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
@@ -19,10 +21,6 @@ import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
-import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
-import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
-import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
-import io.camunda.operate.webapp.api.v1.entities.Variable;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -49,28 +47,26 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
   @Autowired
   private ProcessStore processStore;
 
-  private ProcessDefinition firstProcessDefinition;
-  private ProcessDefinition secondProcessDefinition;
+  private ProcessEntity firstProcessDefinition;
+  private ProcessEntity secondProcessDefinition;
   private ProcessInstanceForListViewEntity firstProcessInstance;
   private ProcessInstanceForListViewEntity secondProcessInstance;
   private ProcessInstanceForListViewEntity thirdProcessInstance;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    firstProcessDefinition = new ProcessDefinition().setKey(2251799813685248L)
-        .setBpmnProcessId("demoProcess").setTenantId(DEFAULT_TENANT_ID).setName("Demo process");
-    secondProcessDefinition = new ProcessDefinition().setKey(2251799813685249L)
-        .setBpmnProcessId("demoProcess-1").setTenantId(DEFAULT_TENANT_ID).setName("Demo process 1");
-    List<ProcessDefinition> processDefinitionList = List.of(firstProcessDefinition, secondProcessDefinition);
-    for (ProcessDefinition data : processDefinitionList) {
-      Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {
-      });
-      // XML source is not part of the model object and must be added manually in the entity map before writing
-      String resourceXml = testResourceManager.readResourceFileContentsAsString("demoProcess_v_1.bpmn");
-      entityMap.put("bpmnXml", resourceXml);
-      entityMap.put("id", data.getKey());
-      testSearchRepository.createOrUpdateDocument(processDefinitionIndex.getFullQualifiedName(), String.valueOf(data.getKey()), entityMap);
-    }
+    String resourceXml = testResourceManager.readResourceFileContentsAsString("demoProcess_v_1.bpmn");
+    firstProcessDefinition = new ProcessEntity().setKey(2251799813685248L).setId("2251799813685248")
+        .setBpmnProcessId("demoProcess").setTenantId(DEFAULT_TENANT_ID).setName("Demo process")
+        .setBpmnXml(resourceXml);
+    testSearchRepository.createOrUpdateDocumentFromObject(processDefinitionIndex.getFullQualifiedName(), firstProcessDefinition.getId(),
+        firstProcessDefinition);
+
+    secondProcessDefinition = new ProcessEntity().setKey(2251799813685249L).setId("2251799813685249")
+        .setBpmnProcessId("demoProcess-1").setTenantId(DEFAULT_TENANT_ID).setName("Demo process 1")
+        .setBpmnXml(resourceXml);
+    testSearchRepository.createOrUpdateDocumentFromObject(processDefinitionIndex.getFullQualifiedName(), secondProcessDefinition.getId(),
+        secondProcessDefinition);
 
     firstProcessInstance = new ProcessInstanceForListViewEntity()
         .setId("4503599627370497").setKey(4503599627370497L).setProcessDefinitionKey(firstProcessDefinition.getKey()).setProcessInstanceKey(4503599627370497L)
@@ -221,9 +217,9 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   @Test
   public void testDeleteProcessDefinitionsByKeys() throws IOException {
-    testSearchRepository.createOrUpdateDocumentFromObject(processDefinitionIndex.getFullQualifiedName(), new ProcessDefinition().setKey(2251799813685298L)
+    testSearchRepository.createOrUpdateDocumentFromObject(processDefinitionIndex.getFullQualifiedName(), new ProcessEntity().setKey(2251799813685298L)
         .setBpmnProcessId("testProcess1").setTenantId(DEFAULT_TENANT_ID).setName("Test process 1"));
-    testSearchRepository.createOrUpdateDocumentFromObject(processDefinitionIndex.getFullQualifiedName(), new ProcessDefinition().setKey(2251799813685299L)
+    testSearchRepository.createOrUpdateDocumentFromObject(processDefinitionIndex.getFullQualifiedName(), new ProcessEntity().setKey(2251799813685299L)
         .setBpmnProcessId("testProcess2").setTenantId(DEFAULT_TENANT_ID).setName("Test process 2"));
     searchContainerManager.refreshIndices("*operate-process*");
 
@@ -241,11 +237,11 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setBpmnProcessId("fakeProcess").setTenantId(DEFAULT_TENANT_ID));
 
     testSearchRepository.createOrUpdateDocumentFromObject(getFullIndexNameForDependant(FlowNodeInstanceTemplate.INDEX_NAME),
-        new FlowNodeInstance().setProcessInstanceKey(processKey));
+        new FlowNodeInstanceEntity().setProcessInstanceKey(processKey));
     testSearchRepository.createOrUpdateDocumentFromObject(getFullIndexNameForDependant(SequenceFlowTemplate.INDEX_NAME),
-        new SequenceFlow().setProcessInstanceKey(processKey));
+        new SequenceFlowEntity().setProcessInstanceKey(processKey));
     testSearchRepository.createOrUpdateDocumentFromObject(getFullIndexNameForDependant(VariableTemplate.INDEX_NAME),
-        new Variable().setProcessInstanceKey(processKey));
+        new VariableEntity().setProcessInstanceKey(processKey));
 
     searchContainerManager.refreshIndices("*");
 

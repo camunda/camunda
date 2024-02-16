@@ -6,16 +6,11 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
-import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -24,10 +19,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -39,6 +31,15 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 @Conditional(ElasticsearchCondition.class)
 @Component("ElasticsearchProcessInstanceDaoV1")
 public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessInstance>
@@ -49,6 +50,20 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
 
   @Autowired
   private ProcessInstanceWriter processInstanceWriter;
+
+  private List<ProcessInstance> mapSearchHits(SearchHit[] searchHitArray) {
+    List<ProcessInstance> processInstances =
+        ElasticsearchUtil.mapSearchHits(searchHitArray, objectMapper, ProcessInstance.class);
+
+    if (processInstances != null) {
+      for (ProcessInstance pi : processInstances) {
+        pi.setStartDate(dateTimeFormatter.convertGeneralToApiDateTime(pi.getStartDate()));
+        pi.setEndDate(dateTimeFormatter.convertGeneralToApiDateTime(pi.getEndDate()));
+      }
+    }
+
+    return processInstances;
+  }
 
   @Override
   public Results<ProcessInstance> search(final Query<ProcessInstance> query)
@@ -68,7 +83,7 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
         List<ProcessInstance> processInstances =
-            ElasticsearchUtil.mapSearchHits(searchHitArray, objectMapper, ProcessInstance.class);
+            mapSearchHits(searchHitArray);
         return new Results<ProcessInstance>()
             .setTotal(searchHits.getTotalHits().value)
             .setItems(processInstances)

@@ -7,8 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OpensearchProperties;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.IncidentDao;
@@ -32,15 +31,16 @@ import static java.lang.String.format;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, OpensearchIncident> implements IncidentDao {
-  private final OpensearchProperties opensearchProperties;
   private final IncidentTemplate incidentIndex;
+
+  private final OperateDateTimeFormatter dateTimeFormatter;
 
   public OpensearchIncidentDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
                                RichOpenSearchClient richOpenSearchClient, IncidentTemplate incidentIndex,
-                               OperateProperties operateProperties) {
+                               OperateDateTimeFormatter dateTimeFormatter) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
-    this.opensearchProperties = operateProperties.getOpensearch();
     this.incidentIndex = incidentIndex;
+    this.dateTimeFormatter = dateTimeFormatter;
   }
 
   @Override
@@ -98,7 +98,7 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
         queryDSLWrapper.term(Incident.STATE, filter.getState()),
         queryDSLWrapper.term(Incident.JOB_KEY, filter.getJobKey()),
         queryDSLWrapper.term(Incident.TENANT_ID, filter.getTenantId()),
-        queryDSLWrapper.matchDateQuery(Incident.CREATION_TIME, filter.getCreationTime(), opensearchProperties.getDateFormat())
+        queryDSLWrapper.matchDateQuery(Incident.CREATION_TIME, filter.getCreationTime(), dateTimeFormatter.getApiDateTimeFormatString())
       ).filter(Objects::nonNull).collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
@@ -128,7 +128,7 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
       .setProcessDefinitionKey(osIncident.processDefinitionKey())
       .setType(osIncident.errorType())
       .setMessage(osIncident.errorMessage())
-      .setCreationTime(osIncident.creationTime())
+      .setCreationTime(dateTimeFormatter.convertGeneralToApiDateTime(osIncident.creationTime()))
       .setState(osIncident.state())
       .setJobKey(osIncident.jobKey())
       .setTenantId(osIncident.tenantId());

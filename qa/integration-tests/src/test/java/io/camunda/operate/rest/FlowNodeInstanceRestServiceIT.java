@@ -9,6 +9,8 @@ package io.camunda.operate.rest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
@@ -32,16 +34,17 @@ import java.util.Map;
 
 import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(
     classes = {
         TestApplicationWithNoBeans.class,
         FlowNodeInstanceRestService.class,
-        JacksonConfig.class,
         OperateProperties.class,
         OperateProfileService.class,
         JacksonConfig.class,
+        OperateDateTimeFormatter.class,
+        DatabaseInfo.class,
         OperateProperties.class
     }
 )

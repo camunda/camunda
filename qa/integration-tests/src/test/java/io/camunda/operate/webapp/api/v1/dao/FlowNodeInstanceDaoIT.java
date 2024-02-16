@@ -7,6 +7,10 @@
 package io.camunda.operate.webapp.api.v1.dao;
 
 import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
@@ -16,6 +20,8 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+
+import java.time.OffsetDateTime;
 
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,17 +41,30 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
   @MockBean
   private ProcessCache processCache;
 
+  @Autowired
+  private OperateDateTimeFormatter dateTimeFormatter;
+
+  private final String firstNodeStartDate = "2024-02-15T22:40:10.834+0000";
+  private final String secondNodeStartDate = "2024-02-15T22:41:10.834+0000";
+
+  private final String thirdNodeStartDate = "2024-01-15T22:40:10.834+0000";
+  private final String endDate = "2024-02-15T22:41:10.834+0000";
+
   @Override
   public void runAdditionalBeforeAllSetup() throws Exception {
+
     String indexName = flowNodeInstanceIndex.getFullQualifiedName();
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new FlowNodeInstance().setKey(2251799813685256L).setProcessInstanceKey(2251799813685253L).setProcessDefinitionKey(2251799813685249L)
-        .setStartDate("2024-01-19T18:39:05.196+0000").setEndDate("2024-01-19T18:39:05.196+0000").setFlowNodeId("start").setType("START_EVENT")
-        .setState("COMPLETED").setIncident(false).setTenantId(DEFAULT_TENANT_ID));
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName,
+        new FlowNodeInstanceEntity().setKey(2251799813685256L).setProcessInstanceKey(2251799813685253L).setProcessDefinitionKey(2251799813685249L)
+            .setStartDate(OffsetDateTime.now()).setEndDate(OffsetDateTime.now())
+            .setFlowNodeId("start").setType(FlowNodeType.START_EVENT)
+            .setState(FlowNodeState.COMPLETED).setIncident(false).setTenantId(DEFAULT_TENANT_ID));
 
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new FlowNodeInstance().setKey(2251799813685258L).setProcessInstanceKey(2251799813685253L).setProcessDefinitionKey(2251799813685249L)
-        .setStartDate("2024-01-19T18:39:05.196+0000").setEndDate("2024-01-19T18:39:05.196+0000").setFlowNodeId("taskA").setType("SERVICE_TASK")
-        .setIncidentKey(2251799813685264L).setState("ACTIVE").setIncident(true).setTenantId(DEFAULT_TENANT_ID));
-
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName,
+        new FlowNodeInstanceEntity().setKey(2251799813685258L).setProcessInstanceKey(2251799813685253L).setProcessDefinitionKey(2251799813685249L)
+            .setStartDate(OffsetDateTime.now()).setEndDate(null)
+            .setFlowNodeId("taskA").setType(FlowNodeType.SERVICE_TASK)
+            .setIncidentKey(2251799813685264L).setState(FlowNodeState.ACTIVE).setIncident(true).setTenantId(DEFAULT_TENANT_ID));
     searchContainerManager.refreshIndices("*operate-flow*");
   }
 
@@ -68,7 +87,7 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
         .containsExactly("start", "start");
 
     checkFlowNode = flowNodeInstanceResults.getItems().stream().filter(
-            item -> "SERVICE_TASK".equals(item.getType()))
+            item -> "SERVICE_TASK".equals(item.getType()) && "taskA".equals(item.getFlowNodeId()))
         .findFirst().orElse(null);
     assertThat(checkFlowNode)
         .extracting("flowNodeId", "flowNodeName")
@@ -78,12 +97,12 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
   @Test
   public void shouldFilterFlowNodeInstances() {
     Results<FlowNodeInstance> flowNodeInstanceResults = dao.search(new Query<FlowNodeInstance>()
-        .setFilter(new FlowNodeInstance().setType("SERVICE_TASK")));
+        .setFilter(new FlowNodeInstance().setType("START_EVENT")));
 
     assertThat(flowNodeInstanceResults.getItems()).hasSize(1);
 
     assertThat(flowNodeInstanceResults.getItems().get(0)).extracting("flowNodeId", "flowNodeName")
-        .containsExactly("taskA", "task A");
+        .containsExactly("start", "start");
   }
 
   @Test

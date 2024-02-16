@@ -6,19 +6,6 @@
  */
 package io.camunda.operate;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-
-import io.camunda.operate.connect.CustomInstantDeserializer;
-import io.camunda.operate.connect.CustomOffsetDateTimeDeserializer;
-import io.camunda.operate.connect.CustomOffsetDateTimeSerializer;
-import io.camunda.operate.property.OperateProperties;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonParser;
@@ -27,19 +14,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.operate.connect.CustomInstantDeserializer;
+import io.camunda.operate.connect.CustomOffsetDateTimeDeserializer;
+import io.camunda.operate.connect.CustomOffsetDateTimeSerializer;
+import io.camunda.operate.data.OperateDateTimeFormatter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Configuration
 public class JacksonConfig {
-
-  @Autowired
-  private OperateProperties operateProperties;
-
   @Bean("operateObjectMapper")
-  public ObjectMapper objectMapper() {
+  public ObjectMapper objectMapper(OperateDateTimeFormatter dateTimeFormatter) {
 
     JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter()));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter()));
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter.getGeneralDateTimeFormatter()));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter.getGeneralDateTimeFormatter()));
     javaTimeModule.addDeserializer(Instant.class, new CustomInstantDeserializer());
 
     return Jackson2ObjectMapperBuilder.json()
@@ -60,9 +54,11 @@ public class JacksonConfig {
         .build();
   }
 
+  // Some common components autowire the datetime formatter directly. To avoid potentially impacting
+  // critical code or needing to refactor in multiple places, expose the general date time formatter as
+  // a bean just like it was before the introduction of the OperateDateTimeFormatter component
   @Bean
-  public DateTimeFormatter dateTimeFormatter() {
-    return DateTimeFormatter.ofPattern(operateProperties.getElasticsearch().getDateFormat());
+  public DateTimeFormatter dateTimeFormatter(OperateDateTimeFormatter dateTimeFormatter) {
+    return dateTimeFormatter.getGeneralDateTimeFormatter();
   }
-
 }

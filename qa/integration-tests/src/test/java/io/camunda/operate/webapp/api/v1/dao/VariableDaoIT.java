@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -29,11 +30,11 @@ public class VariableDaoIT extends OperateSearchAbstractIT {
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
     String indexName = variableIndex.getFullQualifiedName();
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new Variable().setKey(5147483647L).setProcessInstanceKey(4147483647L).setScopeKey(4147483647L).setTenantId(DEFAULT_TENANT_ID)
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new VariableEntity().setKey(5147483647L).setProcessInstanceKey(4147483647L).setScopeKey(4147483647L).setTenantId(DEFAULT_TENANT_ID)
         .setName("customerId").setValue("\"23\""));
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName,new Variable().setKey(5147483648L).setProcessInstanceKey(4147483647L).setScopeKey(4147483647L).setTenantId(DEFAULT_TENANT_ID)
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new VariableEntity().setKey(5147483648L).setProcessInstanceKey(4147483647L).setScopeKey(4147483647L).setTenantId(DEFAULT_TENANT_ID)
         .setName("orderId").setValue("\"5\""));
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName,new Variable().setKey(5147483649L).setProcessInstanceKey(4147483649L).setScopeKey(4147483649L).setTenantId(DEFAULT_TENANT_ID)
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new VariableEntity().setKey(5147483649L).setProcessInstanceKey(4147483649L).setScopeKey(4147483649L).setTenantId(DEFAULT_TENANT_ID)
         .setName("k1").setValue("\"v1\""));
 
     searchContainerManager.refreshIndices("*operate-variable*");

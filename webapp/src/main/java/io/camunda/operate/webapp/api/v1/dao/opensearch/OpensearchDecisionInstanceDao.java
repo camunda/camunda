@@ -7,8 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OpensearchProperties;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.DecisionInstanceDao;
@@ -19,6 +18,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -34,18 +34,24 @@ public class OpensearchDecisionInstanceDao extends OpensearchSearchableDao<Decis
 
   private final DecisionInstanceTemplate decisionInstanceTemplate;
 
-  private final OpensearchProperties opensearchProperties;
+  private final OperateDateTimeFormatter dateTimeFormatter;
 
   public OpensearchDecisionInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
                                        RichOpenSearchClient richOpenSearchClient, DecisionInstanceTemplate decisionInstanceTemplate,
-                                       OperateProperties operateProperties){
+                                       OperateDateTimeFormatter dateTimeFormatter){
     super(queryDSLWrapper, requestDSLWrapper,richOpenSearchClient);
     this.decisionInstanceTemplate = decisionInstanceTemplate;
-    this.opensearchProperties = operateProperties.getOpensearch();
+    this.dateTimeFormatter = dateTimeFormatter;
   }
 
   @Override
   protected DecisionInstance convertInternalToApiResult(DecisionInstance internalResult) {
+    if (internalResult != null && StringUtils.isNotEmpty(internalResult.getEvaluationDate())) {
+      internalResult.setEvaluationDate(
+          dateTimeFormatter.convertGeneralToApiDateTime(
+              internalResult.getEvaluationDate()));
+    }
+
     return internalResult;
   }
 
@@ -100,7 +106,8 @@ public class OpensearchDecisionInstanceDao extends OpensearchSearchableDao<Decis
         queryDSLWrapper.term(DecisionInstance.ID, filter.getId()),
         queryDSLWrapper.term(DecisionInstance.KEY, filter.getKey()),
         queryDSLWrapper.term(DecisionInstance.STATE, filter.getState() == null ? null : filter.getState().name()),
-        queryDSLWrapper.matchDateQuery(DecisionInstance.EVALUATION_DATE, filter.getEvaluationDate(), opensearchProperties.getDateFormat()),
+        queryDSLWrapper.matchDateQuery(DecisionInstance.EVALUATION_DATE,
+            filter.getEvaluationDate(), dateTimeFormatter.getApiDateTimeFormatString()),
         queryDSLWrapper.term(DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure()),
         queryDSLWrapper.term(DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
         queryDSLWrapper.term(DecisionInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),

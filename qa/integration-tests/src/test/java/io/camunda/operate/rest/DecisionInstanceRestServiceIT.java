@@ -8,6 +8,8 @@ package io.camunda.operate.rest;
 
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -21,16 +23,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(
     classes = {
         TestApplicationWithNoBeans.class,
         DecisionInstanceRestService.class,
-        JacksonConfig.class,
         OperateProperties.class,
         OperateProfileService.class,
         JacksonConfig.class,
+        OperateDateTimeFormatter.class,
+        DatabaseInfo.class,
         OperateProperties.class
     }
 )

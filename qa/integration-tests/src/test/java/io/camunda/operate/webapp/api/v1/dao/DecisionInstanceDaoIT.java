@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
@@ -16,6 +17,8 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.time.OffsetDateTime;
 
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_ID;
@@ -40,14 +43,14 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
     String indexName = decisionInstanceIndex.getFullQualifiedName();
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionInstance().setId("2251799813685262-1")
-        .setKey(2251799813685262L).setState(DecisionInstanceState.EVALUATED).setEvaluationDate("2024-01-22T16:41:36.316+0000")
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionInstanceEntity().setId("2251799813685262-1")
+        .setKey(2251799813685262L).setState(io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED).setEvaluationDate(OffsetDateTime.now())
         .setProcessDefinitionKey(FAKE_PROCESS_DEFINITION_KEY).setProcessInstanceKey(FAKE_PROCESS_INSTANCE_KEY).setDecisionId("invoiceClassification")
         .setDecisionDefinitionId("2251799813685251").setDecisionName("Invoice Classification").setDecisionVersion(1)
         .setDecisionType(DecisionType.DECISION_TABLE).setResult("\"day-to-day expense\"").setTenantId(DEFAULT_TENANT_ID));
 
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionInstance().setId("2251799813685262-2")
-        .setKey(2251799813685262L).setState(DecisionInstanceState.EVALUATED).setEvaluationDate("2024-01-22T16:41:36.316+0000")
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionInstanceEntity().setId("2251799813685262-2")
+        .setKey(2251799813685262L).setState(io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED).setEvaluationDate(OffsetDateTime.now())
         .setProcessDefinitionKey(FAKE_PROCESS_DEFINITION_KEY).setProcessInstanceKey(FAKE_PROCESS_INSTANCE_KEY).setDecisionId("invoiceAssignApprover")
         .setDecisionDefinitionId("2251799813685250").setDecisionName("Assign Approver Group").setDecisionVersion(1)
         .setDecisionType(DecisionType.DECISION_TABLE).setResult("\"day-to-day expense\"").setTenantId(DEFAULT_TENANT_ID));

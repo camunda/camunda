@@ -10,6 +10,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.IncidentDao;
@@ -125,7 +126,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
         .setProcessDefinitionKey((Long) searchHitAsMap.get(IncidentTemplate.PROCESS_DEFINITION_KEY))
         .setType((String) searchHitAsMap.get(IncidentTemplate.ERROR_TYPE))
         .setMessage((String) searchHitAsMap.get(IncidentTemplate.ERROR_MSG))
-        .setCreationTime((String) searchHitAsMap.get(Incident.CREATION_TIME))
+        .setCreationTime(dateTimeFormatter.convertGeneralToApiDateTime((String) searchHitAsMap.get(Incident.CREATION_TIME)))
         .setState((String) searchHitAsMap.get(Incident.STATE))
         .setJobKey((Long) searchHitAsMap.get(Incident.JOB_KEY))
         .setTenantId((String) searchHitAsMap.get(Incident.TENANT_ID));

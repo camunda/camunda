@@ -6,11 +6,9 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeInstanceDao;
@@ -20,10 +18,6 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -33,6 +27,13 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Conditional(ElasticsearchCondition.class)
 @Component("ElasticsearchFlowNodeInstanceDaoV1")
@@ -120,8 +121,8 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
         .setKey((Long) searchHitAsMap.get(FlowNodeInstance.KEY))
         .setProcessInstanceKey((Long) searchHitAsMap.get(FlowNodeInstance.PROCESS_INSTANCE_KEY))
         .setProcessDefinitionKey((Long) searchHitAsMap.get(FlowNodeInstance.PROCESS_DEFINITION_KEY))
-        .setStartDate((String) searchHitAsMap.get(FlowNodeInstance.START_DATE))
-        .setEndDate((String) searchHitAsMap.get(FlowNodeInstance.END_DATE))
+        .setStartDate(dateTimeFormatter.convertGeneralToApiDateTime((String) searchHitAsMap.get(FlowNodeInstance.START_DATE)))
+        .setEndDate(dateTimeFormatter.convertGeneralToApiDateTime((String) searchHitAsMap.get(FlowNodeInstance.END_DATE)))
         .setType((String) searchHitAsMap.get(FlowNodeInstance.TYPE))
         .setState((String) searchHitAsMap.get(FlowNodeInstance.STATE))
         .setFlowNodeId((String) searchHitAsMap.get(FlowNodeInstance.FLOW_NODE_ID))

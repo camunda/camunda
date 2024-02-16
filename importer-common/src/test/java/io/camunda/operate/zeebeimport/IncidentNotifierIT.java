@@ -6,48 +6,17 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_ALERTS;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_BPMN_PROCESS_ID;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_CREATION_TIME;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_ERROR_MESSAGE;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_ERROR_TYPE;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_FLOW_NODE_ID;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_FLOW_NODE_INSTANCE_KEY;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_JOB_KEY;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_MESSAGE;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_STATE;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_INSTANCE_ID;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_KEY;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_NAME;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_VERSION;
-import static io.camunda.operate.zeebeimport.IncidentNotifier.MESSAGE;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
 import io.camunda.operate.JacksonConfig;
+import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.zeebeimport.util.TestApplicationWithNoBeans;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,10 +33,44 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+
+import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_ALERTS;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_BPMN_PROCESS_ID;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_CREATION_TIME;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_ERROR_MESSAGE;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_ERROR_TYPE;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_FLOW_NODE_ID;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_JOB_KEY;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_MESSAGE;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_INSTANCE_ID;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_KEY;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_NAME;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_PROCESS_VERSION;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_STATE;
+import static io.camunda.operate.zeebeimport.IncidentNotifier.MESSAGE;
+import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {TestApplicationWithNoBeans.class, IncidentNotifier.class, JacksonConfig.class,
-        OperateProperties.class},
+        OperateDateTimeFormatter.class, DatabaseInfo.class, OperateProperties.class},
     properties = {
         "camunda.operate.alert.webhook=" + IncidentNotifierIT.ALERT_WEBHOOKURL_URL
     }

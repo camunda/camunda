@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.property;
 
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 import java.net.URI;
@@ -15,9 +16,6 @@ import java.util.function.Function;
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
 public class OpensearchProperties {
-
-  public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
-
   public static final String OS_DATE_FORMAT_DEFAULT = "date_time";
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
@@ -30,7 +28,7 @@ public class OpensearchProperties {
   @Deprecated
   private int port = 9200;
 
-  private String dateFormat = DATE_FORMAT_DEFAULT;
+  private String dateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
 
   private String osDateFormat = OS_DATE_FORMAT_DEFAULT;
 

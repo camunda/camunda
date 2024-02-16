@@ -6,17 +6,16 @@
  */
 package io.camunda.operate.property;
 
-import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.function.Function;
 
+import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
+
 public class ElasticsearchProperties {
-
-  public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
-
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
@@ -29,7 +28,7 @@ public class ElasticsearchProperties {
   @Deprecated
   private int port = 9200;
 
-  private String dateFormat = DATE_FORMAT_DEFAULT;
+  private String dateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
 
   private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
 
@@ -47,7 +46,7 @@ public class ElasticsearchProperties {
   private int bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
 
   @NestedConfigurationProperty
-  private SslProperties ssl;;
+  private SslProperties ssl;
 
   public String getClusterName() {
     return clusterName;

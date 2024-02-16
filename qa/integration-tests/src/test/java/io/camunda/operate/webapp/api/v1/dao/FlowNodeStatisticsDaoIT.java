@@ -6,13 +6,16 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
-import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
@@ -32,25 +35,25 @@ public class FlowNodeStatisticsDaoIT extends OperateSearchAbstractIT {
   @Override
   public void runAdditionalBeforeAllSetup() throws Exception {
     String indexName = flowNodeInstanceIndex.getFullQualifiedName();
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new FlowNodeInstance().setKey(2251799813685254L).setProcessInstanceKey(PROCESS_INSTANCE_KEY)
-        .setProcessDefinitionKey(PROCESS_DEFINITION_KEY).setStartDate("2024-01-22T22:42:01.058+0000")
-        .setEndDate("2024-01-22T22:42:01.058+0000").setFlowNodeId("start").setType("START_EVENT")
-        .setState("COMPLETED").setIncident(false).setTenantId(DEFAULT_TENANT_ID));
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new FlowNodeInstanceEntity().setKey(2251799813685254L).setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+        .setProcessDefinitionKey(PROCESS_DEFINITION_KEY).setStartDate(OffsetDateTime.now())
+        .setEndDate(OffsetDateTime.now()).setFlowNodeId("start").setType(FlowNodeType.START_EVENT)
+        .setState(FlowNodeState.COMPLETED).setIncident(false).setTenantId(DEFAULT_TENANT_ID));
 
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new FlowNodeInstance().setKey(2251799813685256L).setProcessInstanceKey(PROCESS_INSTANCE_KEY)
-        .setProcessDefinitionKey(PROCESS_DEFINITION_KEY).setStartDate("2024-01-22T22:42:01.058+0000")
-        .setEndDate("2024-01-22T22:42:01.058+0000").setFlowNodeId("ExclusiveGateway_05d8jf3").setType("PARALLEL_GATEWAY")
-        .setState("COMPLETED").setIncident(false).setTenantId(DEFAULT_TENANT_ID));
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new FlowNodeInstanceEntity().setKey(2251799813685256L).setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+        .setProcessDefinitionKey(PROCESS_DEFINITION_KEY).setStartDate(OffsetDateTime.now())
+        .setEndDate(OffsetDateTime.now()).setFlowNodeId("ExclusiveGateway_05d8jf3").setType(FlowNodeType.PARALLEL_GATEWAY)
+        .setState(FlowNodeState.COMPLETED).setIncident(false).setTenantId(DEFAULT_TENANT_ID));
 
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new FlowNodeInstance().setKey(2251799813685258L).setProcessInstanceKey(PROCESS_INSTANCE_KEY)
-        .setProcessDefinitionKey(PROCESS_DEFINITION_KEY).setStartDate("2024-01-22T22:42:01.058+0000")
-        .setEndDate("2024-01-22T22:42:01.058+0000").setFlowNodeId("taskD").setType("SERVICE_TASK")
-        .setState("ACTIVE").setIncident(false).setTenantId(DEFAULT_TENANT_ID));
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new FlowNodeInstanceEntity().setKey(2251799813685258L).setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+        .setProcessDefinitionKey(PROCESS_DEFINITION_KEY).setStartDate(OffsetDateTime.now())
+        .setEndDate(OffsetDateTime.now()).setFlowNodeId("taskD").setType(FlowNodeType.SERVICE_TASK)
+        .setState(FlowNodeState.ACTIVE).setIncident(false).setTenantId(DEFAULT_TENANT_ID));
 
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new FlowNodeInstance().setKey(2251799813685260L).setProcessInstanceKey(PROCESS_INSTANCE_KEY)
-        .setProcessDefinitionKey(PROCESS_DEFINITION_KEY).setStartDate("2024-01-22T22:42:01.058+0000")
-        .setEndDate("2024-01-22T22:42:01.058+0000").setFlowNodeId("taskA").setType("SERVICE_TASK")
-        .setState("ACTIVE").setIncident(true).setTenantId(DEFAULT_TENANT_ID));
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new FlowNodeInstanceEntity().setKey(2251799813685260L).setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+        .setProcessDefinitionKey(PROCESS_DEFINITION_KEY).setStartDate(OffsetDateTime.now())
+        .setEndDate(OffsetDateTime.now()).setFlowNodeId("taskA").setType(FlowNodeType.SERVICE_TASK)
+        .setState(FlowNodeState.ACTIVE).setIncident(true).setTenantId(DEFAULT_TENANT_ID));
 
     searchContainerManager.refreshIndices("*operate-flow*");
   }

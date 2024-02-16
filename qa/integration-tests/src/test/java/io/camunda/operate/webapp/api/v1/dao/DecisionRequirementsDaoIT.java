@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
@@ -27,9 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
@@ -52,23 +50,17 @@ public class DecisionRequirementsDaoIT extends OperateSearchAbstractIT {
   protected void runAdditionalBeforeAllSetup() throws Exception {
     String indexName = decisionRequirementsIndex.getFullQualifiedName();
 
-    List<DecisionRequirements> decisionData = new LinkedList<>();
-
-    decisionData.add(new DecisionRequirements().setId("2251799813685249").setKey(2251799813685249L)
+    String resourceXml = testResourceManager.readResourceFileContentsAsString("invoiceBusinessDecisions_v_1.dmn");
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionRequirementsEntity().setId("2251799813685249").setKey(2251799813685249L)
         .setDecisionRequirementsId("invoiceBusinessDecisions").setName("Invoice Business Decisions")
-        .setVersion(1).setResourceName("invoiceBusinessDecisions_v_1.dmn").setTenantId(DEFAULT_TENANT_ID));
+        .setVersion(1).setResourceName("invoiceBusinessDecisions_v_1.dmn").setTenantId(DEFAULT_TENANT_ID)
+        .setXml(resourceXml));
 
-    decisionData.add(new DecisionRequirements().setId("2251799813685253").setKey(2251799813685253L)
+    resourceXml = testResourceManager.readResourceFileContentsAsString("invoiceBusinessDecisions_v_2.dmn");
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new DecisionRequirementsEntity().setId("2251799813685253").setKey(2251799813685253L)
         .setDecisionRequirementsId("invoiceBusinessDecisions").setName("Invoice Business Decisions")
-        .setVersion(2).setResourceName("invoiceBusinessDecisions_v_2.dmn").setTenantId(DEFAULT_TENANT_ID));
-
-    for (DecisionRequirements data : decisionData) {
-      Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
-      // XML source is not part of the model object and must be added manually in the entity map before writing
-      String resourceXml = testResourceManager.readResourceFileContentsAsString(data.getResourceName());
-      entityMap.put("xml", resourceXml);
-      testSearchRepository.createOrUpdateDocument(indexName, entityMap);
-    }
+        .setVersion(2).setResourceName("invoiceBusinessDecisions_v_2.dmn").setTenantId(DEFAULT_TENANT_ID)
+        .setXml(resourceXml));
 
     searchContainerManager.refreshIndices("*operate-decision*");
   }

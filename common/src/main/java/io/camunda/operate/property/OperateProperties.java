@@ -34,6 +34,8 @@ public class OperateProperties {
   private boolean archiverEnabled = true;
   private boolean webappEnabled = true;
 
+  private boolean rfc3339ApiDateFormat = false;
+
   private boolean persistentSessionsEnabled = false;
   /**
    * Indicates, whether CSRF prevention is enabled.
@@ -367,4 +369,11 @@ public class OperateProperties {
     return this;
   }
 
+  public boolean isRfc3339ApiDateFormat() {
+    return rfc3339ApiDateFormat;
+  }
+
+  public void setRfc3339ApiDateFormat(boolean rfc3339ApiDateFormat) {
+    this.rfc3339ApiDateFormat = rfc3339ApiDateFormat;
+  }
 }

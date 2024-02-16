@@ -6,23 +6,19 @@
  */
 package io.camunda.operate.it;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
+import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
-import io.camunda.operate.webapp.api.v1.entities.DecisionDefinition;
-import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
-import io.camunda.operate.webapp.api.v1.entities.DecisionInstanceState;
-import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
 import io.camunda.operate.webapp.writer.DecisionWriter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.time.OffsetDateTime;
 
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -44,7 +40,7 @@ public class DecisionWriterIT extends OperateSearchAbstractIT {
   @Test
   public void shouldDeleteDecisionRequirements() throws IOException {
     testSearchRepository.createOrUpdateDocumentFromObject(decisionRequirementsIndex.getFullQualifiedName(),
-        new DecisionRequirements().setId("2251799813685249").setKey(2251799813685249L).setDecisionRequirementsId("invoiceBusinessDecisions")
+        new DecisionRequirementsEntity().setId("2251799813685249").setKey(2251799813685249L).setDecisionRequirementsId("invoiceBusinessDecisions")
             .setName("Invoice Business Decisions").setVersion(1).setResourceName("invoiceBusinessDecisions_v_1.dmn")
             .setTenantId(DEFAULT_TENANT_ID));
 
@@ -58,11 +54,11 @@ public class DecisionWriterIT extends OperateSearchAbstractIT {
   @Test
   public void shouldDeleteDecisionDefinitions() throws IOException {
     testSearchRepository.createOrUpdateDocumentFromObject(decisionIndex.getFullQualifiedName(),
-        new DecisionDefinition().setId("2251799813685250").setKey(2251799813685250L).setDecisionId("invoiceAssignApprover")
+        new DecisionDefinitionEntity().setId("2251799813685250").setKey(2251799813685250L).setDecisionId("invoiceAssignApprover")
             .setName("Assign Approver Group").setVersion(1).setDecisionRequirementsId("invoiceBusinessDecisions").setDecisionRequirementsKey(2251799813685249L)
             .setTenantId(DEFAULT_TENANT_ID));
     testSearchRepository.createOrUpdateDocumentFromObject(decisionIndex.getFullQualifiedName(),
-        new DecisionDefinition().setId("2251799813685251").setKey(2251799813685251L).setDecisionId("invoiceClassification")
+        new DecisionDefinitionEntity().setId("2251799813685251").setKey(2251799813685251L).setDecisionId("invoiceClassification")
             .setName("Invoice Classification").setVersion(1).setDecisionRequirementsId("invoiceBusinessDecisions").setDecisionRequirementsKey(2251799813685249L)
             .setTenantId(DEFAULT_TENANT_ID));
 
@@ -75,21 +71,15 @@ public class DecisionWriterIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldDeleteDecisionInstances() throws IOException {
-    List<DecisionInstance> instanceData = new LinkedList<>();
-    instanceData.add(new DecisionInstance().setId("2251799813685262-1").setKey(2251799813685262L)
-        .setState(DecisionInstanceState.EVALUATED).setEvaluationDate("2024-01-31T17:59:32.312+0000")
-        .setProcessDefinitionKey(2251799813685253L).setProcessInstanceKey(2251799813685255L));
-    instanceData.add(new DecisionInstance().setId("2251799813685262-2").setKey(2251799813685262L)
-        .setState(DecisionInstanceState.EVALUATED).setEvaluationDate("2024-01-31T17:59:32.312+0000")
-        .setProcessDefinitionKey(2251799813685253L).setProcessInstanceKey(2251799813685255L));
+    testSearchRepository.createOrUpdateDocumentFromObject(decisionInstanceTemplate.getFullQualifiedName(),
+        new DecisionInstanceEntity().setId("2251799813685262-1").setKey(2251799813685262L)
+        .setState(io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED).setEvaluationDate(OffsetDateTime.now())
+        .setProcessDefinitionKey(2251799813685253L).setDecisionRequirementsKey(2251799813685249L).setProcessInstanceKey(2251799813685255L));
+    testSearchRepository.createOrUpdateDocumentFromObject(decisionInstanceTemplate.getFullQualifiedName(),
+        new DecisionInstanceEntity().setId("2251799813685262-2").setKey(2251799813685262L)
+        .setState(io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED).setEvaluationDate(OffsetDateTime.now())
+        .setDecisionRequirementsKey(2251799813685249L).setProcessDefinitionKey(2251799813685253L).setProcessInstanceKey(2251799813685255L));
 
-    for(DecisionInstance di : instanceData) {
-      Map<String, Object> entityMap = objectMapper.convertValue(di, new TypeReference<>() {
-      });
-      entityMap.put("decisionRequirementsKey", 2251799813685249L);
-
-      testSearchRepository.createOrUpdateDocument(decisionInstanceTemplate.getFullQualifiedName(), entityMap);
-    }
     searchContainerManager.refreshIndices("*operate-decision*");
 
     long deleted = decisionWriter.deleteDecisionInstancesFor(2251799813685249L);

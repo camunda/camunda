@@ -7,13 +7,13 @@
 package io.camunda.operate.webapp.api.v1.entities.opensearch;
 
 public record OpensearchIncident(
-  String creationTime,
-  String errorType,
-  String errorMessage,
-  Long key,
-  Long processDefinitionKey,
-  Long processInstanceKey,
-  String state,
-  Long jobKey,
-  String tenantId
+    String creationTime,
+    String errorType,
+    String errorMessage,
+    Long key,
+    Long processDefinitionKey,
+    Long processInstanceKey,
+    String state,
+    Long jobKey,
+    String tenantId
 ){}

@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -28,13 +29,13 @@ public class SequenceFlowDaoIT extends OperateSearchAbstractIT {
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
     String indexName = sequenceFlowIndex.getFullQualifiedName();
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new SequenceFlow().setId("2251799813685253_sequenceFlow_01").setActivityId("sequenceFlow_01")
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName, new SequenceFlowEntity().setId("2251799813685253_sequenceFlow_01").setActivityId("sequenceFlow_01")
         .setProcessInstanceKey(2251799813685253L).setTenantId(DEFAULT_TENANT_ID));
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName,new SequenceFlow().setId("2251799813685253_sequenceFlow_02").setActivityId("sequenceFlow_02")
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName,new SequenceFlowEntity().setId("2251799813685253_sequenceFlow_02").setActivityId("sequenceFlow_02")
         .setProcessInstanceKey(2251799813685253L).setTenantId(DEFAULT_TENANT_ID));
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName,new SequenceFlow().setId("2251799813685253_sequenceFlow_03").setActivityId("sequenceFlow_03")
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName,new SequenceFlowEntity().setId("2251799813685253_sequenceFlow_03").setActivityId("sequenceFlow_03")
         .setProcessInstanceKey(2251799813685253L).setTenantId(DEFAULT_TENANT_ID));
-    testSearchRepository.createOrUpdateDocumentFromObject(indexName,new SequenceFlow().setId("2251799813685253_sequenceFlow_04").setActivityId("sequenceFlow_04")
+    testSearchRepository.createOrUpdateDocumentFromObject(indexName,new SequenceFlowEntity().setId("2251799813685253_sequenceFlow_04").setActivityId("sequenceFlow_04")
         .setProcessInstanceKey(2251799813685253L).setTenantId(DEFAULT_TENANT_ID));
 
     searchContainerManager.refreshIndices("*operate-sequence*");

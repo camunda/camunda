@@ -6,6 +6,9 @@
  */
 package io.camunda.operate.it;
 
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.SequenceFlowEntity;
+import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.ListViewJoinRelation;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
@@ -17,9 +20,6 @@ import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
-import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
-import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
-import io.camunda.operate.webapp.api.v1.entities.Variable;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
 import org.junit.jupiter.api.Test;
@@ -63,11 +63,11 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
     testSearchRepository.createOrUpdateDocumentFromObject(listViewTemplate.getFullQualifiedName(), processInstance.getId(), processInstance);
 
     testSearchRepository.createOrUpdateDocumentFromObject(getFullIndexNameForDependant(FlowNodeInstanceTemplate.INDEX_NAME),
-        new FlowNodeInstance().setProcessInstanceKey(processInstanceKey));
+        new FlowNodeInstanceEntity().setProcessInstanceKey(processInstanceKey));
     testSearchRepository.createOrUpdateDocumentFromObject(getFullIndexNameForDependant(SequenceFlowTemplate.INDEX_NAME),
-        new SequenceFlow().setProcessInstanceKey(processInstanceKey));
+        new SequenceFlowEntity().setProcessInstanceKey(processInstanceKey));
     testSearchRepository.createOrUpdateDocumentFromObject(getFullIndexNameForDependant(VariableTemplate.INDEX_NAME),
-        new Variable().setProcessInstanceKey(processInstanceKey));
+        new VariableEntity().setProcessInstanceKey(processInstanceKey));
 
     searchContainerManager.refreshIndices("*");
 
@@ -90,11 +90,11 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
     testSearchRepository.createOrUpdateDocumentFromObject(listViewTemplate.getFullQualifiedName(), processInstance.getId(), processInstance);
 
     testSearchRepository.createOrUpdateDocumentFromObject(getFullIndexNameForDependant(FlowNodeInstanceTemplate.INDEX_NAME),
-        new FlowNodeInstance().setProcessInstanceKey(processInstanceKey));
+        new FlowNodeInstanceEntity().setProcessInstanceKey(processInstanceKey));
     testSearchRepository.createOrUpdateDocumentFromObject(getFullIndexNameForDependant(SequenceFlowTemplate.INDEX_NAME),
-        new SequenceFlow().setProcessInstanceKey(processInstanceKey));
+        new SequenceFlowEntity().setProcessInstanceKey(processInstanceKey));
     testSearchRepository.createOrUpdateDocumentFromObject(getFullIndexNameForDependant(VariableTemplate.INDEX_NAME),
-        new Variable().setProcessInstanceKey(processInstanceKey));
+        new VariableEntity().setProcessInstanceKey(processInstanceKey));
 
     searchContainerManager.refreshIndices("*");
 

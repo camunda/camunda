@@ -8,7 +8,6 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.schema.templates.IncidentTemplate;

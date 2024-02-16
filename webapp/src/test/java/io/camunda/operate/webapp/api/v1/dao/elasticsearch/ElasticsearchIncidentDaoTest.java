@@ -6,25 +6,37 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
-import io.camunda.operate.property.OperateElasticsearchProperties;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
-import org.elasticsearch.index.query.*;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class ElasticsearchIncidentDaoTest {
@@ -33,10 +45,7 @@ public class ElasticsearchIncidentDaoTest {
     private IncidentTemplate mockIncidentIndex;
 
     @Mock
-    private OperateProperties mockOperateProperties;
-
-    @Mock
-    private OperateElasticsearchProperties mockElasticsearchProperties;
+    private OperateDateTimeFormatter mockDateTimeFormatter;
 
     @InjectMocks
     private ElasticsearchIncidentDao underTest;
@@ -46,17 +55,19 @@ public class ElasticsearchIncidentDaoTest {
 
     @Test
     public void testBuildFilteringWithIncidentFilter() {
+        OffsetDateTime creationTime = OffsetDateTime.now();
         Incident testFilter = new Incident();
         testFilter.setKey(123L).setProcessDefinitionKey(222L).setProcessInstanceKey(333L).setType("type")
                 .setMessage("message").setState("state").setJobKey(444L).setTenantId("fakeTenant")
-                .setCreationTime("01-01-2020");
+                .setCreationTime("2024-02-13T15:10:33.013+0000");
 
         SearchSourceBuilder mockBuilder = Mockito.mock(SearchSourceBuilder.class);
         Query<Incident> mockQuery = Mockito.mock(Query.class);
 
         when(mockQuery.getFilter()).thenReturn(testFilter);
-        when(mockOperateProperties.getElasticsearch()).thenReturn(mockElasticsearchProperties);
-        when(mockElasticsearchProperties.getDateFormat()).thenReturn("yyyy.MM.dd");
+
+        String expectedDateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
+        when(mockDateTimeFormatter.getApiDateTimeFormatString()).thenReturn(expectedDateFormat);
 
         underTest.buildFiltering(mockQuery, mockBuilder);
 
@@ -87,8 +98,8 @@ public class ElasticsearchIncidentDaoTest {
         assertThat(((TermQueryBuilder)(mustClauses.get(7))).fieldName()).isEqualTo(Incident.TENANT_ID);
         assertThat(((TermQueryBuilder)(mustClauses.get(7))).value()).isEqualTo(testFilter.getTenantId());
         assertThat(((RangeQueryBuilder)(mustClauses.get(8))).fieldName()).isEqualTo(Incident.CREATION_TIME);
-        assertThat(((RangeQueryBuilder)(mustClauses.get(8))).format()).isEqualTo("yyyy.MM.dd");
-        assertThat(((RangeQueryBuilder)(mustClauses.get(8))).from()).isEqualTo(testFilter.getCreationTime());
+        assertThat(((RangeQueryBuilder)(mustClauses.get(8))).format()).isEqualTo(expectedDateFormat);
+        assertThat(((RangeQueryBuilder)(mustClauses.get(8))).from()).isEqualTo("2024-02-13T15:10:33.013+0000");
     }
 
     @Test
@@ -105,7 +116,7 @@ public class ElasticsearchIncidentDaoTest {
         QueryBuilder capturedArgument = queryCaptor.getValue();
         assertThat(capturedArgument).isNull();
 
-        verifyNoInteractions(mockOperateProperties);
+        verifyNoInteractions(mockDateTimeFormatter);
     }
 
     @Test
@@ -118,12 +129,14 @@ public class ElasticsearchIncidentDaoTest {
         searchHitAsMap.put(IncidentTemplate.PROCESS_DEFINITION_KEY, 333L);
         searchHitAsMap.put(IncidentTemplate.ERROR_TYPE, "errorType");
         searchHitAsMap.put(IncidentTemplate.ERROR_MSG, "message");
-        searchHitAsMap.put(IncidentTemplate.CREATION_TIME, "01-01-2020");
+        searchHitAsMap.put(IncidentTemplate.CREATION_TIME, "2024-02-13T15:10:33.013+0000");
         searchHitAsMap.put(IncidentTemplate.STATE, "state");
         searchHitAsMap.put(IncidentTemplate.JOB_KEY, 444L);
         searchHitAsMap.put(IncidentTemplate.TENANT_ID, "tenant");
 
         when(mockSearchHit.getSourceAsMap()).thenReturn(searchHitAsMap);
+        String parsedDateTime = "2024-02-13T15:10:33.013+00:00";
+        when(mockDateTimeFormatter.convertGeneralToApiDateTime(anyString())).thenReturn(parsedDateTime);
 
         Incident result = underTest.searchHitToIncident(mockSearchHit);
 
@@ -133,7 +146,7 @@ public class ElasticsearchIncidentDaoTest {
         assertThat(result.getProcessDefinitionKey()).isEqualTo(searchHitAsMap.get(IncidentTemplate.PROCESS_DEFINITION_KEY));
         assertThat(result.getType()).isEqualTo(searchHitAsMap.get(IncidentTemplate.ERROR_TYPE));
         assertThat(result.getMessage()).isEqualTo(searchHitAsMap.get(IncidentTemplate.ERROR_MSG));
-        assertThat(result.getCreationTime()).isEqualTo(searchHitAsMap.get(IncidentTemplate.CREATION_TIME));
+        assertThat(result.getCreationTime()).isEqualTo(parsedDateTime);
         assertThat(result.getState()).isEqualTo(searchHitAsMap.get(IncidentTemplate.STATE));
         assertThat(result.getJobKey()).isEqualTo(searchHitAsMap.get(IncidentTemplate.JOB_KEY));
         assertThat(result.getTenantId()).isEqualTo(searchHitAsMap.get(IncidentTemplate.TENANT_ID));

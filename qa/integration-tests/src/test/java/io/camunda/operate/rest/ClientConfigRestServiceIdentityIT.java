@@ -8,6 +8,8 @@ package io.camunda.operate.rest;
 
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -32,6 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         ClientConfig.class,
         ClientConfigRestService.class,
         JacksonConfig.class,
+        OperateDateTimeFormatter.class,
+        DatabaseInfo.class,
         OperateProperties.class},
     properties = {
         OperateProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url"

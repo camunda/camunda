@@ -9,6 +9,8 @@ package io.camunda.operate.rest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.property.OperateProperties;
@@ -29,17 +31,19 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(
     classes = {
         TestApplicationWithNoBeans.class,
         ProcessRestService.class,
-        JacksonConfig.class,
         OperateProperties.class,
         OperateProfileService.class,
         JacksonConfig.class,
+        OperateDateTimeFormatter.class,
+        DatabaseInfo.class,
         OperateProperties.class
     }
 )

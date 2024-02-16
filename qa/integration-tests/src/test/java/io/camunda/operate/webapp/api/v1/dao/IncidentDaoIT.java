@@ -6,7 +6,9 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.operate.entities.ErrorType;
+import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
@@ -16,9 +18,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.time.OffsetDateTime;
 
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,25 +33,14 @@ public class IncidentDaoIT extends OperateSearchAbstractIT {
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    List<Incident> incData = new LinkedList<>();
+    testSearchRepository.createOrUpdateDocumentFromObject(incidentIndex.getFullQualifiedName(),
+        new IncidentEntity().setKey(7147483647L).setProcessDefinitionKey(5147483647L).setProcessInstanceKey(6147483647L)
+        .setErrorType(ErrorType.JOB_NO_RETRIES).setState(IncidentState.ACTIVE).setErrorMessage("Some error")
+        .setTenantId(DEFAULT_TENANT_ID).setCreationTime(OffsetDateTime.now()).setJobKey(2251799813685260L));
 
-    incData.add(new Incident().setKey(7147483647L).setProcessDefinitionKey(5147483647L).setProcessInstanceKey(6147483647L).setType("JOB_NO_RETRIES")
-        .setState("ACTIVE").setMessage("Some error").setTenantId(DEFAULT_TENANT_ID).setCreationTime("2024-01-22T16:34:46.645+0000").setJobKey(2251799813685260L));
-
-    incData.add(new Incident().setKey(7147483648L).setProcessDefinitionKey(5147483648L).setProcessInstanceKey(6147483648L).setType("JOB_NO_RETRIES")
-        .setState("ACTIVE").setMessage("Another error").setTenantId(DEFAULT_TENANT_ID).setCreationTime("2024-01-22T16:32:46.645+0000").setJobKey(3251799813685260L));
-
-    for (Incident data : incData) {
-      Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {
-      });
-      // Field names in schema are different from property names in model object and need to be manually adjusted
-      entityMap.put("errorType", entityMap.get("type"));
-      entityMap.remove("type");
-
-      entityMap.put("errorMessage", entityMap.get("message"));
-      entityMap.remove("message");
-      testSearchRepository.createOrUpdateDocument(incidentIndex.getFullQualifiedName(), entityMap);
-    }
+    testSearchRepository.createOrUpdateDocumentFromObject(incidentIndex.getFullQualifiedName(),
+        new IncidentEntity().setKey(7147483648L).setProcessDefinitionKey(5147483648L).setProcessInstanceKey(6147483648L)
+        .setErrorType(ErrorType.JOB_NO_RETRIES).setState(IncidentState.ACTIVE).setErrorMessage("Another error").setTenantId(DEFAULT_TENANT_ID).setCreationTime(OffsetDateTime.now()).setJobKey(3251799813685260L));
 
     searchContainerManager.refreshIndices("*operate-incident*");
   }

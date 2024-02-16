@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.DecisionInstanceDao;
@@ -56,9 +57,20 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
       throw new ServerException(String.format("Found more than one decision instance for id %s", id));
     }
 
-    DecisionInstance decisionInstance = decisionInstances.get(0);
+    return decisionInstances.get(0);
+  }
 
-    return decisionInstance;
+  private List<DecisionInstance> mapSearchHits(SearchHit[] searchHitArray) {
+    List<DecisionInstance> decisionInstances =
+        ElasticsearchUtil.mapSearchHits(searchHitArray, objectMapper, DecisionInstance.class);
+
+    if (decisionInstances != null) {
+      for (DecisionInstance di : decisionInstances) {
+        di.setEvaluationDate(dateTimeFormatter.convertGeneralToApiDateTime(di.getEvaluationDate()));
+      }
+    }
+
+    return decisionInstances;
   }
 
   @Override
@@ -74,7 +86,7 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        List<DecisionInstance> decisionInstances = ElasticsearchUtil.mapSearchHits(searchHitArray, objectMapper, DecisionInstance.class);
+        List<DecisionInstance> decisionInstances = mapSearchHits(searchHitArray);
         return new Results<DecisionInstance>().setTotal(searchHits.getTotalHits().value).setItems(decisionInstances).setSortValues(sortValues);
       } else {
         return new Results<DecisionInstance>().setTotal(searchHits.getTotalHits().value);

@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
@@ -24,10 +24,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_PROCESS_ID;
@@ -45,28 +41,20 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    List<ProcessDefinition> definitionData = new LinkedList<>();
+    String resourceXml = testResourceManager.readResourceFileContentsAsString("demoProcess_v_1.bpmn");
+    testSearchRepository.createOrUpdateDocumentFromObject(processIndex.getFullQualifiedName(),
+        new ProcessEntity().setKey(2251799813685249L).setTenantId(DEFAULT_TENANT_ID).setName("Demo process").setVersion(1)
+        .setBpmnProcessId("demoProcess").setBpmnXml(resourceXml));
 
-    Map<String, String> xmlSourceMap = new HashMap<>();
-    xmlSourceMap.put("demoProcess", "demoProcess_v_1.bpmn");
-    xmlSourceMap.put("errorProcess", "errorProcess.bpmn");
-    xmlSourceMap.put("complexProcess", "complexProcess_v_3.bpmn");
+    resourceXml = testResourceManager.readResourceFileContentsAsString("errorProcess.bpmn");
+    testSearchRepository.createOrUpdateDocumentFromObject(processIndex.getFullQualifiedName(),
+        new ProcessEntity().setKey(2251799813685251L).setTenantId(DEFAULT_TENANT_ID).setName("Error process").setVersion(1)
+        .setBpmnProcessId("errorProcess").setBpmnXml(resourceXml));
 
-    definitionData.add(new ProcessDefinition().setKey(2251799813685249L).setTenantId(DEFAULT_TENANT_ID).setName("Demo process").setVersion(1)
-        .setBpmnProcessId("demoProcess"));
-    definitionData.add(new ProcessDefinition().setKey(2251799813685251L).setTenantId(DEFAULT_TENANT_ID).setName("Error process").setVersion(1)
-        .setBpmnProcessId("errorProcess"));
-    definitionData.add(new ProcessDefinition().setKey(2251799813685253L).setTenantId(DEFAULT_TENANT_ID).setName("Complex process").setVersion(1)
-        .setBpmnProcessId("complexProcess"));
-
-    for (ProcessDefinition data : definitionData) {
-      Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {
-      });
-      // XML source is not part of the model object and must be added manually in the entity map before writing
-      String resourceXml = testResourceManager.readResourceFileContentsAsString(xmlSourceMap.get(data.getBpmnProcessId()));
-      entityMap.put("bpmnXml", resourceXml);
-      testSearchRepository.createOrUpdateDocument(processIndex.getFullQualifiedName(), entityMap);
-    }
+    resourceXml = testResourceManager.readResourceFileContentsAsString("complexProcess_v_3.bpmn");
+    testSearchRepository.createOrUpdateDocumentFromObject(processIndex.getFullQualifiedName(),
+        new ProcessEntity().setKey(2251799813685253L).setTenantId(DEFAULT_TENANT_ID).setName("Complex process").setVersion(1)
+        .setBpmnProcessId("complexProcess").setBpmnXml(resourceXml));
 
     searchContainerManager.refreshIndices("*operate-process*");
   }

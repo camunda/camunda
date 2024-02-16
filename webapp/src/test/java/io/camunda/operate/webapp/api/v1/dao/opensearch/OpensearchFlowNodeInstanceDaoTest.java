@@ -7,8 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.cache.ProcessCache;
-import io.camunda.operate.property.OperateOpensearchProperties;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -53,17 +52,14 @@ public class OpensearchFlowNodeInstanceDaoTest {
   private ProcessCache mockProcessCache;
 
   @Mock
-  private OperateOpensearchProperties mockOpensearchProperties;
-
-  @Mock
-  private OperateProperties mockOperateProperties;
+  private OperateDateTimeFormatter mockDateTimeFormatter;
 
   private OpensearchFlowNodeInstanceDao underTest;
 
   @BeforeEach
   public void setup() {
-    when(mockOperateProperties.getOpensearch()).thenReturn(mockOpensearchProperties);
-    underTest = new OpensearchFlowNodeInstanceDao(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient, mockFlowNodeIndex, mockProcessCache, mockOperateProperties);
+    underTest = new OpensearchFlowNodeInstanceDao(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient,
+        mockFlowNodeIndex, mockProcessCache, mockDateTimeFormatter);
   }
 
   @Test
@@ -117,11 +113,11 @@ public class OpensearchFlowNodeInstanceDaoTest {
   public void testBuildFilteringWithValidFields() {
     SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
     FlowNodeInstance filter = new FlowNodeInstance().setKey(1L).setProcessInstanceKey(2L).setProcessDefinitionKey(3L)
-        .setStartDate("01-01-2020").setEndDate("01-02-2020").setState("state").setType("type").setFlowNodeId("nodeA")
+        .setStartDate("2024-01-19T18:39:05.196-0500").setEndDate("2024-01-19T18:39:06.196-0500").setState("state").setType("type").setFlowNodeId("nodeA")
         .setIncident(true).setIncidentKey(4L).setTenantId("tenant");
 
-    String expectedDateFormat = "dd-mm-yy";
-    when(mockOpensearchProperties.getDateFormat()).thenReturn(expectedDateFormat);
+    String expectedDateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
+    when(mockDateTimeFormatter.getApiDateTimeFormatString()).thenReturn(expectedDateFormat);
 
     Query<FlowNodeInstance> inputQuery = new Query<FlowNodeInstance>().setFilter(filter);
 

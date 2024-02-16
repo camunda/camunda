@@ -6,20 +6,19 @@
  */
 package io.camunda.operate.webapp.management.dto;
 
-import io.camunda.operate.property.ElasticsearchProperties;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.Objects;
 
 public class UsageMetricQueryDTO {
   private static final int DEFAULT_PAGE_SIZE = Integer.MAX_VALUE;
 
-  @DateTimeFormat(pattern = ElasticsearchProperties.DATE_FORMAT_DEFAULT)
+  @DateTimeFormat(pattern = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT)
   private OffsetDateTime startTime;
 
-  @DateTimeFormat(pattern = ElasticsearchProperties.DATE_FORMAT_DEFAULT)
+  @DateTimeFormat(pattern = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT)
   private OffsetDateTime endTime;
 
   private int pageSize = DEFAULT_PAGE_SIZE;

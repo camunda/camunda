@@ -6,11 +6,15 @@
  */
 package io.camunda.operate.qa.performance;
 
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.connect.CustomOffsetDateTimeDeserializer;
 import io.camunda.operate.connect.CustomOffsetDateTimeSerializer;
-import io.camunda.operate.property.ElasticsearchProperties;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -19,12 +23,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Configuration
 @ComponentScan(basePackages = {
@@ -37,7 +38,7 @@ public class TestConfig {
 
   @Bean
   public DateTimeFormatter getDateTimeFormatter() {
-    return DateTimeFormatter.ofPattern(ElasticsearchProperties.DATE_FORMAT_DEFAULT);
+    return DateTimeFormatter.ofPattern(OperateDateTimeFormatter.DATE_FORMAT_DEFAULT);
   }
 
   @Bean

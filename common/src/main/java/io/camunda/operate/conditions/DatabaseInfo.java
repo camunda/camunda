@@ -44,6 +44,14 @@ public class DatabaseInfo implements ApplicationContextAware {
     return isCurrent(DatabaseType.Opensearch);
   }
 
+  // Helper methods that allow the component to be autowired and safely check the db type instead of using static methods
+  public boolean isOpensearchDb() {
+    return isOpensearch();
+  }
+  public boolean isElasticsearchDb() {
+    return isElasticsearch();
+  }
+
   @Override
   public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
     DatabaseInfo.applicationContext = applicationContext;

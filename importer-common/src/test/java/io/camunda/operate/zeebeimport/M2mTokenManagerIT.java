@@ -6,30 +6,12 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.camunda.operate.util.CollectionUtil.asMap;
-import static io.camunda.operate.zeebeimport.M2mTokenManager.FIELD_NAME_ACCESS_TOKEN;
-import static io.camunda.operate.zeebeimport.M2mTokenManager.FIELD_NAME_AUDIENCE;
-import static io.camunda.operate.zeebeimport.M2mTokenManager.FIELD_NAME_CLIENT_ID;
-import static io.camunda.operate.zeebeimport.M2mTokenManager.FIELD_NAME_CLIENT_SECRET;
-import static io.camunda.operate.zeebeimport.M2mTokenManager.FIELD_NAME_GRANT_TYPE;
-import static io.camunda.operate.zeebeimport.M2mTokenManager.GRANT_TYPE_VALUE;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.Map;
 import io.camunda.operate.JacksonConfig;
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.zeebeimport.util.TestApplicationWithNoBeans;
 import org.junit.After;
@@ -47,10 +29,31 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.Map;
+
+import static io.camunda.operate.util.CollectionUtil.asMap;
+import static io.camunda.operate.zeebeimport.M2mTokenManager.FIELD_NAME_ACCESS_TOKEN;
+import static io.camunda.operate.zeebeimport.M2mTokenManager.FIELD_NAME_AUDIENCE;
+import static io.camunda.operate.zeebeimport.M2mTokenManager.FIELD_NAME_CLIENT_ID;
+import static io.camunda.operate.zeebeimport.M2mTokenManager.FIELD_NAME_CLIENT_SECRET;
+import static io.camunda.operate.zeebeimport.M2mTokenManager.FIELD_NAME_GRANT_TYPE;
+import static io.camunda.operate.zeebeimport.M2mTokenManager.GRANT_TYPE_VALUE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {TestApplicationWithNoBeans.class, M2mTokenManager.class, JacksonConfig.class,
-        OperateProperties.class},
+        OperateDateTimeFormatter.class, DatabaseInfo.class, OperateProperties.class},
     properties = {
         "camunda.operate.auth0.domain=" + M2mTokenManagerIT.AUTH0_DOMAIN,
         "camunda.operate.auth0.m2mClientId=" + M2mTokenManagerIT.M2M_CLIENT_ID,
