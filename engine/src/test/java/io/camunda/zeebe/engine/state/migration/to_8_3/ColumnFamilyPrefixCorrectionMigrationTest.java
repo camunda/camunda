@@ -262,7 +262,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
     @Test
     void shouldIgnoreProcessInstanceKeyByDefinitionKeyEntries() {
       // given
-      decisionRequirementsId.wrapString("decisionRequirements");
+      decisionRequirementsId.wrapString("drg");
       decisionRequirementsVersion.wrapInt(1);
       decisionRequirementsKey.wrapLong(543);
       correctDecisionRequirementsKeyColumnFamily.insert(
@@ -273,7 +273,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       wrongPiKeyByProcDefKeyColumnFamily.insert(
           processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
 
-      decisionRequirementsId.wrapString("decisionRequirements2");
+      decisionRequirementsId.wrapString("drg2");
       decisionRequirementsVersion.wrapInt(2);
       decisionRequirementsKey.wrapLong(987);
       correctDecisionRequirementsKeyColumnFamily.insert(
@@ -295,6 +295,22 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       Assertions.assertThat(
               correctPiKeyByProcDefKeyColumnFamily.exists(processInstanceKeyByProcessDefinitionKey))
           .isTrue();
+
+      decisionRequirementsId.wrapString("drg");
+      decisionRequirementsVersion.wrapInt(1);
+      Assertions.assertThat(
+              correctDecisionRequirementsKeyColumnFamily.get(decisionRequirementsIdAndVersion))
+          .isNotNull()
+          .extracting(DbLong::getValue)
+          .isEqualTo(543L);
+
+      decisionRequirementsId.wrapString("drg2");
+      decisionRequirementsVersion.wrapInt(2);
+      Assertions.assertThat(
+              correctDecisionRequirementsKeyColumnFamily.get(decisionRequirementsIdAndVersion))
+          .isNotNull()
+          .extracting(DbLong::getValue)
+          .isEqualTo(987L);
     }
   }
 
