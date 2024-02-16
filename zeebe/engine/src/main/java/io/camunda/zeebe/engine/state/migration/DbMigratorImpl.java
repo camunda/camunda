@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDe
 import io.camunda.zeebe.engine.state.migration.to_8_4.MultiTenancySignalSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_5.ColumnFamilyPrefixCorrectionMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,6 +72,7 @@ public class DbMigratorImpl implements DbMigrator {
 
   @Override
   public void runMigrations() {
+    checkVersionCompatibility();
     logPreview(migrationTasks);
 
     final var executedMigrations = new ArrayList<MigrationTask>();
@@ -84,6 +86,48 @@ public class DbMigratorImpl implements DbMigrator {
     }
     markMigrationsAsCompleted();
     logSummary(executedMigrations);
+  }
+
+  private void checkVersionCompatibility() {
+    final var migratedByVersion = processingState.getMigrationState().getMigratedByVersion();
+    final var currentVersion = VersionUtil.getVersion();
+
+    final var currentSemanticVersion = SemanticVersion.parse(currentVersion);
+    final var migratedSemanticVersion = SemanticVersion.parse(migratedByVersion);
+
+    if (currentSemanticVersion.isEmpty()) {
+      if (migratedByVersion != null) {
+        LOGGER.warn(
+            "Snapshot is from version {}, but current version {} is not a valid semantic version, not checking compatibility",
+            currentVersion,
+            migratedByVersion);
+      } else {
+        LOGGER.debug(
+            "Snapshot is from an unknown version, not checking compatibility with current version {} which is not a valid semantic version anyway",
+            currentVersion);
+      }
+      return;
+    }
+
+    if (migratedSemanticVersion.isEmpty()) {
+      if (migratedByVersion != null) {
+        LOGGER.warn(
+            "Snapshot is from version {} which is not a valid semantic version, not checking compatibility with current version {}",
+            migratedByVersion,
+            currentVersion);
+      } else {
+        LOGGER.debug(
+            "Snapshot is from an unknown version, not checking compatibility with current version {}",
+            currentVersion);
+      }
+      return;
+    }
+
+    if (migratedSemanticVersion.get().compareTo(currentSemanticVersion.get()) > 0) {
+      throw new IllegalStateException(
+          "Snapshot from version %s is not compatible with current version %s"
+              .formatted(migratedByVersion, currentVersion));
+    }
   }
 
   private void markMigrationsAsCompleted() {
