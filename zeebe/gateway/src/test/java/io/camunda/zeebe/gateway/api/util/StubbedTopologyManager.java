@@ -40,6 +40,11 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
+  public ClusterTopology getClusterTopology() {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
   public void addTopologyListener(final BrokerTopologyListener listener) {
     throw new UnsupportedOperationException("Not yet implemented; implement if need be");
   }
