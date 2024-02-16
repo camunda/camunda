@@ -28,12 +28,14 @@ jobs:
         include:
           - branch: master
             releaseVersion: 99.0.0
-          - branch: stable/8.0
-            releaseVersion: 90.0.0
           - branch: stable/8.1
             releaseVersion: 91.0.0
           - branch: stable/8.2
             releaseVersion: 92.0.0
+          - branch: stable/8.3
+            releaseVersion: 93.0.0
+          - branch: stable/8.4
+            releaseVersion: 94.0.0
     with:
       branch: ${{ matrix.branch }}
       releaseVersion: ${{ matrix.releaseVersion }}
