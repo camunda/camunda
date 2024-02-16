@@ -24,7 +24,6 @@ import io.camunda.zeebe.engine.state.migration.to_8_4.corrections.ColumnFamily49
 import io.camunda.zeebe.engine.state.migration.to_8_4.corrections.ColumnFamily50Corrector;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import org.agrona.collections.MutableInteger;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -36,13 +35,6 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
 
   public static final String EXAMPLE_IDENTIFIER =
       new ColumnFamilyPrefixCorrectionMigration().getIdentifier();
-
-  /** Helper method for missing count method on column family */
-  private static int count(final ColumnFamily<?, ?> columnFamily) {
-    final var count = new MutableInteger(0);
-    columnFamily.forEach((key, value) -> count.increment());
-    return count.get();
-  }
 
   /**
    * Test correction from DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION -> MESSAGE_STATS
@@ -150,7 +142,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       decisionKey.wrapLong(234);
       correctDecisionColumnFamily.insert(decisionIdAndVersion, decisionKey);
 
-      Assertions.assertThat(count(wrongMessageStatsColumnFamily)).isEqualTo(3);
+      Assertions.assertThat(wrongMessageStatsColumnFamily.count()).isEqualTo(3);
 
       // when
       sut.correctColumnFamilyPrefix();
@@ -158,9 +150,9 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       // then
       // we can no longer use wrongMessageStatsColumnFamily.isEmpty() as there are entries in there
       // just no longer message stats entries, but we can simply count the entries
-      Assertions.assertThat(count(wrongMessageStatsColumnFamily)).isEqualTo(2);
-      Assertions.assertThat(count(correctDecisionColumnFamily)).isEqualTo(2);
-      Assertions.assertThat(count(correctMessageStatsColumnFamily)).isEqualTo(1);
+      Assertions.assertThat(wrongMessageStatsColumnFamily.count()).isEqualTo(2);
+      Assertions.assertThat(correctDecisionColumnFamily.count()).isEqualTo(2);
+      Assertions.assertThat(correctMessageStatsColumnFamily.count()).isEqualTo(1);
 
       decisionId.wrapString("decision");
       decisionVersion.wrapInt(1);
@@ -289,7 +281,7 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       correctDecisionRequirementsKeyColumnFamily.insert(
           decisionRequirementsIdAndVersion, decisionRequirementsKey);
 
-      Assertions.assertThat(count(wrongPiKeyByProcDefKeyColumnFamily)).isEqualTo(3);
+      Assertions.assertThat(wrongPiKeyByProcDefKeyColumnFamily.count()).isEqualTo(3);
 
       // when
       sut.correctColumnFamilyPrefix();
@@ -298,9 +290,9 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
       // we can no longer use wrongPiKeyByProcDefKeyColumnFamily.isEmpty() as there are entries in
       // there just no longer process instance keys by process definition key entries, but we can
       // simply count the entries
-      Assertions.assertThat(count(wrongPiKeyByProcDefKeyColumnFamily)).isEqualTo(2);
-      Assertions.assertThat(count(correctDecisionRequirementsKeyColumnFamily)).isEqualTo(2);
-      Assertions.assertThat(count(correctPiKeyByProcDefKeyColumnFamily)).isEqualTo(1);
+      Assertions.assertThat(wrongPiKeyByProcDefKeyColumnFamily.count()).isEqualTo(2);
+      Assertions.assertThat(correctDecisionRequirementsKeyColumnFamily.count()).isEqualTo(2);
+      Assertions.assertThat(correctPiKeyByProcDefKeyColumnFamily.count()).isEqualTo(1);
 
       elementInstanceKey.wrapLong(123);
       processDefinitionKey.wrapLong(456);
