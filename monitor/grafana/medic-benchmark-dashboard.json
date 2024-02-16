@@ -746,7 +746,7 @@
               },
               {
                 "color": "red",
-                "value": 0.3
+                "value": 0.2
               }
             ]
           },
@@ -787,7 +787,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -830,7 +830,7 @@
               },
               {
                 "color": "yellow",
-                "value": 0.1
+                "value": 0.2
               },
               {
                 "color": "red",
@@ -875,7 +875,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -918,11 +918,11 @@
               },
               {
                 "color": "yellow",
-                "value": 0.1
+                "value": 0.3
               },
               {
                 "color": "red",
-                "value": 0.3
+                "value": 0.6
               }
             ]
           },
@@ -963,7 +963,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2094,7 +2094,7 @@
               },
               {
                 "color": "red",
-                "value": 0.3
+                "value": 0.2
               }
             ]
           },
@@ -2178,11 +2178,11 @@
               },
               {
                 "color": "yellow",
-                "value": 0.1
+                "value": 0.3
               },
               {
                 "color": "red",
-                "value": 0.3
+                "value": 0.5
               }
             ]
           },
@@ -2266,11 +2266,11 @@
               },
               {
                 "color": "yellow",
-                "value": 0.1
+                "value": 0.3
               },
               {
                 "color": "red",
-                "value": 0.3
+                "value": 0.6
               }
             ]
           },
