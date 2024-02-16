@@ -73,5 +73,9 @@ public interface TopologyChangeCoordinator {
      */
     Either<Exception, List<TopologyChangeOperation>> operations(
         final ClusterTopology currentTopology);
+
+    default boolean isForced() {
+      return false;
+    }
   }
 }
