@@ -12,8 +12,10 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -48,6 +50,8 @@ public class ColumnFamily49Corrector {
   private final DbLong processDefinitionKey;
   private final DbLong elementInstanceKey;
 
+  private final DbCompositeKey<DbString, DbInt> decisionRequirementsIdAndVersion;
+
   public ColumnFamily49Corrector(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     recoverColumnFamily =
@@ -64,6 +68,11 @@ public class ColumnFamily49Corrector {
             transactionContext,
             processInstanceKeyByProcessDefinitionKey,
             DbNil.INSTANCE);
+
+    final var dbDecisionRequirementsId = new DbString();
+    final var dbDecisionRequirementsVersion = new DbInt();
+    decisionRequirementsIdAndVersion =
+        new DbCompositeKey<>(dbDecisionRequirementsId, dbDecisionRequirementsVersion);
   }
 
   public void correctColumnFamilyPrefix() {
@@ -83,8 +92,7 @@ public class ColumnFamily49Corrector {
           try {
             // so it appears the key fits the expected length, let's try to read it to ensure it
             // is a decision requirement id and version
-            processInstanceKeyByProcessDefinitionKey.wrap(
-                key.getDirectBuffer(), 0, key.getLength());
+            decisionRequirementsIdAndVersion.wrap(key.getDirectBuffer(), 0, key.getLength());
           } catch (final Exception e) {
             LOG.trace(
                 "Found invalid key [{}] (unable to read key) in column family [{}] {}",
