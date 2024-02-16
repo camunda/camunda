@@ -18,6 +18,7 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.topology.api.ErrorResponse.ErrorCode;
+import io.camunda.zeebe.topology.api.TopologyCoordinatorSupplier.ClusterTopologyAwareCoordinatorSupplier;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
@@ -46,11 +47,12 @@ final class TopologyManagementApiTest {
   private TopologyRequestServer requestServer;
   private AtomixCluster gateway;
   private AtomixCluster coordinator;
-  private final ClusterTopology initialTopology = ClusterTopology.init();
   private final MemberId id0 = MemberId.from("0");
   private final MemberId id1 = MemberId.from("1");
   private final MemberId id2 = MemberId.from("2");
   private final MemberId id3 = MemberId.from("3");
+  private final ClusterTopology initialTopology =
+      ClusterTopology.init().addMember(id0, MemberState.initializeAsActive(Map.of()));
 
   @BeforeEach
   void setup() {
@@ -69,7 +71,8 @@ final class TopologyManagementApiTest {
     clientApi =
         new TopologyManagementRequestSender(
             gateway.getCommunicationService(),
-            coordinator.getMembershipService().getLocalMember().id(),
+            new ClusterTopologyAwareCoordinatorSupplier(
+                () -> recordingCoordinator.getTopology().join()),
             new ProtoBufSerializer());
 
     requestServer =
@@ -129,7 +132,7 @@ final class TopologyManagementApiTest {
   void shouldRemoveMembers() {
     // given
     recordingCoordinator.setCurrentTopology(
-        ClusterTopology.init()
+        initialTopology
             .addMember(id1, MemberState.initializeAsActive(Map.of()))
             .addMember(id2, MemberState.initializeAsActive(Map.of())));
     final var request = new TopologyManagementRequest.RemoveMembersRequest(Set.of(id1, id2), false);
@@ -174,7 +177,7 @@ final class TopologyManagementApiTest {
     final var request =
         new TopologyManagementRequest.ReassignPartitionsRequest(Set.of(id1, id2), false);
     final ClusterTopology currentTopology =
-        ClusterTopology.init()
+        initialTopology
             .addMember(
                 id1,
                 MemberState.initializeAsActive(
@@ -194,13 +197,12 @@ final class TopologyManagementApiTest {
   @Test
   void shouldScaleBrokers() {
     // given
-    final var request = new TopologyManagementRequest.ScaleRequest(Set.of(id1, id2), false);
+    final var request = new TopologyManagementRequest.ScaleRequest(Set.of(id0, id1), false);
     final ClusterTopology currentTopology =
-        ClusterTopology.init()
-            .addMember(
-                id1,
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(1))));
+        initialTopology
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1)))
+            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1)));
+
     recordingCoordinator.setCurrentTopology(currentTopology);
 
     // when
@@ -209,9 +211,9 @@ final class TopologyManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
-            new MemberJoinOperation(id2),
-            new PartitionJoinOperation(id2, 2, 1),
-            new PartitionLeaveOperation(id1, 2));
+            new MemberJoinOperation(id1),
+            new PartitionJoinOperation(id1, 2, 1),
+            new PartitionLeaveOperation(id0, 2));
   }
 
   @Test
