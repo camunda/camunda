@@ -12,10 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -62,6 +66,68 @@ class MetricsExporterTest {
         .map(s -> s.value)
         .describedAs("Expected exactly 1 observed job_life_time sample counted")
         .containsExactly(1d);
+  }
+
+  @Test
+  void shouldCleanupProcessInstancesWithSameStartTime() {
+    // given
+    final var exporter = new MetricsExporter(new ExecutionLatencyMetrics());
+    final var controller = new ExporterTestController();
+    exporter.open(controller);
+    exporter.export(
+        ImmutableRecord.<ProcessInstanceRecord>builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.PROCESS_INSTANCE)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withTimestamp(1651505728460L)
+            .withKey(Protocol.encodePartitionId(1, 1))
+            .withValue(new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS))
+            .build());
+    exporter.export(
+        ImmutableRecord.<ProcessInstanceRecord>builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.PROCESS_INSTANCE)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withTimestamp(1651505728460L)
+            .withKey(Protocol.encodePartitionId(1, 2))
+            .withValue(new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS))
+            .build());
+
+    // when
+    controller.runScheduledTasks(Duration.ofHours(1));
+
+    // then
+    assertThat(exporter.cachedProcessInstanceCount()).isZero();
+  }
+
+  @Test
+  void shouldCleanupJobWithSameStartTime() {
+    // given
+    final var exporter = new MetricsExporter(new ExecutionLatencyMetrics());
+    final var controller = new ExporterTestController();
+    exporter.open(controller);
+    exporter.export(
+        ImmutableRecord.builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.JOB)
+            .withIntent(JobIntent.CREATED)
+            .withTimestamp(1651505729571L)
+            .withKey(Protocol.encodePartitionId(1, 1))
+            .build());
+    exporter.export(
+        ImmutableRecord.builder()
+            .withRecordType(RecordType.EVENT)
+            .withValueType(ValueType.JOB)
+            .withIntent(JobIntent.CREATED)
+            .withTimestamp(1651505729571L)
+            .withKey(Protocol.encodePartitionId(1, 2))
+            .build());
+
+    // when
+    controller.runScheduledTasks(Duration.ofHours(1));
+
+    // then
+    assertThat(exporter.cachedJobCount()).isZero();
   }
 
   @Nested
