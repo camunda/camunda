@@ -33,11 +33,11 @@ import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
-import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
-import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.importing.job.EventProcessInstanceDatabaseImportJob;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.importing.job.EventProcessInstanceDatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.Instant;
@@ -78,6 +78,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   private final Map<String, EventToFlowNodeMapping> eventMappingIdToEventMapping;
   private final BpmnModelInstance bpmnModelInstance;
   private final DatabaseClient databaseClient;
+  private List<EventProcessGatewayDto> gatewayLookup;
 
   public EventProcessInstanceImportService(final ConfigurationService configurationService,
                                            final EventProcessPublishStateDto eventProcessPublishStateDto,
@@ -90,10 +91,8 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     this.bpmnModelInstance = parseBpmnModel(eventProcessPublishStateDto.getXml());
     this.eventMappingIdToEventMapping = extractMappingByEventIdentifier(eventProcessPublishStateDto, bpmnModelInstance);
     this.eventProcessInstanceWriter = eventProcessInstanceWriter;
-    this.eventProcessInstanceWriter.setGatewayLookup(buildGatewayLookup(
-      eventProcessPublishStateDto, bpmnModelInstance
-    ));
     this.databaseClient = databaseClient;
+    this.gatewayLookup = buildGatewayLookup(eventProcessPublishStateDto, bpmnModelInstance);
   }
 
   @Override
@@ -446,7 +445,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   private DatabaseImportJob<EventProcessInstanceDto> createDatabaseImportJob(List<EventProcessInstanceDto> processInstances,
                                                                                   Runnable callback) {
     EventProcessInstanceDatabaseImportJob importJob = new EventProcessInstanceDatabaseImportJob(
-      eventProcessInstanceWriter, callback, databaseClient
+      eventProcessInstanceWriter, callback, databaseClient, gatewayLookup, eventProcessPublishStateDto
     );
     importJob.setEntitiesToImport(processInstances);
     return importJob;

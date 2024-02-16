@@ -8,9 +8,9 @@ package org.camunda.optimize.service.cleanup;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES;
 import org.camunda.optimize.service.db.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
-import org.camunda.optimize.service.db.writer.EventProcessInstanceWriterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
@@ -27,7 +27,7 @@ public class EventProcessCleanupService extends CleanupService {
 
   private final ConfigurationService configurationService;
   private final EventProcessPublishStateReader eventProcessPublishStateReader;
-  private final EventProcessInstanceWriterFactory eventProcessInstanceWriterFactory;
+  private final EventProcessInstanceWriter eventProcessInstanceWriter;
 
   @Override
   public boolean isEnabled() {
@@ -59,15 +59,14 @@ public class EventProcessCleanupService extends CleanupService {
       cleanupMode
     );
 
-    final EventProcessInstanceWriter eventProcessInstanceWriter =
-      eventProcessInstanceWriterFactory.createEventProcessInstanceWriter(eventProcess);
+    final String index = new EventProcessInstanceIndexES(eventProcess.getId()).getIndexName();
     final OffsetDateTime endDate = startTime.minus(cleanupConfiguration.getTtl());
     switch (cleanupMode) {
       case ALL:
-        eventProcessInstanceWriter.deleteInstancesThatEndedBefore(endDate);
+        eventProcessInstanceWriter.deleteInstancesThatEndedBefore(index, endDate);
         break;
       case VARIABLES:
-        eventProcessInstanceWriter.deleteVariablesOfInstancesThatEndedBefore(endDate);
+        eventProcessInstanceWriter.deleteVariablesOfInstancesThatEndedBefore(index, endDate);
         break;
       default:
         throw new IllegalStateException("Unsupported cleanup mode " + cleanupMode);
