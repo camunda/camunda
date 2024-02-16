@@ -7,6 +7,8 @@ package org.camunda.optimize.service.db.os.externalcode.client.async;
 
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
 import org.opensearch.client.opensearch.core.UpdateByQueryResponse;
 
@@ -21,5 +23,10 @@ public class OpenSearchAsyncDocumentOperations extends OpenSearchAsyncOperation 
   public CompletableFuture<UpdateByQueryResponse> updateByQuery(UpdateByQueryRequest.Builder requestBuilder,
                                                                 Function<Exception, String> errorMessageSupplier) {
     return safe(() -> openSearchAsyncClient.updateByQuery(requestBuilder.build()), errorMessageSupplier);
+  }
+
+  public CompletableFuture<DeleteByQueryResponse> deleteByQuery(DeleteByQueryRequest.Builder requestBuilder,
+                                                                Function<Exception, String> errorMessageSupplier) {
+    return safe(() -> openSearchAsyncClient.deleteByQuery(requestBuilder.build()), errorMessageSupplier);
   }
 }

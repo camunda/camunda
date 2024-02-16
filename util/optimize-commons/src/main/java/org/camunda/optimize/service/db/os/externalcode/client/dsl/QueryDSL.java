@@ -19,6 +19,7 @@ import org.opensearch.client.opensearch._types.query_dsl.IdsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchNoneQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
+import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Operator;
 import org.opensearch.client.opensearch._types.query_dsl.PrefixQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -112,6 +113,10 @@ public interface QueryDSL {
     )._toQuery();
   }
 
+  static <A> Query lt(String field, A lt) {
+    return RangeQuery.of(q -> q.field(field).lte(json(lt)))._toQuery();
+  }
+
   static <A> Query lte(String field, A lte) {
     return RangeQuery.of(q -> q.field(field).lte(json(lte)))._toQuery();
   }
@@ -130,6 +135,10 @@ public interface QueryDSL {
 
   static Query matchNone() {
     return new MatchNoneQuery.Builder().build()._toQuery();
+  }
+
+  static Query nested(String path, Query query, ChildScoreMode scoreMode) {
+    return NestedQuery.of(q -> q.path(path).query(query).scoreMode(scoreMode))._toQuery();
   }
 
   static Query not(Query... queries) {

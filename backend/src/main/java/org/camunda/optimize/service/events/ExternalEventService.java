@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.events;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
@@ -12,10 +13,10 @@ import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
+import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES;
 import org.camunda.optimize.service.db.events.EventFetcherService;
 import org.camunda.optimize.service.db.reader.ExternalEventReader;
 import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
-import org.camunda.optimize.service.db.writer.EventProcessInstanceWriterFactory;
 import org.camunda.optimize.service.db.writer.ExternalEventWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
@@ -26,19 +27,12 @@ import java.util.Optional;
 
 @Component
 @Slf4j
+@AllArgsConstructor
 public class ExternalEventService implements EventFetcherService<EventDto> {
 
   private final ExternalEventReader externalEventReader;
   private final ExternalEventWriter externalEventWriter;
   private final EventProcessInstanceWriter eventInstanceWriter;
-
-  public ExternalEventService(final ExternalEventReader externalEventReader,
-                              final ExternalEventWriter externalEventWriter,
-                              final EventProcessInstanceWriterFactory eventProcessInstanceWriterFactory) {
-    this.externalEventReader = externalEventReader;
-    this.externalEventWriter = externalEventWriter;
-    this.eventInstanceWriter = eventProcessInstanceWriterFactory.createAllEventProcessInstanceWriter();
-  }
 
   public Page<DeletableEventDto> getEventsForRequest(final EventSearchRequestDto eventSearchRequestDto) {
     return externalEventReader.getEventsForRequest(eventSearchRequestDto);
@@ -77,7 +71,8 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
   }
 
   public void deleteEvents(final List<String> eventIdsToDelete) {
-    eventInstanceWriter.deleteEventsWithIdsInFromAllInstances(eventIdsToDelete);
+    final String index = new EventProcessInstanceIndexES("*").getIndexName();
+    eventInstanceWriter.deleteEventsWithIdsInFromAllInstances(index, eventIdsToDelete);
     externalEventWriter.deleteEventsWithIdsIn(eventIdsToDelete);
   }
 

@@ -70,7 +70,7 @@ public class RunningProcessInstanceWriter {
 
     createMissingIndices(processInstanceDtos);
 
-    processInstanceRepository.doImportBulkRequestWithList(IMPORT_ITEM_NAME, processInstanceDtoToUpdateList);
+    processInstanceRepository.bulkImportProcessInstances(IMPORT_ITEM_NAME, processInstanceDtoToUpdateList);
   }
 
   public void importProcessInstancesForProcessDefinitionIds(final Map<String, Map<String, String>> definitionKeyToIdToStateMap) {

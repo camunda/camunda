@@ -39,6 +39,7 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.CountResponse;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.DeleteResponse;
 import org.opensearch.client.opensearch.core.GetRequest;
@@ -630,6 +631,29 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
     final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
     log.debug("Updated [{}] {}.", taskStatus.updated(), updateItemIdentifier);
+    return taskStatus.updated() > 0L;
+  }
+
+  public boolean deleteByQueryTask(String deleteItemIdentifier, Query filterQuery, boolean refresh, String... indices) {
+    log.debug("Deleting {}", deleteItemIdentifier);
+    DeleteByQueryRequest.Builder requestBuilder = new DeleteByQueryRequest.Builder()
+      .index(applyIndexPrefixes(indices))
+      .conflicts(Conflicts.Proceed)
+      .query(filterQuery)
+      .refresh(refresh);
+    Function<Exception, String> errorMessage = e ->
+      format("Failed to create deleteByQuery task for [%s] with query [%s]!", deleteItemIdentifier, filterQuery);
+
+    final String taskId = safe(
+      () -> richOpenSearchClient.async().doc().deleteByQuery(requestBuilder, errorMessage).get().task(),
+      errorMessage,
+      log
+    );
+
+    waitUntilTaskIsFinished(taskId, deleteItemIdentifier);
+
+    final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
+    log.debug("Deleted [{}] {}.", taskStatus.updated(), deleteItemIdentifier);
     return taskStatus.updated() > 0L;
   }
 
