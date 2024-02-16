@@ -35,9 +35,9 @@ public interface UserTaskRecordValue
 
   String getAssignee();
 
-  String getCandidateGroups();
+  List<String> getCandidateGroupsList();
 
-  String getCandidateUsers();
+  List<String> getCandidateUsersList();
 
   String getDueDate();
 

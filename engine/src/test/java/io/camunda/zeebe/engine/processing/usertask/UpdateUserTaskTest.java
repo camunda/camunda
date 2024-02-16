@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -134,7 +135,10 @@ public final class UpdateUserTaskTest {
 
     // when
     final Record<UserTaskRecordValue> updateRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).update("baz,foobar", null, null, null);
+        ENGINE
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .update(List.of("baz", "foobar"), null, null, null);
 
     // then
     Assertions.assertThat(updateRecord)
@@ -142,8 +146,8 @@ public final class UpdateUserTaskTest {
         .hasIntent(UserTaskIntent.UPDATING);
 
     Assertions.assertThat(updateRecord.getValue())
-        .hasCandidateGroups("baz,foobar")
-        .hasCandidateUsers("[\"oof\",\"rab\"]")
+        .hasCandidateGroupsList("baz", "foobar")
+        .hasCandidateUsersList("oof", "rab")
         .hasDueDate("2023-03-02T15:35+02:00")
         .hasFollowUpDate("2023-03-02T16:35+02:00");
   }
@@ -165,7 +169,10 @@ public final class UpdateUserTaskTest {
 
     // when
     final Record<UserTaskRecordValue> updateRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).update(null, "baz,foobar", null, null);
+        ENGINE
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .update(null, List.of("baz", "foobar"), null, null);
 
     // then
     Assertions.assertThat(updateRecord)
@@ -173,8 +180,8 @@ public final class UpdateUserTaskTest {
         .hasIntent(UserTaskIntent.UPDATING);
 
     Assertions.assertThat(updateRecord.getValue())
-        .hasCandidateGroups("[\"foo\",\"bar\"]")
-        .hasCandidateUsers("baz,foobar")
+        .hasCandidateGroupsList("foo", "bar")
+        .hasCandidateUsersList("baz", "foobar")
         .hasDueDate("2023-03-02T15:35+02:00")
         .hasFollowUpDate("2023-03-02T16:35+02:00");
   }
@@ -204,8 +211,8 @@ public final class UpdateUserTaskTest {
         .hasIntent(UserTaskIntent.UPDATING);
 
     Assertions.assertThat(updateRecord.getValue())
-        .hasCandidateGroups("[\"foo\",\"bar\"]")
-        .hasCandidateUsers("[\"oof\",\"rab\"]")
+        .hasCandidateGroupsList("foo", "bar")
+        .hasCandidateUsersList("oof", "rab")
         .hasDueDate("abc")
         .hasFollowUpDate("2023-03-02T16:35+02:00");
   }
@@ -235,8 +242,8 @@ public final class UpdateUserTaskTest {
         .hasIntent(UserTaskIntent.UPDATING);
 
     Assertions.assertThat(updateRecord.getValue())
-        .hasCandidateGroups("[\"foo\",\"bar\"]")
-        .hasCandidateUsers("[\"oof\",\"rab\"]")
+        .hasCandidateGroupsList("foo", "bar")
+        .hasCandidateUsersList("oof", "rab")
         .hasDueDate("2023-03-02T15:35+02:00")
         .hasFollowUpDate("abc");
   }
@@ -266,8 +273,8 @@ public final class UpdateUserTaskTest {
         .hasIntent(UserTaskIntent.UPDATING);
 
     Assertions.assertThat(updateRecord.getValue())
-        .hasCandidateGroups("")
-        .hasCandidateUsers("")
+        .hasNoCandidateUsersList()
+        .hasNoCandidateUsersList()
         .hasDueDate("")
         .hasFollowUpDate("");
   }

@@ -150,15 +150,15 @@ public final class UserTaskClient {
   }
 
   public Record<UserTaskRecordValue> update(
-      final String candidateGroups,
-      final String candidateUsers,
+      final List<String> candidateGroups,
+      final List<String> candidateUsers,
       final String dueDate,
       final String followUpDate) {
     if (candidateGroups != null) {
-      userTaskRecord.setCandidateGroups(candidateGroups).setCandidateGroupsChanged();
+      userTaskRecord.setCandidateGroupsList(candidateGroups).setCandidateGroupsChanged();
     }
     if (candidateUsers != null) {
-      userTaskRecord.setCandidateUsers(candidateUsers).setCandidateUsersChanged();
+      userTaskRecord.setCandidateUsersList(candidateUsers).setCandidateUsersChanged();
     }
     if (dueDate != null) {
       userTaskRecord.setDueDate(dueDate).setDueDateChanged();

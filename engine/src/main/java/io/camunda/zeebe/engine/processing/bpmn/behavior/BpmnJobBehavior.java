@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -100,11 +102,13 @@ public final class BpmnJobBehavior {
                 userTaskBehavior
                     .evaluateCandidateGroupsExpression(
                         jobWorkerProps.getCandidateGroups(), scopeKey)
+                    .map(BpmnJobBehavior::asListLiteralOrNull)
                     .map(p::candidateGroups))
         .flatMap(
             p ->
                 userTaskBehavior
                     .evaluateCandidateUsersExpression(jobWorkerProps.getCandidateUsers(), scopeKey)
+                    .map(BpmnJobBehavior::asListLiteralOrNull)
                     .map(p::candidateUsers))
         .flatMap(
             p ->
@@ -123,6 +127,10 @@ public final class BpmnJobBehavior {
                         jobWorkerProps.getFormId(), scopeKey, tenantId)
                     .map(key -> Objects.toString(key, null))
                     .map(p::formKey));
+  }
+
+  private static String asListLiteralOrNull(final List<String> list) {
+    return list == null ? null : ExpressionTransformer.asListLiteral(list);
   }
 
   public void createNewJob(

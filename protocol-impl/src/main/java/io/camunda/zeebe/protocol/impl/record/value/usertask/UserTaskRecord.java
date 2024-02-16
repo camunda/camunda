@@ -31,8 +31,8 @@ import org.agrona.DirectBuffer;
 
 public final class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecordValue {
 
-  public static final String CANDIDATE_GROUPS = "candidateGroups";
-  public static final String CANDIDATE_USERS = "candidateUsers";
+  public static final String CANDIDATE_GROUPS = "candidateGroupsList";
+  public static final String CANDIDATE_USERS = "candidateUsersList";
   public static final String DUE_DATE = "dueDate";
   public static final String FOLLOW_UP_DATE = "followUpDate";
 
@@ -44,10 +44,10 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
   private final StringProperty assigneeProp = new StringProperty("assignee", EMPTY_STRING);
-  private final StringProperty candidateGroupsProp =
-      new StringProperty(CANDIDATE_GROUPS, EMPTY_STRING);
-  private final StringProperty candidateUsersProp =
-      new StringProperty(CANDIDATE_USERS, EMPTY_STRING);
+  private final ArrayProperty<StringValue> candidateGroupsListProp =
+      new ArrayProperty<>(CANDIDATE_GROUPS, StringValue::new);
+  private final ArrayProperty<StringValue> candidateUsersListProp =
+      new ArrayProperty<>(CANDIDATE_USERS, StringValue::new);
   private final StringProperty dueDateProp = new StringProperty(DUE_DATE, EMPTY_STRING);
   private final StringProperty followUpDateProp = new StringProperty(FOLLOW_UP_DATE, EMPTY_STRING);
   private final LongProperty formKeyProp = new LongProperty("formKey", -1);
@@ -77,8 +77,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     super(19);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
-        .declareProperty(candidateGroupsProp)
-        .declareProperty(candidateUsersProp)
+        .declareProperty(candidateGroupsListProp)
+        .declareProperty(candidateUsersListProp)
         .declareProperty(dueDateProp)
         .declareProperty(followUpDateProp)
         .declareProperty(formKeyProp)
@@ -99,8 +99,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public void wrapWithoutVariables(final UserTaskRecord record) {
     userTaskKeyProp.setValue(record.getUserTaskKey());
     assigneeProp.setValue(record.getAssigneeBuffer());
-    candidateGroupsProp.setValue(record.getCandidateGroupsBuffer());
-    candidateUsersProp.setValue(record.getCandidateUsersBuffer());
+    setCandidateGroupsList(record.getCandidateGroupsList());
+    setCandidateUsersList(record.getCandidateUsersList());
     dueDateProp.setValue(record.getDueDateBuffer());
     followUpDateProp.setValue(record.getFollowUpDateBuffer());
     formKeyProp.setValue(record.getFormKey());
@@ -129,10 +129,10 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private void updateAttribute(final StringValue attribute, final UserTaskRecord record) {
     switch (bufferAsString(attribute.getValue())) {
       case CANDIDATE_GROUPS:
-        candidateGroupsProp.setValue(record.getCandidateGroupsBuffer());
+        setCandidateGroupsList(record.getCandidateGroupsList());
         break;
       case CANDIDATE_USERS:
-        candidateUsersProp.setValue(record.getCandidateUsersBuffer());
+        setCandidateUsersList(record.getCandidateUsersList());
         break;
       case DUE_DATE:
         dueDateProp.setValue(record.getDueDateBuffer());
@@ -156,13 +156,19 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @Override
-  public String getCandidateGroups() {
-    return bufferAsString(candidateGroupsProp.getValue());
+  public List<String> getCandidateGroupsList() {
+    return StreamSupport.stream(candidateGroupsListProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
   }
 
   @Override
-  public String getCandidateUsers() {
-    return bufferAsString(candidateUsersProp.getValue());
+  public List<String> getCandidateUsersList() {
+    return StreamSupport.stream(candidateUsersListProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -320,23 +326,17 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     return this;
   }
 
-  public UserTaskRecord setCandidateUsers(final String candidateUsers) {
-    candidateUsersProp.setValue(candidateUsers);
+  public UserTaskRecord setCandidateUsersList(final List<String> candidateUsers) {
+    candidateUsersListProp.reset();
+    candidateUsers.forEach(
+        tenantId -> candidateUsersListProp.add().wrap(BufferUtil.wrapString(tenantId)));
     return this;
   }
 
-  public UserTaskRecord setCandidateUsers(final DirectBuffer candidateUsers) {
-    candidateUsersProp.setValue(candidateUsers);
-    return this;
-  }
-
-  public UserTaskRecord setCandidateGroups(final String candidateGroups) {
-    candidateGroupsProp.setValue(candidateGroups);
-    return this;
-  }
-
-  public UserTaskRecord setCandidateGroups(final DirectBuffer candidateGroups) {
-    candidateGroupsProp.setValue(candidateGroups);
+  public UserTaskRecord setCandidateGroupsList(final List<String> candidateGroups) {
+    candidateGroupsListProp.reset();
+    candidateGroups.forEach(
+        tenantId -> candidateGroupsListProp.add().wrap(BufferUtil.wrapString(tenantId)));
     return this;
   }
 
@@ -410,16 +410,6 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   @JsonIgnore
   public DirectBuffer getAssigneeBuffer() {
     return assigneeProp.getValue();
-  }
-
-  @JsonIgnore
-  public DirectBuffer getCandidateGroupsBuffer() {
-    return candidateGroupsProp.getValue();
-  }
-
-  @JsonIgnore
-  public DirectBuffer getCandidateUsersBuffer() {
-    return candidateUsersProp.getValue();
   }
 
   @JsonIgnore

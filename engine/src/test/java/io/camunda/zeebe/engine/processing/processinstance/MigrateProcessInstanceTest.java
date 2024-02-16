@@ -582,8 +582,8 @@ public class MigrateProcessInstanceTest {
                 in the target process. Re-evaluation of these expression is not enabled for this \
                 migration""")
         .hasAssignee(userTask.getAssignee())
-        .hasCandidateGroups(userTask.getCandidateGroups())
-        .hasCandidateUsers(userTask.getCandidateUsers())
+        .hasCandidateGroupsList(userTask.getCandidateGroupsList())
+        .hasCandidateUsersList(userTask.getCandidateUsersList())
         .hasDueDate(userTask.getDueDate())
         .hasFollowUpDate(userTask.getFollowUpDate())
         .hasFormKey(userTask.getFormKey());
