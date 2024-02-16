@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.mockito.Mockito;
@@ -246,6 +247,14 @@ public final class StreamPlatform {
       final SynchronousLogStream stream,
       final boolean awaitOpening,
       final StreamProcessorMode processorMode) {
+    return buildStreamProcessor(
+        stream, awaitOpening, cfg -> cfg.streamProcessorMode(processorMode));
+  }
+
+  public StreamProcessor buildStreamProcessor(
+      final SynchronousLogStream stream,
+      final boolean awaitOpening,
+      final Consumer<StreamProcessorBuilder> processorConfiguration) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
     scheduledCommandCache = new TestCommandCache();
@@ -264,10 +273,11 @@ public final class StreamPlatform {
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .recordProcessors(recordProcessors)
-            .streamProcessorMode(processorMode)
             .listener(mockStreamProcessorListener)
             .scheduledCommandCache(scheduledCommandCache)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
+
+    processorConfiguration.accept(builder);
 
     builder.addLifecycleListener(mockProcessorLifecycleAware);
 
