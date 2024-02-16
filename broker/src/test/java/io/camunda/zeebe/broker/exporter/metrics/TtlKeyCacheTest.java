@@ -115,4 +115,17 @@ final class TtlKeyCacheTest {
     assertThat(cache.remove(3L)).isEqualTo(30L);
     assertThat(cache.remove(4L)).isEqualTo(40L);
   }
+
+  @Test
+  void shouldReturnNullValue() {
+    // given
+    final var cache = new TtlKeyCache(3L);
+    cache.store(1L, 10L);
+
+    // when
+    final var timestamp = cache.remove(2L);
+
+    // then
+    assertThat(timestamp).isEqualTo(3L);
+  }
 }
