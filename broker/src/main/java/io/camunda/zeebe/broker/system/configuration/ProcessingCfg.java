@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import java.util.Set;
+
 public final class ProcessingCfg implements ConfigurationEntry {
   private static final int DEFAULT_PROCESSING_BATCH_LIMIT = 100;
   private Integer maxCommandsInBatch = DEFAULT_PROCESSING_BATCH_LIMIT;
+  private Set<Long> skipPositions;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -25,6 +28,14 @@ public final class ProcessingCfg implements ConfigurationEntry {
 
   public void setMaxCommandsInBatch(final int maxCommandsInBatch) {
     this.maxCommandsInBatch = maxCommandsInBatch;
+  }
+
+  public Set<Long> skipPositions() {
+    return skipPositions != null ? skipPositions : Set.of();
+  }
+
+  public void setSkipPositions(final Set<Long> skipPositions) {
+    this.skipPositions = skipPositions;
   }
 
   @Override

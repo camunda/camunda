@@ -2,3 +2,4 @@ zeebe:
   broker:
     processing:
       maxCommandsInBatch: 125
+      skipPositions: 1, 2, 3
