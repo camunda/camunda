@@ -25,6 +25,7 @@ const props = {
     processDefinitionKey: '',
     processDefinitionVersions: [],
     tenantIds: [],
+    filters: [],
   },
   selectedOutlierNode,
 };

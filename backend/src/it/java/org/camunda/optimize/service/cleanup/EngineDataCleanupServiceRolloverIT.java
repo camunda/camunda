@@ -61,7 +61,7 @@ public class EngineDataCleanupServiceRolloverIT extends AbstractCleanupIT {
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
-    assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+    assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(getCamundaActivityEvents())
       .extracting(CamundaActivityEventDto::getProcessInstanceId)
       .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
@@ -103,7 +103,7 @@ public class EngineDataCleanupServiceRolloverIT extends AbstractCleanupIT {
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
-    assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
+    assertPersistedProcessInstanceDataComplete(unaffectedProcessInstanceForSameDefinition.getId());
     assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
       .isNotEmpty()
       .extracting(VariableUpdateInstanceDto::getProcessInstanceId)

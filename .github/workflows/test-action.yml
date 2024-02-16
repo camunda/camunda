@@ -1,9 +1,16 @@
 # This action is used to test different GHA related things
 name: Test Action
 on:
-  repository_dispatch:
-    types:
-      - test_action
+  workflow_dispatch: 
+    inputs:
+      test-input1:
+        description: 'Test input 1'
+        required: true
+        type: string
+      test-input2:
+        description: 'Test input 2'
+        required: true
+        type: string
 
 jobs:
   test_action:
@@ -11,4 +18,4 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       - run: |
-          echo "${{ toJson(github.event.client_payload) }}"
+          echo "${{ toJson(github.event.inputs) }}"

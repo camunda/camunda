@@ -17,8 +17,6 @@
     <it.test.excludedGroups />
     <it.test.includedGroups />
     <test.forkCount />
-
-    <sonar.coverage.jacoco.xmlReportPaths>${basedir}/../${aggregate.report.dir}</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
   <dependencies>

@@ -30,4 +30,8 @@ public enum DatabaseType {
     return valueOf(profileString.toUpperCase());
   }
 
+  @Override
+  public String toString() {
+    return getId();
+  }
 }

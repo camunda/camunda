@@ -20,7 +20,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMapping
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
@@ -30,11 +29,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEven
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES;
-import org.camunda.optimize.service.db.es.schema.index.events.EventProcessPublishStateIndexES;
 import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -42,17 +37,7 @@ import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.provider.Arguments;
@@ -60,7 +45,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -79,14 +63,9 @@ import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOUR
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntryForGroup;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Tag("eventBasedProcess")
 public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
@@ -271,78 +250,28 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   }
 
   @SneakyThrows
-  protected Map<String, List<AliasMetadata>> getEventProcessInstanceIndicesWithAliasesFromElasticsearch() {
-    final OptimizeElasticsearchClient esClient =
-      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-    final OptimizeIndexNameService indexNameService = esClient
-      .getIndexNameService();
-    final GetIndexResponse getIndexResponse = esClient
-      .getHighLevelClient()
-      .indices().get(
-        new GetIndexRequest(indexNameService.getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX) + "*"),
-        esClient.requestOptions()
-      );
-    return getIndexResponse.getAliases();
+  protected Map<String, List<AliasMetadata>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
+    return databaseIntegrationTestExtension.getEventProcessInstanceIndicesWithAliasesFromDatabase();
   }
 
   @SneakyThrows
-  protected Optional<EventProcessPublishStateDto> getEventProcessPublishStateDtoFromElasticsearch(final String processMappingId) {
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(
-        boolQuery()
-          .must(termQuery(EventProcessPublishStateIndexES.PROCESS_MAPPING_ID, processMappingId))
-          .must(termQuery(EventProcessPublishStateIndexES.DELETED, false))
-      )
-      .sort(SortBuilders.fieldSort(EventProcessPublishStateIndexES.PUBLISH_DATE_TIME).order(SortOrder.DESC))
-      .size(1);
-    final SearchResponse searchResponse = databaseIntegrationTestExtension
-      .getOptimizeElasticsearchClient()
-      .search(
-        new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME).source(searchSourceBuilder)
-      );
-
-    EventProcessPublishStateDto result = null;
-    if (searchResponse.getHits().getTotalHits().value > 0) {
-      result = databaseIntegrationTestExtension.getObjectMapper().readValue(
-        searchResponse.getHits().getAt(0).getSourceAsString(),
-        EsEventProcessPublishStateDto.class
-      ).toEventProcessPublishStateDto();
-    }
-    return Optional.ofNullable(result);
+  protected Optional<EventProcessPublishStateDto> getEventProcessPublishStateDtoFromDatabase(final String processMappingId) {
+    return databaseIntegrationTestExtension.getEventProcessPublishStateDtoFromDatabase(processMappingId);
   }
 
   @SneakyThrows
-  protected Optional<EventProcessDefinitionDto> getEventProcessDefinitionFromElasticsearch(final String definitionId) {
-    final GetResponse getResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
-      .get(new GetRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME).id(definitionId));
-
-    EventProcessDefinitionDto result = null;
-    if (getResponse.isExists()) {
-      result = databaseIntegrationTestExtension.getObjectMapper().readValue(
-        getResponse.getSourceAsString(), EventProcessDefinitionDto.class
-      );
-    }
-
-    return Optional.ofNullable(result);
+  protected Optional<EventProcessDefinitionDto> getEventProcessDefinitionFromDatabase(final String definitionId) {
+    return databaseIntegrationTestExtension.getEventProcessDefinitionFromDatabase(definitionId);
   }
 
   @SneakyThrows
-  protected List<EventProcessInstanceDto> getEventProcessInstancesFromElasticsearch() {
-    return getEventProcessInstancesFromElasticsearchForProcessPublishStateId("*");
+  protected List<EventProcessInstanceDto> getEventProcessInstancesFromDatabase() {
+    return getEventProcessInstancesFromDatabaseForProcessPublishStateId("*");
   }
 
   @SneakyThrows
-  protected List<EventProcessInstanceDto> getEventProcessInstancesFromElasticsearchForProcessPublishStateId(final String publishStateId) {
-    final List<EventProcessInstanceDto> results = new ArrayList<>();
-    final SearchResponse searchResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
-      .search(new SearchRequest(EventProcessInstanceIndex.constructIndexName(publishStateId)));
-    for (SearchHit hit : searchResponse.getHits().getHits()) {
-      results.add(
-        databaseIntegrationTestExtension.getObjectMapper()
-          .readValue(hit.getSourceAsString(), EventProcessInstanceDto.class)
-      );
-    }
-    return results;
+  protected List<EventProcessInstanceDto> getEventProcessInstancesFromDatabaseForProcessPublishStateId(final String publishStateId) {
+    return databaseIntegrationTestExtension.getEventProcessInstancesFromDatabaseForProcessPublishStateId(publishStateId);
   }
 
   protected String ingestTestEvent(final String eventName) {
@@ -395,13 +324,13 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   }
 
   protected String getEventPublishStateIdForEventProcessMappingId(final String eventProcessMappingId) {
-    return getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)
+    return getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId)
       .map(EventProcessPublishStateDto::getId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get id of published process"));
   }
 
   protected EventProcessPublishStateDto getEventPublishStateForEventProcessMappingId(final String eventProcessMappingId) {
-    return getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)
+    return getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get id of published process"));
   }
 
@@ -891,7 +820,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   protected boolean eventInstanceIndexForPublishStateExists(final EventProcessPublishStateDto publishState) {
     Map<String, List<AliasMetadata>> currentIndices = new HashMap<>();
     try {
-      currentIndices = getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
+      currentIndices = getEventProcessInstanceIndicesWithAliasesFromDatabase();
     } catch (ElasticsearchStatusException ex) {
       if (InstanceIndexUtil.isInstanceIndexNotFoundException(ex)) {
         return false;
@@ -909,7 +838,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   }
 
   protected EventProcessPublishStateDto getEventProcessPublishStateDto(final String processMappingId) {
-    return getEventProcessPublishStateDtoFromElasticsearch(processMappingId)
+    return getEventProcessPublishStateDtoFromDatabase(processMappingId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Could not fetch publish state for process mapping"));
   }
 

@@ -37,12 +37,11 @@ import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import org.camunda.optimize.service.db.schema.DatabaseSchemaManager;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.writer.AbstractProcessInstanceDataWriter;
 import org.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
 import org.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.digest.DigestService;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.events.rollover.ExternalProcessVariableIndexRolloverService;
@@ -714,16 +713,6 @@ public class EmbeddedOptimizeExtension
 
   public DatabaseClient getOptimizeDatabaseClient() {
     return getBean(DatabaseClient.class);
-  }
-
-  // TODO remove with OPT-7455
-  public OptimizeElasticsearchClient getOptimizeElasticSearchClient() {
-    try {
-      return (OptimizeElasticsearchClient) getBean(DatabaseClient.class);
-    } catch (ClassCastException e) {
-      log.warn("Getting an OptimizeElasticsearchClient in OpenSearch operation mode is not supported.");
-      return null;
-    }
   }
 
   public DatabaseMetadataService getDatabaseMetadataService() {

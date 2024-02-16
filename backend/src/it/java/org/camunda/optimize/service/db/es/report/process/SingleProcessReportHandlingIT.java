@@ -40,8 +40,7 @@ import org.camunda.optimize.rest.providers.ElasticsearchStatusExceptionMapper;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -53,7 +52,6 @@ import org.mockserver.model.HttpResponse;
 import org.mockserver.model.HttpStatusCode;
 import org.slf4j.event.Level;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -62,10 +60,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessReportDataType.INCIDENT_DUR_GROUP_BY_NONE;
 import static org.camunda.optimize.service.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE;
@@ -73,10 +74,10 @@ import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_
 import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_WITH_PART;
 import static org.camunda.optimize.service.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
 
   @RegisterExtension
@@ -84,20 +85,18 @@ public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
     LogCapturer.create().forLevel(Level.ERROR).captureForType(ElasticsearchStatusExceptionMapper.class);
 
   @Test
-  public void reportIsWrittenToElasticsearch() throws IOException {
+  public void reportIsWrittenToDatabase() {
     // given
     String id = reportClient.createEmptySingleProcessReport();
 
     // when
-    GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_INDEX_NAME).id(id);
-    GetResponse getResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient().get(getRequest);
+    Optional<SingleProcessReportDefinitionRequestDto> definitionDto = databaseIntegrationTestExtension
+      .getDatabaseEntryById(SINGLE_PROCESS_REPORT_INDEX_NAME, id, SingleProcessReportDefinitionRequestDto.class);
 
     // then
-    assertThat(getResponse.isExists()).isTrue();
-    SingleProcessReportDefinitionRequestDto definitionDto = databaseIntegrationTestExtension.getObjectMapper()
-      .readValue(getResponse.getSourceAsString(), SingleProcessReportDefinitionRequestDto.class);
-    assertThat(definitionDto.getData()).isNotNull();
-    ProcessReportDataDto data = definitionDto.getData();
+    assertThat(definitionDto).isPresent();
+    ProcessReportDataDto data = definitionDto.get().getData();
+    assertThat(data).isNotNull();
     assertThat(data.getFilter()).isNotNull();
     assertThat(data.getConfiguration()).isNotNull();
     assertThat(data.getConfiguration()).isEqualTo(new SingleReportConfigurationDto());
@@ -414,6 +413,7 @@ public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void reportEvaluationReturnsMetaData() {
     // given
     String reportId = reportClient.createEmptySingleProcessReport();
@@ -445,6 +445,7 @@ public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportWithoutVisualization() {
     // given
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
@@ -467,6 +468,7 @@ public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @EnumSource(ProcessReportDataType.class)
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReport_missingInstanceIndicesReturnsEmptyResult(ProcessReportDataType reportType) {
     // given
     final String reportId = deployDefinitionAndCreateReport(reportType);
@@ -482,6 +484,7 @@ public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void reportEvaluationWithTooManyBuckets_throwsTooManyBucketsException() {
     // given a distributed by report with that exceeds the ES bucket limit
     final Map<String, Object> variables = Collections.singletonMap("doubleVar", 1.0);
@@ -521,7 +524,8 @@ public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
 
   @Test
   @SneakyThrows
-  public void elasticsearchStatusExceptionIsMapped() {
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  public void databaseStatusExceptionIsMapped() {
     // given a report evaluation that throws an ElasticsearchStatusException
     final String definitionKey = "someKey";
     final ClientAndServer dbMockServer = useAndGetDbMockServer();

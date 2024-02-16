@@ -100,7 +100,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
 
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessId)).isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
   }
 
@@ -180,7 +180,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     assertThat(dashboardClient.getDashboard(dashboardId).getTiles())
       .extracting(DashboardReportTileDto.Fields.id)
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKeyToDelete)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKeyToDelete)).isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
     assertThat(getAllDocumentsOfVariableLabelIndex()).hasSize(1).containsExactly(nonDeletedDefinitionVariableLabelsDto);
   }
@@ -217,7 +217,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
 
     // then
     assertGetMappingRequestStatusCode(eventProcessDefinitionKeyToDelete, Response.Status.NOT_FOUND.getStatusCode());
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKeyToDelete)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKeyToDelete)).isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(eventProcessDefinitionKeyToDeletePublishState)).isFalse();
     assertThat(getAllDocumentsOfVariableLabelIndex()).hasSize(1).containsExactly(nonDeletedDefinitionVariableLabelsDto);
   }
@@ -319,7 +319,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     // then
     dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey, Response.Status.OK.getStatusCode());
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey)).isNotEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey)).isNotEmpty();
   }
 
   @Test
@@ -421,8 +421,8 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
 
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId1)).isEmpty();
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId2)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessId1)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessId2)).isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(publishState1)).isFalse();
     assertThat(eventInstanceIndexForPublishStateExists(publishState2)).isFalse();
     assertGetMappingRequestStatusCode(eventProcessId1, Response.Status.NOT_FOUND.getStatusCode());
@@ -464,8 +464,8 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
     assertThat(reportClient.getReportById(reportUsingMapping)).isNotNull();
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey1)).isNotEmpty();
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey2)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey1)).isNotEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey2)).isEmpty();
     logCapturer.assertContains(
       "There was an error while deleting resources associated to the event process mapping with id " + eventProcessDefinitionKey1);
   }
@@ -520,9 +520,9 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     dbMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey1)).isNotEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey1)).isNotEmpty();
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey2)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey2)).isEmpty();
     logCapturer.assertContains(
       "There was an error while deleting resources associated to the event process mapping with id " + eventProcessDefinitionKey1);
   }
@@ -561,9 +561,9 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     assertThat(collectionClient.getCollectionById(collectionId).getData().getScope())
       .extracting(CollectionScopeEntryDto::getDefinitionKey)
       .contains(eventProcessDefinitionKey1);
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey1)).isNotEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey1)).isNotEmpty();
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey2)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey2)).isEmpty();
     logCapturer.assertContains(
       "There was an error while deleting resources associated to the event process mapping with id " + eventProcessDefinitionKey1);
 
@@ -655,7 +655,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     assertThat(dashboardClient.getDashboard(dashboardId).getTiles())
       .extracting(DashboardReportTileDto.Fields.id)
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(firstDeletingEventProcessDefinitionKey)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromDatabase(firstDeletingEventProcessDefinitionKey)).isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
     assertGetMappingRequestStatusCode(
       firstDeletingEventProcessDefinitionKey,

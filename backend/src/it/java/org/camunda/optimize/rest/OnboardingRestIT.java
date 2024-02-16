@@ -5,23 +5,22 @@
  */
 package org.camunda.optimize.rest;
 
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.OnboardingStateDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
-import java.io.IOException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.ONBOARDING_INDEX_NAME;
 
+@Tag(OPENSEARCH_PASSING)
 public class OnboardingRestIT extends AbstractPlatformIT {
 
   private static final String KEY_WHATSNEW = "whatsnew";
@@ -29,7 +28,7 @@ public class OnboardingRestIT extends AbstractPlatformIT {
   @Test
   public void testGetOnboardingState() {
     // given
-    assertThat(getOnboardingStateFromElasticsearch(DEFAULT_USERNAME, KEY_WHATSNEW)).isEmpty();
+    assertThat(getOnboardingStateFromDatabase(DEFAULT_USERNAME, KEY_WHATSNEW)).isEmpty();
 
     // when
     final OnboardingStateRestDto onboardingStateRestDto = getOnboardingState(KEY_WHATSNEW);
@@ -66,9 +65,10 @@ public class OnboardingRestIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void testSetOnboardingState() {
     // given
-    assertThat(getOnboardingStateFromElasticsearch(DEFAULT_USERNAME, KEY_WHATSNEW)).isEmpty();
+    assertThat(getOnboardingStateFromDatabase(DEFAULT_USERNAME, KEY_WHATSNEW)).isEmpty();
 
     // when
     embeddedOptimizeExtension
@@ -79,7 +79,7 @@ public class OnboardingRestIT extends AbstractPlatformIT {
     // then
     final OnboardingStateRestDto onboardingStateRestDto = getOnboardingState(KEY_WHATSNEW);
     assertThat(onboardingStateRestDto.isSeen()).isTrue();
-    final Optional<OnboardingStateDto> stateFromElasticsearch = getOnboardingStateFromElasticsearch(
+    final Optional<OnboardingStateDto> stateFromElasticsearch = getOnboardingStateFromDatabase(
       DEFAULT_USERNAME, KEY_WHATSNEW
     );
     assertThat(stateFromElasticsearch)
@@ -101,7 +101,7 @@ public class OnboardingRestIT extends AbstractPlatformIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
-    assertThat(getOnboardingStateFromElasticsearch(DEFAULT_USERNAME, invalidKey)).isEmpty();
+    assertThat(getOnboardingStateFromDatabase(DEFAULT_USERNAME, invalidKey)).isEmpty();
   }
 
   @Test
@@ -126,17 +126,9 @@ public class OnboardingRestIT extends AbstractPlatformIT {
   }
 
   @SneakyThrows
-  private Optional<OnboardingStateDto> getOnboardingStateFromElasticsearch(final String userId, final String key) {
-    final GetResponse getResponse = databaseIntegrationTestExtension
-      .getOptimizeElasticsearchClient()
-      .get(new GetRequest(ONBOARDING_INDEX_NAME).id(userId + ":" + key));
-    return Optional.ofNullable(getResponse.getSourceAsString())
-      .map(json -> {
-        try {
-          return embeddedOptimizeExtension.getObjectMapper().readValue(json, OnboardingStateDto.class);
-        } catch (IOException e) {
-          throw new OptimizeIntegrationTestException("Failed parsing response: " + json);
-        }
-      });
+  private Optional<OnboardingStateDto> getOnboardingStateFromDatabase(final String userId, final String key) {
+   return databaseIntegrationTestExtension
+      .getDatabaseEntryById(ONBOARDING_INDEX_NAME, userId + ":" + key, OnboardingStateDto.class);
+
   }
 }

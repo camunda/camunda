@@ -36,7 +36,7 @@ This action is heavily WIP and maybe the old Jenkins functionality can be realis
 
 ```yaml
 jobs:
-    environment:
+    steps:
         name: Define global values
         runs-on: ubuntu-latest
         outputs:
@@ -52,12 +52,15 @@ jobs:
         - uses: actions/checkout@v3
         - id: define-values
           uses: ./.github/actions/git-environment
+    ...
+    - name: Expose common variables as Env
+      env:
+        RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
+      run: |
+        {
+        echo "VERSION=$RELEASE_VERSION"
+        echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
+        } >> "$GITHUB_ENV"
 
-  sonarqube:
-    name: SonarQube - Java
-    runs-on: ubuntu-latest
-    needs: ['environment']
-    if: ${{ needs.environment.outputs.is_main_or_maintenance_branch }}
-    steps:
-        ...
+    ...
 ```

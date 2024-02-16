@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.test.it.extension.db;
 
+import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,5 +32,13 @@ public class TermsQueryContainer {
       query.must(QueryBuilders.termsQuery(term, termQueries.get(term)));
     }
     return query;
+  }
+
+  BoolQuery toOpenSearchQuery() {
+    BoolQuery.Builder query = new BoolQuery.Builder();
+    for (String term : termQueries.keySet()) {
+      query.must(QueryDSL.stringTerms(term, termQueries.get(term)));
+    }
+    return query.build();
   }
 }

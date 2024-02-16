@@ -133,7 +133,7 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     List<String> variableResponse = variablesClient.getProcessVariableValues(valueRequestDto);
 
     // then
-    assertThat(variableResponse.size()).isEqualTo(selectedTenants.size());
+    assertThat(variableResponse).hasSameSizeAs(selectedTenants);
   }
 
   @Test

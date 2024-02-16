@@ -11,6 +11,7 @@ import org.apache.commons.text.RandomStringGenerator;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -22,15 +23,10 @@ import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.camunda.optimize.test.util.VariableTestUtil;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -38,12 +34,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public abstract class AbstractCleanupIT extends AbstractPlatformIT {
   private static final RandomStringGenerator KEY_GENERATOR = new RandomStringGenerator.Builder()
@@ -79,7 +71,7 @@ public abstract class AbstractCleanupIT extends AbstractPlatformIT {
 
   @SneakyThrows
   protected void assertNoProcessInstanceDataExists(final List<ProcessInstanceEngineDto> instances) {
-    assertThat(getProcessInstancesById(extractProcessInstanceIds(instances)).getHits().getTotalHits().value).isZero();
+    assertThat(getProcessInstancesById(extractProcessInstanceIds(instances)).isEmpty());
   }
 
   protected ProcessInstanceEngineDto startNewInstanceWithEndTimeLessThanTtl(final ProcessInstanceEngineDto originalInstance) {
@@ -135,39 +127,23 @@ public abstract class AbstractCleanupIT extends AbstractPlatformIT {
 
   @SneakyThrows
   protected void assertVariablesEmptyInProcessInstances(final List<String> instanceIds) {
-
-    SearchResponse idsResp = getProcessInstancesById(instanceIds);
-
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(instanceIds.size());
-    for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      assertThat((Collection<?>) searchHit.getSourceAsMap().get(VARIABLES)).isEmpty();
-    }
+    assertThat(getProcessInstancesById(instanceIds))
+      .hasSameSizeAs(instanceIds)
+      .allMatch(processInstanceDto -> processInstanceDto.getVariables().isEmpty());
   }
 
-  protected SearchResponse getProcessInstancesById(final List<String> instanceIds) throws IOException {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termsQuery(PROCESS_INSTANCE_ID, instanceIds))
-      .trackTotalHits(true)
-      .size(100);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(PROCESS_INSTANCE_MULTI_ALIAS)
-      .source(searchSourceBuilder);
-
-    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient().search(searchRequest);
+  protected List<ProcessInstanceDto> getProcessInstancesById(final List<String> instanceIds) throws IOException {
+    return databaseIntegrationTestExtension.getProcessInstancesById(instanceIds);
   }
 
-  protected void assertProcessInstanceDataCompleteInEs(final String instanceId) throws IOException {
-    assertProcessInstanceDataCompleteInEs(Collections.singletonList(instanceId));
+  protected void assertPersistedProcessInstanceDataComplete(final String instanceId) throws IOException {
+    assertPersistedProcessInstanceDataComplete(Collections.singletonList(instanceId));
   }
 
-  protected void assertProcessInstanceDataCompleteInEs(final List<String> instanceIds) throws IOException {
-    SearchResponse idsResp = getProcessInstancesById(instanceIds);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(instanceIds.size());
-
-    for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      assertThat((Collection<?>) searchHit.getSourceAsMap().get(VARIABLES)).isNotEmpty();
-    }
+  protected void assertPersistedProcessInstanceDataComplete(final List<String> instanceIds) throws IOException {
+    List<ProcessInstanceDto> idsResp = getProcessInstancesById(instanceIds);
+    assertThat(idsResp).hasSameSizeAs(instanceIds);
+    assertThat(idsResp).allSatisfy(processInstanceDto -> assertThat(processInstanceDto.getVariables()).isNotEmpty());
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {

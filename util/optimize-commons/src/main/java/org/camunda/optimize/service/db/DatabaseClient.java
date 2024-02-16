@@ -13,6 +13,7 @@ import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -58,7 +59,7 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   //todo will be handle in the OPT-7469
   public abstract ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest) throws IOException;
 
-  public abstract String getElasticsearchVersion() throws IOException;
+  public abstract String getDatabaseVersion() throws IOException;
 
   public abstract void setDefaultRequestOptions();
 
@@ -73,6 +74,8 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
                                                            final String definitionIdField,
                                                            final int maxPageSize,
                                                            final String engineAlias);
+
+  public abstract DatabaseType getDatabaseVendor();
 
   protected String[] convertToPrefixedAliasNames(final String[] indices) {
     return Arrays.stream(indices)

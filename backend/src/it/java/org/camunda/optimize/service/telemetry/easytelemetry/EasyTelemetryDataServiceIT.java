@@ -18,10 +18,10 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.license.LicenseManager;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.elasticsearch.action.delete.DeleteRequest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -29,7 +29,6 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
@@ -40,19 +39,21 @@ import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.licensecheck.LicenseType.OPTIMIZE;
 import static org.camunda.bpm.licensecheck.LicenseType.UNIFIED;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.CAMUNDA_BPM_FEATURE;
 import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.CAWEMO_FEATURE;
 import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.FEATURE_NAMES;
 import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.INFORMATION_UNAVAILABLE_STRING;
 import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.OPTIMIZE_FEATURE;
-import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
 
   @Test
 //  @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void retrieveTelemetryData() {
     // when
     final TelemetryDataDto telemetryData =
@@ -63,12 +64,13 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
     assertThat(metadata).isPresent();
 
     final TelemetryDataDto expectedTelemetry = createExpectedTelemetryWithLicenseKey(
-      getEsVersion(),
+      getDatabaseVersion(),
+      getDatabaseVendor(),
       metadata.get().getInstallationId(),
       getLicense()
     );
     assertThat(telemetryData).isEqualTo(expectedTelemetry);
-    // ensure the elastic version is an actual version
+    // ensure the database version is an actual version
     assertThat(telemetryData.getProduct().getInternals().getDatabase().getVersion())
       .matches("^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$");
   }
@@ -100,7 +102,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   }
 
   @Test
-  public void retrieveTelemetryData_elasticsearchVersionRequestFails_returnsUnavailableString() {
+  public void retrieveTelemetryData_databaseVersionRequestFails_returnsUnavailableString() {
     // given
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
@@ -123,7 +125,8 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   }
 
   @Test
-  public void retrieveTelemetryData_elasticsearchMetadataRequestFails_returnsUnavailableString() {
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  public void retrieveTelemetryData_databaseMetadataRequestFails_returnsUnavailableString() {
     // given
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
@@ -240,6 +243,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
 
   @SneakyThrows
   private TelemetryDataDto createExpectedTelemetryWithLicenseKey(final String databaseVersion,
+                                                                 final DatabaseType vendor,
                                                                  final String installationId,
                                                                  final String licenseKey) {
 
@@ -255,6 +259,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
 
     return createExpectedTelemetry(
       databaseVersion,
+      vendor,
       installationId,
       licenseKeyImpl.getCustomerId(),
       licenseKeyImpl.getLicenseType().name(),
@@ -266,6 +271,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   }
 
   private TelemetryDataDto createExpectedTelemetry(final String databaseVersion,
+                                                   final DatabaseType vendor,
                                                    final String installationId,
                                                    final String customerName,
                                                    final String type,
@@ -275,7 +281,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
                                                    final String licenseKeyRaw) {
     final DatabaseDto databaseDto = DatabaseDto.builder()
       .version(databaseVersion)
-      .vendor("elasticsearch")
+      .vendor(vendor.toString())
       .build();
 
     final LicenseKeyDto licenseKeyDto = LicenseKeyDto.builder()
@@ -305,11 +311,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
 
   @SneakyThrows
   private void removeMetadata() {
-    final DeleteRequest request = new DeleteRequest(METADATA_INDEX_NAME)
-      .id(MetadataIndex.ID)
-      .setRefreshPolicy(IMMEDIATE);
-
-    databaseIntegrationTestExtension.getOptimizeElasticsearchClient().delete(request);
+    databaseIntegrationTestExtension.deleteDatabaseEntryById(METADATA_INDEX_NAME, MetadataIndex.ID);
   }
 
   private LicenseKeyDto getTelemetryLicenseKey() {
@@ -344,17 +346,10 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
       .orElseThrow(() -> new OptimizeIntegrationTestException("Unable to retrieve Optimize license"));
   }
 
-  private String getEsVersion() {
-    try {
-      final OptimizeElasticsearchClient optimizeElasticClient =
-        databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-      return optimizeElasticClient.getHighLevelClient()
-        .info(optimizeElasticClient.requestOptions())
-        .getVersion()
-        .getNumber();
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not retrieve elasticsearch version.", e);
-    }
+  private String getDatabaseVersion() {
+    return databaseIntegrationTestExtension.getDatabaseVersion();
   }
-
+  private DatabaseType getDatabaseVendor() {
+    return databaseIntegrationTestExtension.getDatabaseVendor();
+  }
 }

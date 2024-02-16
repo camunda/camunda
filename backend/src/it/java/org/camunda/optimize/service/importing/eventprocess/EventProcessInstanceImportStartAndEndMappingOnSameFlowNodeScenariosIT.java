@@ -130,7 +130,7 @@ public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenarios
   private void assertProcessInstanceIsAsExpected(final String firstEventId,
                                                  final String secondEventId,
                                                  final String fourthEventId) {
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()

@@ -128,7 +128,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -176,7 +176,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -249,7 +249,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
 
   private void assertZeroDurationBpmnEventProcessInstance(final String firstEventId, final String secondEventId,
                                                           final String thirdEventId) {
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -319,7 +319,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
                                                  final String startEventId,
                                                  final String intermediateEventId,
                                                  final String endEventId) {
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()

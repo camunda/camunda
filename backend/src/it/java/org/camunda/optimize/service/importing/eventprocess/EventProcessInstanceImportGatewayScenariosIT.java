@@ -50,7 +50,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -94,7 +94,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -133,7 +133,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -173,7 +173,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -213,7 +213,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -262,7 +262,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -336,7 +336,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -395,7 +395,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -442,7 +442,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -489,7 +489,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -530,7 +530,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -566,7 +566,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -611,7 +611,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -665,7 +665,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()
@@ -708,7 +708,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromDatabase();
     assertThat(processInstances)
       .hasSize(1)
       .singleElement()

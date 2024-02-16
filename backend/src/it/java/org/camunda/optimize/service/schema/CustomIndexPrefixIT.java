@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.schema.OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix;
 import static org.camunda.optimize.service.db.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 public class CustomIndexPrefixIT extends AbstractPlatformIT {
   private static final String CUSTOM_PREFIX = UUID.randomUUID().toString().substring(0, 5);
@@ -96,12 +96,14 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
     deploySimpleProcess();
     importAllEngineEntitiesFromScratch();
 
+    String indexPrefix = customPrefixDatabaseIntegrationTestExtension
+      .getIndexNameService()
+      .getIndexPrefix();
+
     // when
-    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setIndexPrefix(
-      customPrefixDatabaseIntegrationTestExtension.getOptimizeElasticsearchClient()
-        .getIndexNameService()
-        .getIndexPrefix()
-    );
+    // Set values for both ES and OS, the proper one will be used depending on which database is active
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setIndexPrefix(indexPrefix);
+    embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().setIndexPrefix(indexPrefix);
     embeddedOptimizeExtension.reloadConfiguration();
     initializeSchema();
 

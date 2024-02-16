@@ -222,6 +222,7 @@ export default function TaskAnalysis() {
             onDetailsClick={loadChartData}
             outlierVariables={higherNodeOutlierVariables}
             nodeOutliers={nodeOutliers}
+            config={config}
           />
         </>
       )}
