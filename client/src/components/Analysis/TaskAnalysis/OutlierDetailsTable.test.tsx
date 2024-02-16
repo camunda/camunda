@@ -15,16 +15,17 @@ const props = {
   nodeOutliers: {
     task1: {
       totalCount: 10,
-      higherOutlier: {count: 1, relation: 0.5},
+      higherOutlier: {count: 1, relation: 0.5, boundValue: 0},
     },
     task2: {
       totalCount: 5,
-      higherOutlier: {count: 2, relation: 0.1},
+      higherOutlier: {count: 2, relation: 0.1, boundValue: 0},
     },
   },
   outlierVariables: {
     task1: [{variableName: 'variable1', variableTerm: true}],
   },
+  config: {filters: [], tenantIds: [], processDefinitionKey: '', processDefinitionVersions: []},
   onDetailsClick: jest.fn(),
 };
 
@@ -32,6 +33,9 @@ it('should render the table properly', () => {
   const node = shallow(<OutlierDetailsTable {...props} />);
 
   const tableBody = node.find('Table').prop<(string | JSX.Element)[][]>('body');
+
+  expect(tableBody.length).toBe(2);
+  expect(tableBody[0]?.length).toBe(6);
 
   // task 1 with name and variable
   expect(tableBody[0]?.[0]).toBe('Task 1');
@@ -68,4 +72,18 @@ it('should ommit tasks without higher outlier', () => {
   const tableBody = node.find('Table').prop<(string | JSX.Element)[][]>('body');
 
   expect(tableBody.length).toBe(2);
+});
+
+it('should render download instances button', () => {
+  const node = shallow(<OutlierDetailsTable {...props} />);
+
+  const tableBody = node.find('Table').prop<(string | JSX.Element)[][]>('body');
+  const downloadButton = tableBody[0]?.[5] as JSX.Element;
+
+  expect(downloadButton.props).toMatchObject({
+    id: 'task1',
+    name: 'Task 1',
+    totalCount: 10,
+    value: 0,
+  });
 });

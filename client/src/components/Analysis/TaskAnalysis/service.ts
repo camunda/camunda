@@ -19,13 +19,14 @@ export interface OutliersVariable {
 }
 
 export interface AnalysisProcessDefinitionParameters {
+  [key: string]: unknown;
+  filters: unknown[];
   processDefinitionKey: string;
   processDefinitionVersions: string[];
   tenantIds: string[];
 }
 
 export interface AnalysisFlowNodeOutlierParameters extends AnalysisProcessDefinitionParameters {
-  [key: string]: unknown;
   flowNodeId: string;
   lowerOutlierBound?: number;
   higherOutlierBound: number;

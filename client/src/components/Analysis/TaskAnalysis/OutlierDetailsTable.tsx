@@ -9,11 +9,15 @@ import {Table, TableBody} from 'components';
 import {t} from 'translation';
 import {Button} from '@carbon/react';
 
-import {getOutlierSummary} from './service';
+import {AnalysisProcessDefinitionParameters, getOutlierSummary} from './service';
+import InstancesButton from './InstanceButton';
 
 import './OutlierDetailsTable.scss';
 
-type TaskData = {totalCount: number; higherOutlier?: {count: number; relation: number}};
+type TaskData = {
+  totalCount: number;
+  higherOutlier?: {count: number; relation: number; boundValue: number};
+};
 
 type Variable = {variableName: string; variableTerm: string | number | boolean};
 
@@ -23,6 +27,7 @@ interface OutlierDetailsTableProps {
   outlierVariables: Record<string, Variable[]>;
   flowNodeNames: Record<string, string>;
   onDetailsClick: (taskId: string, taskData: TaskData) => string;
+  config: AnalysisProcessDefinitionParameters;
 }
 
 export default function OutlierDetailsTable({
@@ -31,6 +36,7 @@ export default function OutlierDetailsTable({
   outlierVariables,
   flowNodeNames,
   onDetailsClick,
+  config,
 }: OutlierDetailsTableProps) {
   function getVariablesList(variables?: Variable[]): string | JSX.Element {
     if (!variables?.length) {
@@ -58,7 +64,7 @@ export default function OutlierDetailsTable({
         }
 
         const {
-          higherOutlier: {count, relation},
+          higherOutlier: {count, relation, boundValue},
           totalCount,
         } = nodeOutlierData;
         const variables = outlierVariables[nodeOutlierId];
@@ -75,6 +81,13 @@ export default function OutlierDetailsTable({
           >
             {t('common.viewDetails')}
           </Button>,
+          <InstancesButton
+            id={nodeOutlierId}
+            name={flowNodeNames[nodeOutlierId]}
+            value={boundValue}
+            config={config}
+            totalCount={totalCount}
+          />,
         ]);
 
         return tableRows;
@@ -92,6 +105,7 @@ export default function OutlierDetailsTable({
         t('analysis.task.table.outliers').toString(),
         t('report.variables.default').toString(),
         t('common.details').toString(),
+        t('common.download').toString(),
       ]}
       body={parseTableBody()}
       loading={loading}
