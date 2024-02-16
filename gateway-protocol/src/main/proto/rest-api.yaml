@@ -30,7 +30,42 @@ paths:
       description: Obtains the current topology of the cluster the gateway is part of.
       responses:
         '200':
-          $ref: '#/components/responses/TopologyResponse'
+          $ref: "#/components/responses/TopologyResponse"
+  /user-tasks/{userTaskKey}/completion:
+    post:
+      summary: Complete a user task.
+      description: Completes a user task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to complete.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskCompletionRequest"
+
+      responses:
+        '204':
+          description: The user task was completed successfully.
+        '404':
+          description: The user task with the given key was not found.
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          $ref: "#/components/responses/ProblemResponse"
+        '400':
+          description: >
+            The user task with the given key cannot be completed.
+            More details are provided in the response body.
+          $ref: "#/components/responses/ProblemResponse"
+
 
 components:
   responses:
@@ -39,7 +74,13 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/TopologyResponse'
+            $ref: "#/components/schemas/TopologyResponse"
+    ProblemResponse:
+      description: Response for exceptional uses cases, providing more details.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
 
   schemas:
     TopologyResponse:
@@ -103,7 +144,7 @@ components:
           type: integer
           format: int32
         role:
-          description:  Describes the Raft role of the broker for a given partition.
+          description: Describes the Raft role of the broker for a given partition.
           type: string
           enum:
             - leader
@@ -116,5 +157,48 @@ components:
             - healthy
             - unhealthy
             - dead
-
-
+    UserTaskCompletionRequest:
+      type: object
+      properties:
+        variables:
+          description: The variables to complete the user task with.
+          type: object
+          nullable: true
+          $ref: "#/components/schemas/Variables"
+        action:
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "complete".
+          type: string
+          nullable: true
+    Variables:
+      description: A map of variables.
+      type: object
+      additionalProperties: true
+    ProblemDetail:
+      description: >
+        A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
+        There may be additional properties specific to the problem type.
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          description: A URI identifying the problem type.
+          default: about:blank
+        title:
+          type: string
+          description: A summary of the problem type.
+        status:
+          type: integer
+          format: int32
+          description: The HTTP status code for this problem.
+          minimum: 400
+          maximum: 600
+        detail:
+          type: string
+          description: An explanation of the problem in more detail.
+        instance:
+          type: string
+          format: uri
+          description: A URI identifying the origin of the problem.
