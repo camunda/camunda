@@ -206,12 +206,17 @@ public final class StreamPlatform {
 
   public StreamProcessor startStreamProcessor() {
     final SynchronousLogStream stream = getLogStream();
-    return buildStreamProcessor(stream, true);
+    return buildStreamProcessor(stream, true, StreamProcessorMode.PROCESSING);
+  }
+
+  public StreamProcessor startStreamProcessorInReplayOnlyMode() {
+    final SynchronousLogStream stream = getLogStream();
+    return buildStreamProcessor(stream, false, StreamProcessorMode.REPLAY);
   }
 
   public StreamProcessor startStreamProcessorNotAwaitOpening() {
     final SynchronousLogStream stream = getLogStream();
-    return buildStreamProcessor(stream, false);
+    return buildStreamProcessor(stream, false, StreamProcessorMode.PROCESSING);
   }
 
   public StreamProcessorLifecycleAware getMockProcessorLifecycleAware() {
@@ -223,7 +228,9 @@ public final class StreamPlatform {
   }
 
   public StreamProcessor buildStreamProcessor(
-      final SynchronousLogStream stream, final boolean awaitOpening) {
+      final SynchronousLogStream stream,
+      final boolean awaitOpening,
+      final StreamProcessorMode processorMode) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
     scheduledCommandCache = new TestCommandCache();
@@ -243,7 +250,7 @@ public final class StreamPlatform {
             .commandResponseWriter(mockCommandResponseWriter)
             .recordProcessors(recordProcessors)
             .eventApplierFactory(EventAppliers::new) // todo remove this soon
-            .streamProcessorMode(streamProcessorMode)
+            .streamProcessorMode(processorMode)
             .listener(mockStreamProcessorListener)
             .maxCommandsInBatch(maxCommandsInBatch)
             .scheduledCommandCache(scheduledCommandCache)
