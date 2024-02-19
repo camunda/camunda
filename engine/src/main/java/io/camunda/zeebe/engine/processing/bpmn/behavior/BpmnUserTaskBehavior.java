@@ -38,7 +38,7 @@ import java.util.Set;
 public final class BpmnUserTaskBehavior {
 
   private static final Set<LifecycleState> CANCELABLE_LIFECYCLE_STATES =
-      EnumSet.of(LifecycleState.CREATING, LifecycleState.CREATED);
+      EnumSet.complementOf(EnumSet.of(LifecycleState.NOT_FOUND, LifecycleState.CANCELING));
   private final UserTaskRecord userTaskRecord =
       new UserTaskRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final KeyGenerator keyGenerator;
