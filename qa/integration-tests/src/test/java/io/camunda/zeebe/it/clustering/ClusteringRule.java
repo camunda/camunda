@@ -74,6 +74,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -286,8 +287,9 @@ public class ClusteringRule extends ExternalResource {
     // Previously we used `Collection#parallelStream` in an attempt to achieve the same but
     // that didn't work because requesting a parallel stream does not guarantee that
     // stopping the brokers will actually run in parallel.
+    final var brokersToShutdown = new ArrayList<>(brokers.values());
     final var shutdownFutures =
-        brokers.values().stream()
+        brokersToShutdown.stream()
             .map(b -> CompletableFuture.runAsync(b::close))
             .toArray(CompletableFuture[]::new);
     CompletableFuture.allOf(shutdownFutures)
