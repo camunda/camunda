@@ -6,12 +6,9 @@
  */
 package io.camunda.tasklist.webapp.security.oauth;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static io.camunda.tasklist.webapp.security.oauth.IdentityOAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 import io.camunda.identity.sdk.IdentityConfiguration;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class IdentityOAuth2WebConfigurerTest {
 
@@ -41,8 +39,7 @@ class IdentityOAuth2WebConfigurerTest {
     when(environment.containsProperty(
             IdentityOAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI))
         .thenReturn(true);
-    when(environment.getProperty(
-            IdentityOAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI))
+    when(environment.getProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI))
         .thenReturn("https://example.com/jwks");
     when(identityConfiguration.getIssuerBackendUrl()).thenReturn("https://example.com/identity");
 
@@ -61,8 +58,7 @@ class IdentityOAuth2WebConfigurerTest {
     when(environment.containsProperty(
             IdentityOAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI))
         .thenReturn(false);
-    when(environment.containsProperty(
-            IdentityOAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI))
+    when(environment.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI))
         .thenReturn(false);
 
     final HttpSecurity httpSecurity = mock(HttpSecurity.class);
@@ -72,5 +68,28 @@ class IdentityOAuth2WebConfigurerTest {
 
     // then
     verify(httpSecurity, never()).oauth2ResourceServer(any());
+  }
+
+  @Test
+  public void shouldReturnConcatUrlForJdkAuth() {
+    when(identityConfiguration.getIssuerBackendUrl()).thenReturn("http://localhost:1111");
+
+    final String result =
+        (String) (ReflectionTestUtils.invokeGetterMethod(webConfigurer, "getJwkSetUriProperty"));
+
+    assertThat(result).isEqualTo("http://localhost:1111/protocol/openid-connect/certs");
+  }
+
+  @Test
+  public void shouldReturnConcatEnvVarJdkAuth() {
+    when(environment.getProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI))
+        .thenReturn("http://localhost:1111");
+    when(environment.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI))
+        .thenReturn(true);
+
+    final String result =
+        (String) (ReflectionTestUtils.invokeGetterMethod(webConfigurer, "getJwkSetUriProperty"));
+
+    assertThat(result).isEqualTo("http://localhost:1111");
   }
 }

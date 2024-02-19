@@ -59,7 +59,24 @@ public class IdentityOAuth2WebConfigurer {
   }
 
   private String getJwkSetUriProperty() {
-    return identityConfiguration.getIssuerBackendUrl() + JWKS_PATH;
+    final String backendUri;
+
+    // If the SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI is present, then it has already
+    // been correctly
+    // calculated and should be used as-is.
+    if (env.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI)) {
+      backendUri = env.getProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI);
+      LOGGER.info(
+          "Using value in SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI for issuer authentication");
+    } else {
+      backendUri = identityConfiguration.getIssuerBackendUrl() + JWKS_PATH;
+      LOGGER.warn(
+          "SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI is not present, building issuer authentication uri from issuer backend url.");
+    }
+
+    LOGGER.info("Using {} for issuer authentication", backendUri);
+
+    return backendUri;
   }
 
   private void authenticationFailure(
