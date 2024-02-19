@@ -14,7 +14,7 @@ jobs:
     name: Add issue to project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/add-to-project@0008229a2277e5f9299b5d1f06272b00d09342f8
+      - uses: actions/add-to-project@0609a2702eefb44781da00f8e04901d6e5cd2b92
         name: Add to project
         id: add-project
         with:
