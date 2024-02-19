@@ -14,6 +14,7 @@ import {
   TableToolbarContent,
   TableToolbarSearch,
 } from '@carbon/react';
+import {useId} from '@camunda/camunda-optimize-composite-components';
 
 import {Table, TableBody, TableHead, NoDataNotice} from 'components';
 import {t} from 'translation';
@@ -65,6 +66,7 @@ export default function Checklist<
   hideSelectAllInView,
 }: ChecklistProps<T>) {
   const [query, setQuery] = useState('');
+  const checklistId = useId();
 
   const formattedData = formatter(allItems, selectedItems);
   const isAllSelected = formattedData.every(({checked}) => checked);
@@ -130,14 +132,15 @@ export default function Checklist<
   ];
 
   let body: TableBody[] = searchFilteredData.map(({id, label, checked, disabled}) => {
+    const rowId = `${checklistId}-${id}`;
     const onSelect = () => updateItems(id, !checked);
     const rowLabel = (label || id || '').toString();
     return {
       content: [
         <TableSelectRow
           checked={!!checked}
-          id={`${id}`}
-          name={`${id}`}
+          id={rowId}
+          name={rowId}
           ariaLabel={rowLabel}
           disabled={disabled}
           onSelect={onSelect}
