@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.StandaloneBroker;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -130,7 +129,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   /** Returns the broker configuration */
-  public BrokerCfg brokerConfig() {
+  public BrokerProperties brokerConfig() {
     return config;
   }
 
@@ -138,7 +137,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * Modifies the broker configuration. Will still mutate the configuration if the broker is
    * started, but likely has no effect until it's restarted.
    */
-  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerCfg> modifier) {
+  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerProperties> modifier) {
     modifier.accept(config);
     return this;
   }
