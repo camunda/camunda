@@ -110,6 +110,11 @@ public class LogStreamBatchReaderImpl implements LogStreamBatchReader {
     }
 
     @Override
+    public LoggedEvent current() {
+      return event;
+    }
+
+    @Override
     public boolean hasNext() {
       return currentIndex < offsets.size();
     }
