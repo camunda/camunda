@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -22,7 +23,6 @@ import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatusRequest;
 import io.camunda.zeebe.gateway.admin.backup.BrokerBackupRequest;
 import io.camunda.zeebe.gateway.admin.backup.State;
-import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -32,17 +32,21 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
-import io.camunda.zeebe.restore.RestoreManager;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
-import java.nio.file.Path;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -53,11 +57,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
+@ZeebeIntegration
 class BackupMultiPartitionTest {
   @Container private static final MinioContainer S3 = new MinioContainer();
   private static final String JOB_TYPE = "test";
@@ -78,10 +82,16 @@ class BackupMultiPartitionTest {
   private String bucketName = null;
   private GrpcClientRule client;
   private BackupRequestHandler backupRequestHandler;
+  private BackupActuator backupActuator;
 
-  @RegisterExtension
-  private final ClusteringRuleExtension clusteringRule =
-      new ClusteringRuleExtension(2, 1, 2, this::configureBackupStore);
+  @TestZeebe
+  private final TestCluster cluster =
+      TestCluster.builder()
+          .withBrokersCount(2)
+          .withPartitionsCount(2)
+          .withReplicationFactor(1)
+          .withBrokerConfig(b -> b.withBrokerConfig(this::configureBackupStore))
+          .build();
 
   private void configureBackupStore(final BrokerCfg config) {
 
@@ -126,8 +136,9 @@ class BackupMultiPartitionTest {
 
   @BeforeEach
   void setup() {
-    client = new GrpcClientRule(clusteringRule.getClient());
-    backupRequestHandler = new BackupRequestHandler(clusteringRule.getGateway().getBrokerClient());
+    client = new GrpcClientRule(cluster.newClientBuilder().build());
+    backupActuator = BackupActuator.of(cluster.anyGateway());
+    backupRequestHandler = new BackupRequestHandler(cluster.anyGateway().bean(BrokerClient.class));
     createBackupStoreForTest();
   }
 
@@ -194,23 +205,13 @@ class BackupMultiPartitionTest {
   void shouldRestoreOnAllPartitions() {
     // given
     final var jobsCreated = createJobsOnAllPartitions();
-
     final var backupId = 4;
-    backup(backupId);
+    backupActuator.take(backupId);
     waitUntilBackupIsCompleted(backupId);
 
-    final var brokerIds =
-        clusteringRule.getBrokers().stream()
-            .map(broker -> broker.getConfig().getCluster().getNodeId())
-            .toList();
-
     // when
-    brokerIds.forEach(this::stopBrokerAndDeleteData);
-    brokerIds.forEach(broker -> restoreBroker(backupId, broker));
-    brokerIds.forEach(b -> CompletableFuture.runAsync(() -> clusteringRule.getBroker(b).start()));
-
-    clusteringRule.waitForTopology(
-        topology -> topology.hasLeaderForEachPartition(clusteringRule.getPartitionCount()));
+    cluster.shutdown().brokers().values().forEach(broker -> deleteAndRestore(broker, backupId));
+    cluster.start().awaitCompleteTopology();
 
     // then
     final var jobHandler = new RecordingJobHandler();
@@ -228,16 +229,25 @@ class BackupMultiPartitionTest {
     }
   }
 
+  private void deleteAndRestore(final TestStandaloneBroker broker, final int backupId) {
+    try (final var restore = new TestRestoreApp(broker.brokerConfig()).withBackupId(backupId)) {
+      FileUtil.deleteFolderIfExists(broker.bean(WorkingDirectory.class).path());
+      restore.start();
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   @Test
   @Timeout(value = 180)
   void shouldDeleteBackup() {
     // given
     final var backupId = 4;
-    backup(backupId);
+    backupActuator.take(backupId);
     waitUntilBackupIsCompleted(backupId);
 
     // when
-    delete(backupId);
+    backupActuator.delete(backupId);
 
     // then
     Awaitility.await("Backup must be deleted.")
@@ -249,7 +259,7 @@ class BackupMultiPartitionTest {
   private Set<Long> createJobsOnAllPartitions() {
     final Set<Integer> partitions = new HashSet<>();
     final Set<Long> jobKeys = new HashSet<>();
-    while (partitions.size() < clusteringRule.getPartitionCount()) {
+    while (partitions.size() < cluster.partitionsCount()) {
       final long jobKey = client.createSingleJob(JOB_TYPE);
       jobKeys.add(jobKey);
       partitions.addAll(
@@ -263,38 +273,6 @@ class BackupMultiPartitionTest {
     return jobKeys;
   }
 
-  private void stopBrokerAndDeleteData(final int brokerId) {
-    final var broker = clusteringRule.getBroker(brokerId);
-    final var dataDirectory = broker.getConfig().getData().getDirectory();
-
-    clusteringRule.stopBroker(brokerId);
-    try {
-      FileUtil.deleteFolderIfExists(Path.of(dataDirectory));
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private void backup(final long backupId) {
-    assertThat(backupRequestHandler.takeBackup(backupId).toCompletableFuture())
-        .succeedsWithin(Duration.ofSeconds(30));
-  }
-
-  private void delete(final long backupId) {
-    assertThat(backupRequestHandler.deleteBackup(backupId).toCompletableFuture())
-        .succeedsWithin(Duration.ofSeconds(30));
-  }
-
-  private void restoreBroker(final long backupId, final int brokerId) {
-    try {
-      new RestoreManager(clusteringRule.getBrokerCfg(brokerId), s3BackupStore)
-          .restore(backupId, true)
-          .get(120, TimeUnit.SECONDS);
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   private void waitUntilBackupIsCompleted(final long backupId) {
     Awaitility.await("Backup must be completed.")
         .timeout(Duration.ofMinutes(1))
@@ -304,7 +282,7 @@ class BackupMultiPartitionTest {
               final var status = getBackupStatus(backupId);
               assertThat(status.status()).isEqualTo(State.COMPLETED);
               assertThat(status.backupId()).isEqualTo(backupId);
-              assertThat(status.partitions()).hasSize(clusteringRule.getPartitionCount());
+              assertThat(status.partitions()).hasSize(cluster.partitionsCount());
             });
   }
 
@@ -317,7 +295,7 @@ class BackupMultiPartitionTest {
     final BrokerBackupRequest backupRequest = new BrokerBackupRequest();
     backupRequest.setBackupId(backupId);
     backupRequest.setPartitionId(partitionId);
-    final BrokerClient brokerClient = clusteringRule.getGateway().getBrokerClient();
+    final BrokerClient brokerClient = cluster.anyGateway().bean(BrokerClient.class);
     brokerClient.sendRequest(backupRequest).orTimeout(30, TimeUnit.SECONDS).join();
 
     waitUntilBackupCompletedOnPartition(backupId, partitionId);
@@ -327,7 +305,7 @@ class BackupMultiPartitionTest {
     final BackupStatusRequest backupStatusRequest = new BackupStatusRequest();
     backupStatusRequest.setPartitionId(partitionId);
     backupStatusRequest.setBackupId(backupId);
-    final BrokerClient brokerClient = clusteringRule.getGateway().getBrokerClient();
+    final BrokerClient brokerClient = cluster.anyGateway().bean(BrokerClient.class);
     Awaitility.await()
         .ignoreExceptions()
         .untilAsserted(
