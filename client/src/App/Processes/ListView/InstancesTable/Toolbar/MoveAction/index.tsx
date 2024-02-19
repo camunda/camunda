@@ -35,6 +35,7 @@ import modalDiagramImageDark from './images/modal-diagram-image-dark.png';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {Checkbox} from './styled';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 const MoveAction: React.FC = observer(() => {
   const location = useLocation();
@@ -99,7 +100,9 @@ const MoveAction: React.FC = observer(() => {
           <TableBatchAction
             renderIcon={Move}
             onClick={() => {
-              if (!getStateLocally()?.hideMoveModificationHelperModal) {
+              if (getStateLocally()?.hideMoveModificationHelperModal) {
+                batchModificationStore.enable();
+              } else {
                 setOpen(true);
               }
             }}
@@ -161,7 +164,13 @@ const MoveAction: React.FC = observer(() => {
                   });
                 }}
               />
-              <Button kind="primary" onClick={() => {}}>
+              <Button
+                kind="primary"
+                onClick={() => {
+                  setOpen(false);
+                  batchModificationStore.enable();
+                }}
+              >
                 Continue
               </Button>
             </ModalFooter>

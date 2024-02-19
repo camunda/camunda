@@ -27,12 +27,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
-import {
-  BottomPanel,
-  ModificationHeader,
-  ModificationFooter,
-  Buttons,
-} from './styled';
+import {BottomPanel, ModificationFooter, Buttons} from './styled';
 import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
 import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
@@ -43,6 +38,7 @@ import {LastModification} from './LastModification';
 import {VariablePanel} from './BottomPanel/VariablePanel';
 import {Forbidden} from 'modules/components/Forbidden';
 import {notificationsStore} from 'modules/stores/notifications';
+import {Frame} from 'modules/components/Frame';
 
 const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
   variablesStore.startPolling(processInstanceId, {runImmediately: true});
@@ -194,110 +190,110 @@ const ProcessInstance: React.FC = observer(() => {
           isModificationModeEnabled ? ' - Modification Mode' : ''
         }`}
       </VisuallyHiddenH1>
-      <InstanceDetail
-        hasLoadingOverlay={modificationStatus === 'applying-modifications'}
-        breadcrumb={
-          isBreadcrumbVisible ? (
-            <Breadcrumb
-              processInstance={
-                processInstanceDetailsStore.state.processInstance!
-              }
-            />
-          ) : undefined
-        }
-        header={<ProcessInstanceHeader />}
-        topPanel={<TopPanel />}
-        bottomPanel={
-          <BottomPanel>
-            <FlowNodeInstanceLog />
-            <VariablePanel />
-          </BottomPanel>
-        }
-        frameHeader={
-          isModificationModeEnabled ? (
-            <ModificationHeader>
-              Process Instance Modification Mode
-            </ModificationHeader>
-          ) : undefined
-        }
-        frameFooter={
-          isModificationModeEnabled ? (
-            <ModificationFooter>
-              <LastModification />
-              <Buttons orientation="horizontal" gap={4}>
-                <ModalStateManager
-                  renderLauncher={({setOpen}) => (
-                    <Button
-                      kind="secondary"
-                      size="sm"
-                      onClick={() => {
-                        tracking.track({
-                          eventName: 'discard-all-summary',
-                          hasPendingModifications,
-                        });
-                        setOpen(true);
-                      }}
-                      data-testid="discard-all-button"
-                    >
-                      Discard All
-                    </Button>
-                  )}
-                >
-                  {({open, setOpen}) => (
-                    <Modal
-                      modalHeading="Discard Modifications"
-                      preventCloseOnClickOutside
-                      danger
-                      primaryButtonText="Discard"
-                      secondaryButtonText="Cancel"
-                      open={open}
-                      onRequestClose={() => setOpen(false)}
-                      onRequestSubmit={() => {
-                        tracking.track({
-                          eventName: 'discard-modifications',
-                          hasPendingModifications,
-                        });
-                        modificationsStore.reset();
-                        setOpen(false);
-                      }}
-                    >
-                      <p>
-                        About to discard all added modifications for instance{' '}
-                        {processInstanceId}.
-                      </p>
-                      <p>Click "Discard" to proceed.</p>
-                    </Modal>
-                  )}
-                </ModalStateManager>
-                <ModalStateManager
-                  renderLauncher={({setOpen}) => (
-                    <Button
-                      kind="primary"
-                      size="sm"
-                      onClick={() => {
-                        tracking.track({
-                          eventName: 'apply-modifications-summary',
-                          hasPendingModifications,
-                        });
-                        setOpen(true);
-                      }}
-                      data-testid="apply-modifications-button"
-                      disabled={!hasPendingModifications}
-                    >
-                      Apply Modifications
-                    </Button>
-                  )}
-                >
-                  {({open, setOpen}) => (
-                    <ModificationSummaryModal open={open} setOpen={setOpen} />
-                  )}
-                </ModalStateManager>
-              </Buttons>
-            </ModificationFooter>
-          ) : undefined
-        }
-        type="process"
-      />
+      <Frame
+        frame={{
+          isVisible: isModificationModeEnabled,
+          headerTitle: 'Process Instance Modification Mode',
+        }}
+      >
+        <InstanceDetail
+          hasLoadingOverlay={modificationStatus === 'applying-modifications'}
+          breadcrumb={
+            isBreadcrumbVisible ? (
+              <Breadcrumb
+                processInstance={
+                  processInstanceDetailsStore.state.processInstance!
+                }
+              />
+            ) : undefined
+          }
+          header={<ProcessInstanceHeader />}
+          topPanel={<TopPanel />}
+          bottomPanel={
+            <BottomPanel>
+              <FlowNodeInstanceLog />
+              <VariablePanel />
+            </BottomPanel>
+          }
+          footer={
+            isModificationModeEnabled ? (
+              <ModificationFooter>
+                <LastModification />
+                <Buttons orientation="horizontal" gap={4}>
+                  <ModalStateManager
+                    renderLauncher={({setOpen}) => (
+                      <Button
+                        kind="secondary"
+                        size="sm"
+                        onClick={() => {
+                          tracking.track({
+                            eventName: 'discard-all-summary',
+                            hasPendingModifications,
+                          });
+                          setOpen(true);
+                        }}
+                        data-testid="discard-all-button"
+                      >
+                        Discard All
+                      </Button>
+                    )}
+                  >
+                    {({open, setOpen}) => (
+                      <Modal
+                        modalHeading="Discard Modifications"
+                        preventCloseOnClickOutside
+                        danger
+                        primaryButtonText="Discard"
+                        secondaryButtonText="Cancel"
+                        open={open}
+                        onRequestClose={() => setOpen(false)}
+                        onRequestSubmit={() => {
+                          tracking.track({
+                            eventName: 'discard-modifications',
+                            hasPendingModifications,
+                          });
+                          modificationsStore.reset();
+                          setOpen(false);
+                        }}
+                      >
+                        <p>
+                          About to discard all added modifications for instance{' '}
+                          {processInstanceId}.
+                        </p>
+                        <p>Click "Discard" to proceed.</p>
+                      </Modal>
+                    )}
+                  </ModalStateManager>
+                  <ModalStateManager
+                    renderLauncher={({setOpen}) => (
+                      <Button
+                        kind="primary"
+                        size="sm"
+                        onClick={() => {
+                          tracking.track({
+                            eventName: 'apply-modifications-summary',
+                            hasPendingModifications,
+                          });
+                          setOpen(true);
+                        }}
+                        data-testid="apply-modifications-button"
+                        disabled={!hasPendingModifications}
+                      >
+                        Apply Modifications
+                      </Button>
+                    )}
+                  >
+                    {({open, setOpen}) => (
+                      <ModificationSummaryModal open={open} setOpen={setOpen} />
+                    )}
+                  </ModalStateManager>
+                </Buttons>
+              </ModificationFooter>
+            ) : undefined
+          }
+          type="process"
+        />
+      </Frame>
       {showPrompt && (
         <Modal
           open={showPrompt}

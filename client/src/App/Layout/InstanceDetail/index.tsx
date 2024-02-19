@@ -17,7 +17,7 @@ import {Loading} from '@carbon/react';
 type Props = {
   header: React.ReactNode;
   frameHeader?: React.ReactNode;
-  frameFooter?: React.ReactNode;
+  footer?: React.ReactNode;
   breadcrumb?: React.ReactNode;
   topPanel: React.ReactNode;
   bottomPanel: React.ReactNode;
@@ -30,8 +30,7 @@ const InstanceDetail: React.FC<Props> = observer(
     type,
     header,
     breadcrumb,
-    frameHeader,
-    frameFooter,
+    footer,
     topPanel,
     bottomPanel,
     rightPanel,
@@ -49,11 +48,9 @@ const InstanceDetail: React.FC<Props> = observer(
     return (
       <Container
         $hasBreadcrumb={breadcrumb !== undefined}
-        $hasFrameHeader={frameHeader !== undefined}
-        $hasFrameFooter={frameFooter !== undefined}
+        $hasFooter={footer !== undefined}
       >
         {hasLoadingOverlay && <Loading data-testid="loading-overlay" />}
-        {frameHeader}
         {breadcrumb}
         {header}
         <div ref={containerRef}>
@@ -67,7 +64,7 @@ const InstanceDetail: React.FC<Props> = observer(
           </ResizablePanel>
         </div>
         {rightPanel}
-        {frameFooter}
+        {footer}
       </Container>
     );
   },

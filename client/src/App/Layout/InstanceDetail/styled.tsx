@@ -8,33 +8,20 @@
 import styled, {css} from 'styled-components';
 
 type Props = {
-  $hasFrameHeader?: boolean;
-  $hasFrameFooter?: boolean;
+  $hasFooter?: boolean;
   $hasBreadcrumb?: boolean;
 };
 
 const Container = styled.div<Props>`
-  ${({
-    $hasFrameHeader = false,
-    $hasBreadcrumb = false,
-    $hasFrameFooter = false,
-  }) => {
+  ${({$hasBreadcrumb = false, $hasFooter = false}) => {
     return css`
       display: grid;
       height: 100%;
-      grid-template-rows: ${`${$hasFrameHeader ? 'var(--cds-spacing-07)' : ''}
+      grid-template-rows: ${`
         ${
           $hasBreadcrumb ? 'var(--cds-spacing-07)' : ''
-        } var(--cds-spacing-09) 1fr ${
-          $hasFrameFooter ? 'var(--cds-spacing-09)' : ''
-        }
+        } var(--cds-spacing-09) 1fr ${$hasFooter ? 'var(--cds-spacing-09)' : ''}
       `};
-
-      ${$hasFrameHeader &&
-      css`
-        border: 4px solid var(--cds-interactive);
-        border-top: none;
-      `}
     `;
   }}
 `;

@@ -7,22 +7,11 @@
 
 import styled from 'styled-components';
 import {Stack} from '@carbon/react';
-import {styles} from '@carbon/elements';
 
 const BottomPanel = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   height: 100%;
-`;
-
-const ModificationHeader = styled.div`
-  display: flex;
-  align-items: center;
-  padding-left: var(--cds-spacing-05);
-  background-color: var(--cds-interactive);
-  color: var(--cds-text-inverse);
-  ${styles.bodyShort01};
-  font-weight: bold;
 `;
 
 const ModificationFooter = styled.div`
@@ -37,4 +26,4 @@ const Buttons = styled(Stack)`
   margin-left: auto;
 `;
 
-export {BottomPanel, ModificationHeader, ModificationFooter, Buttons};
+export {BottomPanel, ModificationFooter, Buttons};

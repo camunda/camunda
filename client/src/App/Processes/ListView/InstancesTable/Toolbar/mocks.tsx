@@ -17,6 +17,7 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {UserEvent} from '@testing-library/user-event';
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 const fetchProcessInstances = async (screen: Screen, user: UserEvent) => {
   await user.click(
@@ -59,6 +60,7 @@ function getWrapper(initialPath: string = Paths.processes()) {
           processInstanceMigrationStore.reset();
           processStatisticsStore.reset();
           processXmlStore.reset();
+          batchModificationStore.reset();
         };
       }, []);
       return (

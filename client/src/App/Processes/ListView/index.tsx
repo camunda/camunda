@@ -24,6 +24,7 @@ import {variableFilterStore} from 'modules/stores/variableFilter';
 import {reaction} from 'mobx';
 import {tracking} from 'modules/tracking';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -126,6 +127,10 @@ const ListView: React.FC = observer(() => {
         topPanel={<DiagramPanel />}
         bottomPanel={<InstancesTable />}
         rightPanel={<OperationsPanel />}
+        frame={{
+          isVisible: batchModificationStore.state.isEnabled,
+          headerTitle: 'Batch Modification Mode',
+        }}
       />
     </>
   );

@@ -19,6 +19,7 @@ import {
 import {MoveAction} from '.';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'MoveModificationProcess';
@@ -263,7 +264,7 @@ describe('<MoveAction />', () => {
     expect(screen.getByRole('button', {name: /move/i})).toBeEnabled();
   });
 
-  it('should display migration helper modal on button click', async () => {
+  it('should display migration helper modal and enter migration mode', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchProcessXML().withSuccess(mockProcessXML);
 
@@ -292,7 +293,11 @@ describe('<MoveAction />', () => {
       ),
     ).toBeInTheDocument();
 
-    expect(screen.getByRole('button', {name: 'Continue'})).toBeInTheDocument();
+    expect(batchModificationStore.state.isEnabled).toBe(false);
+
+    await user.click(screen.getByRole('button', {name: 'Continue'}));
+
+    expect(batchModificationStore.state.isEnabled).toBe(true);
   });
 
   it('should hide helper modal after checkbox click', async () => {

@@ -12,6 +12,7 @@ import {
 import {Container, PanelContainer} from './styled';
 import {observer} from 'mobx-react';
 import {useEffect, useRef, useState} from 'react';
+import {Frame, FrameProps} from 'modules/components/Frame';
 
 type Props = {
   leftPanel?: React.ReactNode;
@@ -20,6 +21,7 @@ type Props = {
   additionalTopContent?: React.ReactNode;
   footer?: React.ReactNode;
   rightPanel?: React.ReactNode;
+  frame?: FrameProps;
   type: 'process' | 'decision' | 'migrate';
 };
 const InstancesList: React.FC<Props> = observer(
@@ -30,6 +32,7 @@ const InstancesList: React.FC<Props> = observer(
     rightPanel,
     additionalTopContent,
     footer,
+    frame,
     type,
   }) => {
     const [clientHeight, setClientHeight] = useState(0);
@@ -42,27 +45,29 @@ const InstancesList: React.FC<Props> = observer(
     const panelMinHeight = clientHeight / 4;
 
     return (
-      <Container
-        $hasLeftPanel={leftPanel !== undefined}
-        $hasRightPanel={rightPanel !== undefined}
-        $hasFooter={footer !== undefined}
-        $hasAdditionalTopContent={additionalTopContent !== undefined}
-      >
-        {leftPanel}
-        {additionalTopContent && <>{additionalTopContent}</>}
-        <PanelContainer ref={containerRef}>
-          <ResizablePanel
-            panelId={`${type}-instances-vertical-panel`}
-            direction={SplitDirection.Vertical}
-            minHeights={[panelMinHeight, panelMinHeight]}
-          >
-            {topPanel}
-            {bottomPanel}
-          </ResizablePanel>
-        </PanelContainer>
-        {rightPanel}
-        {footer}
-      </Container>
+      <Frame frame={frame}>
+        <Container
+          $hasLeftPanel={leftPanel !== undefined}
+          $hasRightPanel={rightPanel !== undefined}
+          $hasFooter={footer !== undefined}
+          $hasAdditionalTopContent={additionalTopContent !== undefined}
+        >
+          {leftPanel}
+          {additionalTopContent && <>{additionalTopContent}</>}
+          <PanelContainer ref={containerRef}>
+            <ResizablePanel
+              panelId={`${type}-instances-vertical-panel`}
+              direction={SplitDirection.Vertical}
+              minHeights={[panelMinHeight, panelMinHeight]}
+            >
+              {topPanel}
+              {bottomPanel}
+            </ResizablePanel>
+          </PanelContainer>
+          {rightPanel}
+          {footer}
+        </Container>
+      </Frame>
     );
   },
 );
