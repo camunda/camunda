@@ -12,7 +12,13 @@ export function getRandomId() {
 export {loadReports, loadEntities, copyEntity} from './entityService';
 
 export * as formatters from './formatters';
-export {loadProcessDefinitionXml, loadDecisionDefinitionXml} from './dataLoaders';
+export {
+  loadProcessDefinitionXml,
+  loadDecisionDefinitionXml,
+  loadInputVariables,
+  loadOutputVariables,
+  loadVariables,
+} from './dataLoaders';
 export {numberParser} from './NumberParser';
 
 export {

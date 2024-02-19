@@ -5,30 +5,45 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
-import {Button, TableToolbar, TableToolbarContent, TableToolbarSearch} from '@carbon/react';
+import {ChangeEvent, useEffect, useState} from 'react';
+import {
+  Button,
+  TableToolbar,
+  TableToolbarContent,
+  TableToolbarSearch,
+  TextInput,
+} from '@carbon/react';
 
-import {Input, Modal, NoDataNotice, Table} from 'components';
+import {Modal, NoDataNotice, Table} from 'components';
 import {loadVariables} from 'services';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {useErrorHandling} from 'hooks';
+import {Variable} from 'types';
 
 import {updateVariables} from './service';
 
 import './RenameVariablesModal.scss';
 
-export function RenameVariablesModal({
+interface RenameVariablesModalProps {
+  open?: boolean;
+  onClose: () => void;
+  onChange: () => void;
+  definitionKey: string;
+  availableTenants: (string | null)[];
+}
+
+export default function RenameVariablesModal({
   open,
   onClose,
   onChange,
-  mightFail,
   definitionKey,
   availableTenants,
-}) {
-  const [variables, setVariables] = useState();
+}: RenameVariablesModalProps) {
+  const [variables, setVariables] = useState<Variable[]>();
   const [query, setQuery] = useState('');
   const [renamedVariables, setRenamedVariables] = useState(new Map());
+  const {mightFail} = useErrorHandling();
 
   useEffect(() => {
     mightFail(
@@ -44,7 +59,7 @@ export function RenameVariablesModal({
         setRenamedVariables(
           new Map(
             variables
-              .filter((variable) => variable.label)
+              .filter((variable) => !!variable.label)
               .map((variable) => [
                 variable,
                 {
@@ -96,10 +111,9 @@ export function RenameVariablesModal({
             <TableToolbar>
               <TableToolbarContent>
                 <TableToolbarSearch
-                  value={query}
-                  placeholder={t('report.groupBy.searchForVariable')}
+                  placeholder={t('report.groupBy.searchForVariable').toString()}
                   onChange={(evt) => {
-                    setQuery(evt.target.value);
+                    setQuery((evt as ChangeEvent<HTMLInputElement>).target.value);
                   }}
                   onClear={() => {
                     setQuery('');
@@ -116,9 +130,12 @@ export function RenameVariablesModal({
           body={filteredVariables.map((variable) => [
             variable.name,
             variable.type,
-            <Input
+            <TextInput
+              id={`${variable.name}-${variable.type}-input`}
               className="nameInput"
-              type="text"
+              size="sm"
+              labelText={t('report.definition.variables.newName')}
+              hideLabel
               value={renamedVariables.get(variable)?.variableLabel || ''}
               onChange={(evt) =>
                 setRenamedVariables(
@@ -136,7 +153,7 @@ export function RenameVariablesModal({
           ])}
           loading={!variables}
           noData={
-            variables?.length > 0 && filteredVariables.length === 0 ? (
+            !!variables?.length && filteredVariables.length === 0 ? (
               <NoDataNotice title={t('events.table.noResults')} />
             ) : undefined
           }
@@ -154,5 +171,3 @@ export function RenameVariablesModal({
     </Modal>
   );
 }
-
-export default withErrorHandling(RenameVariablesModal);

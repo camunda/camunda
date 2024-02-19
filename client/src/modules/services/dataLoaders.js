@@ -7,6 +7,14 @@
 
 import {get, post} from 'request';
 
+export {
+  loadProcessDefinitionXml,
+  loadDecisionDefinitionXml,
+  loadVariables,
+  loadInputVariables,
+  loadOutputVariables,
+} from './dataLoaders.ts';
+
 export async function getFlowNodeNames(processDefinitionKey, processDefinitionVersion, tenantId) {
   if (processDefinitionKey && processDefinitionVersion) {
     const payload = {
@@ -32,14 +40,3 @@ export async function checkDeleteConflict(id, entity) {
   const response = await get(`api/${entity}/${id}/delete-conflicts`);
   return await response.json();
 }
-
-const loadVariablesFrom = (endpoint) => async (payload) => {
-  const response = await post(endpoint, payload);
-
-  return await response.json();
-};
-
-export const loadVariables = loadVariablesFrom('api/variables');
-export const loadInputVariables = loadVariablesFrom('api/decision-variables/inputs/names');
-export const loadOutputVariables = loadVariablesFrom('api/decision-variables/outputs/names');
-export {loadDecisionDefinitionXml, loadProcessDefinitionXml} from './dataLoaders.ts';

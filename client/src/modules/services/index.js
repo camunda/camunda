@@ -7,13 +7,14 @@
 
 export {
   getFlowNodeNames,
-  loadProcessDefinitionXml,
-  loadDecisionDefinitionXml,
   checkDeleteConflict,
-  loadVariables,
+  loadDecisionDefinitionXml,
   loadInputVariables,
   loadOutputVariables,
+  loadProcessDefinitionXml,
+  loadVariables,
 } from './dataLoaders';
+
 export {numberParser} from './NumberParser';
 export {incompatibleFilters} from './incompatibleFilters.ts';
 export {default as reportConfig, createReportUpdate, getDefaultSorting} from './reportConfig';

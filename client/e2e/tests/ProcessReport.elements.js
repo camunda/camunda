@@ -117,6 +117,6 @@ export const objectViewBtn = reportTable.find('.ObjectViewBtn').nth(0);
 export const objectVariableModal = Selector('.ObjectVariableModal');
 export const renameVariablesBtn = Selector('button').withText('Rename variables');
 export const newNameInput = (name) =>
-  Selector('.RenameVariablesModal tbody tr').withText(name).find('.Input');
+  Selector('.RenameVariablesModal tbody tr').withText(name).find('input');
 export const numberReportInfo = reportRenderer.find('.Number .label');
 export const variableSubmenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);

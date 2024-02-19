@@ -5,14 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {loadVariables} from 'services';
 import {Table} from 'components';
 
 import {updateVariables} from './service';
-import {RenameVariablesModal} from './RenameVariablesModal';
+import RenameVariablesModal from './RenameVariablesModal';
+import {ChangeEvent} from 'react';
 
 jest.mock('./service', () => ({updateVariables: jest.fn()}));
 jest.mock('services', () => {
@@ -29,9 +30,17 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
+jest.mock('hooks', () => ({
+  useErrorHandling: () => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  }),
+}));
+
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   availableTenants: [null, 'engineering'],
+  definitionKey: '',
+  onChange: jest.fn(),
+  onClose: jest.fn(),
 };
 
 it('should load all variables for the specified definition', () => {
@@ -40,7 +49,7 @@ it('should load all variables for the specified definition', () => {
 
   runLastEffect();
 
-  expect(node.find(Table).prop('body')[0][2].props.value).toBe('existingLabel');
+  expect(node.find(Table).prop<JSX.Element[][]>('body')[0]?.[2]?.props.value).toBe('existingLabel');
   expect(loadVariables).toHaveBeenCalledWith([
     {processDefinitionKey, processDefinitionVersions: ['all'], tenantIds: props.availableTenants},
   ]);
@@ -63,12 +72,12 @@ it('should invoke updateVariable when confirming the modal with the list of upda
 
   node
     .find(Table)
-    .prop('body')[0][2]
-    .props.onChange({target: {value: 'new name'}});
+    .prop<JSX.Element[][]>('body')[0]?.[2]
+    ?.props.onChange({target: {value: 'new name'}});
 
   node.find('.confirm').simulate('click');
 
-  expect(node.find(Table).prop('body')[0][2].props.value).toBe('new name');
+  expect(node.find(Table).prop<JSX.Element[][]>('body')[0]?.[2]?.props.value).toBe('new name');
   expect(updateVariables).toHaveBeenCalledWith(definitionKey, [
     {variableLabel: 'new name', variableName: 'variable1', variableType: 'String'},
   ]);
@@ -90,12 +99,12 @@ it('should filter items based on search', () => {
 
   runLastEffect();
 
-  const toolbar = shallow(node.find(Table).prop('toolbar'));
-  toolbar.find('TableToolbarSearch').prop('onChange')({
+  const toolbar = shallow(node.find(Table).prop<JSX.Element>('toolbar'));
+  toolbar.find('TableToolbarSearch').prop('onChange')?.({
     target: {value: 'variable1'},
-  });
+  } as ChangeEvent<HTMLInputElement>);
 
-  const variables = node.find(Table).prop('body');
+  const variables = node.find(Table).prop('body') as string[][];
   expect(variables.length).toBe(1);
-  expect(variables[0][0]).toBe('variable1');
+  expect(variables[0]?.[0]).toBe('variable1');
 });

@@ -5,7 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {get} from 'request';
+import {Variable} from 'types';
+import {get, post} from 'request';
 
 export async function loadProcessDefinitionXml(
   key?: string,
@@ -43,3 +44,30 @@ export async function loadDecisionDefinitionXml(
     return null;
   }
 }
+
+const loadVariablesFrom =
+  <P>(endpoint: string) =>
+  async (payload: P) => {
+    const response = await post(endpoint, payload);
+
+    return (await response.json()) as Variable[];
+  };
+
+type LoadVariablesPayload = {
+  processDefinitionKey: string;
+  processDefinitionVersions: string[];
+  tenantIds: (string | null)[];
+};
+export const loadVariables = loadVariablesFrom<LoadVariablesPayload[]>('api/variables');
+
+type LoadDecisionVariablesPayload = {
+  decisionDefinitionKey: string;
+  decisionDefinitionVersions: string[];
+  tenantIds: (string | null)[];
+};
+export const loadInputVariables = loadVariablesFrom<LoadDecisionVariablesPayload>(
+  'api/decision-variables/inputs/names'
+);
+export const loadOutputVariables = loadVariablesFrom<LoadDecisionVariablesPayload>(
+  'api/decision-variables/outputs/names'
+);

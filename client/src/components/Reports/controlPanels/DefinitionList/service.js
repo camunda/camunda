@@ -29,6 +29,4 @@ export async function loadVersions(type, collectionId, key) {
   return await response.json();
 }
 
-export function updateVariables(definitionKey, labels) {
-  return post('api/variables/labels', {definitionKey, labels});
-}
+export {updateVariables} from './service.ts';
