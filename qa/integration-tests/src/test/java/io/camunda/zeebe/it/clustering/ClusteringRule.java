@@ -74,6 +74,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -279,15 +280,22 @@ public class ClusteringRule extends ExternalResource {
                 LOG.error("Failed to close managed resource {}", autoCloseable, e);
               }
             });
-    brokers.values().parallelStream()
-        .forEach(
-            b -> {
-              try {
-                b.close();
-              } catch (final Exception e) {
-                LOG.error("Failed to close broker: ", e);
-              }
-            });
+
+    // Previously we used `Collection#parallelStream` in an attempt to achieve the same but
+    // that didn't work because requesting a parallel stream does not guarantee that
+    // stopping the brokers will actually run in parallel.
+    final var brokersToShutdown = new ArrayList<>(brokers.values());
+    final var shutdownFutures =
+        brokersToShutdown.stream()
+            .map(b -> CompletableFuture.runAsync(b::close))
+            .toArray(CompletableFuture[]::new);
+    CompletableFuture.allOf(shutdownFutures)
+        .exceptionally(
+            t -> {
+              LOG.error("Failed to close broker", t);
+              return null;
+            })
+        .join();
     systemContexts.values().forEach(ctx -> ctx.getScheduler().stop());
     systemContexts.clear();
     brokers.clear();
@@ -728,6 +736,7 @@ public class ClusteringRule extends ExternalResource {
   public void fillSegments(final int minimumSegmentCount) {
     fillSegments(getBrokers(), minimumSegmentCount);
   }
+
   /**
    * Writes entries until at least the given count of segments exist on the given brokers.
    * Automatically accounts for offset log compaction to ensure that at least one segment will be
@@ -738,6 +747,7 @@ public class ClusteringRule extends ExternalResource {
         getBrokerCfg(0).getExperimental().getRaft().getPreferSnapshotReplicationThreshold();
     fillSegments(brokers, minimumSegmentCount, logCompactionOffset);
   }
+
   /**
    * Writes entries until at least the given count of segments exist on all brokers and at least the
    * given count of entries are written.
@@ -745,6 +755,7 @@ public class ClusteringRule extends ExternalResource {
   public void fillSegments(final int minimumSegmentCount, final int minimumWrittenEntries) {
     fillSegments(getBrokers(), minimumSegmentCount, minimumWrittenEntries);
   }
+
   /**
    * Writes entries until at least the given count of segments exist on the given brokers and at
    * least the given count of entries are written.
