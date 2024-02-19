@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Compatible;
+import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
+import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionRequirementsMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyDecisionStateMigration;
@@ -20,7 +23,6 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDe
 import io.camunda.zeebe.engine.state.migration.to_8_4.MultiTenancySignalSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_5.ColumnFamilyPrefixCorrectionMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,56 +93,21 @@ public class DbMigratorImpl implements DbMigrator {
   private void checkVersionCompatibility() {
     final var migratedByVersion = processingState.getMigrationState().getMigratedByVersion();
     final var currentVersion = VersionUtil.getVersion();
-
-    final var currentSemanticVersion = SemanticVersion.parse(currentVersion);
-    final var migratedSemanticVersion = SemanticVersion.parse(migratedByVersion);
-
-    if (currentSemanticVersion.isEmpty()) {
-      if (migratedByVersion != null) {
-        LOGGER.warn(
-            "Snapshot is from version {}, but current version {} is not a valid semantic version, not checking compatibility",
-            currentVersion,
-            migratedByVersion);
-      } else {
-        LOGGER.debug(
-            "Snapshot is from an unknown version, not checking compatibility with current version {} which is not a valid semantic version anyway",
-            currentVersion);
-      }
-      return;
-    }
-
-    if (migratedSemanticVersion.isEmpty()) {
-      if (migratedByVersion != null) {
-        LOGGER.warn(
-            "Snapshot is from version {} which is not a valid semantic version, not checking compatibility with current version {}",
-            migratedByVersion,
-            currentVersion);
-      } else {
-        LOGGER.debug(
-            "Snapshot is from an unknown version, not checking compatibility with current version {}",
-            currentVersion);
-      }
-      return;
-    }
-
-    if (migratedSemanticVersion.get().compareTo(currentSemanticVersion.get()) > 0) {
-      throw new IllegalStateException(
-          "Snapshot from version %s is not compatible with current version %s"
-              .formatted(migratedByVersion, currentVersion));
-    }
-
-    if (migratedSemanticVersion.get().major() != currentSemanticVersion.get().major()) {
-      throw new IllegalStateException(
-          "Snapshot from version %s is not compatible with current version %s, upgrades between major versions are not supported"
-              .formatted(migratedByVersion, currentVersion));
-    }
-
-    if (currentSemanticVersion.get().minor() - migratedSemanticVersion.get().minor() > 1) {
-      final var requiredVersion =
-          migratedSemanticVersion.get().major() + "." + (migratedSemanticVersion.get().minor() - 1);
-      throw new IllegalStateException(
-          "Snapshot from version %s is not compatible with current version %s, must be %s or newer."
-              .formatted(migratedByVersion, currentVersion, requiredVersion));
+    switch (VersionCompatibilityCheck.check(migratedByVersion, currentVersion)) {
+      case final Indeterminate.PreviousVersionUnknown previousVersionUnknown ->
+          LOGGER.trace(
+              "Snapshot is from an unknown version, not checking compatibility with current version: {}",
+              previousVersionUnknown);
+      case final Indeterminate indeterminate ->
+          LOGGER.warn(
+              "Could not check compatibility of snapshot with current version: {}", indeterminate);
+      case final Incompatible incompatible ->
+          throw new IllegalStateException(
+              "Snapshot is not compatible with current version: %s".formatted(incompatible));
+      case final Compatible.SameVersion sameVersion ->
+          LOGGER.trace("Snapshot is from the same version as the current version: {}", sameVersion);
+      case final Compatible compatible ->
+          LOGGER.info("Snapshot is compatible with current version: {}", compatible);
     }
   }
 
