@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import org.apache.commons.text.StringEscapeUtils;
 
 /**
  * Transform variable mappings into an expression.
@@ -176,9 +175,10 @@ public final class VariableMappingTransformer {
         final String expression;
 
         if (sourceExpression instanceof StaticExpression) {
+          // due to a regression (https://github.com/camunda/zeebe/issues/16043) all the double
+          // quotes inside the static expression must be escaped
           expression =
-              String.format(
-                  "\"%s\"", StringEscapeUtils.escapeJava(sourceExpression.getExpression()));
+              String.format("\"%s\"", sourceExpression.getExpression().replaceAll("\"", "\\\\\""));
         } else {
           expression = sourceExpression.getExpression();
         }
