@@ -26,6 +26,7 @@ import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.management.backups.BackupInfo;
 import io.camunda.zeebe.management.backups.TakeBackupResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.ErrorResponse.Payload;
+import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.zeebe.containers.ZeebeNode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -60,6 +61,17 @@ public interface BackupActuator {
    */
   static BackupActuator ofAddress(final String address) {
     final var endpoint = String.format("http://%s/actuator/backups", address);
+    return of(endpoint);
+  }
+
+  /**
+   * Returns a {@link BackupActuator} instance using the given node as upstream.
+   *
+   * @param node the node to connect to
+   * @return a new instance of {@link BackupActuator}
+   */
+  static BackupActuator of(final TestApplication<?> node) {
+    final var endpoint = String.format("http://%s/actuator/backups", node.monitoringAddress());
     return of(endpoint);
   }
 
