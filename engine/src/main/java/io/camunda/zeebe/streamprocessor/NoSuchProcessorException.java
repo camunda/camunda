@@ -10,7 +10,7 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 
-public class NoSuchProcessorException extends UnrecoverableException {
+final class NoSuchProcessorException extends UnrecoverableException {
   private NoSuchProcessorException(final String message) {
     super(message);
   }
