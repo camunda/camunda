@@ -128,6 +128,20 @@ public class DbMigratorImpl implements DbMigrator {
           "Snapshot from version %s is not compatible with current version %s"
               .formatted(migratedByVersion, currentVersion));
     }
+
+    if (migratedSemanticVersion.get().major() != currentSemanticVersion.get().major()) {
+      throw new IllegalStateException(
+          "Snapshot from version %s is not compatible with current version %s, upgrades between major versions are not supported"
+              .formatted(migratedByVersion, currentVersion));
+    }
+
+    if (currentSemanticVersion.get().minor() - migratedSemanticVersion.get().minor() > 1) {
+      final var requiredVersion =
+          migratedSemanticVersion.get().major() + "." + (migratedSemanticVersion.get().minor() - 1);
+      throw new IllegalStateException(
+          "Snapshot from version %s is not compatible with current version %s, must be %s or newer."
+              .formatted(migratedByVersion, currentVersion, requiredVersion));
+    }
   }
 
   private void markMigrationsAsCompleted() {
