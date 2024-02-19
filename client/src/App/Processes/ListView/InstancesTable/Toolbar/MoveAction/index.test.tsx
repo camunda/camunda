@@ -262,4 +262,80 @@ describe('<MoveAction />', () => {
 
     expect(screen.getByRole('button', {name: /move/i})).toBeEnabled();
   });
+
+  it('should display migration helper modal on button click', async () => {
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    const {user} = render(<MoveAction />, {
+      wrapper: getWrapper(
+        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+      ),
+    });
+
+    await fetchProcessInstances(screen, user);
+    await fetchProcessXml(screen, user);
+
+    act(() => {
+      processInstancesSelectionStore.selectAllProcessInstances();
+    });
+
+    await user.click(screen.getByRole('button', {name: /move/i}));
+
+    expect(
+      screen.getByText(/process instance batch move mode/i),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /this mode allows you to move multiple instances as a batch in a one operation/i,
+      ),
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole('button', {name: 'Continue'})).toBeInTheDocument();
+  });
+
+  it('should hide helper modal after checkbox click', async () => {
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    const {user} = render(<MoveAction />, {
+      wrapper: getWrapper(
+        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+      ),
+    });
+
+    await fetchProcessInstances(screen, user);
+    await fetchProcessXml(screen, user);
+
+    act(() => {
+      processInstancesSelectionStore.selectAllProcessInstances();
+    });
+
+    await user.click(screen.getByRole('button', {name: /move/i}));
+
+    expect(
+      screen.getByText(/process instance batch move mode/i),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('checkbox', {name: /do not show this message again/i}),
+    );
+
+    await user.click(screen.getByRole('button', {name: /close/i}));
+
+    await user.click(screen.getByRole('button', {name: /move/i}));
+
+    expect(
+      screen.queryByText(/process instance batch move mode/i),
+    ).not.toBeInTheDocument();
+
+    localStorage.clear();
+
+    await user.click(screen.getByRole('button', {name: /move/i}));
+
+    expect(
+      screen.getByText(/process instance batch move mode/i),
+    ).toBeInTheDocument();
+  });
 });
