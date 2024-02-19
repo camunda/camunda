@@ -7,9 +7,19 @@
 
 import {ComponentProps, ReactNode} from 'react';
 import classnames from 'classnames';
+import {
+  Checkbox,
+  CheckboxSkeleton,
+  Form,
+  FormGroup,
+  RadioButton,
+  RadioButtonGroup,
+  RadioButtonSkeleton,
+  Tag,
+} from '@carbon/react';
 
 import {t} from 'translation';
-import {Popover, LabeledInput, Form, Badge, LoadingIndicator} from 'components';
+import {Popover} from 'components';
 
 import {Version} from './service';
 
@@ -58,65 +68,74 @@ export default function VersionPopover({
         </Popover.ListBox>
       }
     >
-      {loading && <LoadingIndicator />}
-      <Form compact>
-        <Form.Group>
-          <LabeledInput
-            label={t('common.all')}
-            type="radio"
-            checked={selected[0] === 'all'}
-            onChange={() => onChange(['all'])}
-            disabled={loading}
-          />
-          <LabeledInput
-            label={t('common.definitionSelection.version.alwaysLatest')}
-            type="radio"
-            checked={selected[0] === 'latest'}
-            onChange={() => onChange(['latest'])}
-            disabled={loading}
-          />
-          <LabeledInput
-            label={t(
-              `common.definitionSelection.version.specific.label${
-                versions?.length === 1 ? '' : '-plural'
-              }`
-            )}
-            type="radio"
-            checked={specific}
-            onChange={() => onChange(selectedSpecificVersions)}
-            disabled={loading}
-          />
-          <Form.Group
-            noSpacing
+      <Form>
+        <FormGroup legendText={t('common.definitionSelection.version.label')}>
+          <RadioButtonGroup name="version-selection" orientation="vertical">
+            <ReplaceContentOnLoading loading={loading} loadingComponent={RadioButtonSkeleton}>
+              <RadioButton
+                id="all"
+                value="all"
+                labelText={t('common.all')}
+                checked={selected[0] === 'all'}
+                onClick={() => onChange(['all'])}
+              />
+              <RadioButton
+                id="latest"
+                value="latest"
+                labelText={t('common.definitionSelection.version.alwaysLatest')}
+                checked={selected[0] === 'latest'}
+                onClick={() => onChange(['latest'])}
+              />
+              <RadioButton
+                id="specific"
+                value="specific"
+                labelText={t(
+                  `common.definitionSelection.version.specific.label${
+                    versions?.length === 1 ? '' : '-plural'
+                  }`
+                )}
+                checked={specific}
+                onClick={() => onChange(selectedSpecificVersions)}
+              />
+            </ReplaceContentOnLoading>
+          </RadioButtonGroup>
+          <FormGroup
+            legendText={t('common.definitionSelection.version.specific.label')}
             className={classnames('specificVersions', {
               disabled: !specific,
             })}
           >
-            {versions?.map(({version, versionTag}) => {
-              return (
-                <LabeledInput
-                  key={version}
-                  label={
-                    <>
-                      {version}
-                      {versionTag && <Badge>{versionTag}</Badge>}
-                    </>
-                  }
-                  type="checkbox"
-                  checked={selectedSpecificVersions.includes(version)}
-                  disabled={!specific || loading}
-                  onChange={({target}) => {
-                    if (target.checked) {
-                      onChange(selected.concat([version]).sort((a, b) => Number(b) - Number(a)));
-                    } else {
-                      onChange(selected.filter((selected) => selected !== version));
+            <ReplaceContentOnLoading
+              loading={loading}
+              count={versions?.length}
+              loadingComponent={CheckboxSkeleton}
+            >
+              {versions?.map(({version, versionTag}) => {
+                return (
+                  <Checkbox
+                    key={version}
+                    id={version}
+                    labelText={
+                      <span className="checkboxLabel">
+                        {version}
+                        {versionTag && <Tag size="sm">{versionTag}</Tag>}
+                      </span>
                     }
-                  }}
-                />
-              );
-            })}
-          </Form.Group>
-        </Form.Group>
+                    checked={selectedSpecificVersions.includes(version)}
+                    disabled={!specific}
+                    onChange={(_, {checked}) => {
+                      if (checked) {
+                        onChange(selected.concat([version]).sort((a, b) => Number(b) - Number(a)));
+                      } else {
+                        onChange(selected.filter((selected) => selected !== version));
+                      }
+                    }}
+                  />
+                );
+              })}
+            </ReplaceContentOnLoading>
+          </FormGroup>
+        </FormGroup>
       </Form>
     </Popover>
   );
@@ -127,4 +146,22 @@ function usesSpecificVersions(selectedVersions: Version['version'][]) {
     selectedVersions.length === 1 &&
     (selectedVersions[0] === 'all' || selectedVersions[0] === 'latest')
   );
+}
+
+function ReplaceContentOnLoading({
+  loading,
+  children,
+  count = 3,
+  loadingComponent: LoadingComponent,
+}: {
+  loading?: boolean;
+  children: ReactNode;
+  count?: number;
+  loadingComponent: (props: any) => JSX.Element;
+}) {
+  if (!loading) {
+    return children;
+  }
+
+  return Array.from({length: count}, (_, i) => <LoadingComponent key={i} className="skeleton" />);
 }

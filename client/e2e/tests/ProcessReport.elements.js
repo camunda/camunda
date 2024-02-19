@@ -7,6 +7,8 @@
 
 import {Selector} from 'testcafe';
 
+import * as Common from './Common.elements.js';
+
 export const templateOption = (text) =>
   Selector('.TemplateModal .templateContainer .Button').withText(text);
 export const reportContainer = Selector('.Report');
@@ -84,11 +86,11 @@ export const definitionEditorPopover = Selector('.DefinitionList .Popover');
 export const definitionEditor = definitionEditorPopover.find('.buttonWrapper button');
 export const definitionEditorDialog = definitionEditorPopover.find('.popoverContent');
 export const versionPopover = Selector('.VersionPopover');
-export const versionAll = Selector('input[type="radio"]').nth(0);
-export const versionLatest = Selector('input[type="radio"]').nth(1);
-export const versionSpecific = Selector('input[type="radio"]').nth(2);
+export const versionAll = Common.radioButton('All');
+export const versionLatest = Common.radioButton('Always display latest');
+export const versionSpecific = Common.radioButton('Specific versions');
 export const versionCheckbox = (number) =>
-  Selector('.specificVersions input[type="checkbox"]').nth(number);
+  Selector('.specificVersions .cds--checkbox-label').nth(number);
 export const tenantPopover = Selector('.TenantPopover');
 export const aggregationTypeSelect = Selector('.AggregationType');
 export const aggregationOption = (text) => Selector('.AggregationType .cds--toggle').withText(text);

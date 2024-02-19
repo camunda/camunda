@@ -7,8 +7,6 @@
 
 import {shallow} from 'enzyme';
 
-import {LabeledInput} from 'components';
-
 import {Version} from './service';
 import VersionPopover from './VersionPopover';
 
@@ -29,10 +27,7 @@ beforeEach(() => {
 it('should call the provided onChange function', () => {
   const node = shallow(<VersionPopover {...props} versions={versions} selected={['3']} />);
 
-  node
-    .find(LabeledInput)
-    .first()
-    .simulate('change', {target: {checked: true}});
+  node.find('RadioButton').first().simulate('click');
 
   expect(props.onChange).toHaveBeenCalledWith(['all']);
 });
@@ -88,9 +83,11 @@ it('should not crash, but be disabled if no versions are provided', () => {
   expect(node.prop('trigger').props.disabled).toBe(true);
 });
 
-it('should diplay a loading indicator and disable the inputs while loading', () => {
+it('should diplay a loading state the inputs while loading', () => {
   const node = shallow(<VersionPopover {...props} selected={[]} loading />);
 
-  expect(node.find('LoadingIndicator')).toExist();
-  expect(node.find(LabeledInput).at(0).prop('disabled')).toBe(true);
+  expect(node.find('ReplaceContentOnLoading').at(0).dive().find('RadioButtonSkeleton').length).toBe(
+    3
+  );
+  expect(node.find('ReplaceContentOnLoading').at(1).dive().find('CheckboxSkeleton').length).toBe(3);
 });
