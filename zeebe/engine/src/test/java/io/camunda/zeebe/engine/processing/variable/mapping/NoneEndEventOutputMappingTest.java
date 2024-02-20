@@ -69,6 +69,11 @@ public final class NoneEndEventOutputMappingTest {
         scopeVariables(variable("y", "1"))
       },
       {
+        "{'_x': 1}",
+        mapping(b -> b.zeebeOutputExpression("_x", "_y")),
+        scopeVariables(variable("_y", "1"))
+      },
+      {
         "{'x': 1}",
         mapping(b -> b.zeebeOutputExpression("decimal(x / 3, 2)", "y")),
         scopeVariables(variable("y", "0.33"))

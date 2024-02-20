@@ -186,18 +186,18 @@ public final class ProcessInstanceVariableTest {
         ENGINE_RULE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariables("{'x':1, 'y':2}")
+            .withVariables("{'x':1, 'y':2, '_z':3}")
             .create();
 
     // then
     assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
+                .limit(3))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
-        .hasSize(2)
-        .contains(tuple("x", "1"), tuple("y", "2"));
+        .hasSize(3)
+        .contains(tuple("x", "1"), tuple("y", "2"), tuple("_z", "3"));
   }
 
   @Test
@@ -307,7 +307,7 @@ public final class ProcessInstanceVariableTest {
         ENGINE_RULE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariables("{'x':1, 'y':2, 'z':3}")
+            .withVariables("{'x':1, 'y':2, 'z':3, '_z':4}")
             .create();
 
     // when
@@ -315,7 +315,7 @@ public final class ProcessInstanceVariableTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType("test")
-        .withVariables("{'x':1, 'y':4, 'z':5}")
+        .withVariables("{'x':1, 'y':4, 'z':5, '_z':7}")
         .complete();
 
     // then
@@ -327,8 +327,8 @@ public final class ProcessInstanceVariableTest {
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
-        .hasSize(2)
-        .contains(tuple("y", "4"), tuple("z", "5"));
+        .hasSize(3)
+        .contains(tuple("y", "4"), tuple("z", "5"), tuple("_z", "7"));
   }
 
   @Test

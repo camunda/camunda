@@ -69,9 +69,19 @@ public final class SignalEndEventInputMappingTest {
         activityVariables(variable("x", "1"))
       },
       {
+        "{'_x': 1}",
+        mapping(b -> b.zeebeInputExpression("_x", "_x")),
+        activityVariables(variable("_x", "1"))
+      },
+      {
         "{'x': 1}",
         mapping(b -> b.zeebeInputExpression("x", "y")),
         activityVariables(variable("y", "1"))
+      },
+      {
+        "{'_x': 1}",
+        mapping(b -> b.zeebeInputExpression("_x", "_y")),
+        activityVariables(variable("_y", "1"))
       },
       {
         "{'x': 1, 'y': 2}",

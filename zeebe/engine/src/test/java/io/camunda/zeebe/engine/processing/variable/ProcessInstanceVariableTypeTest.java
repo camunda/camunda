@@ -54,6 +54,7 @@ public final class ProcessInstanceVariableTypeTest {
       {"{'x':null}", "null"},
       {"{'x':[1,2,3]}", "[1,2,3]"},
       {"{'x':{'y':123}}", "{\"y\":123}"},
+      {"{'x':{'_y':123}}", "{\"_y\":123}"},
     };
   }
 

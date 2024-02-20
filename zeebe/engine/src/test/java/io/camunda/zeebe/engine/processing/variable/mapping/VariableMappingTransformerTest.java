@@ -32,7 +32,8 @@ public final class VariableMappingTransformerTest {
   public void shouldCreateValidExpression() {
     // when
     final var expression =
-        transformer.transformInputMappings(List.of(mapping("x", "a")), expressionLanguage);
+        transformer.transformInputMappings(
+            List.of(mapping("x", "a"), mapping("_x", "b")), expressionLanguage);
 
     // then
     assertThat(expression.isValid())
