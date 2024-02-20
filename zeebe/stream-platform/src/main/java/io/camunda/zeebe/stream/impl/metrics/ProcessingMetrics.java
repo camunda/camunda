@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.stream.impl.metrics;
 
+import io.camunda.zeebe.stream.impl.ProcessingStateMachine.ErrorHandlingPhase;
 import io.prometheus.client.Counter;
+import io.prometheus.client.Enumeration;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Child;
+import io.prometheus.client.Histogram.Timer;
 
 public class ProcessingMetrics {
 
@@ -50,19 +53,31 @@ public class ProcessingMetrics {
               "Number of times batch processing failed due to reaching batch limit and was retried")
           .labelNames(LABEL_NAME_PARTITION)
           .register();
+
+  private static final Enumeration ERROR_HANDLING_PHASE =
+      Enumeration.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_error_handling_phase")
+          .help("The phase of error handling")
+          .labelNames(LABEL_NAME_PARTITION)
+          .states(ErrorHandlingPhase.class)
+          .register();
+
   private final Child batchProcessingDuration;
   private final Child batchProcessingCommands;
   private final Counter.Child batchProcessingRetries;
   private final Child batchProcessingPostCommitTasks;
+  private final Enumeration.Child errorHandlingPhase;
 
   public ProcessingMetrics(final String partitionIdLabel) {
     batchProcessingDuration = BATCH_PROCESSING_DURATION.labels(partitionIdLabel);
     batchProcessingCommands = BATCH_PROCESSING_COMMANDS.labels(partitionIdLabel);
     batchProcessingRetries = BATCH_PROCESSING_RETRIES.labels(partitionIdLabel);
     batchProcessingPostCommitTasks = BATCH_PROCESSING_POST_COMMIT_TASKS.labels(partitionIdLabel);
+    errorHandlingPhase = ERROR_HANDLING_PHASE.labels(partitionIdLabel);
   }
 
-  public Histogram.Timer startBatchProcessingDurationTimer() {
+  public Timer startBatchProcessingDurationTimer() {
     return batchProcessingDuration.startTimer();
   }
 
@@ -74,7 +89,11 @@ public class ProcessingMetrics {
     batchProcessingRetries.inc();
   }
 
-  public Histogram.Timer startBatchProcessingPostCommitTasksTimer() {
+  public Timer startBatchProcessingPostCommitTasksTimer() {
     return batchProcessingPostCommitTasks.startTimer();
+  }
+
+  public void errorHandlingPhase(final ErrorHandlingPhase phase) {
+    errorHandlingPhase.state(phase);
   }
 }

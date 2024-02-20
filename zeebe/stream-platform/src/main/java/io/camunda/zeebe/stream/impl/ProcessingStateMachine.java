@@ -209,7 +209,7 @@ public final class ProcessingStateMachine {
     inProcessing = false;
     if (onErrorRetries > 0) {
       onErrorRetries = 0;
-      errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
+      updateErrorHandlingPhase(ErrorHandlingPhase.NO_ERROR);
     }
   }
 
@@ -487,15 +487,16 @@ public final class ProcessingStateMachine {
 
   private void startErrorLoop(final boolean isUserCommand) {
     if (errorHandlingPhase == ErrorHandlingPhase.NO_ERROR) {
-      errorHandlingPhase =
+      final var nextPhase =
           isUserCommand
               ? ErrorHandlingPhase.USER_COMMAND_PROCESSING_FAILED
               : ErrorHandlingPhase.PROCESSING_FAILED;
+      updateErrorHandlingPhase(nextPhase);
     }
   }
 
   private void switchErrorPhase() {
-    errorHandlingPhase =
+    final var nextPhase =
         switch (errorHandlingPhase) {
           case NO_ERROR -> ErrorHandlingPhase.NO_ERROR; // First switch is explicit
           case PROCESSING_FAILED -> ErrorHandlingPhase.PROCESSING_ERROR_FAILED;
@@ -514,6 +515,7 @@ public final class ProcessingStateMachine {
           }
           case ENDLESS_ERROR_LOOP -> ErrorHandlingPhase.ENDLESS_ERROR_LOOP;
         };
+    updateErrorHandlingPhase(nextPhase);
   }
 
   private void tryRejectingIfUserCommand(final String errorMessage) {
@@ -752,6 +754,11 @@ public final class ProcessingStateMachine {
     actor.submit(this::tryToReadNextRecord);
   }
 
+  private void updateErrorHandlingPhase(final ErrorHandlingPhase errorHandlingPhase) {
+    this.errorHandlingPhase = errorHandlingPhase;
+    processingMetrics.errorHandlingPhase(errorHandlingPhase);
+  }
+
   private record BatchProcessingStepResult(
       List<TypedRecord<?>> toProcess, List<LogAppendEntry> toWrite) {}
 
@@ -760,7 +767,7 @@ public final class ProcessingStateMachine {
     void run() throws Exception;
   }
 
-  private enum ErrorHandlingPhase {
+  public enum ErrorHandlingPhase {
     NO_ERROR,
     // external commands failed in processRecord
     USER_COMMAND_PROCESSING_FAILED,
