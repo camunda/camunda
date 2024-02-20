@@ -153,7 +153,8 @@ public class FormStoreElasticSearch implements FormStore {
       final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
       searchSourceBuilder.query(boolQuery);
 
-      final SearchRequest searchRequest = new SearchRequest(taskTemplate.getFullQualifiedName());
+      final SearchRequest searchRequest =
+          ElasticsearchUtil.createSearchRequest(taskTemplate, ElasticsearchUtil.QueryType.ALL);
       searchRequest.source(searchSourceBuilder);
 
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
@@ -176,7 +177,8 @@ public class FormStoreElasticSearch implements FormStore {
       final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
       searchSourceBuilder.query(boolQuery);
 
-      final SearchRequest searchRequest = new SearchRequest(processIndex.getFullQualifiedName());
+      final SearchRequest searchRequest =
+          ElasticsearchUtil.createSearchRequest(processIndex, ElasticsearchUtil.QueryType.ALL);
       searchRequest.source(searchSourceBuilder);
 
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);

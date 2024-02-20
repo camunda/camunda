@@ -35,8 +35,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class FormStoreElasticSearchTest {
 
   private static final String FORM_INDEX_NAME = "tasklist-form-x.0.0";
@@ -57,8 +60,8 @@ class FormStoreElasticSearchTest {
     // given
     when(formIndex.getIndexName()).thenReturn(FormIndex.INDEX_NAME);
     final var response = mock(SearchResponse.class);
-    when(taskTemplate.getFullQualifiedName()).thenReturn("tasklist-task-x.0.0");
-    when(processIndex.getFullQualifiedName()).thenReturn("tasklist-task-x.0.0");
+    when(taskTemplate.getAlias()).thenReturn("tasklist-task-x.0.0");
+    when(processIndex.getAlias()).thenReturn("tasklist-task-x.0.0");
     when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(response);
     final var hits = mock(SearchHits.class);
     when(response.getHits()).thenReturn(hits);

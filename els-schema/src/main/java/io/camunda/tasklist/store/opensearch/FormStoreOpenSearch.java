@@ -72,7 +72,6 @@ public class FormStoreOpenSearch implements FormStore {
     try {
       final SearchRequest.Builder searchRequest =
           OpenSearchUtil.createSearchRequest(taskTemplate, OpenSearchUtil.QueryType.ALL)
-              .index(taskTemplate.getFullQualifiedName())
               .size(1) // only need to know if at least one exists
               .query(
                   b ->
@@ -108,7 +107,6 @@ public class FormStoreOpenSearch implements FormStore {
     try {
       final SearchRequest.Builder searchRequest =
           OpenSearchUtil.createSearchRequest(processIndex, OpenSearchUtil.QueryType.ALL)
-              .index(processIndex.getFullQualifiedName())
               .size(1) // only need to know if at least one exists
               .query(
                   b ->
