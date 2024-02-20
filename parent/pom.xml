@@ -1171,6 +1171,13 @@
       </dependency>
 
       <!-- Dependencies present for convergence only -->
+      <!-- between commons-compress and testcontainers-keycloak -->
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>2.15.1</version>
+      </dependency>
+
       <!-- between log4j2 and commons-compress (from testcontainers) -->
       <dependency>
         <groupId>org.osgi</groupId>
