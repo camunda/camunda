@@ -27,7 +27,7 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
   private static final long NO_VARIABLE_SCOPE = -1L;
 
   private static final Pattern PATH_PATTERN =
-      Pattern.compile("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*");
+      Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*");
 
   private static final List<String> PATH_RESERVED_WORDS =
       List.of(
