@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
@@ -59,13 +61,15 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new IntegerProperty("processDefinitionVersion", -1);
   private final LongProperty processDefinitionKeyProp =
       new LongProperty("processDefinitionKey", -1L);
+  private final EnumProperty<JobKind> jobKindProp =
+      new EnumProperty<>("jobKind", JobKind.class, JobKind.BPMN_ELEMENT);
   private final StringProperty elementIdProp = new StringProperty("elementId", EMPTY_STRING);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public JobRecord() {
-    super(18);
+    super(19);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -81,6 +85,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(processDefinitionVersionProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processInstanceKeyProp)
+        .declareProperty(jobKindProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp);
@@ -102,6 +107,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     processDefinitionVersionProp.setValue(record.getProcessDefinitionVersion());
     processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
+    jobKindProp.setValue(record.getJobKind());
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
@@ -209,6 +215,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
+    return this;
+  }
+
+  @Override
+  public JobKind getJobKind() {
+    return jobKindProp.getValue();
+  }
+
+  public JobRecord setJobKind(final JobKind jobKind) {
+    jobKindProp.setValue(jobKind);
     return this;
   }
 

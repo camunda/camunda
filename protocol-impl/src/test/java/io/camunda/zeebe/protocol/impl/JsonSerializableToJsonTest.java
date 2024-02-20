@@ -635,6 +635,7 @@ final class JsonSerializableToJsonTest {
                 "foo": "bar"
               },
               "retries": 3,
+              "jobKind": "BPMN_ELEMENT",
               "retryBackoff": 1002,
               "recurringTime": 1001,
               "errorMessage": "failed message",
@@ -732,6 +733,7 @@ final class JsonSerializableToJsonTest {
             "foo": "bar"
           },
           "retries": 12,
+          "jobKind": "BPMN_ELEMENT",
           "retryBackoff": 1003,
           "recurringTime": 1004,
           "errorMessage": "failed message",
@@ -764,6 +766,7 @@ final class JsonSerializableToJsonTest {
           "variables": {},
           "worker": "",
           "retries": -1,
+          "jobKind": "BPMN_ELEMENT",
           "retryBackoff": 0,
           "recurringTime": -1,
           "errorMessage": "",
@@ -801,6 +804,7 @@ final class JsonSerializableToJsonTest {
           "timeout": -1,
           "worker": "",
           "retries": -1,
+          "jobKind": "BPMN_ELEMENT",
           "retryBackoff": 0,
           "recurringTime": -1,
           "errorCode": "",

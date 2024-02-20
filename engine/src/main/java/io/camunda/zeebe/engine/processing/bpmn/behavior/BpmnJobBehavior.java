@@ -26,6 +26,7 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
@@ -159,6 +160,7 @@ public final class BpmnJobBehavior {
 
     jobRecord
         .setType(props.getType())
+        .setJobKind(JobKind.BPMN_ELEMENT)
         .setRetries(props.getRetries().intValue())
         .setCustomHeaders(encodedHeaders)
         .setBpmnProcessId(context.getBpmnProcessId())

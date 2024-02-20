@@ -91,6 +91,9 @@
                 },
                 "tenantId": {
                   "type": "keyword"
+                },
+                "jobKind": {
+                  "type": "keyword"
                 }
               }
             },
