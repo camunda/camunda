@@ -5,93 +5,54 @@
  * except in compliance with the proprietary license.
  */
 
-import fetchUrl from './fetchUrl';
-import fs from 'fs';
+import path from 'path';
 
-type VulnLevel = 'critical' | 'high' | 'medium' | 'low';
+import {createJsonFile, isRegExp, readJsonFIle} from './services';
+import {Config} from './types';
+import {SnykService} from './SnykService';
+import {GitHubService} from './GitHubService';
 
-type GithubWorkflow =
-  | {
-      name: string;
-      branches?: string[];
-    }
-  | string;
+const ARGOCD_PROJECTS = ['optimize-previews'];
+const ARGOCD_URL = 'https://argocd.int.camunda.com';
 
-type PRParams = {
-  author?: string;
-  base?: string;
-  labels?: string[];
-  state?: PRState;
-  title?: string;
-  resultType?: PRResultType;
-};
-type PRState = 'open' | 'close' | 'all';
+const SNYK_TOKEN = process.env.SNYK_TOKEN;
+const SNYK_EXCLUDED_PROJECT_VERSIONS = ['3.8'];
+const SNYK_ORG_ID = process.env.SNYK_ORG_ID;
+const SNYK_ORG_NAME = 'team-optimize';
+const SNYK_API_VERSION = '2023-05-29';
 
-type PRResultType = 'list' | 'count';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_ORG = 'camunda';
+const GITHUB_REPO = 'camunda-optimize';
 
-type Config = {
-  github: {
-    title?: string;
-    defaultBranch?: string;
-    organization: string;
-    repository: string;
-    workflows: GithubWorkflow[];
-  };
-  argoCd: {
-    title?: string;
-    url: string;
-    projects: string[];
-  };
-  snyk: {
-    title?: string;
-    organization: string;
-    vulnLevels?: VulnLevel[];
-    projects: {
-      project: string;
-      origin: string;
-      versions: string[];
-    }[];
-  };
-  githubPrs: {
-    title?: string;
-    organization: string;
-    repository: string;
-    prs: PRParams[];
-  };
-};
+const RENOVATE_CONFIG_PATH = path.join(process.cwd(), '../../renovate.json5');
 
-type Branch = {
-  ref: string;
-};
-
-type SnykProject = {
-  name: string;
-  issueCountsBySeverity: {
-    low: number;
-    medium: number;
-    high: number;
-    critical: number;
-  };
-};
-
-type SnykProjectsResponse = {
-  projects: SnykProject[];
-};
+const CONFIG_FILE_NAME = 'config.json';
 
 async function createHealthStatusConfig() {
-  const ciBranches = (await getCiBranches()).filter((branch) => !branch.includes('3.8'));
-  const snykProjects = (await fetchSnykProjects()).filter(
-    (project) => !project.name.includes('3.8'),
+  const githubService = new GitHubService(GITHUB_TOKEN, GITHUB_ORG, GITHUB_REPO);
+  const snykService = new SnykService(
+    SNYK_TOKEN,
+    SNYK_ORG_ID,
+    SNYK_API_VERSION,
+    SNYK_EXCLUDED_PROJECT_VERSIONS,
   );
+
+  const hardcodedBranches = getRenovateStringBranches();
+  const releaseBranches = await githubService.getBranchesWithPrefix('release');
+  const ciBranches = [...releaseBranches, ...hardcodedBranches].sort(githubService.sortBranches);
+
+  const snykProjects = await snykService.fetchSnykProjects();
+  const snykProjectVersions = snykService.getHighestDockerVersions(snykProjects);
 
   const config: Partial<Config> = {
     argoCd: {
-      projects: ['optimize-previews'],
-      url: 'https://argocd.int.camunda.com',
+      projects: ARGOCD_PROJECTS,
+      url: ARGOCD_URL,
     },
     github: {
-      organization: 'camunda',
-      repository: 'camunda-optimize',
+      organization: GITHUB_ORG,
+      repository: GITHUB_REPO,
       defaultBranch: 'master',
       workflows: [
         {
@@ -110,7 +71,9 @@ async function createHealthStatusConfig() {
       ],
     },
     snyk: {
-      organization: 'team-optimize',
+      organizationId: SNYK_ORG_ID,
+      organizationName: SNYK_ORG_NAME,
+      apiVersion: SNYK_API_VERSION,
       vulnLevels: ['critical', 'high', 'medium', 'low'],
       projects: [
         {
@@ -120,14 +83,14 @@ async function createHealthStatusConfig() {
         },
         {
           project: 'camunda/optimize',
-          versions: getHighestDockerVersions(snykProjects),
+          versions: snykProjectVersions,
           origin: 'docker-hub',
         },
       ],
     },
     githubPrs: {
-      repository: 'camunda-optimize',
-      organization: 'camunda',
+      repository: GITHUB_REPO,
+      organization: GITHUB_ORG,
       prs: [
         {
           author: 'renovate[bot]',
@@ -154,120 +117,12 @@ async function createHealthStatusConfig() {
     },
   };
 
-  return fs.writeFileSync('config.json', JSON.stringify(config), 'utf-8');
+  return createJsonFile(CONFIG_FILE_NAME, config);
 }
 
-async function getCiBranches() {
-  const maintenanceBranches = new Set<string>();
-  (await fetchCiBranches())
-    .map(branchToBranchName)
-    .filter((name): name is string => name !== undefined)
-    .sort(sortCiBranches)
-    .forEach((name) => maintenanceBranches.add(name));
-  return ['master', ...maintenanceBranches];
-}
-
-async function fetchCiBranches() {
-  return fetchUrl<Branch[]>(
-    'https://api.github.com/repos/camunda/camunda-optimize/git/refs/heads/maintenance',
-    `token ${process.env.GITHUB_TOKEN}`,
-  );
-}
-function branchToBranchName(branch: Branch): string | undefined {
-  const regex = /refs\/heads\/(maintenance\/\d+\.\d+)/;
-  const match = branch.ref.match(regex);
-
-  return match?.[1];
-}
-
-function sortCiBranches(firstBranch: string, secondBranch: string) {
-  const [firstMain, firstMinor] = getBranchVersion(firstBranch);
-  const [secondMain, secondMinor] = getBranchVersion(secondBranch);
-
-  if (firstMain !== secondMain) {
-    return secondMain - firstMain;
-  } else {
-    return secondMinor - firstMinor;
-  }
-}
-
-function getBranchVersion(branch: string) {
-  return branch.split('/')[1].split('.').map(Number);
-}
-
-async function fetchSnykProjects() {
-  return (
-    (
-      await fetchUrl<SnykProjectsResponse>(
-        'https://snyk.io/api/v1/org/team-optimize/projects',
-        `token ${process.env.SNYK_TOKEN}`,
-      )
-    ).projects || []
-  );
-}
-
-function getHighestDockerVersions(projects: SnykProject[]) {
-  const camundaOptimizeProjects = projects.filter((project) =>
-    project.name.includes('camunda/optimize:'),
-  );
-  const uniqueVersions = getUniqueProjectVersions(camundaOptimizeProjects).sort(sortSnykBranches);
-  return getHighestProjectVersions(uniqueVersions);
-}
-
-function sortSnykBranches(firstBranch: string, secondBranch: string) {
-  const [firstMain, firstMinor] = firstBranch.split('.').map(Number);
-  const [secondMain, secondMinor] = secondBranch.split('.').map(Number);
-
-  if (firstBranch && !firstMain) {
-    return -1;
-  } else if (secondBranch && !secondMain) {
-    return 1;
-  } else if (firstMain !== secondMain) {
-    return secondMain - firstMain;
-  } else {
-    return secondMinor - firstMinor;
-  }
-}
-
-function getUniqueProjectVersions(projects: SnykProject[]) {
-  const projectVersions = new Set<string>();
-  projects.forEach((project) => projectVersions.add(project.name.split(':')[1]));
-  return [...projectVersions];
-}
-
-function getHighestProjectVersions(projectVersions: string[]) {
-  const minorVersionsMap = new Map<string, number | string>();
-
-  // Group versions by minor version
-  for (const version of projectVersions) {
-    const [major, minor, patch = version] = version.split('.');
-    const minorVersionKey = major && minor ? `${major}.${minor}` : version;
-    let formatedPatch: number | string = +patch;
-    if (patch.includes('-')) {
-      continue;
-    } else if (Number.isNaN(formatedPatch)) {
-      formatedPatch = version;
-    }
-    if (
-      !minorVersionsMap.has(minorVersionKey) ||
-      (typeof formatedPatch === 'number' &&
-        formatedPatch > (+minorVersionsMap.get(minorVersionKey) || 0))
-    ) {
-      minorVersionsMap.set(minorVersionKey, formatedPatch);
-    }
-  }
-
-  // Generate the result array
-  const result: string[] = [];
-  for (const [minorVersionKey, patch] of minorVersionsMap.entries()) {
-    if (minorVersionKey === patch) {
-      result.push(minorVersionKey);
-    } else {
-      result.push(`${minorVersionKey}.${patch}`);
-    }
-  }
-
-  return result;
+function getRenovateStringBranches() {
+  const renovateConfig = readJsonFIle<{baseBranches: string[]}>(RENOVATE_CONFIG_PATH);
+  return renovateConfig.baseBranches.filter((branch) => !isRegExp(branch));
 }
 
 createHealthStatusConfig();
