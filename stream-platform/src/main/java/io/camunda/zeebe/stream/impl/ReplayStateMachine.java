@@ -165,7 +165,10 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
             .onComplete(
                 (success, failure) -> {
                   if (failure != null) {
-                    throw new RuntimeException(failure);
+                    throw new RuntimeException(
+                        "Failed to replay batch at '%s %s'"
+                            .formatted(batch.current(), typedEvent.getMetadata()),
+                        failure);
                   } else {
                     // observe the replay duration
                     replayDurationTimer.close();
@@ -225,11 +228,13 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
 
-      recordProcessors.stream()
-          .filter(p -> p.accepts(currentTypedEvent.getValueType()))
-          .findFirst()
-          .ifPresent(recordProcessor -> recordProcessor.replay(currentTypedEvent));
+      final var processor =
+          recordProcessors.stream()
+              .filter(p -> p.accepts(currentTypedEvent.getValueType()))
+              .findFirst()
+              .orElseThrow(() -> NoSuchProcessorException.forRecord(currentTypedEvent));
 
+      processor.replay(currentTypedEvent);
       lastReplayedEventPosition = currentTypedEvent.getPosition();
     }
 
