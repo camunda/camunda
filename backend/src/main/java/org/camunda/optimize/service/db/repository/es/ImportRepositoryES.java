@@ -3,17 +3,22 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.db.es.reader.importindex;
+package org.camunda.optimize.service.db.repository.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.service.db.reader.importindex.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
+import org.camunda.optimize.service.db.repository.ImportRepository;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.DatabaseHelper;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -22,40 +27,23 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
-import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.DB_TYPE_INDEX_REFERS_TO;
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.DB_TYPE_INDEX_REFERS_TO;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-@Component
 @Slf4j
+@Component
+@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public class TimestampBasedImportIndexReaderES extends AbstractImportIndexReaderES<TimestampBasedImportIndexDto, DataSourceDto>
-  implements TimestampBasedImportIndexReader {
-
-  public TimestampBasedImportIndexReaderES(final OptimizeElasticsearchClient esClient,
-                                           final ObjectMapper objectMapper) {
-    super(esClient, objectMapper);
-  }
+public class ImportRepositoryES implements ImportRepository {
+  private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
 
   @Override
-  public String getImportIndexType() {
-    return "timestamp based";
-  }
-
-  @Override
-  public String getImportIndexName() {
-    return TIMESTAMP_BASED_IMPORT_INDEX_NAME;
-  }
-
-  @Override
-  public Class<TimestampBasedImportIndexDto> getImportDTOClass() {
-    return TimestampBasedImportIndexDto.class;
-  }
-
-  @Override
-  public List<TimestampBasedImportIndexDto> getAllImportIndicesForTypes(List<String> indexTypes) {
+  public List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(List<String> indexTypes) {
     log.debug("Fetching timestamp based import indices of types '{}'", indexTypes);
 
     final SearchRequest searchRequest = new SearchRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
@@ -73,4 +61,41 @@ public class TimestampBasedImportIndexReaderES extends AbstractImportIndexReader
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), TimestampBasedImportIndexDto.class, objectMapper);
   }
 
+  @Override
+  public <T extends ImportIndexDto<D>, D extends DataSourceDto> Optional<T> getImportIndex(
+    String indexName,
+    String indexType,
+    Class<T> importDTOClass,
+    String typeIndexComesFrom,
+    D dataSourceDto
+  ) {
+    log.debug("Fetching {} import index of type '{}'", indexType, typeIndexComesFrom);
+
+    GetResponse getResponse = null;
+    GetRequest getRequest = new GetRequest(indexName)
+      .id(DatabaseHelper.constructKey(typeIndexComesFrom, dataSourceDto));
+    try {
+      getResponse = esClient.get(getRequest);
+    } catch (IOException e) {
+      log.error("Could not fetch {} import index", indexType, e);
+    }
+
+    if (getResponse != null && getResponse.isExists()) {
+      String content = getResponse.getSourceAsString();
+      try {
+        return Optional.of(objectMapper.readValue(content, importDTOClass));
+      } catch (IOException e) {
+        log.debug("Error while reading {} import index from elasticsearch!", indexType, e);
+        return Optional.empty();
+      }
+    } else {
+      log.debug(
+        "Was not able to retrieve {} import index for type [{}] and engine [{}] from elasticsearch.",
+        indexType,
+        typeIndexComesFrom,
+        dataSourceDto
+      );
+      return Optional.empty();
+    }
+  }
 }

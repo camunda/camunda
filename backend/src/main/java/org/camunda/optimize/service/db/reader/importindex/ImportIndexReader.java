@@ -10,13 +10,6 @@ import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 
 import java.util.Optional;
 
-public interface AbstractImportIndexReader <T extends ImportIndexDto<D>, D extends DataSourceDto> {
-
-  String getImportIndexType();
-
-  String getImportIndexName();
-
-  Class<T> getImportDTOClass();
-
+public interface ImportIndexReader<T extends ImportIndexDto<D>, D extends DataSourceDto> {
   Optional<T> getImportIndex(String typeIndexComesFrom, D dataSourceDto);
 }
