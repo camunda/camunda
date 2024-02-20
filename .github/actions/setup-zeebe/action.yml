@@ -176,6 +176,6 @@ runs:
     - if: ${{ inputs.go == 'true' }}
       uses: actions/setup-go@v3
       with:
-        go-version-file: 'clients/go/go.mod'
+        go-version: '1.22'
         cache: true
         cache-dependency-path: 'clients/go/go.sum'
