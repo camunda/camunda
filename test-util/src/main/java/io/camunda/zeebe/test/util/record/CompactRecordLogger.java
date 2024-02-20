@@ -150,7 +150,7 @@ public class CompactRecordLogger {
     multiPartition = isMultiPartition();
     hasTimerEvents = records.stream().anyMatch(r -> r.getValueType() == ValueType.TIMER);
 
-    final var highestPosition = this.records.get(this.records.size() - 1).getPosition();
+    final var highestPosition = this.records.getLast().getPosition();
 
     int digits = 0;
     long num = highestPosition;
@@ -423,6 +423,10 @@ public class CompactRecordLogger {
           .append(value.getType())
           .append("\"")
           .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
+    }
+
+    if (value.getJobKind() != null) {
+      result.append(" (").append(value.getJobKind()).append("),");
     }
 
     result.append(" ").append(value.getRetries()).append(" retries,");
