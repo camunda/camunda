@@ -5,20 +5,39 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
+import org.camunda.optimize.service.db.repository.ProcessRepository;
+import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public interface ProcessOverviewReader {
+@AllArgsConstructor
+@Component
+@Slf4j
+public class ProcessOverviewReader {
+  private final ProcessRepository processRepository;
 
-  Map<String, ProcessOverviewDto> getProcessOverviewsByKey(final Set<String> processDefinitionKeys);
+  public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(final Set<String> processDefinitionKeys) {
+    return processRepository.getProcessOverviewsByKey(processDefinitionKeys);
+  }
 
-  Optional<ProcessOverviewDto> getProcessOverviewByKey(final String processDefinitionKey);
+  public Optional<ProcessOverviewDto> getProcessOverviewByKey(final String processDefinitionKey) {
+    final Map<String, ProcessOverviewDto> goalsForProcessesByKey =
+      getProcessOverviewsByKey(Collections.singleton(processDefinitionKey));
+    return Optional.ofNullable(goalsForProcessesByKey.get(processDefinitionKey));
+  }
 
-  Map<String, ProcessDigestResponseDto> getAllActiveProcessDigestsByKey();
+  public Map<String, ProcessDigestResponseDto> getAllActiveProcessDigestsByKey() {
+    return processRepository.getAllActiveProcessDigestsByKey();
+  }
 
-  Map<String, ProcessOverviewDto> getProcessOverviewsWithPendingOwnershipData();
+  public Map<String, ProcessOverviewDto> getProcessOverviewsWithPendingOwnershipData() {
+    return processRepository.getProcessOverviewsWithPendingOwnershipData();
+  }
 }

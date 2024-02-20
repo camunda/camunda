@@ -3,15 +3,16 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.db.es.reader;
+package org.camunda.optimize.service.db.repository.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
-import org.camunda.optimize.service.db.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
+import org.camunda.optimize.service.db.repository.ProcessRepository;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.search.SearchRequest;
@@ -24,24 +25,22 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.db.schema.index.ProcessOverviewIndex.DIGEST;
-import static org.camunda.optimize.service.db.schema.index.ProcessOverviewIndex.ENABLED;
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_OVERVIEW_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.ProcessOverviewIndex.DIGEST;
+import static org.camunda.optimize.service.db.schema.index.ProcessOverviewIndex.ENABLED;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-@AllArgsConstructor
-@Component
 @Slf4j
+@Component
+@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public class ProcessOverviewReaderES implements ProcessOverviewReader {
-
+public class ProcessRepositoryES implements ProcessRepository {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
@@ -71,13 +70,6 @@ public class ProcessOverviewReaderES implements ProcessOverviewReader {
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), ProcessOverviewDto.class, objectMapper)
       .stream()
       .collect(Collectors.toMap(ProcessOverviewDto::getProcessDefinitionKey, Function.identity()));
-  }
-
-  @Override
-  public Optional<ProcessOverviewDto> getProcessOverviewByKey(final String processDefinitionKey) {
-    final Map<String, ProcessOverviewDto> goalsForProcessesByKey =
-      getProcessOverviewsByKey(Collections.singleton(processDefinitionKey));
-    return Optional.ofNullable(goalsForProcessesByKey.get(processDefinitionKey));
   }
 
   @Override
