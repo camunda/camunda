@@ -6,10 +6,10 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import java.util.Set;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.zeebe.client.ZeebeClient;
+import java.util.Set;
 
 public interface OperationHandler {
 
@@ -21,6 +21,4 @@ public interface OperationHandler {
 
   // Needed for tests
   void setZeebeClient(final ZeebeClient zeebeClient);
-
-
 }

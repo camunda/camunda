@@ -6,9 +6,9 @@
  */
 package io.camunda.operate.qa.performance;
 
-import org.springframework.http.HttpMethod;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.http.HttpMethod;
 
 public class TestQuery {
 

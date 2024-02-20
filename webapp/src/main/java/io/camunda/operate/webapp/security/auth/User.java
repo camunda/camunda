@@ -26,7 +26,7 @@ public class User extends org.springframework.security.core.userdetails.User {
     return map(roles, role -> new SimpleGrantedAuthority("ROLE_" + role));
   }
 
-  public User(String userId,String displayName, String password, List<Role> roles) {
+  public User(String userId, String displayName, String password, List<Role> roles) {
     super(userId, password, toAuthorities(roles));
     this.userId = userId;
     this.displayName = displayName;
@@ -64,6 +64,7 @@ public class User extends org.springframework.security.core.userdetails.User {
     this.roles = roles;
     return this;
   }
+
   public List<Role> getRoles() {
     return roles;
   }
@@ -80,8 +81,10 @@ public class User extends org.springframework.security.core.userdetails.User {
       return false;
     }
     final User user = (User) o;
-    return canLogout == user.canLogout && userId.equals(user.userId) && displayName.equals(
-        user.displayName) && roles.equals(user.roles);
+    return canLogout == user.canLogout
+        && userId.equals(user.userId)
+        && displayName.equals(user.displayName)
+        && roles.equals(user.roles);
   }
 
   @Override

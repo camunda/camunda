@@ -19,8 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class DeleteProcessInstanceOperationZeebeIT extends OperateZeebeAbstractIT {
 
-  @Autowired
-  private BatchOperationReader batchOperationReader;
+  @Autowired private BatchOperationReader batchOperationReader;
 
   @Before
   public void before() {
@@ -31,19 +30,23 @@ public class DeleteProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
   private void startAndCompleteSimpleProcess() {
     tester
         .deployProcess("single-task.bpmn")
-        .waitUntil().processIsDeployed()
+        .waitUntil()
+        .processIsDeployed()
         .then()
         .startProcessInstance("process")
-        .waitUntil().processInstanceIsStarted()
+        .waitUntil()
+        .processInstanceIsStarted()
         .then()
         .completeTask("task")
-        .waitUntil().processInstanceIsCompleted();
+        .waitUntil()
+        .processInstanceIsCompleted();
   }
 
   private long startDemoProcessInstance() {
     String processId = "demoProcess";
 
-    return tester.startProcessInstance(processId, "{\"a\": \"b\"}")
+    return tester
+        .startProcessInstance(processId, "{\"a\": \"b\"}")
         .waitUntil()
         .flowNodeIsActive("taskA")
         .getProcessInstanceKey();
@@ -62,8 +65,8 @@ public class DeleteProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     // When
     tester.deleteProcessInstance().and().executeOperations();
     // then
-    List<BatchOperationEntity> operations = batchOperationReader
-        .getBatchOperations(new BatchOperationRequestDto().setPageSize(5));
+    List<BatchOperationEntity> operations =
+        batchOperationReader.getBatchOperations(new BatchOperationRequestDto().setPageSize(5));
     assertThat(operations.size()).isEqualTo(1);
     BatchOperationEntity operation = operations.get(0);
     assertThat(operation.getOperationsTotalCount()).isEqualTo(1);
@@ -73,14 +76,13 @@ public class DeleteProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
   @Test
   public void testDeleteProcessInstanceFailed() throws Exception {
     // Given
-    tester.deployProcess("demoProcess_v_2.bpmn")
-            .waitUntil().processIsDeployed();
+    tester.deployProcess("demoProcess_v_2.bpmn").waitUntil().processIsDeployed();
     startDemoProcessInstanceWithIncidents();
     // When
     tester.deleteProcessInstance().and().executeOperations();
     // then
-    List<BatchOperationEntity> operations = batchOperationReader
-        .getBatchOperations(new BatchOperationRequestDto().setPageSize(5));
+    List<BatchOperationEntity> operations =
+        batchOperationReader.getBatchOperations(new BatchOperationRequestDto().setPageSize(5));
     assertThat(operations.size()).isEqualTo(1);
     BatchOperationEntity operation = operations.get(0);
     assertThat(operation.getOperationsTotalCount()).isEqualTo(1);

@@ -7,7 +7,6 @@
 package io.camunda.operate.schema.migration;
 
 import io.camunda.operate.exceptions.MigrationException;
-
 import java.io.IOException;
 import java.util.List;
 

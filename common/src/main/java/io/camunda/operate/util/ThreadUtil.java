@@ -8,13 +8,12 @@ package io.camunda.operate.util;
 
 public class ThreadUtil {
 
-	public static long sleepFor(long milliseconds) {
-		try {
-			Thread.sleep(milliseconds);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-		return milliseconds;
-	}
-
+  public static long sleepFor(long milliseconds) {
+    try {
+      Thread.sleep(milliseconds);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    return milliseconds;
+  }
 }

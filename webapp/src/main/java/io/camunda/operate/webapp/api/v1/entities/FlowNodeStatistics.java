@@ -8,7 +8,6 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.util.Objects;
 
 @Schema(name = "FlowNodeStatistics")
@@ -19,17 +18,20 @@ public class FlowNodeStatistics {
 
   @Schema(description = "The id of the flow node for which the results are aggregated")
   private String activityId;
+
   @Schema(description = "The total number of active instances of the flow node")
   private Long active = 0L;
+
   @Schema(description = "The total number of canceled instances of the flow node")
   private Long canceled = 0L;
+
   @Schema(description = "The total number of incidents for the flow node")
   private Long incidents = 0L;
+
   @Schema(description = "The total number of completed instances of the flow node")
   private Long completed = 0L;
 
-  public FlowNodeStatistics() {
-  }
+  public FlowNodeStatistics() {}
 
   public String getActivityId() {
     return activityId;
@@ -78,13 +80,14 @@ public class FlowNodeStatistics {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     FlowNodeStatistics that = (FlowNodeStatistics) o;
-    return Objects.equals(activityId, that.activityId) && Objects.equals(active, that.active) && Objects.equals(canceled, that.canceled) && Objects.equals(
-        incidents, that.incidents) && Objects.equals(completed, that.completed);
+    return Objects.equals(activityId, that.activityId)
+        && Objects.equals(active, that.active)
+        && Objects.equals(canceled, that.canceled)
+        && Objects.equals(incidents, that.incidents)
+        && Objects.equals(completed, that.completed);
   }
 
   @Override
@@ -94,7 +97,18 @@ public class FlowNodeStatistics {
 
   @Override
   public String toString() {
-    return "FlowNodeStatistics{" + "activityId='" + activityId + '\'' + ", active=" + active + ", canceled=" + canceled + ", incidents=" + incidents
-        + ", completed=" + completed + '}';
+    return "FlowNodeStatistics{"
+        + "activityId='"
+        + activityId
+        + '\''
+        + ", active="
+        + active
+        + ", canceled="
+        + canceled
+        + ", incidents="
+        + incidents
+        + ", completed="
+        + completed
+        + '}';
   }
 }

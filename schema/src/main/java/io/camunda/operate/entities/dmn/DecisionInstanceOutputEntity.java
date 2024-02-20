@@ -70,11 +70,11 @@ public class DecisionInstanceOutputEntity {
       return false;
     }
     final DecisionInstanceOutputEntity that = (DecisionInstanceOutputEntity) o;
-    return ruleIndex == that.ruleIndex &&
-        Objects.equals(id, that.id) &&
-        Objects.equals(name, that.name) &&
-        Objects.equals(value, that.value) &&
-        Objects.equals(ruleId, that.ruleId);
+    return ruleIndex == that.ruleIndex
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value)
+        && Objects.equals(ruleId, that.ruleId);
   }
 
   @Override

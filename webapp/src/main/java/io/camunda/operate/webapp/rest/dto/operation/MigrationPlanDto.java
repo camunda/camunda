@@ -9,10 +9,9 @@ package io.camunda.operate.webapp.rest.dto.operation;
 import io.camunda.operate.webapp.rest.dto.RequestValidator;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.List;
 import java.util.Objects;
+import org.apache.commons.lang3.StringUtils;
 
 @Schema(description = "Migration plan for process instance migration operation")
 public class MigrationPlanDto implements RequestValidator {
@@ -58,8 +57,12 @@ public class MigrationPlanDto implements RequestValidator {
     if (hasNullMappings) {
       throw new InvalidRequestException("Mapping instructions cannot be null.");
     }
-    boolean hasEmptyElements = mappingInstructions.stream().anyMatch(x ->
-        StringUtils.isEmpty(x.getSourceElementId()) || StringUtils.isEmpty(x.getTargetElementId()));
+    boolean hasEmptyElements =
+        mappingInstructions.stream()
+            .anyMatch(
+                x ->
+                    StringUtils.isEmpty(x.getSourceElementId())
+                        || StringUtils.isEmpty(x.getTargetElementId()));
     if (hasEmptyElements) {
       throw new InvalidRequestException("Mapping source and target elements cannot be empty.");
     }
@@ -70,7 +73,8 @@ public class MigrationPlanDto implements RequestValidator {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     MigrationPlanDto that = (MigrationPlanDto) o;
-    return Objects.equals(targetProcessDefinitionKey, that.targetProcessDefinitionKey) && Objects.equals(mappingInstructions, that.mappingInstructions);
+    return Objects.equals(targetProcessDefinitionKey, that.targetProcessDefinitionKey)
+        && Objects.equals(mappingInstructions, that.mappingInstructions);
   }
 
   @Override
@@ -78,9 +82,7 @@ public class MigrationPlanDto implements RequestValidator {
     return Objects.hash(targetProcessDefinitionKey, mappingInstructions);
   }
 
-  /**
-   * MappingInstruction
-   */
+  /** MappingInstruction */
   public static class MappingInstruction {
 
     private String sourceElementId;
@@ -109,7 +111,8 @@ public class MigrationPlanDto implements RequestValidator {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       MappingInstruction that = (MappingInstruction) o;
-      return Objects.equals(sourceElementId, that.sourceElementId) && Objects.equals(targetElementId, that.targetElementId);
+      return Objects.equals(sourceElementId, that.sourceElementId)
+          && Objects.equals(targetElementId, that.targetElementId);
     }
 
     @Override

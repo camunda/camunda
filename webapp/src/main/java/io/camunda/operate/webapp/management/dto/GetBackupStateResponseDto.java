@@ -16,8 +16,7 @@ public class GetBackupStateResponseDto {
   private String failureReason;
   private List<GetBackupStateResponseDetailDto> details;
 
-  public GetBackupStateResponseDto() {
-  }
+  public GetBackupStateResponseDto() {}
 
   public GetBackupStateResponseDto(Long backupId) {
     this.backupId = backupId;
@@ -61,13 +60,13 @@ public class GetBackupStateResponseDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     GetBackupStateResponseDto that = (GetBackupStateResponseDto) o;
-    return Objects.equals(backupId, that.backupId) && state == that.state && Objects.equals(failureReason,
-        that.failureReason) && Objects.equals(details, that.details);
+    return Objects.equals(backupId, that.backupId)
+        && state == that.state
+        && Objects.equals(failureReason, that.failureReason)
+        && Objects.equals(details, that.details);
   }
 
   @Override

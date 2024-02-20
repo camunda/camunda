@@ -6,6 +6,10 @@
  */
 package io.camunda.operate.rest;
 
+import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
@@ -23,41 +27,32 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
 @SpringBootTest(
     classes = {
-        TestApplicationWithNoBeans.class,
-        FlowNodeInstanceRestService.class,
-        OperateProperties.class,
-        OperateProfileService.class,
-        JacksonConfig.class,
-        OperateDateTimeFormatter.class,
-        DatabaseInfo.class,
-        OperateProperties.class
-    }
-)
+      TestApplicationWithNoBeans.class,
+      FlowNodeInstanceRestService.class,
+      OperateProperties.class,
+      OperateProfileService.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class,
+      OperateProperties.class
+    })
 public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
 
-  @MockBean
-  private FlowNodeInstanceReader flowNodeInstanceReader;
+  @MockBean private FlowNodeInstanceReader flowNodeInstanceReader;
 
-  @MockBean
-  protected ProcessInstanceReader processInstanceReader;
+  @MockBean protected ProcessInstanceReader processInstanceReader;
 
-  @MockBean
-  private PermissionsService permissionsService;
+  @MockBean private PermissionsService permissionsService;
 
   @Test
   public void testFlowNodeInstancesFailsWhenNoPermissions() throws Exception {
@@ -65,12 +60,20 @@ public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
     String processInstanceId = "123";
     String treePath = "456";
     String bpmnProcessId = "processId";
-    FlowNodeInstanceRequestDto requestDto = (new FlowNodeInstanceRequestDto()).setQueries(
-        List.of(new FlowNodeInstanceQueryDto().setProcessInstanceId(processInstanceId).setTreePath(treePath)));
+    FlowNodeInstanceRequestDto requestDto =
+        (new FlowNodeInstanceRequestDto())
+            .setQueries(
+                List.of(
+                    new FlowNodeInstanceQueryDto()
+                        .setProcessInstanceId(processInstanceId)
+                        .setTreePath(treePath)));
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(FLOW_NODE_INSTANCE_URL, requestDto);
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        postRequestShouldFailWithNoAuthorization(FLOW_NODE_INSTANCE_URL, requestDto);
     // then
     assertErrorMessageContains(mvcResult, "No read permission for process instance");
   }
@@ -81,15 +84,22 @@ public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
     String processInstanceId = "123";
     String treePath = "456";
     String bpmnProcessId = "processId";
-    FlowNodeInstanceRequestDto requestDto = (new FlowNodeInstanceRequestDto()).setQueries(
-        List.of(new FlowNodeInstanceQueryDto().setProcessInstanceId(processInstanceId).setTreePath(treePath)));
+    FlowNodeInstanceRequestDto requestDto =
+        (new FlowNodeInstanceRequestDto())
+            .setQueries(
+                List.of(
+                    new FlowNodeInstanceQueryDto()
+                        .setProcessInstanceId(processInstanceId)
+                        .setTreePath(treePath)));
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(true);
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(true);
     when(flowNodeInstanceReader.getFlowNodeInstances(requestDto)).thenReturn(new LinkedHashMap<>());
     MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, requestDto);
-    final Map<String, FlowNodeInstanceResponseDto> response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    final Map<String, FlowNodeInstanceResponseDto> response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     // then
     assertThat(response).isEmpty();
   }

@@ -52,7 +52,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setZeebeDataFolder(File zeebeDataFolder) {
     this.zeebeDataFolder = zeebeDataFolder;
-    return (T)this;
+    return (T) this;
   }
 
   public Network getNetwork() {
@@ -61,7 +61,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setNetwork(Network network) {
     this.network = network;
-    return (T)this;
+    return (T) this;
   }
 
   public String getInternalPostgresHost() {
@@ -142,7 +142,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setExternalElsHost(String externalElsHost) {
     this.externalElsHost = externalElsHost;
-    return (T)this;
+    return (T) this;
   }
 
   public Integer getExternalElsPort() {
@@ -151,7 +151,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setExternalElsPort(Integer externalElsPort) {
     this.externalElsPort = externalElsPort;
-    return (T)this;
+    return (T) this;
   }
 
   public String getInternalElsHost() {
@@ -160,7 +160,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setInternalElsHost(String internalElsHost) {
     this.internalElsHost = internalElsHost;
-    return (T)this;
+    return (T) this;
   }
 
   public Integer getInternalElsPort() {
@@ -169,7 +169,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setInternalElsPort(Integer internalElsPort) {
     this.internalElsPort = internalElsPort;
-    return (T)this;
+    return (T) this;
   }
 
   public String getExternalKeycloakHost() {
@@ -214,7 +214,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setExternalZeebeContactPoint(String externalZeebeContactPoint) {
     this.externalZeebeContactPoint = externalZeebeContactPoint;
-    return (T)this;
+    return (T) this;
   }
 
   public String getInternalZeebeContactPoint() {
@@ -223,7 +223,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setInternalZeebeContactPoint(String internalZeebeContactPoint) {
     this.internalZeebeContactPoint = internalZeebeContactPoint;
-    return (T)this;
+    return (T) this;
   }
 
   public String getZeebeIndexPrefix() {
@@ -232,7 +232,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setZeebeIndexPrefix(String zeebeIndexPrefix) {
     this.zeebeIndexPrefix = zeebeIndexPrefix;
-    return (T)this;
+    return (T) this;
   }
 
   public String getExternalOperateHost() {
@@ -241,7 +241,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setExternalOperateHost(String externalOperateHost) {
     this.externalOperateHost = externalOperateHost;
-    return (T)this;
+    return (T) this;
   }
 
   public Integer getExternalOperatePort() {
@@ -250,7 +250,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setExternalOperatePort(Integer externalOperatePort) {
     this.externalOperatePort = externalOperatePort;
-    return (T)this;
+    return (T) this;
   }
 
   public String getExternalOperateContextPath() {
@@ -259,7 +259,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setExternalOperateContextPath(String externalOperateContextPath) {
     this.externalOperateContextPath = externalOperateContextPath;
-    return (T)this;
+    return (T) this;
   }
 
   public List<String> getProcessesToAssert() {
@@ -268,7 +268,7 @@ public class TestContext<T extends TestContext<T>> {
 
   public T setProcessesToAssert(List<String> processesToAssert) {
     this.processesToAssert = processesToAssert;
-    return (T)this;
+    return (T) this;
   }
 
   public void addProcess(String bpmnProcessId) {

@@ -6,11 +6,12 @@
  */
 package io.camunda.operate.modules;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.operate.ArchiverModuleConfiguration;
 import io.camunda.operate.ImportModuleConfiguration;
 import io.camunda.operate.WebappModuleConfiguration;
 import org.junit.Test;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class FullAppIT extends ModuleAbstractIT {
 
@@ -20,5 +21,4 @@ public class FullAppIT extends ModuleAbstractIT {
     assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
     assertThat(applicationContext.getBean(ArchiverModuleConfiguration.class)).isNotNull();
   }
-
 }

@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public enum EventType {
-
   CREATED,
 
   RESOLVED,
@@ -23,7 +22,7 @@ public enum EventType {
   ELEMENT_COMPLETED,
   ELEMENT_TERMINATED,
 
-  //JOB
+  // JOB
   ACTIVATED,
 
   COMPLETED,
@@ -34,7 +33,7 @@ public enum EventType {
 
   RETRIES_UPDATED,
 
-  //MESSAGE
+  // MESSAGE
   CORRELATED,
 
   CANCELED,
@@ -52,5 +51,4 @@ public enum EventType {
       return UNKNOWN;
     }
   }
-
 }

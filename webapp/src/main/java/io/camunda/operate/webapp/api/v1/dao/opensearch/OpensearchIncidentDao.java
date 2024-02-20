@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
+import static java.lang.String.format;
+
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.IncidentTemplate;
@@ -18,26 +20,27 @@ import io.camunda.operate.webapp.api.v1.entities.opensearch.OpensearchIncident;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static java.lang.String.format;
-
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, OpensearchIncident> implements IncidentDao {
+public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, OpensearchIncident>
+    implements IncidentDao {
   private final IncidentTemplate incidentIndex;
 
   private final OperateDateTimeFormatter dateTimeFormatter;
 
-  public OpensearchIncidentDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                               RichOpenSearchClient richOpenSearchClient, IncidentTemplate incidentIndex,
-                               OperateDateTimeFormatter dateTimeFormatter) {
+  public OpensearchIncidentDao(
+      OpensearchQueryDSLWrapper queryDSLWrapper,
+      OpensearchRequestDSLWrapper requestDSLWrapper,
+      RichOpenSearchClient richOpenSearchClient,
+      IncidentTemplate incidentIndex,
+      OperateDateTimeFormatter dateTimeFormatter) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.incidentIndex = incidentIndex;
     this.dateTimeFormatter = dateTimeFormatter;
@@ -89,17 +92,24 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
   protected void buildFiltering(Query<Incident> query, SearchRequest.Builder request) {
     final Incident filter = query.getFilter();
     if (filter != null) {
-      var queryTerms = Stream.of(
-        queryDSLWrapper.term(Incident.KEY, filter.getKey()),
-        queryDSLWrapper.term(Incident.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
-        queryDSLWrapper.term(Incident.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
-        queryDSLWrapper.term(Incident.TYPE, filter.getType()),
-        queryDSLWrapper.match(Incident.MESSAGE, filter.getMessage()),
-        queryDSLWrapper.term(Incident.STATE, filter.getState()),
-        queryDSLWrapper.term(Incident.JOB_KEY, filter.getJobKey()),
-        queryDSLWrapper.term(Incident.TENANT_ID, filter.getTenantId()),
-        queryDSLWrapper.matchDateQuery(Incident.CREATION_TIME, filter.getCreationTime(), dateTimeFormatter.getApiDateTimeFormatString())
-      ).filter(Objects::nonNull).collect(Collectors.toList());
+      var queryTerms =
+          Stream.of(
+                  queryDSLWrapper.term(Incident.KEY, filter.getKey()),
+                  queryDSLWrapper.term(
+                      Incident.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
+                  queryDSLWrapper.term(
+                      Incident.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
+                  queryDSLWrapper.term(Incident.TYPE, filter.getType()),
+                  queryDSLWrapper.match(Incident.MESSAGE, filter.getMessage()),
+                  queryDSLWrapper.term(Incident.STATE, filter.getState()),
+                  queryDSLWrapper.term(Incident.JOB_KEY, filter.getJobKey()),
+                  queryDSLWrapper.term(Incident.TENANT_ID, filter.getTenantId()),
+                  queryDSLWrapper.matchDateQuery(
+                      Incident.CREATION_TIME,
+                      filter.getCreationTime(),
+                      dateTimeFormatter.getApiDateTimeFormatString()))
+              .filter(Objects::nonNull)
+              .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
         request.query(queryDSLWrapper.and(queryTerms));
@@ -112,10 +122,13 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
       return;
     }
 
-    var rewrittenSort = query.getSort()
-      .stream()
-      .map(s -> s.setField(Incident.OBJECT_TO_SEARCH_MAP.getOrDefault(s.getField(), s.getField())))
-      .toList();
+    var rewrittenSort =
+        query.getSort().stream()
+            .map(
+                s ->
+                    s.setField(
+                        Incident.OBJECT_TO_SEARCH_MAP.getOrDefault(s.getField(), s.getField())))
+            .toList();
 
     query.setSort(rewrittenSort);
   }
@@ -123,14 +136,14 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
   @Override
   protected Incident convertInternalToApiResult(OpensearchIncident osIncident) {
     return new Incident()
-      .setKey(osIncident.key())
-      .setProcessInstanceKey(osIncident.processInstanceKey())
-      .setProcessDefinitionKey(osIncident.processDefinitionKey())
-      .setType(osIncident.errorType())
-      .setMessage(osIncident.errorMessage())
-      .setCreationTime(dateTimeFormatter.convertGeneralToApiDateTime(osIncident.creationTime()))
-      .setState(osIncident.state())
-      .setJobKey(osIncident.jobKey())
-      .setTenantId(osIncident.tenantId());
+        .setKey(osIncident.key())
+        .setProcessInstanceKey(osIncident.processInstanceKey())
+        .setProcessDefinitionKey(osIncident.processDefinitionKey())
+        .setType(osIncident.errorType())
+        .setMessage(osIncident.errorMessage())
+        .setCreationTime(dateTimeFormatter.convertGeneralToApiDateTime(osIncident.creationTime()))
+        .setState(osIncident.state())
+        .setJobKey(osIncident.jobKey())
+        .setTenantId(osIncident.tenantId());
   }
 }

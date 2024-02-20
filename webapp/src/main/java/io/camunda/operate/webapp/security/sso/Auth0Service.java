@@ -19,6 +19,8 @@ import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,9 +35,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 @Component
 @Profile(SSO_AUTH_PROFILE)
 public class Auth0Service {
@@ -43,18 +42,14 @@ public class Auth0Service {
   private static final String LOGOUT_URL_TEMPLATE = "https://%s/v2/logout?client_id=%s&returnTo=%s";
   private static final String PERMISSION_URL_TEMPLATE = "%s/%s";
 
-  private static final List<String> SCOPES = List.of(
-      "openid",
-      "profile",
-      "email",
-      "offline_access"  // request refresh token
-  );
+  private static final List<String> SCOPES =
+      List.of(
+          "openid", "profile", "email", "offline_access" // request refresh token
+          );
 
-  @Autowired
-  private BeanFactory beanFactory;
+  @Autowired private BeanFactory beanFactory;
 
-  @Autowired
-  private AuthenticationController authenticationController;
+  @Autowired private AuthenticationController authenticationController;
 
   @Value("${" + OperateProperties.PREFIX + ".auth0.domain}")
   private String domain;
@@ -62,8 +57,7 @@ public class Auth0Service {
   @Value("${" + OperateProperties.PREFIX + ".auth0.clientId}")
   private String clientId;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @Autowired(required = false)
   @Qualifier("saasIdentity")
@@ -77,9 +71,11 @@ public class Auth0Service {
       throws Auth0ServiceException {
     try {
       final Tokens tokens = retrieveTokens(req, res);
-      final TokenAuthentication authentication = new TokenAuthentication(operateProperties.getAuth0(),
-          operateProperties.getCloud().getOrganizationId());
-      authentication.authenticate(tokens.getIdToken(), tokens.getRefreshToken(), tokens.getAccessToken());
+      final TokenAuthentication authentication =
+          new TokenAuthentication(
+              operateProperties.getAuth0(), operateProperties.getCloud().getOrganizationId());
+      authentication.authenticate(
+          tokens.getIdToken(), tokens.getRefreshToken(), tokens.getAccessToken());
       checkPermission(authentication, tokens.getAccessToken());
       authentication.getAuthorizations();
       return authentication;
@@ -93,7 +89,9 @@ public class Auth0Service {
 
     headers.setBearerAuth(accessToken);
     final String urlDomain = operateProperties.getCloud().getPermissionUrl();
-    final String url = String.format(PERMISSION_URL_TEMPLATE, urlDomain, operateProperties.getCloud().getOrganizationId());
+    final String url =
+        String.format(
+            PERMISSION_URL_TEMPLATE, urlDomain, operateProperties.getCloud().getOrganizationId());
     final ResponseEntity<ClusterInfo> responseEntity =
         restTemplate.exchange(url, HttpMethod.GET, new HttpEntity(headers), ClusterInfo.class);
     final ClusterInfo clusterInfo = responseEntity.getBody();
@@ -145,11 +143,11 @@ public class Auth0Service {
     return getRedirectURI(req, redirectTo, false);
   }
 
-  public String getRedirectURI(final HttpServletRequest req, final String redirectTo,
-      boolean omitContextPath) {
+  public String getRedirectURI(
+      final HttpServletRequest req, final String redirectTo, boolean omitContextPath) {
     String redirectUri = req.getScheme() + "://" + req.getServerName();
-    if ((req.getScheme().equals("http") && req.getServerPort() != 80) || (
-        req.getScheme().equals("https") && req.getServerPort() != 443)) {
+    if ((req.getScheme().equals("http") && req.getServerPort() != 80)
+        || (req.getScheme().equals("https") && req.getServerPort() != 443)) {
       redirectUri += ":" + req.getServerPort();
     }
     final String clusterId = req.getContextPath().replace("/", "");
@@ -159,5 +157,4 @@ public class Auth0Service {
       return redirectUri + req.getContextPath() + redirectTo;
     }
   }
-
 }

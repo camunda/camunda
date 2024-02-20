@@ -34,8 +34,8 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   public static final String ERROR_MSG = "errorMessage";
   public static final String JOB_FAILED_WITH_RETRIES_LEFT = "jobFailedWithRetriesLeft";
 
-  //used both for process instance and flow node instance
-  public static final String INCIDENT = "incident";     //true/false
+  // used both for process instance and flow node instance
+  public static final String INCIDENT = "incident"; // true/false
 
   public static final String VAR_NAME = "varName";
   public static final String VAR_VALUE = "varValue";
@@ -45,7 +45,8 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
 
   public static final String JOIN_RELATION = "joinRelation";
   public static final String PROCESS_INSTANCE_JOIN_RELATION = "processInstance";
-  public static final String ACTIVITIES_JOIN_RELATION = "activity";     //now we call it flow node instance
+  public static final String ACTIVITIES_JOIN_RELATION =
+      "activity"; // now we call it flow node instance
   public static final String VARIABLES_JOIN_RELATION = "variable";
 
   @Override
@@ -55,7 +56,6 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
 
   @Override
   public String getVersion() {
-     return "8.3.0";
+    return "8.3.0";
   }
-
 }

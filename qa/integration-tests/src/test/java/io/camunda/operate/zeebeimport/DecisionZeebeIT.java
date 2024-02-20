@@ -19,15 +19,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.camunda.operate.data.util.DecisionDataUtil;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import java.util.List;
 import java.util.Map;
-
-import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,17 +40,13 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
   private static final String QUERY_DECISIONS_GROUPED_URL = "/api/decisions/grouped";
   private static final String QUERY_DECISION_XML_URL = "/api/decisions/%s/xml";
 
-  @Rule
-  public SearchTestRule searchTestRule = new SearchTestRule();
+  @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
-  @Autowired
-  private DecisionDataUtil testDataUtil;
+  @Autowired private DecisionDataUtil testDataUtil;
 
-  @Autowired
-  private DecisionReader decisionReader;
+  @Autowired private DecisionReader decisionReader;
 
-  @MockBean
-  private PermissionsService permissionsService;
+  @MockBean private PermissionsService permissionsService;
 
   @Before
   public void before() {
@@ -61,77 +56,95 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testDecisionsGrouped() throws Exception {
-    //given
+    // given
     final String demoDecisionId1 = "invoiceClassification";
     final String decision1Name = "Invoice Classification";
     final String demoDecisionId2 = "invoiceAssignApprover";
     final String decision2Name = "Assign Approver Group";
 
-    tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+    tester
+        .deployDecision("invoiceBusinessDecisions_v_1.dmn")
         .deployDecision("invoiceBusinessDecisions_v_2.dmn")
         .waitUntil()
-        //each DRD has two decisions
+        // each DRD has two decisions
         .decisionsAreDeployed(4);
 
-    //when
+    // when
     MockHttpServletRequestBuilder request = get(QUERY_DECISIONS_GROUPED_URL);
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-        .andReturn();
+    MvcResult mvcResult =
+        mockMvc
+            .perform(request)
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+            .andReturn();
 
-    //then
-    List<DecisionGroupDto> decisionGroupDtos = mockMvcTestRule.listFromResponse(mvcResult, DecisionGroupDto.class);
+    // then
+    List<DecisionGroupDto> decisionGroupDtos =
+        mockMvcTestRule.listFromResponse(mvcResult, DecisionGroupDto.class);
     assertThat(decisionGroupDtos).hasSize(2);
-    assertThat(decisionGroupDtos).isSortedAccordingTo(new DecisionGroupDto.DecisionGroupComparator());
+    assertThat(decisionGroupDtos)
+        .isSortedAccordingTo(new DecisionGroupDto.DecisionGroupComparator());
 
-    assertThat(decisionGroupDtos).filteredOn(wg -> wg.getDecisionId().equals(demoDecisionId1)).hasSize(1);
+    assertThat(decisionGroupDtos)
+        .filteredOn(wg -> wg.getDecisionId().equals(demoDecisionId1))
+        .hasSize(1);
     final DecisionGroupDto demoDecisionGroup1 =
-        decisionGroupDtos.stream().filter(wg -> wg.getDecisionId().equals(demoDecisionId1)).findFirst().get();
+        decisionGroupDtos.stream()
+            .filter(wg -> wg.getDecisionId().equals(demoDecisionId1))
+            .findFirst()
+            .get();
     assertThat(demoDecisionGroup1.getDecisions()).hasSize(2);
     assertThat(demoDecisionGroup1.getName()).isEqualTo(decision1Name);
-    assertThat(demoDecisionGroup1.getDecisions()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
-    assertThat(demoDecisionGroup1.getDecisions().get(0).getId()).isNotEqualTo(demoDecisionGroup1.getDecisions().get(1).getId());
+    assertThat(demoDecisionGroup1.getDecisions())
+        .isSortedAccordingTo(
+            (w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
+    assertThat(demoDecisionGroup1.getDecisions().get(0).getId())
+        .isNotEqualTo(demoDecisionGroup1.getDecisions().get(1).getId());
 
-    assertThat(decisionGroupDtos).filteredOn(wg -> wg.getDecisionId().equals(demoDecisionId2)).hasSize(1);
+    assertThat(decisionGroupDtos)
+        .filteredOn(wg -> wg.getDecisionId().equals(demoDecisionId2))
+        .hasSize(1);
     final DecisionGroupDto demoDecisionGroup2 =
-        decisionGroupDtos.stream().filter(wg -> wg.getDecisionId().equals(demoDecisionId2)).findFirst().get();
+        decisionGroupDtos.stream()
+            .filter(wg -> wg.getDecisionId().equals(demoDecisionId2))
+            .findFirst()
+            .get();
     assertThat(demoDecisionGroup2.getDecisions()).hasSize(2);
     assertThat(demoDecisionGroup2.getName()).isEqualTo(decision2Name);
-    assertThat(demoDecisionGroup2.getDecisions()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
-    assertThat(demoDecisionGroup2.getDecisions().get(0).getId()).isNotEqualTo(demoDecisionGroup1.getDecisions().get(1).getId());
+    assertThat(demoDecisionGroup2.getDecisions())
+        .isSortedAccordingTo(
+            (w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
+    assertThat(demoDecisionGroup2.getDecisions().get(0).getId())
+        .isNotEqualTo(demoDecisionGroup1.getDecisions().get(1).getId());
 
     verify(permissionsService, times(2)).getDecisionDefinitionPermission(anyString());
   }
 
   @Test
   public void testDecisionGetDiagramV1() throws Exception {
-    //given
+    // given
     final Long decision1V1Id = 1222L;
     final Long decision2V1Id = 1333L;
 
     createData();
 
-    //when invoiceClassification version 1
-    MockHttpServletRequestBuilder request = get(String.format(QUERY_DECISION_XML_URL, decision1V1Id));
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andReturn();
+    // when invoiceClassification version 1
+    MockHttpServletRequestBuilder request =
+        get(String.format(QUERY_DECISION_XML_URL, decision1V1Id));
+    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
 
     final String invoiceClassification_v_1 = mvcResult.getResponse().getContentAsString();
 
-    //and invoiceClassification version 1
+    // and invoiceClassification version 1
     request = get(String.format(QUERY_DECISION_XML_URL, decision2V1Id));
-    mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andReturn();
+    mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
 
     final String invoiceAssignApprover_v_1 = mvcResult.getResponse().getContentAsString();
 
-    //then one and the same DRD is returned
+    // then one and the same DRD is returned
     assertThat(invoiceAssignApprover_v_1).isEqualTo(invoiceClassification_v_1);
 
-    //it is of version 1
+    // it is of version 1
     assertThat(invoiceAssignApprover_v_1).isNotEmpty();
     assertThat(invoiceAssignApprover_v_1).contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
     assertThat(invoiceAssignApprover_v_1).doesNotContain("exceptional");
@@ -139,32 +152,29 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testDecisionGetDiagramV2() throws Exception {
-    //given
+    // given
     final Long decision1V2Id = 2222L;
     final Long decision2V2Id = 2333L;
 
     createData();
 
-    //when invoiceClassification version 2
-    MockHttpServletRequestBuilder request = get(String.format(QUERY_DECISION_XML_URL, decision1V2Id));
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andReturn();
+    // when invoiceClassification version 2
+    MockHttpServletRequestBuilder request =
+        get(String.format(QUERY_DECISION_XML_URL, decision1V2Id));
+    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
 
     final String invoiceClassification_v_2 = mvcResult.getResponse().getContentAsString();
 
-    //and invoiceClassification version 2
+    // and invoiceClassification version 2
     request = get(String.format(QUERY_DECISION_XML_URL, decision2V2Id));
-    mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andReturn();
+    mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
 
     final String invoiceAssignApprover_v_2 = mvcResult.getResponse().getContentAsString();
 
-    //then
-    //one and the same DRD is returned
+    // then
+    // one and the same DRD is returned
     assertThat(invoiceAssignApprover_v_2).isEqualTo(invoiceClassification_v_2);
-    //it is of version 2
+    // it is of version 2
     assertThat(invoiceAssignApprover_v_2).isNotEmpty();
     assertThat(invoiceAssignApprover_v_2).contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
     assertThat(invoiceAssignApprover_v_2).contains("exceptional");
@@ -172,33 +182,36 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testNonExistingDecisionGetDiagram() throws Exception {
-    //given
+    // given
     final String decisionDefinitionId = "111";
-    //no decisions deployed
+    // no decisions deployed
 
-    //when
-    MockHttpServletRequestBuilder request = get(String.format(QUERY_DECISION_XML_URL, decisionDefinitionId));
-    mockMvc.perform(request)
-        .andExpect(status().isNotFound());
+    // when
+    MockHttpServletRequestBuilder request =
+        get(String.format(QUERY_DECISION_XML_URL, decisionDefinitionId));
+    mockMvc.perform(request).andExpect(status().isNotFound());
   }
 
   @Test
   public void testDecisionReaderGetByDecisionDefinitionKey() {
-    //given
+    // given
     final String demoDecisionId1 = "invoiceClassification";
     final String decision1Name = "Invoice Classification";
 
-    tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").waitUntil()
-        //each DRD has two decisions
+    tester
+        .deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .waitUntil()
+        // each DRD has two decisions
         .decisionsAreDeployed(2);
 
-    //when
-    Map<String, List<DecisionDefinitionEntity>> decisionsGrouped = decisionReader.getDecisionsGrouped(new DecisionRequestDto());
+    // when
+    Map<String, List<DecisionDefinitionEntity>> decisionsGrouped =
+        decisionReader.getDecisionsGrouped(new DecisionRequestDto());
     DecisionDefinitionEntity entity1 = decisionsGrouped.values().iterator().next().get(0);
     Long decisionDefinitionKey = Long.valueOf(entity1.getId());
     DecisionDefinitionEntity entity2 = decisionReader.getDecision(decisionDefinitionKey);
 
-    //then
+    // then
     assertThat(entity2.getId()).isEqualTo(entity1.getId());
     assertThat(entity2.getName()).isEqualTo(entity1.getName());
     assertThat(entity2.getDecisionId()).isEqualTo(entity1.getDecisionId());
@@ -207,5 +220,4 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
   private void createData() throws PersistenceException {
     searchTestRule.persistOperateEntitiesNew(testDataUtil.createDecisionDefinitions());
   }
-
 }

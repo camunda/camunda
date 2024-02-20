@@ -8,23 +8,21 @@ package io.camunda.operate.webapp.zeebe.operation;
 
 import static io.camunda.operate.entities.OperationType.CANCEL_PROCESS_INSTANCE;
 
-import java.util.Set;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-/**
- * Operation handler to cancel process instances.
- */
+/** Operation handler to cancel process instances. */
 @Component
-public class CancelProcessInstanceHandler extends AbstractOperationHandler implements OperationHandler {
+public class CancelProcessInstanceHandler extends AbstractOperationHandler
+    implements OperationHandler {
 
-  @Autowired
-  private ProcessInstanceReader processInstanceReader;
+  @Autowired private ProcessInstanceReader processInstanceReader;
 
   @Override
   public void handleWithException(OperationEntity operation) throws Exception {
@@ -32,16 +30,20 @@ public class CancelProcessInstanceHandler extends AbstractOperationHandler imple
       failOperation(operation, "No process instance id is provided.");
       return;
     }
-    final ProcessInstanceForListViewEntity processInstance = processInstanceReader.getProcessInstanceByKey(operation.getProcessInstanceKey());
+    final ProcessInstanceForListViewEntity processInstance =
+        processInstanceReader.getProcessInstanceByKey(operation.getProcessInstanceKey());
 
     if (!processInstance.getState().equals(ProcessInstanceState.ACTIVE)) {
-      //fail operation
-      failOperation(operation,
-          String.format("Unable to cancel %s process instance. Instance must be in ACTIVE or INCIDENT state.", processInstance.getState()));
+      // fail operation
+      failOperation(
+          operation,
+          String.format(
+              "Unable to cancel %s process instance. Instance must be in ACTIVE or INCIDENT state.",
+              processInstance.getState()));
       return;
     }
     zeebeClient.newCancelInstanceCommand(processInstance.getKey()).send().join();
-    //mark operation as sent
+    // mark operation as sent
     markAsSent(operation);
   }
 
@@ -49,5 +51,4 @@ public class CancelProcessInstanceHandler extends AbstractOperationHandler imple
   public Set<OperationType> getTypes() {
     return Set.of(CANCEL_PROCESS_INSTANCE);
   }
-
 }

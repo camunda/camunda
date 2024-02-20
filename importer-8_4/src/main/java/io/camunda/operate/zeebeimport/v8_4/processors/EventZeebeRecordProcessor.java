@@ -6,8 +6,15 @@
  */
 package io.camunda.operate.zeebeimport.v8_4.processors;
 
-import io.camunda.operate.entities.ErrorType;
+import static io.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
+import static io.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
+import static io.camunda.operate.schema.templates.EventTemplate.METADATA;
+import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
+
 import io.camunda.operate.entities.*;
+import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.store.BatchRequest;
@@ -18,33 +25,24 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.*;
+import java.time.Instant;
+import java.util.*;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.time.Instant;
-import java.util.*;
-import java.util.function.Consumer;
-
-import static io.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
-import static io.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
-import static io.camunda.operate.schema.templates.EventTemplate.METADATA;
-import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
-import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
-
 @Component
 public class EventZeebeRecordProcessor {
-
 
   private static final Logger logger = LoggerFactory.getLogger(EventZeebeRecordProcessor.class);
 
   private static final String ID_PATTERN = "%s_%s";
 
   private static final Set<String> INCIDENT_EVENTS = new HashSet<>();
-  private final static Set<String> JOB_EVENTS = new HashSet<>();
+  private static final Set<String> JOB_EVENTS = new HashSet<>();
   private static final Set<String> PROCESS_INSTANCE_STATES = new HashSet<>();
   private static final Set<String> PROCESS_MESSAGE_SUBSCRIPTION_STATES = new HashSet<>();
 
@@ -69,54 +67,73 @@ public class EventZeebeRecordProcessor {
     PROCESS_MESSAGE_SUBSCRIPTION_STATES.add(ProcessMessageSubscriptionIntent.CREATED.name());
   }
 
-  @Autowired
-  private EventTemplate eventTemplate;
+  @Autowired private EventTemplate eventTemplate;
 
-  public void processIncidentRecords(Map<Long, List<Record<IncidentRecordValue>>> records,
-      BatchRequest batchRequest) throws PersistenceException {
+  public void processIncidentRecords(
+      Map<Long, List<Record<IncidentRecordValue>>> records, BatchRequest batchRequest)
+      throws PersistenceException {
     for (List<Record<IncidentRecordValue>> incidentRecords : records.values()) {
-      processLastRecord(incidentRecords, INCIDENT_EVENTS, rethrowConsumer(record -> {
-        IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
-        processIncident(record, recordValue, batchRequest);
-      }));
+      processLastRecord(
+          incidentRecords,
+          INCIDENT_EVENTS,
+          rethrowConsumer(
+              record -> {
+                IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
+                processIncident(record, recordValue, batchRequest);
+              }));
     }
   }
 
-  public void processJobRecords(Map<Long, List<Record<JobRecordValue>>> records,
-      BatchRequest batchRequest) throws PersistenceException {
+  public void processJobRecords(
+      Map<Long, List<Record<JobRecordValue>>> records, BatchRequest batchRequest)
+      throws PersistenceException {
     for (List<Record<JobRecordValue>> jobRecords : records.values()) {
-      processLastRecord(jobRecords, JOB_EVENTS, rethrowConsumer(record -> {
-        JobRecordValue recordValue = (JobRecordValue) record.getValue();
-        processJob(record, recordValue, batchRequest);
-      }));
+      processLastRecord(
+          jobRecords,
+          JOB_EVENTS,
+          rethrowConsumer(
+              record -> {
+                JobRecordValue recordValue = (JobRecordValue) record.getValue();
+                processJob(record, recordValue, batchRequest);
+              }));
     }
   }
 
   public void processProcessMessageSubscription(
       final Map<Long, List<Record<ProcessMessageSubscriptionRecordValue>>> records,
-      final BatchRequest batchRequest) throws PersistenceException {
+      final BatchRequest batchRequest)
+      throws PersistenceException {
     for (List<Record<ProcessMessageSubscriptionRecordValue>> pmsRecords : records.values()) {
-      processLastRecord(pmsRecords, PROCESS_MESSAGE_SUBSCRIPTION_STATES, rethrowConsumer(record -> {
-        ProcessMessageSubscriptionRecordValue recordValue = (ProcessMessageSubscriptionRecordValue) record
-            .getValue();
-        processMessage(record, recordValue, batchRequest);
-      }));
+      processLastRecord(
+          pmsRecords,
+          PROCESS_MESSAGE_SUBSCRIPTION_STATES,
+          rethrowConsumer(
+              record -> {
+                ProcessMessageSubscriptionRecordValue recordValue =
+                    (ProcessMessageSubscriptionRecordValue) record.getValue();
+                processMessage(record, recordValue, batchRequest);
+              }));
     }
-
   }
 
   public void processProcessInstanceRecords(
       Map<Long, List<Record<ProcessInstanceRecordValue>>> records, BatchRequest batchRequest)
       throws PersistenceException {
     for (List<Record<ProcessInstanceRecordValue>> piRecords : records.values()) {
-      processLastRecord(piRecords, PROCESS_INSTANCE_STATES, rethrowConsumer(record -> {
-        ProcessInstanceRecordValue recordValue = (ProcessInstanceRecordValue) record.getValue();
-        processProcessInstance(record, recordValue, batchRequest);
-      }));
+      processLastRecord(
+          piRecords,
+          PROCESS_INSTANCE_STATES,
+          rethrowConsumer(
+              record -> {
+                ProcessInstanceRecordValue recordValue =
+                    (ProcessInstanceRecordValue) record.getValue();
+                processProcessInstance(record, recordValue, batchRequest);
+              }));
     }
   }
 
-  private <T extends RecordValue> void processLastRecord(final List<Record<T>> incidentRecords,
+  private <T extends RecordValue> void processLastRecord(
+      final List<Record<T>> incidentRecords,
       final Set<String> events,
       final Consumer<Record<? extends RecordValue>> recordProcessor) {
     if (incidentRecords.size() >= 1) {
@@ -130,15 +147,19 @@ public class EventZeebeRecordProcessor {
     }
   }
 
-  private void processProcessInstance(Record record, ProcessInstanceRecordValue recordValue, BatchRequest batchRequest)
-    throws PersistenceException {
-    if (!isProcessEvent(recordValue)) {   //we do not need to store process level events
-      EventEntity eventEntity = new EventEntity()
-          .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), record.getKey()));
+  private void processProcessInstance(
+      Record record, ProcessInstanceRecordValue recordValue, BatchRequest batchRequest)
+      throws PersistenceException {
+    if (!isProcessEvent(recordValue)) { // we do not need to store process level events
+      EventEntity eventEntity =
+          new EventEntity()
+              .setId(
+                  String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), record.getKey()));
 
       loadEventGeneralData(record, eventEntity);
 
-      eventEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+      eventEntity
+          .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
           .setProcessInstanceKey(recordValue.getProcessInstanceKey())
           .setBpmnProcessId(recordValue.getBpmnProcessId())
           .setTenantId(tenantOrDefault(recordValue.getTenantId()));
@@ -155,11 +176,18 @@ public class EventZeebeRecordProcessor {
     }
   }
 
-  private void processMessage(final Record record,
-      final ProcessMessageSubscriptionRecordValue recordValue, final BatchRequest batchRequest)
+  private void processMessage(
+      final Record record,
+      final ProcessMessageSubscriptionRecordValue recordValue,
+      final BatchRequest batchRequest)
       throws PersistenceException {
-    EventEntity eventEntity = new EventEntity()
-        .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
+    EventEntity eventEntity =
+        new EventEntity()
+            .setId(
+                String.format(
+                    ID_PATTERN,
+                    recordValue.getProcessInstanceKey(),
+                    recordValue.getElementInstanceKey()));
 
     loadEventGeneralData(record, eventEntity);
 
@@ -168,7 +196,8 @@ public class EventZeebeRecordProcessor {
       eventEntity.setProcessInstanceKey(processInstanceKey);
     }
 
-    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
+    eventEntity
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setFlowNodeId(recordValue.getElementId())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
@@ -184,12 +213,17 @@ public class EventZeebeRecordProcessor {
     eventEntity.setMetadata(eventMetadata);
 
     persistEvent(eventEntity, record.getPosition(), batchRequest);
-
   }
 
-  private void processJob(Record record, JobRecordValue recordValue, BatchRequest batchRequest) throws PersistenceException {
-    EventEntity eventEntity = new EventEntity()
-        .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
+  private void processJob(Record record, JobRecordValue recordValue, BatchRequest batchRequest)
+      throws PersistenceException {
+    EventEntity eventEntity =
+        new EventEntity()
+            .setId(
+                String.format(
+                    ID_PATTERN,
+                    recordValue.getProcessInstanceKey(),
+                    recordValue.getElementInstanceKey()));
 
     loadEventGeneralData(record, eventEntity);
 
@@ -203,7 +237,8 @@ public class EventZeebeRecordProcessor {
       eventEntity.setProcessInstanceKey(processInstanceKey);
     }
 
-    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
+    eventEntity
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setFlowNodeId(recordValue.getElementId())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
@@ -230,18 +265,25 @@ public class EventZeebeRecordProcessor {
     eventEntity.setMetadata(eventMetadata);
 
     persistEvent(eventEntity, record.getPosition(), batchRequest);
-
   }
 
-  private void processIncident(Record record, IncidentRecordValue recordValue, BatchRequest batchRequest) throws PersistenceException {
-    EventEntity eventEntity = new EventEntity()
-        .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
+  private void processIncident(
+      Record record, IncidentRecordValue recordValue, BatchRequest batchRequest)
+      throws PersistenceException {
+    EventEntity eventEntity =
+        new EventEntity()
+            .setId(
+                String.format(
+                    ID_PATTERN,
+                    recordValue.getProcessInstanceKey(),
+                    recordValue.getElementInstanceKey()));
     loadEventGeneralData(record, eventEntity);
 
     if (recordValue.getProcessInstanceKey() > 0) {
       eventEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     }
-    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
+    eventEntity
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setFlowNodeId(recordValue.getElementId())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
     if (recordValue.getElementInstanceKey() > 0) {
@@ -249,8 +291,11 @@ public class EventZeebeRecordProcessor {
     }
 
     EventMetadataEntity eventMetadata = new EventMetadataEntity();
-    eventMetadata.setIncidentErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
-    eventMetadata.setIncidentErrorType(ErrorType.fromZeebeErrorType(recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()));
+    eventMetadata.setIncidentErrorMessage(
+        StringUtils.trimWhitespace(recordValue.getErrorMessage()));
+    eventMetadata.setIncidentErrorType(
+        ErrorType.fromZeebeErrorType(
+            recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()));
     eventEntity.setMetadata(eventMetadata);
 
     persistEvent(eventEntity, record.getPosition(), batchRequest);
@@ -271,50 +316,57 @@ public class EventZeebeRecordProcessor {
   private void loadEventGeneralData(Record record, EventEntity eventEntity) {
     eventEntity.setKey(record.getKey());
     eventEntity.setPartitionId(record.getPartitionId());
-    eventEntity.setEventSourceType(EventSourceType.fromZeebeValueType(record.getValueType() == null ? null : record.getValueType().name()));
+    eventEntity.setEventSourceType(
+        EventSourceType.fromZeebeValueType(
+            record.getValueType() == null ? null : record.getValueType().name()));
     eventEntity.setDateTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     eventEntity.setEventType(EventType.fromZeebeIntent(record.getIntent().name()));
   }
 
-  private void persistEvent(EventEntity entity, long position, BatchRequest batchRequest) throws PersistenceException {
-      logger.debug("Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}", entity.getId(), entity.getEventSourceType(), entity.getEventType(),
+  private void persistEvent(EventEntity entity, long position, BatchRequest batchRequest)
+      throws PersistenceException {
+    logger.debug(
+        "Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}",
+        entity.getId(),
+        entity.getEventSourceType(),
+        entity.getEventType(),
         entity.getProcessInstanceKey());
-      Map<String, Object> jsonMap = new HashMap<>();
-      jsonMap.put(EventTemplate.KEY, entity.getKey());
-      jsonMap.put(EventTemplate.EVENT_SOURCE_TYPE, entity.getEventSourceType());
-      jsonMap.put(EventTemplate.EVENT_TYPE, entity.getEventType());
-      jsonMap.put(EventTemplate.DATE_TIME, entity.getDateTime());
-      jsonMap.put(EventTemplate.PROCESS_KEY, entity.getProcessDefinitionKey());
-      jsonMap.put(EventTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
-      jsonMap.put(EventTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
-      if (entity.getMetadata() != null) {
-        Map<String, Object> metadataMap = new HashMap<>();
-        if (
-            entity.getMetadata().getIncidentErrorMessage() != null) {
-          metadataMap.put(EventTemplate.INCIDENT_ERROR_MSG,
-              entity.getMetadata().getIncidentErrorMessage());
-          metadataMap
-              .put(EventTemplate.INCIDENT_ERROR_TYPE, entity.getMetadata().getIncidentErrorType());
-        }
-        if (entity.getMetadata().getJobKey() != null) {
-          metadataMap.put(EventTemplate.JOB_KEY, entity.getMetadata().getJobKey());
-        }
-        if (entity.getMetadata().getJobType() != null) {
-          metadataMap.put(EventTemplate.JOB_TYPE, entity.getMetadata().getJobType());
-          metadataMap.put(EventTemplate.JOB_RETRIES, entity.getMetadata().getJobRetries());
-          metadataMap.put(EventTemplate.JOB_WORKER, entity.getMetadata().getJobWorker());
-          metadataMap.put(EventTemplate.JOB_KEY, entity.getMetadata().getJobKey());
-          metadataMap.put(EventTemplate.JOB_CUSTOM_HEADERS, entity.getMetadata().getJobCustomHeaders());
-        }
-        if (entity.getMetadata().getMessageName() != null) {
-          metadataMap.put(EventTemplate.MESSAGE_NAME, entity.getMetadata().getMessageName());
-          metadataMap.put(EventTemplate.CORRELATION_KEY, entity.getMetadata().getCorrelationKey());
-        }
-        if (metadataMap.size() > 0) {
-          jsonMap.put(METADATA, metadataMap);
-        }
+    Map<String, Object> jsonMap = new HashMap<>();
+    jsonMap.put(EventTemplate.KEY, entity.getKey());
+    jsonMap.put(EventTemplate.EVENT_SOURCE_TYPE, entity.getEventSourceType());
+    jsonMap.put(EventTemplate.EVENT_TYPE, entity.getEventType());
+    jsonMap.put(EventTemplate.DATE_TIME, entity.getDateTime());
+    jsonMap.put(EventTemplate.PROCESS_KEY, entity.getProcessDefinitionKey());
+    jsonMap.put(EventTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
+    jsonMap.put(EventTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
+    if (entity.getMetadata() != null) {
+      Map<String, Object> metadataMap = new HashMap<>();
+      if (entity.getMetadata().getIncidentErrorMessage() != null) {
+        metadataMap.put(
+            EventTemplate.INCIDENT_ERROR_MSG, entity.getMetadata().getIncidentErrorMessage());
+        metadataMap.put(
+            EventTemplate.INCIDENT_ERROR_TYPE, entity.getMetadata().getIncidentErrorType());
       }
-      //write event
-      batchRequest.upsert(eventTemplate.getFullQualifiedName(), entity.getId(), entity, jsonMap);
+      if (entity.getMetadata().getJobKey() != null) {
+        metadataMap.put(EventTemplate.JOB_KEY, entity.getMetadata().getJobKey());
+      }
+      if (entity.getMetadata().getJobType() != null) {
+        metadataMap.put(EventTemplate.JOB_TYPE, entity.getMetadata().getJobType());
+        metadataMap.put(EventTemplate.JOB_RETRIES, entity.getMetadata().getJobRetries());
+        metadataMap.put(EventTemplate.JOB_WORKER, entity.getMetadata().getJobWorker());
+        metadataMap.put(EventTemplate.JOB_KEY, entity.getMetadata().getJobKey());
+        metadataMap.put(
+            EventTemplate.JOB_CUSTOM_HEADERS, entity.getMetadata().getJobCustomHeaders());
+      }
+      if (entity.getMetadata().getMessageName() != null) {
+        metadataMap.put(EventTemplate.MESSAGE_NAME, entity.getMetadata().getMessageName());
+        metadataMap.put(EventTemplate.CORRELATION_KEY, entity.getMetadata().getCorrelationKey());
+      }
+      if (metadataMap.size() > 0) {
+        jsonMap.put(METADATA, metadataMap);
+      }
+    }
+    // write event
+    batchRequest.upsert(eventTemplate.getFullQualifiedName(), entity.getId(), entity, jsonMap);
   }
 }

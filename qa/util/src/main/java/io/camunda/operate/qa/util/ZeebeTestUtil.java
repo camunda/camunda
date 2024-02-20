@@ -33,16 +33,20 @@ public abstract class ZeebeTestUtil {
       return null;
     }
     DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand();
-    for (String classpathResource: classpathResources) {
-      deployProcessCommandStep1 = deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
+    for (String classpathResource : classpathResources) {
+      deployProcessCommandStep1 =
+          deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
     }
     final DeploymentEvent deploymentEvent =
-        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2)deployProcessCommandStep1)
+        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
             .send()
             .join();
-    logger.debug("Deployment of resource [{}] was performed", (Object[])classpathResources);
+    logger.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
     return String.valueOf(
-        deploymentEvent.getProcesses().get(classpathResources.length - 1).getProcessDefinitionKey());
+        deploymentEvent
+            .getProcesses()
+            .get(classpathResources.length - 1)
+            .getProcessDefinitionKey());
   }
 
   public static void deployDecision(ZeebeClient client, String... classpathResources) {
@@ -50,38 +54,45 @@ public abstract class ZeebeTestUtil {
       return;
     }
     DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand();
-    for (String classpathResource: classpathResources) {
-      deployProcessCommandStep1 = deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
+    for (String classpathResource : classpathResources) {
+      deployProcessCommandStep1 =
+          deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
     }
     final DeploymentEvent deploymentEvent =
-        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2)deployProcessCommandStep1)
+        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
             .send()
             .join();
-    logger.debug("Deployment of resource [{}] was performed", (Object[])classpathResources);
+    logger.debug("Deployment of resource [{}] was performed", (Object[]) classpathResources);
   }
 
-  public static String deployProcess(ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
-    DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand()
-      .addProcessModel(processModel, resourceName);
+  public static String deployProcess(
+      ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
+    DeployProcessCommandStep1 deployProcessCommandStep1 =
+        client.newDeployCommand().addProcessModel(processModel, resourceName);
     final DeploymentEvent deploymentEvent =
-      ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2)deployProcessCommandStep1)
-        .send()
-        .join();
+        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
+            .send()
+            .join();
     logger.debug("Deployment of resource [{}] was performed", resourceName);
     return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }
 
-  public static ZeebeFuture<ProcessInstanceEvent> startProcessInstanceAsync(ZeebeClient client, String bpmnProcessId, String payload) {
-    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 = client
-      .newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
+  public static ZeebeFuture<ProcessInstanceEvent> startProcessInstanceAsync(
+      ZeebeClient client, String bpmnProcessId, String payload) {
+    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
+        createProcessInstanceCommandStep3 =
+            client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
     if (payload != null) {
       createProcessInstanceCommandStep3.variables(payload);
     }
     return createProcessInstanceCommandStep3.send();
   }
-  public static long startProcessInstance(ZeebeClient client, String bpmnProcessId, String payload) {
-    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 = client
-      .newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
+
+  public static long startProcessInstance(
+      ZeebeClient client, String bpmnProcessId, String payload) {
+    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
+        createProcessInstanceCommandStep3 =
+            client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
     if (payload != null) {
       createProcessInstanceCommandStep3.variables(payload);
     }
@@ -90,66 +101,84 @@ public abstract class ZeebeTestUtil {
     return processInstanceEvent.getProcessInstanceKey();
   }
 
-  public static void completeTask(ZeebeClient client, String jobType, String workerName, String payload, int count) {
-    final int[] countCompleted = { 0 };
-    JobWorker jobWorker = client.newWorker()
-        .jobType(jobType)
-        .handler((jobClient, job) -> {
-          try {
-            if (countCompleted[0] < count) {
-              CompleteJobCommandStep1 completeJobCommandStep1 = jobClient
-                  .newCompleteCommand(job.getKey());
-              if (payload != null) {
-                completeJobCommandStep1 = completeJobCommandStep1.variables(payload);
-              }
-              completeJobCommandStep1.send().join();
-              logger.debug("Task completed jobKey [{}]", job.getKey());
-              countCompleted[0]++;
-              if (countCompleted[0] % 1000 == 0) {
-                logger.info("{} jobs completed ", countCompleted[0]);
-              }
-            }
-          } catch (Exception ex) {
-            logger.error(ex.getMessage(), ex);
-            throw ex;
-          }
-        })
-      .name(workerName)
-      .timeout(Duration.ofSeconds(2))
-      .open();
-    //wait till all requested tasks are completed
-    while(countCompleted[0] < count) {
+  public static void completeTask(
+      ZeebeClient client, String jobType, String workerName, String payload, int count) {
+    final int[] countCompleted = {0};
+    JobWorker jobWorker =
+        client
+            .newWorker()
+            .jobType(jobType)
+            .handler(
+                (jobClient, job) -> {
+                  try {
+                    if (countCompleted[0] < count) {
+                      CompleteJobCommandStep1 completeJobCommandStep1 =
+                          jobClient.newCompleteCommand(job.getKey());
+                      if (payload != null) {
+                        completeJobCommandStep1 = completeJobCommandStep1.variables(payload);
+                      }
+                      completeJobCommandStep1.send().join();
+                      logger.debug("Task completed jobKey [{}]", job.getKey());
+                      countCompleted[0]++;
+                      if (countCompleted[0] % 1000 == 0) {
+                        logger.info("{} jobs completed ", countCompleted[0]);
+                      }
+                    }
+                  } catch (Exception ex) {
+                    logger.error(ex.getMessage(), ex);
+                    throw ex;
+                  }
+                })
+            .name(workerName)
+            .timeout(Duration.ofSeconds(2))
+            .open();
+    // wait till all requested tasks are completed
+    while (countCompleted[0] < count) {
       sleepFor(1000);
     }
     jobWorker.close();
   }
 
-  public static void failTask(ZeebeClient client, String jobType, String workerName, int incidentCount) {
+  public static void failTask(
+      ZeebeClient client, String jobType, String workerName, int incidentCount) {
     failTask(client, jobType, workerName, null, incidentCount);
   }
 
-  public static void failTask(ZeebeClient client, String jobType, String workerName, String errorMessage, int incidentCount) {
-    final int[] countFailed = { 0 };
-    JobWorker jobWorker = client.newWorker()
-      .jobType(jobType)
-      .handler((jobClient, activatedJob) -> {
-        final String error = errorMessage == null ? "Error " + random.nextInt(50) : errorMessage;
-        if (countFailed[0] < incidentCount) {
-          client.newFailCommand(activatedJob.getKey()).retries(0).errorMessage(error).send().join();
-          countFailed[0]++;
-          if (countFailed[0] % 1000 == 0) {
-            logger.info("{} jobs failed ", countFailed[0]);
-          }
-        }
-      })
-      .name(workerName)
-      .timeout(Duration.ofSeconds(2))
-      .open();
-    //wait till all incidents are created
+  public static void failTask(
+      ZeebeClient client,
+      String jobType,
+      String workerName,
+      String errorMessage,
+      int incidentCount) {
+    final int[] countFailed = {0};
+    JobWorker jobWorker =
+        client
+            .newWorker()
+            .jobType(jobType)
+            .handler(
+                (jobClient, activatedJob) -> {
+                  final String error =
+                      errorMessage == null ? "Error " + random.nextInt(50) : errorMessage;
+                  if (countFailed[0] < incidentCount) {
+                    client
+                        .newFailCommand(activatedJob.getKey())
+                        .retries(0)
+                        .errorMessage(error)
+                        .send()
+                        .join();
+                    countFailed[0]++;
+                    if (countFailed[0] % 1000 == 0) {
+                      logger.info("{} jobs failed ", countFailed[0]);
+                    }
+                  }
+                })
+            .name(workerName)
+            .timeout(Duration.ofSeconds(2))
+            .open();
+    // wait till all incidents are created
     while (countFailed[0] < incidentCount) {
       sleepFor(200);
     }
     jobWorker.close();
   }
-
 }

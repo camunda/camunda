@@ -6,6 +6,9 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -15,6 +18,11 @@ import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.util.Either;
 import io.camunda.operate.util.ElasticsearchUtil;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.Callable;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -31,58 +39,55 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.Callable;
-
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchImportStore implements ImportStore {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchImportStore.class);
-  @Autowired
-  private ImportPositionIndex importPositionType;
-  @Autowired
-  private RestHighLevelClient esClient;
+  @Autowired private ImportPositionIndex importPositionType;
+  @Autowired private RestHighLevelClient esClient;
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private Metrics metrics;
+  @Autowired private Metrics metrics;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
+
   @Override
-  public ImportPositionEntity getImportPositionByAliasAndPartitionId(String alias, int partitionId) throws IOException {
-    final QueryBuilder queryBuilder = joinWithAnd(termQuery(ImportPositionIndex.ALIAS_NAME, alias),
-        termQuery(ImportPositionIndex.PARTITION_ID, partitionId));
+  public ImportPositionEntity getImportPositionByAliasAndPartitionId(String alias, int partitionId)
+      throws IOException {
+    final QueryBuilder queryBuilder =
+        joinWithAnd(
+            termQuery(ImportPositionIndex.ALIAS_NAME, alias),
+            termQuery(ImportPositionIndex.PARTITION_ID, partitionId));
 
-    final SearchRequest searchRequest = new SearchRequest(importPositionType.getAlias())
-        .source(new SearchSourceBuilder()
-            .query(queryBuilder)
-            .size(10));
+    final SearchRequest searchRequest =
+        new SearchRequest(importPositionType.getAlias())
+            .source(new SearchSourceBuilder().query(queryBuilder).size(10));
 
     final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     final Iterator<SearchHit> hitIterator = searchResponse.getHits().iterator();
 
-    ImportPositionEntity position = new ImportPositionEntity().setAliasName(alias).setPartitionId(partitionId);
+    ImportPositionEntity position =
+        new ImportPositionEntity().setAliasName(alias).setPartitionId(partitionId);
 
     if (hitIterator.hasNext()) {
-      position = ElasticsearchUtil.fromSearchHit(hitIterator.next().getSourceAsString(), objectMapper, ImportPositionEntity.class);
+      position =
+          ElasticsearchUtil.fromSearchHit(
+              hitIterator.next().getSourceAsString(), objectMapper, ImportPositionEntity.class);
     }
-    logger.debug("Latest loaded position for alias [{}] and partitionId [{}]: {}", alias, partitionId, position);
+    logger.debug(
+        "Latest loaded position for alias [{}] and partitionId [{}]: {}",
+        alias,
+        partitionId,
+        position);
 
     return position;
   }
 
   @Override
-  public Either<Throwable, Boolean> updateImportPositions(List<ImportPositionEntity> positions, List<ImportPositionEntity> postImportPositions) {
+  public Either<Throwable, Boolean> updateImportPositions(
+      List<ImportPositionEntity> positions, List<ImportPositionEntity> postImportPositions) {
     var preparedBulkRequest = prepareBulkRequest(positions);
 
     if (preparedBulkRequest.isLeft()) {
@@ -100,10 +105,14 @@ public class ElasticsearchImportStore implements ImportStore {
     try {
       final var bulkRequest = preparedBulkRequest.get();
 
-      withImportPositionTimer(() -> {
-        ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
-        return null;
-      });
+      withImportPositionTimer(
+          () -> {
+            ElasticsearchUtil.processBulkRequest(
+                esClient,
+                bulkRequest,
+                operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+            return null;
+          });
 
       return Either.right(true);
     } catch (final Throwable e) {
@@ -116,14 +125,13 @@ public class ElasticsearchImportStore implements ImportStore {
     metrics.getTimer(Metrics.TIMER_NAME_IMPORT_POSITION_UPDATE).recordCallable(action);
   }
 
-  private Either<Exception, BulkRequest> prepareBulkRequest(final List<ImportPositionEntity> positions) {
+  private Either<Exception, BulkRequest> prepareBulkRequest(
+      final List<ImportPositionEntity> positions) {
     final var bulkRequest = new BulkRequest();
 
     if (positions.size() > 0) {
-      final var preparedUpdateRequests = positions
-          .stream()
-          .map(this::prepareUpdateRequest)
-          .collect(Either.collectorFoldingLeft());
+      final var preparedUpdateRequests =
+          positions.stream().map(this::prepareUpdateRequest).collect(Either.collectorFoldingLeft());
 
       if (preparedUpdateRequests.isLeft()) {
         final var e = preparedUpdateRequests.getLeft();
@@ -136,14 +144,14 @@ public class ElasticsearchImportStore implements ImportStore {
     return Either.right(bulkRequest);
   }
 
-  private Either<Exception, BulkRequest> addPostImportRequests(final BulkRequest bulkRequest,
-      final List<ImportPositionEntity> positions) {
+  private Either<Exception, BulkRequest> addPostImportRequests(
+      final BulkRequest bulkRequest, final List<ImportPositionEntity> positions) {
 
     if (positions.size() > 0) {
-      final var preparedUpdateRequests = positions
-          .stream()
-          .map(this::preparePostImportUpdateRequest)
-          .collect(Either.collectorFoldingLeft());
+      final var preparedUpdateRequests =
+          positions.stream()
+              .map(this::preparePostImportUpdateRequest)
+              .collect(Either.collectorFoldingLeft());
 
       if (preparedUpdateRequests.isLeft()) {
         final var e = preparedUpdateRequests.getLeft();
@@ -156,26 +164,37 @@ public class ElasticsearchImportStore implements ImportStore {
     return Either.right(bulkRequest);
   }
 
-  private Either<Exception, UpdateRequest> preparePostImportUpdateRequest(final ImportPositionEntity position) {
+  private Either<Exception, UpdateRequest> preparePostImportUpdateRequest(
+      final ImportPositionEntity position) {
     try {
       final var index = importPositionType.getFullQualifiedName();
       final var source = objectMapper.writeValueAsString(position);
       final var updateFields = new HashMap<String, Object>();
 
-      updateFields.put(ImportPositionIndex.POST_IMPORTER_POSITION, position.getPostImporterPosition());
+      updateFields.put(
+          ImportPositionIndex.POST_IMPORTER_POSITION, position.getPostImporterPosition());
 
-      final UpdateRequest updateRequest = new UpdateRequest().index(index).id(position.getId())
-          .upsert(source, XContentType.JSON).doc(updateFields);
+      final UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(index)
+              .id(position.getId())
+              .upsert(source, XContentType.JSON)
+              .doc(updateFields);
 
       return Either.right(updateRequest);
 
     } catch (final Exception e) {
-      logger.error(String.format("Error occurred while preparing request to update processed position for %s", position.getAliasName()), e);
+      logger.error(
+          String.format(
+              "Error occurred while preparing request to update processed position for %s",
+              position.getAliasName()),
+          e);
       return Either.left(e);
     }
   }
 
-  private Either<Exception, UpdateRequest> prepareUpdateRequest(final ImportPositionEntity position) {
+  private Either<Exception, UpdateRequest> prepareUpdateRequest(
+      final ImportPositionEntity position) {
     try {
       final var index = importPositionType.getFullQualifiedName();
       final var source = objectMapper.writeValueAsString(position);
@@ -185,13 +204,21 @@ public class ElasticsearchImportStore implements ImportStore {
       updateFields.put(ImportPositionIndex.FIELD_INDEX_NAME, position.getIndexName());
       updateFields.put(ImportPositionIndex.SEQUENCE, position.getSequence());
 
-      final UpdateRequest updateRequest = new UpdateRequest().index(index).id(position.getId())
-          .upsert(source, XContentType.JSON).doc(updateFields);
+      final UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(index)
+              .id(position.getId())
+              .upsert(source, XContentType.JSON)
+              .doc(updateFields);
 
       return Either.right(updateRequest);
 
     } catch (final Exception e) {
-      logger.error(String.format("Error occurred while preparing request to update processed position for %s", position.getAliasName()), e);
+      logger.error(
+          String.format(
+              "Error occurred while preparing request to update processed position for %s",
+              position.getAliasName()),
+          e);
       return Either.left(e);
     }
   }

@@ -10,21 +10,20 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.exceptions.MigrationException;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
+import io.camunda.operate.schema.migration.BaseStepsRepository;
+import io.camunda.operate.schema.migration.Step;
+import io.camunda.operate.schema.migration.StepsRepository;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.schema.migration.BaseStepsRepository;
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
-import io.camunda.operate.exceptions.MigrationException;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
-import io.camunda.operate.schema.migration.Step;
-import io.camunda.operate.schema.migration.StepsRepository;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -58,8 +57,11 @@ public class ElasticsearchStepsRepository extends BaseStepsRepository implements
   private final MigrationRepositoryIndex migrationRepositoryIndex;
 
   @Autowired
-  public ElasticsearchStepsRepository(final OperateProperties operateProperties,@Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
-      final RetryElasticsearchClient retryElasticsearchClient, final MigrationRepositoryIndex migrationRepositoryIndex){
+  public ElasticsearchStepsRepository(
+      final OperateProperties operateProperties,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
+      final RetryElasticsearchClient retryElasticsearchClient,
+      final MigrationRepositoryIndex migrationRepositoryIndex) {
     this.operateProperties = operateProperties;
     this.objectMapper = objectMapper;
     this.retryElasticsearchClient = retryElasticsearchClient;
@@ -84,7 +86,7 @@ public class ElasticsearchStepsRepository extends BaseStepsRepository implements
       steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
       return steps;
     } catch (FileNotFoundException ex) {
-      //ignore
+      // ignore
       logger.warn("Directory with migration steps was not found: " + ex.getMessage());
     }
     return steps;
@@ -94,9 +96,7 @@ public class ElasticsearchStepsRepository extends BaseStepsRepository implements
     return objectMapper.readValue(is, Step.class);
   }
 
-  /**
-   * Returns the of repository. It is used as index name for elasticsearch
-   */
+  /** Returns the of repository. It is used as index name for elasticsearch */
   @Override
   public String getName() {
     return migrationRepositoryIndex.getFullQualifiedName();
@@ -113,47 +113,48 @@ public class ElasticsearchStepsRepository extends BaseStepsRepository implements
 
   @Override
   public void save(final Step step) throws MigrationException, IOException {
-    final boolean createdOrUpdated = retryElasticsearchClient.createOrUpdateDocument(
-        getName(),
-        idFromStep(step),
-        objectMapper.writeValueAsString(step));
+    final boolean createdOrUpdated =
+        retryElasticsearchClient.createOrUpdateDocument(
+            getName(), idFromStep(step), objectMapper.writeValueAsString(step));
     if (createdOrUpdated) {
       logger.info("Step {}  saved.", step);
     } else {
-      throw new MigrationException(String.format("Error in save step %s:  document wasn't created/updated.", step));
+      throw new MigrationException(
+          String.format("Error in save step %s:  document wasn't created/updated.", step));
     }
   }
 
   protected List<Step> findBy(final Optional<QueryBuilder> query) {
-    final SearchSourceBuilder searchSpec = new SearchSourceBuilder()
-        .sort(Step.VERSION+ ".keyword", SortOrder.ASC);
+    final SearchSourceBuilder searchSpec =
+        new SearchSourceBuilder().sort(Step.VERSION + ".keyword", SortOrder.ASC);
     query.ifPresent(searchSpec::query);
-    SearchRequest request = new SearchRequest(getName())
-        .source(searchSpec)
-        .indicesOptions(IndicesOptions.lenientExpandOpen());
+    SearchRequest request =
+        new SearchRequest(getName())
+            .source(searchSpec)
+            .indicesOptions(IndicesOptions.lenientExpandOpen());
     return retryElasticsearchClient.searchWithScroll(request, Step.class, objectMapper);
   }
 
-  /**
-   * Returns all stored steps in repository index
-   */
+  /** Returns all stored steps in repository index */
   @Override
   public List<Step> findAll() {
-    logger.debug("Find all steps from Elasticsearch at {}", operateProperties.getElasticsearch().getUrl());
+    logger.debug(
+        "Find all steps from Elasticsearch at {}", operateProperties.getElasticsearch().getUrl());
     return findBy(Optional.empty());
   }
-  /**
-   * Returns all steps for an index that are not applied yet.
-   */
+
+  /** Returns all steps for an index that are not applied yet. */
   @Override
   public List<Step> findNotAppliedFor(final String indexName) {
-    logger.debug("Find 'not applied steps' for index {} from Elasticsearch at {} ", indexName,
+    logger.debug(
+        "Find 'not applied steps' for index {} from Elasticsearch at {} ",
+        indexName,
         operateProperties.getElasticsearch().getUrl());
 
-    return findBy(Optional.ofNullable(
-        joinWithAnd(
-            termQuery(Step.INDEX_NAME + ".keyword", indexName),
-            termQuery(Step.APPLIED, false))));
+    return findBy(
+        Optional.ofNullable(
+            joinWithAnd(
+                termQuery(Step.INDEX_NAME + ".keyword", indexName),
+                termQuery(Step.APPLIED, false))));
   }
-
 }

@@ -9,5 +9,4 @@ package io.camunda.operate.qa.migration.util;
 public interface TestConstants {
 
   String DEFAULT_TENANT_ID = "<default>";
-
 }

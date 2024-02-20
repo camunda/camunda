@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.security.sso;
 // Wrap auth0 exceptions for testing and specific handling
 public class Auth0ServiceException extends RuntimeException {
 
-  public Auth0ServiceException(String message){
+  public Auth0ServiceException(String message) {
     super(message);
   }
 

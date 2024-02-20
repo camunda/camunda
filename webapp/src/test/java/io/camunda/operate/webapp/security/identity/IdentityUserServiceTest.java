@@ -6,6 +6,10 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Authentication;
@@ -13,6 +17,8 @@ import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.sso.TokenAuthentication;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,23 +28,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class IdentityUserServiceTest {
 
   private IdentityUserService underTest;
 
-  @Mock
-  private Identity mockIdentity;
+  @Mock private Identity mockIdentity;
 
-  @Mock
-  private PermissionConverter mockPermissionConverter;
+  @Mock private PermissionConverter mockPermissionConverter;
 
   @BeforeEach
   public void setup() {
@@ -79,7 +76,8 @@ public class IdentityUserServiceTest {
     when(mockJwt.getTokenValue()).thenReturn("mockTokenValue");
     when(mockIdentity.authentication()).thenReturn(mockAuthentication);
     when(mockAuthentication.verifyToken(any())).thenReturn(mockAccessToken);
-    when(mockAccessToken.getPermissions()).thenReturn(Arrays.asList(PermissionConverter.READ_PERMISSION_VALUE));
+    when(mockAccessToken.getPermissions())
+        .thenReturn(Arrays.asList(PermissionConverter.READ_PERMISSION_VALUE));
     when(mockPermissionConverter.convert(any())).thenCallRealMethod();
 
     UserDto result = underTest.createUserDtoFrom(jwtToken);

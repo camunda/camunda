@@ -33,6 +33,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,77 +48,87 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
 @RestController("ProcessInstanceControllerV1")
 @RequestMapping(URI)
 @Tag(name = "ProcessInstance", description = "Process Instance API")
 @Validated
-public class ProcessInstanceController extends ErrorController implements SearchController<ProcessInstance> {
+public class ProcessInstanceController extends ErrorController
+    implements SearchController<ProcessInstance> {
 
   public static final String URI = "/v1/process-instances";
 
-  @Autowired
-  private ProcessInstanceDao processInstanceDao;
+  @Autowired private ProcessInstanceDao processInstanceDao;
 
-  @Autowired
-  private SequenceFlowDao sequenceFlowDao;
+  @Autowired private SequenceFlowDao sequenceFlowDao;
 
-  @Autowired
-  private FlowNodeStatisticsDao flowNodeStatisticsDao;
+  @Autowired private FlowNodeStatisticsDao flowNodeStatisticsDao;
 
   private final QueryValidator<ProcessInstance> queryValidator = new QueryValidator<>();
 
   @Operation(
       summary = "Search process instances",
-      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie")},
+      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
       responses = {
-          @ApiResponse(
-              description = "Success",
-              responseCode = "200"
-          ),
-          @ApiResponse(
-              description = ServerException.TYPE,
-              responseCode = "500",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ClientException.TYPE,
-              responseCode = "400",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ValidationException.TYPE,
-              responseCode = "400",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          )
+        @ApiResponse(description = "Success", responseCode = "200"),
+        @ApiResponse(
+            description = ServerException.TYPE,
+            responseCode = "500",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ClientException.TYPE,
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ValidationException.TYPE,
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
       })
-  @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Search process instances", content =
-    @Content(examples = {
-        @ExampleObject(name = "All", value = "{}",description = "Returns all process instances (default return list size is 10)"),
-        @ExampleObject(name = "Sorted by field", value = "{  \"sort\": [{\"field\":\"bpmnProcessId\",\"order\": \"ASC\"}] }", description = "Returns process instances sorted ascending by bpmnProcessId"),
-        @ExampleObject(name = "Sorted and paged with size",
-            value = "{  \"size\": 3,"
-            + "    \"sort\": [{\"field\":\"bpmnProcessId\",\"order\": \"ASC\"}],"
-            + "    \"searchAfter\":["
-            + "    \"bigVarProcess\","
-            + "    6755399441055870"
-            + "  ]}",
-            description = "Returns max 3 process instances after 'bigVarProcess' and key 6755399441055870 sorted ascending by bpmnProcessId \n"
-                + "To get the next page copy the value of 'sortValues' into 'searchAfter' value.\n"
-                + "Sort specification should match the searchAfter specification"),
-        @ExampleObject(name = "Filtered and sorted",
-            value = "{  \"filter\": {"
-                + "      \"processVersion\": 2"
-                + "    },"
-                + "    \"size\": 50,"
-                + "    \"sort\": [{\"field\":\"bpmnProcessId\",\"order\": \"ASC\"}]}",
-            description = "Returns max 50 process instances, filtered by processVersion of 2 sorted ascending by bpmnProcessId"),
-      }
-    )
-  )
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      description = "Search process instances",
+      content =
+          @Content(
+              examples = {
+                @ExampleObject(
+                    name = "All",
+                    value = "{}",
+                    description = "Returns all process instances (default return list size is 10)"),
+                @ExampleObject(
+                    name = "Sorted by field",
+                    value = "{  \"sort\": [{\"field\":\"bpmnProcessId\",\"order\": \"ASC\"}] }",
+                    description = "Returns process instances sorted ascending by bpmnProcessId"),
+                @ExampleObject(
+                    name = "Sorted and paged with size",
+                    value =
+                        "{  \"size\": 3,"
+                            + "    \"sort\": [{\"field\":\"bpmnProcessId\",\"order\": \"ASC\"}],"
+                            + "    \"searchAfter\":["
+                            + "    \"bigVarProcess\","
+                            + "    6755399441055870"
+                            + "  ]}",
+                    description =
+                        "Returns max 3 process instances after 'bigVarProcess' and key 6755399441055870 sorted ascending by bpmnProcessId \n"
+                            + "To get the next page copy the value of 'sortValues' into 'searchAfter' value.\n"
+                            + "Sort specification should match the searchAfter specification"),
+                @ExampleObject(
+                    name = "Filtered and sorted",
+                    value =
+                        "{  \"filter\": {"
+                            + "      \"processVersion\": 2"
+                            + "    },"
+                            + "    \"size\": 50,"
+                            + "    \"sort\": [{\"field\":\"bpmnProcessId\",\"order\": \"ASC\"}]}",
+                    description =
+                        "Returns max 50 process instances, filtered by processVersion of 2 sorted ascending by bpmnProcessId"),
+              }))
   @Override
   public Results<ProcessInstance> search(@RequestBody final Query<ProcessInstance> query) {
     logger.debug("search for query {}", query);
@@ -125,125 +138,159 @@ public class ProcessInstanceController extends ErrorController implements Search
 
   @Operation(
       summary = "Get process instance by key",
-      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
+      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
       responses = {
-          @ApiResponse(
-              description = "Success",
-              responseCode = "200"
-          ),
-          @ApiResponse(
-              description = ServerException.TYPE,
-              responseCode = "500",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ClientException.TYPE,
-              responseCode = "400",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ResourceNotFoundException.TYPE,
-              responseCode = "404",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          )
+        @ApiResponse(description = "Success", responseCode = "200"),
+        @ApiResponse(
+            description = ServerException.TYPE,
+            responseCode = "500",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ClientException.TYPE,
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ResourceNotFoundException.TYPE,
+            responseCode = "404",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
       })
   @Override
-  public ProcessInstance byKey(@Parameter(description = "Key of process instance",required = true) @PathVariable final Long key) {
+  public ProcessInstance byKey(
+      @Parameter(description = "Key of process instance", required = true) @PathVariable
+          final Long key) {
     return processInstanceDao.byKey(key);
   }
 
   @Operation(
       summary = "Delete process instance and all dependant data by key",
-      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
+      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
       responses = {
-          @ApiResponse(
-              description = "Success",
-              responseCode = "200"
-          ),
-          @ApiResponse(
-              description = ServerException.TYPE,
-              responseCode = "500",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ClientException.TYPE,
-              responseCode = "400",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ResourceNotFoundException.TYPE,
-              responseCode = "404",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          )
+        @ApiResponse(description = "Success", responseCode = "200"),
+        @ApiResponse(
+            description = ServerException.TYPE,
+            responseCode = "500",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ClientException.TYPE,
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ResourceNotFoundException.TYPE,
+            responseCode = "404",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
       })
   @ResponseStatus(HttpStatus.OK)
-  @DeleteMapping(value = BY_KEY, produces = {MediaType.APPLICATION_JSON_VALUE})
-  public ChangeStatus delete(@Parameter(description = "Key of process instance",required = true) @Valid @PathVariable final Long key) {
+  @DeleteMapping(
+      value = BY_KEY,
+      produces = {MediaType.APPLICATION_JSON_VALUE})
+  public ChangeStatus delete(
+      @Parameter(description = "Key of process instance", required = true) @Valid @PathVariable
+          final Long key) {
     return processInstanceDao.delete(key);
   }
 
   @Operation(
       summary = "Get sequence flows of process instance by key",
-      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
+      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
       responses = {
-          @ApiResponse(
-              description = "Success",
-              responseCode = "200"
-          ),
-          @ApiResponse(
-              description = ServerException.TYPE,
-              responseCode = "500",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ClientException.TYPE,
-              responseCode = "400",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ResourceNotFoundException.TYPE,
-              responseCode = "404",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          )
+        @ApiResponse(description = "Success", responseCode = "200"),
+        @ApiResponse(
+            description = ServerException.TYPE,
+            responseCode = "500",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ClientException.TYPE,
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ResourceNotFoundException.TYPE,
+            responseCode = "404",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
       })
   @GetMapping(value = BY_KEY + "/sequence-flows")
-  public List<String> sequenceFlowsByKey(@Parameter(description = "Key of process instance",required = true) @PathVariable final Long key) {
+  public List<String> sequenceFlowsByKey(
+      @Parameter(description = "Key of process instance", required = true) @PathVariable
+          final Long key) {
     processInstanceDao.byKey(key); // this is just to throw error if not found
-    Query<SequenceFlow> query = new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(key)).setSize(QueryValidator.MAX_QUERY_SIZE);
+    Query<SequenceFlow> query =
+        new Query<SequenceFlow>()
+            .setFilter(new SequenceFlow().setProcessInstanceKey(key))
+            .setSize(QueryValidator.MAX_QUERY_SIZE);
     logger.debug("search for query {}", query);
     QueryValidator<SequenceFlow> queryValidator = new QueryValidator<>();
     queryValidator.validate(query, SequenceFlow.class);
     Results<SequenceFlow> results = sequenceFlowDao.search(query);
-    return results.getItems().stream().map(SequenceFlow::getActivityId).collect(Collectors.toList());
+    return results.getItems().stream()
+        .map(SequenceFlow::getActivityId)
+        .collect(Collectors.toList());
   }
 
   @Operation(
       summary = "Get flow node statistic by process instance id",
-      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
+      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
       responses = {
-          @ApiResponse(
-              description = "Success. Returns statistics for the given process instance, grouped by flow nodes",
-              responseCode = "200",
-              content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, array = @ArraySchema(schema = @Schema(implementation = FlowNodeStatistics.class)))
-          ),
-          @ApiResponse(
-              description = ServerException.TYPE,
-              responseCode = "500",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ClientException.TYPE,
-              responseCode = "400",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ResourceNotFoundException.TYPE,
-              responseCode = "404",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          )
+        @ApiResponse(
+            description =
+                "Success. Returns statistics for the given process instance, grouped by flow nodes",
+            responseCode = "200",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    array =
+                        @ArraySchema(schema = @Schema(implementation = FlowNodeStatistics.class)))),
+        @ApiResponse(
+            description = ServerException.TYPE,
+            responseCode = "500",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ClientException.TYPE,
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ResourceNotFoundException.TYPE,
+            responseCode = "404",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
       })
   @GetMapping(value = BY_KEY + "/statistics")
-  public Collection<FlowNodeStatistics> getStatistics(@Parameter(description = "Key of process instance",required = true) @PathVariable final Long key) {
+  public Collection<FlowNodeStatistics> getStatistics(
+      @Parameter(description = "Key of process instance", required = true) @PathVariable
+          final Long key) {
     processInstanceDao.byKey(key); // this is just to throw error if not found
     return flowNodeStatisticsDao.getFlowNodeStatisticsForProcessInstance(key);
   }

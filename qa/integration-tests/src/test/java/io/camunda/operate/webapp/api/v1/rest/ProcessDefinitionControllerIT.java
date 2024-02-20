@@ -42,20 +42,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-    classes = {
-        TestApplicationWithNoBeans.class,
-        ProcessDefinitionController.class
-    })
+@SpringBootTest(classes = {TestApplicationWithNoBeans.class, ProcessDefinitionController.class})
 public class ProcessDefinitionControllerIT {
 
-  @Autowired
-  WebApplicationContext context;
+  @Autowired WebApplicationContext context;
 
   private MockMvc mockMvc;
 
-  @MockBean
-  private ProcessDefinitionDao processDefinitionDao;
+  @MockBean private ProcessDefinitionDao processDefinitionDao;
 
   @Before
   public void setupMockMvc() {
@@ -70,56 +64,66 @@ public class ProcessDefinitionControllerIT {
 
   @Test
   public void shouldAcceptQueryWithSearchAfterAndSize() throws Exception {
-    assertPostToWithSucceed(URI + SEARCH , "{\"searchAfter\": [\"name\"], \"size\": 7}");
-    verify(processDefinitionDao).search(new Query<ProcessDefinition>().setSearchAfter(new Object[]{"name"}).setSize(7));
+    assertPostToWithSucceed(URI + SEARCH, "{\"searchAfter\": [\"name\"], \"size\": 7}");
+    verify(processDefinitionDao)
+        .search(new Query<ProcessDefinition>().setSearchAfter(new Object[] {"name"}).setSize(7));
   }
 
   @Test
   public void shouldAcceptQueryWithSizeAndSortSpec() throws Exception {
-    assertPostToWithSucceed(URI + SEARCH, "{\"size\": 7, \"sort\":  [{\"field\":\"name\", \"order\":\"DESC\"}] }");
-    verify(processDefinitionDao).search(new Query<ProcessDefinition>()
-        .setSize(7)
-        .setSort(Sort.listOf(ProcessDefinition.NAME, Order.DESC)));
+    assertPostToWithSucceed(
+        URI + SEARCH, "{\"size\": 7, \"sort\":  [{\"field\":\"name\", \"order\":\"DESC\"}] }");
+    verify(processDefinitionDao)
+        .search(
+            new Query<ProcessDefinition>()
+                .setSize(7)
+                .setSort(Sort.listOf(ProcessDefinition.NAME, Order.DESC)));
   }
 
   @Test
   public void shouldAcceptQueryWithFilter() throws Exception {
     assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { \"name\": \"hase\" } }");
-    verify(processDefinitionDao).search(new Query<ProcessDefinition>()
-        .setFilter(new ProcessDefinition().setName("hase")));
+    verify(processDefinitionDao)
+        .search(new Query<ProcessDefinition>().setFilter(new ProcessDefinition().setName("hase")));
   }
 
   @Test
   public void shouldAcceptQueryWithFullFilterAndSortingAndPaging() throws Exception {
-    assertPostToWithSucceed(URI + SEARCH,
+    assertPostToWithSucceed(
+        URI + SEARCH,
         "{\"filter\": "
-                + "{ \"name\": \"hase\","
-                  + "\"version\": 5 ,"
-                  + "\"bpmnProcessId\": \"bpmnProcessId-23\", "
-                  + "\"key\": 4217, "
-                  + "\"tenantId\": \"tenantA\""
-                + "},"
-                + "\"size\": 17, "
-                + "\"sort\": [{\"field\":\"version\", \"order\":\"DESC\"}]"
+            + "{ \"name\": \"hase\","
+            + "\"version\": 5 ,"
+            + "\"bpmnProcessId\": \"bpmnProcessId-23\", "
+            + "\"key\": 4217, "
+            + "\"tenantId\": \"tenantA\""
+            + "},"
+            + "\"size\": 17, "
+            + "\"sort\": [{\"field\":\"version\", \"order\":\"DESC\"}]"
             + "}");
-    verify(processDefinitionDao).search(new Query<ProcessDefinition>()
-        .setFilter(
-            new ProcessDefinition()
-                .setName("hase")
-                .setVersion(5)
-                .setBpmnProcessId("bpmnProcessId-23")
-                .setKey(4217L)
-                .setTenantId("tenantA"))
-        .setSort(Sort.listOf(VERSION, Order.DESC))
-        .setSize(17));
+    verify(processDefinitionDao)
+        .search(
+            new Query<ProcessDefinition>()
+                .setFilter(
+                    new ProcessDefinition()
+                        .setName("hase")
+                        .setVersion(5)
+                        .setBpmnProcessId("bpmnProcessId-23")
+                        .setKey(4217L)
+                        .setTenantId("tenantA"))
+                .setSort(Sort.listOf(VERSION, Order.DESC))
+                .setSize(17));
   }
 
   @Test
   public void shouldReturnErrorMessageForListFailure() throws Exception {
-    final String expectedJSONContent = "{\"status\":500,\"message\":\"Error in retrieving data.\",\"instance\":\"47a7e1e4-5f09-4086-baa0-c9bcd40da029\",\"type\":\"API application error\"}";
+    final String expectedJSONContent =
+        "{\"status\":500,\"message\":\"Error in retrieving data.\",\"instance\":\"47a7e1e4-5f09-4086-baa0-c9bcd40da029\",\"type\":\"API application error\"}";
     // given
-    when(processDefinitionDao.search(any(Query.class))).thenThrow(
-        new ServerException("Error in retrieving data.").setInstance("47a7e1e4-5f09-4086-baa0-c9bcd40da029"));
+    when(processDefinitionDao.search(any(Query.class)))
+        .thenThrow(
+            new ServerException("Error in retrieving data.")
+                .setInstance("47a7e1e4-5f09-4086-baa0-c9bcd40da029"));
     // then
     assertPostToWithFailed(URI + SEARCH, "{}")
         .andExpect(status().isInternalServerError())
@@ -134,17 +138,18 @@ public class ProcessDefinitionControllerIT {
     List<ProcessDefinition> processDefinitions = createProcessDefinitionsOf(1);
     when(processDefinitionDao.byKey(0L)).thenReturn(processDefinitions.get(0));
     // then
-    assertGetToSucceed(URI + "/0")
-        .andExpect(content().string(expectedJSONContent));
+    assertGetToSucceed(URI + "/0").andExpect(content().string(expectedJSONContent));
   }
 
   @Test
   public void shouldReturnErrorMessageForByKeyFailure() throws Exception {
-    final String expectedJSONContent = "{\"status\":404,\"message\":\"Error in retrieving data for key.\",\"instance\":\"ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c\",\"type\":\"Requested resource not found\"}";
+    final String expectedJSONContent =
+        "{\"status\":404,\"message\":\"Error in retrieving data for key.\",\"instance\":\"ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c\",\"type\":\"Requested resource not found\"}";
     // given
-    when(processDefinitionDao.byKey(any(Long.class))).thenThrow(
-        new ResourceNotFoundException("Error in retrieving data for key.")
-            .setInstance("ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c"));
+    when(processDefinitionDao.byKey(any(Long.class)))
+        .thenThrow(
+            new ResourceNotFoundException("Error in retrieving data for key.")
+                .setInstance("ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c"));
     // then
     assertGetWithFailed(URI + "/235")
         .andExpect(status().isNotFound())
@@ -164,10 +169,12 @@ public class ProcessDefinitionControllerIT {
 
   @Test
   public void shouldReturnErrorMessageForXmlByKeyFailure() throws Exception {
-    final String expectedJSONContent = "{\"status\":500,\"message\":\"Error in retrieving data for key.\",\"instance\":\"instanceValue\",\"type\":\"API application error\"}";
+    final String expectedJSONContent =
+        "{\"status\":500,\"message\":\"Error in retrieving data for key.\",\"instance\":\"instanceValue\",\"type\":\"API application error\"}";
     // given
-    when(processDefinitionDao.xmlByKey(any(Long.class))).thenThrow(
-        new ServerException("Error in retrieving data for key.").setInstance("instanceValue"));
+    when(processDefinitionDao.xmlByKey(any(Long.class)))
+        .thenThrow(
+            new ServerException("Error in retrieving data for key.").setInstance("instanceValue"));
     // then
     assertGetWithFailed(URI + "/235" + AS_XML)
         .andExpect(status().isInternalServerError())
@@ -175,27 +182,24 @@ public class ProcessDefinitionControllerIT {
   }
 
   protected ResultActions assertGetToSucceed(final String endpoint) throws Exception {
-    return mockMvc.perform(get(endpoint))
-        .andExpect(status().isOk());
+    return mockMvc.perform(get(endpoint)).andExpect(status().isOk());
   }
 
   protected ResultActions assertGetWithFailed(final String endpoint) throws Exception {
-    return mockMvc.perform(get(endpoint))
+    return mockMvc
+        .perform(get(endpoint))
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE));
   }
 
   protected ResultActions assertPostToWithFailed(final String endpoint, final String content)
       throws Exception {
-    return mockMvc.perform(post(endpoint)
-            .content(content)
-            .contentType(MediaType.APPLICATION_JSON));
+    return mockMvc.perform(post(endpoint).content(content).contentType(MediaType.APPLICATION_JSON));
   }
 
   protected ResultActions assertPostToWithSucceed(final String endpoint, final String content)
       throws Exception {
-    return mockMvc.perform(post(endpoint)
-            .content(content)
-            .contentType(MediaType.APPLICATION_JSON))
+    return mockMvc
+        .perform(post(endpoint).content(content).contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
   }
 
@@ -211,5 +215,4 @@ public class ProcessDefinitionControllerIT {
     }
     return processDefinitions;
   }
-
 }

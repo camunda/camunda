@@ -6,7 +6,13 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import java.util.ArrayList;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
@@ -21,6 +27,7 @@ import io.camunda.operate.util.NoBeansIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.v8_5.processors.ImportBulkProcessor;
+import java.util.ArrayList;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,44 +37,39 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.stereotype.Component;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
 
 @SpringBootTest(
-    classes = { TestApplicationWithNoBeans.class, ImportJob.class, ImportListenerIT.TestImportListener.class,
-        ImportStore.class, ElasticsearchImportStore.class, ImportJob.class, ImportPositionIndex.class, Metrics.class,
-        ZeebeStore.class, ElasticsearchZeebeStore.class })
+    classes = {
+      TestApplicationWithNoBeans.class,
+      ImportJob.class,
+      ImportListenerIT.TestImportListener.class,
+      ImportStore.class,
+      ElasticsearchImportStore.class,
+      ImportJob.class,
+      ImportPositionIndex.class,
+      Metrics.class,
+      ZeebeStore.class,
+      ElasticsearchZeebeStore.class
+    })
 public class ImportListenerIT extends NoBeansIT {
 
-  @MockBean
-  private ImportBatchProcessorFactory importBatchProcessorFactory;
+  @MockBean private ImportBatchProcessorFactory importBatchProcessorFactory;
 
-  @MockBean
-  private ImportBulkProcessor elasticsearchBulkProcessor;
+  @MockBean private ImportBulkProcessor elasticsearchBulkProcessor;
 
-  @MockBean
-  private ImportPositionHolder importPositionHolder;
+  @MockBean private ImportPositionHolder importPositionHolder;
 
   @MockBean
   @Qualifier("zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  @MockBean
-  private RecordsReaderHolder recordsReaderHolder;
+  @MockBean private RecordsReaderHolder recordsReaderHolder;
 
-  @MockBean
-  private OperateProperties operateProperties;
+  @MockBean private OperateProperties operateProperties;
 
-  @Autowired
-  private BeanFactory beanFactory;
+  @Autowired private BeanFactory beanFactory;
 
-  @Autowired
-  private TestImportListener importListener;
+  @Autowired private TestImportListener importListener;
 
   @Before
   public void before() {
@@ -114,25 +116,29 @@ public class ImportListenerIT extends NoBeansIT {
 
   @Test
   public void testFinished() {
-    ImportBatch importBatch = new ImportBatch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), "some_name");
-    ImportPositionEntity previousPosition = new ImportPositionEntity()
-        .setAliasName("alias")
-        .setPartitionId(1).setPosition(0)
-        .setSequence(0L);
+    ImportBatch importBatch =
+        new ImportBatch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), "some_name");
+    ImportPositionEntity previousPosition =
+        new ImportPositionEntity()
+            .setAliasName("alias")
+            .setPartitionId(1)
+            .setPosition(0)
+            .setSequence(0L);
     ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
 
-    //mock import methods
+    // mock import methods
     try {
-      when(importBatchProcessorFactory.getImportBatchProcessor(anyString())).thenReturn(elasticsearchBulkProcessor);
+      when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
+          .thenReturn(elasticsearchBulkProcessor);
       doNothing().when(elasticsearchBulkProcessor).performImport(importBatch);
     } catch (PersistenceException e) {
-      //ignore
+      // ignore
     }
 
-    //when the job is executed
+    // when the job is executed
     importJob.call();
 
-    //then
+    // then
     assertTrue(importListener.isFinishedCalled());
     assertFalse(importListener.isFailedCalled());
     assertEquals(importListener.getImportBatch(), importBatch);
@@ -140,26 +146,30 @@ public class ImportListenerIT extends NoBeansIT {
 
   @Test
   public void testFailed() {
-    ImportBatch importBatch = new ImportBatch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), null);
-    ImportPositionEntity previousPosition = new ImportPositionEntity()
-        .setAliasName("alias")
-        .setPartitionId(1).setPosition(0)
-        .setSequence(0L);
+    ImportBatch importBatch =
+        new ImportBatch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), null);
+    ImportPositionEntity previousPosition =
+        new ImportPositionEntity()
+            .setAliasName("alias")
+            .setPartitionId(1)
+            .setPosition(0)
+            .setSequence(0L);
     ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
-    //mock import methods
+    // mock import methods
     try {
-      doThrow(new PersistenceException()).when(elasticsearchBulkProcessor).performImport(importBatch);
+      doThrow(new PersistenceException())
+          .when(elasticsearchBulkProcessor)
+          .performImport(importBatch);
     } catch (PersistenceException e) {
-      //ignore
+      // ignore
     }
 
-    //when the job is executed
+    // when the job is executed
     importJob.call();
 
-    //then
+    // then
     assertTrue(importListener.isFailedCalled());
     assertFalse(importListener.isFinishedCalled());
     assertEquals(importListener.getImportBatch(), importBatch);
   }
-
 }

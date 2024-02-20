@@ -11,51 +11,45 @@ import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OpensearchOperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
+import java.util.function.Function;
 import org.junit.After;
 import org.junit.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
-import java.util.function.Function;
-
 public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbstractIT {
-  @Autowired
-  protected RichOpenSearchClient richOpenSearchClient;
+  @Autowired protected RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired
-  protected SchemaManager schemaManager;
+  @Autowired protected SchemaManager schemaManager;
 
-  @Autowired
-  protected OperateProperties operateProperties;
+  @Autowired protected OperateProperties operateProperties;
 
-  @Autowired
-  protected OpensearchTestDataHelper opensearchTestDataHelper;
+  @Autowired protected OpensearchTestDataHelper opensearchTestDataHelper;
 
   protected String indexPrefix;
 
   @Before
-  public void setUp(){
-    indexPrefix = "test-opensearch-operation-"+ TestUtil.createRandomString(5);
+  public void setUp() {
+    indexPrefix = "test-opensearch-operation-" + TestUtil.createRandomString(5);
     operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
     schemaManager.createSchema();
   }
 
   @After
   public void cleanUp() {
-    schemaManager.deleteIndicesFor(indexPrefix +"*");
+    schemaManager.deleteIndicesFor(indexPrefix + "*");
   }
 
-  public  <R> R withThreadPoolTaskScheduler(Function<ThreadPoolTaskScheduler, R> f){
+  public <R> R withThreadPoolTaskScheduler(Function<ThreadPoolTaskScheduler, R> f) {
     ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
     scheduler.setPoolSize(5);
     scheduler.setThreadNamePrefix(this.getClass().getSimpleName());
     scheduler.initialize();
 
-    try{
+    try {
       return f.apply(scheduler);
     } finally {
       scheduler.shutdown();
     }
   }
-
 }

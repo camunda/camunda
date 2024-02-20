@@ -6,28 +6,25 @@
  */
 package io.camunda.operate.webapp.security.tenant;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateProperties;
-
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-
 @Component
 public class TenantService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TenantService.class);
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   public AuthenticatedTenants getAuthenticatedTenants() {
     if (!securityContextPresent()) {
@@ -61,14 +58,18 @@ public class TenantService {
       currentAuthentication = null;
 
       // log error message for visibility
-      final var message = String.format("Multi Tenancy is not supported with current authentication type %s", authentication.getClass());
+      final var message =
+          String.format(
+              "Multi Tenancy is not supported with current authentication type %s",
+              authentication.getClass());
       LOGGER.error(message, new OperateRuntimeException());
     }
 
     return currentAuthentication;
   }
 
-  private List<String> getTenantsFromAuthentication(final TenantAwareAuthentication authentication) {
+  private List<String> getTenantsFromAuthentication(
+      final TenantAwareAuthentication authentication) {
     final var authenticatedTenants = new ArrayList<String>();
 
     if (authentication != null) {
@@ -127,5 +128,4 @@ public class TenantService {
     TENANT_ACCESS_ASSIGNED,
     TENANT_ACCESS_NONE
   }
-
 }

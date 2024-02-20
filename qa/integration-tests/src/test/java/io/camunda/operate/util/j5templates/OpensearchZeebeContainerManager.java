@@ -19,12 +19,15 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchZeebeContainerManager extends ZeebeContainerManager {
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchZeebeContainerManager.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(OpensearchZeebeContainerManager.class);
 
   private final ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
 
-  public OpensearchZeebeContainerManager(OperateProperties operateProperties, TestContainerUtil testContainerUtil,
-                                         ZeebeRichOpenSearchClient zeebeRichOpenSearchClient) {
+  public OpensearchZeebeContainerManager(
+      OperateProperties operateProperties,
+      TestContainerUtil testContainerUtil,
+      ZeebeRichOpenSearchClient zeebeRichOpenSearchClient) {
     super(operateProperties, testContainerUtil);
     this.zeebeRichOpenSearchClient = zeebeRichOpenSearchClient;
   }
@@ -35,6 +38,7 @@ public class OpensearchZeebeContainerManager extends ZeebeContainerManager {
   }
 
   protected void removeIndices() {
-    TestUtil.removeAllIndices(zeebeRichOpenSearchClient.index(), zeebeRichOpenSearchClient.template(), prefix);
+    TestUtil.removeAllIndices(
+        zeebeRichOpenSearchClient.index(), zeebeRichOpenSearchClient.template(), prefix);
   }
 }

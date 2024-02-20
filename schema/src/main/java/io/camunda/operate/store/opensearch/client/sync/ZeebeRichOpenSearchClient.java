@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-
 @Conditional(OpensearchCondition.class)
 @Component
 public class ZeebeRichOpenSearchClient {
@@ -23,11 +22,13 @@ public class ZeebeRichOpenSearchClient {
 
   BeanFactory beanFactory;
   OpenSearchClient openSearchClient;
-  final private OpenSearchDocumentOperations openSearchDocumentOperations;
-  final private OpenSearchIndexOperations openSearchIndexOperations;
-  final private OpenSearchTemplateOperations openSearchTemplateOperations;
+  private final OpenSearchDocumentOperations openSearchDocumentOperations;
+  private final OpenSearchIndexOperations openSearchIndexOperations;
+  private final OpenSearchTemplateOperations openSearchTemplateOperations;
 
-  public ZeebeRichOpenSearchClient(BeanFactory beanFactory, @Qualifier("zeebeOpensearchClient") OpenSearchClient openSearchClient) {
+  public ZeebeRichOpenSearchClient(
+      BeanFactory beanFactory,
+      @Qualifier("zeebeOpensearchClient") OpenSearchClient openSearchClient) {
     this.beanFactory = beanFactory;
     this.openSearchClient = openSearchClient;
     openSearchDocumentOperations = new OpenSearchDocumentOperations(LOGGER, openSearchClient);

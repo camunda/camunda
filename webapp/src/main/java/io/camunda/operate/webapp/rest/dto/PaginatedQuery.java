@@ -9,13 +9,12 @@ package io.camunda.operate.webapp.rest.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
+import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,21 +25,18 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
   private static final int DEFAULT_PAGE_SIZE = 50;
 
   private SortingDto sorting;
-  /**
-   * Search for process instances that goes exactly after the given sort values.
-   */
+
+  /** Search for process instances that goes exactly after the given sort values. */
   private SortValuesWrapper[] searchAfter;
 
   private SortValuesWrapper[] searchAfterOrEqual;
-  /**
-   * Search for process instance that goes exactly before the given sort values.
-   */
+
+  /** Search for process instance that goes exactly before the given sort values. */
   private SortValuesWrapper[] searchBefore;
 
   private SortValuesWrapper[] searchBeforeOrEqual;
-  /**
-   * Page size.
-   */
+
+  /** Page size. */
   protected Integer pageSize = DEFAULT_PAGE_SIZE;
 
   public SortingDto getSorting() {
@@ -49,7 +45,8 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
 
   public T setSorting(SortingDto sorting) {
     if (sorting != null && !getValidSortByValues().contains(sorting.getSortBy())) {
-      throw new InvalidRequestException("SortBy parameter has invalid value: " + sorting.getSortBy());
+      throw new InvalidRequestException(
+          "SortBy parameter has invalid value: " + sorting.getSortBy());
     }
     this.sorting = sorting;
     return (T) this;
@@ -60,7 +57,9 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
     return new HashSet<>();
   }
 
-  @Schema(description= "Array of values (can be one): copy/paste of sortValues field from one of the objects.",
+  @Schema(
+      description =
+          "Array of values (can be one): copy/paste of sortValues field from one of the objects.",
       example = "[1605160098477, 4629710542312628000]")
   public SortValuesWrapper[] getSearchAfter() {
     return searchAfter;
@@ -88,7 +87,9 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
     return SortValuesWrapper.convertSortValues(searchAfterOrEqual, objectMapper);
   }
 
-  @Schema(description= "Array of values (can be one): copy/paste of sortValues field from one of the objects.",
+  @Schema(
+      description =
+          "Array of values (can be one): copy/paste of sortValues field from one of the objects.",
       example = "[1605160098477, 4629710542312628000]")
   public SortValuesWrapper[] getSearchBefore() {
     return searchBefore;
@@ -134,12 +135,12 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
       return false;
     }
     final PaginatedQuery that = (PaginatedQuery) o;
-    return Objects.equals(sorting, that.sorting) &&
-        Arrays.equals(searchAfter, that.searchAfter) &&
-        Arrays.equals(searchAfterOrEqual, that.searchAfterOrEqual) &&
-        Arrays.equals(searchBefore, that.searchBefore) &&
-        Arrays.equals(searchBeforeOrEqual, that.searchBeforeOrEqual) &&
-        Objects.equals(pageSize, that.pageSize);
+    return Objects.equals(sorting, that.sorting)
+        && Arrays.equals(searchAfter, that.searchAfter)
+        && Arrays.equals(searchAfterOrEqual, that.searchAfterOrEqual)
+        && Arrays.equals(searchBefore, that.searchBefore)
+        && Arrays.equals(searchBeforeOrEqual, that.searchBeforeOrEqual)
+        && Objects.equals(pageSize, that.pageSize);
   }
 
   @Override
@@ -151,5 +152,4 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
     result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
     return result;
   }
-
 }

@@ -6,6 +6,13 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_RUNTIME;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.OperationEntity;
@@ -20,6 +27,8 @@ import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import java.util.List;
+import java.util.Map;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -30,38 +39,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_RUNTIME;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchListViewReader implements ListViewReader {
   private static final Logger logger = LoggerFactory.getLogger(OpensearchListViewReader.class);
 
-  @Autowired
-  private RichOpenSearchClient richOpenSearchClient;
+  @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired
-  private OpenSearchQueryHelper openSearchQueryHelper;
+  @Autowired private OpenSearchQueryHelper openSearchQueryHelper;
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private ListViewTemplate listViewTemplate;
+  @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired
-  private OperationReader operationReader;
+  @Autowired private OperationReader operationReader;
 
   /**
    * Queries process instances by different criteria (with pagination).
+   *
    * @param processInstanceRequest
    * @return
    */
@@ -69,13 +64,19 @@ public class OpensearchListViewReader implements ListViewReader {
   public ListViewResponseDto queryProcessInstances(ListViewRequestDto processInstanceRequest) {
     ListViewResponseDto result = new ListViewResponseDto();
 
-    List<ProcessInstanceForListViewEntity> processInstanceEntities = queryListView(processInstanceRequest, result);
-    List<Long> processInstanceKeys = CollectionUtil
-        .map(processInstanceEntities, processInstanceEntity -> Long.valueOf(processInstanceEntity.getId()));
+    List<ProcessInstanceForListViewEntity> processInstanceEntities =
+        queryListView(processInstanceRequest, result);
+    List<Long> processInstanceKeys =
+        CollectionUtil.map(
+            processInstanceEntities,
+            processInstanceEntity -> Long.valueOf(processInstanceEntity.getId()));
 
-    final Map<Long, List<OperationEntity>> operationsPerProcessInstance = operationReader.getOperationsPerProcessInstanceKey(processInstanceKeys);
+    final Map<Long, List<OperationEntity>> operationsPerProcessInstance =
+        operationReader.getOperationsPerProcessInstanceKey(processInstanceKeys);
 
-    final List<ListViewProcessInstanceDto> processInstanceDtoList = ListViewProcessInstanceDto.createFrom(processInstanceEntities, operationsPerProcessInstance, objectMapper);
+    final List<ListViewProcessInstanceDto> processInstanceDtoList =
+        ListViewProcessInstanceDto.createFrom(
+            processInstanceEntities, operationsPerProcessInstance, objectMapper);
     result.setProcessInstances(processInstanceDtoList);
     return result;
   }
@@ -87,8 +88,9 @@ public class OpensearchListViewReader implements ListViewReader {
         sortBy = ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
       } else if (sortBy.equals(ListViewRequestDto.SORT_BY_TENANT_ID)) {
         sortBy = ListViewTemplate.TENANT_ID;
-      } if (sortBy.equals(ListViewTemplate.ID)) {
-        //we sort by id as numbers, not as strings
+      }
+      if (sortBy.equals(ListViewTemplate.ID)) {
+        // we sort by id as numbers, not as strings
         sortBy = ListViewTemplate.KEY;
       }
       return sortBy;
@@ -96,11 +98,13 @@ public class OpensearchListViewReader implements ListViewReader {
     return null;
   }
 
-  private void applySorting(SearchRequest.Builder searchRequest, ListViewRequestDto request){
+  private void applySorting(SearchRequest.Builder searchRequest, ListViewRequestDto request) {
     final String sortBy = getSortBy(request);
-    final boolean directSorting = request.getSearchAfter() != null || request.getSearchBefore() == null;
+    final boolean directSorting =
+        request.getSearchAfter() != null || request.getSearchBefore() == null;
     if (request.getSorting() != null) {
-      final SortOrder directOrder = "asc".equals(request.getSorting().getSortOrder()) ? SortOrder.Asc : SortOrder.Desc;
+      final SortOrder directOrder =
+          "asc".equals(request.getSorting().getSortOrder()) ? SortOrder.Asc : SortOrder.Desc;
       if (directSorting) {
         searchRequest.sort(sortOptions(sortBy, directOrder, "_last"));
       } else {
@@ -117,20 +121,22 @@ public class OpensearchListViewReader implements ListViewReader {
       querySearchAfter = request.getSearchBefore(objectMapper);
     }
     searchRequest.size(request.getPageSize());
-    if(querySearchAfter != null) {
+    if (querySearchAfter != null) {
       searchRequest.searchAfter(CollectionUtil.toSafeListOfStrings(querySearchAfter));
     }
   }
 
   @Override
-  public List<ProcessInstanceForListViewEntity> queryListView(ListViewRequestDto processInstanceRequest, ListViewResponseDto result) {
-    final RequestDSL.QueryType queryType = processInstanceRequest.getQuery().isFinished() ? ALL : ONLY_RUNTIME;
-    final Query query = constantScore(withTenantCheck(
-      and(
-        term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-        openSearchQueryHelper.createQueryFragment(processInstanceRequest.getQuery())
-      )
-    ));
+  public List<ProcessInstanceForListViewEntity> queryListView(
+      ListViewRequestDto processInstanceRequest, ListViewResponseDto result) {
+    final RequestDSL.QueryType queryType =
+        processInstanceRequest.getQuery().isFinished() ? ALL : ONLY_RUNTIME;
+    final Query query =
+        constantScore(
+            withTenantCheck(
+                and(
+                    term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+                    openSearchQueryHelper.createQueryFragment(processInstanceRequest.getQuery()))));
 
     logger.debug("Process instance search request: \n{}", query.toString());
 
@@ -140,20 +146,23 @@ public class OpensearchListViewReader implements ListViewReader {
 
     searchRequestBuilder.size(processInstanceRequest.getPageSize());
 
-    final SearchResponse<ProcessInstanceForListViewEntity> response = richOpenSearchClient.doc().fixedSearch(searchRequestBuilder.build(), ProcessInstanceForListViewEntity.class);
+    final SearchResponse<ProcessInstanceForListViewEntity> response =
+        richOpenSearchClient
+            .doc()
+            .fixedSearch(searchRequestBuilder.build(), ProcessInstanceForListViewEntity.class);
 
     result.setTotalCount(response.hits().total().value());
 
-    List<ProcessInstanceForListViewEntity> processInstanceEntities = response
-      .hits()
-      .hits()
-      .stream()
-      .map(hit -> {
-        ProcessInstanceForListViewEntity entity = hit.source();;
-        entity.setSortValues(hit.sort().toArray());
-        return entity;
-      })
-      .toList();
+    List<ProcessInstanceForListViewEntity> processInstanceEntities =
+        response.hits().hits().stream()
+            .map(
+                hit -> {
+                  ProcessInstanceForListViewEntity entity = hit.source();
+                  ;
+                  entity.setSortValues(hit.sort().toArray());
+                  return entity;
+                })
+            .toList();
 
     if (processInstanceRequest.getSearchBefore() != null) {
       return CollectionUtil.reversedView(processInstanceEntities);

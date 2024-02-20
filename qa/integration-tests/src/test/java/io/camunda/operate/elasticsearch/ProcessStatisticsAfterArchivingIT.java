@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.elasticsearch;
 
+import static org.junit.Assume.assumeFalse;
+
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.zeebe.PartitionHolder;
@@ -15,18 +17,14 @@ import org.junit.rules.TestName;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import static org.junit.Assume.assumeFalse;
 
 public class ProcessStatisticsAfterArchivingIT extends ProcessStatisticsIT {
 
-  @Autowired
-  private BeanFactory beanFactory;
+  @Autowired private BeanFactory beanFactory;
 
-  @MockBean
-  private PartitionHolder partitionHolder;
+  @MockBean private PartitionHolder partitionHolder;
 
-  @Rule
-  public TestName name = new TestName();
+  @Rule public TestName name = new TestName();
 
   @Before
   public void before() {
@@ -40,12 +38,15 @@ public class ProcessStatisticsAfterArchivingIT extends ProcessStatisticsIT {
     super.createData(processDefinitionKey);
     mockPartitionHolder(partitionHolder);
     Archiver archiver = beanFactory.getBean(Archiver.class);
-    ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
-    runArchiving(archiverJob, () -> {
-      searchTestRule.refreshSerchIndexes();
-      return null;
-    });
+    ProcessInstancesArchiverJob archiverJob =
+        beanFactory.getBean(
+            ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+    runArchiving(
+        archiverJob,
+        () -> {
+          searchTestRule.refreshSerchIndexes();
+          return null;
+        });
     searchTestRule.refreshSerchIndexes();
   }
-
 }

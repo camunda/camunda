@@ -6,8 +6,8 @@
  */
 package io.camunda.operate.qa.migration.v100;
 
-import io.camunda.operate.qa.util.migration.AbstractTestFixture;
 import io.camunda.operate.qa.util.TestContext;
+import io.camunda.operate.qa.util.migration.AbstractTestFixture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,14 +16,11 @@ public class TestFixture extends AbstractTestFixture {
 
   public static final String VERSION = "1.0.0";
 
-  @Autowired
-  private BasicProcessDataGenerator basicProcessDataGenerator;
+  @Autowired private BasicProcessDataGenerator basicProcessDataGenerator;
 
-  @Autowired
-  private BigProcessDataGenerator bigProcessDataGenerator;
+  @Autowired private BigProcessDataGenerator bigProcessDataGenerator;
 
-  @Autowired
-  private BigVariableDataGenerator bigVariableDataGenerator;
+  @Autowired private BigVariableDataGenerator bigVariableDataGenerator;
 
   @Override
   public void setup(TestContext testContext) {
@@ -47,5 +44,4 @@ public class TestFixture extends AbstractTestFixture {
       throw new RuntimeException(e);
     }
   }
-
 }

@@ -6,6 +6,10 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.componentTemplateRequestBuilder;
+import static org.junit.Assert.assertTrue;
+
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
@@ -15,6 +19,10 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.containers.ZeebeContainer;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import org.junit.runner.Description;
 import org.opensearch.client.opensearch.cluster.ComponentTemplateSummary;
 import org.opensearch.client.opensearch.indices.IndexSettings;
@@ -25,32 +33,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.componentTemplateRequestBuilder;
-import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
-import static org.junit.Assert.assertTrue;
-
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvider {
 
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
 
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchOperateZeebeRuleProvider.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(OpensearchOperateZeebeRuleProvider.class);
   public static final String YYYY_MM_DD = "uuuu-MM-dd";
 
-  @Autowired
-  public OperateProperties operateProperties;
+  @Autowired public OperateProperties operateProperties;
 
-  @Autowired
-  protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
+  @Autowired protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
 
-  @Autowired
-  private TestContainerUtil testContainerUtil;
+  @Autowired private TestContainerUtil testContainerUtil;
 
   protected ZeebeContainer zeebeContainer;
   private ZeebeClient client;
@@ -68,16 +65,23 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   public void updateRefreshInterval(String value) {
-    ComponentTemplateSummary template = zeebeRichOpenSearchClient.template().getComponentTemplate().get(prefix).template();
+    ComponentTemplateSummary template =
+        zeebeRichOpenSearchClient.template().getComponentTemplate().get(prefix).template();
     IndexSettings indexSettings = template.settings().get("index");
-    IndexSettings newSettings = IndexSettings.of(b -> b.index(indexSettings).refreshInterval(ri -> ri.time(value)));
-    IndexState newTemplate = IndexState.of(t -> t.settings(newSettings).mappings(template.mappings()));
+    IndexSettings newSettings =
+        IndexSettings.of(b -> b.index(indexSettings).refreshInterval(ri -> ri.time(value)));
+    IndexState newTemplate =
+        IndexState.of(t -> t.settings(newSettings).mappings(template.mappings()));
     var requestBuilder = componentTemplateRequestBuilder(prefix).template(newTemplate);
-    assertTrue(zeebeRichOpenSearchClient.template().createComponentTemplateWithRetries(requestBuilder.build()));
+    assertTrue(
+        zeebeRichOpenSearchClient
+            .template()
+            .createComponentTemplateWithRetries(requestBuilder.build()));
   }
 
   public void refreshIndices(Instant instant) {
-    String date = DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
+    String date =
+        DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
     zeebeRichOpenSearchClient.index().refresh(prefix + "*" + date);
   }
 
@@ -89,7 +93,8 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
       client = null;
     }
     if (!failed) {
-      TestUtil.removeAllIndices(zeebeRichOpenSearchClient.index(), zeebeRichOpenSearchClient.template(), prefix);
+      TestUtil.removeAllIndices(
+          zeebeRichOpenSearchClient.index(), zeebeRichOpenSearchClient.template(), prefix);
     }
   }
 
@@ -106,21 +111,23 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
    */
   public void startZeebe() {
 
-    final String zeebeVersion = ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
-    zeebeContainer = testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
+    final String zeebeVersion =
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
+    zeebeContainer =
+        testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
 
-    client = ZeebeClient.newClientBuilder()
-        .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
-        .usePlaintext()
-        .defaultRequestTimeout(REQUEST_TIMEOUT)
-    .build();
+    client =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+            .usePlaintext()
+            .defaultRequestTimeout(REQUEST_TIMEOUT)
+            .build();
 
     testZeebeIsReady();
-
   }
 
   private void testZeebeIsReady() {
-    //get topology to check that cluster is available and ready for work
+    // get topology to check that cluster is available and ready for work
     Topology topology = null;
     while (topology == null) {
       try {

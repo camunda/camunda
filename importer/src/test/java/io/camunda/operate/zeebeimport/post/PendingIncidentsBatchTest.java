@@ -6,10 +6,9 @@
  */
 package io.camunda.operate.zeebeimport.post;
 
-import io.camunda.operate.zeebeimport.post.PendingIncidentsBatch;
-import org.junit.Test;
-
 import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 
 public class PendingIncidentsBatchTest {
 
@@ -25,10 +24,9 @@ public class PendingIncidentsBatchTest {
     batch2.setLastProcessedPosition(lastProcessedPosition2);
     assertTrue(batch2.getLastProcessedPosition().equals(5000000000L));
 
-    Object lastProcessedPosition3 = Byte.valueOf((byte)5);
+    Object lastProcessedPosition3 = Byte.valueOf((byte) 5);
     PendingIncidentsBatch batch3 = new PendingIncidentsBatch();
     batch3.setLastProcessedPosition(lastProcessedPosition3);
     assertTrue(batch3.getLastProcessedPosition().equals(5L));
   }
-
 }

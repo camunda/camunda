@@ -6,8 +6,13 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateURIs.*;
+
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.operate.property.OperateProperties;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +27,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-
-import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
-import static io.camunda.operate.webapp.security.OperateURIs.*;
 
 @Controller
 @Profile(IDENTITY_AUTH_PROFILE)
@@ -55,7 +53,9 @@ public class IdentityController {
    * @param req request
    * @return a redirect command to Camunda Account authorize url
    */
-  @RequestMapping(value = LOGIN_RESOURCE, method = {RequestMethod.GET, RequestMethod.POST})
+  @RequestMapping(
+      value = LOGIN_RESOURCE,
+      method = {RequestMethod.GET, RequestMethod.POST})
   public String login(final HttpServletRequest req) {
     final String authorizeUrl = identityService.getRedirectUrl(req);
     logger.debug("Redirect Login to {}", authorizeUrl);
@@ -63,8 +63,9 @@ public class IdentityController {
   }
 
   /**
-   * Logged in callback -  Is called by Camunda Account with results of user authentication (GET)
-   * <br/> Redirects to root url if successful, otherwise it will be redirected to an error url.
+   * Logged in callback - Is called by Camunda Account with results of user authentication (GET)
+   * <br>
+   * Redirects to root url if successful, otherwise it will be redirected to an error url.
    *
    * @param req request
    * @param res response
@@ -72,13 +73,18 @@ public class IdentityController {
    * @throws IOException IO Exception
    */
   @GetMapping(value = IDENTITY_CALLBACK_URI)
-  public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res,
+  public void loggedInCallback(
+      final HttpServletRequest req,
+      final HttpServletResponse res,
       @RequestParam(required = false, name = "code") String code,
       @RequestParam(required = false, name = "state") String state,
-      @RequestParam(required = false, name = "error") String error) throws IOException {
+      @RequestParam(required = false, name = "error") String error)
+      throws IOException {
     final AuthCodeDto authCodeDto = new AuthCodeDto(code, state, error);
-    logger.debug("Called back by identity with {} {}, SessionId: {} and AuthCode {}",
-        req.getRequestURI(), req.getQueryString(),
+    logger.debug(
+        "Called back by identity with {} {}, SessionId: {} and AuthCode {}",
+        req.getRequestURI(),
+        req.getQueryString(),
         req.getSession().getId(),
         authCodeDto.getCode());
     try {
@@ -135,8 +141,8 @@ public class IdentityController {
     cleanup(req);
   }
 
-  protected void clearContextAndRedirectToNoPermission(HttpServletRequest req,
-      HttpServletResponse res, Throwable t) throws IOException {
+  protected void clearContextAndRedirectToNoPermission(
+      HttpServletRequest req, HttpServletResponse res, Throwable t) throws IOException {
     logger.error("Error in authentication callback: ", t);
     cleanup(req);
     res.sendRedirect(NO_PERMISSION);

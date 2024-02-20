@@ -10,33 +10,29 @@ import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.zeebe.ImportValueType;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class SearchTestRule extends TestWatcher {
 
   protected static final Logger logger = LoggerFactory.getLogger(SearchTestRule.class);
 
-  @Autowired
-  protected SearchTestRuleProvider searchTestRuleProvider;
+  @Autowired protected SearchTestRuleProvider searchTestRuleProvider;
 
-  @Autowired
-  protected OperateProperties operateProperties;
+  @Autowired protected OperateProperties operateProperties;
 
   Consumer<OperateProperties> operatePropertiesCustomizer = operateProperties -> {};
 
-  public SearchTestRule() {
-  }
+  public SearchTestRule() {}
 
   public SearchTestRule(String indexPrefix) {
     searchTestRuleProvider.setIndexPrefix(indexPrefix);
@@ -60,7 +56,7 @@ public class SearchTestRule extends TestWatcher {
 
   @Override
   protected void finished(Description description) {
-      searchTestRuleProvider.finished(description);
+    searchTestRuleProvider.finished(description);
   }
 
   public void refreshSerchIndexes() {
@@ -75,37 +71,52 @@ public class SearchTestRule extends TestWatcher {
     searchTestRuleProvider.refreshOperateSearchIndices();
   }
 
-  public void processAllRecordsAndWait(Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
+  public void processAllRecordsAndWait(
+      Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
     searchTestRuleProvider.processAllRecordsAndWait(maxWaitingRounds, predicate, arguments);
   }
 
   public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
     searchTestRuleProvider.processAllRecordsAndWait(predicate, arguments);
   }
-  public void processAllRecordsAndWait(Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+
+  public void processAllRecordsAndWait(
+      Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
     searchTestRuleProvider.processAllRecordsAndWait(predicate, supplier, arguments);
   }
 
-  public void processAllRecordsAndWait(boolean runPostImport, Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+  public void processAllRecordsAndWait(
+      boolean runPostImport,
+      Predicate<Object[]> predicate,
+      Supplier<Object> supplier,
+      Object... arguments) {
     searchTestRuleProvider.processAllRecordsAndWait(runPostImport, predicate, supplier, arguments);
   }
 
-  public void processRecordsWithTypeAndWait(ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
+  public void processRecordsWithTypeAndWait(
+      ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
     searchTestRuleProvider.processRecordsWithTypeAndWait(importValueType, predicate, arguments);
   }
-  public void processRecordsWithTypeAndWait(ImportValueType importValueType, boolean runPostImport, Predicate<Object[]> predicate, Object... arguments) {
-    searchTestRuleProvider.processRecordsWithTypeAndWait(importValueType, runPostImport, predicate, arguments);
+
+  public void processRecordsWithTypeAndWait(
+      ImportValueType importValueType,
+      boolean runPostImport,
+      Predicate<Object[]> predicate,
+      Object... arguments) {
+    searchTestRuleProvider.processRecordsWithTypeAndWait(
+        importValueType, runPostImport, predicate, arguments);
   }
 
   public void persistNew(OperateEntity... entitiesToPersist) {
     searchTestRuleProvider.persistNew(entitiesToPersist);
   }
 
-  public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities) throws PersistenceException {
+  public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities)
+      throws PersistenceException {
     searchTestRuleProvider.persistOperateEntitiesNew(operateEntities);
   }
 
-  public Map<Class<? extends OperateEntity>, String> getEntityToAliasMap(){
+  public Map<Class<? extends OperateEntity>, String> getEntityToAliasMap() {
     return searchTestRuleProvider.getEntityToAliasMap();
   }
 

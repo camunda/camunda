@@ -14,6 +14,8 @@ import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import java.util.List;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.HttpStatus;
@@ -21,22 +23,17 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.regex.Pattern;
-
 @Component
 @RestControllerEndpoint(id = "backups")
 public class BackupController extends ErrorController {
 
-  @Autowired
-  private BackupService backupService;
+  @Autowired private BackupService backupService;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   private final Pattern pattern = Pattern.compile("((?![A-Z \"*\\\\<|,>\\/?_]).){0,3996}$");
 
-  @PostMapping(produces = { MediaType.APPLICATION_JSON_VALUE})
+  @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
   public TakeBackupResponseDto takeBackup(@RequestBody TakeBackupRequestDto request) {
     validateRequest(request);
     validateRepositoryNameIsConfigured();
@@ -44,8 +41,9 @@ public class BackupController extends ErrorController {
   }
 
   private void validateRepositoryNameIsConfigured() {
-    if (operateProperties.getBackup() == null || operateProperties.getBackup()
-        .getRepositoryName() == null || operateProperties.getBackup().getRepositoryName().isEmpty()) {
+    if (operateProperties.getBackup() == null
+        || operateProperties.getBackup().getRepositoryName() == null
+        || operateProperties.getBackup().getRepositoryName().isEmpty()) {
       throw new NotFoundException("No backup repository configured.");
     }
   }
@@ -84,5 +82,4 @@ public class BackupController extends ErrorController {
           "BackupId must be a non-negative Integer. Received value: " + backupId);
     }
   }
-
 }

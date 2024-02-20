@@ -14,21 +14,22 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
-
 import java.util.List;
 
 public interface BatchOperationWriter {
-    List<OperationEntity> lockBatch() throws PersistenceException;
+  List<OperationEntity> lockBatch() throws PersistenceException;
 
-    void updateOperation(OperationEntity operation) throws PersistenceException;
+  void updateOperation(OperationEntity operation) throws PersistenceException;
 
-    BatchOperationEntity scheduleBatchOperation(CreateBatchOperationRequestDto batchOperationRequest);
+  BatchOperationEntity scheduleBatchOperation(CreateBatchOperationRequestDto batchOperationRequest);
 
-    BatchOperationEntity scheduleSingleOperation(long processInstanceKey, CreateOperationRequestDto operationRequest);
+  BatchOperationEntity scheduleSingleOperation(
+      long processInstanceKey, CreateOperationRequestDto operationRequest);
 
-    BatchOperationEntity scheduleModifyProcessInstance(ModifyProcessInstanceRequestDto modifyRequest);
+  BatchOperationEntity scheduleModifyProcessInstance(ModifyProcessInstanceRequestDto modifyRequest);
 
-    BatchOperationEntity scheduleDeleteDecisionDefinition(DecisionDefinitionEntity decisionDefinitionEntity);
+  BatchOperationEntity scheduleDeleteDecisionDefinition(
+      DecisionDefinitionEntity decisionDefinitionEntity);
 
-    BatchOperationEntity scheduleDeleteProcessDefinition(ProcessEntity processEntity);
+  BatchOperationEntity scheduleDeleteProcessDefinition(ProcessEntity processEntity);
 }

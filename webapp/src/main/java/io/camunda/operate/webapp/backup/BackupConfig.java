@@ -13,15 +13,14 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @Configuration
 public class BackupConfig {
 
-    @Bean("backupThreadPoolExecutor")
-    public ThreadPoolTaskExecutor getTaskExecutor() {
-        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(1);
-        executor.setMaxPoolSize(1);
-        executor.setThreadNamePrefix("backup_");
-        executor.setQueueCapacity(6);
-        executor.initialize();
-        return executor;
-    }
-
+  @Bean("backupThreadPoolExecutor")
+  public ThreadPoolTaskExecutor getTaskExecutor() {
+    final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(1);
+    executor.setMaxPoolSize(1);
+    executor.setThreadNamePrefix("backup_");
+    executor.setQueueCapacity(6);
+    executor.initialize();
+    return executor;
+  }
 }

@@ -6,21 +6,19 @@
  */
 package io.camunda.operate.webapp.security.oauth2;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-
 import io.camunda.identity.sdk.Identity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 public class IdentityTenantAwareJwtAuthenticationToken extends JwtAuthenticationToken
     implements TenantAwareAuthentication {
@@ -29,8 +27,8 @@ public class IdentityTenantAwareJwtAuthenticationToken extends JwtAuthentication
 
   private List<OperateTenant> tenants;
 
-  public IdentityTenantAwareJwtAuthenticationToken(final Jwt jwt, final Collection<? extends GrantedAuthority> authorities,
-      final String name) {
+  public IdentityTenantAwareJwtAuthenticationToken(
+      final Jwt jwt, final Collection<? extends GrantedAuthority> authorities, final String name) {
     super(jwt, authorities, name);
   }
 
@@ -70,5 +68,4 @@ public class IdentityTenantAwareJwtAuthenticationToken extends JwtAuthentication
   private boolean isMultiTenancyEnabled() {
     return getOperateProperties().getMultiTenancy().isEnabled();
   }
-
 }

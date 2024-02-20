@@ -14,7 +14,7 @@ import java.util.Objects;
 public class Results<T> {
 
   private List<T> items = new ArrayList<>();
-  private Object[] sortValues = new Object[]{};
+  private Object[] sortValues = new Object[] {};
 
   private long total;
 
@@ -54,7 +54,8 @@ public class Results<T> {
       return false;
     }
     final Results<?> results = (Results<?>) o;
-    return total == results.total && Objects.equals(items, results.items)
+    return total == results.total
+        && Objects.equals(items, results.items)
         && Arrays.equals(sortValues, results.sortValues);
   }
 
@@ -65,10 +66,13 @@ public class Results<T> {
 
   @Override
   public String toString() {
-    return "Results{" +
-        "items=" + items +
-        ", sortValues=" + Arrays.toString(sortValues) +
-        ", total=" + total +
-        '}';
+    return "Results{"
+        + "items="
+        + items
+        + ", sortValues="
+        + Arrays.toString(sortValues)
+        + ", total="
+        + total
+        + '}';
   }
 }

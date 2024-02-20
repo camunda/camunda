@@ -9,9 +9,9 @@ package io.camunda.operate.webapp.security.oauth2;
 import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.BaseWebConfigurer.sendJSONErrorMessage;
 
-import java.io.IOException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,25 +34,26 @@ public class OAuth2WebConfigurer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2WebConfigurer.class);
 
-  @Autowired
-  private Environment env;
+  @Autowired private Environment env;
 
-  @Autowired
-  private Jwt2AuthenticationTokenConverter jwtConverter;
+  @Autowired private Jwt2AuthenticationTokenConverter jwtConverter;
 
   public void configure(HttpSecurity http) throws Exception {
     if (isJWTEnabled()) {
       http.oauth2ResourceServer(
           serverCustomizer ->
-              serverCustomizer.authenticationEntryPoint(this::authenticationFailure)
-                  .jwt(
-                  jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)));
+              serverCustomizer
+                  .authenticationEntryPoint(this::authenticationFailure)
+                  .jwt(jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)));
       LOGGER.info("Enabled OAuth2 JWT access to Operate API");
     }
   }
 
-  private void authenticationFailure(final HttpServletRequest request,
-      final HttpServletResponse response, final AuthenticationException e) throws IOException {
+  private void authenticationFailure(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException e)
+      throws IOException {
     sendJSONErrorMessage(response, e.getMessage());
   }
 
@@ -60,5 +61,4 @@ public class OAuth2WebConfigurer {
     return env.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI)
         || env.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI);
   }
-
 }

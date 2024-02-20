@@ -10,8 +10,8 @@ import io.camunda.operate.schema.backup.Prio3Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PostImporterQueueTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant,
-    Prio3Backup {
+public class PostImporterQueueTemplate extends AbstractTemplateDescriptor
+    implements ProcessInstanceDependant, Prio3Backup {
 
   public static final String INDEX_NAME = "post-importer-queue";
 
@@ -33,5 +33,4 @@ public class PostImporterQueueTemplate extends AbstractTemplateDescriptor implem
   public String getVersion() {
     return "8.3.0";
   }
-
 }

@@ -14,17 +14,16 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 /**
  * Class represents call tree path to store sequence of calls in case of call activities.
  *
- * PI = Process instance, FN = Flow node, FNI = Flow node instance.
+ * <p>PI = Process instance, FN = Flow node, FNI = Flow node instance.
  *
- * If we have a process with call activity, then tree path for child process instance will be build
- * as PI_<parent_process_instance_id>/FN_<call_activity_id>/FNI_<parent_flow_node_instance_id_of_call_activity_type>/PI_<child_process_instance_id>,
+ * <p>If we have a process with call activity, then tree path for child process instance will be
+ * build as
+ * PI_<parent_process_instance_id>/FN_<call_activity_id>/FNI_<parent_flow_node_instance_id_of_call_activity_type>/PI_<child_process_instance_id>,
  * for the incident in child instance we will have tree path as
  * PI_<parent_process_instance_id>/FN_<call_activity_id>/FNI_<parent_flow_node_instance_id_of_call_activity_type>/PI_<child_process_instance_id>/FN_<flow_node_id>/FNI<flow_node_instance_id_where_incident_happenned>.
- *
  */
 public class TreePath {
 
@@ -64,14 +63,16 @@ public class TreePath {
     return this;
   }
 
-  public TreePath appendEntries(String callActivityId, String flowNodeInstanceId, String processInstanceId) {
-    return appendFlowNode(callActivityId).appendFlowNodeInstance(flowNodeInstanceId)
+  public TreePath appendEntries(
+      String callActivityId, String flowNodeInstanceId, String processInstanceId) {
+    return appendFlowNode(callActivityId)
+        .appendFlowNodeInstance(flowNodeInstanceId)
         .appendProcessInstance(processInstanceId);
   }
 
   public static String extractFlowNodeInstanceId(final String treePath, String currentTreePath) {
-    final Pattern fniPattern = Pattern
-        .compile(String.format("%s/FN_[^/]*/FNI_(\\d*)/.*", currentTreePath));
+    final Pattern fniPattern =
+        Pattern.compile(String.format("%s/FN_[^/]*/FNI_(\\d*)/.*", currentTreePath));
     final Matcher matcher = fniPattern.matcher(treePath);
     matcher.matches();
     return matcher.group(1);
@@ -79,10 +80,11 @@ public class TreePath {
 
   public String extractRootInstanceId() {
     final Pattern piPattern = Pattern.compile("PI_(\\d*).*");
-    final Optional<Matcher> firstMatch = Arrays.stream(treePath.toString().split("/"))
-        .map(piPattern::matcher)
-        .filter(Matcher::matches)
-        .findFirst();
+    final Optional<Matcher> firstMatch =
+        Arrays.stream(treePath.toString().split("/"))
+            .map(piPattern::matcher)
+            .filter(Matcher::matches)
+            .findFirst();
     if (firstMatch.isPresent()) {
       return firstMatch.get().group(1);
     } else {
@@ -96,10 +98,8 @@ public class TreePath {
     Arrays.stream(treePath.toString().split("/"))
         .map(piPattern::matcher)
         .filter(Matcher::matches)
-        .forEach(matcher ->
-            processInstanceIds.add(matcher.group(1))
+        .forEach(matcher -> processInstanceIds.add(matcher.group(1)));
 
-        );
     return processInstanceIds;
   }
 
@@ -109,10 +109,8 @@ public class TreePath {
     Arrays.stream(treePath.toString().split("/"))
         .map(fniPattern::matcher)
         .filter(Matcher::matches)
-        .forEach(matcher ->
-            flowNodeInstanceIds.add(matcher.group(1))
+        .forEach(matcher -> flowNodeInstanceIds.add(matcher.group(1)));
 
-        );
     return flowNodeInstanceIds;
   }
 
@@ -127,10 +125,10 @@ public class TreePath {
     int piIndex = treePathEntries.indexOf("PI_" + processInstanceKey);
     if (piIndex > -1) {
       if (piIndex == treePathEntries.size() - 1) {
-        //if last element remove only that one
+        // if last element remove only that one
         treePathEntries.remove(piIndex);
       } else {
-        //else remove 3 elements: PI, FN and FNI
+        // else remove 3 elements: PI, FN and FNI
         treePathEntries.remove(piIndex + 2);
         treePathEntries.remove(piIndex + 1);
         treePathEntries.remove(piIndex);
@@ -142,18 +140,11 @@ public class TreePath {
   }
 
   public enum TreePathEntryType {
-    /**
-     * Process instance.
-     */
+    /** Process instance. */
     PI,
-    /**
-     * Flow node instance.
-     */
+    /** Flow node instance. */
     FNI,
-    /**
-     * Flow node.
-     */
+    /** Flow node. */
     FN
   }
-
 }

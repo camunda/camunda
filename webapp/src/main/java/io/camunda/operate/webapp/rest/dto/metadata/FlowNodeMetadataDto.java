@@ -6,20 +6,21 @@
  */
 package io.camunda.operate.webapp.rest.dto.metadata;
 
+import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import io.camunda.operate.entities.FlowNodeType;
 
 public class FlowNodeMetadataDto {
 
   /**
-   * These fields show, which exactly metadata is returned. E.g. in case flowNodeInstanceId is not null,
-   * then metadata is about specific instance. In case flowNodeId and flowNodeType are not null, then
-   * we returned the number of instances with the given flowNodeId and type.
+   * These fields show, which exactly metadata is returned. E.g. in case flowNodeInstanceId is not
+   * null, then metadata is about specific instance. In case flowNodeId and flowNodeType are not
+   * null, then we returned the number of instances with the given flowNodeId and type.
    */
   private String flowNodeInstanceId;
+
   private String flowNodeId;
   private FlowNodeType flowNodeType;
 
@@ -102,8 +103,7 @@ public class FlowNodeMetadataDto {
     return incident;
   }
 
-  public FlowNodeMetadataDto setIncident(
-      final IncidentDto incident) {
+  public FlowNodeMetadataDto setIncident(final IncidentDto incident) {
     this.incident = incident;
     return this;
   }
@@ -117,33 +117,50 @@ public class FlowNodeMetadataDto {
       return false;
     }
     final FlowNodeMetadataDto that = (FlowNodeMetadataDto) o;
-    return Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId) &&
-        Objects.equals(flowNodeId, that.flowNodeId) &&
-        flowNodeType == that.flowNodeType &&
-        Objects.equals(instanceCount, that.instanceCount) &&
-        Objects.equals(breadcrumb, that.breadcrumb) &&
-        Objects.equals(instanceMetadata, that.instanceMetadata) &&
-        Objects.equals(incidentCount, that.incidentCount) &&
-        Objects.equals(incident, that.incident);
+    return Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
+        && Objects.equals(flowNodeId, that.flowNodeId)
+        && flowNodeType == that.flowNodeType
+        && Objects.equals(instanceCount, that.instanceCount)
+        && Objects.equals(breadcrumb, that.breadcrumb)
+        && Objects.equals(instanceMetadata, that.instanceMetadata)
+        && Objects.equals(incidentCount, that.incidentCount)
+        && Objects.equals(incident, that.incident);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(flowNodeInstanceId, flowNodeId, flowNodeType, instanceCount, breadcrumb,
-        instanceMetadata, incidentCount, incident);
+    return Objects.hash(
+        flowNodeInstanceId,
+        flowNodeId,
+        flowNodeType,
+        instanceCount,
+        breadcrumb,
+        instanceMetadata,
+        incidentCount,
+        incident);
   }
 
   @Override
   public String toString() {
-    return "FlowNodeMetadataDto{" +
-        "flowNodeInstanceId='" + flowNodeInstanceId + '\'' +
-        ", flowNodeId='" + flowNodeId + '\'' +
-        ", flowNodeType=" + flowNodeType +
-        ", instanceCount=" + instanceCount +
-        ", breadcrumb=" + breadcrumb +
-        ", instanceMetadata=" + instanceMetadata +
-        ", incidentCount=" + incidentCount +
-        ", incident=" + incident +
-        '}';
+    return "FlowNodeMetadataDto{"
+        + "flowNodeInstanceId='"
+        + flowNodeInstanceId
+        + '\''
+        + ", flowNodeId='"
+        + flowNodeId
+        + '\''
+        + ", flowNodeType="
+        + flowNodeType
+        + ", instanceCount="
+        + instanceCount
+        + ", breadcrumb="
+        + breadcrumb
+        + ", instanceMetadata="
+        + instanceMetadata
+        + ", incidentCount="
+        + incidentCount
+        + ", incident="
+        + incident
+        + '}';
   }
 }

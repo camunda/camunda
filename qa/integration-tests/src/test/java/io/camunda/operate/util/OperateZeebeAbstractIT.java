@@ -6,9 +6,9 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -16,17 +16,26 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.entities.BatchOperationEntity;
+import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.ProcessRestService;
-import io.micrometer.core.instrument.Meter;
-import io.micrometer.core.instrument.MeterRegistry;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
+import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
+import io.camunda.operate.zeebe.PartitionHolder;
+import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.zeebe.containers.ZeebeContainer;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -40,16 +49,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.http.HttpStatus;
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
-import io.camunda.operate.zeebe.PartitionHolder;
-import io.camunda.operate.zeebeimport.ImportPositionHolder;
-import io.camunda.operate.cache.ProcessCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,35 +65,30 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   private static final String POST_BATCH_OPERATION_URL = PROCESS_INSTANCE_URL + "/batch-operation";
 
   @MockBean
-  protected ZeebeClient mockedZeebeClient;    //we don't want to create ZeebeClient, we will rather use the one from test rule
+  protected ZeebeClient
+      mockedZeebeClient; // we don't want to create ZeebeClient, we will rather use the one from
+
+  // test rule
 
   protected ZeebeClient zeebeClient;
 
-  @Autowired
-  public BeanFactory beanFactory;
+  @Autowired public BeanFactory beanFactory;
 
-  @Rule
-  public final OperateZeebeRule zeebeRule;
+  @Rule public final OperateZeebeRule zeebeRule;
 
   private ZeebeContainer zeebeContainer;
 
-  @Rule
-  public SearchTestRule searchTestRule = new SearchTestRule();
+  @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
-  @Autowired
-  protected PartitionHolder partitionHolder;
+  @Autowired protected PartitionHolder partitionHolder;
 
-  @Autowired
-  protected ImportPositionHolder importPositionHolder;
+  @Autowired protected ImportPositionHolder importPositionHolder;
 
-  @Autowired
-  protected ProcessCache processCache;
+  @Autowired protected ProcessCache processCache;
 
-  @Autowired
-  protected ObjectMapper objectMapper;
+  @Autowired protected ObjectMapper objectMapper;
 
-  @Autowired
-  private TestSearchRepository testSearchRepository;
+  @Autowired private TestSearchRepository testSearchRepository;
 
   private HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -203,16 +197,13 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Qualifier("userTasksAreCreated")
   protected Predicate<Object[]> userTasksAreCreated;
 
-  @Autowired
-  protected OperateProperties operateProperties;
+  @Autowired protected OperateProperties operateProperties;
 
   private String workerName;
 
-  @Autowired
-  protected OperationExecutor operationExecutor;
+  @Autowired protected OperationExecutor operationExecutor;
 
-  @Autowired
-  private MeterRegistry meterRegistry;
+  @Autowired private MeterRegistry meterRegistry;
 
   protected OperateTester tester;
 
@@ -254,32 +245,41 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     return workerName;
   }
 
-  public Long failTaskWithNoRetriesLeft(String taskName, long processInstanceKey, int numberOfFailure, String errorMessage) {
-    Long jobKey = ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), numberOfFailure, errorMessage);
+  public Long failTaskWithNoRetriesLeft(
+      String taskName, long processInstanceKey, int numberOfFailure, String errorMessage) {
+    Long jobKey =
+        ZeebeTestUtil.failTask(
+            getClient(), taskName, getWorkerName(), numberOfFailure, errorMessage);
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     return jobKey;
   }
 
-  public Long failTaskWithNoRetriesLeft(String taskName, long processInstanceKey, String errorMessage) {
+  public Long failTaskWithNoRetriesLeft(
+      String taskName, long processInstanceKey, String errorMessage) {
     Long jobKey = ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), 3, errorMessage);
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
     return jobKey;
   }
 
-  public Long failTaskWithRetriesLeft(String taskName, long processInstanceKey, String errorMessage) {
-    Long jobKey = ZeebeTestUtil.failTaskWithRetriesLeft(getClient(), taskName, getWorkerName(), 1, errorMessage);
+  public Long failTaskWithRetriesLeft(
+      String taskName, long processInstanceKey, String errorMessage) {
+    Long jobKey =
+        ZeebeTestUtil.failTaskWithRetriesLeft(
+            getClient(), taskName, getWorkerName(), 1, errorMessage);
     searchTestRule.processAllRecordsAndWait(jobWithRetriesCheck, processInstanceKey, jobKey, 1);
     return jobKey;
   }
 
   protected Long deployProcessWithTenant(String tenantId, String... classpathResources) {
-    final Long processDefinitionKey = ZeebeTestUtil.deployProcess(getClient(), tenantId, classpathResources);
+    final Long processDefinitionKey =
+        ZeebeTestUtil.deployProcess(getClient(), tenantId, classpathResources);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     return processDefinitionKey;
   }
 
   protected Long deployProcess(String... classpathResources) {
-    final Long processDefinitionKey = ZeebeTestUtil.deployProcess(getClient(), null, classpathResources);
+    final Long processDefinitionKey =
+        ZeebeTestUtil.deployProcess(getClient(), null, classpathResources);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     return processDefinitionKey;
   }
@@ -305,107 +305,127 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     completeTask(processInstanceKey, activityId, payload, true);
   }
 
-  protected void completeTask(long processInstanceKey, String activityId, String payload, boolean waitForData) {
+  protected void completeTask(
+      long processInstanceKey, String activityId, String payload, boolean waitForData) {
     ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
     if (waitForData) {
-      searchTestRule.processAllRecordsAndWait(flowNodeIsCompletedCheck, processInstanceKey, activityId);
+      searchTestRule.processAllRecordsAndWait(
+          flowNodeIsCompletedCheck, processInstanceKey, activityId);
     }
   }
 
-  protected void postUpdateVariableOperation(Long processInstanceKey, String newVarName, String newVarValue) throws Exception {
-    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
+  protected void postUpdateVariableOperation(
+      Long processInstanceKey, String newVarName, String newVarValue) throws Exception {
+    final CreateOperationRequestDto op =
+        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
     postOperationWithOKResponse(processInstanceKey, op);
   }
 
-  protected String postAddVariableOperation(Long processInstanceKey, String newVarName, String newVarValue) throws Exception {
+  protected String postAddVariableOperation(
+      Long processInstanceKey, String newVarName, String newVarValue) throws Exception {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
     final MvcResult mvcResult = postOperationWithOKResponse(processInstanceKey, op);
-    final BatchOperationDto batchOperationDto = objectMapper
-        .readValue(mvcResult.getResponse().getContentAsString(), BatchOperationDto.class);
+    final BatchOperationDto batchOperationDto =
+        objectMapper.readValue(
+            mvcResult.getResponse().getContentAsString(), BatchOperationDto.class);
     return batchOperationDto.getId();
   }
 
-  protected void postUpdateVariableOperation(Long processInstanceKey, Long scopeKey, String newVarName, String newVarValue) throws Exception {
-    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
+  protected void postUpdateVariableOperation(
+      Long processInstanceKey, Long scopeKey, String newVarName, String newVarValue)
+      throws Exception {
+    final CreateOperationRequestDto op =
+        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(scopeKey));
     postOperationWithOKResponse(processInstanceKey, op);
   }
 
-  protected String postAddVariableOperation(Long processInstanceKey, Long scopeKey, String newVarName, String newVarValue) throws Exception {
+  protected String postAddVariableOperation(
+      Long processInstanceKey, Long scopeKey, String newVarName, String newVarValue)
+      throws Exception {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(scopeKey));
     final MvcResult mvcResult = postOperationWithOKResponse(processInstanceKey, op);
-    final BatchOperationDto batchOperationDto = objectMapper
-        .readValue(mvcResult.getResponse().getContentAsString(), BatchOperationDto.class);
+    final BatchOperationDto batchOperationDto =
+        objectMapper.readValue(
+            mvcResult.getResponse().getContentAsString(), BatchOperationDto.class);
     return batchOperationDto.getId();
   }
 
   protected void executeOneBatch() {
     try {
       List<Future<?>> futures = operationExecutor.executeOneBatch();
-      //wait till all scheduled tasks are executed
-      for(Future f: futures) { f.get(); }
+      // wait till all scheduled tasks are executed
+      for (Future f : futures) {
+        f.get();
+      }
     } catch (Exception e) {
       fail(e.getMessage(), e);
     }
   }
 
-  protected MvcResult postOperationWithOKResponse(Long processInstanceKey, CreateOperationRequestDto operationRequest) throws Exception {
+  protected MvcResult postOperationWithOKResponse(
+      Long processInstanceKey, CreateOperationRequestDto operationRequest) throws Exception {
     return postOperation(processInstanceKey, operationRequest, HttpStatus.SC_OK);
   }
 
-  protected MvcResult postOperation(Long processInstanceKey, CreateOperationRequestDto operationRequest, int expectedStatus) throws Exception {
+  protected MvcResult postOperation(
+      Long processInstanceKey, CreateOperationRequestDto operationRequest, int expectedStatus)
+      throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
-      post(String.format(POST_OPERATION_URL, processInstanceKey))
-        .content(mockMvcTestRule.json(operationRequest))
-        .contentType(mockMvcTestRule.getContentType());
+        post(String.format(POST_OPERATION_URL, processInstanceKey))
+            .content(mockMvcTestRule.json(operationRequest))
+            .contentType(mockMvcTestRule.getContentType());
 
     final MvcResult mvcResult =
-      mockMvc.perform(postOperationRequest)
-        .andExpect(status().is(expectedStatus))
-        .andReturn();
+        mockMvc.perform(postOperationRequest).andExpect(status().is(expectedStatus)).andReturn();
     searchTestRule.refreshSerchIndexes();
     return mvcResult;
   }
 
-  protected MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType) throws Exception {
+  protected MvcResult postBatchOperationWithOKResponse(
+      ListViewQueryDto query, OperationType operationType) throws Exception {
     return postBatchOperationWithOKResponse(query, operationType, null);
   }
 
-  protected MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType, String name) throws Exception {
+  protected MvcResult postBatchOperationWithOKResponse(
+      ListViewQueryDto query, OperationType operationType, String name) throws Exception {
     return postBatchOperation(query, operationType, name, HttpStatus.SC_OK);
   }
 
-  protected MvcResult postBatchOperation(CreateBatchOperationRequestDto batchOperationDto, int expectedStatus) throws Exception {
+  protected MvcResult postBatchOperation(
+      CreateBatchOperationRequestDto batchOperationDto, int expectedStatus) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
         post(POST_BATCH_OPERATION_URL)
             .content(mockMvcTestRule.json(batchOperationDto))
             .contentType(mockMvcTestRule.getContentType());
 
     final MvcResult mvcResult =
-        mockMvc.perform(postOperationRequest)
-            .andExpect(status().is(expectedStatus))
-            .andReturn();
+        mockMvc.perform(postOperationRequest).andExpect(status().is(expectedStatus)).andReturn();
     searchTestRule.refreshSerchIndexes();
     return mvcResult;
   }
 
-  protected MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, String name, int expectedStatus) throws Exception {
-    CreateBatchOperationRequestDto batchOperationDto = createBatchOperationDto(operationType, name, query);
+  protected MvcResult postBatchOperation(
+      ListViewQueryDto query, OperationType operationType, String name, int expectedStatus)
+      throws Exception {
+    CreateBatchOperationRequestDto batchOperationDto =
+        createBatchOperationDto(operationType, name, query);
     return postBatchOperation(batchOperationDto, expectedStatus);
   }
 
-  protected CreateBatchOperationRequestDto createBatchOperationDto(OperationType operationType, String name, ListViewQueryDto query) {
+  protected CreateBatchOperationRequestDto createBatchOperationDto(
+      OperationType operationType, String name, ListViewQueryDto query) {
     CreateBatchOperationRequestDto batchOperationDto = new CreateBatchOperationRequestDto();
     batchOperationDto.setQuery(query);
     batchOperationDto.setOperationType(operationType);
@@ -417,131 +437,142 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
   protected BatchOperationEntity deleteProcessWithOkResponse(String processId) throws Exception {
     String requestUrl = ProcessRestService.PROCESS_URL + "/" + processId;
-    MockHttpServletRequestBuilder request = delete(requestUrl).accept(mockMvcTestRule.getContentType());
+    MockHttpServletRequestBuilder request =
+        delete(requestUrl).accept(mockMvcTestRule.getContentType());
 
-    final MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().is(HttpStatus.SC_OK))
-        .andReturn();
+    final MvcResult mvcResult =
+        mockMvc.perform(request).andExpect(status().is(HttpStatus.SC_OK)).andReturn();
     searchTestRule.refreshSerchIndexes();
 
-    final BatchOperationEntity batchOperation = objectMapper
-        .readValue(mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
+    final BatchOperationEntity batchOperation =
+        objectMapper.readValue(
+            mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
     return batchOperation;
   }
 
-  protected BatchOperationEntity deleteDecisionWithOkResponse(String decisionDefinitionId) throws Exception {
+  protected BatchOperationEntity deleteDecisionWithOkResponse(String decisionDefinitionId)
+      throws Exception {
     String requestUrl = DecisionRestService.DECISION_URL + "/" + decisionDefinitionId;
-    MockHttpServletRequestBuilder request = delete(requestUrl).accept(mockMvcTestRule.getContentType());
+    MockHttpServletRequestBuilder request =
+        delete(requestUrl).accept(mockMvcTestRule.getContentType());
 
-    final MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().is(HttpStatus.SC_OK))
-        .andReturn();
+    final MvcResult mvcResult =
+        mockMvc.perform(request).andExpect(status().is(HttpStatus.SC_OK)).andReturn();
     searchTestRule.refreshSerchIndexes();
 
-    final BatchOperationEntity batchOperation = objectMapper
-        .readValue(mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
+    final BatchOperationEntity batchOperation =
+        objectMapper.readValue(
+            mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
     return batchOperation;
   }
 
   protected void clearMetrics() {
-    for (Meter meter: meterRegistry.getMeters()) {
+    for (Meter meter : meterRegistry.getMeters()) {
       meterRegistry.remove(meter);
     }
   }
 
   protected Instant pinZeebeTime() {
-      return pinZeebeTime(Instant.now());
+    return pinZeebeTime(Instant.now());
   }
 
   protected Instant pinZeebeTime(Instant pinAt) {
-      final var pinRequest = new ZeebeClockActuatorPinRequest(pinAt.toEpochMilli());
-      try {
-          final var body = HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(pinRequest));
-          return zeebeRequest("POST", "actuator/clock/pin", body);
-      } catch (IOException | InterruptedException e) {
-          throw new IllegalStateException("Could not pin zeebe clock", e);
-      }
+    final var pinRequest = new ZeebeClockActuatorPinRequest(pinAt.toEpochMilli());
+    try {
+      final var body =
+          HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(pinRequest));
+      return zeebeRequest("POST", "actuator/clock/pin", body);
+    } catch (IOException | InterruptedException e) {
+      throw new IllegalStateException("Could not pin zeebe clock", e);
+    }
   }
 
   protected Instant offsetZeebeTime(Duration offsetBy) {
-      final var offsetRequest = new ZeebeClockActuatorOffsetRequest(offsetBy.toMillis());
-      try {
-          final var body = HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(offsetRequest));
-          return zeebeRequest("POST", "actuator/clock/pin", body);
-      } catch (IOException | InterruptedException e) {
-          throw new IllegalStateException("Could not offset zeebe clock", e);
-      }
+    final var offsetRequest = new ZeebeClockActuatorOffsetRequest(offsetBy.toMillis());
+    try {
+      final var body =
+          HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(offsetRequest));
+      return zeebeRequest("POST", "actuator/clock/pin", body);
+    } catch (IOException | InterruptedException e) {
+      throw new IllegalStateException("Could not offset zeebe clock", e);
+    }
   }
 
   protected Instant resetZeebeTime() {
-      try {
-          return zeebeRequest("DELETE", "actuator/clock", HttpRequest.BodyPublishers.noBody());
-      } catch (IOException | InterruptedException e) {
-          throw new IllegalStateException("Could not reset zeebe clock", e);
-      }
+    try {
+      return zeebeRequest("DELETE", "actuator/clock", HttpRequest.BodyPublishers.noBody());
+    } catch (IOException | InterruptedException e) {
+      throw new IllegalStateException("Could not reset zeebe clock", e);
+    }
   }
 
-  private Instant zeebeRequest(String method, String endpoint, HttpRequest.BodyPublisher bodyPublisher) throws IOException, InterruptedException {
-      final var fullEndpoint =
-              URI.create(
-                      String.format("http://%s/%s", zeebeContainer.getExternalAddress(9600), endpoint));
-      final var httpRequest =
-              HttpRequest.newBuilder(fullEndpoint)
-                      .method(method, bodyPublisher)
-                      .header("Content-Type", "application/json")
-                      .build();
-      final var httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-      if (httpResponse.statusCode() != 200) {
-          throw new IllegalStateException("Pinning time failed: " + httpResponse.body());
-      }
-      final var result = objectMapper.readValue(httpResponse.body(),ZeebeClockActuatorResponse.class);
+  private Instant zeebeRequest(
+      String method, String endpoint, HttpRequest.BodyPublisher bodyPublisher)
+      throws IOException, InterruptedException {
+    final var fullEndpoint =
+        URI.create(
+            String.format("http://%s/%s", zeebeContainer.getExternalAddress(9600), endpoint));
+    final var httpRequest =
+        HttpRequest.newBuilder(fullEndpoint)
+            .method(method, bodyPublisher)
+            .header("Content-Type", "application/json")
+            .build();
+    final var httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+    if (httpResponse.statusCode() != 200) {
+      throw new IllegalStateException("Pinning time failed: " + httpResponse.body());
+    }
+    final var result =
+        objectMapper.readValue(httpResponse.body(), ZeebeClockActuatorResponse.class);
 
-      return Instant.ofEpochMilli(result.epochMilli);
+    return Instant.ofEpochMilli(result.epochMilli);
   }
 
-  private final static class ZeebeClockActuatorPinRequest {
-      @JsonProperty
-      long epochMilli;
-      ZeebeClockActuatorPinRequest(long epochMilli) {
-          this.epochMilli = epochMilli;
-      }
+  private static final class ZeebeClockActuatorPinRequest {
+    @JsonProperty long epochMilli;
+
+    ZeebeClockActuatorPinRequest(long epochMilli) {
+      this.epochMilli = epochMilli;
+    }
   }
 
-  private final static class ZeebeClockActuatorOffsetRequest {
-      @JsonProperty
-      long epochMilli;
+  private static final class ZeebeClockActuatorOffsetRequest {
+    @JsonProperty long epochMilli;
 
-      public ZeebeClockActuatorOffsetRequest(long offsetMilli) {
-          this.epochMilli = offsetMilli;
-      }
+    public ZeebeClockActuatorOffsetRequest(long offsetMilli) {
+      this.epochMilli = offsetMilli;
+    }
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  private final static class ZeebeClockActuatorResponse {
-    @JsonProperty
-    long epochMilli;
+  private static final class ZeebeClockActuatorResponse {
+    @JsonProperty long epochMilli;
   }
 
   protected List<Long> deployProcesses(String... processResources) {
-    return Stream.of(processResources).sequential()
-        .map(resource ->
-            tester
-                .deployProcess(resource)
-                .and()
-                .waitUntil()
-                .processIsDeployed()
-                .getProcessDefinitionKey()
-        ).collect(Collectors.toList());
+    return Stream.of(processResources)
+        .sequential()
+        .map(
+            resource ->
+                tester
+                    .deployProcess(resource)
+                    .and()
+                    .waitUntil()
+                    .processIsDeployed()
+                    .getProcessDefinitionKey())
+        .collect(Collectors.toList());
   }
 
   protected List<Long> startProcesses(String... bpmnProcessIds) {
-     return Stream.of(bpmnProcessIds).sequential()
-        .map(bpmnProcessId ->
-            tester.startProcessInstance(bpmnProcessId)
-                .and()
-                .waitUntil()
-                .processInstanceExists()
-                .getProcessInstanceKey())
+    return Stream.of(bpmnProcessIds)
+        .sequential()
+        .map(
+            bpmnProcessId ->
+                tester
+                    .startProcessInstance(bpmnProcessId)
+                    .and()
+                    .waitUntil()
+                    .processInstanceExists()
+                    .getProcessInstanceKey())
         .collect(Collectors.toList());
   }
 

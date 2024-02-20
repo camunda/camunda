@@ -6,11 +6,10 @@
  */
 package io.camunda.operate.util;
 
-import io.camunda.operate.conditions.DatabaseInfo;
-import org.junit.BeforeClass;
-
 import static org.junit.Assume.assumeTrue;
 
+import io.camunda.operate.conditions.DatabaseInfo;
+import org.junit.BeforeClass;
 
 public abstract class OpensearchOperateAbstractIT extends OperateAbstractIT {
   @BeforeClass

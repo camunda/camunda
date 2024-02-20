@@ -9,7 +9,6 @@ package io.camunda.operate.util.searchrepository;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +21,7 @@ public interface TestSearchRepository {
     True
   }
 
-  record IndexSettings(Integer shards, Integer replicas){}
+  record IndexSettings(Integer shards, Integer replicas) {}
 
   boolean isConnected();
 
@@ -30,9 +29,13 @@ public interface TestSearchRepository {
 
   boolean createIndex(String indexName, Map<String, ?> mapping) throws Exception;
 
-  boolean createOrUpdateDocumentFromObject(String indexName, String docId, Object data) throws IOException;
+  boolean createOrUpdateDocumentFromObject(String indexName, String docId, Object data)
+      throws IOException;
+
   String createOrUpdateDocumentFromObject(String indexName, Object data) throws IOException;
-  boolean createOrUpdateDocument(String indexName, String docId, Map<String, ?> doc) throws IOException;
+
+  boolean createOrUpdateDocument(String indexName, String docId, Map<String, ?> doc)
+      throws IOException;
 
   String createOrUpdateDocument(String indexName, Map<String, ?> doc) throws IOException;
 
@@ -40,17 +43,21 @@ public interface TestSearchRepository {
 
   Set<String> getFieldNames(String indexName) throws IOException;
 
-  boolean hasDynamicMapping(String indexName, DynamicMappingType dynamicMappingType) throws IOException;
+  boolean hasDynamicMapping(String indexName, DynamicMappingType dynamicMappingType)
+      throws IOException;
 
   List<String> getAliasNames(String indexName) throws IOException;
 
   <R> List<R> searchAll(String index, Class<R> clazz) throws IOException;
 
-  <R> List<R> searchJoinRelation(String index, String joinRelation, Class<R> clazz, int size) throws IOException;
+  <R> List<R> searchJoinRelation(String index, String joinRelation, Class<R> clazz, int size)
+      throws IOException;
 
-  <A, R> List<R> searchTerm(String index, String field, A value, Class<R> clazz, int size) throws IOException;
+  <A, R> List<R> searchTerm(String index, String field, A value, Class<R> clazz, int size)
+      throws IOException;
 
-  List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size) throws IOException;
+  List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size)
+      throws IOException;
 
   void deleteByTermsQuery(String index, String fieldName, List<Long> values) throws IOException;
 
@@ -58,15 +65,20 @@ public interface TestSearchRepository {
 
   List<VariableEntity> getVariablesByProcessInstanceKey(String index, Long processInstanceKey);
 
-  void reindex(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) throws IOException;
+  void reindex(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams)
+      throws IOException;
 
   boolean ilmPolicyExists(String policyName) throws IOException;
 
   IndexSettings getIndexSettings(String indexName) throws IOException;
 
-  List<BatchOperationEntity> getBatchOperationEntities(String indexName, List<String> ids) throws IOException;
+  List<BatchOperationEntity> getBatchOperationEntities(String indexName, List<String> ids)
+      throws IOException;
 
-  List<ProcessInstanceForListViewEntity> getProcessInstances(String indexName, List<Long> ids) throws IOException;
+  List<ProcessInstanceForListViewEntity> getProcessInstances(String indexName, List<Long> ids)
+      throws IOException;
 
-  Optional<List<Long>> getIds(String indexName, String idFieldName, List<Long> ids, boolean ignoreAbsentIndex) throws IOException;
+  Optional<List<Long>> getIds(
+      String indexName, String idFieldName, List<Long> ids, boolean ignoreAbsentIndex)
+      throws IOException;
 }

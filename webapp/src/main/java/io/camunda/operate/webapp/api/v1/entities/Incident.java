@@ -12,37 +12,40 @@ import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.util.Map;
 import java.util.Objects;
 
 @JsonInclude(Include.NON_NULL)
 public class Incident {
 
-  public static final String
-    KEY = IncidentTemplate.KEY,
-    PROCESS_DEFINITION_KEY = IncidentTemplate.PROCESS_DEFINITION_KEY,
-    PROCESS_INSTANCE_KEY = IncidentTemplate.PROCESS_INSTANCE_KEY,
-    TYPE = IncidentTemplate.ERROR_TYPE,
-    MESSAGE = IncidentTemplate.ERROR_MSG,
-    CREATION_TIME = IncidentTemplate.CREATION_TIME,
-    STATE = IncidentTemplate.STATE,
-    JOB_KEY = IncidentTemplate.JOB_KEY,
-    TENANT_ID = IncidentTemplate.TENANT_ID;
+  public static final String KEY = IncidentTemplate.KEY,
+      PROCESS_DEFINITION_KEY = IncidentTemplate.PROCESS_DEFINITION_KEY,
+      PROCESS_INSTANCE_KEY = IncidentTemplate.PROCESS_INSTANCE_KEY,
+      TYPE = IncidentTemplate.ERROR_TYPE,
+      MESSAGE = IncidentTemplate.ERROR_MSG,
+      CREATION_TIME = IncidentTemplate.CREATION_TIME,
+      STATE = IncidentTemplate.STATE,
+      JOB_KEY = IncidentTemplate.JOB_KEY,
+      TENANT_ID = IncidentTemplate.TENANT_ID;
 
   public static final String MESSAGE_FIELD = "message";
   public static final String TYPE_FIELD = "type";
-  public static final Map<String,String> OBJECT_TO_SEARCH_MAP = Map.of(TYPE_FIELD, TYPE, MESSAGE_FIELD, MESSAGE);
+  public static final Map<String, String> OBJECT_TO_SEARCH_MAP =
+      Map.of(TYPE_FIELD, TYPE, MESSAGE_FIELD, MESSAGE);
 
   private Long key;
   private Long processDefinitionKey;
   private Long processInstanceKey;
+
   @Schema(implementation = ErrorType.class)
   private String type;
+
   private String message;
   private String creationTime;
+
   @Schema(implementation = IncidentState.class)
   private String state;
+
   private Long jobKey;
   private String tenantId;
 
@@ -129,27 +132,61 @@ public class Incident {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     Incident incident = (Incident) o;
-    return Objects.equals(key, incident.key) && Objects.equals(processDefinitionKey,
-        incident.processDefinitionKey) && Objects.equals(processInstanceKey,
-        incident.processInstanceKey) && Objects.equals(type, incident.type) && Objects.equals(message,
-        incident.message) && Objects.equals(creationTime, incident.creationTime) && Objects.equals(state,
-        incident.state) && Objects.equals(jobKey, incident.jobKey) && Objects.equals(tenantId, incident.tenantId);
+    return Objects.equals(key, incident.key)
+        && Objects.equals(processDefinitionKey, incident.processDefinitionKey)
+        && Objects.equals(processInstanceKey, incident.processInstanceKey)
+        && Objects.equals(type, incident.type)
+        && Objects.equals(message, incident.message)
+        && Objects.equals(creationTime, incident.creationTime)
+        && Objects.equals(state, incident.state)
+        && Objects.equals(jobKey, incident.jobKey)
+        && Objects.equals(tenantId, incident.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, processDefinitionKey, processInstanceKey, type, message, creationTime, state, jobKey, tenantId);
+    return Objects.hash(
+        key,
+        processDefinitionKey,
+        processInstanceKey,
+        type,
+        message,
+        creationTime,
+        state,
+        jobKey,
+        tenantId);
   }
 
   @Override
   public String toString() {
-    return "Incident{" + "key=" + key + ", processDefinitionKey=" + processDefinitionKey + ", processInstanceKey="
-        + processInstanceKey + ", type='" + type + '\'' + ", message='" + message + '\'' + ", creationTime='" + creationTime
-        + '\'' + ", state='" + state + '\'' + ", jobKey='" + jobKey + '\'' + ", tenantId='" + tenantId + '\'' + '}';
+    return "Incident{"
+        + "key="
+        + key
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", processInstanceKey="
+        + processInstanceKey
+        + ", type='"
+        + type
+        + '\''
+        + ", message='"
+        + message
+        + '\''
+        + ", creationTime='"
+        + creationTime
+        + '\''
+        + ", state='"
+        + state
+        + '\''
+        + ", jobKey='"
+        + jobKey
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

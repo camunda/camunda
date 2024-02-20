@@ -22,4 +22,3 @@ public class SSOConfigurator {
     return builder.build();
   }
 }
-

@@ -27,8 +27,7 @@ public class ProcessInstanceReferenceDto {
     return processDefinitionId;
   }
 
-  public ProcessInstanceReferenceDto setProcessDefinitionId(
-      final String processDefinitionId) {
+  public ProcessInstanceReferenceDto setProcessDefinitionId(final String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
     return this;
   }
@@ -37,8 +36,7 @@ public class ProcessInstanceReferenceDto {
     return processDefinitionName;
   }
 
-  public ProcessInstanceReferenceDto setProcessDefinitionName(
-      final String processDefinitionName) {
+  public ProcessInstanceReferenceDto setProcessDefinitionName(final String processDefinitionName) {
     this.processDefinitionName = processDefinitionName;
     return this;
   }
@@ -52,14 +50,13 @@ public class ProcessInstanceReferenceDto {
       return false;
     }
     final ProcessInstanceReferenceDto that = (ProcessInstanceReferenceDto) o;
-    return Objects.equals(instanceId, that.instanceId) &&
-        Objects.equals(processDefinitionId, that.processDefinitionId) &&
-        Objects.equals(processDefinitionName, that.processDefinitionName);
+    return Objects.equals(instanceId, that.instanceId)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
+        && Objects.equals(processDefinitionName, that.processDefinitionName);
   }
 
   @Override
   public int hashCode() {
-    return Objects
-        .hash(instanceId, processDefinitionId, processDefinitionName);
+    return Objects.hash(instanceId, processDefinitionId, processDefinitionName);
   }
 }

@@ -6,12 +6,12 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
+import io.camunda.operate.webapp.rest.dto.PaginatedQuery;
+import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import io.camunda.operate.webapp.rest.dto.PaginatedQuery;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 
 @Schema(description = "Process instances request")
 public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
@@ -25,6 +25,7 @@ public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
   public static final String SORT_BY_TENANT_ID = "tenant";
 
   public static final Set<String> VALID_SORT_BY_VALUES;
+
   static {
     VALID_SORT_BY_VALUES = new HashSet<>();
     VALID_SORT_BY_VALUES.add(SORT_BY_ID);
@@ -38,8 +39,7 @@ public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
 
   private ListViewQueryDto query;
 
-  public ListViewRequestDto() {
-  }
+  public ListViewRequestDto() {}
 
   public ListViewRequestDto(final ListViewQueryDto query) {
     this.query = query;
@@ -93,5 +93,4 @@ public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
   public int hashCode() {
     return Objects.hash(super.hashCode(), query);
   }
-
 }

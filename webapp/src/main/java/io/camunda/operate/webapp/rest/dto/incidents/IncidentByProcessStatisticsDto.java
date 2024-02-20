@@ -11,8 +11,8 @@ import java.util.Objects;
 
 public class IncidentByProcessStatisticsDto implements Comparable<IncidentByProcessStatisticsDto> {
 
-
-  public final static Comparator<IncidentByProcessStatisticsDto> COMPARATOR = new IncidentByProcessStatisticsDtoComparator();
+  public static final Comparator<IncidentByProcessStatisticsDto> COMPARATOR =
+      new IncidentByProcessStatisticsDtoComparator();
 
   private String processId;
 
@@ -30,16 +30,17 @@ public class IncidentByProcessStatisticsDto implements Comparable<IncidentByProc
 
   private long activeInstancesCount;
 
-  public IncidentByProcessStatisticsDto() {
-  }
+  public IncidentByProcessStatisticsDto() {}
 
-  public IncidentByProcessStatisticsDto(String processId, long instancesWithActiveIncidentsCount, long activeInstancesCount) {
+  public IncidentByProcessStatisticsDto(
+      String processId, long instancesWithActiveIncidentsCount, long activeInstancesCount) {
     this.processId = processId;
     this.instancesWithActiveIncidentsCount = instancesWithActiveIncidentsCount;
     this.activeInstancesCount = activeInstancesCount;
   }
 
-  public IncidentByProcessStatisticsDto(String processId, String errorMessage, long instancesWithActiveIncidentsCount) {
+  public IncidentByProcessStatisticsDto(
+      String processId, String errorMessage, long instancesWithActiveIncidentsCount) {
     this.processId = processId;
     this.errorMessage = errorMessage;
     this.instancesWithActiveIncidentsCount = instancesWithActiveIncidentsCount;
@@ -112,21 +113,30 @@ public class IncidentByProcessStatisticsDto implements Comparable<IncidentByProc
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     IncidentByProcessStatisticsDto that = (IncidentByProcessStatisticsDto) o;
-    return version == that.version && instancesWithActiveIncidentsCount == that.instancesWithActiveIncidentsCount && activeInstancesCount == that.activeInstancesCount && Objects.equals(
-        processId, that.processId) && Objects.equals(name, that.name) && Objects.equals(bpmnProcessId,
-        that.bpmnProcessId) && Objects.equals(tenantId, that.tenantId) && Objects.equals(errorMessage,
-        that.errorMessage);
+    return version == that.version
+        && instancesWithActiveIncidentsCount == that.instancesWithActiveIncidentsCount
+        && activeInstancesCount == that.activeInstancesCount
+        && Objects.equals(processId, that.processId)
+        && Objects.equals(name, that.name)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(errorMessage, that.errorMessage);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(processId, version, name, bpmnProcessId, tenantId, errorMessage,
-        instancesWithActiveIncidentsCount, activeInstancesCount);
+    return Objects.hash(
+        processId,
+        version,
+        name,
+        bpmnProcessId,
+        tenantId,
+        errorMessage,
+        instancesWithActiveIncidentsCount,
+        activeInstancesCount);
   }
 
   @Override
@@ -134,7 +144,8 @@ public class IncidentByProcessStatisticsDto implements Comparable<IncidentByProc
     return COMPARATOR.compare(this, o);
   }
 
-  public static class IncidentByProcessStatisticsDtoComparator implements Comparator<IncidentByProcessStatisticsDto>{
+  public static class IncidentByProcessStatisticsDtoComparator
+      implements Comparator<IncidentByProcessStatisticsDto> {
 
     @Override
     public int compare(IncidentByProcessStatisticsDto o1, IncidentByProcessStatisticsDto o2) {
@@ -151,13 +162,19 @@ public class IncidentByProcessStatisticsDto implements Comparable<IncidentByProc
       if (o1.equals(o2)) {
         return 0;
       }
-      int result = Long.compare(o2.getInstancesWithActiveIncidentsCount(), o1.getInstancesWithActiveIncidentsCount());
+      int result =
+          Long.compare(
+              o2.getInstancesWithActiveIncidentsCount(), o1.getInstancesWithActiveIncidentsCount());
       if (result == 0) {
         result = Long.compare(o2.getActiveInstancesCount(), o1.getActiveInstancesCount());
         if (result == 0) {
-          result = emptyStringWhenNull(o1.getBpmnProcessId()).compareTo(emptyStringWhenNull(o2.getBpmnProcessId()));
+          result =
+              emptyStringWhenNull(o1.getBpmnProcessId())
+                  .compareTo(emptyStringWhenNull(o2.getBpmnProcessId()));
           if (result == 0) {
-            result = emptyStringWhenNull(o1.getTenantId()).compareTo(emptyStringWhenNull(o2.getTenantId()));
+            result =
+                emptyStringWhenNull(o1.getTenantId())
+                    .compareTo(emptyStringWhenNull(o2.getTenantId()));
             if (result == 0) {
               result = Integer.compare(o1.getVersion(), o2.getVersion());
             }

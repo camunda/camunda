@@ -6,6 +6,9 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -40,6 +43,16 @@ import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.operate.zeebeimport.ZeebePostImporter;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -59,85 +72,56 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static org.assertj.core.api.Assertions.assertThat;
-
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
-  protected static final Logger logger = LoggerFactory.getLogger(ElasticsearchTestRuleProvider.class);
+  protected static final Logger logger =
+      LoggerFactory.getLogger(ElasticsearchTestRuleProvider.class);
 
   // Scroll contexts constants
   private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
   // Path to find search statistics for all indexes
-  private static final String PATH_SEARCH_STATISTICS = "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
+  private static final String PATH_SEARCH_STATISTICS =
+      "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
 
-  @Autowired
-  protected RestHighLevelClient esClient;
+  @Autowired protected RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
-  @Autowired
-  private ListViewTemplate listViewTemplate;
+  @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired
-  private VariableTemplate variableTemplate;
+  @Autowired private VariableTemplate variableTemplate;
 
-  @Autowired
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
-  @Autowired
-  private OperationTemplate operationTemplate;
+  @Autowired private OperationTemplate operationTemplate;
 
-  @Autowired
-  private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private BatchOperationTemplate batchOperationTemplate;
 
-  @Autowired
-  private IncidentTemplate incidentTemplate;
+  @Autowired private IncidentTemplate incidentTemplate;
 
-  @Autowired
-  private DecisionInstanceTemplate decisionInstanceTemplate;
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
-  @Autowired
-  private DecisionRequirementsIndex decisionRequirementsIndex;
+  @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
 
-  @Autowired
-  private DecisionIndex decisionIndex;
+  @Autowired private DecisionIndex decisionIndex;
 
-  @Autowired
-  protected OperateProperties operateProperties;
+  @Autowired protected OperateProperties operateProperties;
 
-  @Autowired
-  private SchemaManager schemaManager;
+  @Autowired private SchemaManager schemaManager;
 
-  @Autowired
-  protected ZeebeImporter zeebeImporter;
+  @Autowired protected ZeebeImporter zeebeImporter;
 
-  @Autowired
-  protected ZeebePostImporter zeebePostImporter;
+  @Autowired protected ZeebePostImporter zeebePostImporter;
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  protected RecordsReaderHolder recordsReaderHolder;
+  @Autowired protected RecordsReaderHolder recordsReaderHolder;
 
-  @Autowired
-  private TestImportListener testImportListener;
+  @Autowired private TestImportListener testImportListener;
 
   Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
 
@@ -181,15 +165,17 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
       TestUtil.removeAllIndices(esClient, indexPrefix);
     }
-    operateProperties.getElasticsearch().setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
+    operateProperties
+        .getElasticsearch()
+        .setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
     zeebePostImporter.getPostImportActions().stream().forEach(PostImportAction::clearCache);
     assertMaxOpenScrollContexts(15);
   }
 
   public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
     assertThat(getOpenScrollcontextSize())
-      .describedAs("There are too many open scroll contexts left.")
-      .isLessThanOrEqualTo(maxOpenScrollContexts);
+        .describedAs("There are too many open scroll contexts left.")
+        .isLessThanOrEqualTo(maxOpenScrollContexts);
   }
 
   @Override
@@ -201,7 +187,8 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void refreshZeebeIndices() {
     try {
-      RefreshRequest refreshRequest = new RefreshRequest(operateProperties.getZeebeElasticsearch().getPrefix() + "*");
+      RefreshRequest refreshRequest =
+          new RefreshRequest(operateProperties.getZeebeElasticsearch().getPrefix() + "*");
       zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (Exception t) {
       logger.error("Could not refresh Zeebe Elasticsearch indices", t);
@@ -211,37 +198,71 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void refreshOperateSearchIndices() {
     try {
-      RefreshRequest refreshRequest = new RefreshRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*");
+      RefreshRequest refreshRequest =
+          new RefreshRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*");
       esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (Exception t) {
       logger.error("Could not refresh Operate Elasticsearch indices", t);
     }
   }
 
-  public void processAllRecordsAndWait(Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), maxWaitingRounds, true, predicate, null, arguments);
+  public void processAllRecordsAndWait(
+      Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
+    processRecordsAndWaitFor(
+        recordsReaderHolder.getAllRecordsReaders(),
+        maxWaitingRounds,
+        true,
+        predicate,
+        null,
+        arguments);
   }
 
   public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
     processAllRecordsAndWait(50, predicate, arguments);
   }
-  public void processAllRecordsAndWait(Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), 50, true, predicate, supplier, arguments);
-  }
 
-  public void processAllRecordsAndWait(boolean runPostImport, Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), 50, runPostImport, predicate, supplier, arguments);
-  }
-
-  public void processRecordsWithTypeAndWait(ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), 50, true, predicate, null, arguments);
-  }
-  public void processRecordsWithTypeAndWait(ImportValueType importValueType, boolean runPostImport, Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), 50, runPostImport, predicate, null, arguments);
-  }
-
-  public void processRecordsAndWaitFor(Collection<RecordsReader> readers, Integer maxWaitingRounds, boolean runPostImport,
+  public void processAllRecordsAndWait(
       Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+    processRecordsAndWaitFor(
+        recordsReaderHolder.getAllRecordsReaders(), 50, true, predicate, supplier, arguments);
+  }
+
+  public void processAllRecordsAndWait(
+      boolean runPostImport,
+      Predicate<Object[]> predicate,
+      Supplier<Object> supplier,
+      Object... arguments) {
+    processRecordsAndWaitFor(
+        recordsReaderHolder.getAllRecordsReaders(),
+        50,
+        runPostImport,
+        predicate,
+        supplier,
+        arguments);
+  }
+
+  public void processRecordsWithTypeAndWait(
+      ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
+    processRecordsAndWaitFor(
+        getRecordsReaders(importValueType), 50, true, predicate, null, arguments);
+  }
+
+  public void processRecordsWithTypeAndWait(
+      ImportValueType importValueType,
+      boolean runPostImport,
+      Predicate<Object[]> predicate,
+      Object... arguments) {
+    processRecordsAndWaitFor(
+        getRecordsReaders(importValueType), 50, runPostImport, predicate, null, arguments);
+  }
+
+  public void processRecordsAndWaitFor(
+      Collection<RecordsReader> readers,
+      Integer maxWaitingRounds,
+      boolean runPostImport,
+      Predicate<Object[]> predicate,
+      Supplier<Object> supplier,
+      Object... arguments) {
     int waitingRound = 0, maxRounds = maxWaitingRounds;
     boolean found = predicate.test(arguments);
     long start = System.currentTimeMillis();
@@ -279,7 +300,9 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
           testImportListener.resetCounters();
           logger.error(e.getMessage(), e);
         }
-        logger.debug(" {} of {} imports processed", testImportListener.getImportedCount(),
+        logger.debug(
+            " {} of {} imports processed",
+            testImportListener.getImportedCount(),
             testImportListener.getScheduledCount());
       }
       refreshOperateSearchIndices();
@@ -291,11 +314,11 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     }
     long finishedTime = System.currentTimeMillis() - start;
 
-    if(found) {
-      logger.debug("Conditions met in round {} ({} ms).", waitingRound,finishedTime );
-    }else {
+    if (found) {
+      logger.debug("Conditions met in round {} ({} ms).", waitingRound, finishedTime);
+    } else {
       logger.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
-//      throw new TestPrerequisitesFailedException("Conditions not met.");
+      //      throw new TestPrerequisitesFailedException("Conditions not met.");
     }
   }
 
@@ -303,7 +326,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     if (zeebePostImporter.getPostImportActions().size() == 0) {
       zeebePostImporter.initPostImporters();
     }
-    for (PostImportAction action: zeebePostImporter.getPostImportActions()) {
+    for (PostImportAction action : zeebePostImporter.getPostImportActions()) {
       try {
         action.performOneRound();
       } catch (IOException e) {
@@ -312,7 +335,8 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     }
   }
 
-  public boolean areIndicesCreatedAfterChecks(String indexPrefix, int minCountOfIndices,int maxChecks) {
+  public boolean areIndicesCreatedAfterChecks(
+      String indexPrefix, int minCountOfIndices, int maxChecks) {
     boolean areCreated = false;
     int checks = 0;
     while (!areCreated && checks <= maxChecks) {
@@ -320,7 +344,11 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       try {
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
       } catch (Exception t) {
-        logger.error("Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",minCountOfIndices, checks, maxChecks);
+        logger.error(
+            "Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",
+            minCountOfIndices,
+            checks,
+            maxChecks);
         sleepFor(200);
       }
     }
@@ -330,17 +358,21 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices)
       throws IOException {
-    GetIndexResponse response = esClient.indices().get(
-        new GetIndexRequest(indexPrefix + "*")
-            .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
-        RequestOptions.DEFAULT);
+    GetIndexResponse response =
+        esClient
+            .indices()
+            .get(
+                new GetIndexRequest(indexPrefix + "*")
+                    .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
+                RequestOptions.DEFAULT);
     String[] indices = response.getIndices();
     return indices != null && indices.length >= minCountOfIndices;
   }
 
   public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
     return recordsReaderHolder.getAllRecordsReaders().stream()
-        .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
+        .filter(rr -> rr.getImportValueType().equals(importValueType))
+        .collect(Collectors.toList());
   }
 
   public void persistNew(OperateEntity... entitiesToPersist) {
@@ -353,7 +385,8 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     refreshSearchIndices();
   }
 
-  public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities) throws PersistenceException {
+  public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities)
+      throws PersistenceException {
     try {
       BulkRequest bulkRequest = new BulkRequest();
       for (OperateEntity entity : operateEntities) {
@@ -361,37 +394,49 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
         if (alias == null) {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
         }
-        final IndexRequest indexRequest = new IndexRequest(alias)
-            .id(entity.getId())
-            .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
+        final IndexRequest indexRequest =
+            new IndexRequest(alias)
+                .id(entity.getId())
+                .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
         if (entity instanceof FlowNodeInstanceForListViewEntity) {
-          indexRequest.routing(((FlowNodeInstanceForListViewEntity)entity).getProcessInstanceKey().toString());
+          indexRequest.routing(
+              ((FlowNodeInstanceForListViewEntity) entity).getProcessInstanceKey().toString());
         }
         if (entity instanceof VariableForListViewEntity) {
-          indexRequest.routing(((VariableForListViewEntity)entity).getProcessInstanceKey().toString());
+          indexRequest.routing(
+              ((VariableForListViewEntity) entity).getProcessInstanceKey().toString());
         }
         bulkRequest.add(indexRequest);
       }
-      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true, operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+      ElasticsearchUtil.processBulkRequest(
+          esClient,
+          bulkRequest,
+          true,
+          operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
     } catch (Exception ex) {
       throw new PersistenceException(ex);
     }
-
   }
 
-  public Map<Class<? extends OperateEntity>, String> getEntityToAliasMap(){
+  public Map<Class<? extends OperateEntity>, String> getEntityToAliasMap() {
     if (entityToESAliasMap == null) {
       entityToESAliasMap = new HashMap<>();
       entityToESAliasMap.put(ProcessEntity.class, processIndex.getFullQualifiedName());
       entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(ProcessInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(FlowNodeInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(
+          ProcessInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(
+          FlowNodeInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(
+          VariableForListViewEntity.class, listViewTemplate.getFullQualifiedName());
       entityToESAliasMap.put(VariableEntity.class, variableTemplate.getFullQualifiedName());
       entityToESAliasMap.put(OperationEntity.class, operationTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
+      entityToESAliasMap.put(
+          BatchOperationEntity.class, batchOperationTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(
+          DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(
+          DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
       entityToESAliasMap.put(DecisionDefinitionEntity.class, decisionIndex.getFullQualifiedName());
     }
     return entityToESAliasMap;
@@ -401,11 +446,12 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
   }
 
-  private int getIntValueForJSON(final String path,final String fieldname,final int defaultValue) {
+  private int getIntValueForJSON(
+      final String path, final String fieldname, final int defaultValue) {
     Optional<JsonNode> jsonNode = getJsonFor(path);
-    if(jsonNode.isPresent()) {
+    if (jsonNode.isPresent()) {
       JsonNode field = jsonNode.get().findValue(fieldname);
-      if(field != null) {
+      if (field != null) {
         return field.asInt(defaultValue);
       }
     }
@@ -415,10 +461,10 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   private Optional<JsonNode> getJsonFor(final String path) {
     try {
       ObjectMapper objectMapper = new ObjectMapper();
-      Response response = esClient.getLowLevelClient().performRequest(new Request("GET",path));
+      Response response = esClient.getLowLevelClient().performRequest(new Request("GET", path));
       return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
     } catch (Exception e) {
-      logger.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.",e);
+      logger.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
       return Optional.empty();
     }
   }

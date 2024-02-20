@@ -12,17 +12,14 @@ import java.util.Objects;
 
 public class DRDDataEntryDto {
 
-  @JsonIgnore
-  private String decisionId;
+  @JsonIgnore private String decisionId;
   private String decisionInstanceId;
   private DecisionInstanceState state;
 
-  public DRDDataEntryDto() {
-  }
+  public DRDDataEntryDto() {}
 
-  public DRDDataEntryDto(final String decisionInstanceId,
-      final String decisionId,
-      final DecisionInstanceState state) {
+  public DRDDataEntryDto(
+      final String decisionInstanceId, final String decisionId, final DecisionInstanceState state) {
     this.decisionInstanceId = decisionInstanceId;
     this.decisionId = decisionId;
     this.state = state;
@@ -69,8 +66,8 @@ public class DRDDataEntryDto {
       return false;
     }
     final DRDDataEntryDto that = (DRDDataEntryDto) o;
-    return Objects.equals(decisionId, that.decisionId) &&
-        Objects.equals(decisionInstanceId, that.decisionInstanceId) &&
-        state == that.state;
+    return Objects.equals(decisionId, that.decisionId)
+        && Objects.equals(decisionInstanceId, that.decisionInstanceId)
+        && state == that.state;
   }
 }

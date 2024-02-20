@@ -8,6 +8,7 @@ package io.camunda.operate.store.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.ZeebeStore;
+import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,8 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -31,7 +30,7 @@ public class OpensearchZeebeStore implements ZeebeStore {
   @Override
   public void refreshIndex(String indexPattern) {
     try {
-      var response = openSearchClient.indices().refresh( r -> r.index(indexPattern));
+      var response = openSearchClient.indices().refresh(r -> r.index(indexPattern));
       if (!response.shards().failures().isEmpty()) {
         logger.warn("Unable to refresh indices: {}", indexPattern);
       }
@@ -42,16 +41,20 @@ public class OpensearchZeebeStore implements ZeebeStore {
 
   @Override
   public boolean zeebeIndicesExists(String indexPattern) {
-    try{
-      var exists = openSearchClient.indices().exists( r -> r
-        .index(indexPattern)
-        .allowNoIndices(false).ignoreUnavailable(true)).value();
+    try {
+      var exists =
+          openSearchClient
+              .indices()
+              .exists(r -> r.index(indexPattern).allowNoIndices(false).ignoreUnavailable(true))
+              .value();
       if (exists) {
         logger.debug("Data already exists in Zeebe.");
       }
       return exists;
     } catch (IOException io) {
-      logger.debug("Error occurred while checking existence of data in Zeebe: {}. Demo data won't be created.", io.getMessage());
+      logger.debug(
+          "Error occurred while checking existence of data in Zeebe: {}. Demo data won't be created.",
+          io.getMessage());
       return false;
     }
   }

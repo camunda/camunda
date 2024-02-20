@@ -16,11 +16,14 @@ public abstract class AbstractUserService<T extends Authentication> implements U
 
   public UserDto getCurrentUser() {
     T authentication = getCurrentAuthentication();
-    try{
+    try {
       return createUserDtoFrom(authentication);
-    }catch (ClassCastException e){
-      logger.error(String.format("Couldn't get matching authentication for %s. Throw UserNotFound exception.",
-          authentication), e);
+    } catch (ClassCastException e) {
+      logger.error(
+          String.format(
+              "Couldn't get matching authentication for %s. Throw UserNotFound exception.",
+              authentication),
+          e);
       throw new UserNotFoundException("Couldn't get authentication for user.");
     }
   }
@@ -36,5 +39,4 @@ public abstract class AbstractUserService<T extends Authentication> implements U
   }
 
   public abstract String getUserToken(final T authentication);
-
 }

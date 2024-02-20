@@ -6,22 +6,24 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
+import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
-import io.camunda.operate.webapp.security.SessionService;
+import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
+import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import io.camunda.operate.webapp.security.OperateURIs;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,51 +39,45 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.GenericContainer;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
-        SameSiteCookieTomcatContextCustomizer.class,
-        OperateProperties.class,
-        TestApplicationWithNoBeans.class,
-        AuthenticationRestService.class,
-        OAuth2WebConfigurer.class,
-        Jwt2AuthenticationTokenConverter.class,
-        CCSaaSJwtAuthenticationTokenValidator.class,
-        LDAPConfig.class,
-        LDAPWebSecurityConfig.class,
-        LDAPUserService.class,
-        RetryElasticsearchClient.class,
-        ElasticsearchTaskStore.class,
-        SessionService.class,
-        OperateWebSessionIndex.class,
-        OperateProfileService.class,
-        ElasticsearchConnector.class
+      SameSiteCookieTomcatContextCustomizer.class,
+      OperateProperties.class,
+      TestApplicationWithNoBeans.class,
+      AuthenticationRestService.class,
+      OAuth2WebConfigurer.class,
+      Jwt2AuthenticationTokenConverter.class,
+      CCSaaSJwtAuthenticationTokenValidator.class,
+      LDAPConfig.class,
+      LDAPWebSecurityConfig.class,
+      LDAPUserService.class,
+      RetryElasticsearchClient.class,
+      ElasticsearchTaskStore.class,
+      SessionService.class,
+      OperateWebSessionIndex.class,
+      OperateProfileService.class,
+      ElasticsearchConnector.class
     },
     properties = {
-        "camunda.operate.ldap.baseDn=dc=planetexpress,dc=com",
-        "camunda.operate.ldap.managerDn=cn=admin,dc=planetexpress,dc=com",
-        "camunda.operate.ldap.managerPassword=GoodNewsEveryone",
-        "camunda.operate.ldap.userSearchFilter=uid={0}"
+      "camunda.operate.ldap.baseDn=dc=planetexpress,dc=com",
+      "camunda.operate.ldap.managerDn=cn=admin,dc=planetexpress,dc=com",
+      "camunda.operate.ldap.managerPassword=GoodNewsEveryone",
+      "camunda.operate.ldap.userSearchFilter=uid={0}"
     },
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({"ldap-auth", "test"})
 @ContextConfiguration(initializers = {AuthenticationIT.Initializer.class})
 public class AuthenticationIT implements AuthenticationTestable {
 
-  @Autowired
-  private TestRestTemplate testRestTemplate;
+  @Autowired private TestRestTemplate testRestTemplate;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @ClassRule
   public static GenericContainer<?> ldapServer =
       // https://github.com/rroemhild/docker-test-openldap
-      new GenericContainer<>("rroemhild/test-openldap")
-          .withExposedPorts(10389);
+      new GenericContainer<>("rroemhild/test-openldap").withExposedPorts(10389);
 
   @Override
   public TestRestTemplate getTestRestTemplate() {
@@ -92,9 +88,11 @@ public class AuthenticationIT implements AuthenticationTestable {
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
     public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
       TestPropertyValues.of(
-          "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID,
-          String.format("camunda.operate.ldap.url=ldap://%s:%d/", ldapServer.getHost(), ldapServer.getFirstMappedPort())
-      ).applyTo(configurableApplicationContext.getEnvironment());
+              "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID,
+              String.format(
+                  "camunda.operate.ldap.url=ldap://%s:%d/",
+                  ldapServer.getHost(), ldapServer.getFirstMappedPort()))
+          .applyTo(configurableApplicationContext.getEnvironment());
     }
   }
 
@@ -124,11 +122,11 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @Test
   public void shouldReturnCurrentUser() {
-    //given authenticated user
+    // given authenticated user
     ResponseEntity<?> response = login("bender", "bender");
     // when
     UserDto userInfo = getCurrentUser(response);
-    //then
+    // then
     assertThat(userInfo.getUserId()).isEqualTo("bender");
     assertThat(userInfo.getDisplayName()).isEqualTo("Bender");
     assertThat(userInfo.isCanLogout()).isTrue();

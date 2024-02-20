@@ -15,25 +15,25 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 public class ListViewQueryAfterArchivingIT extends ListViewQueryIT {
 
-  @MockBean
-  private PartitionHolder partitionHolder;
+  @MockBean private PartitionHolder partitionHolder;
 
-  @Autowired
-  private Archiver archiver;
+  @Autowired private Archiver archiver;
 
-  @Autowired
-  private BeanFactory beanFactory;
+  @Autowired private BeanFactory beanFactory;
 
   @Override
   protected void createData() {
     super.createData();
     mockPartitionHolder(partitionHolder);
-    ProcessInstancesArchiverJob archiverJob = beanFactory.getBean(ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
-    runArchiving(archiverJob, () -> {
-      searchTestRule.refreshSerchIndexes();
-      return null;
-    });
+    ProcessInstancesArchiverJob archiverJob =
+        beanFactory.getBean(
+            ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+    runArchiving(
+        archiverJob,
+        () -> {
+          searchTestRule.refreshSerchIndexes();
+          return null;
+        });
     searchTestRule.refreshSerchIndexes();
   }
-
 }

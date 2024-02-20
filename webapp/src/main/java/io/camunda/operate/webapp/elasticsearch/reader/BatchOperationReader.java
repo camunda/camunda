@@ -6,17 +6,22 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
+import static org.elasticsearch.client.Requests.searchRequest;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.security.UserService;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -31,11 +36,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.elasticsearch.client.Requests.searchRequest;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
@@ -43,72 +43,82 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
 
   private static final Logger logger = LoggerFactory.getLogger(BatchOperationReader.class);
 
-  @Autowired
-  private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private BatchOperationTemplate batchOperationTemplate;
 
-  @Autowired
-  private UserService userService;
+  @Autowired private UserService userService;
 
-  @Autowired
-  private RestHighLevelClient esClient;
+  @Autowired private RestHighLevelClient esClient;
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
   @Override
-  public List<BatchOperationEntity> getBatchOperations(BatchOperationRequestDto batchOperationRequestDto) {
+  public List<BatchOperationEntity> getBatchOperations(
+      BatchOperationRequestDto batchOperationRequestDto) {
 
     SearchRequest searchRequest = createSearchRequest(batchOperationRequestDto);
     final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      List<BatchOperationEntity> batchOperationEntities = ElasticsearchUtil.mapSearchHits(searchResponse.getHits().getHits(),
-          (sh) -> {
-            BatchOperationEntity entity = ElasticsearchUtil.fromSearchHit(sh.getSourceAsString(), objectMapper, BatchOperationEntity.class);
-            entity.setSortValues(sh.getSortValues());
-            return entity;
-          });
+      List<BatchOperationEntity> batchOperationEntities =
+          ElasticsearchUtil.mapSearchHits(
+              searchResponse.getHits().getHits(),
+              (sh) -> {
+                BatchOperationEntity entity =
+                    ElasticsearchUtil.fromSearchHit(
+                        sh.getSourceAsString(), objectMapper, BatchOperationEntity.class);
+                entity.setSortValues(sh.getSortValues());
+                return entity;
+              });
       if (batchOperationRequestDto.getSearchBefore() != null) {
         Collections.reverse(batchOperationEntities);
       }
       return batchOperationEntities;
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while getting page of batch operations list: %s", e.getMessage());
+      final String message =
+          String.format(
+              "Exception occurred, while getting page of batch operations list: %s",
+              e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
-
   }
 
   private SearchRequest createSearchRequest(BatchOperationRequestDto batchOperationRequestDto) {
-    QueryBuilder queryBuilder = termQuery(BatchOperationTemplate.USERNAME, userService.getCurrentUser().getUsername());
+    QueryBuilder queryBuilder =
+        termQuery(BatchOperationTemplate.USERNAME, userService.getCurrentUser().getUsername());
 
-    SortBuilder sort1,
-                sort2;
+    SortBuilder sort1, sort2;
     Object[] querySearchAfter;
 
     Object[] searchAfter = batchOperationRequestDto.getSearchAfter(objectMapper);
     Object[] searchBefore = batchOperationRequestDto.getSearchBefore(objectMapper);
-    if (searchAfter != null || searchBefore == null) { //this sorting is also the default one for 1st page
-      sort1 = new FieldSortBuilder(BatchOperationTemplate.END_DATE).order(SortOrder.DESC).missing("_first");
+    if (searchAfter != null
+        || searchBefore == null) { // this sorting is also the default one for 1st page
+      sort1 =
+          new FieldSortBuilder(BatchOperationTemplate.END_DATE)
+              .order(SortOrder.DESC)
+              .missing("_first");
       sort2 = new FieldSortBuilder(BatchOperationTemplate.START_DATE).order(SortOrder.DESC);
-      querySearchAfter = searchAfter; //may be null
-    } else { //searchBefore != null
-      //reverse sorting
-      sort1 = new FieldSortBuilder(BatchOperationTemplate.END_DATE).order(SortOrder.ASC).missing("_last");
+      querySearchAfter = searchAfter; // may be null
+    } else { // searchBefore != null
+      // reverse sorting
+      sort1 =
+          new FieldSortBuilder(BatchOperationTemplate.END_DATE)
+              .order(SortOrder.ASC)
+              .missing("_last");
       sort2 = new FieldSortBuilder(BatchOperationTemplate.START_DATE).order(SortOrder.ASC);
       querySearchAfter = searchBefore;
     }
 
-    SearchSourceBuilder sourceBuilder = searchSource()
-        .query(constantScoreQuery(queryBuilder))
-        .sort(sort1)
-        .sort(sort2)
-        .size(batchOperationRequestDto.getPageSize());
+    SearchSourceBuilder sourceBuilder =
+        searchSource()
+            .query(constantScoreQuery(queryBuilder))
+            .sort(sort1)
+            .sort(sort2)
+            .size(batchOperationRequestDto.getPageSize());
     if (querySearchAfter != null) {
       sourceBuilder.searchAfter(querySearchAfter);
     }
     return searchRequest(batchOperationTemplate.getAlias()).source(sourceBuilder);
   }
-
 }

@@ -16,16 +16,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-public class DecisionInstanceDto implements
-    CreatableFromEntity<DecisionInstanceDto, DecisionInstanceEntity> {
+public class DecisionInstanceDto
+    implements CreatableFromEntity<DecisionInstanceDto, DecisionInstanceEntity> {
 
-  public static final Comparator<DecisionInstanceOutputDto> DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR =
-      Comparator
-      .comparingInt(DecisionInstanceOutputDto::getRuleIndex)
-      .thenComparing(DecisionInstanceOutputDto::getName);
+  public static final Comparator<DecisionInstanceOutputDto>
+      DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR =
+          Comparator.comparingInt(DecisionInstanceOutputDto::getRuleIndex)
+              .thenComparing(DecisionInstanceOutputDto::getName);
   public static final Comparator<DecisionInstanceInputDto> DECISION_INSTANCE_INPUT_DTO_COMPARATOR =
-      Comparator
-      .comparing(DecisionInstanceInputDto::getName);
+      Comparator.comparing(DecisionInstanceInputDto::getName);
 
   private String id;
   private DecisionInstanceStateDto state;
@@ -55,8 +54,7 @@ public class DecisionInstanceDto implements
     return state;
   }
 
-  public DecisionInstanceDto setState(
-      final DecisionInstanceStateDto state) {
+  public DecisionInstanceDto setState(final DecisionInstanceStateDto state) {
     this.state = state;
     return this;
   }
@@ -65,8 +63,7 @@ public class DecisionInstanceDto implements
     return decisionType;
   }
 
-  public DecisionInstanceDto setDecisionType(
-      final DecisionType decisionType) {
+  public DecisionInstanceDto setDecisionType(final DecisionType decisionType) {
     this.decisionType = decisionType;
     return this;
   }
@@ -174,12 +171,12 @@ public class DecisionInstanceDto implements
 
   @Override
   public DecisionInstanceDto fillFrom(final DecisionInstanceEntity entity) {
-    final List<DecisionInstanceInputDto> inputs = DtoCreator
-        .create(entity.getEvaluatedInputs(), DecisionInstanceInputDto.class);
+    final List<DecisionInstanceInputDto> inputs =
+        DtoCreator.create(entity.getEvaluatedInputs(), DecisionInstanceInputDto.class);
     Collections.sort(inputs, DECISION_INSTANCE_INPUT_DTO_COMPARATOR);
 
-    final List<DecisionInstanceOutputDto> outputs = DtoCreator
-        .create(entity.getEvaluatedOutputs(), DecisionInstanceOutputDto.class);
+    final List<DecisionInstanceOutputDto> outputs =
+        DtoCreator.create(entity.getEvaluatedOutputs(), DecisionInstanceOutputDto.class);
     Collections.sort(outputs, DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR);
 
     this.setId(entity.getId())
@@ -201,23 +198,41 @@ public class DecisionInstanceDto implements
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     DecisionInstanceDto that = (DecisionInstanceDto) o;
-    return decisionVersion == that.decisionVersion && Objects.equals(id,
-        that.id) && state == that.state && decisionType == that.decisionType && Objects.equals(decisionDefinitionId,
-        that.decisionDefinitionId) && Objects.equals(decisionId, that.decisionId) && Objects.equals(tenantId,
-        that.tenantId) && Objects.equals(decisionName, that.decisionName) && Objects.equals(evaluationDate,
-        that.evaluationDate) && Objects.equals(errorMessage, that.errorMessage) && Objects.equals(processInstanceId,
-        that.processInstanceId) && Objects.equals(result, that.result) && Objects.equals(evaluatedInputs,
-        that.evaluatedInputs) && Objects.equals(evaluatedOutputs, that.evaluatedOutputs);
+    return decisionVersion == that.decisionVersion
+        && Objects.equals(id, that.id)
+        && state == that.state
+        && decisionType == that.decisionType
+        && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
+        && Objects.equals(decisionId, that.decisionId)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(decisionName, that.decisionName)
+        && Objects.equals(evaluationDate, that.evaluationDate)
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(result, that.result)
+        && Objects.equals(evaluatedInputs, that.evaluatedInputs)
+        && Objects.equals(evaluatedOutputs, that.evaluatedOutputs);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, state, decisionType, decisionDefinitionId, decisionId, tenantId, decisionName,
-        decisionVersion, evaluationDate, errorMessage, processInstanceId, result, evaluatedInputs, evaluatedOutputs);
+    return Objects.hash(
+        id,
+        state,
+        decisionType,
+        decisionDefinitionId,
+        decisionId,
+        tenantId,
+        decisionName,
+        decisionVersion,
+        evaluationDate,
+        errorMessage,
+        processInstanceId,
+        result,
+        evaluatedInputs,
+        evaluatedOutputs);
   }
 }

@@ -30,11 +30,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 public class MetricWithMockedImporterZeebeIT extends OperateZeebeAbstractIT {
 
-  @Autowired
-  private ZeebeImporter zeebeImporter;
+  @Autowired private ZeebeImporter zeebeImporter;
 
-  @Autowired
-  private TestImportListener countImportListener;
+  @Autowired private TestImportListener countImportListener;
 
   @MockBean
   @Qualifier("importThreadPoolExecutor")
@@ -49,37 +47,34 @@ public class MetricWithMockedImporterZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testQueueSize() throws IOException {
 
-    //executor is not executing anything, just holds a callable forever
+    // executor is not executing anything, just holds a callable forever
     when(importExecutor.submit(any(Callable.class))).thenReturn(mock(Future.class));
 
     final String bpmnProcessId = "startEndProcess";
     final BpmnModelInstance startEndProcess =
-        Bpmn.createExecutableProcess(bpmnProcessId)
-            .startEvent()
-            .endEvent()
-            .done();
+        Bpmn.createExecutableProcess(bpmnProcessId).startEvent().endEvent().done();
 
-    //process
-    tester
-        .deployProcess(startEndProcess, "startEndProcess.bpmn");
-    waitTillSmthRecordsAreReadToQueue();    //this will be picked up by importExecutor
+    // process
+    tester.deployProcess(startEndProcess, "startEndProcess.bpmn");
+    waitTillSmthRecordsAreReadToQueue(); // this will be picked up by importExecutor
 
-    //process instance partition 1
+    // process instance partition 1
     tester.startProcessInstance(bpmnProcessId);
-    waitTillSmthRecordsAreReadToQueue();    //this will be picked up by importExecutor
+    waitTillSmthRecordsAreReadToQueue(); // this will be picked up by importExecutor
 
-    //process instance partition 2
+    // process instance partition 2
     tester.startProcessInstance(bpmnProcessId);
-    waitTillSmthRecordsAreReadToQueue();    //this will be picked up by importExecutor
+    waitTillSmthRecordsAreReadToQueue(); // this will be picked up by importExecutor
 
-    //process instance partition 1
+    // process instance partition 1
     tester.startProcessInstance(bpmnProcessId);
-    waitTillSmthRecordsAreReadToQueue();    //this will end up in the queue for partition 1
+    waitTillSmthRecordsAreReadToQueue(); // this will end up in the queue for partition 1
 
-    assertThatMetricsFrom(mockMvc,
-        new MetricAssert.ValueMatcher("operate_import_queue_size{partition=\"1\",type=\"PROCESS_INSTANCE\",}",
+    assertThatMetricsFrom(
+        mockMvc,
+        new MetricAssert.ValueMatcher(
+            "operate_import_queue_size{partition=\"1\",type=\"PROCESS_INSTANCE\",}",
             d -> d.doubleValue() >= 1.0));
-
   }
 
   private void waitTillSmthRecordsAreReadToQueue() throws IOException {
@@ -89,5 +84,4 @@ public class MetricWithMockedImporterZeebeIT extends OperateZeebeAbstractIT {
       zeebeImporter.performOneRoundOfImport();
     }
   }
-
 }

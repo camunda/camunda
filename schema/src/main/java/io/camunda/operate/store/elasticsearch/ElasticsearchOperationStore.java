@@ -6,6 +6,12 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import static io.camunda.operate.util.ElasticsearchUtil.*;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.scroll;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.*;
@@ -16,6 +22,11 @@ import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.util.ElasticsearchUtil;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.WriteRequest;
@@ -35,38 +46,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static io.camunda.operate.util.ElasticsearchUtil.*;
-
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.scroll;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchOperationStore implements OperationStore {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchOperationStore.class);
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private RestHighLevelClient esClient;
+  @Autowired private RestHighLevelClient esClient;
 
-  @Autowired
-  private OperationTemplate operationTemplate;
+  @Autowired private OperationTemplate operationTemplate;
 
-  @Autowired
-  private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private BatchOperationTemplate batchOperationTemplate;
 
-  @Autowired
-  private BeanFactory beanFactory;
+  @Autowired private BeanFactory beanFactory;
 
   @Override
   public Map<String, String> getIndexNameForAliasAndIds(String alias, Collection<String> ids) {
@@ -74,15 +67,27 @@ public class ElasticsearchOperationStore implements OperationStore {
   }
 
   @Override
-  public List<OperationEntity> getOperationsFor(Long zeebeCommandKey, Long processInstanceKey,
-      Long incidentKey, OperationType operationType) {
+  public List<OperationEntity> getOperationsFor(
+      Long zeebeCommandKey,
+      Long processInstanceKey,
+      Long incidentKey,
+      OperationType operationType) {
     if (processInstanceKey == null && zeebeCommandKey == null) {
-      throw new OperateRuntimeException("Wrong call to search for operation. Not enough parameters.");
+      throw new OperateRuntimeException(
+          "Wrong call to search for operation. Not enough parameters.");
     }
-    TermQueryBuilder zeebeCommandKeyQ = zeebeCommandKey != null ? termQuery(OperationTemplate.ZEEBE_COMMAND_KEY, zeebeCommandKey) : null;
-    TermQueryBuilder processInstanceKeyQ = processInstanceKey != null ? termQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey) : null;
-    TermQueryBuilder incidentKeyQ = incidentKey != null ? termQuery(OperationTemplate.INCIDENT_KEY, incidentKey) : null;
-    TermQueryBuilder operationTypeQ = operationType != null ? termQuery(OperationTemplate.TYPE, operationType.name()) : null;
+    TermQueryBuilder zeebeCommandKeyQ =
+        zeebeCommandKey != null
+            ? termQuery(OperationTemplate.ZEEBE_COMMAND_KEY, zeebeCommandKey)
+            : null;
+    TermQueryBuilder processInstanceKeyQ =
+        processInstanceKey != null
+            ? termQuery(OperationTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)
+            : null;
+    TermQueryBuilder incidentKeyQ =
+        incidentKey != null ? termQuery(OperationTemplate.INCIDENT_KEY, incidentKey) : null;
+    TermQueryBuilder operationTypeQ =
+        operationType != null ? termQuery(OperationTemplate.TYPE, operationType.name()) : null;
 
     QueryBuilder query =
         joinWithAnd(
@@ -90,16 +95,16 @@ public class ElasticsearchOperationStore implements OperationStore {
             processInstanceKeyQ,
             incidentKeyQ,
             operationTypeQ,
-            termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name())
-        );
-    final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
-        .source(new SearchSourceBuilder()
-            .query(query)
-            .size(1));
+            termsQuery(
+                OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()));
+    final SearchRequest searchRequest =
+        new SearchRequest(operationTemplate.getAlias())
+            .source(new SearchSourceBuilder().query(query).size(1));
     try {
       return scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining the operations: %s", e.getMessage());
+      final String message =
+          String.format("Exception occurred, while obtaining the operations: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -107,52 +112,73 @@ public class ElasticsearchOperationStore implements OperationStore {
   @Override
   public String add(BatchOperationEntity batchOperationEntity) throws PersistenceException {
     try {
-      var indexRequest = new IndexRequest(batchOperationTemplate.getFullQualifiedName()).id(batchOperationEntity.getId()).
-          source(objectMapper.writeValueAsString(batchOperationEntity), XContentType.JSON);
+      var indexRequest =
+          new IndexRequest(batchOperationTemplate.getFullQualifiedName())
+              .id(batchOperationEntity.getId())
+              .source(objectMapper.writeValueAsString(batchOperationEntity), XContentType.JSON);
       esClient.index(indexRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       logger.error("Error persisting batch operation", e);
       throw new PersistenceException(
-          String.format("Error persisting batch operation of type [%s]", batchOperationEntity.getType()), e);
+          String.format(
+              "Error persisting batch operation of type [%s]", batchOperationEntity.getType()),
+          e);
     }
     return batchOperationEntity.getId();
   }
 
   @Override
-  public void update(OperationEntity operation, boolean refreshImmediately) throws PersistenceException {
+  public void update(OperationEntity operation, boolean refreshImmediately)
+      throws PersistenceException {
     try {
-      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
+      Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
 
-      UpdateRequest updateRequest = new UpdateRequest().index(operationTemplate.getFullQualifiedName()).id(operation.getId()).doc(jsonMap).retryOnConflict(UPDATE_RETRY_COUNT);
+      UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(operationTemplate.getFullQualifiedName())
+              .id(operation.getId())
+              .doc(jsonMap)
+              .retryOnConflict(UPDATE_RETRY_COUNT);
       if (refreshImmediately) {
         updateRequest = updateRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       }
       esClient.update(updateRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new PersistenceException(
-          String.format("Error preparing the query to update operation [%s] for process instance id [%s]", operation.getId(), operation.getProcessInstanceKey()), e);
+          String.format(
+              "Error preparing the query to update operation [%s] for process instance id [%s]",
+              operation.getId(), operation.getProcessInstanceKey()),
+          e);
     }
   }
 
   @Override
-  public void updateWithScript(String index, String id, String script,
-      Map<String, Object> parameters) {
+  public void updateWithScript(
+      String index, String id, String script, Map<String, Object> parameters) {
     try {
-      final UpdateRequest updateRequest = new UpdateRequest()
-        .index(index)
-        .id(id)
-        .script(getScriptWithParameters(script, parameters))
-        .retryOnConflict(UPDATE_RETRY_COUNT);
+      final UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(index)
+              .id(id)
+              .script(getScriptWithParameters(script, parameters))
+              .retryOnConflict(UPDATE_RETRY_COUNT);
       esClient.update(updateRequest, RequestOptions.DEFAULT);
     } catch (Exception e) {
-      final String message = String.format("Exception occurred, while executing update request: %s", e.getMessage());
+      final String message =
+          String.format("Exception occurred, while executing update request: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
 
-  private Script getScriptWithParameters(String script, Map<String, Object> parameters) throws PersistenceException {
+  private Script getScriptWithParameters(String script, Map<String, Object> parameters)
+      throws PersistenceException {
     try {
-      return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, objectMapper.readValue(objectMapper.writeValueAsString(parameters), HashMap.class));
+      return new Script(
+          ScriptType.INLINE,
+          Script.DEFAULT_SCRIPT_LANG,
+          script,
+          objectMapper.readValue(objectMapper.writeValueAsString(parameters), HashMap.class));
     } catch (IOException e) {
       throw new PersistenceException(e);
     }

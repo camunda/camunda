@@ -6,32 +6,28 @@
  */
 package io.camunda.operate.elasticsearch.writer;
 
+import static io.camunda.operate.store.MetricsStore.*;
+import static org.mockito.Mockito.*;
+
 import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.MetricIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchMetricsStore;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.OffsetDateTime;
-
-import static io.camunda.operate.store.MetricsStore.*;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 public class MetricWriterTest {
 
-  @InjectMocks
-  private MetricsStore subject = new ElasticsearchMetricsStore();
-  @Mock
-  BatchRequest batchRequest;
-  @Mock
-  private MetricIndex metricIndex;
+  @InjectMocks private MetricsStore subject = new ElasticsearchMetricsStore();
+  @Mock BatchRequest batchRequest;
+  @Mock private MetricIndex metricIndex;
 
   @Test
   public void verifyRegisterProcessEventWasCalledWithRightArgument() throws PersistenceException {
@@ -44,11 +40,14 @@ public class MetricWriterTest {
     subject.registerProcessInstanceStartEvent(key, tenantId, now, batchRequest);
 
     // Then
-    verify(batchRequest).add(metricIndex.getFullQualifiedName(), new MetricEntity()
-        .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
-        .setValue(key)
-        .setEventTime(now)
-        .setTenantId(tenantId));
+    verify(batchRequest)
+        .add(
+            metricIndex.getFullQualifiedName(),
+            new MetricEntity()
+                .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
+                .setValue(key)
+                .setEventTime(now)
+                .setTenantId(tenantId));
   }
 
   @Test
@@ -62,10 +61,13 @@ public class MetricWriterTest {
     subject.registerDecisionInstanceCompleteEvent(key, tenantId, now, batchRequest);
 
     // Then
-    verify(batchRequest).add( metricIndex.getFullQualifiedName(), new MetricEntity()
-        .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
-        .setValue(key)
-        .setEventTime(now)
-        .setTenantId(tenantId));
+    verify(batchRequest)
+        .add(
+            metricIndex.getFullQualifiedName(),
+            new MetricEntity()
+                .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
+                .setValue(key)
+                .setEventTime(now)
+                .setTenantId(tenantId));
   }
 }

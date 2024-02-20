@@ -8,13 +8,12 @@ package io.camunda.operate.data;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Component
 public class OperateDateTimeFormatter {
@@ -32,17 +31,17 @@ public class OperateDateTimeFormatter {
   public OperateDateTimeFormatter(OperateProperties operateProperties, DatabaseInfo databaseInfo) {
     if (databaseInfo.isOpensearchDb()) {
       generalDateTimeFormatString = operateProperties.getOpensearch().getDateFormat();
-    }
-    else {
+    } else {
       generalDateTimeFormatString = operateProperties.getElasticsearch().getDateFormat();
     }
 
     if (operateProperties.isRfc3339ApiDateFormat()) {
-      logger.info("rfc3339ApiDateFormat is set to true, operate API will format datetimes according to the RFC3339 spec");
+      logger.info(
+          "rfc3339ApiDateFormat is set to true, operate API will format datetimes according to the RFC3339 spec");
       apiDateTimeFormatString = RFC3339_DATE_FORMAT;
-    }
-    else {
-      logger.info("rfc3339ApiDateFormat is set to false, operate API will format datetimes in the existing format");
+    } else {
+      logger.info(
+          "rfc3339ApiDateFormat is set to false, operate API will format datetimes in the existing format");
       apiDateTimeFormatString = generalDateTimeFormatString;
     }
 
@@ -53,6 +52,7 @@ public class OperateDateTimeFormatter {
   public String getGeneralDateTimeFormatString() {
     return generalDateTimeFormatString;
   }
+
   public DateTimeFormatter getGeneralDateTimeFormatter() {
     return generalDateTimeFormatter;
   }
@@ -100,6 +100,4 @@ public class OperateDateTimeFormatter {
     }
     return null;
   }
-
-
 }

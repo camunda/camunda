@@ -8,12 +8,10 @@ package io.camunda.operate.webapp.api.v1.dao;
 
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
-
 import java.util.List;
 import java.util.Set;
 
-public interface DecisionRequirementsDao extends
-    SearchableDao<DecisionRequirements> {
+public interface DecisionRequirementsDao extends SearchableDao<DecisionRequirements> {
 
   DecisionRequirements byKey(Long key) throws APIException;
 

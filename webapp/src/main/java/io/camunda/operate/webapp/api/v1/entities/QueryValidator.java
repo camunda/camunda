@@ -29,8 +29,8 @@ public class QueryValidator<T> {
     validate(query, queriedClass, null);
   }
 
-  public void validate(final Query<T> query, Class<T> queriedClass,
-      CustomQueryValidator<T> customValidator) {
+  public void validate(
+      final Query<T> query, Class<T> queriedClass, CustomQueryValidator<T> customValidator) {
     retrieveFieldsFor(queriedClass);
     validateSorting(query.getSort(), fields);
     validatePaging(query);
@@ -41,9 +41,10 @@ public class QueryValidator<T> {
 
   private void retrieveFieldsFor(final Class<T> queriedClass) {
     if (fields == null) {
-      fields = Arrays.stream(
-          queriedClass.getDeclaredFields()).map(
-          Field::getName).collect(Collectors.toList());
+      fields =
+          Arrays.stream(queriedClass.getDeclaredFields())
+              .map(Field::getName)
+              .collect(Collectors.toList());
     }
   }
 
@@ -56,10 +57,11 @@ public class QueryValidator<T> {
     if (searchAfter != null && searchAfter.length == 0) {
       throw new ValidationException("searchAfter should have a least 1 value");
     }
-    if( query.getSort()!= null ) {
+    if (query.getSort() != null) {
       final int sortSize = query.getSort().size();
       if (searchAfter != null && searchAfter.length != sortSize + 1) {
-        throw new ValidationException(String.format("searchAfter should have a %s values", sortSize + 1));
+        throw new ValidationException(
+            String.format("searchAfter should have a %s values", sortSize + 1));
       }
     }
   }
@@ -68,23 +70,24 @@ public class QueryValidator<T> {
     if (sortSpecs == null || sortSpecs.isEmpty()) {
       return;
     }
-    final List<String> givenFields = CollectionUtil.withoutNulls(
-        sortSpecs.stream().map(Sort::getField)
-            .collect(Collectors.toList()));
+    final List<String> givenFields =
+        CollectionUtil.withoutNulls(
+            sortSpecs.stream().map(Sort::getField).collect(Collectors.toList()));
     if (givenFields.isEmpty()) {
-      throw new ValidationException("No 'field' given in sort. Example: \"sort\": [{\"field\":\"name\",\"order\": \"ASC\"}] ");
+      throw new ValidationException(
+          "No 'field' given in sort. Example: \"sort\": [{\"field\":\"name\",\"order\": \"ASC\"}] ");
     }
     List<String> invalidSortSpecs = getInvalidFields(fields, givenFields);
     if (!invalidSortSpecs.isEmpty()) {
-      throw new ValidationException(String.format("Sort has invalid field(s): %s",
-          String.join(", ", invalidSortSpecs)));
+      throw new ValidationException(
+          String.format("Sort has invalid field(s): %s", String.join(", ", invalidSortSpecs)));
     }
   }
 
-  private List<String> getInvalidFields(final List<String> availableFields,
-      final List<String> givenFields) {
-    return givenFields.stream().filter(field -> !availableFields.contains(field))
+  private List<String> getInvalidFields(
+      final List<String> availableFields, final List<String> givenFields) {
+    return givenFields.stream()
+        .filter(field -> !availableFields.contains(field))
         .collect(Collectors.toList());
   }
-
 }

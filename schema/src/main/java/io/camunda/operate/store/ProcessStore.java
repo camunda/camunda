@@ -9,13 +9,11 @@ package io.camunda.operate.store;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
-import org.springframework.lang.Nullable;
-
 import java.io.IOException;
 import java.util.*;
+import org.springframework.lang.Nullable;
 
 public interface ProcessStore {
-
 
   // General methods -> TODO: refactor to upper interface?
   Optional<Long> getDistinctCountFor(final String fieldName);
@@ -27,9 +25,11 @@ public interface ProcessStore {
 
   String getDiagramByKey(final Long processDefinitionKey);
 
-  Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(String tenantId, @Nullable Set<String> allowedBPMNprocessIds);
+  Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(
+      String tenantId, @Nullable Set<String> allowedBPMNprocessIds);
 
-  Map<Long, ProcessEntity> getProcessesIdsToProcessesWithFields(@Nullable Set<String> allowedBPMNIds, int maxSize, String... fields);
+  Map<Long, ProcessEntity> getProcessesIdsToProcessesWithFields(
+      @Nullable Set<String> allowedBPMNIds, int maxSize, String... fields);
 
   long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys);
 
@@ -40,16 +40,21 @@ public interface ProcessStore {
 
   String getProcessInstanceTreePathById(final String processInstanceId);
 
-  List<Map<String, String>> createCallHierarchyFor(List<String> processInstanceIds, final String currentProcessInstanceId);
+  List<Map<String, String>> createCallHierarchyFor(
+      List<String> processInstanceIds, final String currentProcessInstanceId);
 
   long deleteDocument(final String indexName, final String idField, String id) throws IOException;
 
   void deleteProcessInstanceFromTreePath(String processInstanceKey);
 
-  List<ProcessInstanceForListViewEntity> getProcessInstancesByProcessAndStates(long processDefinitionKey, Set<ProcessInstanceState> states, int size,
-                                                                               String[] includeFields);
+  List<ProcessInstanceForListViewEntity> getProcessInstancesByProcessAndStates(
+      long processDefinitionKey,
+      Set<ProcessInstanceState> states,
+      int size,
+      String[] includeFields);
 
-  List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(Set<Long> parentProcessInstanceKeys, int size, String[] includeFields);
+  List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(
+      Set<Long> parentProcessInstanceKeys, int size, String[] includeFields);
 
   long deleteProcessInstancesAndDependants(Set<Long> processInstanceKeys);
 
@@ -82,12 +87,11 @@ public interface ProcessStore {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o)
-        return true;
-      if (o == null || getClass() != o.getClass())
-        return false;
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
       ProcessKey that = (ProcessKey) o;
-      return Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(tenantId, that.tenantId);
+      return Objects.equals(bpmnProcessId, that.bpmnProcessId)
+          && Objects.equals(tenantId, that.tenantId);
     }
 
     @Override

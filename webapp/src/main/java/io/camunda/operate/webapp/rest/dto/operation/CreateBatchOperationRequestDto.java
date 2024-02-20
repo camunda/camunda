@@ -8,29 +8,20 @@ package io.camunda.operate.webapp.rest.dto.operation;
 
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-
 import java.util.Objects;
 
 public class CreateBatchOperationRequestDto {
 
-  /**
-   * Batch operation name
-   */
+  /** Batch operation name */
   private String name;
 
-  /**
-   * Query to filter the process instances affected
-   */
+  /** Query to filter the process instances affected */
   private ListViewQueryDto query;
 
-  /**
-   * Operation type
-   */
+  /** Operation type */
   private OperationType operationType;
 
-  /**
-   * Migration plan, only needed for process instance migration operation
-   */
+  /** Migration plan, only needed for process instance migration operation */
   private MigrationPlanDto migrationPlan;
 
   public String getName() {
@@ -69,8 +60,7 @@ public class CreateBatchOperationRequestDto {
     return this;
   }
 
-  public CreateBatchOperationRequestDto() {
-  }
+  public CreateBatchOperationRequestDto() {}
 
   public CreateBatchOperationRequestDto(ListViewQueryDto query, OperationType operationType) {
     this.query = query;
@@ -82,8 +72,10 @@ public class CreateBatchOperationRequestDto {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     CreateBatchOperationRequestDto that = (CreateBatchOperationRequestDto) o;
-    return Objects.equals(name, that.name) && Objects.equals(query, that.query) && operationType == that.operationType &&
-        Objects.equals(migrationPlan, that.migrationPlan);
+    return Objects.equals(name, that.name)
+        && Objects.equals(query, that.query)
+        && operationType == that.operationType
+        && Objects.equals(migrationPlan, that.migrationPlan);
   }
 
   @Override
@@ -93,11 +85,16 @@ public class CreateBatchOperationRequestDto {
 
   @Override
   public String toString() {
-    return "CreateBatchOperationRequestDto{" +
-        "name='" + name + '\'' +
-        ", query=" + query +
-        ", operationType=" + operationType +
-        ", migrationPlan=" + migrationPlan +
-        '}';
+    return "CreateBatchOperationRequestDto{"
+        + "name='"
+        + name
+        + '\''
+        + ", query="
+        + query
+        + ", operationType="
+        + operationType
+        + ", migrationPlan="
+        + migrationPlan
+        + '}';
   }
 }

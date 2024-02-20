@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.conditions;
 
-public class ElasticsearchCondition extends DatabaseCondition{
+public class ElasticsearchCondition extends DatabaseCondition {
   private static final String DATABASE = "elasticsearch";
 
   @Override

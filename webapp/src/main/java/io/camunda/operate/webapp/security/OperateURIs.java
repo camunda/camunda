@@ -9,10 +9,9 @@ package io.camunda.operate.webapp.security;
 public final class OperateURIs {
 
   // Used as constants class
-   private OperateURIs(){}
+  private OperateURIs() {}
 
-   public static final String
-      RESPONSE_CHARACTER_ENCODING = "UTF-8";
+  public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
   public static final String ROOT = "/";
   public static final String API = "/api/**";
   public static final String PUBLIC_API = "/v*/**";
@@ -26,20 +25,18 @@ public final class OperateURIs {
 
   public static final String IDENTITY_CALLBACK_URI = "/identity-callback";
 
-  public static final String// For redirects after login
-      REQUESTED_URL = "requestedUrl"
-  ;
+  public static final String // For redirects after login
+      REQUESTED_URL = "requestedUrl";
 
   public static final String[] AUTH_WHITELIST = {
-       "/swagger-resources",
-       "/swagger-resources/**",
-       "/swagger-ui.html",
-       "/documentation",
-      "/actuator/**",
-       LOGIN_RESOURCE,
-       SSO_CALLBACK_URI,
-       NO_PERMISSION,
-       LOGOUT_RESOURCE
-   };
-
+    "/swagger-resources",
+    "/swagger-resources/**",
+    "/swagger-ui.html",
+    "/documentation",
+    "/actuator/**",
+    LOGIN_RESOURCE,
+    SSO_CALLBACK_URI,
+    NO_PERMISSION,
+    LOGOUT_RESOURCE
+  };
 }

@@ -58,10 +58,10 @@ public abstract class AbstractStep implements Step {
 
   @Override
   public OffsetDateTime getCreatedDate() {
-     if( createdDate == null) {
-       createdDate = OffsetDateTime.now();
-     }
-     return createdDate;
+    if (createdDate == null) {
+      createdDate = OffsetDateTime.now();
+    }
+    return createdDate;
   }
 
   @Override
@@ -83,13 +83,12 @@ public abstract class AbstractStep implements Step {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     AbstractStep that = (AbstractStep) o;
-    return Objects.equals(indexName, that.indexName) && Objects.equals(version, that.version) && Objects.equals(order,
-        that.order);
+    return Objects.equals(indexName, that.indexName)
+        && Objects.equals(version, that.version)
+        && Objects.equals(order, that.order);
   }
 
   @Override
@@ -99,6 +98,27 @@ public abstract class AbstractStep implements Step {
 
   @Override
   public String toString() {
-    return "AbstractStep{" + "content='" + content + '\'' + ", description='" + description + '\'' + ", createdDate=" + createdDate + ", appliedDate=" + appliedDate + ", indexName='" + indexName + '\'' + ", isApplied=" + isApplied + ", version='" + version + '\'' + ", order=" + order + '}';
+    return "AbstractStep{"
+        + "content='"
+        + content
+        + '\''
+        + ", description='"
+        + description
+        + '\''
+        + ", createdDate="
+        + createdDate
+        + ", appliedDate="
+        + appliedDate
+        + ", indexName='"
+        + indexName
+        + '\''
+        + ", isApplied="
+        + isApplied
+        + ", version='"
+        + version
+        + '\''
+        + ", order="
+        + order
+        + '}';
   }
 }

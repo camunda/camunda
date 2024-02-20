@@ -21,19 +21,15 @@ public class OperateProfileService {
   public static final String AUTH_PROFILE = "auth";
   public static final String DEFAULT_AUTH = AUTH_PROFILE;
   public static final String LDAP_AUTH_PROFILE = "ldap-auth";
-  public static final Set<String> AUTH_PROFILES = Set.of(AUTH_PROFILE,
-      LDAP_AUTH_PROFILE,
-      SSO_AUTH_PROFILE,
-      IDENTITY_AUTH_PROFILE
-  );
+  public static final Set<String> AUTH_PROFILES =
+      Set.of(AUTH_PROFILE, LDAP_AUTH_PROFILE, SSO_AUTH_PROFILE, IDENTITY_AUTH_PROFILE);
 
   private static final Set<String> CANT_LOGOUT_AUTH_PROFILES = Set.of(SSO_AUTH_PROFILE);
 
-  @Autowired
-  private Environment environment;
+  @Autowired private Environment environment;
 
   public String getMessageByProfileFor(final Exception exception) {
-    if(exception!=null && isDevelopmentProfileActive()){
+    if (exception != null && isDevelopmentProfileActive()) {
       return exception.getMessage();
     }
     return "";

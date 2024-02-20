@@ -6,16 +6,15 @@
  */
 package io.camunda.operate.util.j5templates;
 
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.util.TestUtil;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class SearchContainerManager {
   protected static final Logger logger = LoggerFactory.getLogger(SearchContainerManager.class);
@@ -50,7 +49,8 @@ public abstract class SearchContainerManager {
 
   protected abstract boolean shouldCreateSchema();
 
-  protected boolean areIndicesCreatedAfterChecks(String indexPrefix, int minCountOfIndices,int maxChecks) {
+  protected boolean areIndicesCreatedAfterChecks(
+      String indexPrefix, int minCountOfIndices, int maxChecks) {
     boolean areCreated = false;
     int checks = 0;
     while (!areCreated && checks <= maxChecks) {
@@ -58,7 +58,11 @@ public abstract class SearchContainerManager {
       try {
         areCreated = areIndicesCreated(indexPrefix, minCountOfIndices);
       } catch (Exception t) {
-        logger.error("Search indices (min {}) are not created yet. Waiting {}/{}",minCountOfIndices, checks, maxChecks);
+        logger.error(
+            "Search indices (min {}) are not created yet. Waiting {}/{}",
+            minCountOfIndices,
+            checks,
+            maxChecks);
         sleepFor(200);
       }
     }
@@ -66,8 +70,8 @@ public abstract class SearchContainerManager {
     return areCreated;
   }
 
-  protected abstract boolean areIndicesCreated(String indexPrefix, int minCountOfIndices) throws IOException;
-
+  protected abstract boolean areIndicesCreated(String indexPrefix, int minCountOfIndices)
+      throws IOException;
 
   public abstract void stopContainer();
 }

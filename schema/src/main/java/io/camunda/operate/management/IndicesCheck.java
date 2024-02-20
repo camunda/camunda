@@ -14,17 +14,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class IndicesCheck {
 
-  @Autowired
-  private IndexSchemaValidator indexSchemaValidator;
+  @Autowired private IndexSchemaValidator indexSchemaValidator;
 
-  @Autowired
-  private SchemaManager schemaManager;
+  @Autowired private SchemaManager schemaManager;
 
   public boolean indicesArePresent() {
     return indexSchemaValidator.schemaExists();
   }
 
-  public boolean isHealthy(){
-      return schemaManager.isHealthy();
+  public boolean isHealthy() {
+    return schemaManager.isHealthy();
   }
 }

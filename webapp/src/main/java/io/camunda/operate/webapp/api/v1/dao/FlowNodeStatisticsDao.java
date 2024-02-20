@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.api.v1.dao;
 
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
-
 import java.util.List;
 
 public interface FlowNodeStatisticsDao {
@@ -19,4 +18,3 @@ public interface FlowNodeStatisticsDao {
 
   List<FlowNodeStatistics> getFlowNodeStatisticsForProcessInstance(Long processInstanceKey);
 }
-

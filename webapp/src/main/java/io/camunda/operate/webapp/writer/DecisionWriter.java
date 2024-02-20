@@ -10,9 +10,9 @@ import java.io.IOException;
 
 public interface DecisionWriter {
 
-    long deleteDecisionRequirements(long decisionRequirementsKey) throws IOException;
+  long deleteDecisionRequirements(long decisionRequirementsKey) throws IOException;
 
-    long deleteDecisionDefinitionsFor(long decisionRequirementsKey) throws IOException;
+  long deleteDecisionDefinitionsFor(long decisionRequirementsKey) throws IOException;
 
-    long deleteDecisionInstancesFor(long decisionRequirementsKey) throws IOException;
+  long deleteDecisionInstancesFor(long decisionRequirementsKey) throws IOException;
 }

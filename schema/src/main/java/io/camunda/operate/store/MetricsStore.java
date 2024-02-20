@@ -7,7 +7,6 @@
 package io.camunda.operate.store;
 
 import io.camunda.operate.exceptions.PersistenceException;
-
 import java.time.OffsetDateTime;
 
 public interface MetricsStore {
@@ -20,8 +19,20 @@ public interface MetricsStore {
   String DECISION_INSTANCES_AGG_NAME = "decision_instances";
 
   Long retrieveProcessInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime);
-  Long retrieveDecisionInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime);
-  void registerProcessInstanceStartEvent(String processInstanceKey, String tenantId, OffsetDateTime timestamp, BatchRequest batchRequest) throws PersistenceException;
-  void registerDecisionInstanceCompleteEvent(String processInstanceKey, String tenantId, OffsetDateTime timestamp, BatchRequest batchRequest) throws PersistenceException;
 
+  Long retrieveDecisionInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime);
+
+  void registerProcessInstanceStartEvent(
+      String processInstanceKey,
+      String tenantId,
+      OffsetDateTime timestamp,
+      BatchRequest batchRequest)
+      throws PersistenceException;
+
+  void registerDecisionInstanceCompleteEvent(
+      String processInstanceKey,
+      String tenantId,
+      OffsetDateTime timestamp,
+      BatchRequest batchRequest)
+      throws PersistenceException;
 }

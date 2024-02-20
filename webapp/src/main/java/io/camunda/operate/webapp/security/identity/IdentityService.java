@@ -6,21 +6,20 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateURIs.IDENTITY_CALLBACK_URI;
+
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.operate.property.OperateProperties;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
-
-import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
-import static io.camunda.operate.webapp.security.OperateURIs.IDENTITY_CALLBACK_URI;
 
 @Component
 @Profile(IDENTITY_AUTH_PROFILE)
@@ -33,7 +32,10 @@ public class IdentityService {
   private final IdentityRetryService identityRetryService;
 
   @Autowired
-  public IdentityService(IdentityRetryService identityRetryService, OperateProperties operateProperties, Identity identity) {
+  public IdentityService(
+      IdentityRetryService identityRetryService,
+      OperateProperties operateProperties,
+      Identity identity) {
     this.identityRetryService = identityRetryService;
     this.operateProperties = operateProperties;
     this.identity = identity;

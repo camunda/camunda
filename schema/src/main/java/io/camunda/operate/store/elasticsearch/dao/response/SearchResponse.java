@@ -7,7 +7,6 @@
 package io.camunda.operate.store.elasticsearch.dao.response;
 
 import io.camunda.operate.entities.OperateEntity;
-
 import java.util.List;
 
 public class SearchResponse<T extends OperateEntity> implements DAOResponse {

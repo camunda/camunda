@@ -6,10 +6,10 @@
  */
 package io.camunda.operate.entities.dmn.definition;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 import io.camunda.operate.entities.OperateZeebeEntity;
 import java.util.Objects;
-
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 
 public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinitionEntity> {
 
@@ -18,7 +18,8 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
   private int version;
   private String decisionRequirementsId;
   private long decisionRequirementsKey;
-  private String tenantId = DEFAULT_TENANT_ID;;
+  private String tenantId = DEFAULT_TENANT_ID;
+  ;
 
   public String getDecisionId() {
     return decisionId;
@@ -76,21 +77,27 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     DecisionDefinitionEntity that = (DecisionDefinitionEntity) o;
-    return version == that.version && decisionRequirementsKey == that.decisionRequirementsKey && Objects.equals(
-        decisionId, that.decisionId) && Objects.equals(name, that.name) && Objects.equals(decisionRequirementsId,
-        that.decisionRequirementsId) && Objects.equals(tenantId, that.tenantId);
+    return version == that.version
+        && decisionRequirementsKey == that.decisionRequirementsKey
+        && Objects.equals(decisionId, that.decisionId)
+        && Objects.equals(name, that.name)
+        && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), decisionId, name, version, decisionRequirementsId, decisionRequirementsKey,
+    return Objects.hash(
+        super.hashCode(),
+        decisionId,
+        name,
+        version,
+        decisionRequirementsId,
+        decisionRequirementsKey,
         tenantId);
   }
 }

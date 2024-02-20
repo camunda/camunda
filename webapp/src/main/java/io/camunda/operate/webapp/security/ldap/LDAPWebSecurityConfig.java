@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
+import static io.camunda.operate.OperateProfileService.LDAP_AUTH_PROFILE;
+
 import io.camunda.operate.property.LdapProperties;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
@@ -22,21 +24,18 @@ import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAu
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import static io.camunda.operate.OperateProfileService.LDAP_AUTH_PROFILE;
-
 @Profile(LDAP_AUTH_PROFILE)
 @Configuration
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class LDAPWebSecurityConfig extends BaseWebConfigurer {
-  @Autowired
-  private LDAPUserService userService;
+  @Autowired private LDAPUserService userService;
 
-  @Autowired
-  protected OAuth2WebConfigurer oAuth2WebConfigurer;
+  @Autowired protected OAuth2WebConfigurer oAuth2WebConfigurer;
 
   @Override
-  protected void applyAuthenticationSettings(final AuthenticationManagerBuilder auth) throws Exception {
+  protected void applyAuthenticationSettings(final AuthenticationManagerBuilder auth)
+      throws Exception {
     LdapProperties ldapConfig = operateProperties.getLdap();
     if (StringUtils.hasText(ldapConfig.getDomain())) {
       setUpActiveDirectoryLDAP(auth, ldapConfig);
@@ -45,13 +44,11 @@ public class LDAPWebSecurityConfig extends BaseWebConfigurer {
     }
   }
 
-  private void setUpActiveDirectoryLDAP(AuthenticationManagerBuilder auth,
-      LdapProperties ldapConfig) {
+  private void setUpActiveDirectoryLDAP(
+      AuthenticationManagerBuilder auth, LdapProperties ldapConfig) {
     ActiveDirectoryLdapAuthenticationProvider adLDAPProvider =
         new ActiveDirectoryLdapAuthenticationProvider(
-            ldapConfig.getDomain(),
-            ldapConfig.getUrl(),
-            ldapConfig.getBaseDn());
+            ldapConfig.getDomain(), ldapConfig.getUrl(), ldapConfig.getBaseDn());
     if (StringUtils.hasText(ldapConfig.getUserSearchFilter())) {
       adLDAPProvider.setSearchFilter(ldapConfig.getUserSearchFilter());
     }
@@ -77,7 +74,8 @@ public class LDAPWebSecurityConfig extends BaseWebConfigurer {
   }
 
   @Override
-  protected void logoutSuccessHandler(final HttpServletRequest request,
+  protected void logoutSuccessHandler(
+      final HttpServletRequest request,
       final HttpServletResponse response,
       final Authentication authentication) {
     userService.cleanUp(authentication);

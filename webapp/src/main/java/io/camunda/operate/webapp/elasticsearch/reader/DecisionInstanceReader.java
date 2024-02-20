@@ -49,14 +49,13 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -74,43 +73,44 @@ import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
-public class DecisionInstanceReader extends AbstractReader implements io.camunda.operate.webapp.reader.DecisionInstanceReader {
+public class DecisionInstanceReader extends AbstractReader
+    implements io.camunda.operate.webapp.reader.DecisionInstanceReader {
 
   private static final Logger logger = LoggerFactory.getLogger(DecisionInstanceReader.class);
 
-  @Autowired
-  private DecisionInstanceTemplate decisionInstanceTemplate;
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
-  @Autowired
-  private DateTimeFormatter dateTimeFormatter;
+  @Autowired private DateTimeFormatter dateTimeFormatter;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @Autowired(required = false)
   protected PermissionsService permissionsService;
 
   @Override
   public DecisionInstanceDto getDecisionInstance(String decisionInstanceId) {
-    final QueryBuilder query = joinWithAnd(
-        idsQuery().addIds(String.valueOf(decisionInstanceId)),
-        termQuery(ID, decisionInstanceId)
-    );
+    final QueryBuilder query =
+        joinWithAnd(
+            idsQuery().addIds(String.valueOf(decisionInstanceId)),
+            termQuery(ID, decisionInstanceId));
 
-    SearchRequest request = ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate, ALL)
-      .source(new SearchSourceBuilder()
-      .query(constantScoreQuery(query)));
+    SearchRequest request =
+        ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate, ALL)
+            .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
 
     try {
       final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value == 1) {
-        final DecisionInstanceEntity decisionInstance = ElasticsearchUtil
-            .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper,
+        final DecisionInstanceEntity decisionInstance =
+            ElasticsearchUtil.fromSearchHit(
+                response.getHits().getHits()[0].getSourceAsString(),
+                objectMapper,
                 DecisionInstanceEntity.class);
         return DtoCreator.create(decisionInstance, DecisionInstanceDto.class);
       } else if (response.getHits().getTotalHits().value > 1) {
-        throw new NotFoundException(String
-            .format("Could not find unique decision instance with id '%s'.", decisionInstanceId));
+        throw new NotFoundException(
+            String.format(
+                "Could not find unique decision instance with id '%s'.", decisionInstanceId));
       } else {
         throw new NotFoundException(
             String.format("Could not find decision instance with id '%s'.", decisionInstanceId));
@@ -122,7 +122,7 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
 
   @Override
   public DecisionInstanceListResponseDto queryDecisionInstances(
-          final DecisionInstanceListRequestDto request) {
+      final DecisionInstanceListRequestDto request) {
     DecisionInstanceListResponseDto result = new DecisionInstanceListResponseDto();
 
     List<DecisionInstanceEntity> entities = queryDecisionInstancesEntities(request, result);
@@ -138,13 +138,15 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
 
     logger.debug("Decision instance search request: \n{}", query.toString());
 
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-        .fetchSource(null, new String[]{RESULT, EVALUATED_INPUTS, EVALUATED_OUTPUTS});
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(query)
+            .fetchSource(null, new String[] {RESULT, EVALUATED_INPUTS, EVALUATED_OUTPUTS});
 
     applySorting(searchSourceBuilder, request);
 
-    SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate).source(searchSourceBuilder);
 
     logger.debug("Search request will search in: \n{}", searchRequest.indices());
 
@@ -152,38 +154,43 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
       SearchResponse response = tenantAwareClient.search(searchRequest);
       result.setTotalCount(response.getHits().getTotalHits().value);
 
-      List<DecisionInstanceEntity> decisionInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(),
-          (sh) -> {
-            DecisionInstanceEntity entity = ElasticsearchUtil.fromSearchHit(sh.getSourceAsString(), objectMapper, DecisionInstanceEntity.class);
-            entity.setSortValues(sh.getSortValues());
-            return entity;
-          });
+      List<DecisionInstanceEntity> decisionInstanceEntities =
+          ElasticsearchUtil.mapSearchHits(
+              response.getHits().getHits(),
+              (sh) -> {
+                DecisionInstanceEntity entity =
+                    ElasticsearchUtil.fromSearchHit(
+                        sh.getSourceAsString(), objectMapper, DecisionInstanceEntity.class);
+                entity.setSortValues(sh.getSortValues());
+                return entity;
+              });
       if (request.getSearchBefore() != null) {
         Collections.reverse(decisionInstanceEntities);
       }
       return decisionInstanceEntities;
     } catch (IOException e) {
-      final String message = String
-          .format("Exception occurred, while obtaining instances list: %s", e.getMessage());
+      final String message =
+          String.format("Exception occurred, while obtaining instances list: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
 
-  private void applySorting(SearchSourceBuilder searchSourceBuilder, DecisionInstanceListRequestDto request) {
+  private void applySorting(
+      SearchSourceBuilder searchSourceBuilder, DecisionInstanceListRequestDto request) {
 
     String sortBy = getSortBy(request);
 
-    final boolean directSorting = request.getSearchAfter() != null || request.getSearchBefore() == null;
+    final boolean directSorting =
+        request.getSearchAfter() != null || request.getSearchBefore() == null;
     if (request.getSorting() != null) {
       SortBuilder sort1;
       SortOrder sort1DirectOrder = SortOrder.fromString(request.getSorting().getSortOrder());
       if (directSorting) {
-        sort1 = SortBuilders.fieldSort(sortBy).order(sort1DirectOrder)
-            .missing("_last");
+        sort1 = SortBuilders.fieldSort(sortBy).order(sort1DirectOrder).missing("_last");
       } else {
-        sort1 = SortBuilders.fieldSort(sortBy)
-            .order(reverseOrder(sort1DirectOrder)).missing("_first");
+        sort1 =
+            SortBuilders.fieldSort(sortBy).order(reverseOrder(sort1DirectOrder)).missing("_first");
       }
       searchSourceBuilder.sort(sort1);
     }
@@ -191,21 +198,18 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
     SortBuilder sort2;
     SortBuilder sort3;
     Object[] querySearchAfter;
-    if (directSorting) { //this sorting is also the default one for 1st page
+    if (directSorting) { // this sorting is also the default one for 1st page
       sort2 = SortBuilders.fieldSort(KEY).order(SortOrder.ASC);
       sort3 = SortBuilders.fieldSort(EXECUTION_INDEX).order(SortOrder.ASC);
-      querySearchAfter = request.getSearchAfter(objectMapper); //may be null
-    } else { //searchBefore != null
-      //reverse sorting
+      querySearchAfter = request.getSearchAfter(objectMapper); // may be null
+    } else { // searchBefore != null
+      // reverse sorting
       sort2 = SortBuilders.fieldSort(KEY).order(SortOrder.DESC);
       sort3 = SortBuilders.fieldSort(EXECUTION_INDEX).order(SortOrder.DESC);
       querySearchAfter = request.getSearchBefore(objectMapper);
     }
 
-    searchSourceBuilder
-        .sort(sort2)
-        .sort(sort3)
-        .size(request.getPageSize());
+    searchSourceBuilder.sort(sort2).sort(sort3).size(request.getPageSize());
     if (querySearchAfter != null) {
       searchSourceBuilder.searchAfter(querySearchAfter);
     }
@@ -215,7 +219,7 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
     if (request.getSorting() != null) {
       String sortBy = request.getSorting().getSortBy();
       if (sortBy.equals(DecisionInstanceListRequestDto.SORT_BY_ID)) {
-        //we sort by id as numbers, not as strings
+        // we sort by id as numbers, not as strings
         sortBy = KEY;
       } else if (sortBy.equals(DecisionInstanceListRequestDto.SORT_BY_TENANT_ID)) {
         sortBy = TENANT_ID;
@@ -236,16 +240,16 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
   }
 
   private QueryBuilder createRequestQuery(final DecisionInstanceListQueryDto query) {
-    QueryBuilder queryBuilder = joinWithAnd(
-        createEvaluatedFailedQuery(query),
-        createDecisionDefinitionIdsQuery(query),
-        createIdsQuery(query),
-        createProcessInstanceIdQuery(query),
-        createEvaluationDateQuery(query),
-        createReadPermissionQuery(),
-        //TODO Elasticsearch changes
-        createTenantIdQuery(query)
-    );
+    QueryBuilder queryBuilder =
+        joinWithAnd(
+            createEvaluatedFailedQuery(query),
+            createDecisionDefinitionIdsQuery(query),
+            createIdsQuery(query),
+            createProcessInstanceIdQuery(query),
+            createEvaluationDateQuery(query),
+            createReadPermissionQuery(),
+            // TODO Elasticsearch changes
+            createTenantIdQuery(query));
     if (queryBuilder == null) {
       queryBuilder = matchAllQuery();
     }
@@ -260,10 +264,12 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
   }
 
   private QueryBuilder createReadPermissionQuery() {
-    if( permissionsService == null) return null;
-     var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
+    if (permissionsService == null) return null;
+    var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
     if (allowed == null) return null;
-    return allowed.isAll() ? QueryBuilders.matchAllQuery() : QueryBuilders.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
+    return allowed.isAll()
+        ? QueryBuilders.matchAllQuery()
+        : QueryBuilders.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
   }
 
   private QueryBuilder createEvaluationDateQuery(final DecisionInstanceListQueryDto query) {
@@ -305,7 +311,7 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
 
   private QueryBuilder createEvaluatedFailedQuery(final DecisionInstanceListQueryDto query) {
     if (query.isEvaluated() && query.isFailed()) {
-      //cover all instances
+      // cover all instances
       return null;
     } else if (query.isFailed()) {
       return termQuery(STATE, FAILED);
@@ -318,25 +324,36 @@ public class DecisionInstanceReader extends AbstractReader implements io.camunda
 
   @Override
   public Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(String decisionInstanceId) {
-    //we need to find all decision instances with he same key, which we extract from decisionInstanceId
+    // we need to find all decision instances with he same key, which we extract from
+    // decisionInstanceId
     final Long decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
-    final SearchRequest request = ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
-        .source(
-            new SearchSourceBuilder()
-                .query(termQuery(KEY, decisionInstanceKey))
-                .fetchSource(new String[]{DECISION_ID, STATE}, null)
-            .sort(EVALUATION_DATE, SortOrder.ASC)
-        );
+    final SearchRequest request =
+        ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
+            .source(
+                new SearchSourceBuilder()
+                    .query(termQuery(KEY, decisionInstanceKey))
+                    .fetchSource(new String[] {DECISION_ID, STATE}, null)
+                    .sort(EVALUATION_DATE, SortOrder.ASC));
     try {
-      final List<DRDDataEntryDto> entries = tenantAwareClient.search(request, () -> {
-        return ElasticsearchUtil
-          .scroll(request, DRDDataEntryDto.class, objectMapper, esClient,
-              sh -> {
-                final Map<String, Object> map = sh.getSourceAsMap();
-                return new DRDDataEntryDto(sh.getId(), (String) map.get(DECISION_ID),
-                    DecisionInstanceState.valueOf((String) map.get(STATE)));
-              }, null, null);
-      });
+      final List<DRDDataEntryDto> entries =
+          tenantAwareClient.search(
+              request,
+              () -> {
+                return ElasticsearchUtil.scroll(
+                    request,
+                    DRDDataEntryDto.class,
+                    objectMapper,
+                    esClient,
+                    sh -> {
+                      final Map<String, Object> map = sh.getSourceAsMap();
+                      return new DRDDataEntryDto(
+                          sh.getId(),
+                          (String) map.get(DECISION_ID),
+                          DecisionInstanceState.valueOf((String) map.get(STATE)));
+                    },
+                    null,
+                    null);
+              });
       return entries.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId));
     } catch (IOException e) {
       throw new OperateRuntimeException(

@@ -19,5 +19,4 @@ public class MethodSecurityConfig extends GlobalMethodSecurityConfiguration {
   protected MethodSecurityExpressionHandler createExpressionHandler() {
     return new CustomMethodSecurityExpressionHandler();
   }
-
 }

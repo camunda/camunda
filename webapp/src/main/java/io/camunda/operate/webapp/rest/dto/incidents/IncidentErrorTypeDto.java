@@ -57,9 +57,7 @@ public class IncidentErrorTypeDto {
       return false;
     }
     final IncidentErrorTypeDto that = (IncidentErrorTypeDto) o;
-    return count == that.count &&
-        Objects.equals(id, that.id) &&
-        Objects.equals(name, that.name);
+    return count == that.count && Objects.equals(id, that.id) && Objects.equals(name, that.name);
   }
 
   @Override

@@ -14,22 +14,25 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceFlow, SequenceFlow> implements SequenceFlowDao {
+public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceFlow, SequenceFlow>
+    implements SequenceFlowDao {
 
   private final SequenceFlowTemplate sequenceFlowIndex;
 
-  public OpensearchSequenceFlowDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                                   RichOpenSearchClient richOpenSearchClient, SequenceFlowTemplate sequenceFlowIndex) {
+  public OpensearchSequenceFlowDao(
+      OpensearchQueryDSLWrapper queryDSLWrapper,
+      OpensearchRequestDSLWrapper requestDSLWrapper,
+      RichOpenSearchClient richOpenSearchClient,
+      SequenceFlowTemplate sequenceFlowIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.sequenceFlowIndex = sequenceFlowIndex;
   }
@@ -59,12 +62,15 @@ public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceF
     SequenceFlow filter = query.getFilter();
 
     if (filter != null) {
-      var queryTerms = Stream.of(
-          queryDSLWrapper.term(SequenceFlow.ID, filter.getId()),
-          queryDSLWrapper.term(SequenceFlow.ACTIVITY_ID, filter.getActivityId()),
-          queryDSLWrapper.term(SequenceFlow.TENANT_ID, filter.getTenantId()),
-          queryDSLWrapper.term(SequenceFlow.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey())
-      ).filter(Objects::nonNull).collect(Collectors.toList());
+      var queryTerms =
+          Stream.of(
+                  queryDSLWrapper.term(SequenceFlow.ID, filter.getId()),
+                  queryDSLWrapper.term(SequenceFlow.ACTIVITY_ID, filter.getActivityId()),
+                  queryDSLWrapper.term(SequenceFlow.TENANT_ID, filter.getTenantId()),
+                  queryDSLWrapper.term(
+                      SequenceFlow.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()))
+              .filter(Objects::nonNull)
+              .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
         request.query(queryDSLWrapper.and(queryTerms));

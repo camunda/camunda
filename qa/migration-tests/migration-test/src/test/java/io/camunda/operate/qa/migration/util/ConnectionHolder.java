@@ -6,12 +6,11 @@
  */
 package io.camunda.operate.qa.migration.util;
 
+import io.camunda.operate.qa.util.TestContainerUtil;
+import io.camunda.operate.qa.util.TestContext;
 import java.io.File;
 import java.io.IOException;
-
-import io.camunda.operate.qa.util.TestContainerUtil;
 import org.apache.http.HttpHost;
-import io.camunda.operate.qa.util.TestContext;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -20,18 +19,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ConnectionHolder {
 
-  @Autowired
-  private TestContainerUtil testContainerUtil;
+  @Autowired private TestContainerUtil testContainerUtil;
 
   @Bean
-  public RestHighLevelClient getEsClient(TestContext testContext){
+  public RestHighLevelClient getEsClient(TestContext testContext) {
     testContainerUtil.startElasticsearch(testContext);
     return new RestHighLevelClient(
-        org.elasticsearch.client.RestClient.builder(new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort(), "http")));
+        org.elasticsearch.client.RestClient.builder(
+            new HttpHost(
+                testContext.getExternalElsHost(), testContext.getExternalElsPort(), "http")));
   }
 
   @Bean
-  public TestContext getTestContext(){
+  public TestContext getTestContext() {
     final TestContext testContext = new TestContext();
     testContext.setZeebeDataFolder(createTemporaryFolder());
     testContext.setZeebeIndexPrefix("migration-test");
@@ -42,7 +42,6 @@ public class ConnectionHolder {
   public EntityReader getEntityReader(RestHighLevelClient esClient) {
     return new EntityReader(esClient);
   }
-
 
   private File createTemporaryFolder() {
     File createdFolder;
@@ -55,5 +54,4 @@ public class ConnectionHolder {
       throw new RuntimeException(e);
     }
   }
-
 }

@@ -6,14 +6,13 @@
  */
 package io.camunda.operate.util;
 
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.function.Predicate;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.camunda.operate.webapp.security.OperateURIs;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.function.Predicate;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -22,22 +21,20 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 public class MetricAssert {
 
-//  public static void assertThatMetricsAreDisabledFrom(MockMvc mockMvc) {
-//    MockHttpServletRequestBuilder request = get(ENDPOINT);
-//    try {
-//      mockMvc.perform(request)
-//          .andExpect(status().is(404));
-//    } catch (Exception e) {
-//      throw new RuntimeException("Exception while asserting:" + e.getMessage(), e);
-//    }
-//  }
-  
+  //  public static void assertThatMetricsAreDisabledFrom(MockMvc mockMvc) {
+  //    MockHttpServletRequestBuilder request = get(ENDPOINT);
+  //    try {
+  //      mockMvc.perform(request)
+  //          .andExpect(status().is(404));
+  //    } catch (Exception e) {
+  //      throw new RuntimeException("Exception while asserting:" + e.getMessage(), e);
+  //    }
+  //  }
+
   public static void assertThatMetricsFrom(MockMvc mockMvc, Matcher<? super String> matcher) {
     MockHttpServletRequestBuilder request = get("/actuator/prometheus");
     try {
-      mockMvc.perform(request)
-          .andExpect(status().isOk())
-          .andExpect(content().string(matcher));
+      mockMvc.perform(request).andExpect(status().isOk()).andExpect(content().string(matcher));
     } catch (Exception e) {
       throw new RuntimeException("Exception while asserting:" + e.getMessage(), e);
     }
@@ -74,15 +71,14 @@ public class MetricAssert {
     }
 
     public Optional<String> getMetricString(Object o) {
-      String s = (String)o;
+      String s = (String) o;
       String[] strings = s.split("\\n");
-      return Arrays.stream(strings).filter(str -> str.toLowerCase().contains(metricName) && !str.startsWith("#")).findFirst();
+      return Arrays.stream(strings)
+          .filter(str -> str.toLowerCase().contains(metricName) && !str.startsWith("#"))
+          .findFirst();
     }
 
     @Override
-    public void describeTo(Description description) {
-
-    }
+    public void describeTo(Description description) {}
   }
-
 }

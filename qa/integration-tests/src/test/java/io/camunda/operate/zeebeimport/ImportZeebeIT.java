@@ -6,6 +6,11 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
@@ -34,38 +39,26 @@ import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
-  @Autowired
-  private ProcessInstanceReader processInstanceReader;
+  @Autowired private ProcessInstanceReader processInstanceReader;
 
-  @Autowired
-  private IncidentReader incidentReader;
+  @Autowired private IncidentReader incidentReader;
 
-  @Autowired
-  private ListViewReader listViewReader;
+  @Autowired private ListViewReader listViewReader;
 
-  @Autowired
-  private SequenceFlowStore sequenceFlowStore;
+  @Autowired private SequenceFlowStore sequenceFlowStore;
 
-  @Autowired
-  private TestSearchRepository testSearchRepository;
+  @Autowired private TestSearchRepository testSearchRepository;
 
-  @Autowired
-  private VariableTemplate variableTemplate;
+  @Autowired private VariableTemplate variableTemplate;
 
   @Test
   public void testProcessInstanceCreated() {
@@ -73,12 +66,14 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     String processId = "demoProcess";
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
 
-    //when
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    // when
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
-    //then
-    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    // then
+    final ProcessInstanceForListViewEntity processInstanceEntity =
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(processInstanceEntity.getProcessName()).isEqualTo("Demo process");
     assertThat(processInstanceEntity.getProcessVersion()).isEqualTo(1);
@@ -89,7 +84,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(processInstanceEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(processInstanceEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
-    //assert list view data
+    // assert list view data
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getProcessId()).isEqualTo(ConversionUtils.toStringOrNull(processDefinitionKey));
     assertThat(pi.getProcessName()).isEqualTo("Demo process");
@@ -100,9 +95,9 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(pi.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(pi.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(2);
     assertStartFlowNodeCompleted(allFlowNodeInstances.get(0));
     assertFlowNodeIsActive(allFlowNodeInstances.get(1), "taskA");
@@ -114,47 +109,51 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
 
-    //when TC 1
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    // when TC 1
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
     searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "a");
 
-    //then we can find the instance by 2 variable values: a = b, foo = b
+    // then we can find the instance by 2 variable values: a = b, foo = b
     assertVariableExists(processInstanceKey, "a", "\"b\"");
     assertVariableExists(processInstanceKey, "foo", "\"b\"");
     assertVariableDoesNotExist(processInstanceKey, "a", "\"c\"");
 
-    //when TC 2
-    //update variable
+    // when TC 2
+    // update variable
     ZeebeTestUtil.updateVariables(zeebeClient, processInstanceKey, "{\"a\": \"c\"}");
-    //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
-    searchTestRule.processAllRecordsAndWait(variableEqualsCheck, processInstanceKey,processInstanceKey,"a","\"c\"");
-    //then we can find the instance by 2 variable values: foo = b
+    // elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
+    searchTestRule.processAllRecordsAndWait(
+        variableEqualsCheck, processInstanceKey, processInstanceKey, "a", "\"c\"");
+    // then we can find the instance by 2 variable values: foo = b
     assertVariableDoesNotExist(processInstanceKey, "a", "\"b\"");
     assertVariableExists(processInstanceKey, "foo", "\"b\"");
     assertVariableExists(processInstanceKey, "a", "\"c\"");
   }
 
   private void assertVariableExists(Long processInstanceKey, String name, String value) {
-    ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView(
-      createGetAllProcessInstancesRequest(q -> {
-        q.setVariable(new VariablesQueryDto(name, value));
-      }));
+    ListViewProcessInstanceDto pi =
+        getSingleProcessInstanceForListView(
+            createGetAllProcessInstancesRequest(
+                q -> {
+                  q.setVariable(new VariablesQueryDto(name, value));
+                }));
     assertThat(pi.getId()).isEqualTo(processInstanceKey.toString());
   }
 
   private void assertVariableDoesNotExist(Long processInstanceKey, String name, String value) {
-    final ListViewRequestDto request = createGetAllProcessInstancesRequest(q ->
-            q.setVariable(new VariablesQueryDto(name, value)));
+    final ListViewRequestDto request =
+        createGetAllProcessInstancesRequest(q -> q.setVariable(new VariablesQueryDto(name, value)));
     request.setPageSize(100);
-    final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(
-        request);
+    final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(request);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(0);
     assertThat(listViewResponse.getProcessInstances()).hasSize(0);
   }
 
-  private ListViewProcessInstanceDto getSingleProcessInstanceForListView(ListViewRequestDto request) {
+  private ListViewProcessInstanceDto getSingleProcessInstanceForListView(
+      ListViewRequestDto request) {
     final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(request);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
     assertThat(listViewResponse.getProcessInstances()).hasSize(1);
@@ -169,32 +168,36 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   public void testProcessInstanceAndActivityCompleted() {
     // having
     String processId = "demoProcess";
-    BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
-      .startEvent("start")
-        .serviceTask("task1").zeebeJobType("task1")
-      .endEvent()
-      .done();
+    BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .serviceTask("task1")
+            .zeebeJobType("task1")
+            .endEvent()
+            .done();
     deployProcess(process, "demoProcess_v_1.bpmn");
 
-    //when
-    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
+    // when
+    final long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
 
     completeTask(processInstanceKey, "task1", null);
 
     searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
 
-    //then
-    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    // then
+    final ProcessInstanceForListViewEntity processInstanceEntity =
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceEntity.getState()).isEqualTo(ProcessInstanceState.COMPLETED);
 
-    //assert list view data
+    // assert list view data
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.COMPLETED);
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(3);
     final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
     assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
@@ -205,31 +208,35 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   public void testProcessInstanceStartTimeDoesNotChange() {
     // having
     String processId = "demoProcess";
-    BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
-      .startEvent("start")
-        .serviceTask("task1").zeebeJobType("task1")
-      .endEvent()
-      .done();
+    BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .serviceTask("task1")
+            .zeebeJobType("task1")
+            .endEvent()
+            .done();
     deployProcess(process, "demoProcess_v_1.bpmn");
-    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
+    final long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
-    //remember start date
-    final OffsetDateTime startDate = processInstanceReader.getProcessInstanceByKey(processInstanceKey).getStartDate();
+    // remember start date
+    final OffsetDateTime startDate =
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey).getStartDate();
 
-    //when
+    // when
     completeTask(processInstanceKey, "task1", null);
     searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
 
-    //then
-    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    // then
+    final ProcessInstanceForListViewEntity processInstanceEntity =
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceEntity.getState()).isEqualTo(ProcessInstanceState.COMPLETED);
-    //assert start date did not change
+    // assert start date did not change
     assertThat(processInstanceEntity.getStartDate()).isEqualTo(startDate);
 
-    //assert list view data
+    // assert list view data
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getStartDate()).isEqualTo(startDate);
-
   }
 
   @Test
@@ -239,28 +246,31 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
     String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
-    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
-    //create an incident
+    // create an incident
     failTaskWithNoRetriesLeft(activityId, processInstanceKey, "Some error");
 
-    //when update retries
-    List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
+    // when update retries
+    List<IncidentEntity> allIncidents =
+        incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
-    ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
+    ZeebeTestUtil.resolveIncident(
+        zeebeClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
     searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
-    //then
+    // then
     allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(0);
 
-    //assert list view data
+    // assert list view data
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.ACTIVE);
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(2);
     final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
     assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
@@ -275,14 +285,16 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
     String processId = "demoProcess";
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
-    //when
-    //create an incident
+    // when
+    // create an incident
     failTaskWithNoRetriesLeft(activityId, processInstanceKey, errorMessage);
 
-    //then
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
+    // then
+    final List<IncidentEntity> allIncidents =
+        incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
@@ -293,13 +305,13 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(incidentEntity.getErrorType()).isNotNull();
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
-    //assert list view data
+    // assert list view data
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(2);
     final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
     assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
@@ -313,26 +325,34 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     String activityId = "xor";
 
     String processId = "demoProcess";
-    BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
-      .startEvent("start")
-        .exclusiveGateway(activityId)
-        .sequenceFlowId("s1").condition("=foo < 5")
-          .serviceTask("task1").zeebeJobType("task1")
-          .endEvent()
-        .moveToLastGateway()
-        .sequenceFlowId("s2").condition("=foo >= 5")
-          .serviceTask("task2").zeebeJobType("task2")
-          .endEvent()
-      .done();
+    BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .exclusiveGateway(activityId)
+            .sequenceFlowId("s1")
+            .condition("=foo < 5")
+            .serviceTask("task1")
+            .zeebeJobType("task1")
+            .endEvent()
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("=foo >= 5")
+            .serviceTask("task2")
+            .zeebeJobType("task2")
+            .endEvent()
+            .done();
     final String resourceName = processId + ".bpmn";
     final Long processDefinitionKey = deployProcess(process, resourceName);
 
-    //when
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
+    // when
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(
+            zeebeClient, processId, "{\"a\": \"b\"}"); // wrong payload provokes incident
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
-    //then incident created, activity in INCIDENT state
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
+    // then incident created, activity in INCIDENT state
+    final List<IncidentEntity> allIncidents =
+        incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
@@ -343,35 +363,38 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(incidentEntity.getErrorType()).isNotNull();
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
-    //assert list view data
+    // assert list view data
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(2);
     final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
     assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(activity.getIncidentKey()).isNotNull();
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
 
-    //when payload updated
-//TODO    ZeebeUtil.updateVariables(zeebeClient, gatewayActivity.getKey(), processInstanceKey, "{\"foo\": 7}", processId, processId);
-//    elasticsearchTestRule.processAllEvents(5);
+    // when payload updated
+    // TODO    ZeebeUtil.updateVariables(zeebeClient, gatewayActivity.getKey(), processInstanceKey,
+    // "{\"foo\": 7}", processId, processId);
+    //    elasticsearchTestRule.processAllEvents(5);
 
-    //then incident is resolved
-//TODO    processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstancekey);
-//    assertThat(processInstanceEntity.getIncidents().size()).isEqualTo(1);
-//    incidentEntity = processInstanceEntity.getIncidents().get(0);
-//    assertThat(incidentEntity.getElementId()).isEqualTo(activityId);
-//    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
+    // then incident is resolved
+    // TODO    processInstanceEntity =
+    // processInstanceReader.getProcessInstanceByKey(processInstancekey);
+    //    assertThat(processInstanceEntity.getIncidents().size()).isEqualTo(1);
+    //    incidentEntity = processInstanceEntity.getIncidents().get(0);
+    //    assertThat(incidentEntity.getElementId()).isEqualTo(activityId);
+    //    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
 
-    //assert activity fields
-//TODO    final ActivityInstanceEntity xorActivity = processInstanceEntity.getActivities().stream().filter(a -> a.getElementId().equals("xor"))
-//      .findFirst().get();
-//    assertThat(xorActivity.getState()).isEqualTo(ActivityState.COMPLETED);
-//    assertThat(xorActivity.getEndDate()).isNotNull();
+    // assert activity fields
+    // TODO    final ActivityInstanceEntity xorActivity =
+    // processInstanceEntity.getActivities().stream().filter(a -> a.getElementId().equals("xor"))
+    //      .findFirst().get();
+    //    assertThat(xorActivity.getState()).isEqualTo(ActivityState.COMPLETED);
+    //    assertThat(xorActivity.getEndDate()).isNotNull();
   }
 
   @Test
@@ -380,50 +403,59 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     String activityId = "xor";
 
     String processId = "demoProcess";
-    BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
-      .startEvent("start")
-        .exclusiveGateway(activityId)
-        .sequenceFlowId("s1").condition("=foo < 5")
-          .serviceTask("task1").zeebeJobType("task1")
-          .endEvent()
-        .moveToLastGateway()
-        .sequenceFlowId("s2").condition("=foo >= 5")
-          .serviceTask("task2").zeebeJobType("task2")
-          .endEvent()
-      .done();
+    BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .exclusiveGateway(activityId)
+            .sequenceFlowId("s1")
+            .condition("=foo < 5")
+            .serviceTask("task1")
+            .zeebeJobType("task1")
+            .endEvent()
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("=foo >= 5")
+            .serviceTask("task2")
+            .zeebeJobType("task2")
+            .endEvent()
+            .done();
     final String resourceName = processId + ".bpmn";
     final Long processDefinitionKey = deployProcess(process, resourceName);
 
-    //when
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
+    // when
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(
+            zeebeClient, processId, "{\"a\": \"b\"}"); // wrong payload provokes incident
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
-    //then incident created, activity in INCIDENT state
-    List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
+    // then incident created, activity in INCIDENT state
+    List<IncidentEntity> allIncidents =
+        incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(processId);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
-    //when I cancel process instance
+    // when I cancel process instance
     ZeebeTestUtil.cancelProcessInstance(zeebeClient, processInstanceKey);
     searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
     searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
-    //then incident is deleted
-    ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    // then incident is deleted
+    ProcessInstanceForListViewEntity processInstanceEntity =
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceEntity.getState()).isEqualTo(ProcessInstanceState.CANCELED);
     allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(0);
 
-    //assert list view data
+    // assert list view data
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(2);
     final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
     assertThat(activity.getState()).isEqualTo(FlowNodeState.TERMINATED);
@@ -437,27 +469,33 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     String activityId = "xor";
 
     String processId = "demoProcess";
-    BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
-      .startEvent("start")
-        .exclusiveGateway(activityId)
-        .sequenceFlowId("s1").condition("=foo < 5")
-          .serviceTask("task1").zeebeJobType("task1")
-          .endEvent()
-        .moveToLastGateway()
-        .sequenceFlowId("s2").condition("=foo >= 5")
-          .serviceTask("task2").zeebeJobType("task2")
-          .endEvent()
-      .done();
+    BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .exclusiveGateway(activityId)
+            .sequenceFlowId("s1")
+            .condition("=foo < 5")
+            .serviceTask("task1")
+            .zeebeJobType("task1")
+            .endEvent()
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("=foo >= 5")
+            .serviceTask("task2")
+            .zeebeJobType("task2")
+            .endEvent()
+            .done();
     final String resourceName = processId + ".bpmn";
     deployProcess(process, resourceName);
 
-    //when
-    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"foo\": 6}");
+    // when
+    final long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"foo\": 6}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances.size()).isGreaterThanOrEqualTo(2);
     final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
     assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
@@ -471,33 +509,35 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     String activityId = "gateway";
 
     String processId = "demoProcess";
-    BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
-      .startEvent()
-      .eventBasedGateway(activityId)
-      .intermediateCatchEvent(
-        "msg-1", i -> i.message(m -> m.name("msg-1").zeebeCorrelationKey("=key1")))
-      .endEvent()
-      .moveToLastGateway()
-      .intermediateCatchEvent(
-        "msg-2", i -> i.message(m -> m.name("msg-2").zeebeCorrelationKey("=key2")))
-      .endEvent()
-      .done();
+    BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .eventBasedGateway(activityId)
+            .intermediateCatchEvent(
+                "msg-1", i -> i.message(m -> m.name("msg-1").zeebeCorrelationKey("=key1")))
+            .endEvent()
+            .moveToLastGateway()
+            .intermediateCatchEvent(
+                "msg-2", i -> i.message(m -> m.name("msg-2").zeebeCorrelationKey("=key2")))
+            .endEvent()
+            .done();
     final String resourceName = processId + ".bpmn";
     deployProcess(process, resourceName);
 
-    //when
-    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"key1\": \"value1\", \"key2\": \"value2\"}");
+    // when
+    final long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(
+            zeebeClient, processId, "{\"key1\": \"value1\", \"key2\": \"value2\"}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "gateway");
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(2);
     final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
     assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(activity.getEndDate()).isNull();
-
   }
 
   @Test
@@ -507,14 +547,16 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
     String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
-    //when
+    // when
     cancelProcessInstance(processInstanceKey);
 
-    //then
-    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    // then
+    final ProcessInstanceForListViewEntity processInstanceEntity =
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceEntity.getId()).isEqualTo(processInstanceKey.toString());
     assertThat(processInstanceEntity.getKey()).isEqualTo(processInstanceKey);
     assertThat(processInstanceEntity.getState()).isEqualTo(ProcessInstanceState.CANCELED);
@@ -522,7 +564,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(processInstanceEntity.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(processInstanceEntity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
-    //assert list view data
+    // assert list view data
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
     assertThat(pi.getId()).isEqualTo(processInstanceKey.toString());
@@ -530,16 +572,15 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(pi.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(pi.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(2);
     final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
     assertThat(activity.getState()).isEqualTo(FlowNodeState.TERMINATED);
     assertThat(activity.getEndDate()).isNotNull();
     assertThat(activity.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
-
   }
 
   @Test
@@ -549,15 +590,18 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
     String processId = "eventProcess";
     deployProcess("messageEventProcess_v_1.bpmn");
-//    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
+    //    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId,
+    // "{\"a\": \"b\"}");
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
     sleepFor(1000);
 
-    //when
+    // when
     cancelProcessInstance(processInstanceKey);
 
-    //then
-    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    // then
+    final ProcessInstanceForListViewEntity processInstanceEntity =
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceEntity.getId()).isEqualTo(processInstanceKey.toString());
     assertThat(processInstanceEntity.getKey()).isEqualTo(processInstanceKey);
     assertThat(processInstanceEntity.getState()).isEqualTo(ProcessInstanceState.CANCELED);
@@ -565,7 +609,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(processInstanceEntity.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(processInstanceEntity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
-    //assert list view data
+    // assert list view data
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
     assertThat(pi.getId()).isEqualTo(processInstanceKey.toString());
@@ -573,16 +617,15 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(pi.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(pi.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(2);
     final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
     assertThat(activity.getState()).isEqualTo(FlowNodeState.TERMINATED);
     assertThat(activity.getEndDate()).isNotNull();
     assertThat(activity.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
-
   }
 
   @Test
@@ -592,23 +635,23 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
     String processId = "eventProcess";
     deployProcess("messageEventProcess_v_1.bpmn");
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
     sleepFor(1000);
 
-    //when
+    // when
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(3);
     final FlowNodeInstanceEntity activity = allFlowNodeInstances.get(1);
     assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(activity.getEndDate()).isNotNull();
     assertThat(activity.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
-
   }
 
   private void sendMessages(String messageName, String payload, int count) {
@@ -619,10 +662,12 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   public void testProcessInstanceById() {
     String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
-    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
 
-    final ProcessInstanceForListViewEntity processInstanceById = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    final ProcessInstanceForListViewEntity processInstanceById =
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceById).isNotNull();
     assertThat(processInstanceById.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
   }
@@ -633,14 +678,16 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     final String errorMessage = "Error occurred when working on the job";
     String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
-    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
 
-    //create an incident
+    // create an incident
     failTaskWithNoRetriesLeft(activityId, processInstanceKey, errorMessage);
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
-    final ProcessInstanceForListViewEntity processInstanceById = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    final ProcessInstanceForListViewEntity processInstanceById =
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceById).isNotNull();
     assertThat(processInstanceById.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
     assertThat(processInstanceById.isIncident()).isTrue();
@@ -654,43 +701,55 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     String processId2 = "simpleProcess";
     deployProcess("demoProcess_v_1.bpmn");
     deployProcess(
-        Bpmn.createExecutableProcess(processId2).startEvent().serviceTask("task1").zeebeJobType("task1").endEvent().done(),
+        Bpmn.createExecutableProcess(processId2)
+            .startEvent()
+            .serviceTask("task1")
+            .zeebeJobType("task1")
+            .endEvent()
+            .done(),
         processId2 + ".bpmn");
-    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    final long processInstanceKey2 = ZeebeTestUtil.startProcessInstance(zeebeClient, processId2, null);
+    final long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long processInstanceKey2 =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId2, null);
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey2);
 
-    //fail task with retries left
+    // fail task with retries left
     failTaskWithRetriesLeft(activityId, processInstanceKey, errorMessage);
 
-    //when search by retriesLeft = true
-    ListViewResponseDto response = listViewReader.queryProcessInstances(
-        createGetAllProcessInstancesRequest(q -> q.setRetriesLeft(true)));
-    //then
+    // when search by retriesLeft = true
+    ListViewResponseDto response =
+        listViewReader.queryProcessInstances(
+            createGetAllProcessInstancesRequest(q -> q.setRetriesLeft(true)));
+    // then
     assertThat(response.getProcessInstances().size()).isEqualTo(1);
-    assertThat(response.getProcessInstances().get(0).getId()).isEqualTo(String.valueOf(processInstanceKey));
+    assertThat(response.getProcessInstances().get(0).getId())
+        .isEqualTo(String.valueOf(processInstanceKey));
 
-    //fail task with no retries -> incident
+    // fail task with no retries -> incident
     failTaskWithNoRetriesLeft(activityId, processInstanceKey, 1, errorMessage);
-    //when search by retriesLeft = true
-    response = listViewReader.queryProcessInstances(
-        createGetAllProcessInstancesRequest(q -> q.setRetriesLeft(true)));
-    //then
+    // when search by retriesLeft = true
+    response =
+        listViewReader.queryProcessInstances(
+            createGetAllProcessInstancesRequest(q -> q.setRetriesLeft(true)));
+    // then
     assertThat(response.getProcessInstances().size()).isEqualTo(0);
 
-    //when search by retriesLeft = false
-    response = listViewReader.queryProcessInstances(
-        createGetAllProcessInstancesRequest(q -> q.setRetriesLeft(false)));
-    //then
+    // when search by retriesLeft = false
+    response =
+        listViewReader.queryProcessInstances(
+            createGetAllProcessInstancesRequest(q -> q.setRetriesLeft(false)));
+    // then
     assertThat(response.getProcessInstances().size()).isEqualTo(2);
-    assertThat(response.getProcessInstances()).extracting(ListViewProcessInstanceDto::getId)
+    assertThat(response.getProcessInstances())
+        .extracting(ListViewProcessInstanceDto::getId)
         .contains(String.valueOf(processInstanceKey));
   }
 
   @Test
   public void testProcessInstanceCalledFromCallActivityById() throws Exception {
-    //having process with call activity
+    // having process with call activity
     final String parentProcessId = "parentProcess";
     final String calledProcessId = "process";
     final String callActivityId = "callActivity";
@@ -700,50 +759,51 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
             .callActivity(callActivityId)
             .zeebeProcessId(calledProcessId)
             .done();
-    final long calledProcessDefinitionKey = tester
-        .deployProcess("single-task.bpmn")
-        .getProcessDefinitionKey();
+    final long calledProcessDefinitionKey =
+        tester.deployProcess("single-task.bpmn").getProcessDefinitionKey();
 
-    final Long parentProcessDefinitionKey = tester.deployProcess(testProcess, "testProcess.bpmn")
-        .getProcessDefinitionKey();
-    final long parentProcessInstanceKey = tester
-        .startProcessInstance(parentProcessId, null)
-        .and().waitUntil()
-        .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 1)
-        .getProcessInstanceKey();
+    final Long parentProcessDefinitionKey =
+        tester.deployProcess(testProcess, "testProcess.bpmn").getProcessDefinitionKey();
+    final long parentProcessInstanceKey =
+        tester
+            .startProcessInstance(parentProcessId, null)
+            .and()
+            .waitUntil()
+            .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 1)
+            .getProcessInstanceKey();
 
-    //find called process instance key
-    final ListViewResponseDto response = listViewReader
-        .queryProcessInstances(createGetAllProcessInstancesRequest(q ->
-            q.setBpmnProcessId(calledProcessId).setProcessVersion(1)));
+    // find called process instance key
+    final ListViewResponseDto response =
+        listViewReader.queryProcessInstances(
+            createGetAllProcessInstancesRequest(
+                q -> q.setBpmnProcessId(calledProcessId).setProcessVersion(1)));
     assertThat(response.getProcessInstances().size()).isEqualTo(1);
     final String calledProcessInstanceId = response.getProcessInstances().get(0).getId();
 
-    //when
+    // when
     ListViewProcessInstanceDto processInstance = getProcessInstanceById(calledProcessInstanceId);
 
-    //then
+    // then
     assertThat(processInstance).isNotNull();
     assertThat(processInstance.getParentInstanceId())
         .isEqualTo(String.valueOf(parentProcessInstanceKey));
-    assertThat(processInstance.getRootInstanceId()).isEqualTo(String.valueOf(parentProcessInstanceKey));
+    assertThat(processInstance.getRootInstanceId())
+        .isEqualTo(String.valueOf(parentProcessInstanceKey));
 
     assertThat(processInstance.getCallHierarchy()).isNotNull();
     assertThat(processInstance.getCallHierarchy()).hasSize(1);
-    final ProcessInstanceReferenceDto callHier1 = processInstance
-        .getCallHierarchy().get(0);
+    final ProcessInstanceReferenceDto callHier1 = processInstance.getCallHierarchy().get(0);
     assertThat(callHier1.getInstanceId()).isEqualTo(String.valueOf(parentProcessInstanceKey));
-    assertThat(callHier1.getProcessDefinitionId()).isEqualTo(String.valueOf(parentProcessDefinitionKey));
+    assertThat(callHier1.getProcessDefinitionId())
+        .isEqualTo(String.valueOf(parentProcessDefinitionKey));
     assertThat(callHier1.getProcessDefinitionName()).isEqualTo(parentProcessId);
-
   }
 
   private ListViewProcessInstanceDto getProcessInstanceById(final String processInstanceId)
       throws Exception {
     String url = String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
     final MvcResult result = getRequest(url);
-    return mockMvcTestRule.fromResponse(result, new TypeReference<>() {
-    });
+    return mockMvcTestRule.fromResponse(result, new TypeReference<>() {});
   }
 
   @Test
@@ -753,19 +813,21 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
 
     String processId = "eventSubProcess";
     deployProcess("eventSubProcess.bpmn");
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
     sleepFor(5_000);
 
-    //when
+    // when
     searchTestRule.processAllRecordsAndWait(flowNodeIsTerminatedCheck, processInstanceKey, "taskA");
 
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).hasSize(5);
-    final List<FlowNodeInstanceEntity> eventSP = allFlowNodeInstances.stream()
-        .filter(fn -> fn.getType().equals(FlowNodeType.EVENT_SUB_PROCESS))
-        .collect(Collectors.toList());
+    final List<FlowNodeInstanceEntity> eventSP =
+        allFlowNodeInstances.stream()
+            .filter(fn -> fn.getType().equals(FlowNodeType.EVENT_SUB_PROCESS))
+            .collect(Collectors.toList());
     assertThat(eventSP).hasSize(1);
   }
 
@@ -773,25 +835,29 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   public void testProcessInstanceByIdFailForUnknownId() {
     String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
-    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
 
-    /*final ProcessInstanceForListViewEntity processInstanceById =*/ processInstanceReader.getProcessInstanceByKey(-42L);
+    /*final ProcessInstanceForListViewEntity processInstanceById =*/ processInstanceReader
+        .getProcessInstanceByKey(-42L);
   }
 
   @Test
   public void testSequenceFlowEntityCreated() {
 
-    //having
+    // having
     String processId = "demoProcess";
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
 
-    //when
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    // when
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
-    //then
-    final List<SequenceFlowEntity> sequenceFlowEntities = sequenceFlowStore.getSequenceFlowsByProcessInstanceKey(processInstanceKey);
+    // then
+    final List<SequenceFlowEntity> sequenceFlowEntities =
+        sequenceFlowStore.getSequenceFlowsByProcessInstanceKey(processInstanceKey);
     assertThat(sequenceFlowEntities).hasSize(1);
 
     SequenceFlowEntity sequenceFlowEntity = sequenceFlowEntities.get(0);
@@ -804,16 +870,19 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testVariableEntityCreated() {
 
-    //having
+    // having
     String processId = "demoProcess";
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
 
-    //when
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    // when
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
-    //then
-    final List<VariableEntity> variableEntities = testSearchRepository.getVariablesByProcessInstanceKey(variableTemplate.getAlias(), processInstanceKey);
+    // then
+    final List<VariableEntity> variableEntities =
+        testSearchRepository.getVariablesByProcessInstanceKey(
+            variableTemplate.getAlias(), processInstanceKey);
     assertThat(variableEntities).isNotEmpty();
 
     VariableEntity variableEntity = variableEntities.get(0);
@@ -844,5 +913,4 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
     assertThat(flowNodeEntity.getEndDate()).isNull();
   }
-
 }

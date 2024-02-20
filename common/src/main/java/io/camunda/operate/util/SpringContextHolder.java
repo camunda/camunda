@@ -6,7 +6,6 @@
  */
 package io.camunda.operate.util;
 
-import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
@@ -17,8 +16,9 @@ public class SpringContextHolder implements ApplicationContextAware {
   private static ApplicationContext context;
 
   /**
-   * Returns the Spring managed bean instance of the given class type if it exists.
-   * Returns null otherwise.
+   * Returns the Spring managed bean instance of the given class type if it exists. Returns null
+   * otherwise.
+   *
    * @param beanClass
    * @return
    */
@@ -35,5 +35,4 @@ public class SpringContextHolder implements ApplicationContextAware {
     // store ApplicationContext reference to access required beans later on
     SpringContextHolder.context = context;
   }
-
 }

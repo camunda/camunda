@@ -6,6 +6,11 @@
  */
 package io.camunda.operate.qa.backup;
 
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
@@ -19,16 +24,6 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.time.Instant;
@@ -40,11 +35,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class DataGenerator {
@@ -55,15 +54,17 @@ public class DataGenerator {
   public static final int INCIDENT_COUNT = 32;
   public static final int COUNT_OF_CANCEL_OPERATION = 9;
   public static final int COUNT_OF_RESOLVE_OPERATION = 8;
-  private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+  private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
-  //data change
+  // data change
   public static final String NEW_BPMN_PROCESS_ID = "testProcess2";
   public static final int CANCELLED_PROCESS_INSTANCES = 3;
   public static final int NEW_PROCESS_INSTANCES_COUNT = 13;
 
   /**
-   * ZeebeClient must not be reused between different test fixtures, as this may be different versions of client in the future.
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
+   * versions of client in the future.
    */
   private ZeebeClient zeebeClient;
 
@@ -75,11 +76,14 @@ public class DataGenerator {
 
   private RestHighLevelClient esClient;
 
-  @Autowired
-  private OperateAPICaller operateAPICaller;
+  @Autowired private OperateAPICaller operateAPICaller;
 
   private void init(BackupRestoreTestContext testContext) {
-    this.zeebeClient = ZeebeClient.newClientBuilder().gatewayAddress(testContext.getExternalZeebeContactPoint()).usePlaintext().build();
+    this.zeebeClient =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress(testContext.getExternalZeebeContactPoint())
+            .usePlaintext()
+            .build();
     this.esClient = testContext.getEsClient();
     this.operateRestClient = testContext.getOperateRestClient();
   }
@@ -99,12 +103,18 @@ public class DataGenerator {
     for (int i = 0; i < COUNT_OF_CANCEL_OPERATION; i++) {
       createOperation(OperationType.CANCEL_PROCESS_INSTANCE, processInstanceKeys.size() * 10);
     }
-    logger.info("{} operations of type {} started", COUNT_OF_CANCEL_OPERATION, OperationType.CANCEL_PROCESS_INSTANCE);
+    logger.info(
+        "{} operations of type {} started",
+        COUNT_OF_CANCEL_OPERATION,
+        OperationType.CANCEL_PROCESS_INSTANCE);
 
     for (int i = 0; i < COUNT_OF_RESOLVE_OPERATION; i++) {
       createOperation(OperationType.RESOLVE_INCIDENT, processInstanceKeys.size() * 10);
     }
-    logger.info("{} operations of type {} started", COUNT_OF_RESOLVE_OPERATION, OperationType.RESOLVE_INCIDENT);
+    logger.info(
+        "{} operations of type {} started",
+        COUNT_OF_RESOLVE_OPERATION,
+        OperationType.RESOLVE_INCIDENT);
 
     waitTillSomeInstancesAreArchived();
 
@@ -113,7 +123,8 @@ public class DataGenerator {
     } catch (IOException e) {
       logger.error("Error in refreshing indices", e);
     }
-    logger.info("Data generation completed in: {} s",
+    logger.info(
+        "Data generation completed in: {} s",
         ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
     testContext.addProcess(PROCESS_BPMN_PROCESS_ID);
   }
@@ -166,11 +177,14 @@ public class DataGenerator {
 
   private boolean someInstancesAreArchived() {
     try {
-      SearchResponse search = esClient.search(
-          new SearchRequest("operate-*_" + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())), RequestOptions.DEFAULT);
+      SearchResponse search =
+          esClient.search(
+              new SearchRequest("operate-*_" + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())),
+              RequestOptions.DEFAULT);
       return search.getHits().getTotalHits().value > 0;
     } catch (IOException e) {
-      throw new RuntimeException("Exception occurred while checking archived indices: " + e.getMessage(), e);
+      throw new RuntimeException(
+          "Exception occurred while checking archived indices: " + e.getMessage(), e);
     }
   }
 
@@ -186,7 +200,8 @@ public class DataGenerator {
     if (operationStarted) {
       logger.debug("Operation {} started", operationType.name());
     } else {
-      throw new RuntimeException(String.format("Operation %s could not started", operationType.name()));
+      throw new RuntimeException(
+          String.format("Operation %s could not started", operationType.name()));
     }
   }
 
@@ -203,7 +218,8 @@ public class DataGenerator {
   private List<Long> startProcessInstances(String bpmnProcessId, int numberOfProcessInstances) {
     List<Long> processInstanceKeys = new ArrayList<>();
     for (int i = 0; i < numberOfProcessInstances; i++) {
-      long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
+      long processInstanceKey =
+          ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
       logger.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
@@ -212,14 +228,29 @@ public class DataGenerator {
   }
 
   private void deployProcess(String bpmnProcessId) {
-    String processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+    String processDefinitionKey =
+        ZeebeTestUtil.deployProcess(
+            zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
     logger.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 
   private BpmnModelInstance createModel(String bpmnProcessId) {
-    return Bpmn.createExecutableProcess(bpmnProcessId).startEvent("start").serviceTask("task1").zeebeJobType("task1")
-        .zeebeInput("=var1", "varIn").zeebeOutput("=varOut", "var2").serviceTask("task2").zeebeJobType("task2").serviceTask("task3").zeebeJobType("task3").serviceTask("task4").zeebeJobType("task4").serviceTask("task5")
-        .zeebeJobType("task5").endEvent().done();
+    return Bpmn.createExecutableProcess(bpmnProcessId)
+        .startEvent("start")
+        .serviceTask("task1")
+        .zeebeJobType("task1")
+        .zeebeInput("=var1", "varIn")
+        .zeebeOutput("=varOut", "var2")
+        .serviceTask("task2")
+        .zeebeJobType("task2")
+        .serviceTask("task3")
+        .zeebeJobType("task3")
+        .serviceTask("task4")
+        .zeebeJobType("task4")
+        .serviceTask("task5")
+        .zeebeJobType("task5")
+        .endEvent()
+        .done();
   }
 
   private Long chooseKey(List<Long> keys) {
@@ -242,20 +273,21 @@ public class DataGenerator {
 
   public void assertData() {
     try {
-      RetryOperation
-          .newBuilder()
+      RetryOperation.newBuilder()
           .noOfRetry(10)
           .delayInterval(2000, TimeUnit.MILLISECONDS)
           .retryPredicate(result -> !(boolean) result)
-          .retryConsumer(() -> {
-            try {
-              assertDataOneAttempt();
-              return true;
-            } catch (AssertionError er) {
-              return false;
-            }
-      }).build().retry();
-
+          .retryConsumer(
+              () -> {
+                try {
+                  assertDataOneAttempt();
+                  return true;
+                } catch (AssertionError er) {
+                  return false;
+                }
+              })
+          .build()
+          .retry();
 
     } catch (Exception ex) {
       throw new OperateRuntimeException(ex);
@@ -270,22 +302,27 @@ public class DataGenerator {
     ListViewResponseDto processInstances = operateAPICaller.getProcessInstances();
     assertThat(processInstances.getProcessInstances().size()).isEqualTo(PROCESS_INSTANCE_COUNT);
 
-    //check sequence flows from random process instances
+    // check sequence flows from random process instances
     int count = 0;
     while (count <= 10) {
-      SequenceFlowDto[] sequenceFlows = operateAPICaller.getSequenceFlows(
-          processInstances.getProcessInstances().get(random.nextInt(PROCESS_INSTANCE_COUNT)).getId());
+      SequenceFlowDto[] sequenceFlows =
+          operateAPICaller.getSequenceFlows(
+              processInstances
+                  .getProcessInstances()
+                  .get(random.nextInt(PROCESS_INSTANCE_COUNT))
+                  .getId());
       assertThat(sequenceFlows.length).isEqualTo(PROCESS_INSTANCE_COUNT * 2);
       count++;
     }
 
-    //count incident process instances
+    // count incident process instances
     ListViewResponseDto incidentProcessInstances = operateAPICaller.getIncidentProcessInstances();
-    assertThat(incidentProcessInstances.getProcessInstances().size()).isEqualTo(PROCESS_INSTANCE_COUNT);
-    assertThat(incidentProcessInstances.getTotalCount()).isBetween(
-        Long.valueOf(INCIDENT_COUNT - (COUNT_OF_CANCEL_OPERATION + COUNT_OF_RESOLVE_OPERATION)),
-        Long.valueOf(INCIDENT_COUNT)
-    );
+    assertThat(incidentProcessInstances.getProcessInstances().size())
+        .isEqualTo(PROCESS_INSTANCE_COUNT);
+    assertThat(incidentProcessInstances.getTotalCount())
+        .isBetween(
+            Long.valueOf(INCIDENT_COUNT - (COUNT_OF_CANCEL_OPERATION + COUNT_OF_RESOLVE_OPERATION)),
+            Long.valueOf(INCIDENT_COUNT));
   }
 
   public void changeData() {
@@ -296,40 +333,59 @@ public class DataGenerator {
     startProcessInstances(NEW_BPMN_PROCESS_ID, NEW_PROCESS_INSTANCES_COUNT);
 
     ListViewResponseDto incidentProcessInstances = operateAPICaller.getIncidentProcessInstances();
-    //resolve several incidents
+    // resolve several incidents
     for (int i = 0; i < 10; i++) {
-      operateAPICaller.createOperation(Long.valueOf(incidentProcessInstances.getProcessInstances()
-              .get(random.nextInt((int) incidentProcessInstances.getTotalCount())).getId()),
+      operateAPICaller.createOperation(
+          Long.valueOf(
+              incidentProcessInstances
+                  .getProcessInstances()
+                  .get(random.nextInt((int) incidentProcessInstances.getTotalCount()))
+                  .getId()),
           OperationType.RESOLVE_INCIDENT);
     }
 
-    //cancel several instances
+    // cancel several instances
     for (int i = 0; i < CANCELLED_PROCESS_INSTANCES; i++) {
-      operateAPICaller.createOperation(Long.valueOf(incidentProcessInstances.getProcessInstances()
-              .get(random.nextInt((int) incidentProcessInstances.getTotalCount())).getId()),
+      operateAPICaller.createOperation(
+          Long.valueOf(
+              incidentProcessInstances
+                  .getProcessInstances()
+                  .get(random.nextInt((int) incidentProcessInstances.getTotalCount()))
+                  .getId()),
           OperationType.CANCEL_PROCESS_INSTANCE);
     }
 
-    logger.info("Data changing completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
+    logger.info(
+        "Data changing completed in: "
+            + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now())
+            + " s");
   }
 
   public void assertDataAfterChange() throws Exception {
-    RetryOperation.newBuilder().noOfRetry(10).delayInterval(2000, TimeUnit.MILLISECONDS)
-        .retryPredicate(result -> !(boolean) result).retryConsumer(() -> {
-          try {
-            ProcessGroupDto[] groupedProcesses = operateAPICaller.getGroupedProcesses();
-            assertThat(groupedProcesses).hasSize(2);
-            assertThat(groupedProcesses).extracting(ProcessGroupDto::getBpmnProcessId)
-                .containsExactlyInAnyOrder(PROCESS_BPMN_PROCESS_ID, NEW_BPMN_PROCESS_ID);
-            ListViewResponseDto processInstances = operateAPICaller.getProcessInstances();
-            assertThat(processInstances.getProcessInstances().size()).isEqualTo(
-                PROCESS_INSTANCE_COUNT + NEW_PROCESS_INSTANCES_COUNT - CANCELLED_PROCESS_INSTANCES);
-            return true;
-          } catch (AssertionError er) {
-            return false;
-          }
-        })
-        .build().retry();
+    RetryOperation.newBuilder()
+        .noOfRetry(10)
+        .delayInterval(2000, TimeUnit.MILLISECONDS)
+        .retryPredicate(result -> !(boolean) result)
+        .retryConsumer(
+            () -> {
+              try {
+                ProcessGroupDto[] groupedProcesses = operateAPICaller.getGroupedProcesses();
+                assertThat(groupedProcesses).hasSize(2);
+                assertThat(groupedProcesses)
+                    .extracting(ProcessGroupDto::getBpmnProcessId)
+                    .containsExactlyInAnyOrder(PROCESS_BPMN_PROCESS_ID, NEW_BPMN_PROCESS_ID);
+                ListViewResponseDto processInstances = operateAPICaller.getProcessInstances();
+                assertThat(processInstances.getProcessInstances().size())
+                    .isEqualTo(
+                        PROCESS_INSTANCE_COUNT
+                            + NEW_PROCESS_INSTANCES_COUNT
+                            - CANCELLED_PROCESS_INSTANCES);
+                return true;
+              } catch (AssertionError er) {
+                return false;
+              }
+            })
+        .build()
+        .retry();
   }
-
 }

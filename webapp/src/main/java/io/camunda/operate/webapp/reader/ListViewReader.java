@@ -9,11 +9,11 @@ package io.camunda.operate.webapp.reader;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-
 import java.util.List;
 
 public interface ListViewReader {
-    ListViewResponseDto queryProcessInstances(ListViewRequestDto processInstanceRequest);
+  ListViewResponseDto queryProcessInstances(ListViewRequestDto processInstanceRequest);
 
-    List<ProcessInstanceForListViewEntity> queryListView(ListViewRequestDto processInstanceRequest, ListViewResponseDto result);
+  List<ProcessInstanceForListViewEntity> queryListView(
+      ListViewRequestDto processInstanceRequest, ListViewResponseDto result);
 }

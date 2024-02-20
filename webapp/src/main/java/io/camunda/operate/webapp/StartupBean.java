@@ -42,18 +42,17 @@ public class StartupBean {
   @Autowired(required = false)
   private OperateUserDetailsService operateUserDetailsService;
 
-  @Autowired
-  private DataGenerator dataGenerator;
+  @Autowired private DataGenerator dataGenerator;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
-  @Autowired
-  private OperationExecutor operationExecutor;
+  @Autowired private OperationExecutor operationExecutor;
+
   @PostConstruct
   public void initApplication() {
     if (operateUserDetailsService != null) {
-      logger.info("INIT: Create users in {} if not exists ...", DatabaseInfo.getCurrent().getCode());
+      logger.info(
+          "INIT: Create users in {} if not exists ...", DatabaseInfo.getCurrent().getCode());
       operateUserDetailsService.initializeUsers();
     }
     logger.debug("INIT: Generate demo data...");
@@ -70,11 +69,10 @@ public class StartupBean {
 
   @PreDestroy
   public void shutdown() {
-    if(DatabaseInfo.isElasticsearch()) {
+    if (DatabaseInfo.isElasticsearch()) {
       logger.info("Shutdown elasticsearch clients.");
       ElasticsearchConnector.closeEsClient(esClient);
       ElasticsearchConnector.closeEsClient(zeebeEsClient);
     }
   }
-
 }

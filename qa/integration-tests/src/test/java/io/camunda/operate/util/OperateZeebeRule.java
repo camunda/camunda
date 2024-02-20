@@ -6,19 +6,15 @@
  */
 package io.camunda.operate.util;
 
-import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeContainer;
+import java.time.Instant;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
-
-import java.time.Instant;
 
 public class OperateZeebeRule extends TestWatcher {
-  @Autowired
-  public OperateZeebeRuleProvider operateZeebeRuleProvider;
+  @Autowired public OperateZeebeRuleProvider operateZeebeRuleProvider;
 
   @Override
   public void starting(Description description) {
@@ -62,22 +58,22 @@ public class OperateZeebeRule extends TestWatcher {
     return operateZeebeRuleProvider.getPrefix();
   }
 
-//  public void setPrefix(String prefix) {
-//    this.prefix = prefix;
-//  }
-//
+  //  public void setPrefix(String prefix) {
+  //    this.prefix = prefix;
+  //  }
+  //
   public ZeebeContainer getZeebeContainer() {
     return operateZeebeRuleProvider.getZeebeContainer();
   }
 
-//  public void setOperateProperties(final OperateProperties operateProperties) {
-//    this.operateProperties = operateProperties;
-//  }
-//
-//  public void setZeebeEsClient(final RestHighLevelClient zeebeEsClient) {
-//    this.zeebeEsClient = zeebeEsClient;
-//  }
-//
+  //  public void setOperateProperties(final OperateProperties operateProperties) {
+  //    this.operateProperties = operateProperties;
+  //  }
+  //
+  //  public void setZeebeEsClient(final RestHighLevelClient zeebeEsClient) {
+  //    this.zeebeEsClient = zeebeEsClient;
+  //  }
+  //
   public ZeebeClient getClient() {
     return operateZeebeRuleProvider.getClient();
   }

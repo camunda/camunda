@@ -7,10 +7,9 @@
 package io.camunda.operate.webapp.management.dto;
 
 import io.camunda.operate.data.OperateDateTimeFormatter;
-import org.springframework.format.annotation.DateTimeFormat;
-
 import java.time.OffsetDateTime;
 import java.util.Objects;
+import org.springframework.format.annotation.DateTimeFormat;
 
 public class UsageMetricQueryDTO {
   private static final int DEFAULT_PAGE_SIZE = Integer.MAX_VALUE;

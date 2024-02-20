@@ -36,24 +36,24 @@ import org.springframework.stereotype.Component;
 @Component("ElasticsearchVariableDaoV1")
 public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> implements VariableDao {
 
-  @Autowired
-  private VariableTemplate variableIndex;
+  @Autowired private VariableTemplate variableIndex;
 
   @Override
-  protected void buildFiltering(final Query<Variable> query, final SearchSourceBuilder searchSourceBuilder) {
+  protected void buildFiltering(
+      final Query<Variable> query, final SearchSourceBuilder searchSourceBuilder) {
     final Variable filter = query.getFilter();
     List<QueryBuilder> queryBuilders = new ArrayList<>();
     if (filter != null) {
       queryBuilders.add(buildTermQuery(Variable.KEY, filter.getKey()));
       queryBuilders.add(buildTermQuery(Variable.TENANT_ID, filter.getTenantId()));
-      queryBuilders.add(buildTermQuery(Variable.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
+      queryBuilders.add(
+          buildTermQuery(Variable.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
       queryBuilders.add(buildTermQuery(Variable.SCOPE_KEY, filter.getScopeKey()));
       queryBuilders.add(buildTermQuery(Variable.NAME, filter.getName()));
       queryBuilders.add(buildTermQuery(Variable.VALUE, filter.getValue()));
       queryBuilders.add(buildTermQuery(Variable.TRUNCATED, filter.getTruncated()));
     }
-    searchSourceBuilder.query(
-        joinWithAnd(queryBuilders.toArray(new QueryBuilder[]{})));
+    searchSourceBuilder.query(joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {})));
   }
 
   @Override
@@ -77,22 +77,19 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
   @Override
   public Results<Variable> search(final Query<Variable> query) throws APIException {
     logger.debug("search {}", query);
-    final SearchSourceBuilder searchSourceBuilder = buildQueryOn(
-        query,
-        Variable.KEY,
-        new SearchSourceBuilder());
+    final SearchSourceBuilder searchSourceBuilder =
+        buildQueryOn(query, Variable.KEY, new SearchSourceBuilder());
     try {
-      final SearchRequest searchRequest = new SearchRequest().indices(
-              variableIndex.getAlias())
-          .source(searchSourceBuilder);
+      final SearchRequest searchRequest =
+          new SearchRequest().indices(variableIndex.getAlias()).source(searchSourceBuilder);
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
         List<Variable> variables =
-            ElasticsearchUtil.mapSearchHits(searchHitArray,
-                this::searchHitToVariableWithoutFullValue);
+            ElasticsearchUtil.mapSearchHits(
+                searchHitArray, this::searchHitToVariableWithoutFullValue);
         return new Results<Variable>()
             .setTotal(searchHits.getTotalHits().value)
             .setItems(variables)
@@ -105,24 +102,25 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
     }
   }
 
-  protected Variable searchHitToVariableWithoutFullValue(final SearchHit searchHit){
+  protected Variable searchHitToVariableWithoutFullValue(final SearchHit searchHit) {
     return searchHitToVariable(searchHit, false);
   }
 
-  protected Variable searchHitToVariableWithFullValue(final SearchHit searchHit){
+  protected Variable searchHitToVariableWithFullValue(final SearchHit searchHit) {
     return searchHitToVariable(searchHit, true);
   }
 
   protected Variable searchHitToVariable(final SearchHit searchHit, final boolean isFullValue) {
     final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
-    final Variable variable = new Variable()
-        .setKey((Long) searchHitAsMap.get(Variable.KEY))
-        .setProcessInstanceKey((Long) searchHitAsMap.get(Variable.PROCESS_INSTANCE_KEY))
-        .setScopeKey((Long) searchHitAsMap.get(Variable.SCOPE_KEY))
-        .setTenantId((String) searchHitAsMap.get(Variable.TENANT_ID))
-        .setName((String) searchHitAsMap.get(Variable.NAME))
-        .setValue((String) searchHitAsMap.get(Variable.VALUE))
-        .setTruncated((Boolean) searchHitAsMap.get(Variable.TRUNCATED));
+    final Variable variable =
+        new Variable()
+            .setKey((Long) searchHitAsMap.get(Variable.KEY))
+            .setProcessInstanceKey((Long) searchHitAsMap.get(Variable.PROCESS_INSTANCE_KEY))
+            .setScopeKey((Long) searchHitAsMap.get(Variable.SCOPE_KEY))
+            .setTenantId((String) searchHitAsMap.get(Variable.TENANT_ID))
+            .setName((String) searchHitAsMap.get(Variable.NAME))
+            .setValue((String) searchHitAsMap.get(Variable.VALUE))
+            .setTruncated((Boolean) searchHitAsMap.get(Variable.TRUNCATED));
     if (isFullValue) {
       final String fullValue = (String) searchHitAsMap.get(Variable.FULL_VALUE);
       if (fullValue != null) {
@@ -133,15 +131,16 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
     return variable;
   }
 
-  protected List<Variable> searchFor(final SearchSourceBuilder searchSourceBuilder){
+  protected List<Variable> searchFor(final SearchSourceBuilder searchSourceBuilder) {
     try {
-      final SearchRequest searchRequest = new SearchRequest(variableIndex.getAlias())
-          .source(searchSourceBuilder);
+      final SearchRequest searchRequest =
+          new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
-        return ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToVariableWithFullValue);
+        return ElasticsearchUtil.mapSearchHits(
+            searchHitArray, this::searchHitToVariableWithFullValue);
       } else {
         return List.of();
       }
@@ -150,4 +149,3 @@ public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> impleme
     }
   }
 }
-

@@ -7,6 +7,9 @@
 package io.camunda.operate;
 
 import io.camunda.operate.data.DataGenerator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -21,18 +24,22 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.core.env.ConfigurableEnvironment;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 @SpringBootApplication
-@ComponentScan(basePackages = "io.camunda.operate",
+@ComponentScan(
+    basePackages = "io.camunda.operate",
     excludeFilters = {
-        @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.zeebeimport\\..*"),
-        @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.webapp\\..*"),
-        @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.archiver\\..*")
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.operate\\.zeebeimport\\..*"),
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.operate\\.webapp\\..*"),
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.operate\\.archiver\\..*")
     },
-    //use fully qualified names as bean name, as we have classes with same names for different versions of importer
+    // use fully qualified names as bean name, as we have classes with same names for different
+    // versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @EnableAutoConfiguration
 public class Application {
@@ -41,19 +48,19 @@ public class Application {
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
   public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";
 
-  public static class ApplicationErrorListener implements
-      ApplicationListener<ApplicationFailedEvent> {
+  public static class ApplicationErrorListener
+      implements ApplicationListener<ApplicationFailedEvent> {
 
     @Override
     public void onApplicationEvent(ApplicationFailedEvent event) {
-        event.getApplicationContext().close();
-        System.exit(-1);
+      event.getApplicationContext().close();
+      System.exit(-1);
     }
   }
 
   public static void main(String[] args) {
 
-    //To ensure that debug logging performed using java.util.logging is routed into Log4j 2
+    // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
     // Workaround for https://github.com/spring-projects/spring-boot/issues/26627
     System.setProperty(
@@ -68,13 +75,14 @@ public class Application {
   }
 
   private static void setDefaultAuthProfile(final SpringApplication springApplication) {
-    springApplication.addInitializers(configurableApplicationContext -> {
-      ConfigurableEnvironment env = configurableApplicationContext.getEnvironment();
-      Set<String> activeProfiles = Set.of(env.getActiveProfiles());
-      if (OperateProfileService.AUTH_PROFILES.stream().noneMatch(activeProfiles::contains)) {
-        env.addActiveProfile(OperateProfileService.DEFAULT_AUTH);
-      }
-    });
+    springApplication.addInitializers(
+        configurableApplicationContext -> {
+          ConfigurableEnvironment env = configurableApplicationContext.getEnvironment();
+          Set<String> activeProfiles = Set.of(env.getActiveProfiles());
+          if (OperateProfileService.AUTH_PROFILES.stream().noneMatch(activeProfiles::contains)) {
+            env.addActiveProfile(OperateProfileService.DEFAULT_AUTH);
+          }
+        });
   }
 
   private static void setDefaultProperties(final SpringApplication springApplication) {
@@ -86,26 +94,33 @@ public class Application {
 
   private static Map<String, Object> getWebProperties() {
     return Map.of(
-        "server.servlet.session.cookie.name","OPERATE-SESSION",
-        SPRING_THYMELEAF_PREFIX_KEY, SPRING_THYMELEAF_PREFIX_VALUE,
-        "spring.mvc.pathmatch.matching-strategy", "ANT_PATH_MATCHER",
+        "server.servlet.session.cookie.name",
+        "OPERATE-SESSION",
+        SPRING_THYMELEAF_PREFIX_KEY,
+        SPRING_THYMELEAF_PREFIX_VALUE,
+        "spring.mvc.pathmatch.matching-strategy",
+        "ANT_PATH_MATCHER",
         // Return error messages for all endpoints by default, except for Internal API.
         // Internal API error handling is defined in InternalAPIErrorController.
-        "server.error.include-message" , "always");
+        "server.error.include-message",
+        "always");
   }
 
   public static Map<String, Object> getManagementProperties() {
     return Map.of(
-        //disable default health indicators: https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-health-indicators
+        // disable default health indicators:
+        // https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-health-indicators
         "management.health.defaults.enabled", "false",
 
-        //enable Kubernetes health groups: https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-kubernetes-probes
+        // enable Kubernetes health groups:
+        // https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-kubernetes-probes
         "management.endpoint.health.probes.enabled", "true",
 
-        //enable health check and metrics endpoints
-        "management.endpoints.web.exposure.include", "health, prometheus, loggers, usage-metrics, backups",
+        // enable health check and metrics endpoints
+        "management.endpoints.web.exposure.include",
+            "health, prometheus, loggers, usage-metrics, backups",
 
-        //add custom check to standard readiness check
+        // add custom check to standard readiness check
         "management.endpoint.health.group.readiness.include", "readinessState,indicesCheck");
   }
 
@@ -115,6 +130,4 @@ public class Application {
     logger.debug("Create Data generator stub");
     return DataGenerator.DO_NOTHING;
   }
-
 }
-

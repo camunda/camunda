@@ -24,19 +24,18 @@ import io.camunda.operate.qa.util.ElasticsearchUtil;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateAbstractIT;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestImportListener;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
+import io.camunda.operate.zeebeimport.v8_5.processors.ImportBulkProcessor;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import io.camunda.operate.zeebeimport.v8_5.processors.ImportBulkProcessor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.junit.*;
@@ -55,26 +54,19 @@ public class ImportSeveralVersionsIT extends OperateAbstractIT {
   private static final int TIMEOUT_IN_SECONDS = 5 * 60; // 5 minutes
   private static final int TIMEOUT_IN_MILLIS = TIMEOUT_IN_SECONDS * 1000; // 5 minutes
 
-  @Rule
-  public SearchTestRule searchTestRule = new SearchTestRule(OPERATE_PREFIX);
+  @Rule public SearchTestRule searchTestRule = new SearchTestRule(OPERATE_PREFIX);
 
-  @Autowired
-  private ZeebeImporter zeebeImporter;
+  @Autowired private ZeebeImporter zeebeImporter;
 
-  @Autowired
-  private TestImportListener countImportListener;
+  @Autowired private TestImportListener countImportListener;
 
-  @Autowired
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
-  @Autowired
-  private ListViewTemplate listViewTemplate;
+  @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired
-  private IncidentTemplate incidentTemplate;
+  @Autowired private IncidentTemplate incidentTemplate;
 
-  @Autowired
-  private RestHighLevelClient esClient;
+  @Autowired private RestHighLevelClient esClient;
 
   @Value("${test.wiCount}")
   private int wiCount;
@@ -85,17 +77,13 @@ public class ImportSeveralVersionsIT extends OperateAbstractIT {
   @Value("${test.incidentCount}")
   private int incidentCount;
 
-  @SpyBean
-  private ImportBulkProcessor importerv2;
+  @SpyBean private ImportBulkProcessor importerv2;
 
-  @SpyBean
-  private io.camunda.operate.zeebeimport.v8_4.processors.ImportBulkProcessor importerv1;
+  @SpyBean private io.camunda.operate.zeebeimport.v8_4.processors.ImportBulkProcessor importerv1;
 
-  @MockBean
-  private PartitionHolder partitionHolder;
+  @MockBean private PartitionHolder partitionHolder;
 
-  @Autowired
-  private RecordsReaderHolder recordsReaderHolder;
+  @Autowired private RecordsReaderHolder recordsReaderHolder;
 
   @Before
   public void beforeTest() {
@@ -111,16 +99,21 @@ public class ImportSeveralVersionsIT extends OperateAbstractIT {
   @Test
   @Ignore("https://github.com/camunda/operate/issues/3713")
   public void shouldImportFromSeveralZeebeVersions() throws PersistenceException {
-    //when
+    // when
     AtomicBoolean hold = new AtomicBoolean(true);
     zeebeImporter.scheduleReaders();
-    countImportListener.setBatchFinishedListener(() -> {
-      logger.info("Batch finished. Imported batches: " + countImportListener.getImportedCount() + "   ::   scheduled: " + countImportListener.getScheduledCount());
-      if (countImportListener.getImportedCount() == countImportListener.getScheduledCount()) {
-        hold.set(false);
-        logger.info("All readers have finished importing batch");
-      }
-    });
+    countImportListener.setBatchFinishedListener(
+        () -> {
+          logger.info(
+              "Batch finished. Imported batches: "
+                  + countImportListener.getImportedCount()
+                  + "   ::   scheduled: "
+                  + countImportListener.getScheduledCount());
+          if (countImportListener.getImportedCount() == countImportListener.getScheduledCount()) {
+            hold.set(false);
+            logger.info("All readers have finished importing batch");
+          }
+        });
 
     int waitingFor = 0;
     while (hold.get()) {
@@ -134,7 +127,7 @@ public class ImportSeveralVersionsIT extends OperateAbstractIT {
 
     // then
     executeAndRetry(60, 1000L, this::assertOperateData);
-    //make sure that both importers were called
+    // make sure that both importers were called
     verify(importerv1, atLeastOnce()).performImport(any(ImportBatch.class));
     verify(importerv2, atLeastOnce()).performImport(any(ImportBatch.class));
   }
@@ -143,28 +136,38 @@ public class ImportSeveralVersionsIT extends OperateAbstractIT {
     try {
       ElasticsearchUtil.flushData(esClient);
 
-      //assert process count
+      // assert process count
       int count = ElasticsearchUtil.getDocCount(esClient, processIndex.getAlias());
       assertThat(count).isEqualTo(1);
 
-      //assert process instances count
-      count = ElasticsearchUtil.getFieldCardinality(esClient, listViewTemplate.getAlias(), ListViewTemplate.PROCESS_INSTANCE_KEY);
+      // assert process instances count
+      count =
+          ElasticsearchUtil.getFieldCardinality(
+              esClient, listViewTemplate.getAlias(), ListViewTemplate.PROCESS_INSTANCE_KEY);
       assertThat(count).isEqualTo(wiCount);
 
-      //assert finished count
-      final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
-      count = ElasticsearchUtil.getFieldCardinalityWithRequest(esClient, listViewTemplate.getAlias(), ListViewTemplate.END_DATE, isProcessInstanceQuery);
+      // assert finished count
+      final TermQueryBuilder isProcessInstanceQuery =
+          termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
+      count =
+          ElasticsearchUtil.getFieldCardinalityWithRequest(
+              esClient,
+              listViewTemplate.getAlias(),
+              ListViewTemplate.END_DATE,
+              isProcessInstanceQuery);
       assertThat(count).isEqualTo(finishedCount);
 
-      //assert incidents count
-      count = ElasticsearchUtil.getFieldCardinality(esClient, incidentTemplate.getAlias(), IncidentTemplate.KEY);
+      // assert incidents count
+      count =
+          ElasticsearchUtil.getFieldCardinality(
+              esClient, incidentTemplate.getAlias(), IncidentTemplate.KEY);
       assertThat(count).isEqualTo(incidentCount);
     } catch (IOException ex) {
       fail("Unable to assert data.", ex);
     }
   }
 
-  private void executeAndRetry(int retryTimes, long waitTime, Runnable execute)  {
+  private void executeAndRetry(int retryTimes, long waitTime, Runnable execute) {
     executeAndRetry(0, retryTimes, waitTime, execute);
   }
 
@@ -181,7 +184,6 @@ public class ImportSeveralVersionsIT extends OperateAbstractIT {
       }
     }
   }
-
 
   // ImportSeveralVersionsIT.shouldImportFromSeveralZeebeVersions:138
   //    ->executeAndRetry:178

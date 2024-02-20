@@ -63,8 +63,10 @@ public class UserEntity extends OperateEntity<UserEntity> {
       return false;
     }
     final UserEntity that = (UserEntity) o;
-    return userId.equals(that.userId) && displayName.equals(that.displayName) && password.equals(
-        that.password) && roles.equals(that.roles);
+    return userId.equals(that.userId)
+        && displayName.equals(that.displayName)
+        && password.equals(that.password)
+        && roles.equals(that.roles);
   }
 
   @Override

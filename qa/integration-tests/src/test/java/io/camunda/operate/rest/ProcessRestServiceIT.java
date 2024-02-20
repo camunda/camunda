@@ -6,6 +6,11 @@
  */
 package io.camunda.operate.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
@@ -30,36 +35,26 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @SpringBootTest(
     classes = {
-        TestApplicationWithNoBeans.class,
-        ProcessRestService.class,
-        OperateProperties.class,
-        OperateProfileService.class,
-        JacksonConfig.class,
-        OperateDateTimeFormatter.class,
-        DatabaseInfo.class,
-        OperateProperties.class
-    }
-)
+      TestApplicationWithNoBeans.class,
+      ProcessRestService.class,
+      OperateProperties.class,
+      OperateProfileService.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class,
+      OperateProperties.class
+    })
 public class ProcessRestServiceIT extends OperateAbstractIT {
 
-  @MockBean
-  protected ProcessReader processReader;
+  @MockBean protected ProcessReader processReader;
 
-  @MockBean
-  protected ProcessInstanceReader processInstanceReader;
+  @MockBean protected ProcessInstanceReader processInstanceReader;
 
-  @MockBean
-  private PermissionsService permissionsService;
+  @MockBean private PermissionsService permissionsService;
 
-  @MockBean
-  private BatchOperationWriter batchOperationWriter;
+  @MockBean private BatchOperationWriter batchOperationWriter;
 
   @Test
   public void testProcessDefinitionByIdFailsWhenNoPermissions() throws Exception {
@@ -67,9 +62,12 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     Long processDefinitionKey = 123L;
     String bpmnProcessId = "processId";
     // when
-    when(processReader.getProcess(processDefinitionKey)).thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getProcessByIdUrl(processDefinitionKey.toString()));
+    when(processReader.getProcess(processDefinitionKey))
+        .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        getRequestShouldFailWithNoAuthorization(getProcessByIdUrl(processDefinitionKey.toString()));
     // then
     assertErrorMessageContains(mvcResult, "No read permission for process");
   }
@@ -80,9 +78,13 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     Long processDefinitionKey = 123L;
     String bpmnProcessId = "processId";
     // when
-    when(processReader.getProcess(processDefinitionKey)).thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getProcessXmlByIdUrl(processDefinitionKey.toString()));
+    when(processReader.getProcess(processDefinitionKey))
+        .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        getRequestShouldFailWithNoAuthorization(
+            getProcessXmlByIdUrl(processDefinitionKey.toString()));
     // then
     assertErrorMessageContains(mvcResult, "No read permission for process");
   }
@@ -93,35 +95,46 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     Long processDefinitionKey = 123L;
     String bpmnProcessId = "processId";
     // when
-    when(processReader.getProcess(processDefinitionKey)).thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE)).thenReturn(true);
-    when(batchOperationWriter.scheduleDeleteProcessDefinition(any())).thenReturn(new BatchOperationEntity());
-    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(getProcessByIdUrl(processDefinitionKey.toString()))
-        .accept(mockMvcTestRule.getContentType());
+    when(processReader.getProcess(processDefinitionKey))
+        .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE))
+        .thenReturn(true);
+    when(batchOperationWriter.scheduleDeleteProcessDefinition(any()))
+        .thenReturn(new BatchOperationEntity());
+    MockHttpServletRequestBuilder request =
+        MockMvcRequestBuilders.delete(getProcessByIdUrl(processDefinitionKey.toString()))
+            .accept(mockMvcTestRule.getContentType());
     MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
-    BatchOperationEntity batchOperationEntity = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    BatchOperationEntity batchOperationEntity =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     // then
     assertThat(batchOperationEntity).isNotNull();
   }
 
   @Test
   public void testDeleteProcessDefinitionFailsForMissingKey() throws Exception {
-    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(ProcessRestService.PROCESS_URL)
-        .accept(mockMvcTestRule.getContentType());
+    MockHttpServletRequestBuilder request =
+        MockMvcRequestBuilders.delete(ProcessRestService.PROCESS_URL)
+            .accept(mockMvcTestRule.getContentType());
     MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isNotFound()).andReturn();
   }
 
   @Test
   public void testDeleteProcessDefinitionFailsForNotExistingProcess() throws Exception {
     Long processDefinitionKey = 123L;
-    when(processReader.getProcess(processDefinitionKey)).thenThrow(new NotFoundException("Not found"));
-    MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete(getProcessByIdUrl(processDefinitionKey.toString()))
-        .accept(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isNotFound())
-        .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(NotFoundException.class))
-        .andReturn();
+    when(processReader.getProcess(processDefinitionKey))
+        .thenThrow(new NotFoundException("Not found"));
+    MockHttpServletRequestBuilder request =
+        MockMvcRequestBuilders.delete(getProcessByIdUrl(processDefinitionKey.toString()))
+            .accept(mockMvcTestRule.getContentType());
+    MvcResult mvcResult =
+        mockMvc
+            .perform(request)
+            .andExpect(status().isNotFound())
+            .andExpect(
+                result ->
+                    assertThat(result.getResolvedException()).isInstanceOf(NotFoundException.class))
+            .andReturn();
   }
 
   @Test
@@ -130,10 +143,15 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     Long processDefinitionKey = 123L;
     String bpmnProcessId = "processId";
     // when
-    when(processReader.getProcess(processDefinitionKey)).thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE)).thenReturn(false);
-    when(batchOperationWriter.scheduleDeleteProcessDefinition(any())).thenReturn(new BatchOperationEntity());
-    MvcResult mvcResult = deleteRequestShouldFailWithNoAuthorization(getProcessByIdUrl(processDefinitionKey.toString()));
+    when(processReader.getProcess(processDefinitionKey))
+        .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE))
+        .thenReturn(false);
+    when(batchOperationWriter.scheduleDeleteProcessDefinition(any()))
+        .thenReturn(new BatchOperationEntity());
+    MvcResult mvcResult =
+        deleteRequestShouldFailWithNoAuthorization(
+            getProcessByIdUrl(processDefinitionKey.toString()));
     // then
     assertErrorMessageContains(mvcResult, "No delete permission for process");
   }

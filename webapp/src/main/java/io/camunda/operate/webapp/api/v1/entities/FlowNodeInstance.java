@@ -12,14 +12,12 @@ import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.util.Objects;
 
 @JsonInclude(Include.NON_NULL)
 public class FlowNodeInstance {
 
-  public static final String
-      KEY = FlowNodeInstanceTemplate.KEY,
+  public static final String KEY = FlowNodeInstanceTemplate.KEY,
       START_DATE = FlowNodeInstanceTemplate.START_DATE,
       END_DATE = FlowNodeInstanceTemplate.END_DATE,
       FLOW_NODE_ID = FlowNodeInstanceTemplate.FLOW_NODE_ID,
@@ -39,10 +37,13 @@ public class FlowNodeInstance {
   private String flowNodeId;
   private String flowNodeName;
   private Long incidentKey;
+
   @Schema(implementation = FlowNodeType.class)
   private String type;
+
   @Schema(implementation = FlowNodeState.class)
   private String state;
+
   private Boolean incident;
   private String tenantId;
 
@@ -92,7 +93,7 @@ public class FlowNodeInstance {
   }
 
   public String getFlowNodeId() {
-   return flowNodeId;
+    return flowNodeId;
   }
 
   public FlowNodeInstance setFlowNodeId(String flowNodeId) {
@@ -100,14 +101,14 @@ public class FlowNodeInstance {
     return this;
   }
 
-   public String getFlowNodeName() {
-      return flowNodeName;
-   }
+  public String getFlowNodeName() {
+    return flowNodeName;
+  }
 
-   public FlowNodeInstance setFlowNodeName(String flowNodeName) {
-      this.flowNodeName = flowNodeName;
-      return this;
-   }
+  public FlowNodeInstance setFlowNodeName(String flowNodeName) {
+    this.flowNodeName = flowNodeName;
+    return this;
+  }
 
   public Long getIncidentKey() {
     return incidentKey;
@@ -156,30 +157,74 @@ public class FlowNodeInstance {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     FlowNodeInstance that = (FlowNodeInstance) o;
-    return Objects.equals(key, that.key) && Objects.equals(processInstanceKey,
-        that.processInstanceKey) && Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(
-        startDate, that.startDate) && Objects.equals(endDate, that.endDate) && Objects.equals(flowNodeId,
-        that.flowNodeId) && Objects.equals(flowNodeName, that.flowNodeName) && Objects.equals(incidentKey,
-        that.incidentKey) && Objects.equals(type, that.type) && Objects.equals(state, that.state) && Objects.equals(
-        incident, that.incident) && Objects.equals(tenantId, that.tenantId);
+    return Objects.equals(key, that.key)
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(flowNodeName, that.flowNodeName)
+        && Objects.equals(incidentKey, that.incidentKey)
+        && Objects.equals(type, that.type)
+        && Objects.equals(state, that.state)
+        && Objects.equals(incident, that.incident)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, processInstanceKey, processDefinitionKey, startDate, endDate, flowNodeId, flowNodeName,
-        incidentKey, type, state, incident, tenantId);
+    return Objects.hash(
+        key,
+        processInstanceKey,
+        processDefinitionKey,
+        startDate,
+        endDate,
+        flowNodeId,
+        flowNodeName,
+        incidentKey,
+        type,
+        state,
+        incident,
+        tenantId);
   }
 
   @Override
   public String toString() {
-    return "FlowNodeInstance{" + "key=" + key + ", processInstanceKey=" + processInstanceKey + ", processDefinitionKey="
-        + processDefinitionKey + ", startDate='" + startDate + '\'' + ", endDate='" + endDate + '\'' + ", flowNodeId='"
-        + flowNodeId + '\'' + ", flowNodeName='" + flowNodeName + '\'' + ", incidentKey=" + incidentKey + ", type='"
-        + type + '\'' + ", state='" + state + '\'' + ", incident=" + incident + ", tenantId='" + tenantId + '\'' + '}';
+    return "FlowNodeInstance{"
+        + "key="
+        + key
+        + ", processInstanceKey="
+        + processInstanceKey
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", startDate='"
+        + startDate
+        + '\''
+        + ", endDate='"
+        + endDate
+        + '\''
+        + ", flowNodeId='"
+        + flowNodeId
+        + '\''
+        + ", flowNodeName='"
+        + flowNodeName
+        + '\''
+        + ", incidentKey="
+        + incidentKey
+        + ", type='"
+        + type
+        + '\''
+        + ", state='"
+        + state
+        + '\''
+        + ", incident="
+        + incident
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

@@ -6,27 +6,24 @@
  */
 package io.camunda.operate.property;
 
-import io.camunda.operate.data.OperateDateTimeFormatter;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
+import io.camunda.operate.data.OperateDateTimeFormatter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.function.Function;
-
-import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class OpensearchProperties {
   public static final String OS_DATE_FORMAT_DEFAULT = "date_time";
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
 
-  private String clusterName= "opensearch";
+  private String clusterName = "opensearch";
 
-  @Deprecated
-  private String host = "localhost";
+  @Deprecated private String host = "localhost";
 
-  @Deprecated
-  private int port = 9200;
+  @Deprecated private int port = 9200;
 
   private String dateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
 
@@ -45,8 +42,7 @@ public class OpensearchProperties {
 
   private int bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
 
-  @NestedConfigurationProperty
-  private SslProperties ssl;
+  @NestedConfigurationProperty private SslProperties ssl;
 
   public String getClusterName() {
     return clusterName;
@@ -162,7 +158,9 @@ public class OpensearchProperties {
     this.connectTimeout = connectTimeout;
   }
 
-  public SslProperties getSsl() { return ssl; }
+  public SslProperties getSsl() {
+    return ssl;
+  }
 
   public void setSsl(SslProperties ssl) {
     this.ssl = ssl;

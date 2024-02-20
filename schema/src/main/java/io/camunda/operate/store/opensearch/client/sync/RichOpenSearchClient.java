@@ -19,11 +19,10 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-
 @Conditional(OpensearchCondition.class)
 @Component
 public class RichOpenSearchClient {
-  public record AggregationValue(String key, long count){}
+  public record AggregationValue(String key, long count) {}
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RichOpenSearchClient.class);
 
@@ -47,10 +46,14 @@ public class RichOpenSearchClient {
     final OpenSearchAsyncTaskOperations openSearchAsyncTaskOperations;
 
     public Async(OpenSearchAsyncClient openSearchAsyncClient) {
-      this.openSearchAsyncDocumentOperations = new OpenSearchAsyncDocumentOperations(LOGGER, openSearchAsyncClient);
-      this.openSearchAsyncIndexOperations = new OpenSearchAsyncIndexOperations(LOGGER, openSearchAsyncClient);
-      this.openSearchAsyncSnapshotOperations = new OpenSearchAsyncSnapshotOperations(LOGGER, openSearchAsyncClient);
-      this.openSearchAsyncTaskOperations = new OpenSearchAsyncTaskOperations(LOGGER, openSearchAsyncClient);
+      this.openSearchAsyncDocumentOperations =
+          new OpenSearchAsyncDocumentOperations(LOGGER, openSearchAsyncClient);
+      this.openSearchAsyncIndexOperations =
+          new OpenSearchAsyncIndexOperations(LOGGER, openSearchAsyncClient);
+      this.openSearchAsyncSnapshotOperations =
+          new OpenSearchAsyncSnapshotOperations(LOGGER, openSearchAsyncClient);
+      this.openSearchAsyncTaskOperations =
+          new OpenSearchAsyncTaskOperations(LOGGER, openSearchAsyncClient);
     }
 
     public OpenSearchAsyncDocumentOperations doc() {
@@ -64,16 +67,21 @@ public class RichOpenSearchClient {
     public OpenSearchAsyncSnapshotOperations snapshot() {
       return openSearchAsyncSnapshotOperations;
     }
+
     public OpenSearchAsyncTaskOperations task() {
       return openSearchAsyncTaskOperations;
     }
   }
 
-  public RichOpenSearchClient(BeanFactory beanFactory, OpenSearchClient openSearchClient, OpenSearchAsyncClient openSearchAsyncClient) {
+  public RichOpenSearchClient(
+      BeanFactory beanFactory,
+      OpenSearchClient openSearchClient,
+      OpenSearchAsyncClient openSearchAsyncClient) {
     this.beanFactory = beanFactory;
     this.openSearchClient = openSearchClient;
     async = new Async(openSearchAsyncClient);
-    openSearchBatchOperations = new OpenSearchBatchOperations(LOGGER, openSearchClient, beanFactory);
+    openSearchBatchOperations =
+        new OpenSearchBatchOperations(LOGGER, openSearchClient, beanFactory);
     openSearchClusterOperations = new OpenSearchClusterOperations(LOGGER, openSearchClient);
     openSearchDocumentOperations = new OpenSearchDocumentOperations(LOGGER, openSearchClient);
     openSearchIndexOperations = new OpenSearchIndexOperations(LOGGER, openSearchClient);
@@ -103,6 +111,7 @@ public class RichOpenSearchClient {
   public OpenSearchIndexOperations index() {
     return openSearchIndexOperations;
   }
+
   public OpenSearchISMOperations ism() {
     return openSearchISMOperations;
   }

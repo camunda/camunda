@@ -87,16 +87,15 @@ public class OperationDto implements CreatableFromEntity<OperationDto, Operation
       return false;
     }
     final OperationDto that = (OperationDto) o;
-    return Objects.equals(id, that.id) &&
-        Objects.equals(batchOperationId, that.batchOperationId) &&
-        type == that.type &&
-        state == that.state &&
-        Objects.equals(errorMessage, that.errorMessage);
+    return Objects.equals(id, that.id)
+        && Objects.equals(batchOperationId, that.batchOperationId)
+        && type == that.type
+        && state == that.state
+        && Objects.equals(errorMessage, that.errorMessage);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(id, batchOperationId, type, state, errorMessage);
   }
-
 }

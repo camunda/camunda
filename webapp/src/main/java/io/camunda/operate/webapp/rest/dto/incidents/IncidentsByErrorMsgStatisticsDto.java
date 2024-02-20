@@ -6,25 +6,24 @@
  */
 package io.camunda.operate.webapp.rest.dto.incidents;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeSet;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
 public class IncidentsByErrorMsgStatisticsDto {
-  
-  public static final Comparator<IncidentsByErrorMsgStatisticsDto> COMPARATOR = new IncidentsByErrorMsgStatisticsDtoComparator();
+
+  public static final Comparator<IncidentsByErrorMsgStatisticsDto> COMPARATOR =
+      new IncidentsByErrorMsgStatisticsDtoComparator();
 
   private String errorMessage;
 
   private long instancesWithErrorCount;
 
-  @JsonDeserialize(as = TreeSet.class)    //for tests
+  @JsonDeserialize(as = TreeSet.class) // for tests
   private Set<IncidentByProcessStatisticsDto> processes = new TreeSet<>();
 
-  public IncidentsByErrorMsgStatisticsDto() {
-  }
+  public IncidentsByErrorMsgStatisticsDto() {}
 
   public IncidentsByErrorMsgStatisticsDto(String errorMessage) {
     this.errorMessage = errorMessage;
@@ -60,15 +59,12 @@ public class IncidentsByErrorMsgStatisticsDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     IncidentsByErrorMsgStatisticsDto that = (IncidentsByErrorMsgStatisticsDto) o;
 
-    if (instancesWithErrorCount != that.instancesWithErrorCount)
-      return false;
+    if (instancesWithErrorCount != that.instancesWithErrorCount) return false;
     if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
       return false;
     return processes != null ? processes.equals(that.processes) : that.processes == null;
@@ -81,8 +77,9 @@ public class IncidentsByErrorMsgStatisticsDto {
     result = 31 * result + (processes != null ? processes.hashCode() : 0);
     return result;
   }
-  
-  public static class IncidentsByErrorMsgStatisticsDtoComparator implements Comparator<IncidentsByErrorMsgStatisticsDto> {
+
+  public static class IncidentsByErrorMsgStatisticsDtoComparator
+      implements Comparator<IncidentsByErrorMsgStatisticsDto> {
 
     @Override
     public int compare(IncidentsByErrorMsgStatisticsDto o1, IncidentsByErrorMsgStatisticsDto o2) {

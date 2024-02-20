@@ -6,38 +6,35 @@
  */
 package io.camunda.operate.entities;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-
 public class EventEntity extends OperateZeebeEntity<EventEntity> {
 
-  /**
-   * Process data.
-   */
+  /** Process data. */
   private Long processDefinitionKey;
+
   private Long processInstanceKey;
   private String bpmnProcessId;
 
-  /**
-   * Activity data.
-   */
+  /** Activity data. */
   private String flowNodeId;
+
   private Long flowNodeInstanceKey;
 
-  /**
-   * Event data.
-   */
+  /** Event data. */
   private EventSourceType eventSourceType;
+
   private EventType eventType;
   private OffsetDateTime dateTime;
 
-  /**
-   * Metadata
-   */
+  /** Metadata */
   private EventMetadataEntity metadata;
-  private String tenantId = DEFAULT_TENANT_ID;;
+
+  private String tenantId = DEFAULT_TENANT_ID;
+  ;
 
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
@@ -131,23 +128,35 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     EventEntity that = (EventEntity) o;
-    return Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(processInstanceKey,
-        that.processInstanceKey) && Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(flowNodeId,
-        that.flowNodeId) && Objects.equals(flowNodeInstanceKey,
-        that.flowNodeInstanceKey) && eventSourceType == that.eventSourceType && eventType == that.eventType && Objects.equals(
-        dateTime, that.dateTime) && Objects.equals(metadata, that.metadata) && Objects.equals(tenantId, that.tenantId);
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(flowNodeInstanceKey, that.flowNodeInstanceKey)
+        && eventSourceType == that.eventSourceType
+        && eventType == that.eventType
+        && Objects.equals(dateTime, that.dateTime)
+        && Objects.equals(metadata, that.metadata)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), processDefinitionKey, processInstanceKey, bpmnProcessId, flowNodeId,
-        flowNodeInstanceKey, eventSourceType, eventType, dateTime, metadata, tenantId);
+    return Objects.hash(
+        super.hashCode(),
+        processDefinitionKey,
+        processInstanceKey,
+        bpmnProcessId,
+        flowNodeId,
+        flowNodeInstanceKey,
+        eventSourceType,
+        eventType,
+        dateTime,
+        metadata,
+        tenantId);
   }
 }

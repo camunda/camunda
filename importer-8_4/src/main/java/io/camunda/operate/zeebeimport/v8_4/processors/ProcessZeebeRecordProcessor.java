@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.zeebeimport.v8_4.processors;
 
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.ProcessIndex;
@@ -18,16 +20,13 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
-import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 @Component
 public class ProcessZeebeRecordProcessor {
@@ -36,58 +35,65 @@ public class ProcessZeebeRecordProcessor {
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
 
-  private final static Set<String> STATES = new HashSet<>();
+  private static final Set<String> STATES = new HashSet<>();
+
   static {
     STATES.add(ProcessIntent.CREATED.name());
   }
 
-  @Autowired
-  private ListViewTemplate listViewTemplate;
+  @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired
-  private ListViewStore listViewStore;
+  @Autowired private ListViewStore listViewStore;
 
-  @Autowired
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
-  @Autowired
-  private XMLUtil xmlUtil;
+  @Autowired private XMLUtil xmlUtil;
 
-  public void processDeploymentRecord(Record record, BatchRequest batchRequest) throws PersistenceException {
+  public void processDeploymentRecord(Record record, BatchRequest batchRequest)
+      throws PersistenceException {
     final String intentStr = record.getIntent().name();
 
     if (STATES.contains(intentStr)) {
-      ProcessMetadataValue recordValue = (ProcessMetadataValue)record.getValue();
+      ProcessMetadataValue recordValue = (ProcessMetadataValue) record.getValue();
       persistProcess((Process) recordValue, batchRequest);
     }
-
   }
 
-  private void persistProcess(Process process, BatchRequest batchRequest) throws PersistenceException {
-    final ProcessEntity processEntity = createEntity(process);
-    logger.debug("Process: key {}, bpmnProcessId {}", processEntity.getKey(), processEntity.getBpmnProcessId());
-    updateFieldsInInstancesFor(processEntity, batchRequest);
-    batchRequest.addWithId(processIndex.getFullQualifiedName(),ConversionUtils.toStringOrNull(processEntity.getKey()), processEntity);
-  }
-
-  private void updateFieldsInInstancesFor(final ProcessEntity processEntity, BatchRequest batchRequest)
+  private void persistProcess(Process process, BatchRequest batchRequest)
       throws PersistenceException {
-    List<Long> processInstanceKeys = listViewStore.getProcessInstanceKeysWithEmptyProcessVersionFor(processEntity.getKey());
+    final ProcessEntity processEntity = createEntity(process);
+    logger.debug(
+        "Process: key {}, bpmnProcessId {}",
+        processEntity.getKey(),
+        processEntity.getBpmnProcessId());
+    updateFieldsInInstancesFor(processEntity, batchRequest);
+    batchRequest.addWithId(
+        processIndex.getFullQualifiedName(),
+        ConversionUtils.toStringOrNull(processEntity.getKey()),
+        processEntity);
+  }
+
+  private void updateFieldsInInstancesFor(
+      final ProcessEntity processEntity, BatchRequest batchRequest) throws PersistenceException {
+    List<Long> processInstanceKeys =
+        listViewStore.getProcessInstanceKeysWithEmptyProcessVersionFor(processEntity.getKey());
     for (Long processInstanceKey : processInstanceKeys) {
       Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put( ListViewTemplate.PROCESS_NAME, processEntity.getName());
-      updateFields.put(  ListViewTemplate.PROCESS_VERSION, processEntity.getVersion());
-      batchRequest.update(listViewTemplate.getFullQualifiedName(), processInstanceKey.toString(), updateFields);
+      updateFields.put(ListViewTemplate.PROCESS_NAME, processEntity.getName());
+      updateFields.put(ListViewTemplate.PROCESS_VERSION, processEntity.getVersion());
+      batchRequest.update(
+          listViewTemplate.getFullQualifiedName(), processInstanceKey.toString(), updateFields);
     }
   }
 
   private ProcessEntity createEntity(Process process) {
-    ProcessEntity processEntity = new ProcessEntity()
-        .setId(String.valueOf(process.getProcessDefinitionKey()))
-        .setKey(process.getProcessDefinitionKey())
-        .setBpmnProcessId(process.getBpmnProcessId())
-        .setVersion(process.getVersion())
-        .setTenantId(tenantOrDefault(process.getTenantId()));
+    ProcessEntity processEntity =
+        new ProcessEntity()
+            .setId(String.valueOf(process.getProcessDefinitionKey()))
+            .setKey(process.getProcessDefinitionKey())
+            .setBpmnProcessId(process.getBpmnProcessId())
+            .setVersion(process.getVersion())
+            .setTenantId(tenantOrDefault(process.getTenantId()));
 
     byte[] byteArray = process.getResource();
 
@@ -97,12 +103,13 @@ public class ProcessZeebeRecordProcessor {
     String resourceName = process.getResourceName();
     processEntity.setResourceName(resourceName);
 
-    final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray, process.getBpmnProcessId());
+    final Optional<ProcessEntity> diagramData =
+        xmlUtil.extractDiagramData(byteArray, process.getBpmnProcessId());
     if (diagramData.isPresent()) {
-      processEntity.setName(diagramData.get().getName())
+      processEntity
+          .setName(diagramData.get().getName())
           .setFlowNodes(diagramData.get().getFlowNodes());
     }
     return processEntity;
   }
-
 }

@@ -6,19 +6,18 @@
  */
 package io.camunda.operate.util.j5templates;
 
-import org.springframework.stereotype.Component;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import org.springframework.stereotype.Component;
 
 @Component
 public class TestResourceManager {
 
   public String readResourceFileContentsAsString(String resource) {
     try (final InputStream resourceStream =
-             getClass().getClassLoader().getResourceAsStream(resource)) {
+        getClass().getClassLoader().getResourceAsStream(resource)) {
       if (resourceStream != null) {
         return new String(resourceStream.readAllBytes(), StandardCharsets.UTF_8);
       } else {

@@ -10,12 +10,17 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 
-public class ContainerApplicationContextInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-  @Override public void initialize(ConfigurableApplicationContext applicationContext) {
-    switch(DatabaseInfo.getCurrent()) {
-      case Elasticsearch -> new ElasticsearchContainerApplicationContextInitializer().initialize(applicationContext);
-      case Opensearch -> new OpensearchContainerApplicationContextInitializer().initialize(applicationContext);
-      default -> throw new IllegalArgumentException("Unsupported database " + DatabaseInfo.getCurrent());
+public class ContainerApplicationContextInitializer
+    implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+  @Override
+  public void initialize(ConfigurableApplicationContext applicationContext) {
+    switch (DatabaseInfo.getCurrent()) {
+      case Elasticsearch ->
+          new ElasticsearchContainerApplicationContextInitializer().initialize(applicationContext);
+      case Opensearch ->
+          new OpensearchContainerApplicationContextInitializer().initialize(applicationContext);
+      default ->
+          throw new IllegalArgumentException("Unsupported database " + DatabaseInfo.getCurrent());
     }
   }
 }

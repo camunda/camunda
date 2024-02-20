@@ -6,12 +6,11 @@
  */
 package io.camunda.operate.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.OffsetDateTime;
 import java.util.Objects;
-
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 
 public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
@@ -40,11 +39,10 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private String treePath;
 
-  private String tenantId = DEFAULT_TENANT_ID;;
+  private String tenantId = DEFAULT_TENANT_ID;
+  ;
 
-  @Deprecated
-  @JsonIgnore
-  private boolean pending = true;
+  @Deprecated @JsonIgnore private boolean pending = true;
 
   public ErrorType getErrorType() {
     return errorType;
@@ -175,46 +173,77 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     IncidentEntity incident = (IncidentEntity) o;
-    return pending == incident.pending && errorType == incident.errorType && Objects.equals(errorMessage,
-        incident.errorMessage) && Objects.equals(errorMessageHash,
-        incident.errorMessageHash) && state == incident.state && Objects.equals(flowNodeId,
-        incident.flowNodeId) && Objects.equals(flowNodeInstanceKey, incident.flowNodeInstanceKey) && Objects.equals(
-        jobKey, incident.jobKey) && Objects.equals(processInstanceKey, incident.processInstanceKey) && Objects.equals(
-        creationTime, incident.creationTime) && Objects.equals(processDefinitionKey,
-        incident.processDefinitionKey) && Objects.equals(bpmnProcessId, incident.bpmnProcessId) && Objects.equals(
-        treePath, incident.treePath) && Objects.equals(tenantId, incident.tenantId);
+    return pending == incident.pending
+        && errorType == incident.errorType
+        && Objects.equals(errorMessage, incident.errorMessage)
+        && Objects.equals(errorMessageHash, incident.errorMessageHash)
+        && state == incident.state
+        && Objects.equals(flowNodeId, incident.flowNodeId)
+        && Objects.equals(flowNodeInstanceKey, incident.flowNodeInstanceKey)
+        && Objects.equals(jobKey, incident.jobKey)
+        && Objects.equals(processInstanceKey, incident.processInstanceKey)
+        && Objects.equals(creationTime, incident.creationTime)
+        && Objects.equals(processDefinitionKey, incident.processDefinitionKey)
+        && Objects.equals(bpmnProcessId, incident.bpmnProcessId)
+        && Objects.equals(treePath, incident.treePath)
+        && Objects.equals(tenantId, incident.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), errorType, errorMessage, errorMessageHash, state, flowNodeId,
-        flowNodeInstanceKey, jobKey, processInstanceKey, creationTime, processDefinitionKey, bpmnProcessId, treePath,
-        tenantId, pending);
+    return Objects.hash(
+        super.hashCode(),
+        errorType,
+        errorMessage,
+        errorMessageHash,
+        state,
+        flowNodeId,
+        flowNodeInstanceKey,
+        jobKey,
+        processInstanceKey,
+        creationTime,
+        processDefinitionKey,
+        bpmnProcessId,
+        treePath,
+        tenantId,
+        pending);
   }
 
   @Override
   public String toString() {
-    return "IncidentEntity{" +
-        "key=" + getKey() +
-        ", errorType=" + errorType +
-        ", errorMessageHash=" + errorMessageHash +
-        ", state=" + state +
-        ", flowNodeId='" + flowNodeId + '\'' +
-        ", flowNodeInstanceKey=" + flowNodeInstanceKey +
-        ", jobKey=" + jobKey +
-        ", processInstanceKey=" + processInstanceKey +
-        ", creationTime=" + creationTime +
-        ", processDefinitionKey=" + processDefinitionKey +
-        ", bpmnProcessId=" + bpmnProcessId +
-        ", treePath='" + treePath + '\'' +
-        ", pending=" + pending +
-        '}';
+    return "IncidentEntity{"
+        + "key="
+        + getKey()
+        + ", errorType="
+        + errorType
+        + ", errorMessageHash="
+        + errorMessageHash
+        + ", state="
+        + state
+        + ", flowNodeId='"
+        + flowNodeId
+        + '\''
+        + ", flowNodeInstanceKey="
+        + flowNodeInstanceKey
+        + ", jobKey="
+        + jobKey
+        + ", processInstanceKey="
+        + processInstanceKey
+        + ", creationTime="
+        + creationTime
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", bpmnProcessId="
+        + bpmnProcessId
+        + ", treePath='"
+        + treePath
+        + '\''
+        + ", pending="
+        + pending
+        + '}';
   }
 }

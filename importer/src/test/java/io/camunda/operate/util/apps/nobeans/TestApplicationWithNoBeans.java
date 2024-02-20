@@ -10,6 +10,4 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 
 @SpringBootApplication(exclude = ElasticsearchRestClientAutoConfiguration.class)
-public class TestApplicationWithNoBeans {
-
-}
+public class TestApplicationWithNoBeans {}

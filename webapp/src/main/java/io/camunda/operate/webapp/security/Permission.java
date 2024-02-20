@@ -16,11 +16,12 @@ public enum Permission {
   WRITE;
 
   public static Permission fromString(String permissionAsString) {
-    for(Permission permission : values()) {
-      if(permission.name().equalsIgnoreCase(permissionAsString))
-        return permission;
+    for (Permission permission : values()) {
+      if (permission.name().equalsIgnoreCase(permissionAsString)) return permission;
     }
     throw new IllegalArgumentException(
-        String.format("%s does not exists as Permission in %s", permissionAsString, Arrays.toString(values())));
+        String.format(
+            "%s does not exists as Permission in %s",
+            permissionAsString, Arrays.toString(values())));
   }
 }

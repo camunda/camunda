@@ -25,25 +25,27 @@ import org.springframework.stereotype.Component;
 @Component("webSecurityConfig")
 public class IdentityWebSecurityConfig extends BaseWebConfigurer {
 
-  @Autowired
-  protected IdentityOAuth2WebConfigurer oAuth2WebConfigurer;
+  @Autowired protected IdentityOAuth2WebConfigurer oAuth2WebConfigurer;
 
   @Override
   protected void applySecurityFilterSettings(final HttpSecurity http) throws Exception {
     http.csrf((csrf) -> csrf.disable())
-      .authorizeRequests((authorize) -> {
-        authorize
-          .requestMatchers(AUTH_WHITELIST).permitAll()
-          .requestMatchers(API, PUBLIC_API, ROOT).authenticated();
-      })
-      .exceptionHandling((handling) -> {
-        handling.authenticationEntryPoint(this::failureHandler);
-      });
+        .authorizeRequests(
+            (authorize) -> {
+              authorize
+                  .requestMatchers(AUTH_WHITELIST)
+                  .permitAll()
+                  .requestMatchers(API, PUBLIC_API, ROOT)
+                  .authenticated();
+            })
+        .exceptionHandling(
+            (handling) -> {
+              handling.authenticationEntryPoint(this::failureHandler);
+            });
   }
 
   @Override
   protected void applyOAuth2Settings(final HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
-
 }

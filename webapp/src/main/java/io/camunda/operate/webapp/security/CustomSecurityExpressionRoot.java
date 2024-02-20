@@ -11,8 +11,8 @@ import org.springframework.security.access.expression.SecurityExpressionRoot;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
 import org.springframework.security.core.Authentication;
 
-public class CustomSecurityExpressionRoot extends SecurityExpressionRoot implements
-    MethodSecurityExpressionOperations {
+public class CustomSecurityExpressionRoot extends SecurityExpressionRoot
+    implements MethodSecurityExpressionOperations {
 
   private UserService<? extends Authentication> userService;
 

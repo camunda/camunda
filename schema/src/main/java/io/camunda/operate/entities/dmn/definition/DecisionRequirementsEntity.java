@@ -6,10 +6,10 @@
  */
 package io.camunda.operate.entities.dmn.definition;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 import io.camunda.operate.entities.OperateZeebeEntity;
 import java.util.Objects;
-
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 
 public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequirementsEntity> {
 
@@ -18,14 +18,14 @@ public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequi
   private int version;
   private String xml;
   private String resourceName;
-  private String tenantId = DEFAULT_TENANT_ID;;
+  private String tenantId = DEFAULT_TENANT_ID;
+  ;
 
   public String getDecisionRequirementsId() {
     return decisionRequirementsId;
   }
 
-  public DecisionRequirementsEntity setDecisionRequirementsId(
-      final String decisionRequirementsId) {
+  public DecisionRequirementsEntity setDecisionRequirementsId(final String decisionRequirementsId) {
     this.decisionRequirementsId = decisionRequirementsId;
     return this;
   }
@@ -77,20 +77,21 @@ public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequi
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     DecisionRequirementsEntity that = (DecisionRequirementsEntity) o;
-    return version == that.version && Objects.equals(decisionRequirementsId,
-        that.decisionRequirementsId) && Objects.equals(name, that.name) && Objects.equals(xml,
-        that.xml) && Objects.equals(resourceName, that.resourceName) && Objects.equals(tenantId, that.tenantId);
+    return version == that.version
+        && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
+        && Objects.equals(name, that.name)
+        && Objects.equals(xml, that.xml)
+        && Objects.equals(resourceName, that.resourceName)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), decisionRequirementsId, name, version, xml, resourceName, tenantId);
+    return Objects.hash(
+        super.hashCode(), decisionRequirementsId, name, version, xml, resourceName, tenantId);
   }
 }

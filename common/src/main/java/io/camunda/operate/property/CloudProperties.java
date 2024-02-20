@@ -78,7 +78,7 @@ public class CloudProperties {
     return consoleUrl;
   }
 
-  public CloudProperties setConsoleUrl(final String consoleUrl){
+  public CloudProperties setConsoleUrl(final String consoleUrl) {
     this.consoleUrl = consoleUrl;
     return this;
   }

@@ -17,8 +17,7 @@ public class GetBackupStateResponseDetailDto {
   private OffsetDateTime startTime;
   private String[] failures;
 
-  public GetBackupStateResponseDetailDto() {
-  }
+  public GetBackupStateResponseDetailDto() {}
 
   public String getSnapshotName() {
     return snapshotName;
@@ -58,13 +57,13 @@ public class GetBackupStateResponseDetailDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     GetBackupStateResponseDetailDto that = (GetBackupStateResponseDetailDto) o;
-    return Objects.equals(snapshotName, that.snapshotName) && Objects.equals(state, that.state) && Objects.equals(
-        startTime, that.startTime) && Arrays.equals(failures, that.failures);
+    return Objects.equals(snapshotName, that.snapshotName)
+        && Objects.equals(state, that.state)
+        && Objects.equals(startTime, that.startTime)
+        && Arrays.equals(failures, that.failures);
   }
 
   @Override

@@ -48,11 +48,11 @@ public class Query<T> {
       return of(field, Order.ASC);
     }
 
-    public static List<Sort> listOf(String field, Order order){
+    public static List<Sort> listOf(String field, Order order) {
       return List.of(of(field, order));
     }
 
-    public static List<Sort> listOf(String field){
+    public static List<Sort> listOf(String field) {
       return List.of(of(field));
     }
 
@@ -83,7 +83,7 @@ public class Query<T> {
 
   private List<Sort> sort = null;
 
-  public Query(){
+  public Query() {
     super();
   }
 
@@ -100,7 +100,7 @@ public class Query<T> {
     return searchAfter;
   }
 
-  public Query<T> setSearchAfter(final  Object[] searchAfter) {
+  public Query<T> setSearchAfter(final Object[] searchAfter) {
     this.searchAfter = searchAfter;
     return this;
   }
@@ -132,9 +132,10 @@ public class Query<T> {
       return false;
     }
     final Query<?> query = (Query<?>) o;
-    return size == query.size && Objects.equals(filter, query.filter)
-        && Arrays.equals(searchAfter, query.searchAfter) && Objects.equals(sort,
-        query.sort);
+    return size == query.size
+        && Objects.equals(filter, query.filter)
+        && Arrays.equals(searchAfter, query.searchAfter)
+        && Objects.equals(sort, query.sort);
   }
 
   @Override
@@ -146,11 +147,15 @@ public class Query<T> {
 
   @Override
   public String toString() {
-    return "Query{" +
-        "filter=" + filter +
-        ", size=" + size +
-        ", searchAfter=" + Arrays.toString(searchAfter) +
-        ", sort=" + sort +
-        '}';
+    return "Query{"
+        + "filter="
+        + filter
+        + ", size="
+        + size
+        + ", searchAfter="
+        + Arrays.toString(searchAfter)
+        + ", sort="
+        + sort
+        + '}';
   }
 }

@@ -6,6 +6,10 @@
  */
 package io.camunda.operate.util.j5templates;
 
+import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.property.OperateProperties;
@@ -15,6 +19,7 @@ import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
+import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,60 +30,53 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.web.WebAppConfiguration;
 
-import java.util.List;
-
-import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
-
 /**
- * Base definition for a test that requires opensearch/elasticsearch but not zeebe. The test suite automatically
- * starts search before all the tests run, and then tears it down once all the tests have finished.
+ * Base definition for a test that requires opensearch/elasticsearch but not zeebe. The test suite
+ * automatically starts search before all the tests run, and then tears it down once all the tests
+ * have finished.
  */
 @SpringBootTest(
     classes = {TestApplication.class},
-    properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-        "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-        OperateProperties.PREFIX + ".multiTenancy.enabled = false"})
+    properties = {
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
+      OperateProperties.PREFIX + ".multiTenancy.enabled = false"
+    })
 @WebAppConfiguration
 @WithMockUser(DEFAULT_USER)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS) // Lifecycle required to use BeforeAll and AfterAll in non-static fashion
+@TestInstance(
+    TestInstance.Lifecycle
+        .PER_CLASS) // Lifecycle required to use BeforeAll and AfterAll in non-static fashion
 public class OperateSearchAbstractIT {
   // These are mocked so we can bypass authentication issues when connecting to search
-  @MockBean
-  protected UserService userService;
-  @MockBean
-  protected TenantService tenantService;
+  @MockBean protected UserService userService;
+  @MockBean protected TenantService tenantService;
 
+  @Autowired protected ProcessCache processCache;
 
-  @Autowired
-  protected ProcessCache processCache;
+  @Autowired protected TestSearchRepository testSearchRepository;
 
-  @Autowired
-  protected TestSearchRepository testSearchRepository;
+  @Autowired protected SearchContainerManager searchContainerManager;
 
-  @Autowired
-  protected SearchContainerManager searchContainerManager;
+  @Autowired protected TestResourceManager testResourceManager;
 
-  @Autowired
-  protected TestResourceManager testResourceManager;
-
-  @Autowired
-  protected ObjectMapper objectMapper;
+  @Autowired protected ObjectMapper objectMapper;
 
   @BeforeAll
   public void beforeAllSetup() throws Exception {
     // Mocks the authentication for search
-    when(userService.getCurrentUser()).thenReturn(
-        new UserDto().setUserId(DEFAULT_USER)
-            .setPermissions(List.of(Permission.WRITE)));
-    doReturn(TenantService.AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
+    when(userService.getCurrentUser())
+        .thenReturn(
+            new UserDto().setUserId(DEFAULT_USER).setPermissions(List.of(Permission.WRITE)));
+    doReturn(TenantService.AuthenticatedTenants.allTenants())
+        .when(tenantService)
+        .getAuthenticatedTenants();
 
     // Start elasticsearch/opensearch
     searchContainerManager.startContainer();
 
-    //operateTester = beanFactory.getBean(OperateJ5Tester.class, zeebeClient);
+    // operateTester = beanFactory.getBean(OperateJ5Tester.class, zeebeClient);
 
     // Required to keep search from hanging between test suites
     processCache.clearCache();
@@ -89,11 +87,14 @@ public class OperateSearchAbstractIT {
 
   @BeforeEach
   public void beforeEach() throws Exception {
-    // Mocks are cleared between each test, reset the authentication mocks so interactions with search don't fail
-    when(userService.getCurrentUser()).thenReturn(
-        new UserDto().setUserId(DEFAULT_USER)
-            .setPermissions(List.of(Permission.WRITE)));
-    doReturn(TenantService.AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
+    // Mocks are cleared between each test, reset the authentication mocks so interactions with
+    // search don't fail
+    when(userService.getCurrentUser())
+        .thenReturn(
+            new UserDto().setUserId(DEFAULT_USER).setPermissions(List.of(Permission.WRITE)));
+    doReturn(TenantService.AuthenticatedTenants.allTenants())
+        .when(tenantService)
+        .getAuthenticatedTenants();
 
     // Implementing tests can add any additional setup needed to run before each test
     runAdditionalBeforeEachSetup();
@@ -111,7 +112,8 @@ public class OperateSearchAbstractIT {
     // Required to keep search from hanging between test suites
     processCache.clearCache();
 
-    // Implementing tests can add any additional teardown needed to run at the completion of the test suite
+    // Implementing tests can add any additional teardown needed to run at the completion of the
+    // test suite
     runAdditionalAfterAllTeardown();
   }
 

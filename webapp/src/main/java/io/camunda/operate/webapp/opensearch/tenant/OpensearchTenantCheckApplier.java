@@ -6,6 +6,9 @@
  */
 package io.camunda.operate.webapp.opensearch.tenant;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.TENANT_ID;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
+
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.tenant.TenantCheckApplier;
@@ -16,18 +19,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.TENANT_ID;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
-
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchTenantCheckApplier implements TenantCheckApplier<Query>, InitializingBean {
 
   private static OpensearchTenantCheckApplier instance;
 
-  @Autowired
-  private TenantService tenantService;
-
+  @Autowired private TenantService tenantService;
 
   @Override
   public void afterPropertiesSet() throws Exception {
@@ -48,27 +46,31 @@ public class OpensearchTenantCheckApplier implements TenantCheckApplier<Query>, 
     final Query finalQuery;
 
     switch (tenantCheckQueryType) {
-      case TENANT_ACCESS_ASSIGNED: {
-        final var tenantTermsQuery = stringTerms(TENANT_ID, tenantIds);
-        finalQuery = and(tenantTermsQuery, query);
-        break;
-      }
-      case TENANT_ACCESS_NONE: {
-        // no data must be returned
-        finalQuery = matchNone();
-        break;
-      }
-      case TENANT_ACCESS_ALL: {
-        finalQuery = query;
-        break;
-      }
-      default: {
-        final var message = String.format("Unexpected tenant check query type %s", tenantCheckQueryType);
-        throw new OperateRuntimeException(message);
-      }
+      case TENANT_ACCESS_ASSIGNED:
+        {
+          final var tenantTermsQuery = stringTerms(TENANT_ID, tenantIds);
+          finalQuery = and(tenantTermsQuery, query);
+          break;
+        }
+      case TENANT_ACCESS_NONE:
+        {
+          // no data must be returned
+          finalQuery = matchNone();
+          break;
+        }
+      case TENANT_ACCESS_ALL:
+        {
+          finalQuery = query;
+          break;
+        }
+      default:
+        {
+          final var message =
+              String.format("Unexpected tenant check query type %s", tenantCheckQueryType);
+          throw new OperateRuntimeException(message);
+        }
     }
 
     return finalQuery;
   }
-
 }

@@ -28,5 +28,4 @@ public abstract class APIException extends RuntimeException {
     this.instance = instance;
     return this;
   }
-
 }

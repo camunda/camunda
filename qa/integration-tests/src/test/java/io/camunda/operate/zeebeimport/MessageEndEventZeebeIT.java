@@ -19,14 +19,15 @@ import org.springframework.test.annotation.IfProfileValue;
 public class MessageEndEventZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
-  @IfProfileValue(name="spring.profiles.active", value="test")
-  public void shouldImportMessageEndEvent(){
+  @IfProfileValue(name = "spring.profiles.active", value = "test")
+  public void shouldImportMessageEndEvent() {
     final String flowNodeId = "messageEndEvent";
     final String jobKey = "taskDefinition";
     // given
     tester
         .deployProcess("message-end-event.bpmn")
-        .waitUntil().processIsDeployed()
+        .waitUntil()
+        .processIsDeployed()
         .then()
         .startProcessInstance("message-end-event-process", null)
         .flowNodeIsActive(flowNodeId)
@@ -36,9 +37,10 @@ public class MessageEndEventZeebeIT extends OperateZeebeAbstractIT {
         .processInstanceIsFinished();
 
     // when
-    List<FlowNodeInstanceEntity> flowNodes = tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
+    List<FlowNodeInstanceEntity> flowNodes =
+        tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
     // then
-    assertThat(map(flowNodes,FlowNodeInstanceEntity::getType)).isEqualTo(
-        List.of(FlowNodeType.START_EVENT, FlowNodeType.END_EVENT));
+    assertThat(map(flowNodes, FlowNodeInstanceEntity::getType))
+        .isEqualTo(List.of(FlowNodeType.START_EVENT, FlowNodeType.END_EVENT));
   }
 }

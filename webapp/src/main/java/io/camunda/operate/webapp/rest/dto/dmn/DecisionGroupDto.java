@@ -10,10 +10,11 @@ import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.util.*;
 
-@Schema(name = "Decision group object", description = "Group of decisions with the same decisionId with all versions included")
+@Schema(
+    name = "Decision group object",
+    description = "Group of decisions with the same decisionId with all versions included")
 public class DecisionGroupDto {
 
   private String decisionId;
@@ -67,36 +68,45 @@ public class DecisionGroupDto {
     this.decisions = decisions;
   }
 
-  public static List<DecisionGroupDto> createFrom(Map<String, List<DecisionDefinitionEntity>> decisionsGrouped) {
+  public static List<DecisionGroupDto> createFrom(
+      Map<String, List<DecisionDefinitionEntity>> decisionsGrouped) {
     return createFrom(decisionsGrouped, null);
   }
 
-  public static List<DecisionGroupDto> createFrom(Map<String, List<DecisionDefinitionEntity>> decisionsGrouped, PermissionsService permissionsService) {
+  public static List<DecisionGroupDto> createFrom(
+      Map<String, List<DecisionDefinitionEntity>> decisionsGrouped,
+      PermissionsService permissionsService) {
     List<DecisionGroupDto> groups = new ArrayList<>();
-    decisionsGrouped.values().stream().forEach(group -> {
-        DecisionGroupDto groupDto = new DecisionGroupDto();
-        DecisionDefinitionEntity decision0 = group.get(0);
-        groupDto.setDecisionId(decision0.getDecisionId());
-        groupDto.setTenantId(decision0.getTenantId());
-        groupDto.setName(decision0.getName());
-        groupDto.setPermissions(permissionsService == null ? new HashSet<>() : permissionsService.getDecisionDefinitionPermission(decision0.getDecisionId()));
-        groupDto.setDecisions(DtoCreator.create(group, DecisionDto.class));
-        groups.add(groupDto);
-      }
-    );
+    decisionsGrouped.values().stream()
+        .forEach(
+            group -> {
+              DecisionGroupDto groupDto = new DecisionGroupDto();
+              DecisionDefinitionEntity decision0 = group.get(0);
+              groupDto.setDecisionId(decision0.getDecisionId());
+              groupDto.setTenantId(decision0.getTenantId());
+              groupDto.setName(decision0.getName());
+              groupDto.setPermissions(
+                  permissionsService == null
+                      ? new HashSet<>()
+                      : permissionsService.getDecisionDefinitionPermission(
+                          decision0.getDecisionId()));
+              groupDto.setDecisions(DtoCreator.create(group, DecisionDto.class));
+              groups.add(groupDto);
+            });
     groups.sort(new DecisionGroupComparator());
     return groups;
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     DecisionGroupDto that = (DecisionGroupDto) o;
-    return Objects.equals(decisionId, that.decisionId) && Objects.equals(tenantId, that.tenantId) && Objects.equals(
-        name, that.name) && Objects.equals(permissions, that.permissions) && Objects.equals(decisions, that.decisions);
+    return Objects.equals(decisionId, that.decisionId)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(name, that.name)
+        && Objects.equals(permissions, that.permissions)
+        && Objects.equals(decisions, that.decisions);
   }
 
   @Override
@@ -108,7 +118,7 @@ public class DecisionGroupDto {
     @Override
     public int compare(DecisionGroupDto o1, DecisionGroupDto o2) {
 
-      //when sorting "name" field has higher priority than "bpmnProcessId" field
+      // when sorting "name" field has higher priority than "bpmnProcessId" field
       if (o1.getName() == null && o2.getName() == null) {
         return o1.getDecisionId().compareTo(o2.getDecisionId());
       }

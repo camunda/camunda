@@ -13,18 +13,16 @@ import java.util.UUID;
 public class OperationEntity extends OperateEntity<OperationEntity> {
 
   private Long processInstanceKey;
-  /**
-   * Attention! This field will be filled in only for data imported after v. 8.2.0.
-   */
+
+  /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
   private Long processDefinitionKey;
-  /**
-   * Attention! This field will be filled in only for data imported after v. 8.2.0.
-   */
+
+  /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
   private String bpmnProcessId;
-  /**
-   * Attention! This field will be filled in only for data imported after v. 8.3.0.
-   */
+
+  /** Attention! This field will be filled in only for data imported after v. 8.3.0. */
   private Long decisionDefinitionKey;
+
   private Long incidentKey;
   private Long scopeKey;
   private String variableName;
@@ -210,44 +208,98 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
     OperationEntity that = (OperationEntity) o;
-    return Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
-        Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(decisionDefinitionKey, that.decisionDefinitionKey) &&
-        Objects.equals(incidentKey, that.incidentKey) && Objects.equals(scopeKey, that.scopeKey) && Objects.equals(variableName, that.variableName) &&
-        Objects.equals(variableValue, that.variableValue) && type == that.type && Objects.equals(lockExpirationTime, that.lockExpirationTime) &&
-        Objects.equals(lockOwner, that.lockOwner) && state == that.state && Objects.equals(errorMessage, that.errorMessage) &&
-        Objects.equals(batchOperationId, that.batchOperationId) && Objects.equals(zeebeCommandKey, that.zeebeCommandKey) &&
-        Objects.equals(username, that.username) && Objects.equals(modifyInstructions, that.modifyInstructions) &&
-        Objects.equals(migrationPlan, that.migrationPlan);
+    return Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(decisionDefinitionKey, that.decisionDefinitionKey)
+        && Objects.equals(incidentKey, that.incidentKey)
+        && Objects.equals(scopeKey, that.scopeKey)
+        && Objects.equals(variableName, that.variableName)
+        && Objects.equals(variableValue, that.variableValue)
+        && type == that.type
+        && Objects.equals(lockExpirationTime, that.lockExpirationTime)
+        && Objects.equals(lockOwner, that.lockOwner)
+        && state == that.state
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(batchOperationId, that.batchOperationId)
+        && Objects.equals(zeebeCommandKey, that.zeebeCommandKey)
+        && Objects.equals(username, that.username)
+        && Objects.equals(modifyInstructions, that.modifyInstructions)
+        && Objects.equals(migrationPlan, that.migrationPlan);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), processInstanceKey, processDefinitionKey, bpmnProcessId, decisionDefinitionKey, incidentKey, scopeKey,
-        variableName, variableValue, type, lockExpirationTime, lockOwner, state, errorMessage, batchOperationId, zeebeCommandKey, username,
-        modifyInstructions, migrationPlan);
+    return Objects.hash(
+        super.hashCode(),
+        processInstanceKey,
+        processDefinitionKey,
+        bpmnProcessId,
+        decisionDefinitionKey,
+        incidentKey,
+        scopeKey,
+        variableName,
+        variableValue,
+        type,
+        lockExpirationTime,
+        lockOwner,
+        state,
+        errorMessage,
+        batchOperationId,
+        zeebeCommandKey,
+        username,
+        modifyInstructions,
+        migrationPlan);
   }
 
   @Override
   public String toString() {
-    return "OperationEntity{" +
-        "processInstanceKey=" + processInstanceKey +
-        ", processDefinitionKey=" + processDefinitionKey +
-        ", bpmnProcessId='" + bpmnProcessId + '\'' +
-        ", decisionDefinitionKey=" + decisionDefinitionKey +
-        ", incidentKey=" + incidentKey +
-        ", scopeKey=" + scopeKey +
-        ", variableName='" + variableName + '\'' +
-        ", variableValue='" + variableValue + '\'' +
-        ", type=" + type +
-        ", lockExpirationTime=" + lockExpirationTime +
-        ", lockOwner='" + lockOwner + '\'' +
-        ", state=" + state +
-        ", errorMessage='" + errorMessage + '\'' +
-        ", batchOperationId='" + batchOperationId + '\'' +
-        ", zeebeCommandKey=" + zeebeCommandKey +
-        ", username='" + username + '\'' +
-        ", modifyInstructions='" + modifyInstructions + '\'' +
-        ", migrationPlan='" + migrationPlan + '\'' +
-        '}';
+    return "OperationEntity{"
+        + "processInstanceKey="
+        + processInstanceKey
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", decisionDefinitionKey="
+        + decisionDefinitionKey
+        + ", incidentKey="
+        + incidentKey
+        + ", scopeKey="
+        + scopeKey
+        + ", variableName='"
+        + variableName
+        + '\''
+        + ", variableValue='"
+        + variableValue
+        + '\''
+        + ", type="
+        + type
+        + ", lockExpirationTime="
+        + lockExpirationTime
+        + ", lockOwner='"
+        + lockOwner
+        + '\''
+        + ", state="
+        + state
+        + ", errorMessage='"
+        + errorMessage
+        + '\''
+        + ", batchOperationId='"
+        + batchOperationId
+        + '\''
+        + ", zeebeCommandKey="
+        + zeebeCommandKey
+        + ", username='"
+        + username
+        + '\''
+        + ", modifyInstructions='"
+        + modifyInstructions
+        + '\''
+        + ", migrationPlan='"
+        + migrationPlan
+        + '\''
+        + '}';
   }
 }

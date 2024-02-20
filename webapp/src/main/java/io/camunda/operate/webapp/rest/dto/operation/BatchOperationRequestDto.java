@@ -11,40 +11,36 @@ import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 
-/**
- * The request to get the list of batch operations, created by current user.
- */
+/** The request to get the list of batch operations, created by current user. */
 public class BatchOperationRequestDto {
 
-  /**
-   * Search for the batch operations that goes exactly before the given sort values.
-   */
+  /** Search for the batch operations that goes exactly before the given sort values. */
   private SortValuesWrapper[] searchBefore;
-  /**
-   * Search for the batch operations that goes exactly after the given sort values.
-   */
+
+  /** Search for the batch operations that goes exactly after the given sort values. */
   private SortValuesWrapper[] searchAfter;
-  /**
-   * Page size.
-   */
+
+  /** Page size. */
   private Integer pageSize;
 
-  public BatchOperationRequestDto() {
-  }
+  public BatchOperationRequestDto() {}
 
-  public BatchOperationRequestDto(Integer pageSize, SortValuesWrapper[] searchAfter, SortValuesWrapper[] searchBefore) {
+  public BatchOperationRequestDto(
+      Integer pageSize, SortValuesWrapper[] searchAfter, SortValuesWrapper[] searchBefore) {
     this.pageSize = pageSize;
     this.searchAfter = searchAfter;
     this.searchBefore = searchBefore;
   }
 
-  @Schema(description= "Array of two strings: copy/paste of sortValues field from one of the operations.",
+  @Schema(
+      description =
+          "Array of two strings: copy/paste of sortValues field from one of the operations.",
       example = "[\"9223372036854775807\", \"1583836503404\"]")
   public SortValuesWrapper[] getSearchBefore() {
     return searchBefore;
   }
 
-  public Object[] getSearchBefore(ObjectMapper objectMapper){
+  public Object[] getSearchBefore(ObjectMapper objectMapper) {
     return SortValuesWrapper.convertSortValues(searchBefore, objectMapper);
   }
 
@@ -53,13 +49,15 @@ public class BatchOperationRequestDto {
     return this;
   }
 
-  @Schema(description= "Array of two strings: copy/paste of sortValues field from one of the operations.",
+  @Schema(
+      description =
+          "Array of two strings: copy/paste of sortValues field from one of the operations.",
       example = "[\"1583836151645\", \"1583836128180\"]")
   public SortValuesWrapper[] getSearchAfter() {
     return searchAfter;
   }
 
-  public Object[] getSearchAfter(ObjectMapper objectMapper){
+  public Object[] getSearchAfter(ObjectMapper objectMapper) {
     return SortValuesWrapper.convertSortValues(searchAfter, objectMapper);
   }
 
@@ -79,21 +77,16 @@ public class BatchOperationRequestDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     BatchOperationRequestDto that = (BatchOperationRequestDto) o;
 
     // Probably incorrect - comparing Object[] arrays with Arrays.equals
-    if (!Arrays.equals(searchBefore, that.searchBefore))
-      return false;
+    if (!Arrays.equals(searchBefore, that.searchBefore)) return false;
     // Probably incorrect - comparing Object[] arrays with Arrays.equals
-    if (!Arrays.equals(searchAfter, that.searchAfter))
-      return false;
+    if (!Arrays.equals(searchAfter, that.searchAfter)) return false;
     return pageSize != null ? pageSize.equals(that.pageSize) : that.pageSize == null;
-
   }
 
   @Override

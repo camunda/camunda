@@ -6,6 +6,10 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.IncidentEntity;
@@ -39,6 +43,15 @@ import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.operate.zeebeimport.ZeebePostImporter;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.junit.runner.Description;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ExpandWildcard;
@@ -50,77 +63,47 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static org.assertj.core.api.Assertions.assertThat;
-
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
   protected static final Logger logger = LoggerFactory.getLogger(OpensearchTestRuleProvider.class);
 
-  @Autowired
-  protected RichOpenSearchClient richOpenSearchClient;
+  @Autowired protected RichOpenSearchClient richOpenSearchClient;
 
   @Autowired
   @Qualifier("zeebeOpensearchClient")
   protected OpenSearchClient zeebeOsClient;
 
-  @Autowired
-  private ListViewTemplate listViewTemplate;
+  @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired
-  private VariableTemplate variableTemplate;
+  @Autowired private VariableTemplate variableTemplate;
 
-  @Autowired
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
-  @Autowired
-  private OperationTemplate operationTemplate;
+  @Autowired private OperationTemplate operationTemplate;
 
-  @Autowired
-  private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private BatchOperationTemplate batchOperationTemplate;
 
-  @Autowired
-  private IncidentTemplate incidentTemplate;
+  @Autowired private IncidentTemplate incidentTemplate;
 
-  @Autowired
-  private DecisionInstanceTemplate decisionInstanceTemplate;
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
-  @Autowired
-  private DecisionRequirementsIndex decisionRequirementsIndex;
+  @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
 
-  @Autowired
-  private DecisionIndex decisionIndex;
+  @Autowired private DecisionIndex decisionIndex;
 
-  @Autowired
-  protected OperateProperties operateProperties;
+  @Autowired protected OperateProperties operateProperties;
 
-  @Autowired
-  private SchemaManager schemaManager;
+  @Autowired private SchemaManager schemaManager;
 
-  @Autowired
-  protected ZeebeImporter zeebeImporter;
+  @Autowired protected ZeebeImporter zeebeImporter;
 
-  @Autowired
-  protected ZeebePostImporter zeebePostImporter;
+  @Autowired protected ZeebePostImporter zeebePostImporter;
 
-  @Autowired
-  protected RecordsReaderHolder recordsReaderHolder;
+  @Autowired protected RecordsReaderHolder recordsReaderHolder;
 
-  @Autowired
-  private TestImportListener testImportListener;
+  @Autowired private TestImportListener testImportListener;
 
   Map<Class<? extends OperateEntity>, String> entityToAliasMap;
 
@@ -160,16 +143,19 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   public void finished(Description description) {
     TestUtil.removeIlmPolicy(richOpenSearchClient);
     String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
-    TestUtil.removeAllIndices(richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
-    operateProperties.getOpensearch().setIndexPrefix(OperateOpensearchProperties.DEFAULT_INDEX_PREFIX);
+    TestUtil.removeAllIndices(
+        richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
+    operateProperties
+        .getOpensearch()
+        .setIndexPrefix(OperateOpensearchProperties.DEFAULT_INDEX_PREFIX);
     zeebePostImporter.getPostImportActions().stream().forEach(PostImportAction::clearCache);
     assertMaxOpenScrollContexts(15);
   }
 
   public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
     assertThat(getOpenScrollcontextSize())
-      .describedAs("There are too many open scroll contexts left.")
-      .isLessThanOrEqualTo(maxOpenScrollContexts);
+        .describedAs("There are too many open scroll contexts left.")
+        .isLessThanOrEqualTo(maxOpenScrollContexts);
   }
 
   @Override
@@ -181,7 +167,9 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void refreshZeebeIndices() {
     try {
-      zeebeOsClient.indices().refresh(r -> r.index(operateProperties.getZeebeOpensearch().getPrefix() + "*"));
+      zeebeOsClient
+          .indices()
+          .refresh(r -> r.index(operateProperties.getZeebeOpensearch().getPrefix() + "*"));
     } catch (Exception t) {
       logger.error("Could not refresh Zeebe Opensearch indices", t);
     }
@@ -190,37 +178,72 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void refreshOperateSearchIndices() {
     try {
-      richOpenSearchClient.index().refresh(operateProperties.getOpensearch().getIndexPrefix() + "*");
+      richOpenSearchClient
+          .index()
+          .refresh(operateProperties.getOpensearch().getIndexPrefix() + "*");
       Thread.sleep(3000); // TODO: Find a way to wait for refresh completion
     } catch (Exception t) {
       logger.error("Could not refresh Operate Opensearch indices", t);
     }
   }
 
-  public void processAllRecordsAndWait(Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), maxWaitingRounds, true, predicate, null, arguments);
+  public void processAllRecordsAndWait(
+      Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
+    processRecordsAndWaitFor(
+        recordsReaderHolder.getAllRecordsReaders(),
+        maxWaitingRounds,
+        true,
+        predicate,
+        null,
+        arguments);
   }
 
   public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
     processAllRecordsAndWait(50, predicate, arguments);
   }
-  public void processAllRecordsAndWait(Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), 50, true, predicate, supplier, arguments);
-  }
 
-  public void processAllRecordsAndWait(boolean runPostImport, Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), 50, runPostImport, predicate, supplier, arguments);
-  }
-
-  public void processRecordsWithTypeAndWait(ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), 50, true, predicate, null, arguments);
-  }
-  public void processRecordsWithTypeAndWait(ImportValueType importValueType, boolean runPostImport, Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), 50, runPostImport, predicate, null, arguments);
-  }
-
-  public void processRecordsAndWaitFor(Collection<RecordsReader> readers, Integer maxWaitingRounds, boolean runPostImport,
+  public void processAllRecordsAndWait(
       Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+    processRecordsAndWaitFor(
+        recordsReaderHolder.getAllRecordsReaders(), 50, true, predicate, supplier, arguments);
+  }
+
+  public void processAllRecordsAndWait(
+      boolean runPostImport,
+      Predicate<Object[]> predicate,
+      Supplier<Object> supplier,
+      Object... arguments) {
+    processRecordsAndWaitFor(
+        recordsReaderHolder.getAllRecordsReaders(),
+        50,
+        runPostImport,
+        predicate,
+        supplier,
+        arguments);
+  }
+
+  public void processRecordsWithTypeAndWait(
+      ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
+    processRecordsAndWaitFor(
+        getRecordsReaders(importValueType), 50, true, predicate, null, arguments);
+  }
+
+  public void processRecordsWithTypeAndWait(
+      ImportValueType importValueType,
+      boolean runPostImport,
+      Predicate<Object[]> predicate,
+      Object... arguments) {
+    processRecordsAndWaitFor(
+        getRecordsReaders(importValueType), 50, runPostImport, predicate, null, arguments);
+  }
+
+  public void processRecordsAndWaitFor(
+      Collection<RecordsReader> readers,
+      Integer maxWaitingRounds,
+      boolean runPostImport,
+      Predicate<Object[]> predicate,
+      Supplier<Object> supplier,
+      Object... arguments) {
     int waitingRound = 0, maxRounds = maxWaitingRounds;
     boolean found = predicate.test(arguments);
     long start = System.currentTimeMillis();
@@ -258,7 +281,9 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
           testImportListener.resetCounters();
           logger.error(e.getMessage(), e);
         }
-        logger.debug(" {} of {} imports processed", testImportListener.getImportedCount(),
+        logger.debug(
+            " {} of {} imports processed",
+            testImportListener.getImportedCount(),
             testImportListener.getScheduledCount());
       }
       refreshOperateSearchIndices();
@@ -270,11 +295,11 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     }
     long finishedTime = System.currentTimeMillis() - start;
 
-    if(found) {
-      logger.debug("Conditions met in round {} ({} ms).", waitingRound,finishedTime );
-    }else {
+    if (found) {
+      logger.debug("Conditions met in round {} ({} ms).", waitingRound, finishedTime);
+    } else {
       logger.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
-//      throw new TestPrerequisitesFailedException("Conditions not met.");
+      //      throw new TestPrerequisitesFailedException("Conditions not met.");
     }
   }
 
@@ -282,7 +307,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     if (zeebePostImporter.getPostImportActions().size() == 0) {
       zeebePostImporter.initPostImporters();
     }
-    for (PostImportAction action: zeebePostImporter.getPostImportActions()) {
+    for (PostImportAction action : zeebePostImporter.getPostImportActions()) {
       try {
         action.performOneRound();
       } catch (IOException e) {
@@ -291,7 +316,8 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     }
   }
 
-  public boolean areIndicesCreatedAfterChecks(String indexPrefix, int minCountOfIndices,int maxChecks) {
+  public boolean areIndicesCreatedAfterChecks(
+      String indexPrefix, int minCountOfIndices, int maxChecks) {
     boolean areCreated = false;
     int checks = 0;
     while (!areCreated && checks <= maxChecks) {
@@ -299,7 +325,11 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       try {
         areCreated = areIndicesCreated(indexPrefix, minCountOfIndices);
       } catch (Exception t) {
-        logger.error("Opensearch indices (min {}) are not created yet. Waiting {}/{}",minCountOfIndices, checks, maxChecks);
+        logger.error(
+            "Opensearch indices (min {}) are not created yet. Waiting {}/{}",
+            minCountOfIndices,
+            checks,
+            maxChecks);
         sleepFor(200);
       }
     }
@@ -308,10 +338,11 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   }
 
   private boolean areIndicesCreated(String indexPrefix, int minCountOfIndices) throws IOException {
-    var indexRequestBuilder = getIndexRequestBuilder(indexPrefix + "*")
-      .ignoreUnavailable(true)
-      .allowNoIndices(false)
-      .expandWildcards(ExpandWildcard.Open);
+    var indexRequestBuilder =
+        getIndexRequestBuilder(indexPrefix + "*")
+            .ignoreUnavailable(true)
+            .allowNoIndices(false)
+            .expandWildcards(ExpandWildcard.Open);
 
     GetIndexResponse response = richOpenSearchClient.index().get(indexRequestBuilder);
 
@@ -321,7 +352,8 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
   public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
     return recordsReaderHolder.getAllRecordsReaders().stream()
-        .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
+        .filter(rr -> rr.getImportValueType().equals(importValueType))
+        .collect(Collectors.toList());
   }
 
   public void persistNew(OperateEntity... entitiesToPersist) {
@@ -334,18 +366,21 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     refreshSearchIndices();
   }
 
-  public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities) throws PersistenceException {
+  public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities)
+      throws PersistenceException {
     var batchRequest = richOpenSearchClient.batch().newBatchRequest();
 
-    for(OperateEntity entity: operateEntities) {
+    for (OperateEntity entity : operateEntities) {
       final String alias = getEntityToAliasMap().get(entity.getClass());
       if (alias == null) {
         throw new RuntimeException("Index not configured for " + entity.getClass().getName());
       }
       if (entity instanceof FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity) {
-        batchRequest.addWithRouting(alias, entity, flowNodeInstanceForListViewEntity.getProcessInstanceKey().toString());
+        batchRequest.addWithRouting(
+            alias, entity, flowNodeInstanceForListViewEntity.getProcessInstanceKey().toString());
       } else if (entity instanceof VariableForListViewEntity variableForListViewEntity) {
-        batchRequest.addWithRouting(alias, entity, variableForListViewEntity.getProcessInstanceKey().toString());
+        batchRequest.addWithRouting(
+            alias, entity, variableForListViewEntity.getProcessInstanceKey().toString());
       } else {
         batchRequest.add(alias, entity);
       }
@@ -353,26 +388,32 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     batchRequest.executeWithRefresh();
   }
 
-  public Map<Class<? extends OperateEntity>, String> getEntityToAliasMap(){
+  public Map<Class<? extends OperateEntity>, String> getEntityToAliasMap() {
     if (entityToAliasMap == null) {
       entityToAliasMap = new HashMap<>();
       entityToAliasMap.put(ProcessEntity.class, processIndex.getFullQualifiedName());
       entityToAliasMap.put(IncidentEntity.class, incidentTemplate.getFullQualifiedName());
-      entityToAliasMap.put(ProcessInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
-      entityToAliasMap.put(FlowNodeInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
-      entityToAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToAliasMap.put(
+          ProcessInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToAliasMap.put(
+          FlowNodeInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+      entityToAliasMap.put(
+          VariableForListViewEntity.class, listViewTemplate.getFullQualifiedName());
       entityToAliasMap.put(VariableEntity.class, variableTemplate.getFullQualifiedName());
       entityToAliasMap.put(OperationEntity.class, operationTemplate.getFullQualifiedName());
-      entityToAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getFullQualifiedName());
-      entityToAliasMap.put(DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
-      entityToAliasMap.put(DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
+      entityToAliasMap.put(
+          BatchOperationEntity.class, batchOperationTemplate.getFullQualifiedName());
+      entityToAliasMap.put(
+          DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
+      entityToAliasMap.put(
+          DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
       entityToAliasMap.put(DecisionDefinitionEntity.class, decisionIndex.getFullQualifiedName());
     }
     return entityToAliasMap;
   }
 
   public int getOpenScrollcontextSize() {
-    try{
+    try {
       return richOpenSearchClient.cluster().totalOpenContexts();
     } catch (Exception e) {
       logger.error("Failed to retrieve open contexts from opensearch! Returning 0.", e);

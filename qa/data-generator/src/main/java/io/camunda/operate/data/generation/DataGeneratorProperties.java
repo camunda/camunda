@@ -6,12 +6,13 @@
  */
 package io.camunda.operate.data.generation;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 import static io.camunda.operate.data.generation.DataGeneratorProperties.PROPERTIES_PREFIX;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
 @Component
-@ConfigurationProperties(prefix=PROPERTIES_PREFIX)
+@ConfigurationProperties(prefix = PROPERTIES_PREFIX)
 public class DataGeneratorProperties {
 
   public static final String PROPERTIES_PREFIX = "camunda.operate.qa.data";

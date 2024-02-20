@@ -6,15 +6,14 @@
  */
 package io.camunda.operate.store.opensearch.client.sync;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.opensearch.nodes.Stats;
 import org.slf4j.Logger;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class OpenSearchClusterOperations extends OpenSearchSyncOperation {
   public OpenSearchClusterOperations(Logger logger, OpenSearchClient openSearchClient) {
@@ -23,14 +22,15 @@ public class OpenSearchClusterOperations extends OpenSearchSyncOperation {
 
   public boolean isHealthy() {
     try {
-      final HealthResponse response = openSearchClient.cluster().health(h -> h.timeout(t -> t.time("5s")));
+      final HealthResponse response =
+          openSearchClient.cluster().health(h -> h.timeout(t -> t.time("5s")));
       final HealthStatus status = response.status();
       return !response.timedOut() && !status.equals(HealthStatus.Red);
     } catch (IOException e) {
       logger.error(
-        String.format(
-          "Couldn't connect to OpenSearch due to %s. Return unhealthy state.", e.getMessage()),
-        e);
+          String.format(
+              "Couldn't connect to OpenSearch due to %s. Return unhealthy state.", e.getMessage()),
+          e);
       return false;
     }
   }
@@ -44,11 +44,9 @@ public class OpenSearchClusterOperations extends OpenSearchSyncOperation {
   }
 
   public Map<String, Long> openContexts() throws IOException {
-    return nodesStats().entrySet()
-      .stream()
-      .collect(Collectors.toMap(
-        Map.Entry::getKey,
-        entry -> entry.getValue().indices().search().openContexts()
-      ));
+    return nodesStats().entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey, entry -> entry.getValue().indices().search().openContexts()));
   }
 }

@@ -7,13 +7,13 @@
 package io.camunda.operate.webapp.api.v1.entities;
 
 public enum DecisionInstanceState {
-
   FAILED,
   EVALUATED,
   UNKNOWN,
   UNSPECIFIED;
 
-  public static DecisionInstanceState getState(io.camunda.operate.entities.dmn.DecisionInstanceState state) {
+  public static DecisionInstanceState getState(
+      io.camunda.operate.entities.dmn.DecisionInstanceState state) {
     if (state == null) {
       return UNSPECIFIED;
     }

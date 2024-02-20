@@ -12,14 +12,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.util.Objects;
 
 @JsonInclude(Include.NON_NULL)
 public class ProcessInstance {
 
-  public static final String
-      KEY = ListViewTemplate.PROCESS_INSTANCE_KEY,
+  public static final String KEY = ListViewTemplate.PROCESS_INSTANCE_KEY,
       VERSION = ListViewTemplate.PROCESS_VERSION,
       BPMN_PROCESS_ID = ListViewTemplate.BPMN_PROCESS_ID,
       PROCESS_DEFINITION_KEY = ListViewTemplate.PROCESS_KEY,
@@ -37,8 +35,10 @@ public class ProcessInstance {
   private Long parentFlowNodeInstanceKey;
   private String startDate;
   private String endDate;
+
   @Schema(implementation = ProcessInstanceState.class)
   private String state;
+
   private Long processDefinitionKey;
   private String tenantId;
 
@@ -80,8 +80,8 @@ public class ProcessInstance {
 
   @JsonProperty("parentProcessInstanceKey")
   public ProcessInstance setParentProcessInstanceKey(final Long parentProcessInstanceKey) {
-      this.parentKey = parentProcessInstanceKey;
-      return this;
+    this.parentKey = parentProcessInstanceKey;
+    return this;
   }
 
   public Long getParentFlowNodeInstanceKey() {
@@ -140,27 +140,60 @@ public class ProcessInstance {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     ProcessInstance that = (ProcessInstance) o;
-    return Objects.equals(key, that.key) && Objects.equals(processVersion, that.processVersion) && Objects.equals(
-        bpmnProcessId, that.bpmnProcessId) && Objects.equals(parentKey, that.parentKey) && Objects.equals(startDate,
-        that.startDate) && Objects.equals(endDate, that.endDate) && Objects.equals(state, that.state) && Objects.equals(
-        processDefinitionKey, that.processDefinitionKey) && Objects.equals(tenantId, that.tenantId);
+    return Objects.equals(key, that.key)
+        && Objects.equals(processVersion, that.processVersion)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(parentKey, that.parentKey)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && Objects.equals(state, that.state)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, processVersion, bpmnProcessId, parentKey, startDate, endDate, state, processDefinitionKey,
+    return Objects.hash(
+        key,
+        processVersion,
+        bpmnProcessId,
+        parentKey,
+        startDate,
+        endDate,
+        state,
+        processDefinitionKey,
         tenantId);
   }
 
   @Override
   public String toString() {
-    return "ProcessInstance{" + "key=" + key + ", processVersion=" + processVersion + ", bpmnProcessId='" + bpmnProcessId
-        + '\'' + ", parentKey=" + parentKey + ", startDate='" + startDate + '\'' + ", endDate='" + endDate + '\'' + ", state='"
-        + state + '\'' + ", processDefinitionKey=" + processDefinitionKey + ", tenantId='" + tenantId + '\'' + '}';
+    return "ProcessInstance{"
+        + "key="
+        + key
+        + ", processVersion="
+        + processVersion
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", parentKey="
+        + parentKey
+        + ", startDate='"
+        + startDate
+        + '\''
+        + ", endDate='"
+        + endDate
+        + '\''
+        + ", state='"
+        + state
+        + '\''
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

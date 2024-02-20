@@ -14,7 +14,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.stereotype.Component;
 
-@Profile("!" + OperateProfileService.AUTH_PROFILE + " && !" + OperateProfileService.IDENTITY_AUTH_PROFILE)
+@Profile(
+    "!"
+        + OperateProfileService.AUTH_PROFILE
+        + " && !"
+        + OperateProfileService.IDENTITY_AUTH_PROFILE)
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class WebSecurityDisabledConfig {

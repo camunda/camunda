@@ -9,13 +9,14 @@ package io.camunda.operate.webapp.security.auth;
 import java.util.Arrays;
 
 public enum Role {
-  OWNER, OPERATOR, USER;
+  OWNER,
+  OPERATOR,
+  USER;
 
   public static Role fromString(final String roleAsString) {
     final String roleName = roleAsString.replaceAll("\\s+", "_");
-    for(Role role : values()) {
-      if(role.name().equalsIgnoreCase(roleName))
-        return role;
+    for (Role role : values()) {
+      if (role.name().equalsIgnoreCase(roleName)) return role;
     }
     throw new IllegalArgumentException(
         String.format("%s does not exists as Role in %s", roleAsString, Arrays.toString(values())));

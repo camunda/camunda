@@ -6,8 +6,11 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.qa.util.TestContainerUtil.*;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.operate.qa.util.IdentityTester;
+import java.util.Collections;
 import org.junit.Before;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -15,10 +18,6 @@ import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.Collections;
-
-import static io.camunda.operate.qa.util.TestContainerUtil.*;
 
 public abstract class IdentityOperateZeebeAbstractIT extends OperateZeebeAbstractIT {
 
@@ -29,15 +28,22 @@ public abstract class IdentityOperateZeebeAbstractIT extends OperateZeebeAbstrac
 
   @Override
   protected void mockTenantResponse() {
-    //do not mock anything here
+    // do not mock anything here
   }
 
   @Override
   @Before
   public void before() {
     super.before();
-    tester = beanFactory.getBean(OperateTester.class, zeebeClient, mockMvcTestRule, searchTestRule, IdentityTester.jwtDecoder)
-        .withAuthenticationToken(generateCamundaIdentityToken());
+    tester =
+        beanFactory
+            .getBean(
+                OperateTester.class,
+                zeebeClient,
+                mockMvcTestRule,
+                searchTestRule,
+                IdentityTester.jwtDecoder)
+            .withAuthenticationToken(generateCamundaIdentityToken());
   }
 
   protected String generateCamundaIdentityToken() {
@@ -98,5 +104,4 @@ public abstract class IdentityOperateZeebeAbstractIT extends OperateZeebeAbstrac
         + IdentityTester.testContext.getExternalKeycloakPort()
         + CONTEXT_PATH;
   }
-
 }

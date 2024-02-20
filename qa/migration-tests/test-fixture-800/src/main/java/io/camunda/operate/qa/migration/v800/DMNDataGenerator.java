@@ -6,6 +6,10 @@
  */
 package io.camunda.operate.qa.migration.v800;
 
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -15,6 +19,12 @@ import io.camunda.operate.util.rest.StatefulRestTemplate;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -25,20 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
-/**
- * It is considered that Zeebe and Elasticsearch are running.
- */
+/** It is considered that Zeebe and Elasticsearch are running. */
 @Component
 public class DMNDataGenerator {
 
@@ -49,12 +46,12 @@ public class DMNDataGenerator {
   public static final int DECISION_COUNT = 2;
 
   /**
-   * ZeebeClient must not be reused between different test fixtures, as this may be different versions of client in the future.
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
+   * versions of client in the future.
    */
   private ZeebeClient zeebeClient;
 
-  @Autowired
-  private RestHighLevelClient esClient;
+  @Autowired private RestHighLevelClient esClient;
 
   private Random random = new Random();
 
@@ -63,8 +60,16 @@ public class DMNDataGenerator {
   private StatefulRestTemplate operateRestClient;
 
   private void init(TestContext testContext) {
-    zeebeClient = ZeebeClient.newClientBuilder().gatewayAddress(testContext.getExternalZeebeContactPoint()).usePlaintext().build();
-    operateRestClient = new StatefulRestTemplate(testContext.getExternalOperateHost(), testContext.getExternalOperatePort(), testContext.getExternalOperateContextPath());
+    zeebeClient =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress(testContext.getExternalZeebeContactPoint())
+            .usePlaintext()
+            .build();
+    operateRestClient =
+        new StatefulRestTemplate(
+            testContext.getExternalOperateHost(),
+            testContext.getExternalOperatePort(),
+            testContext.getExternalOperateContextPath());
     operateRestClient.loginWhenNeeded();
   }
 
@@ -85,7 +90,9 @@ public class DMNDataGenerator {
       } catch (IOException e) {
         logger.error("Error in refreshing indices", e);
       }
-      logger.info("Data generation completed in: {} s", ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
+      logger.info(
+          "Data generation completed in: {} s",
+          ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
       testContext.addProcess(PROCESS_BPMN_PROCESS_ID);
     } finally {
       closeClients();
@@ -101,7 +108,7 @@ public class DMNDataGenerator {
 
   private void waitUntilAllDataIsImported() throws IOException {
     logger.info("Wait till data is imported.");
-    //count process instances
+    // count process instances
     SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
     searchRequest.source().query(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
     long loadedProcessInstances = 0;
@@ -114,7 +121,7 @@ public class DMNDataGenerator {
     if (count == maxWait) {
       throw new RuntimeException("Waiting for loading process instances failed: Timeout");
     }
-    //count decision instances
+    // count decision instances
     searchRequest = new SearchRequest(getAliasFor(DecisionInstanceTemplate.INDEX_NAME));
     loadedProcessInstances = 0;
     count = 0;
@@ -132,8 +139,9 @@ public class DMNDataGenerator {
   private List<Long> startProcessInstances(int numberOfProcessInstances) {
     for (int i = 0; i < numberOfProcessInstances; i++) {
       String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
-      long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId,
-          "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}");
+      long processInstanceKey =
+          ZeebeTestUtil.startProcessInstance(
+              zeebeClient, bpmnProcessId, "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}");
       logger.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
@@ -149,16 +157,20 @@ public class DMNDataGenerator {
     final BpmnModelInstance instance =
         Bpmn.createExecutableProcess(PROCESS_BPMN_PROCESS_ID)
             .startEvent()
-            .businessRuleTask(elementId, task -> task.zeebeCalledDecisionId(demoDecisionId2)
-                .zeebeResultVariable("approverGroups"))
+            .businessRuleTask(
+                elementId,
+                task ->
+                    task.zeebeCalledDecisionId(demoDecisionId2)
+                        .zeebeResultVariable("approverGroups"))
             .done();
-    String processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, instance, bpmnProcessId + ".bpmn");
+    String processDefinitionKey =
+        ZeebeTestUtil.deployProcess(zeebeClient, instance, bpmnProcessId + ".bpmn");
     logger.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
     ZeebeTestUtil.deployDecision(zeebeClient, "invoiceBusinessDecisions_v_1.dmn");
     logger.info("Deployed decision {}", demoDecisionId2);
   }
 
-  private long countEntitiesFor(SearchRequest searchRequest) throws IOException{
+  private long countEntitiesFor(SearchRequest searchRequest) throws IOException {
     searchRequest.source().size(1000);
     SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     return searchResponse.getHits().getTotalHits().value;
@@ -167,5 +179,4 @@ public class DMNDataGenerator {
   private String getAliasFor(String index) {
     return String.format("operate-%s-*_alias", index);
   }
-
 }

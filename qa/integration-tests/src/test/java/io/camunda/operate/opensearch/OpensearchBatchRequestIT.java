@@ -6,6 +6,11 @@
  */
 package io.camunda.operate.opensearch;
 
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
@@ -15,6 +20,8 @@ import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OpensearchOperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
+import java.util.List;
+import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,43 +29,31 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.List;
-import java.util.Map;
-
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
 
-  @Autowired
-  RichOpenSearchClient richOpenSearchClient;
+  @Autowired RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired
-  ProcessIndex processIndex;
+  @Autowired ProcessIndex processIndex;
 
-  @Autowired
-  SchemaManager schemaManager;
+  @Autowired SchemaManager schemaManager;
 
-  @Autowired
-  OperateProperties operateProperties;
+  @Autowired OperateProperties operateProperties;
   private String indexPrefix;
 
   @Before
-  public void setUp(){
-    indexPrefix = "test-batch-request-"+ TestUtil.createRandomString(5);
+  public void setUp() {
+    indexPrefix = "test-batch-request-" + TestUtil.createRandomString(5);
     operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
     schemaManager.createSchema();
   }
 
   @After
   public void cleanUp() {
-    schemaManager.deleteIndicesFor(indexPrefix +"*");
+    schemaManager.deleteIndicesFor(indexPrefix + "*");
   }
 
   @Test
-  public void canUseRichClient(){
+  public void canUseRichClient() {
     assertThat(richOpenSearchClient).isNotNull();
     assertThat(searchForProcessEntity(matchAll())).isEmpty();
   }
@@ -67,13 +62,24 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
   public void shouldAdd() throws PersistenceException {
     // given
     var batchRequest = richOpenSearchClient.batch().newBatchRequest();
-    batchRequest.add(processIndex.getFullQualifiedName(),
-        new ProcessEntity().setId("1").setBpmnProcessId("bpmnProcessId").setVersion(1)
-            .setBpmnXml("xml").setResourceName("resource")
-            .setName("name1"))
-        .add(processIndex.getFullQualifiedName(),
-            new ProcessEntity().setId("2").setBpmnProcessId("bpmnProcessId2").setVersion(1)
-                .setBpmnXml("xml").setResourceName("resource")
+    batchRequest
+        .add(
+            processIndex.getFullQualifiedName(),
+            new ProcessEntity()
+                .setId("1")
+                .setBpmnProcessId("bpmnProcessId")
+                .setVersion(1)
+                .setBpmnXml("xml")
+                .setResourceName("resource")
+                .setName("name1"))
+        .add(
+            processIndex.getFullQualifiedName(),
+            new ProcessEntity()
+                .setId("2")
+                .setBpmnProcessId("bpmnProcessId2")
+                .setVersion(1)
+                .setBpmnXml("xml")
+                .setResourceName("resource")
                 .setName("name2"))
         .executeWithRefresh();
     // when
@@ -89,13 +95,17 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
   public void shouldUpdateWithIdAndOperateEntity() throws PersistenceException {
     // given
     shouldAdd();
-    var newProcessEntity = new ProcessEntity()
-        .setId("1").setBpmnProcessId("bpmnProcessId").setVersion(1)
-        .setBpmnXml("xml").setResourceName("resource")
-        .setName("newName");
+    var newProcessEntity =
+        new ProcessEntity()
+            .setId("1")
+            .setBpmnProcessId("bpmnProcessId")
+            .setVersion(1)
+            .setBpmnXml("xml")
+            .setResourceName("resource")
+            .setName("newName");
     // when
     newBatchRequest()
-        .update(processIndex.getFullQualifiedName(),"1", newProcessEntity)
+        .update(processIndex.getFullQualifiedName(), "1", newProcessEntity)
         .executeWithRefresh();
     // then
     var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 1L));
@@ -109,7 +119,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
     shouldAdd();
     // when
     newBatchRequest()
-        .update(processIndex.getFullQualifiedName(),"1", Map.of("name","newName"))
+        .update(processIndex.getFullQualifiedName(), "1", Map.of("name", "newName"))
         .executeWithRefresh();
     // then
     var foundProcesses = searchForProcessEntity(term(ProcessIndex.ID, 1L));
@@ -123,7 +133,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
     shouldAdd();
     // when
     var script = "ctx._source.name += params.secondName;";
-    Map<String,Object> parameters = Map.of("secondName","-anotherName");
+    Map<String, Object> parameters = Map.of("secondName", "-anotherName");
     newBatchRequest()
         .updateWithScript(processIndex.getFullQualifiedName(), "1", script, parameters)
         .executeWithRefresh();
@@ -138,9 +148,14 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
     // given
     shouldAdd();
     // when
-    var processEntity = new ProcessEntity().setId("5").setBpmnProcessId("bpmnProcessId").setVersion(1)
-        .setBpmnXml("xml").setResourceName("resource")
-        .setName("name5");
+    var processEntity =
+        new ProcessEntity()
+            .setId("5")
+            .setBpmnProcessId("bpmnProcessId")
+            .setVersion(1)
+            .setBpmnXml("xml")
+            .setResourceName("resource")
+            .setName("name5");
     newBatchRequest()
         .upsert(processIndex.getFullQualifiedName(), "5", processEntity, Map.of())
         .executeWithRefresh();
@@ -150,16 +165,20 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
     assertThat(foundProcesses.get(0).getName()).isEqualTo("name5");
   }
 
-  private BatchRequest newBatchRequest(){
+  private BatchRequest newBatchRequest() {
     return richOpenSearchClient.batch().newBatchRequest();
   }
 
-  private List<ProcessEntity> searchForProcessEntity(Query query){
-    return richOpenSearchClient.doc()
-        .search(searchRequestBuilder(processIndex.getFullQualifiedName())
-        .query(query), ProcessEntity.class)
-        .hits().hits()
-          .stream().map(Hit::source)
+  private List<ProcessEntity> searchForProcessEntity(Query query) {
+    return richOpenSearchClient
+        .doc()
+        .search(
+            searchRequestBuilder(processIndex.getFullQualifiedName()).query(query),
+            ProcessEntity.class)
+        .hits()
+        .hits()
+        .stream()
+        .map(Hit::source)
         .toList();
   }
 }

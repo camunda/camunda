@@ -6,10 +6,10 @@
  */
 package io.camunda.operate.tenant;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import java.io.IOException;
 import java.util.concurrent.Callable;
-
-import io.camunda.operate.conditions.ElasticsearchCondition;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -17,14 +17,12 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-
-import io.camunda.operate.exceptions.OperateRuntimeException;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
-public class TenantAwareElasticsearchClient implements TenantAwareClient<SearchRequest, SearchResponse> {
+public class TenantAwareElasticsearchClient
+    implements TenantAwareClient<SearchRequest, SearchResponse> {
 
   @Autowired
   @Qualifier("esClient")
@@ -35,9 +33,11 @@ public class TenantAwareElasticsearchClient implements TenantAwareClient<SearchR
 
   @Override
   public SearchResponse search(SearchRequest searchRequest) throws IOException {
-    return search(searchRequest, () -> {
-      return defaultClient.search(searchRequest, RequestOptions.DEFAULT);
-    });
+    return search(
+        searchRequest,
+        () -> {
+          return defaultClient.search(searchRequest, RequestOptions.DEFAULT);
+        });
   }
 
   @Override
@@ -50,7 +50,8 @@ public class TenantAwareElasticsearchClient implements TenantAwareClient<SearchR
     } catch (RuntimeException re) {
       throw re;
     } catch (Exception e) {
-      final var message = String.format("Unexpectedly failed to execute search request with %s", e.getMessage());
+      final var message =
+          String.format("Unexpectedly failed to execute search request with %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -60,5 +61,4 @@ public class TenantAwareElasticsearchClient implements TenantAwareClient<SearchR
       tenantCheckApplier.apply(searchRequest);
     }
   }
-
 }

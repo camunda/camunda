@@ -38,7 +38,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = { TestApplication.class },
+@SpringBootTest(
+    classes = {TestApplication.class},
     properties = {"spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 @WithMockUser(username = AuthorizationIT.USER)
 public class AuthorizationIT {
@@ -47,18 +48,17 @@ public class AuthorizationIT {
 
   @MockBean UserService<? extends Authentication> userService;
 
-  @Autowired
-  private ProcessInstanceRestService processInstanceRestService;
+  @Autowired private ProcessInstanceRestService processInstanceRestService;
 
-  @Autowired
-  private TestSchemaManager testSchemaManager;
+  @Autowired private TestSchemaManager testSchemaManager;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @Before
   public void before() {
-    operateProperties.getElasticsearch().setIndexPrefix("test-probes-"+ TestUtil.createRandomString(5));
+    operateProperties
+        .getElasticsearch()
+        .setIndexPrefix("test-probes-" + TestUtil.createRandomString(5));
     testSchemaManager.createSchema();
   }
 
@@ -82,21 +82,22 @@ public class AuthorizationIT {
     // given
     userHasPermission(Permission.READ);
     // when
-    processInstanceRestService.operation("23",new CreateOperationRequestDto()
-        .setOperationType(OperationType.DELETE_PROCESS_INSTANCE));
+    processInstanceRestService.operation(
+        "23",
+        new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_INSTANCE));
     // then throw AccessDeniedException
   }
 
   @Test
   public void testWritePermissionsForBatchOperation() {
-    //given
+    // given
     userHasPermission(Permission.WRITE);
     // when
-    BatchOperationEntity batchOperationEntity = processInstanceRestService.createBatchOperation(new CreateBatchOperationRequestDto().setOperationType(
-        OperationType.DELETE_PROCESS_INSTANCE
-    ).setQuery(new ListViewQueryDto()
-        .setCompleted(true)
-        .setFinished(true)));
+    BatchOperationEntity batchOperationEntity =
+        processInstanceRestService.createBatchOperation(
+            new CreateBatchOperationRequestDto()
+                .setOperationType(OperationType.DELETE_PROCESS_INSTANCE)
+                .setQuery(new ListViewQueryDto().setCompleted(true).setFinished(true)));
     // then
     assertThat(batchOperationEntity).isNotNull();
   }
@@ -106,22 +107,28 @@ public class AuthorizationIT {
     // given
     userHasPermission(Permission.WRITE);
 
-    Exception e = assertThrows(OperateRuntimeException.class, () -> {
-      //when
-      processInstanceRestService.operation("23",
-          new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_INSTANCE));
-    });
-    //then
+    Exception e =
+        assertThrows(
+            OperateRuntimeException.class,
+            () -> {
+              // when
+              processInstanceRestService.operation(
+                  "23",
+                  new CreateOperationRequestDto()
+                      .setOperationType(OperationType.DELETE_PROCESS_INSTANCE));
+            });
+    // then
     Throwable cause = e.getCause();
     assertThat(cause).isInstanceOf(NotFoundException.class);
-    String errorMsg = DatabaseInfo.isOpensearch() ? "Process instances [23] doesn't exists." :  "Could not find process instance with id '23'.";
+    String errorMsg =
+        DatabaseInfo.isOpensearch()
+            ? "Process instances [23] doesn't exists."
+            : "Could not find process instance with id '23'.";
     assertThat(cause.getMessage()).isEqualTo(errorMsg);
   }
 
   private void userHasPermission(Permission permission) {
-    when(userService.getCurrentUser()).thenReturn(
-        new UserDto()
-            .setUserId(USER)
-            .setPermissions(List.of(permission)));
+    when(userService.getCurrentUser())
+        .thenReturn(new UserDto().setUserId(USER).setPermissions(List.of(permission)));
   }
 }

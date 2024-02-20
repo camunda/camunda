@@ -45,8 +45,7 @@ public class ErrorTypeDto implements Comparable<ErrorTypeDto> {
       return false;
     }
     final ErrorTypeDto that = (ErrorTypeDto) o;
-    return Objects.equals(id, that.id) &&
-        Objects.equals(name, that.name);
+    return Objects.equals(id, that.id) && Objects.equals(name, that.name);
   }
 
   @Override
@@ -56,10 +55,7 @@ public class ErrorTypeDto implements Comparable<ErrorTypeDto> {
 
   @Override
   public String toString() {
-    return "ErrorTypeDto{" +
-        "id='" + id + '\'' +
-        ", name='" + name + '\'' +
-        '}';
+    return "ErrorTypeDto{" + "id='" + id + '\'' + ", name='" + name + '\'' + '}';
   }
 
   @Override

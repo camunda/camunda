@@ -10,7 +10,8 @@ import java.util.Random;
 
 public abstract class NameGenerator {
 
-  private static String[] firstNames = { "James",
+  private static String[] firstNames = {
+    "James",
     "John",
     "Robert",
     "Michael",
@@ -51,7 +52,8 @@ public abstract class NameGenerator {
     "Donna",
     "Emily"
   };
-  private static String[] lastNames = { "Smith",
+  private static String[] lastNames = {
+    "Smith",
     "Johnson",
     "Williams",
     "Jones",
@@ -90,7 +92,8 @@ public abstract class NameGenerator {
     "Baker",
     "Gonzalez",
     "Nelson",
-    "Carter"};
+    "Carter"
+  };
 
   private static Random random = new Random();
 
@@ -101,5 +104,4 @@ public abstract class NameGenerator {
   public static String getRandomLastName() {
     return lastNames[random.nextInt(lastNames.length)];
   }
-
 }

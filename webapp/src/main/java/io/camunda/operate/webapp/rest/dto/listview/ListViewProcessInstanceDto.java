@@ -12,12 +12,11 @@ import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.util.TreePath;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
-import io.camunda.operate.util.TreePath;
-
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -50,8 +49,8 @@ public class ListViewProcessInstanceDto {
   private String tenantId;
 
   /**
-   * Sort values, define the position of process instance in the list and may be used to search
-   * for previous or following page.
+   * Sort values, define the position of process instance in the list and may be used to search for
+   * previous or following page.
    */
   private SortValuesWrapper[] sortValues;
 
@@ -201,101 +200,145 @@ public class ListViewProcessInstanceDto {
     this.permissions = permissions;
   }
 
-  public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
-      List<OperationEntity> operations, ObjectMapper objectMapper) {
+  public static ListViewProcessInstanceDto createFrom(
+      ProcessInstanceForListViewEntity processInstanceEntity,
+      List<OperationEntity> operations,
+      ObjectMapper objectMapper) {
     return createFrom(processInstanceEntity, operations, null, null, objectMapper);
   }
 
-  public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
-      List<OperationEntity> operations, List<ProcessInstanceReferenceDto> callHierarchy, ObjectMapper objectMapper) {
+  public static ListViewProcessInstanceDto createFrom(
+      ProcessInstanceForListViewEntity processInstanceEntity,
+      List<OperationEntity> operations,
+      List<ProcessInstanceReferenceDto> callHierarchy,
+      ObjectMapper objectMapper) {
     return createFrom(processInstanceEntity, operations, callHierarchy, null, objectMapper);
   }
 
-  public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
-    List<OperationEntity> operations, List<ProcessInstanceReferenceDto> callHierarchy, PermissionsService permissionsService,
+  public static ListViewProcessInstanceDto createFrom(
+      ProcessInstanceForListViewEntity processInstanceEntity,
+      List<OperationEntity> operations,
+      List<ProcessInstanceReferenceDto> callHierarchy,
+      PermissionsService permissionsService,
       ObjectMapper objectMapper) {
     if (processInstanceEntity == null) {
       return null;
     }
     ListViewProcessInstanceDto processInstance = new ListViewProcessInstanceDto();
-    processInstance.setId(processInstanceEntity.getId())
-      .setStartDate(processInstanceEntity.getStartDate())
-      .setEndDate(processInstanceEntity.getEndDate());
-    if (processInstanceEntity.getState() == ProcessInstanceState.ACTIVE && processInstanceEntity
-        .isIncident()) {
+    processInstance
+        .setId(processInstanceEntity.getId())
+        .setStartDate(processInstanceEntity.getStartDate())
+        .setEndDate(processInstanceEntity.getEndDate());
+    if (processInstanceEntity.getState() == ProcessInstanceState.ACTIVE
+        && processInstanceEntity.isIncident()) {
       processInstance.setState(ProcessInstanceStateDto.INCIDENT);
     } else {
       processInstance.setState(ProcessInstanceStateDto.getState(processInstanceEntity.getState()));
     }
 
-    processInstance.setProcessId(ConversionUtils.toStringOrNull(processInstanceEntity.getProcessDefinitionKey()))
-      .setBpmnProcessId(processInstanceEntity.getBpmnProcessId())
-      .setProcessName(processInstanceEntity.getProcessName())
-      .setProcessVersion(processInstanceEntity.getProcessVersion())
-      .setOperations(DtoCreator.create(operations, OperationDto.class))
-      .setTenantId(processInstanceEntity.getTenantId());
+    processInstance
+        .setProcessId(
+            ConversionUtils.toStringOrNull(processInstanceEntity.getProcessDefinitionKey()))
+        .setBpmnProcessId(processInstanceEntity.getBpmnProcessId())
+        .setProcessName(processInstanceEntity.getProcessName())
+        .setProcessVersion(processInstanceEntity.getProcessVersion())
+        .setOperations(DtoCreator.create(operations, OperationDto.class))
+        .setTenantId(processInstanceEntity.getTenantId());
     if (operations != null) {
-      processInstance.setHasActiveOperation(operations.stream().anyMatch(
-        o ->
-          o.getState().equals(OperationState.SCHEDULED)
-          || o.getState().equals(OperationState.LOCKED)
-          || o.getState().equals(OperationState.SENT)));
+      processInstance.setHasActiveOperation(
+          operations.stream()
+              .anyMatch(
+                  o ->
+                      o.getState().equals(OperationState.SCHEDULED)
+                          || o.getState().equals(OperationState.LOCKED)
+                          || o.getState().equals(OperationState.SENT)));
     }
     if (processInstanceEntity.getParentProcessInstanceKey() != null) {
-      processInstance
-          .setParentInstanceId(String.valueOf(processInstanceEntity.getParentProcessInstanceKey()));
+      processInstance.setParentInstanceId(
+          String.valueOf(processInstanceEntity.getParentProcessInstanceKey()));
     }
-    //convert to String[]
+    // convert to String[]
     if (processInstanceEntity.getSortValues() != null) {
-      processInstance.setSortValues(SortValuesWrapper.createFrom(processInstanceEntity.getSortValues(), objectMapper));
+      processInstance.setSortValues(
+          SortValuesWrapper.createFrom(processInstanceEntity.getSortValues(), objectMapper));
     }
 
     if (processInstanceEntity.getTreePath() != null) {
-      final String rootInstanceId = new TreePath(processInstanceEntity.getTreePath())
-          .extractRootInstanceId();
+      final String rootInstanceId =
+          new TreePath(processInstanceEntity.getTreePath()).extractRootInstanceId();
       if (!processInstanceEntity.getId().equals(rootInstanceId)) {
         processInstance.setRootInstanceId(rootInstanceId);
       }
     }
     processInstance.setCallHierarchy(callHierarchy);
-    processInstance.setPermissions(permissionsService == null ? new HashSet<>() :
-        permissionsService.getProcessDefinitionPermission(processInstanceEntity.getBpmnProcessId()));
+    processInstance.setPermissions(
+        permissionsService == null
+            ? new HashSet<>()
+            : permissionsService.getProcessDefinitionPermission(
+                processInstanceEntity.getBpmnProcessId()));
     return processInstance;
   }
 
   public static List<ListViewProcessInstanceDto> createFrom(
       List<ProcessInstanceForListViewEntity> processInstanceEntities,
-      Map<Long, List<OperationEntity>> operationsPerProcessInstance, ObjectMapper objectMapper) {
+      Map<Long, List<OperationEntity>> operationsPerProcessInstance,
+      ObjectMapper objectMapper) {
     if (processInstanceEntities == null) {
       return new ArrayList<>();
     }
-    return processInstanceEntities.stream().filter(item -> item != null)
-        .map(item -> createFrom(item,
-            operationsPerProcessInstance.get(item.getProcessInstanceKey()), objectMapper))
+    return processInstanceEntities.stream()
+        .filter(item -> item != null)
+        .map(
+            item ->
+                createFrom(
+                    item,
+                    operationsPerProcessInstance.get(item.getProcessInstanceKey()),
+                    objectMapper))
         .collect(Collectors.toList());
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     ListViewProcessInstanceDto that = (ListViewProcessInstanceDto) o;
-    return hasActiveOperation == that.hasActiveOperation && Objects.equals(id, that.id) && Objects.equals(processId,
-        that.processId) && Objects.equals(processName, that.processName) && Objects.equals(processVersion,
-        that.processVersion) && Objects.equals(startDate, that.startDate) && Objects.equals(endDate,
-        that.endDate) && state == that.state && Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(
-        operations, that.operations) && Objects.equals(parentInstanceId, that.parentInstanceId) && Objects.equals(
-        rootInstanceId, that.rootInstanceId) && Objects.equals(callHierarchy, that.callHierarchy) && Objects.equals(
-        tenantId, that.tenantId) && Arrays.equals(sortValues, that.sortValues) && Objects.equals(permissions,
-        that.permissions);
+    return hasActiveOperation == that.hasActiveOperation
+        && Objects.equals(id, that.id)
+        && Objects.equals(processId, that.processId)
+        && Objects.equals(processName, that.processName)
+        && Objects.equals(processVersion, that.processVersion)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && state == that.state
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(operations, that.operations)
+        && Objects.equals(parentInstanceId, that.parentInstanceId)
+        && Objects.equals(rootInstanceId, that.rootInstanceId)
+        && Objects.equals(callHierarchy, that.callHierarchy)
+        && Objects.equals(tenantId, that.tenantId)
+        && Arrays.equals(sortValues, that.sortValues)
+        && Objects.equals(permissions, that.permissions);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(id, processId, processName, processVersion, startDate, endDate, state, bpmnProcessId,
-        hasActiveOperation, operations, parentInstanceId, rootInstanceId, callHierarchy, tenantId, permissions);
+    int result =
+        Objects.hash(
+            id,
+            processId,
+            processName,
+            processVersion,
+            startDate,
+            endDate,
+            state,
+            bpmnProcessId,
+            hasActiveOperation,
+            operations,
+            parentInstanceId,
+            rootInstanceId,
+            callHierarchy,
+            tenantId,
+            permissions);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

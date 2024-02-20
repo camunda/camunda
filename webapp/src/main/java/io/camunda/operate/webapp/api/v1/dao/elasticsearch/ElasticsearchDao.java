@@ -6,12 +6,19 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
+import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
+import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.data.OperateDateTimeFormatter;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -24,14 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
-import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 public abstract class ElasticsearchDao<T> {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
@@ -40,30 +39,32 @@ public abstract class ElasticsearchDao<T> {
   @Qualifier("esClient")
   protected RestHighLevelClient elasticsearch;
 
-  @Autowired
-  protected TenantAwareElasticsearchClient tenantAwareClient;
+  @Autowired protected TenantAwareElasticsearchClient tenantAwareClient;
 
-  @Autowired
-  protected ObjectMapper objectMapper;
+  @Autowired protected ObjectMapper objectMapper;
 
-  @Autowired
-  protected OperateDateTimeFormatter dateTimeFormatter;
+  @Autowired protected OperateDateTimeFormatter dateTimeFormatter;
 
-  protected void buildSorting(final Query<T> query, final String uniqueSortKey,
+  protected void buildSorting(
+      final Query<T> query,
+      final String uniqueSortKey,
       final SearchSourceBuilder searchSourceBuilder) {
     final List<Sort> sorts = query.getSort();
     if (sorts != null) {
-      searchSourceBuilder.sort(sorts.stream().map(sort -> {
-            final Order order = sort.getOrder();
-            final FieldSortBuilder sortBuilder = SortBuilders.fieldSort(sort.getField());
-            if (order.equals(Order.DESC)) {
-              return sortBuilder.order(SortOrder.DESC);
-            } else {
-              // if not specified always assume ASC order
-              return sortBuilder.order(SortOrder.ASC);
-            }
-          }
-      ).collect(Collectors.toList()));
+      searchSourceBuilder.sort(
+          sorts.stream()
+              .map(
+                  sort -> {
+                    final Order order = sort.getOrder();
+                    final FieldSortBuilder sortBuilder = SortBuilders.fieldSort(sort.getField());
+                    if (order.equals(Order.DESC)) {
+                      return sortBuilder.order(SortOrder.DESC);
+                    } else {
+                      // if not specified always assume ASC order
+                      return sortBuilder.order(SortOrder.ASC);
+                    }
+                  })
+              .collect(Collectors.toList()));
     }
     // always sort at least by key - needed for searchAfter method of paging
     searchSourceBuilder.sort(SortBuilders.fieldSort(uniqueSortKey).order(SortOrder.ASC));
@@ -77,7 +78,8 @@ public abstract class ElasticsearchDao<T> {
     searchSourceBuilder.size(query.getSize());
   }
 
-  protected SearchSourceBuilder buildQueryOn(final Query<T> query,final String uniqueKey,final SearchSourceBuilder searchSourceBuilder) {
+  protected SearchSourceBuilder buildQueryOn(
+      final Query<T> query, final String uniqueKey, final SearchSourceBuilder searchSourceBuilder) {
     logger.debug("Build query for Elasticsearch from query {}", query);
     buildSorting(query, uniqueKey, searchSourceBuilder);
     buildPaging(query, searchSourceBuilder);
@@ -85,9 +87,10 @@ public abstract class ElasticsearchDao<T> {
     return searchSourceBuilder;
   }
 
-  protected abstract void buildFiltering(final Query<T> query, final SearchSourceBuilder searchSourceBuilder);
+  protected abstract void buildFiltering(
+      final Query<T> query, final SearchSourceBuilder searchSourceBuilder);
 
-  protected QueryBuilder buildTermQuery(final String name, final String value){
+  protected QueryBuilder buildTermQuery(final String name, final String value) {
     if (!stringIsEmpty(value)) {
       return termQuery(name, value);
     }
@@ -117,19 +120,21 @@ public abstract class ElasticsearchDao<T> {
 
   protected QueryBuilder buildMatchQuery(final String name, final String value) {
     if (value != null) {
-      return matchQuery(name,  value).operator(Operator.AND);
+      return matchQuery(name, value).operator(Operator.AND);
     }
     return null;
   }
 
   protected QueryBuilder buildMatchDateQuery(final String name, final String dateAsString) {
-      if (dateAsString != null) {
-        // Used to match in different time ranges like hours, minutes etc
-        // See: https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
-        return rangeQuery(name)
-            .gte(dateAsString)
-            .lte(dateAsString).format(dateTimeFormatter.getApiDateTimeFormatString());
-      }
-      return null;
+    if (dateAsString != null) {
+      // Used to match in different time ranges like hours, minutes etc
+      // See:
+      // https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
+      return rangeQuery(name)
+          .gte(dateAsString)
+          .lte(dateAsString)
+          .format(dateTimeFormatter.getApiDateTimeFormatString());
+    }
+    return null;
   }
 }

@@ -10,8 +10,8 @@ import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
 import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
 import java.util.Objects;
 
-public class DecisionInstanceOutputDto implements
-    CreatableFromEntity<DecisionInstanceOutputDto, DecisionInstanceOutputEntity> {
+public class DecisionInstanceOutputDto
+    implements CreatableFromEntity<DecisionInstanceOutputDto, DecisionInstanceOutputEntity> {
 
   private String id;
   private String name;
@@ -82,11 +82,11 @@ public class DecisionInstanceOutputDto implements
       return false;
     }
     final DecisionInstanceOutputDto that = (DecisionInstanceOutputDto) o;
-    return ruleIndex == that.ruleIndex &&
-        Objects.equals(id, that.id) &&
-        Objects.equals(name, that.name) &&
-        Objects.equals(value, that.value) &&
-        Objects.equals(ruleId, that.ruleId);
+    return ruleIndex == that.ruleIndex
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value)
+        && Objects.equals(ruleId, that.ruleId);
   }
 
   @Override

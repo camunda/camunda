@@ -8,10 +8,9 @@ package io.camunda.operate.store.opensearch.client.sync;
 
 import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.OpenSearchOperation;
+import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
-
-import java.util.function.Function;
 
 public class OpenSearchSyncOperation extends OpenSearchOperation {
   protected OpenSearchClient openSearchClient;
@@ -25,7 +24,9 @@ public class OpenSearchSyncOperation extends OpenSearchOperation {
     if (openSearchClient instanceof ExtendedOpenSearchClient extendedOpenSearchClient) {
       return f.apply(extendedOpenSearchClient);
     } else {
-      throw new UnsupportedOperationException("ExtendedOpenSearchClient is required! Provided: " + openSearchClient.getClass().getName());
+      throw new UnsupportedOperationException(
+          "ExtendedOpenSearchClient is required! Provided: "
+              + openSearchClient.getClass().getName());
     }
   }
 }

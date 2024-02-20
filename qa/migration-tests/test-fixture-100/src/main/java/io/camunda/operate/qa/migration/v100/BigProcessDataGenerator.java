@@ -14,16 +14,16 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import io.camunda.operate.qa.util.TestContext;
+import io.camunda.operate.qa.util.ZeebeTestUtil;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.util.ThreadUtil;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import io.camunda.operate.qa.util.ZeebeTestUtil;
-import io.camunda.operate.qa.util.TestContext;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.util.ThreadUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -33,9 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-/**
- * It is considered that Zeebe and Elasticsearch are running.
- */
+/** It is considered that Zeebe and Elasticsearch are running. */
 @Component
 public class BigProcessDataGenerator {
 
@@ -43,11 +41,14 @@ public class BigProcessDataGenerator {
   public static final String PROCESS_BPMN_PROCESS_ID = "sequential-noop";
   private ZeebeClient zeebeClient;
 
-  @Autowired
-  private RestHighLevelClient esClient;
+  @Autowired private RestHighLevelClient esClient;
 
   private void init(TestContext testContext) {
-    zeebeClient = ZeebeClient.newClientBuilder().gatewayAddress(testContext.getExternalZeebeContactPoint()).usePlaintext().build();
+    zeebeClient =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress(testContext.getExternalZeebeContactPoint())
+            .usePlaintext()
+            .build();
   }
 
   public void createData(TestContext testContext) throws Exception {
@@ -62,9 +63,9 @@ public class BigProcessDataGenerator {
 
       waitUntilAllDataIsImported();
 
-      logger.info("Data generation completed in: {} s",
-          ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime
-              .now()));
+      logger.info(
+          "Data generation completed in: {} s",
+          ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
       testContext.addProcess(PROCESS_BPMN_PROCESS_ID);
     } finally {
       closeClients();
@@ -74,15 +75,16 @@ public class BigProcessDataGenerator {
   private void waitUntilAllDataIsImported() throws IOException {
     logger.info("Wait till data is imported.");
     SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
-    searchRequest.source().query(joinWithAnd(
-        termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-        termQuery(BPMN_PROCESS_ID, PROCESS_BPMN_PROCESS_ID),
-        termQuery(STATE, COMPLETED)
-        )
-    );
+    searchRequest
+        .source()
+        .query(
+            joinWithAnd(
+                termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+                termQuery(BPMN_PROCESS_ID, PROCESS_BPMN_PROCESS_ID),
+                termQuery(STATE, COMPLETED)));
     SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     int count = 0, maxWait = 101;
-    while(searchResponse.getHits().getTotalHits().value < 1  && count < maxWait) {
+    while (searchResponse.getHits().getTotalHits().value < 1 && count < maxWait) {
       count++;
       ThreadUtil.sleepFor(2000L);
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -93,23 +95,25 @@ public class BigProcessDataGenerator {
   }
 
   private void finishEndTask() {
-    //wait for task "endTask" of long-running process and complete it
+    // wait for task "endTask" of long-running process and complete it
     ZeebeTestUtil.completeTask(zeebeClient, "endTask", "data-generator", null, 1);
     logger.info("Task endTask completed.");
   }
 
   private void deployProcess() {
-    String processDefinitionKey = ZeebeTestUtil
-        .deployProcess(zeebeClient, "sequential-noop.bpmn");
+    String processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, "sequential-noop.bpmn");
     logger.info("Deployed process {} with key {}", PROCESS_BPMN_PROCESS_ID, processDefinitionKey);
   }
 
   private void startBigProcessInstance() {
     String payload =
-        "{\"items\": [" + IntStream.range(1, 1000).boxed().map(Object::toString).collect(
-            Collectors.joining(",")) + "]}";
-    ZeebeTestUtil
-        .startProcessInstance(zeebeClient, PROCESS_BPMN_PROCESS_ID, payload);
+        "{\"items\": ["
+            + IntStream.range(1, 1000)
+                .boxed()
+                .map(Object::toString)
+                .collect(Collectors.joining(","))
+            + "]}";
+    ZeebeTestUtil.startProcessInstance(zeebeClient, PROCESS_BPMN_PROCESS_ID, payload);
     logger.info("Started process instance with id {} ", PROCESS_BPMN_PROCESS_ID);
   }
 
@@ -123,5 +127,4 @@ public class BigProcessDataGenerator {
       zeebeClient = null;
     }
   }
-
 }

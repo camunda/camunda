@@ -16,6 +16,7 @@ import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.UserStore;
 import io.camunda.operate.util.ElasticsearchUtil;
+import java.io.IOException;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -32,30 +33,27 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
-
 @Conditional(ElasticsearchCondition.class)
 @Component
 @DependsOn("schemaStartup")
-@Profile("!" + OperateProfileService.LDAP_AUTH_PROFILE
-    + " & !" + OperateProfileService.SSO_AUTH_PROFILE
-    + " & !" + OperateProfileService.IDENTITY_AUTH_PROFILE
-)
+@Profile(
+    "!"
+        + OperateProfileService.LDAP_AUTH_PROFILE
+        + " & !"
+        + OperateProfileService.SSO_AUTH_PROFILE
+        + " & !"
+        + OperateProfileService.IDENTITY_AUTH_PROFILE)
 public class ElasticsearchUserStore implements UserStore {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUserStore.class);
 
   private static final XContentType XCONTENT_TYPE = XContentType.JSON;
 
-  @Autowired
-  protected RestHighLevelClient esClient;
+  @Autowired protected RestHighLevelClient esClient;
 
-  @Autowired
-  protected ObjectMapper objectMapper;
+  @Autowired protected ObjectMapper objectMapper;
 
-  @Autowired
-  private UserIndex userIndex;
+  @Autowired private UserIndex userIndex;
 
   protected String userEntityToJSONString(UserEntity aUser) throws JsonProcessingException {
     return objectMapper.writeValueAsString(aUser);
@@ -63,20 +61,24 @@ public class ElasticsearchUserStore implements UserStore {
 
   @Override
   public UserEntity getById(String id) {
-    final SearchRequest searchRequest = new SearchRequest(userIndex.getAlias())
-        .source(new SearchSourceBuilder()
-            .query(QueryBuilders.termQuery(UserIndex.USER_ID, id)));
+    final SearchRequest searchRequest =
+        new SearchRequest(userIndex.getAlias())
+            .source(
+                new SearchSourceBuilder().query(QueryBuilders.termQuery(UserIndex.USER_ID, id)));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       if (response.getHits().getTotalHits().value == 1) {
-        return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, UserEntity.class);
+        return ElasticsearchUtil.fromSearchHit(
+            response.getHits().getHits()[0].getSourceAsString(), objectMapper, UserEntity.class);
       } else if (response.getHits().getTotalHits().value > 1) {
-        throw new NotFoundException(String.format("Could not find unique user with userId '%s'.", id));
+        throw new NotFoundException(
+            String.format("Could not find unique user with userId '%s'.", id));
       } else {
         throw new NotFoundException(String.format("Could not find user with userId '%s'.", id));
       }
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining the user: %s", e.getMessage());
+      final String message =
+          String.format("Exception occurred, while obtaining the user: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -84,9 +86,11 @@ public class ElasticsearchUserStore implements UserStore {
   @Override
   public void save(UserEntity user) {
     try {
-      IndexRequest request = new IndexRequest(userIndex.getFullQualifiedName()).id(user.getId())
-          .source(userEntityToJSONString(user), XCONTENT_TYPE);
-      esClient.index(request,RequestOptions.DEFAULT);
+      IndexRequest request =
+          new IndexRequest(userIndex.getFullQualifiedName())
+              .id(user.getId())
+              .source(userEntityToJSONString(user), XCONTENT_TYPE);
+      esClient.index(request, RequestOptions.DEFAULT);
     } catch (Exception t) {
       logger.error("Could not create user with userId {}", user.getUserId(), t);
     }

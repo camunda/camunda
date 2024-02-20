@@ -8,8 +8,8 @@ package io.camunda.operate.zeebeimport;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
-import java.util.Collection;
 import jakarta.annotation.PostConstruct;
+import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,21 +26,17 @@ public class ZeebeImporter {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeImporter.class);
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
-  @Autowired
-  private ZeebePostImporter zeebePostImporter;
+  @Autowired private ZeebePostImporter zeebePostImporter;
 
-  @Autowired
-  private RecordsReaderHolder recordsReaderHolder;
+  @Autowired private RecordsReaderHolder recordsReaderHolder;
 
   @Autowired
   @Qualifier("recordsReaderThreadPoolExecutor")
   private ThreadPoolTaskScheduler recordsReaderThreadPoolExecutor;
 
-  @Autowired
-  private Metrics metrics;
+  @Autowired private Metrics metrics;
 
   @PostConstruct
   public void startImportingData() {
@@ -52,13 +48,12 @@ public class ZeebeImporter {
 
   public void scheduleReaders() {
     logger.info("INIT: Start importing data...");
-    recordsReaderHolder.getAllRecordsReaders().stream().forEach(
-        recordsReader -> recordsReaderThreadPoolExecutor.submit(recordsReader)
-    );
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .forEach(recordsReader -> recordsReaderThreadPoolExecutor.submit(recordsReader));
   }
 
   public void performOneRoundOfImportFor(Collection<RecordsReader> readers) {
-    for (RecordsReader recordsReader: readers) {
+    for (RecordsReader recordsReader : readers) {
       importOneBatch(recordsReader, false);
     }
   }
@@ -70,5 +65,4 @@ public class ZeebeImporter {
   public void importOneBatch(RecordsReader recordsReader, boolean autoContinue) {
     recordsReader.readAndScheduleNextBatch(autoContinue);
   }
-
 }

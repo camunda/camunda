@@ -29,33 +29,36 @@ import org.springframework.stereotype.Component;
 @Component("webSecurityConfig")
 public class SSOWebSecurityConfig extends BaseWebConfigurer {
 
-  @Autowired
-  protected OAuth2WebConfigurer oAuth2WebConfigurer;
+  @Autowired protected OAuth2WebConfigurer oAuth2WebConfigurer;
 
   @Bean
   public AuthenticationController authenticationController() {
-    return AuthenticationController.newBuilder(operateProperties.getAuth0().getDomain(),
-        operateProperties.getAuth0().getClientId(), operateProperties.getAuth0().getClientSecret())
+    return AuthenticationController.newBuilder(
+            operateProperties.getAuth0().getDomain(),
+            operateProperties.getAuth0().getClientId(),
+            operateProperties.getAuth0().getClientSecret())
         .build();
   }
 
   @Override
   protected void applySecurityFilterSettings(final HttpSecurity http) throws Exception {
-    http
-      .csrf((csrf) -> csrf.disable())
-      .authorizeRequests((authorize) -> {
-        authorize
-          .requestMatchers(AUTH_WHITELIST).permitAll()
-          .requestMatchers(API, PUBLIC_API, ROOT + "**").authenticated();
-      })
-      .exceptionHandling((handling) -> {
-        handling.authenticationEntryPoint(this::failureHandler);
-      });
+    http.csrf((csrf) -> csrf.disable())
+        .authorizeRequests(
+            (authorize) -> {
+              authorize
+                  .requestMatchers(AUTH_WHITELIST)
+                  .permitAll()
+                  .requestMatchers(API, PUBLIC_API, ROOT + "**")
+                  .authenticated();
+            })
+        .exceptionHandling(
+            (handling) -> {
+              handling.authenticationEntryPoint(this::failureHandler);
+            });
   }
 
   @Override
   protected void applyOAuth2Settings(final HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
-
 }

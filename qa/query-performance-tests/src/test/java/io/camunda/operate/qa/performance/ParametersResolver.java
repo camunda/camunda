@@ -18,6 +18,7 @@ import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -28,7 +29,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
-import jakarta.annotation.PostConstruct;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -43,13 +43,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * This class helps to resolve placeholders in JSON query files. On startup it reads the required data from Elasticsearch.
- * This data is later used to replace placeholders.
+ * This class helps to resolve placeholders in JSON query files. On startup it reads the required
+ * data from Elasticsearch. This data is later used to replace placeholders.
  */
 @Component
 public class ParametersResolver {
 
-  private static final String PROCESS_INSTANCE_IDS_MANY_VARS_PLACEHOLDER = "${processInstanceIdWithLotsOfVariables}";
+  private static final String PROCESS_INSTANCE_IDS_MANY_VARS_PLACEHOLDER =
+      "${processInstanceIdWithLotsOfVariables}";
   private static final String PROCESS_INSTANCE_IDS_PLACEHOLDER = "${processInstanceIds}";
   private static final String PROCESS_INSTANCE_ID_PLACEHOLDER = "${processInstanceId}";
   private static final String VARIABLE_ID_PLACEHOLDER = "${variableId}";
@@ -60,8 +61,7 @@ public class ParametersResolver {
 
   private RestHighLevelClient esClient;
 
-  @Autowired
-  private DateTimeFormatter df;
+  @Autowired private DateTimeFormatter df;
 
   @Value("${camunda.operate.qa.queries.elasticsearch.url:http://localhost:9200}")
   private String elasticsearchUrl;
@@ -69,17 +69,13 @@ public class ParametersResolver {
   @Value("${camunda.operate.qa.queries.elasticsearch.prefix:operate}")
   private String prefix;
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
-  @Autowired
-  private ListViewTemplate listViewTemplate;
+  @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired
-  private VariableTemplate variableTemplate;
+  @Autowired private VariableTemplate variableTemplate;
 
   private List<String> processInstanceIds = new ArrayList<>();
   private String processInstanceIdWithLotsOfVariables;
@@ -87,14 +83,17 @@ public class ParametersResolver {
   private String startDateBefore;
   private String startDateAfter;
 
-  private final ConstantScoreQueryBuilder isProcessInstanceQuery = constantScoreQuery(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
+  private final ConstantScoreQueryBuilder isProcessInstanceQuery =
+      constantScoreQuery(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
 
   private Random random = new Random();
 
   @PostConstruct
   public void resolveParameters() throws URISyntaxException {
     URI uri = new URI(elasticsearchUrl);
-    esClient = new RestHighLevelClient(RestClient.builder(new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme())));
+    esClient =
+        new RestHighLevelClient(
+            RestClient.builder(new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme())));
     initProcessInstanceIds();
     findProcessInstanceIdWithManyVars();
     initProcessIds();
@@ -107,21 +106,26 @@ public class ParametersResolver {
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
               .query(isProcessInstanceQuery)
-              .from(0).size(1)
-          .sort(ListViewTemplate.START_DATE);
-      SearchRequest searchRequest =
-          new SearchRequest(listViewAlias).source(searchSourceBuilder);
+              .from(0)
+              .size(1)
+              .sort(ListViewTemplate.START_DATE);
+      SearchRequest searchRequest = new SearchRequest(listViewAlias).source(searchSourceBuilder);
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       final SearchHits hits = response.getHits();
       if (hits.getHits().length == 0) {
-        throw new RuntimeException("Error occurred when reading startDate from Elasticsearch: no records found");
+        throw new RuntimeException(
+            "Error occurred when reading startDate from Elasticsearch: no records found");
       }
-      final ProcessInstanceForListViewEntity pi = ElasticsearchUtil
-          .fromSearchHit(hits.getHits()[0].getSourceAsString(), objectMapper, ProcessInstanceForListViewEntity.class);
+      final ProcessInstanceForListViewEntity pi =
+          ElasticsearchUtil.fromSearchHit(
+              hits.getHits()[0].getSourceAsString(),
+              objectMapper,
+              ProcessInstanceForListViewEntity.class);
       startDateAfter = pi.getStartDate().format(df);
       startDateBefore = pi.getStartDate().plus(1, ChronoUnit.MINUTES).format(df);
     } catch (IOException ex) {
-      throw new RuntimeException("Error occurred when reading processInstanceIds from Elasticsearch", ex);
+      throw new RuntimeException(
+          "Error occurred when reading processInstanceIds from Elasticsearch", ex);
     }
   }
 
@@ -132,12 +136,13 @@ public class ParametersResolver {
           new SearchSourceBuilder()
               .query(isProcessInstanceQuery)
               .fetchSource(false)
-              .from(0).size(50);
-      SearchRequest searchRequest =
-          new SearchRequest(listViewAlias).source(searchSourceBuilder);
+              .from(0)
+              .size(50);
+      SearchRequest searchRequest = new SearchRequest(listViewAlias).source(searchSourceBuilder);
       processInstanceIds = requestIdsFor(searchRequest);
     } catch (IOException ex) {
-      throw new RuntimeException("Error occurred when reading processInstanceIds from Elasticsearch", ex);
+      throw new RuntimeException(
+          "Error occurred when reading processInstanceIds from Elasticsearch", ex);
     }
   }
 
@@ -149,39 +154,45 @@ public class ParametersResolver {
               .query(termQuery(VariableTemplate.NAME, "many_vars_0"))
               .fetchSource(VariableTemplate.PROCESS_INSTANCE_KEY, null)
               .size(1);
-      SearchRequest searchRequest =
-          new SearchRequest(variableAlias).source(searchSourceBuilder);
+      SearchRequest searchRequest = new SearchRequest(variableAlias).source(searchSourceBuilder);
       final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
-      processInstanceIdWithLotsOfVariables = hits.getAt(0).getSourceAsMap()
-          .get(VariableTemplate.PROCESS_INSTANCE_KEY).toString();
+      processInstanceIdWithLotsOfVariables =
+          hits.getAt(0).getSourceAsMap().get(VariableTemplate.PROCESS_INSTANCE_KEY).toString();
     } catch (IOException ex) {
-      throw new RuntimeException("Error occurred when reading processInstanceIds from Elasticsearch", ex);
+      throw new RuntimeException(
+          "Error occurred when reading processInstanceIds from Elasticsearch", ex);
     }
   }
 
   private void initProcessIds() {
-    processIds = io.camunda.operate.qa.util.ElasticsearchUtil.getProcessIds(esClient, getAlias(processIndex), 2);
+    processIds =
+        io.camunda.operate.qa.util.ElasticsearchUtil.getProcessIds(
+            esClient, getAlias(processIndex), 2);
   }
 
-  private List<String> requestIdsFor(SearchRequest searchRequest) throws IOException{
+  private List<String> requestIdsFor(SearchRequest searchRequest) throws IOException {
     final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
-    return Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2));
+    return Arrays.stream(hits.getHits())
+        .collect(
+            ArrayList::new,
+            (list, hit) -> list.add(hit.getId()),
+            (list1, list2) -> list1.addAll(list2));
   }
 
   public void replacePlaceholdersInQuery(TestQuery testQuery) {
     try {
-      //replace in url
+      // replace in url
       String url = testQuery.getUrl();
       url = replacePlaceholdersInString(url);
       testQuery.setUrl(url);
-      //replace in pathParams
+      // replace in pathParams
       String pathParams = testQuery.getPathParams();
       pathParams = replacePlaceholdersInString(pathParams);
       testQuery.setPathParams(pathParams);
-      //replace in body
+      // replace in body
       String body = testQuery.getBody();
       body = replacePlaceholdersInString(body);
-      if (body!= null && !body.equals(testQuery.getBody())) {
+      if (body != null && !body.equals(testQuery.getBody())) {
         testQuery.setBody(objectMapper.readTree(body));
       }
     } catch (IOException e) {
@@ -190,26 +201,34 @@ public class ParametersResolver {
   }
 
   private boolean contains(String str, String substr) {
-      return str!=null && str.contains(substr);
+    return str != null && str.contains(substr);
   }
 
   private String replacePlaceholdersInString(String string) {
     if (contains(string, PROCESS_INSTANCE_IDS_MANY_VARS_PLACEHOLDER)) {
-      string = replacePlaceholderWithString(string, PROCESS_INSTANCE_IDS_MANY_VARS_PLACEHOLDER,
-          processInstanceIdWithLotsOfVariables);
+      string =
+          replacePlaceholderWithString(
+              string,
+              PROCESS_INSTANCE_IDS_MANY_VARS_PLACEHOLDER,
+              processInstanceIdWithLotsOfVariables);
     }
     if (contains(string, PROCESS_INSTANCE_IDS_PLACEHOLDER)) {
-      string = replacePlaceholderWithIds(string, PROCESS_INSTANCE_IDS_PLACEHOLDER,
-          processInstanceIds);
+      string =
+          replacePlaceholderWithIds(string, PROCESS_INSTANCE_IDS_PLACEHOLDER, processInstanceIds);
     }
     if (contains(string, PROCESS_INSTANCE_ID_PLACEHOLDER)) {
-      string = replacePlaceholderWithRandomId(string, PROCESS_INSTANCE_ID_PLACEHOLDER,
-          processInstanceIds);
+      string =
+          replacePlaceholderWithRandomId(
+              string, PROCESS_INSTANCE_ID_PLACEHOLDER, processInstanceIds);
     }
     if (contains(string, VARIABLE_ID_PLACEHOLDER)) {
-      string = replacePlaceholderWithString(string, VARIABLE_ID_PLACEHOLDER,
-          String.format("%s-%s", processInstanceIds.get(random.nextInt(processInstanceIds.size())),
-              "var1"));
+      string =
+          replacePlaceholderWithString(
+              string,
+              VARIABLE_ID_PLACEHOLDER,
+              String.format(
+                  "%s-%s",
+                  processInstanceIds.get(random.nextInt(processInstanceIds.size())), "var1"));
     }
     if (contains(string, PROCESS_IDS_PLACEHOLDER)) {
       string = replacePlaceholderWithIds(string, PROCESS_IDS_PLACEHOLDER, processIds);
@@ -243,7 +262,7 @@ public class ParametersResolver {
   }
 
   private String getAlias(IndexDescriptor descriptor) {
-    return String.format("%s-%s-%s_alias", prefix, descriptor.getIndexName(), descriptor.getVersion().toLowerCase());
+    return String.format(
+        "%s-%s-%s_alias", prefix, descriptor.getIndexName(), descriptor.getVersion().toLowerCase());
   }
-
 }

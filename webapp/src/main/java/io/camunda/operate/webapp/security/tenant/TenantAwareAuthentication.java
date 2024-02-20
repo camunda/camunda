@@ -11,5 +11,4 @@ import java.util.List;
 public interface TenantAwareAuthentication {
 
   public List<OperateTenant> getTenants();
-
 }

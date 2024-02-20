@@ -15,5 +15,4 @@ public record OpensearchIncident(
     Long processInstanceKey,
     String state,
     Long jobKey,
-    String tenantId
-){}
+    String tenantId) {}

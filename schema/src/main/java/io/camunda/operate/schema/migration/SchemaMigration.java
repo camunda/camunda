@@ -24,21 +24,22 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {
-    "io.camunda.operate.property",
-    "io.camunda.operate.tenant",
-    "io.camunda.operate.connect",
-    "io.camunda.operate.store",
-    "io.camunda.operate.schema",
-    "io.camunda.operate.management",
-    "io.camunda.operate.conditions"},
+@ComponentScan(
+    basePackages = {
+      "io.camunda.operate.property",
+      "io.camunda.operate.tenant",
+      "io.camunda.operate.connect",
+      "io.camunda.operate.store",
+      "io.camunda.operate.schema",
+      "io.camunda.operate.management",
+      "io.camunda.operate.conditions"
+    },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import({JacksonConfig.class, Metrics.class})
 public class SchemaMigration implements CommandLineRunner {
 
   private static final Logger logger = LoggerFactory.getLogger(SchemaMigration.class);
-  @Autowired
-  private SchemaStartup schemaStartup;
+  @Autowired private SchemaStartup schemaStartup;
 
   @Override
   public void run(String... args) {
@@ -46,7 +47,7 @@ public class SchemaMigration implements CommandLineRunner {
   }
 
   public static void main(String[] args) {
-    //To ensure that debug logging performed using java.util.logging is routed into Log4j2
+    // To ensure that debug logging performed using java.util.logging is routed into Log4j2
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
     // Workaround for https://github.com/spring-projects/spring-boot/issues/26627
     System.setProperty(
@@ -60,8 +61,8 @@ public class SchemaMigration implements CommandLineRunner {
     SpringApplication.exit(ctx);
   }
 
-  public static class ApplicationErrorListener implements
-      ApplicationListener<ApplicationFailedEvent> {
+  public static class ApplicationErrorListener
+      implements ApplicationListener<ApplicationFailedEvent> {
 
     @Override
     public void onApplicationEvent(ApplicationFailedEvent event) {

@@ -14,8 +14,7 @@ import org.testcontainers.containers.GenericContainer;
 
 public abstract class AbstractTestFixture implements TestFixture {
 
-  @Autowired
-  private TestContainerUtil testContainerUtil;
+  @Autowired private TestContainerUtil testContainerUtil;
   protected ZeebeContainer broker;
   protected GenericContainer<?> operateContainer;
 
@@ -34,5 +33,4 @@ public abstract class AbstractTestFixture implements TestFixture {
   protected void stopZeebeAndOperate(TestContext testContext) {
     testContainerUtil.stopZeebeAndOperate(testContext);
   }
-
 }

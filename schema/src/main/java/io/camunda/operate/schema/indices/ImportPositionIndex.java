@@ -30,5 +30,4 @@ public class ImportPositionIndex extends AbstractIndexDescriptor implements Prio
   public String getVersion() {
     return "8.3.0";
   }
-
 }

@@ -6,6 +6,9 @@
  */
 package io.camunda.operate.elasticsearch;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.util.OperateAbstractIT;
@@ -14,32 +17,25 @@ import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
-/**
- * Tests Elasticsearch queries for process.
- */
+/** Tests Elasticsearch queries for process. */
 @Deprecated
-//TODO remove when GET /api/processes/grouped is removed
+// TODO remove when GET /api/processes/grouped is removed
 public class ProcessOldIT extends OperateAbstractIT {
 
-  private static final String QUERY_PROCESS_GROUPED_URL = ProcessRestService.PROCESS_URL + "/grouped";
+  private static final String QUERY_PROCESS_GROUPED_URL =
+      ProcessRestService.PROCESS_URL + "/grouped";
 
-  @MockBean
-  private PermissionsService permissionsService;
+  @MockBean private PermissionsService permissionsService;
 
-  @Rule
-  public SearchTestRule elasticsearchTestRule = new SearchTestRule();
+  @Rule public SearchTestRule elasticsearchTestRule = new SearchTestRule();
 
   @Test
   public void testProcessesGroupedWithPermissionWhenNotAllowed() throws Exception {
@@ -57,13 +53,13 @@ public class ProcessOldIT extends OperateAbstractIT {
     elasticsearchTestRule.persistNew(process1, process2, process3);
 
     // when
-    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
-        PermissionsService.ResourcesAllowed.withIds(Set.of()));
+    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
+        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
     MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
 
     // then
-    List<ProcessGroupDto> response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    List<ProcessGroupDto> response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).isEmpty();
   }
@@ -84,15 +80,17 @@ public class ProcessOldIT extends OperateAbstractIT {
     elasticsearchTestRule.persistNew(process1, process2, process3);
 
     // when
-    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(PermissionsService.ResourcesAllowed.all());
+    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
+        .thenReturn(PermissionsService.ResourcesAllowed.all());
     MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
 
     // then
-    List<ProcessGroupDto> response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    List<ProcessGroupDto> response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(3);
-    assertThat(response.stream().map(ProcessGroupDto::getBpmnProcessId).collect(Collectors.toList()))
+    assertThat(
+            response.stream().map(ProcessGroupDto::getBpmnProcessId).collect(Collectors.toList()))
         .containsExactlyInAnyOrder(bpmnProcessId1, bpmnProcessId2, bpmnProcessId3);
   }
 
@@ -112,16 +110,17 @@ public class ProcessOldIT extends OperateAbstractIT {
     elasticsearchTestRule.persistNew(process1, process2, process3);
 
     // when
-    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ)).thenReturn(
-        PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId2)));
+    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
+        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(bpmnProcessId2)));
     MvcResult mvcResult = getRequest(QUERY_PROCESS_GROUPED_URL);
 
     // then
-    List<ProcessGroupDto> response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    List<ProcessGroupDto> response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(1);
-    assertThat(response.stream().map(ProcessGroupDto::getBpmnProcessId).collect(Collectors.toList()))
+    assertThat(
+            response.stream().map(ProcessGroupDto::getBpmnProcessId).collect(Collectors.toList()))
         .containsExactly(bpmnProcessId2);
   }
 }

@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.entities.dmn;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.operate.entities.OperateZeebeEntity;
 import java.time.OffsetDateTime;
@@ -13,8 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 
 public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceEntity> {
 
@@ -27,10 +27,10 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private String decisionRequirementsId;
   private long processDefinitionKey;
   private long processInstanceKey;
-  /**
-   * Attention! This field will be filled in only for data imported after v. 8.2.0.
-   */
+
+  /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
   private String bpmnProcessId;
+
   private long elementInstanceKey;
   private String elementId;
   private String decisionId;
@@ -44,9 +44,9 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private String result;
   private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
   private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
-  private String tenantId = DEFAULT_TENANT_ID;;
-  @JsonIgnore
-  private Object[] sortValues;
+  private String tenantId = DEFAULT_TENANT_ID;
+  ;
+  @JsonIgnore private Object[] sortValues;
 
   public DecisionInstanceEntity setId(Long key, int executionIndex) {
     return setId(String.format("%d-%d", key, executionIndex));
@@ -69,8 +69,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return state;
   }
 
-  public DecisionInstanceEntity setState(
-      final DecisionInstanceState state) {
+  public DecisionInstanceEntity setState(final DecisionInstanceState state) {
     this.state = state;
     return this;
   }
@@ -115,8 +114,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return decisionRequirementsKey;
   }
 
-  public DecisionInstanceEntity setDecisionRequirementsKey(
-      final long decisionRequirementsKey) {
+  public DecisionInstanceEntity setDecisionRequirementsKey(final long decisionRequirementsKey) {
     this.decisionRequirementsKey = decisionRequirementsKey;
     return this;
   }
@@ -125,8 +123,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return decisionRequirementsId;
   }
 
-  public DecisionInstanceEntity setDecisionRequirementsId(
-      final String decisionRequirementsId) {
+  public DecisionInstanceEntity setDecisionRequirementsId(final String decisionRequirementsId) {
     this.decisionRequirementsId = decisionRequirementsId;
     return this;
   }
@@ -225,8 +222,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return rootDecisionDefinitionId;
   }
 
-  public DecisionInstanceEntity setRootDecisionDefinitionId(
-      final String rootDecisionDefinitionId) {
+  public DecisionInstanceEntity setRootDecisionDefinitionId(final String rootDecisionDefinitionId) {
     this.rootDecisionDefinitionId = rootDecisionDefinitionId;
     return this;
   }
@@ -235,8 +231,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return decisionType;
   }
 
-  public DecisionInstanceEntity setDecisionType(
-      final DecisionType decisionType) {
+  public DecisionInstanceEntity setDecisionType(final DecisionType decisionType) {
     this.decisionType = decisionType;
     return this;
   }
@@ -290,33 +285,66 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     DecisionInstanceEntity that = (DecisionInstanceEntity) o;
-    return decisionRequirementsKey == that.decisionRequirementsKey && processDefinitionKey == that.processDefinitionKey && processInstanceKey == that.processInstanceKey && elementInstanceKey == that.elementInstanceKey && decisionVersion == that.decisionVersion && Objects.equals(
-        executionIndex, that.executionIndex) && state == that.state && Objects.equals(evaluationDate,
-        that.evaluationDate) && Objects.equals(evaluationFailure, that.evaluationFailure) && Objects.equals(position,
-        that.position) && Objects.equals(decisionRequirementsId, that.decisionRequirementsId) && Objects.equals(
-        bpmnProcessId, that.bpmnProcessId) && Objects.equals(elementId, that.elementId) && Objects.equals(decisionId,
-        that.decisionId) && Objects.equals(decisionDefinitionId, that.decisionDefinitionId) && Objects.equals(
-        decisionName, that.decisionName) && Objects.equals(rootDecisionName, that.rootDecisionName) && Objects.equals(
-        rootDecisionId, that.rootDecisionId) && Objects.equals(rootDecisionDefinitionId,
-        that.rootDecisionDefinitionId) && decisionType == that.decisionType && Objects.equals(result,
-        that.result) && Objects.equals(evaluatedInputs, that.evaluatedInputs) && Objects.equals(evaluatedOutputs,
-        that.evaluatedOutputs) && Objects.equals(tenantId, that.tenantId) && Arrays.equals(sortValues, that.sortValues);
+    return decisionRequirementsKey == that.decisionRequirementsKey
+        && processDefinitionKey == that.processDefinitionKey
+        && processInstanceKey == that.processInstanceKey
+        && elementInstanceKey == that.elementInstanceKey
+        && decisionVersion == that.decisionVersion
+        && Objects.equals(executionIndex, that.executionIndex)
+        && state == that.state
+        && Objects.equals(evaluationDate, that.evaluationDate)
+        && Objects.equals(evaluationFailure, that.evaluationFailure)
+        && Objects.equals(position, that.position)
+        && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(elementId, that.elementId)
+        && Objects.equals(decisionId, that.decisionId)
+        && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
+        && Objects.equals(decisionName, that.decisionName)
+        && Objects.equals(rootDecisionName, that.rootDecisionName)
+        && Objects.equals(rootDecisionId, that.rootDecisionId)
+        && Objects.equals(rootDecisionDefinitionId, that.rootDecisionDefinitionId)
+        && decisionType == that.decisionType
+        && Objects.equals(result, that.result)
+        && Objects.equals(evaluatedInputs, that.evaluatedInputs)
+        && Objects.equals(evaluatedOutputs, that.evaluatedOutputs)
+        && Objects.equals(tenantId, that.tenantId)
+        && Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
   public int hashCode() {
-    int result1 = Objects.hash(super.hashCode(), executionIndex, state, evaluationDate, evaluationFailure, position,
-        decisionRequirementsKey, decisionRequirementsId, processDefinitionKey, processInstanceKey, bpmnProcessId,
-        elementInstanceKey, elementId, decisionId, decisionDefinitionId, decisionName, decisionVersion,
-        rootDecisionName, rootDecisionId, rootDecisionDefinitionId, decisionType, result, evaluatedInputs,
-        evaluatedOutputs, tenantId);
+    int result1 =
+        Objects.hash(
+            super.hashCode(),
+            executionIndex,
+            state,
+            evaluationDate,
+            evaluationFailure,
+            position,
+            decisionRequirementsKey,
+            decisionRequirementsId,
+            processDefinitionKey,
+            processInstanceKey,
+            bpmnProcessId,
+            elementInstanceKey,
+            elementId,
+            decisionId,
+            decisionDefinitionId,
+            decisionName,
+            decisionVersion,
+            rootDecisionName,
+            rootDecisionId,
+            rootDecisionDefinitionId,
+            decisionType,
+            result,
+            evaluatedInputs,
+            evaluatedOutputs,
+            tenantId);
     result1 = 31 * result1 + Arrays.hashCode(sortValues);
     return result1;
   }

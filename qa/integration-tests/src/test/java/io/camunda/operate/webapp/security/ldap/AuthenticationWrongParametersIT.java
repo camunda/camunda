@@ -6,21 +6,21 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.webapp.security.OperateURIs.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 
 import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.webapp.security.AuthenticationTestable;
-import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
-import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
-import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
+import io.camunda.operate.webapp.security.AuthenticationTestable;
+import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.auth.RolePermissionService;
+import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
+import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,49 +37,47 @@ import org.springframework.util.MultiValueMap;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
-        OperateProperties.class,
-        TestApplicationWithNoBeans.class,
-        AuthenticationRestService.class,
-        RolePermissionService.class,
-        LDAPWebSecurityConfig.class,
-        OAuth2WebConfigurer.class,
-        Jwt2AuthenticationTokenConverter.class,
-        CCSaaSJwtAuthenticationTokenValidator.class,
-        LDAPUserService.class,
-        OperateProfileService.class
+      OperateProperties.class,
+      TestApplicationWithNoBeans.class,
+      AuthenticationRestService.class,
+      RolePermissionService.class,
+      LDAPWebSecurityConfig.class,
+      OAuth2WebConfigurer.class,
+      Jwt2AuthenticationTokenConverter.class,
+      CCSaaSJwtAuthenticationTokenValidator.class,
+      LDAPUserService.class,
+      OperateProfileService.class
     },
     properties = {
-        "spring.ldap.embedded.base-dn=dc=springframework,dc=org",
-        "spring.ldap.embedded.credential.username=uid=admin",
-        "spring.ldap.embedded.credential.password=secret",
-        "spring.ldap.embedded.ldif=classpath:config/ldap-test-server.ldif",
-        "spring.ldap.embedded.port=8389",
-        "camunda.operate.ldap.url=ldap://localhost:8389/",
-        "camunda.operate.ldap.baseDn=dc=springframework,dc=org",
-        "camunda.operate.ldap.managerDn=uid=admin",
-        "camunda.operate.ldap.managerPassword=secret",
-        "camunda.operate.ldap.userSearchFilter=uid={0}",
-        // Custom session id
-        "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID,
-        //WRONG ATTR NAMES
-        "camunda.operate.ldap.firstnameAttrName=wrongValue",
-        "camunda.operate.ldap.lastnameAttrName="
+      "spring.ldap.embedded.base-dn=dc=springframework,dc=org",
+      "spring.ldap.embedded.credential.username=uid=admin",
+      "spring.ldap.embedded.credential.password=secret",
+      "spring.ldap.embedded.ldif=classpath:config/ldap-test-server.ldif",
+      "spring.ldap.embedded.port=8389",
+      "camunda.operate.ldap.url=ldap://localhost:8389/",
+      "camunda.operate.ldap.baseDn=dc=springframework,dc=org",
+      "camunda.operate.ldap.managerDn=uid=admin",
+      "camunda.operate.ldap.managerPassword=secret",
+      "camunda.operate.ldap.userSearchFilter=uid={0}",
+      // Custom session id
+      "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID,
+      // WRONG ATTR NAMES
+      "camunda.operate.ldap.firstnameAttrName=wrongValue",
+      "camunda.operate.ldap.lastnameAttrName="
     },
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({"ldap-auth", "test"})
 public class AuthenticationWrongParametersIT implements AuthenticationTestable {
 
-  @Autowired
-  private TestRestTemplate testRestTemplate;
+  @Autowired private TestRestTemplate testRestTemplate;
 
   @Test
   public void shouldReturnCurrentUser() {
-    //given authenticated user
+    // given authenticated user
     ResponseEntity<?> response = loginAs("bob", "bobspassword");
     // when
     UserDto userInfo = getCurrentUser(response);
-    //then
+    // then
     assertThat(userInfo.getUserId()).isEqualTo("bob");
   }
 
@@ -91,12 +89,12 @@ public class AuthenticationWrongParametersIT implements AuthenticationTestable {
     body.add("username", user);
     body.add("password", password);
 
-    return testRestTemplate.postForEntity(LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
+    return testRestTemplate.postForEntity(
+        LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
   }
 
   @Override
   public TestRestTemplate getTestRestTemplate() {
     return testRestTemplate;
   }
-
 }

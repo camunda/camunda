@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.identity.sdk.authorizations.dto.Authorization;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -53,7 +52,8 @@ public class IdentityAuthorization implements Serializable {
   }
 
   public static IdentityAuthorization createFrom(Authorization authorization) {
-    return new IdentityAuthorization().setResourceKey(authorization.getResourceKey())
+    return new IdentityAuthorization()
+        .setResourceKey(authorization.getResourceKey())
         .setResourceType(authorization.getResourceType())
         .setPermissions(authorization.getPermissions());
   }
@@ -62,20 +62,20 @@ public class IdentityAuthorization implements Serializable {
     if (authorizations == null) {
       return new ArrayList<>();
     }
-    return authorizations.stream().filter(Objects::nonNull)
+    return authorizations.stream()
+        .filter(Objects::nonNull)
         .map(IdentityAuthorization::createFrom)
         .collect(Collectors.toList());
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     IdentityAuthorization that = (IdentityAuthorization) o;
-    return Objects.equals(resourceKey, that.resourceKey) && Objects.equals(resourceType,
-        that.resourceType) && Objects.equals(permissions, that.permissions);
+    return Objects.equals(resourceKey, that.resourceKey)
+        && Objects.equals(resourceType, that.resourceType)
+        && Objects.equals(permissions, that.permissions);
   }
 
   @Override
@@ -85,6 +85,15 @@ public class IdentityAuthorization implements Serializable {
 
   @Override
   public String toString() {
-    return "IdentityAuthorization{" + "resourceKey='" + resourceKey + '\'' + ", resourceType='" + resourceType + '\'' + ", permissions=" + permissions + '}';
+    return "IdentityAuthorization{"
+        + "resourceKey='"
+        + resourceKey
+        + '\''
+        + ", resourceType='"
+        + resourceType
+        + '\''
+        + ", permissions="
+        + permissions
+        + '}';
   }
 }

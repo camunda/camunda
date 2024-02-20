@@ -53,84 +53,82 @@ public class DecisionDataUtil {
   private Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
   private Random random = new Random();
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  protected DecisionStore decisionStore;
+  @Autowired protected DecisionStore decisionStore;
 
-  @Autowired
-  private DecisionInstanceTemplate decisionInstanceTemplate;
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
-  @Autowired
-  private DecisionRequirementsIndex decisionRequirementsIndex;
+  @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
 
-  @Autowired
-  private DecisionIndex decisionIndex;
+  @Autowired private DecisionIndex decisionIndex;
 
-  @Autowired
-  private PayloadUtil payloadUtil;
+  @Autowired private PayloadUtil payloadUtil;
 
   public List<OperateEntity> createDecisionDefinitions() {
     final List<OperateEntity> decisionEntities = new ArrayList<>();
 
-    //create DRD version 1
-    decisionEntities.add(new DecisionRequirementsEntity()
-        .setId("1111")
-        .setKey(1111L)
-        .setDecisionRequirementsId("invoiceBusinessDecisions")
-        .setName("Invoice Business Decisions")
-        .setVersion(1)
-        .setXml(payloadUtil.readStringFromClasspath("/usertest/invoiceBusinessDecisions_v_1.dmn"))
-        .setResourceName("invoiceBusinessDecisions_v_1.dmn"));
-    //create Decisions
-    decisionEntities.add(new DecisionDefinitionEntity()
-        .setId("1222")
-        .setKey(1222L)
-        .setDecisionId(DECISION_ID_2)
-        .setName("Invoice Classification")
-        .setVersion(1)
-        .setDecisionRequirementsId("invoiceBusinessDecisions")
-        .setDecisionRequirementsKey(1111)
-    );
-    decisionEntities.add(new DecisionDefinitionEntity()
-        .setId("1333")
-        .setKey(1333L)
-        .setDecisionId(DECISION_ID_1)
-        .setName("Assign Approver Group")
-        .setVersion(1)
-        .setDecisionRequirementsId("invoiceBusinessDecisions")
-        .setDecisionRequirementsKey(1111)
-    );
+    // create DRD version 1
+    decisionEntities.add(
+        new DecisionRequirementsEntity()
+            .setId("1111")
+            .setKey(1111L)
+            .setDecisionRequirementsId("invoiceBusinessDecisions")
+            .setName("Invoice Business Decisions")
+            .setVersion(1)
+            .setXml(
+                payloadUtil.readStringFromClasspath("/usertest/invoiceBusinessDecisions_v_1.dmn"))
+            .setResourceName("invoiceBusinessDecisions_v_1.dmn"));
+    // create Decisions
+    decisionEntities.add(
+        new DecisionDefinitionEntity()
+            .setId("1222")
+            .setKey(1222L)
+            .setDecisionId(DECISION_ID_2)
+            .setName("Invoice Classification")
+            .setVersion(1)
+            .setDecisionRequirementsId("invoiceBusinessDecisions")
+            .setDecisionRequirementsKey(1111));
+    decisionEntities.add(
+        new DecisionDefinitionEntity()
+            .setId("1333")
+            .setKey(1333L)
+            .setDecisionId(DECISION_ID_1)
+            .setName("Assign Approver Group")
+            .setVersion(1)
+            .setDecisionRequirementsId("invoiceBusinessDecisions")
+            .setDecisionRequirementsKey(1111));
 
-    //create DRD version 2
-    decisionEntities.add(new DecisionRequirementsEntity()
-        .setId("2222")
-        .setKey(2222L)
-        .setDecisionRequirementsId("invoiceBusinessDecisions")
-        .setName("Invoice Business Decisions")
-        .setVersion(2)
-        .setXml(payloadUtil.readStringFromClasspath("/usertest/invoiceBusinessDecisions_v_2.dmn"))
-        .setResourceName("invoiceBusinessDecisions_v_2.dmn"));
-    //create Decisions
-    decisionEntities.add(new DecisionDefinitionEntity()
-        .setId("2222")
-        .setKey(2222L)
-        .setDecisionId(DECISION_ID_2)
-        .setName("Invoice Classification")
-        .setVersion(2)
-        .setDecisionRequirementsId("invoiceBusinessDecisions")
-        .setDecisionRequirementsKey(2222)
-    );
-    decisionEntities.add(new DecisionDefinitionEntity()
-        .setId("2333")
-        .setKey(2333L)
-        .setDecisionId(DECISION_ID_1)
-        .setName("Assign Approver Group")
-        .setVersion(2)
-        .setDecisionRequirementsId("invoiceBusinessDecisions")
-        .setDecisionRequirementsKey(2222)
-    );
+    // create DRD version 2
+    decisionEntities.add(
+        new DecisionRequirementsEntity()
+            .setId("2222")
+            .setKey(2222L)
+            .setDecisionRequirementsId("invoiceBusinessDecisions")
+            .setName("Invoice Business Decisions")
+            .setVersion(2)
+            .setXml(
+                payloadUtil.readStringFromClasspath("/usertest/invoiceBusinessDecisions_v_2.dmn"))
+            .setResourceName("invoiceBusinessDecisions_v_2.dmn"));
+    // create Decisions
+    decisionEntities.add(
+        new DecisionDefinitionEntity()
+            .setId("2222")
+            .setKey(2222L)
+            .setDecisionId(DECISION_ID_2)
+            .setName("Invoice Classification")
+            .setVersion(2)
+            .setDecisionRequirementsId("invoiceBusinessDecisions")
+            .setDecisionRequirementsKey(2222));
+    decisionEntities.add(
+        new DecisionDefinitionEntity()
+            .setId("2333")
+            .setKey(2333L)
+            .setDecisionId(DECISION_ID_1)
+            .setName("Assign Approver Group")
+            .setVersion(2)
+            .setDecisionRequirementsId("invoiceBusinessDecisions")
+            .setDecisionRequirementsKey(2222));
 
     return decisionEntities;
   }
@@ -138,27 +136,68 @@ public class DecisionDataUtil {
   public List<DecisionInstanceEntity> createDecisionInstances() {
     List<DecisionInstanceEntity> result = new ArrayList<>();
 
-    //3 EVALUATED, 1 decision1 + 2 decision2, 2 version1 + 1 version2
-    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_1, DecisionInstanceState.EVALUATED,
-        DECISION_DEFINITION_NAME_1,
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, DECISION_ID_1, 35467,
-        PROCESS_INSTANCE_ID, TENANT1)
-    );
-    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_2, DecisionInstanceState.EVALUATED, "Invoice Classification",
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 1, DECISION_ID_2, 35467,
-        random.nextInt(1000), TENANT2)
-    );
-    result.add(createDecisionInstance(DECISION_INSTANCE_ID_1_3, DecisionInstanceState.EVALUATED, "Invoice Classification",
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, DECISION_ID_2, 35467,
-        random.nextInt(1000), TENANT1)
-    );
-    //2 FAILED
-    result.add(createDecisionInstance(DECISION_INSTANCE_ID_2_1, DecisionInstanceState.FAILED, DECISION_DEFINITION_NAME_1,
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_1, 1, DECISION_ID_1, 35467, PROCESS_INSTANCE_ID, TENANT2)
-    );
-    result.add(createDecisionInstance(DECISION_INSTANCE_ID_2_2, DecisionInstanceState.FAILED, "Invoice Classification",
-        OffsetDateTime.now(), DECISION_DEFINITION_ID_2, 2, DECISION_ID_2, 35467, random.nextInt(1000), TENANT1)
-    );
+    // 3 EVALUATED, 1 decision1 + 2 decision2, 2 version1 + 1 version2
+    result.add(
+        createDecisionInstance(
+            DECISION_INSTANCE_ID_1_1,
+            DecisionInstanceState.EVALUATED,
+            DECISION_DEFINITION_NAME_1,
+            OffsetDateTime.now(),
+            DECISION_DEFINITION_ID_1,
+            1,
+            DECISION_ID_1,
+            35467,
+            PROCESS_INSTANCE_ID,
+            TENANT1));
+    result.add(
+        createDecisionInstance(
+            DECISION_INSTANCE_ID_1_2,
+            DecisionInstanceState.EVALUATED,
+            "Invoice Classification",
+            OffsetDateTime.now(),
+            DECISION_DEFINITION_ID_2,
+            1,
+            DECISION_ID_2,
+            35467,
+            random.nextInt(1000),
+            TENANT2));
+    result.add(
+        createDecisionInstance(
+            DECISION_INSTANCE_ID_1_3,
+            DecisionInstanceState.EVALUATED,
+            "Invoice Classification",
+            OffsetDateTime.now(),
+            DECISION_DEFINITION_ID_2,
+            2,
+            DECISION_ID_2,
+            35467,
+            random.nextInt(1000),
+            TENANT1));
+    // 2 FAILED
+    result.add(
+        createDecisionInstance(
+            DECISION_INSTANCE_ID_2_1,
+            DecisionInstanceState.FAILED,
+            DECISION_DEFINITION_NAME_1,
+            OffsetDateTime.now(),
+            DECISION_DEFINITION_ID_1,
+            1,
+            DECISION_ID_1,
+            35467,
+            PROCESS_INSTANCE_ID,
+            TENANT2));
+    result.add(
+        createDecisionInstance(
+            DECISION_INSTANCE_ID_2_2,
+            DecisionInstanceState.FAILED,
+            "Invoice Classification",
+            OffsetDateTime.now(),
+            DECISION_DEFINITION_ID_2,
+            2,
+            DECISION_ID_2,
+            35467,
+            random.nextInt(1000),
+            TENANT1));
 
     return result;
   }
@@ -176,56 +215,72 @@ public class DecisionDataUtil {
   }
 
   public DecisionInstanceEntity createDecisionInstance(
-      final DecisionInstanceState state, final String decisionName,
-      final OffsetDateTime evaluationDate, final String decisionDefinitionId,
-      final int decisionVersion, final String decisionId, final long processDefinitionKey,
+      final DecisionInstanceState state,
+      final String decisionName,
+      final OffsetDateTime evaluationDate,
+      final String decisionDefinitionId,
+      final int decisionVersion,
+      final String decisionId,
+      final long processDefinitionKey,
       final long processInstanceKey) {
-    return createDecisionInstance(String.valueOf(random.nextInt(1000)) + "-1", state, decisionName,
-        evaluationDate, decisionDefinitionId,
-        decisionVersion, decisionId, processDefinitionKey,
-        processInstanceKey, null);
+    return createDecisionInstance(
+        String.valueOf(random.nextInt(1000)) + "-1",
+        state,
+        decisionName,
+        evaluationDate,
+        decisionDefinitionId,
+        decisionVersion,
+        decisionId,
+        processDefinitionKey,
+        processInstanceKey,
+        null);
   }
 
-  private DecisionInstanceEntity createDecisionInstance(final String decisionInstanceId,
-      final DecisionInstanceState state, final String decisionName,
-      final OffsetDateTime evaluationDate, final String decisionDefinitionId,
-      final int decisionVersion, final String decisionId, final long processDefinitionKey,
-      final long processInstanceKey, final String tenantId) {
-
+  private DecisionInstanceEntity createDecisionInstance(
+      final String decisionInstanceId,
+      final DecisionInstanceState state,
+      final String decisionName,
+      final OffsetDateTime evaluationDate,
+      final String decisionDefinitionId,
+      final int decisionVersion,
+      final String decisionId,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final String tenantId) {
 
     final List<DecisionInstanceInputEntity> inputs = new ArrayList<>();
-    inputs.add(new DecisionInstanceInputEntity()
-        .setId("InputClause_0og2hn3")
-        .setName("Invoice Classification")
-        .setValue("day-to-day expense")
-    );
-    inputs.add(new DecisionInstanceInputEntity()
-        .setId("InputClause_0og2hn3")
-        .setName("Invoice Classification")
-        .setValue("budget")
-    );
+    inputs.add(
+        new DecisionInstanceInputEntity()
+            .setId("InputClause_0og2hn3")
+            .setName("Invoice Classification")
+            .setValue("day-to-day expense"));
+    inputs.add(
+        new DecisionInstanceInputEntity()
+            .setId("InputClause_0og2hn3")
+            .setName("Invoice Classification")
+            .setValue("budget"));
     final List<DecisionInstanceOutputEntity> outputs = new ArrayList<>();
-    outputs.add(new DecisionInstanceOutputEntity()
-        .setId("OutputClause_1cthd0w")
-        .setName("Approver Group")
-        .setValue("budget")
-        .setRuleIndex(2)
-        .setRuleId("row-49839158-5")
-    );
-    outputs.add(new DecisionInstanceOutputEntity()
-        .setId("OutputClause_1cthd0w")
-        .setName("Approver Group")
-        .setValue("sales")
-        .setRuleIndex(1)
-        .setRuleId("row-49839158-6")
-    );
-    outputs.add(new DecisionInstanceOutputEntity()
-        .setId("OutputClause_1cthd0w")
-        .setName("Approver Group")
-        .setValue("accounting")
-        .setRuleIndex(1)
-        .setRuleId("row-49839158-1")
-    );
+    outputs.add(
+        new DecisionInstanceOutputEntity()
+            .setId("OutputClause_1cthd0w")
+            .setName("Approver Group")
+            .setValue("budget")
+            .setRuleIndex(2)
+            .setRuleId("row-49839158-5"));
+    outputs.add(
+        new DecisionInstanceOutputEntity()
+            .setId("OutputClause_1cthd0w")
+            .setName("Approver Group")
+            .setValue("sales")
+            .setRuleIndex(1)
+            .setRuleId("row-49839158-6"));
+    outputs.add(
+        new DecisionInstanceOutputEntity()
+            .setId("OutputClause_1cthd0w")
+            .setName("Approver Group")
+            .setValue("accounting")
+            .setRuleIndex(1)
+            .setRuleId("row-49839158-1"));
 
     String evaluationFailure = null;
     if (state == DecisionInstanceState.FAILED) {
@@ -257,7 +312,8 @@ public class DecisionDataUtil {
         .setTenantId(tenantId);
   }
 
-  public void persistOperateEntities(List<? extends OperateEntity> operateEntities) throws PersistenceException {
+  public void persistOperateEntities(List<? extends OperateEntity> operateEntities)
+      throws PersistenceException {
     try {
       BatchRequest batchRequest = decisionStore.newBatchRequest();
       for (OperateEntity<?> entity : operateEntities) {
@@ -265,7 +321,7 @@ public class DecisionDataUtil {
         if (alias == null) {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
         }
-        batchRequest.add(alias,entity);
+        batchRequest.add(alias, entity);
       }
       batchRequest.execute();
     } catch (Exception ex) {
@@ -273,14 +329,15 @@ public class DecisionDataUtil {
     }
   }
 
-  public Map<Class<? extends OperateEntity>, String> getEntityToESAliasMap(){
+  public Map<Class<? extends OperateEntity>, String> getEntityToESAliasMap() {
     if (entityToESAliasMap == null) {
       entityToESAliasMap = new HashMap<>();
-      entityToESAliasMap.put(DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
+      entityToESAliasMap.put(
+          DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
+      entityToESAliasMap.put(
+          DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
       entityToESAliasMap.put(DecisionDefinitionEntity.class, decisionIndex.getFullQualifiedName());
     }
     return entityToESAliasMap;
   }
-
 }

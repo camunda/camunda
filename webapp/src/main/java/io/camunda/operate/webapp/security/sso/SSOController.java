@@ -7,17 +7,17 @@
 package io.camunda.operate.webapp.security.sso;
 
 import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
-import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
-import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
+import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
+import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 
 import com.auth0.IdentityVerificationException;
-import java.io.IOException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +40,7 @@ public class SSOController {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired
-  private Auth0Service auth0Service;
+  @Autowired private Auth0Service auth0Service;
 
   private SecurityContextRepository securityContextRepository =
       new HttpSessionSecurityContextRepository();
@@ -49,16 +48,23 @@ public class SSOController {
   private final SecurityContextHolderStrategy securityContextHolderStrategy =
       SecurityContextHolder.getContextHolderStrategy();
 
-  @RequestMapping(value = LOGIN_RESOURCE, method = { RequestMethod.GET, RequestMethod.POST })
-  public String login(final HttpServletRequest req,final HttpServletResponse res) {
+  @RequestMapping(
+      value = LOGIN_RESOURCE,
+      method = {RequestMethod.GET, RequestMethod.POST})
+  public String login(final HttpServletRequest req, final HttpServletResponse res) {
     final String authorizeUrl = auth0Service.getAuthorizeUrl(req, res);
     logger.debug("Redirect Login to {}", authorizeUrl);
     return "redirect:" + authorizeUrl;
   }
 
   @GetMapping(value = SSO_CALLBACK_URI)
-  public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res) throws IOException {
-    logger.debug("Called back by auth0 with {} {} and SessionId: {}", req.getRequestURI(), req.getQueryString(), req.getSession().getId());
+  public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res)
+      throws IOException {
+    logger.debug(
+        "Called back by auth0 with {} {} and SessionId: {}",
+        req.getRequestURI(),
+        req.getQueryString(),
+        req.getSession().getId());
     try {
       final var authentication = auth0Service.authenticate(req, res);
 
@@ -74,20 +80,21 @@ public class SSOController {
       // remove logout, user might just not be allowed to access. Redirect to no permission
       clearContextAndRedirectToNoPermission(req, res, iae);
     } catch (Auth0ServiceException ase) {
-      handleAuth0Exception(ase,req, res);
+      handleAuth0Exception(ase, req, res);
     }
   }
 
-  private void handleAuth0Exception(final Auth0ServiceException ase,
-      final HttpServletRequest req, final HttpServletResponse res) throws IOException {
+  private void handleAuth0Exception(
+      final Auth0ServiceException ase, final HttpServletRequest req, final HttpServletResponse res)
+      throws IOException {
     logger.error("Error in authentication callback: ", ase);
     Throwable cause = ase.getCause();
-    if(cause!=null) {
-      if(cause instanceof InsufficientAuthenticationException){
+    if (cause != null) {
+      if (cause instanceof InsufficientAuthenticationException) {
         logoutAndRedirectToNoPermissionPage(req, res);
-      }else if(cause instanceof IdentityVerificationException ||
-         cause instanceof AuthenticationException) {
-        clearContextAndRedirectToNoPermission(req,res, cause);
+      } else if (cause instanceof IdentityVerificationException
+          || cause instanceof AuthenticationException) {
+        clearContextAndRedirectToNoPermission(req, res, cause);
       } else {
         logout(req, res);
       }
@@ -96,17 +103,19 @@ public class SSOController {
     }
   }
 
-  private void redirectToPage(final HttpServletRequest req, final HttpServletResponse res) throws IOException {
+  private void redirectToPage(final HttpServletRequest req, final HttpServletResponse res)
+      throws IOException {
     Object originalRequestUrl = req.getSession().getAttribute(REQUESTED_URL);
     if (originalRequestUrl != null) {
-        res.sendRedirect(req.getContextPath() + originalRequestUrl);
+      res.sendRedirect(req.getContextPath() + originalRequestUrl);
     } else {
-        res.sendRedirect(req.getContextPath() + ROOT);
+      res.sendRedirect(req.getContextPath() + ROOT);
     }
   }
 
   /**
    * Is called when there was an in authentication or authorization
+   *
    * @return Message as String
    */
   @RequestMapping(value = NO_PERMISSION)
@@ -117,6 +126,7 @@ public class SSOController {
 
   /**
    * Logout - Invalidates session and logout from auth0, after that redirects to root url.
+   *
    * @param req a HttpServletRequest
    * @param res a HttpServletResponse
    * @throws IOException when communication with auth0 fails
@@ -128,13 +138,15 @@ public class SSOController {
     logoutFromAuth0(res, auth0Service.getRedirectURI(req, ROOT));
   }
 
-  protected void clearContextAndRedirectToNoPermission(HttpServletRequest req,HttpServletResponse res, Throwable t) throws IOException {
+  protected void clearContextAndRedirectToNoPermission(
+      HttpServletRequest req, HttpServletResponse res, Throwable t) throws IOException {
     logger.error("Error in authentication callback: ", t);
     cleanup(req);
     res.sendRedirect(auth0Service.getRedirectURI(req, NO_PERMISSION));
   }
 
-  protected void logoutAndRedirectToNoPermissionPage(HttpServletRequest req, HttpServletResponse res) throws IOException {
+  protected void logoutAndRedirectToNoPermissionPage(
+      HttpServletRequest req, HttpServletResponse res) throws IOException {
     logger.warn("User is authenticated but there are no permissions.");
     cleanup(req);
     logoutFromAuth0(res, auth0Service.getRedirectURI(req, NO_PERMISSION));
@@ -157,5 +169,4 @@ public class SSOController {
   private void sessionExpiresWhenAuthenticationExpires(final HttpServletRequest req) {
     req.getSession().setMaxInactiveInterval(-1);
   }
-
 }

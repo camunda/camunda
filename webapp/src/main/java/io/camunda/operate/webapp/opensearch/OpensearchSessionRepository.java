@@ -6,12 +6,24 @@
  */
 package io.camunda.operate.webapp.opensearch;
 
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static java.util.function.UnaryOperator.identity;
+
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.security.OperateSession;
 import io.camunda.operate.webapp.security.SessionRepository;
 import jakarta.annotation.PostConstruct;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,40 +34,23 @@ import org.springframework.core.serializer.support.DeserializingConverter;
 import org.springframework.core.serializer.support.SerializingConverter;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static java.util.function.UnaryOperator.identity;
-
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchSessionRepository implements SessionRepository {
   private static final Logger logger = LoggerFactory.getLogger(OpensearchSessionRepository.class);
 
-  @Autowired
-  private RichOpenSearchClient richOpenSearchClient;
+  @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired
-  private GenericConversionService conversionService;
+  @Autowired private GenericConversionService conversionService;
 
-  @Autowired
-  private OperateWebSessionIndex operateWebSessionIndex;
+  @Autowired private OperateWebSessionIndex operateWebSessionIndex;
 
   private record SessionEntity(
-    String id,
-    Long creationTime,
-    Long lastAccessedTime,
-    Long maxInactiveIntervalInSeconds,
-    Map<String, String> attributes
-  ){}
+      String id,
+      Long creationTime,
+      Long lastAccessedTime,
+      Long maxInactiveIntervalInSeconds,
+      Map<String, String> attributes) {}
 
   @PostConstruct
   private void setUp() {
@@ -68,36 +63,40 @@ public class OpensearchSessionRepository implements SessionRepository {
   }
 
   private SessionEntity toSessionEntity(OperateSession session) {
-    Map<String, String> attributes = session.getAttributeNames().stream().collect(Collectors.toMap(
-      identity(),
-      name -> serialize(session.getAttribute(name))
-    ));
+    Map<String, String> attributes =
+        session.getAttributeNames().stream()
+            .collect(Collectors.toMap(identity(), name -> serialize(session.getAttribute(name))));
 
     return new SessionEntity(
-      session.getId(),
-      session.getCreationTime().toEpochMilli(),
-      session.getLastAccessedTime().toEpochMilli(),
-      session.getMaxInactiveInterval().getSeconds(),
-      attributes
-    );
+        session.getId(),
+        session.getCreationTime().toEpochMilli(),
+        session.getLastAccessedTime().toEpochMilli(),
+        session.getMaxInactiveInterval().getSeconds(),
+        attributes);
   }
 
   private String serialize(Object object) {
     return new String(
-      Base64.getEncoder().encode(
-        (byte[]) conversionService.convert(object, TypeDescriptor.valueOf(Object.class), TypeDescriptor.valueOf(byte[].class))
-      )
-    );
+        Base64.getEncoder()
+            .encode(
+                (byte[])
+                    conversionService.convert(
+                        object,
+                        TypeDescriptor.valueOf(Object.class),
+                        TypeDescriptor.valueOf(byte[].class))));
   }
 
   private OperateSession toOperateSession(SessionEntity sessionEntity) {
     OperateSession session = new OperateSession(sessionEntity.id());
     session.setCreationTime(nullable(sessionEntity.creationTime, Instant::ofEpochMilli));
     session.setLastAccessedTime(nullable(sessionEntity.lastAccessedTime, Instant::ofEpochMilli));
-    session.setMaxInactiveInterval(nullable(sessionEntity.maxInactiveIntervalInSeconds, Duration::ofSeconds));
+    session.setMaxInactiveInterval(
+        nullable(sessionEntity.maxInactiveIntervalInSeconds, Duration::ofSeconds));
 
     if (sessionEntity.attributes() != null) {
-      sessionEntity.attributes().forEach((key, value) -> session.setAttribute(key, deserialize(value)));
+      sessionEntity
+          .attributes()
+          .forEach((key, value) -> session.setAttribute(key, deserialize(value)));
     }
 
     return session;
@@ -105,7 +104,8 @@ public class OpensearchSessionRepository implements SessionRepository {
 
   private Object deserialize(String s) {
     byte[] bytes = Base64.getDecoder().decode(s.getBytes());
-    return conversionService.convert(bytes, TypeDescriptor.valueOf(byte[].class), TypeDescriptor.valueOf(Object.class));
+    return conversionService.convert(
+        bytes, TypeDescriptor.valueOf(byte[].class), TypeDescriptor.valueOf(Object.class));
   }
 
   private <A, R> R nullable(final A a, Function<A, R> f) {
@@ -114,19 +114,24 @@ public class OpensearchSessionRepository implements SessionRepository {
 
   @Override
   public List<String> getExpiredSessionIds() {
-    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder(operateWebSessionIndex.getFullQualifiedName()), SessionEntity.class)
-      .stream()
-      .map(this::toOperateSession)
-      .filter(OperateSession::isExpired)
-      .map(OperateSession::getId)
-      .toList();
+    return richOpenSearchClient
+        .doc()
+        .scrollValues(
+            searchRequestBuilder(operateWebSessionIndex.getFullQualifiedName()),
+            SessionEntity.class)
+        .stream()
+        .map(this::toOperateSession)
+        .filter(OperateSession::isExpired)
+        .map(OperateSession::getId)
+        .toList();
   }
 
   @Override
   public void save(OperateSession session) {
-    var requestBuilder = indexRequestBuilder(operateWebSessionIndex.getFullQualifiedName())
-      .id(session.getId())
-      .document(toSessionEntity(session));
+    var requestBuilder =
+        indexRequestBuilder(operateWebSessionIndex.getFullQualifiedName())
+            .id(session.getId())
+            .document(toSessionEntity(session));
 
     richOpenSearchClient.doc().indexWithRetries(requestBuilder);
   }
@@ -134,9 +139,11 @@ public class OpensearchSessionRepository implements SessionRepository {
   @Override
   public Optional<OperateSession> findById(final String id) {
     try {
-      return richOpenSearchClient.doc().getWithRetries(operateWebSessionIndex.getFullQualifiedName(), id, SessionEntity.class)
-        .map(this::toOperateSession);
-    } catch(Exception e){
+      return richOpenSearchClient
+          .doc()
+          .getWithRetries(operateWebSessionIndex.getFullQualifiedName(), id, SessionEntity.class)
+          .map(this::toOperateSession);
+    } catch (Exception e) {
       return Optional.empty();
     }
   }

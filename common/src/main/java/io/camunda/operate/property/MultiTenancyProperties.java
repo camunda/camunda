@@ -17,5 +17,4 @@ public class MultiTenancyProperties {
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
   }
-
 }

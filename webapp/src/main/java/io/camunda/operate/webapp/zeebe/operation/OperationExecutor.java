@@ -6,6 +6,12 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
+import static io.camunda.operate.util.ThreadUtil.*;
+
+import io.camunda.operate.entities.OperationEntity;
+import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import jakarta.annotation.PreDestroy;
 import java.util.ArrayList;
@@ -13,11 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
-import static io.camunda.operate.util.ThreadUtil.*;
 
 @Component
 @Configuration
@@ -36,14 +36,11 @@ public class OperationExecutor extends Thread {
 
   private boolean shutdown = false;
 
-  @Autowired
-  private List<OperationHandler> handlers;
+  @Autowired private List<OperationHandler> handlers;
 
-  @Autowired
-  private BatchOperationWriter batchOperationWriter;
+  @Autowired private BatchOperationWriter batchOperationWriter;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @Autowired
   @Qualifier("operationsThreadPoolExecutor")
@@ -69,7 +66,7 @@ public class OperationExecutor extends Thread {
       try {
         final List<Future<?>> operations = executeOneBatch();
 
-        //TODO backoff strategy
+        // TODO backoff strategy
         if (operations.size() == 0) {
 
           notifyExecutionFinishedListeners();
@@ -77,8 +74,9 @@ public class OperationExecutor extends Thread {
         }
 
       } catch (Exception ex) {
-        //retry
-        logger.error("Something went wrong, while executing operations batch. Will be retried.", ex);
+        // retry
+        logger.error(
+            "Something went wrong, while executing operations batch. Will be retried.", ex);
 
         sleepFor(2000);
       }
@@ -88,14 +86,17 @@ public class OperationExecutor extends Thread {
   public List<Future<?>> executeOneBatch() throws PersistenceException {
     List<Future<?>> futures = new ArrayList<>();
 
-    //lock the operations
+    // lock the operations
     final List<OperationEntity> lockedOperations = batchOperationWriter.lockBatch();
 
-    //execute all locked operations
+    // execute all locked operations
     for (OperationEntity operation : lockedOperations) {
       final OperationHandler handler = getOperationHandlers().get(operation.getType());
       if (handler == null) {
-        logger.info("Operation {} on worflowInstanceId {} won't be processed, as no suitable handler was found.", operation.getType(), operation.getProcessInstanceKey());
+        logger.info(
+            "Operation {} on worflowInstanceId {} won't be processed, as no suitable handler was found.",
+            operation.getType(),
+            operation.getProcessInstanceKey());
       } else {
         OperationCommand operationCommand = new OperationCommand(operation, handler);
         futures.add(operationsTaskExecutor.submit(operationCommand));
@@ -106,9 +107,9 @@ public class OperationExecutor extends Thread {
 
   @Bean
   public Map<OperationType, OperationHandler> getOperationHandlers() {
-    //populate handlers map
+    // populate handlers map
     Map<OperationType, OperationHandler> handlerMap = new HashMap<>();
-    for (OperationHandler handler: handlers) {
+    for (OperationHandler handler : handlers) {
       handler.getTypes().forEach(t -> handlerMap.put(t, handler));
     }
     return handlerMap;
@@ -119,9 +120,8 @@ public class OperationExecutor extends Thread {
   }
 
   private void notifyExecutionFinishedListeners() {
-    for (ExecutionFinishedListener listener: listeners) {
+    for (ExecutionFinishedListener listener : listeners) {
       listener.onExecutionFinished();
     }
   }
-
 }

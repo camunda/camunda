@@ -19,13 +19,12 @@ public class BackoffIdleStrategy {
   private int state = NOT_IDLE;
   private int idles;
 
-  public BackoffIdleStrategy(final long baseIdleTime,
-      final float idleIncreaseFactor,
-      final long maxIdleTime) {
+  public BackoffIdleStrategy(
+      final long baseIdleTime, final float idleIncreaseFactor, final long maxIdleTime) {
     this.baseIdleTime = baseIdleTime;
     this.idleIncreaseFactor = idleIncreaseFactor;
     this.maxIdleTime = maxIdleTime;
-    this.maxIdles = ((int) log(idleIncreaseFactor, maxIdleTime/baseIdleTime)) + 1;
+    this.maxIdles = ((int) log(idleIncreaseFactor, maxIdleTime / baseIdleTime)) + 1;
   }
 
   private double log(double base, double value) {
@@ -65,5 +64,4 @@ public class BackoffIdleStrategy {
 
     return idleTime;
   }
-
 }

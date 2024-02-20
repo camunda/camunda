@@ -6,20 +6,19 @@
  */
 package io.camunda.operate.archiver;
 
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+
 import io.camunda.operate.Metrics;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
@@ -30,17 +29,13 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
 
   private Archiver archiver;
 
-  @Autowired
-  private ListViewTemplate processInstanceTemplate;
+  @Autowired private ListViewTemplate processInstanceTemplate;
 
-  @Autowired
-  private List<ProcessInstanceDependant> processInstanceDependantTemplates;
+  @Autowired private List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
-  @Autowired
-  private Metrics metrics;
+  @Autowired private Metrics metrics;
 
-  @Autowired
-  private ArchiverRepository archiverRepository;
+  @Autowired private ArchiverRepository archiverRepository;
 
   public ProcessInstancesArchiverJob(Archiver archiver, List<Integer> partitionIds) {
     this.partitionIds = partitionIds;
@@ -64,17 +59,20 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
       final var processInstanceKeys = archiveBatch.getIds();
 
       moveDependableDocuments(finishDate, processInstanceKeys)
-        .thenCompose((v) -> {
-          return moveProcessInstanceDocuments(finishDate, processInstanceKeys);
-        })
-        .thenAccept((i) -> {
-          metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, i);
-          archiveBatchFuture.complete(i);
-        })
-        .exceptionally((t) -> {
-          archiveBatchFuture.completeExceptionally(t);
-          return null;
-        });
+          .thenCompose(
+              (v) -> {
+                return moveProcessInstanceDocuments(finishDate, processInstanceKeys);
+              })
+          .thenAccept(
+              (i) -> {
+                metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, i);
+                archiveBatchFuture.complete(i);
+              })
+          .exceptionally(
+              (t) -> {
+                archiveBatchFuture.completeExceptionally(t);
+                return null;
+              });
 
     } else {
       logger.debug("Nothing to archive");
@@ -84,32 +82,40 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
     return archiveBatchFuture;
   }
 
-  private CompletableFuture<Void> moveDependableDocuments(final String finishDate, final List<Object> processInstanceKeys) {
+  private CompletableFuture<Void> moveDependableDocuments(
+      final String finishDate, final List<Object> processInstanceKeys) {
     final var dependableFutures = new ArrayList<CompletableFuture<Void>>();
 
-    for (ProcessInstanceDependant template: processInstanceDependantTemplates) {
-      final var moveDocumentsFuture = archiver.moveDocuments(template.getFullQualifiedName(),
-        ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
-        finishDate,
-        processInstanceKeys);
+    for (ProcessInstanceDependant template : processInstanceDependantTemplates) {
+      final var moveDocumentsFuture =
+          archiver.moveDocuments(
+              template.getFullQualifiedName(),
+              ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
+              finishDate,
+              processInstanceKeys);
       dependableFutures.add(moveDocumentsFuture);
     }
 
-    return CompletableFuture.allOf(dependableFutures.toArray(new CompletableFuture[dependableFutures.size()]));
+    return CompletableFuture.allOf(
+        dependableFutures.toArray(new CompletableFuture[dependableFutures.size()]));
   }
 
-  private CompletableFuture<Integer> moveProcessInstanceDocuments(final String finishDate, final List<Object> processInstanceKeys) {
+  private CompletableFuture<Integer> moveProcessInstanceDocuments(
+      final String finishDate, final List<Object> processInstanceKeys) {
     final var future = new CompletableFuture<Integer>();
 
-    archiver.moveDocuments(processInstanceTemplate.getFullQualifiedName(),
-        ListViewTemplate.PROCESS_INSTANCE_KEY,
-        finishDate,
-        processInstanceKeys)
-      .thenAccept((ignore) -> future.complete(processInstanceKeys.size()))
-      .exceptionally((t) -> {
-        future.completeExceptionally(t);
-        return null;
-      });
+    archiver
+        .moveDocuments(
+            processInstanceTemplate.getFullQualifiedName(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            finishDate,
+            processInstanceKeys)
+        .thenAccept((ignore) -> future.complete(processInstanceKeys.size()))
+        .exceptionally(
+            (t) -> {
+              future.completeExceptionally(t);
+              return null;
+            });
 
     return future;
   }

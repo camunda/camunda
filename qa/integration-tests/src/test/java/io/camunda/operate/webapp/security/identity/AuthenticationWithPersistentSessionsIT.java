@@ -19,19 +19,19 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OpensearchConnector;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
+import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.opensearch.OpensearchSessionRepository;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
-import io.camunda.operate.webapp.security.SessionService;
-import io.camunda.operate.webapp.security.SessionRepositoryConfig;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
+import io.camunda.operate.webapp.security.SessionRepositoryConfig;
+import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.IdentityOAuth2WebConfigurer;
@@ -58,174 +58,172 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-        classes = {
-                TestApplicationWithNoBeans.class,
-                OAuth2WebConfigurer.class,
-                Jwt2AuthenticationTokenConverter.class,
-                CCSaaSJwtAuthenticationTokenValidator.class,
-                IdentityWebSecurityConfig.class,
-                IdentityService.class,
-                IdentityRetryService.class,
-                IdentityConfigurer.class,
-                IdentityController.class,
-                IdentityUserService.class,
-                IdentityOAuth2WebConfigurer.class,
-                IdentityJwt2AuthenticationTokenConverter.class,
-                OperateURIs.class,
-                OperateProperties.class,
-                OperateProfileService.class,
-                SessionService.class,
-                SessionRepositoryConfig.class,
-                OperateWebSessionIndex.class,
-                RetryElasticsearchClient.class,
-                ElasticsearchTaskStore.class,
-                SameSiteCookieTomcatContextCustomizer.class,
-                ElasticsearchConnector.class,
-                ElasticsearchSessionRepository.class,
-                OpensearchSessionRepository.class,
-                RichOpenSearchClient.class,
-                OpensearchConnector.class,
-                PermissionConverter.class
-        },
-        properties = {
-                "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
-                "camunda.operate.identity.issuerBackendUrl=http://localhost:18080/auth/realms/camunda-platform",
-                "camunda.operate.identity.issuerUrl=http://localhost:18080/auth/realms/camunda-platform",
-                "camunda.operate.identity.clientId=operate",
-                "camunda.operate.identity.clientSecret=the-cake-is-alive",
-                "camunda.operate.identity.audience=operate-api",
-                "camunda.operate.identity.baseUrl=http://localhost:8080",
-                "server.servlet.session.cookie.name=" + COOKIE_JSESSIONID,
-                "camunda.operate.persistentSessionsEnabled=true"
-        },
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+    classes = {
+      TestApplicationWithNoBeans.class,
+      OAuth2WebConfigurer.class,
+      Jwt2AuthenticationTokenConverter.class,
+      CCSaaSJwtAuthenticationTokenValidator.class,
+      IdentityWebSecurityConfig.class,
+      IdentityService.class,
+      IdentityRetryService.class,
+      IdentityConfigurer.class,
+      IdentityController.class,
+      IdentityUserService.class,
+      IdentityOAuth2WebConfigurer.class,
+      IdentityJwt2AuthenticationTokenConverter.class,
+      OperateURIs.class,
+      OperateProperties.class,
+      OperateProfileService.class,
+      SessionService.class,
+      SessionRepositoryConfig.class,
+      OperateWebSessionIndex.class,
+      RetryElasticsearchClient.class,
+      ElasticsearchTaskStore.class,
+      SameSiteCookieTomcatContextCustomizer.class,
+      ElasticsearchConnector.class,
+      ElasticsearchSessionRepository.class,
+      OpensearchSessionRepository.class,
+      RichOpenSearchClient.class,
+      OpensearchConnector.class,
+      PermissionConverter.class
+    },
+    properties = {
+      "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
+      "camunda.operate.identity.issuerBackendUrl=http://localhost:18080/auth/realms/camunda-platform",
+      "camunda.operate.identity.issuerUrl=http://localhost:18080/auth/realms/camunda-platform",
+      "camunda.operate.identity.clientId=operate",
+      "camunda.operate.identity.clientSecret=the-cake-is-alive",
+      "camunda.operate.identity.audience=operate-api",
+      "camunda.operate.identity.baseUrl=http://localhost:8080",
+      "server.servlet.session.cookie.name=" + COOKIE_JSESSIONID,
+      "camunda.operate.persistentSessionsEnabled=true"
+    },
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(locations = {"/application.yml", "/application-identity-auth.yml"})
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
 public class AuthenticationWithPersistentSessionsIT implements AuthenticationTestable {
 
-    public final static String CONTEXT_PATH = "/operate-test";
+  public static final String CONTEXT_PATH = "/operate-test";
 
-    @LocalServerPort
-    private int randomServerPort;
+  @LocalServerPort private int randomServerPort;
 
-    @Autowired
-    private TestRestTemplate testRestTemplate;
+  @Autowired private TestRestTemplate testRestTemplate;
 
-    @MockBean
-    private IdentityService identityService;
+  @MockBean private IdentityService identityService;
 
-    @Test
-    public void testAccessNoPermission() {
-        final ResponseEntity<String> response = get(NO_PERMISSION);
-        assertThat(response.getBody()).contains(
-                "No permission for Operate - Please check your operate configuration or cloud configuration.");
-        assertThatSecurityHeadersAreSet(response);
-    }
+  @Test
+  public void testAccessNoPermission() {
+    final ResponseEntity<String> response = get(NO_PERMISSION);
+    assertThat(response.getBody())
+        .contains(
+            "No permission for Operate - Please check your operate configuration or cloud configuration.");
+    assertThatSecurityHeadersAreSet(response);
+  }
 
-    @Test
-    public void testLoginSuccess() throws Exception {
-        // Step 1 try to access document root
-        ResponseEntity<String> response = get(ROOT);
-        assertThatCookiesAndSecurityHeadersAreSet(response);
-        final HttpEntity<?> cookies = httpEntityWithCookie(response);
+  @Test
+  public void testLoginSuccess() throws Exception {
+    // Step 1 try to access document root
+    ResponseEntity<String> response = get(ROOT);
+    assertThatCookiesAndSecurityHeadersAreSet(response);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
-        assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
-        when(identityService.getRedirectUrl(any())).thenReturn("/redirected-to-identity");
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+    when(identityService.getRedirectUrl(any())).thenReturn("/redirected-to-identity");
 
-        // Step 2 Get Login provider url
-        response = get(LOGIN_RESOURCE, cookies);
-        assertThat(redirectLocationIn(response)).contains("/redirected-to-identity");
+    // Step 2 Get Login provider url
+    response = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(response)).contains("/redirected-to-identity");
 
-        // Step 3 assume authentication will be successful
-        final IdentityAuthentication identityAuthentication =
-                new IdentityAuthentication().setExpires(DateUtil.tomorrow());
-        identityAuthentication.setAuthenticated(true);
+    // Step 3 assume authentication will be successful
+    final IdentityAuthentication identityAuthentication =
+        new IdentityAuthentication().setExpires(DateUtil.tomorrow());
+    identityAuthentication.setAuthenticated(true);
 
-        when(identityService.getAuthenticationFor(any(), any())).thenReturn(identityAuthentication);
+    when(identityService.getAuthenticationFor(any(), any())).thenReturn(identityAuthentication);
 
-        // Step 4 do callback
-        response = get(IDENTITY_CALLBACK_URI, cookies);
+    // Step 4 do callback
+    response = get(IDENTITY_CALLBACK_URI, cookies);
 
-        assertThatRequestIsRedirectedTo(response, urlFor(ROOT));
-        // Step 5  check if access to url possible
-        response = get(ROOT, cookies);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
+    assertThatRequestIsRedirectedTo(response, urlFor(ROOT));
+    // Step 5  check if access to url possible
+    response = get(ROOT, cookies);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
 
-    @Test
-    public void testLoginFailedWithNoPermissions() throws Exception {
-        // Step 1 try to access document root
-        ResponseEntity<String> response = get(ROOT);
-        assertThatCookiesAndSecurityHeadersAreSet(response);
-        final HttpEntity<?> cookies = httpEntityWithCookie(response);
+  @Test
+  public void testLoginFailedWithNoPermissions() throws Exception {
+    // Step 1 try to access document root
+    ResponseEntity<String> response = get(ROOT);
+    assertThatCookiesAndSecurityHeadersAreSet(response);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
-        assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
-        when(identityService.getRedirectUrl(any())).thenReturn("/redirected-to-identity");
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+    when(identityService.getRedirectUrl(any())).thenReturn("/redirected-to-identity");
 
-        // Step 2 Get Login provider url
-        response = get(LOGIN_RESOURCE, cookies);
-        assertThat(redirectLocationIn(response)).contains("/redirected-to-identity");
+    // Step 2 Get Login provider url
+    response = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(response)).contains("/redirected-to-identity");
 
-        // Step 3 assume authentication will be fail
-        when(identityService.getAuthenticationFor(any(), any()))
-                .thenThrow(new RuntimeException("Something is going wrong"));
+    // Step 3 assume authentication will be fail
+    when(identityService.getAuthenticationFor(any(), any()))
+        .thenThrow(new RuntimeException("Something is going wrong"));
 
-        response = get(IDENTITY_CALLBACK_URI, cookies);
+    response = get(IDENTITY_CALLBACK_URI, cookies);
 
-        assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);
+    assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);
 
-        response = get(ROOT, cookies);
-        // Check that access to url is not possible
-        assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
-    }
+    response = get(ROOT, cookies);
+    // Check that access to url is not possible
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+  }
 
-    @Test
-    public void testLoginFailedWithNoReadPermissions() throws Exception {
-        // Step 1 try to access document root
-        ResponseEntity<String> response = get(ROOT);
-        assertThatCookiesAndSecurityHeadersAreSet(response);
-        final HttpEntity<?> cookies = httpEntityWithCookie(response);
+  @Test
+  public void testLoginFailedWithNoReadPermissions() throws Exception {
+    // Step 1 try to access document root
+    ResponseEntity<String> response = get(ROOT);
+    assertThatCookiesAndSecurityHeadersAreSet(response);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
-        assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
-        when(identityService.getRedirectUrl(any())).thenReturn("/redirected-to-identity");
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+    when(identityService.getRedirectUrl(any())).thenReturn("/redirected-to-identity");
 
-        // Step 2 Get Login provider url
-        response = get(LOGIN_RESOURCE, cookies);
-        assertThat(redirectLocationIn(response)).contains("/redirected-to-identity");
-        // Step 3 assume authentication succeed but return no READ permission
-        when(identityService.getAuthenticationFor(any(), any()))
-                .thenThrow(new InsufficientAuthenticationException("No read permissions"));
+    // Step 2 Get Login provider url
+    response = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(response)).contains("/redirected-to-identity");
+    // Step 3 assume authentication succeed but return no READ permission
+    when(identityService.getAuthenticationFor(any(), any()))
+        .thenThrow(new InsufficientAuthenticationException("No read permissions"));
 
-        response = get(IDENTITY_CALLBACK_URI, cookies);
+    response = get(IDENTITY_CALLBACK_URI, cookies);
 
-        assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);
+    assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);
 
-        response = get(ROOT, cookies);
-        // Check that access to url is not possible
-        assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
-    }
+    response = get(ROOT, cookies);
+    // Check that access to url is not possible
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+  }
 
-    @Override
-    public TestRestTemplate getTestRestTemplate() {
-        return testRestTemplate;
-    }
+  @Override
+  public TestRestTemplate getTestRestTemplate() {
+    return testRestTemplate;
+  }
 
-    private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
-        final HttpHeaders headers = new HttpHeaders();
-        headers.add("Cookie", getCookies(response).get(0));
-        return new HttpEntity<>(new HashMap<>(), headers);
-    }
+  private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
+    final HttpHeaders headers = new HttpHeaders();
+    headers.add("Cookie", getCookies(response).get(0));
+    return new HttpEntity<>(new HashMap<>(), headers);
+  }
 
-    protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
-        assertThat(redirectLocationIn(response)).isEqualTo(url);
-    }
+  protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
+    assertThat(redirectLocationIn(response)).isEqualTo(url);
+  }
 
-    private String urlFor(String path) {
-        return String.format("http://localhost:%d%s%s", randomServerPort, CONTEXT_PATH, path);
-    }
+  private String urlFor(String path) {
+    return String.format("http://localhost:%d%s%s", randomServerPort, CONTEXT_PATH, path);
+  }
 
-    private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
-        return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
-    }
+  private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
+    return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
+  }
 }

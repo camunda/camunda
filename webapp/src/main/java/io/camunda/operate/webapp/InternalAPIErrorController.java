@@ -25,16 +25,16 @@ public abstract class InternalAPIErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(InternalAPIErrorController.class);
 
-  @Autowired
-  private OperateProfileService operateProfileService;
+  @Autowired private OperateProfileService operateProfileService;
 
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   @ExceptionHandler(OperateRuntimeException.class)
   public ResponseEntity<Error> handleOperateRuntimeException(OperateRuntimeException exception) {
     LOGGER.warn(exception.getMessage(), exception);
-    final Error error = new Error()
-        .setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-        .setMessage(operateProfileService.getMessageByProfileFor(exception));
+    final Error error =
+        new Error()
+            .setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .setMessage(operateProfileService.getMessageByProfileFor(exception));
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
@@ -42,24 +42,27 @@ public abstract class InternalAPIErrorController {
 
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(io.camunda.operate.store.NotFoundException.class)
-  public ResponseEntity<Error> handleRuntimeNotFoundException(io.camunda.operate.store.NotFoundException exception) {
+  public ResponseEntity<Error> handleRuntimeNotFoundException(
+      io.camunda.operate.store.NotFoundException exception) {
     LOGGER.warn(exception.getMessage(), exception);
-    final Error error = new Error()
+    final Error error =
+        new Error()
             .setStatus(HttpStatus.NOT_FOUND.value())
             .setMessage(operateProfileService.getMessageByProfileFor(exception));
     return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-            .body(error);
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(error);
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(InternalAPIException.class)
   public ResponseEntity<Error> handleInternalAPIException(InternalAPIException exception) {
     LOGGER.warn(String.format("Instance: %s; %s", exception.getInstance(), exception.getMessage()));
-    final Error error = new Error()
-        .setStatus(HttpStatus.BAD_REQUEST.value())
-        .setInstance(exception.getInstance())
-        .setMessage(operateProfileService.getMessageByProfileFor(exception));
+    final Error error =
+        new Error()
+            .setStatus(HttpStatus.BAD_REQUEST.value())
+            .setInstance(exception.getInstance())
+            .setMessage(operateProfileService.getMessageByProfileFor(exception));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
@@ -69,10 +72,11 @@ public abstract class InternalAPIErrorController {
   @ExceptionHandler(NotFoundException.class)
   public ResponseEntity<Error> handleInternalNotFoundException(NotFoundException exception) {
     LOGGER.warn(String.format("Instance: %s; %s", exception.getInstance(), exception.getMessage()));
-    final Error error = new Error()
-        .setStatus(HttpStatus.NOT_FOUND.value())
-        .setInstance(exception.getInstance())
-        .setMessage(operateProfileService.getMessageByProfileFor(exception));
+    final Error error =
+        new Error()
+            .setStatus(HttpStatus.NOT_FOUND.value())
+            .setInstance(exception.getInstance())
+            .setMessage(operateProfileService.getMessageByProfileFor(exception));
     return ResponseEntity.status(HttpStatus.NOT_FOUND)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
@@ -82,10 +86,11 @@ public abstract class InternalAPIErrorController {
   @ExceptionHandler(NotAuthorizedException.class)
   public ResponseEntity<Error> handleNotAuthorizedException(NotAuthorizedException exception) {
     LOGGER.warn(String.format("Instance: %s; %s", exception.getInstance(), exception.getMessage()));
-    final Error error = new Error()
-        .setStatus(HttpStatus.FORBIDDEN.value())
-        .setInstance(exception.getInstance())
-        .setMessage(operateProfileService.getMessageByProfileFor(exception));
+    final Error error =
+        new Error()
+            .setStatus(HttpStatus.FORBIDDEN.value())
+            .setInstance(exception.getInstance())
+            .setMessage(operateProfileService.getMessageByProfileFor(exception));
     return ResponseEntity.status(HttpStatus.FORBIDDEN)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);

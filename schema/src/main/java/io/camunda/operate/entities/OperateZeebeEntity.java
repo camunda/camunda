@@ -32,17 +32,13 @@ public abstract class OperateZeebeEntity<T extends OperateZeebeEntity<T>> extend
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
 
     OperateZeebeEntity<T> that = (OperateZeebeEntity<T>) o;
 
-    if (key != that.key)
-      return false;
+    if (key != that.key) return false;
     return partitionId == that.partitionId;
   }
 

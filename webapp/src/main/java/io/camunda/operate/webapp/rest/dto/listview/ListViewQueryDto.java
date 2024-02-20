@@ -47,7 +47,9 @@ public class ListViewQueryDto {
 
   private String bpmnProcessId;
 
-  @Schema(description = "Process version, goes together with bpmnProcessId. Can be null, then all version of the process are selected.")
+  @Schema(
+      description =
+          "Process version, goes together with bpmnProcessId. Can be null, then all version of the process are selected.")
   private Integer processVersion;
 
   private List<String> excludeIds;
@@ -60,8 +62,7 @@ public class ListViewQueryDto {
 
   private String tenantId;
 
-  public ListViewQueryDto() {
-  }
+  public ListViewQueryDto() {}
 
   public boolean isRunning() {
     return running;
@@ -262,26 +263,55 @@ public class ListViewQueryDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     ListViewQueryDto that = (ListViewQueryDto) o;
-    return running == that.running && active == that.active && incidents == that.incidents && finished == that.finished && completed == that.completed && canceled == that.canceled && Objects.equals(
-        ids, that.ids) && Objects.equals(errorMessage, that.errorMessage) && Objects.equals(activityId,
-        that.activityId) && Objects.equals(startDateAfter, that.startDateAfter) && Objects.equals(startDateBefore,
-        that.startDateBefore) && Objects.equals(endDateAfter, that.endDateAfter) && Objects.equals(endDateBefore,
-        that.endDateBefore) && Objects.equals(processIds, that.processIds) && Objects.equals(bpmnProcessId,
-        that.bpmnProcessId) && Objects.equals(processVersion, that.processVersion) && Objects.equals(excludeIds,
-        that.excludeIds) && Objects.equals(variable, that.variable) && Objects.equals(batchOperationId,
-        that.batchOperationId) && Objects.equals(parentInstanceId, that.parentInstanceId) && Objects.equals(tenantId,
-        that.tenantId);
+    return running == that.running
+        && active == that.active
+        && incidents == that.incidents
+        && finished == that.finished
+        && completed == that.completed
+        && canceled == that.canceled
+        && Objects.equals(ids, that.ids)
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(activityId, that.activityId)
+        && Objects.equals(startDateAfter, that.startDateAfter)
+        && Objects.equals(startDateBefore, that.startDateBefore)
+        && Objects.equals(endDateAfter, that.endDateAfter)
+        && Objects.equals(endDateBefore, that.endDateBefore)
+        && Objects.equals(processIds, that.processIds)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(processVersion, that.processVersion)
+        && Objects.equals(excludeIds, that.excludeIds)
+        && Objects.equals(variable, that.variable)
+        && Objects.equals(batchOperationId, that.batchOperationId)
+        && Objects.equals(parentInstanceId, that.parentInstanceId)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(running, active, incidents, finished, completed, canceled, ids, errorMessage, activityId,
-        startDateAfter, startDateBefore, endDateAfter, endDateBefore, processIds, bpmnProcessId, processVersion,
-        excludeIds, variable, batchOperationId, parentInstanceId, tenantId);
+    return Objects.hash(
+        running,
+        active,
+        incidents,
+        finished,
+        completed,
+        canceled,
+        ids,
+        errorMessage,
+        activityId,
+        startDateAfter,
+        startDateBefore,
+        endDateAfter,
+        endDateBefore,
+        processIds,
+        bpmnProcessId,
+        processVersion,
+        excludeIds,
+        variable,
+        batchOperationId,
+        parentInstanceId,
+        tenantId);
   }
 }

@@ -10,14 +10,10 @@ public class ClusterNodeProperties {
 
   private Integer[] partitionIds = {};
 
-  /**
-   * Overall number of import nodes.
-   */
+  /** Overall number of import nodes. */
   private Integer nodeCount;
 
-  /**
-   * Id of current node, starts from 0.
-   */
+  /** Id of current node, starts from 0. */
   private Integer currentNodeId;
 
   public Integer[] getPartitionIds() {
@@ -43,5 +39,4 @@ public class ClusterNodeProperties {
   public void setCurrentNodeId(Integer currentNodeId) {
     this.currentNodeId = currentNodeId;
   }
-
 }

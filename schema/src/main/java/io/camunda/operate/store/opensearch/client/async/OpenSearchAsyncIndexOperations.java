@@ -6,21 +6,21 @@
  */
 package io.camunda.operate.store.opensearch.client.async;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.slf4j.Logger;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-
 public class OpenSearchAsyncIndexOperations extends OpenSearchAsyncOperation {
-  public OpenSearchAsyncIndexOperations(Logger logger, OpenSearchAsyncClient openSearchAsyncClient) {
+  public OpenSearchAsyncIndexOperations(
+      Logger logger, OpenSearchAsyncClient openSearchAsyncClient) {
     super(logger, openSearchAsyncClient);
   }
 
-  public CompletableFuture<ReindexResponse> reindex(ReindexRequest.Builder requestBuilder,
-                                                    Function<Exception, String> errorMessageSupplier) {
+  public CompletableFuture<ReindexResponse> reindex(
+      ReindexRequest.Builder requestBuilder, Function<Exception, String> errorMessageSupplier) {
     return safe(() -> openSearchAsyncClient.reindex(requestBuilder.build()), errorMessageSupplier);
   }
 }

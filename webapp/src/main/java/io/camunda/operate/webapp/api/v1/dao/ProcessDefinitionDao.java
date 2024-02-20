@@ -9,11 +9,9 @@ package io.camunda.operate.webapp.api.v1.dao;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
-public interface ProcessDefinitionDao extends
-    SearchableDao<ProcessDefinition> {
+public interface ProcessDefinitionDao extends SearchableDao<ProcessDefinition> {
 
   ProcessDefinition byKey(Long key) throws APIException;
 
   String xmlByKey(Long key) throws APIException;
-
 }

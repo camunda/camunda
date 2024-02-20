@@ -6,6 +6,15 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.params.provider.Arguments.of;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.authentication.AuthorizeUriBuilder;
@@ -14,6 +23,9 @@ import io.camunda.operate.property.IdentityProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.OperateURIs;
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,28 +39,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.params.provider.Arguments.of;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class IdentityServiceTest {
 
-  @Mock
-  private IdentityRetryService mockRetryService;
-  @Mock
-  private Identity identity;
-  @Spy
-  private OperateProperties operateProperties = new OperateProperties();
+  @Mock private IdentityRetryService mockRetryService;
+  @Mock private Identity identity;
+  @Spy private OperateProperties operateProperties = new OperateProperties();
 
   private IdentityService instance;
 
@@ -118,7 +114,6 @@ class IdentityServiceTest {
     verify(req, never()).getServerPort();
   }
 
-
   @Test
   public void testGetRedirectUrlWithRedirectRootUrlSet() throws URISyntaxException {
     String expectedRedirectUrl = "http://localhost:9876";
@@ -141,7 +136,8 @@ class IdentityServiceTest {
     // Verify that the redirect url is based on the root url specified in identity properties
     assertThat(redirectUrl).isEqualTo(expectedRedirectUrl);
     verify(identity, times(1)).authentication();
-    verify(mockAuthentication, times(1)).authorizeUriBuilder("http://localhost/test-path/identity-callback");
+    verify(mockAuthentication, times(1))
+        .authorizeUriBuilder("http://localhost/test-path/identity-callback");
     verify(mockAuthorizeBuilder, times(1)).build();
   }
 
@@ -161,20 +157,23 @@ class IdentityServiceTest {
 
     // Capture the dynamically-built redirect string passed to the builder
     StringBuilder dynamicRedirectUrl = new StringBuilder();
-    when(mockAuthentication.authorizeUriBuilder(any())).thenAnswer(
-            (Answer<AuthorizeUriBuilder>) invocationOnMock -> {
-              dynamicRedirectUrl.append((String)invocationOnMock.getArgument(0));
-      return mockAuthorizeBuilder;
-    });
-    when(mockAuthorizeBuilder.build()).thenAnswer((Answer<URI>) invocationOnMock ->
-            new URI(dynamicRedirectUrl.toString()));
+    when(mockAuthentication.authorizeUriBuilder(any()))
+        .thenAnswer(
+            (Answer<AuthorizeUriBuilder>)
+                invocationOnMock -> {
+                  dynamicRedirectUrl.append((String) invocationOnMock.getArgument(0));
+                  return mockAuthorizeBuilder;
+                });
+    when(mockAuthorizeBuilder.build())
+        .thenAnswer((Answer<URI>) invocationOnMock -> new URI(dynamicRedirectUrl.toString()));
 
     String redirectUrl = instance.getRedirectUrl(mockRequest);
 
     // Validate that the redirect URI was built based off the request
     assertThat(redirectUrl).isEqualTo("http://localhost:8132/test-path/identity-callback");
     verify(identity, times(1)).authentication();
-    verify(mockAuthentication, times(1)).authorizeUriBuilder("http://localhost:8132/test-path/identity-callback");
+    verify(mockAuthentication, times(1))
+        .authorizeUriBuilder("http://localhost:8132/test-path/identity-callback");
     verify(mockAuthorizeBuilder, times(1)).build();
   }
 

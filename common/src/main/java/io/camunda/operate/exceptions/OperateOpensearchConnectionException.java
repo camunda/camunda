@@ -12,8 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.BAD_GATEWAY)
 public class OperateOpensearchConnectionException extends OperateRuntimeException {
 
-  public OperateOpensearchConnectionException() {
-  }
+  public OperateOpensearchConnectionException() {}
 
   public OperateOpensearchConnectionException(String message) {
     super(message);

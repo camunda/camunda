@@ -15,8 +15,7 @@ import java.util.Objects;
 public class ProcessDefinition {
 
   // Used for index field search and sorting
-  public static final String
-      KEY = ProcessIndex.KEY,
+  public static final String KEY = ProcessIndex.KEY,
       NAME = ProcessIndex.NAME,
       VERSION = ProcessIndex.VERSION,
       BPMN_PROCESS_ID = ProcessIndex.BPMN_PROCESS_ID,
@@ -75,13 +74,14 @@ public class ProcessDefinition {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     ProcessDefinition that = (ProcessDefinition) o;
-    return Objects.equals(key, that.key) && Objects.equals(name, that.name) && Objects.equals(version,
-        that.version) && Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(tenantId, that.tenantId);
+    return Objects.equals(key, that.key)
+        && Objects.equals(name, that.name)
+        && Objects.equals(version, that.version)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
@@ -91,7 +91,20 @@ public class ProcessDefinition {
 
   @Override
   public String toString() {
-    return "ProcessDefinition{" + "key=" + key + ", name='" + name + '\'' + ", version=" + version + ", bpmnProcessId='"
-        + bpmnProcessId + '\'' + ", tenantId='" + tenantId + '\'' + '}';
+    return "ProcessDefinition{"
+        + "key="
+        + key
+        + ", name='"
+        + name
+        + '\''
+        + ", version="
+        + version
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

@@ -10,18 +10,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * The request to get several lists of flow node instances.
- */
+/** The request to get several lists of flow node instances. */
 public class FlowNodeInstanceRequestDto {
 
   private List<FlowNodeInstanceQueryDto> queries;
 
-  public FlowNodeInstanceRequestDto() {
-  }
+  public FlowNodeInstanceRequestDto() {}
 
-  public FlowNodeInstanceRequestDto(
-      final List<FlowNodeInstanceQueryDto> queries) {
+  public FlowNodeInstanceRequestDto(final List<FlowNodeInstanceQueryDto> queries) {
     this.queries = queries;
   }
 
@@ -33,8 +29,7 @@ public class FlowNodeInstanceRequestDto {
     return queries;
   }
 
-  public FlowNodeInstanceRequestDto setQueries(
-      final List<FlowNodeInstanceQueryDto> queries) {
+  public FlowNodeInstanceRequestDto setQueries(final List<FlowNodeInstanceQueryDto> queries) {
     this.queries = queries;
     return this;
   }

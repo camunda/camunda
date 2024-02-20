@@ -7,7 +7,6 @@
 package io.camunda.operate.zeebe;
 
 public enum ImportValueType {
-
   PROCESS_INSTANCE(ZeebeESConstants.PROCESS_INSTANCE_INDEX_NAME),
   DECISION(ZeebeESConstants.DECISION_INDEX_NAME),
   DECISION_REQUIREMENTS(ZeebeESConstants.DECISION_REQUIREMENTS_INDEX_NAME),
@@ -21,23 +20,25 @@ public enum ImportValueType {
   USER_TASK(ZeebeESConstants.USER_TASK_INDEX_NAME);
 
   private final String aliasTemplate;
+
   ImportValueType(String aliasTemplate) {
     this.aliasTemplate = aliasTemplate;
   }
 
-  public static final ImportValueType[] IMPORT_VALUE_TYPES = new ImportValueType[]{
-      PROCESS,
-      DECISION,
-      DECISION_REQUIREMENTS,
-      DECISION_EVALUATION,
-      PROCESS_INSTANCE,
-      JOB,
-      INCIDENT,
-      VARIABLE,
-      VARIABLE_DOCUMENT,
-      PROCESS_MESSAGE_SUBSCRIPTION,
-      USER_TASK
-  };
+  public static final ImportValueType[] IMPORT_VALUE_TYPES =
+      new ImportValueType[] {
+        PROCESS,
+        DECISION,
+        DECISION_REQUIREMENTS,
+        DECISION_EVALUATION,
+        PROCESS_INSTANCE,
+        JOB,
+        INCIDENT,
+        VARIABLE,
+        VARIABLE_DOCUMENT,
+        PROCESS_MESSAGE_SUBSCRIPTION,
+        USER_TASK
+      };
 
   public String getAliasTemplate() {
     return aliasTemplate;
@@ -50,5 +51,4 @@ public enum ImportValueType {
   public String getAliasName(String prefix) {
     return String.format("%s-%s", prefix, aliasTemplate);
   }
-
 }

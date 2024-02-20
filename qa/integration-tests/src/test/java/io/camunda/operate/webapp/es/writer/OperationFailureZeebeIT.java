@@ -6,6 +6,13 @@
  */
 package io.camunda.operate.webapp.es.writer;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
@@ -16,6 +23,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
+import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -24,27 +32,15 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-import java.util.Arrays;
-
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 public class OperationFailureZeebeIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_INSTANCES_URL = PROCESS_INSTANCE_URL;
 
-  @Autowired
-  private CancelProcessInstanceHandler cancelProcessInstanceHandler;
+  @Autowired private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
-  @SpyBean
-  private io.camunda.operate.webapp.writer.BatchOperationWriter batchOperationWriter;
+  @SpyBean private io.camunda.operate.webapp.writer.BatchOperationWriter batchOperationWriter;
 
-  @Autowired
-  private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private BatchOperationTemplate batchOperationTemplate;
 
   @Before
   public void before() {
@@ -55,48 +51,57 @@ public class OperationFailureZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Ignore
-  @Test public void testCancelExecutedEvenThoughBatchOperationNotFullyPersisted() throws Exception {
+  @Test
+  public void testCancelExecutedEvenThoughBatchOperationNotFullyPersisted() throws Exception {
     // given
-    final BatchOperationWriter.ProcessInstanceSource processInstanceSource1 = startDemoProcessInstance();
-    final BatchOperationWriter.ProcessInstanceSource processInstanceSource2 = startDemoProcessInstance();
+    final BatchOperationWriter.ProcessInstanceSource processInstanceSource1 =
+        startDemoProcessInstance();
+    final BatchOperationWriter.ProcessInstanceSource processInstanceSource2 =
+        startDemoProcessInstance();
 
-    //first single operation will be created successfully, second will fail
-  /*  doCallRealMethod().when(batchOperationWriter)
-        .getIndexOperationRequest(eq(processInstanceSource1), any(), any(), any());
-    IndexRequest failingRequest = new IndexRequest(batchOperationTemplate.getFullQualifiedName()).id("id")
-        .source("{\"wrong_field\":\"\"}", XContentType.JSON);
-    doReturn(failingRequest).when(batchOperationWriter)
-        .getIndexOperationRequest(eq(processInstanceSource2), any(), any(), any());
-*/
-    //when
-    //we call CANCEL_PROCESS_INSTANCE operation on instance
-    final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()
-        .setIds(Arrays.asList(processInstanceSource1.getProcessInstanceKey().toString(), processInstanceSource2.getProcessInstanceKey().toString()));
+    // first single operation will be created successfully, second will fail
+    /*  doCallRealMethod().when(batchOperationWriter)
+            .getIndexOperationRequest(eq(processInstanceSource1), any(), any(), any());
+        IndexRequest failingRequest = new IndexRequest(batchOperationTemplate.getFullQualifiedName()).id("id")
+            .source("{\"wrong_field\":\"\"}", XContentType.JSON);
+        doReturn(failingRequest).when(batchOperationWriter)
+            .getIndexOperationRequest(eq(processInstanceSource2), any(), any(), any());
+    */
+    // when
+    // we call CANCEL_PROCESS_INSTANCE operation on instance
+    final ListViewQueryDto processInstanceQuery =
+        createGetAllProcessInstancesQuery()
+            .setIds(
+                Arrays.asList(
+                    processInstanceSource1.getProcessInstanceKey().toString(),
+                    processInstanceSource2.getProcessInstanceKey().toString()));
     try {
       postBatchOperation(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE, null, 500);
     } catch (Exception ex) {
-      //expected
+      // expected
     }
     searchTestRule.refreshSerchIndexes();
-    //and execute the operation
+    // and execute the operation
     executeOneBatch();
 
-    //then
-    //import works without being stuck on empty batch operation
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceSource1.getProcessInstanceKey());
+    // then
+    // import works without being stuck on empty batch operation
+    searchTestRule.processAllRecordsAndWait(
+        processInstanceIsCanceledCheck, processInstanceSource1.getProcessInstanceKey());
     ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
     assertThat(processInstances.getProcessInstances()).hasSize(2);
-    assertThat(processInstances.getProcessInstances()).extracting(pi -> {
-      return pi.getState();
-    }).containsExactlyInAnyOrder(ProcessInstanceStateDto.ACTIVE, ProcessInstanceStateDto.CANCELED);
-
+    assertThat(processInstances.getProcessInstances())
+        .extracting(
+            pi -> {
+              return pi.getState();
+            })
+        .containsExactlyInAnyOrder(
+            ProcessInstanceStateDto.ACTIVE, ProcessInstanceStateDto.CANCELED);
   }
 
   private BatchOperationWriter.ProcessInstanceSource startDemoProcessInstance() {
     String processId = "demoProcess";
-    tester.startProcessInstance(processId, "{\"a\": \"b\"}")
-        .waitUntil()
-        .flowNodeIsActive("taskA");
+    tester.startProcessInstance(processId, "{\"a\": \"b\"}").waitUntil().flowNodeIsActive("taskA");
 
     return new BatchOperationWriter.ProcessInstanceSource()
         .setProcessInstanceKey(tester.getProcessInstanceKey())
@@ -108,21 +113,21 @@ public class OperationFailureZeebeIT extends OperateZeebeAbstractIT {
     ListViewRequestDto request = new ListViewRequestDto(query);
     request.setPageSize(100);
     MockHttpServletRequestBuilder getProcessInstancesRequest =
-      post(query()).content(mockMvcTestRule.json(request))
-        .contentType(mockMvcTestRule.getContentType());
+        post(query())
+            .content(mockMvcTestRule.json(request))
+            .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult =
-      mockMvc.perform(getProcessInstancesRequest)
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-        .andReturn();
+        mockMvc
+            .perform(getProcessInstancesRequest)
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+            .andReturn();
 
-    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
   }
 
   private String query() {
     return QUERY_INSTANCES_URL;
   }
-
 }

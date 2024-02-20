@@ -11,7 +11,6 @@ import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
-
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,7 +35,8 @@ public class FlowNodeInstanceDto {
   private String treePath;
 
   /**
-   * Sort values, define the position of batch operation in the list and may be used to search for previous of following page.
+   * Sort values, define the position of batch operation in the list and may be used to search for
+   * previous of following page.
    */
   private SortValuesWrapper[] sortValues;
 
@@ -112,18 +112,24 @@ public class FlowNodeInstanceDto {
     return this;
   }
 
-  public static FlowNodeInstanceDto createFrom(final FlowNodeInstanceEntity flowNodeInstanceEntity, final ObjectMapper objectMapper) {
-    FlowNodeInstanceDto instance = new FlowNodeInstanceDto().setId(flowNodeInstanceEntity.getId()).setFlowNodeId(flowNodeInstanceEntity.getFlowNodeId())
-        .setStartDate(flowNodeInstanceEntity.getStartDate())
-        .setEndDate(flowNodeInstanceEntity.getEndDate());
-    if (flowNodeInstanceEntity.getState() == FlowNodeState.ACTIVE && flowNodeInstanceEntity
-        .isIncident()) {
+  public static FlowNodeInstanceDto createFrom(
+      final FlowNodeInstanceEntity flowNodeInstanceEntity, final ObjectMapper objectMapper) {
+    FlowNodeInstanceDto instance =
+        new FlowNodeInstanceDto()
+            .setId(flowNodeInstanceEntity.getId())
+            .setFlowNodeId(flowNodeInstanceEntity.getFlowNodeId())
+            .setStartDate(flowNodeInstanceEntity.getStartDate())
+            .setEndDate(flowNodeInstanceEntity.getEndDate());
+    if (flowNodeInstanceEntity.getState() == FlowNodeState.ACTIVE
+        && flowNodeInstanceEntity.isIncident()) {
       instance.setState(FlowNodeStateDto.INCIDENT);
     } else {
       instance.setState(FlowNodeStateDto.getState(flowNodeInstanceEntity.getState()));
     }
-    instance.setType(flowNodeInstanceEntity.getType())
-        .setSortValues(SortValuesWrapper.createFrom(flowNodeInstanceEntity.getSortValues(), objectMapper))
+    instance
+        .setType(flowNodeInstanceEntity.getType())
+        .setSortValues(
+            SortValuesWrapper.createFrom(flowNodeInstanceEntity.getSortValues(), objectMapper))
         .setTreePath(flowNodeInstanceEntity.getTreePath());
     return instance;
   }
@@ -133,7 +139,8 @@ public class FlowNodeInstanceDto {
     if (flowNodeInstanceEntities == null) {
       return new ArrayList<>();
     }
-    return flowNodeInstanceEntities.stream().filter(item -> item != null)
+    return flowNodeInstanceEntities.stream()
+        .filter(item -> item != null)
         .map(item -> createFrom(item, objectMapper))
         .collect(Collectors.toList());
   }
@@ -147,14 +154,14 @@ public class FlowNodeInstanceDto {
       return false;
     }
     final FlowNodeInstanceDto that = (FlowNodeInstanceDto) o;
-    return Objects.equals(id, that.id) &&
-        type == that.type &&
-        state == that.state &&
-        Objects.equals(flowNodeId, that.flowNodeId) &&
-        Objects.equals(startDate, that.startDate) &&
-        Objects.equals(endDate, that.endDate) &&
-        Objects.equals(treePath, that.treePath) &&
-        Arrays.equals(sortValues, that.sortValues);
+    return Objects.equals(id, that.id)
+        && type == that.type
+        && state == that.state
+        && Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && Objects.equals(treePath, that.treePath)
+        && Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
@@ -163,5 +170,4 @@ public class FlowNodeInstanceDto {
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
-
 }

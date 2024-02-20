@@ -17,13 +17,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class ClientConfig {
 
-  @Autowired
-  private OperateProfileService profileService;
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProfileService profileService;
+  @Autowired private OperateProperties operateProperties;
 
-  @Autowired
-  private ServletContext context;
+  @Autowired private ServletContext context;
 
   public boolean isEnterprise;
 
@@ -47,7 +44,7 @@ public class ClientConfig {
 
   public boolean multiTenancyEnabled;
 
-  public String asJson(){
+  public String asJson() {
     isEnterprise = operateProperties.isEnterprise();
     clusterId = operateProperties.getCloud().getClusterId();
     organizationId = operateProperties.getCloud().getOrganizationId();
@@ -60,8 +57,8 @@ public class ClientConfig {
     resourcePermissionsEnabled = operateProperties.getIdentity().isResourcePermissionsEnabled();
     multiTenancyEnabled = operateProperties.getMultiTenancy().isEnabled();
     try {
-      return String.format("window.clientConfig = %s;",
-          new ObjectMapper().writeValueAsString(this));
+      return String.format(
+          "window.clientConfig = %s;", new ObjectMapper().writeValueAsString(this));
     } catch (JsonProcessingException e) {
       return "window.clientConfig = {};";
     }

@@ -26,9 +26,9 @@ public enum DecisionType {
     try {
       return DecisionType.valueOf(decisionType);
     } catch (IllegalArgumentException ex) {
-      logger.error("Decision type not found for value [{}]. UNKNOWN type will be assigned.", decisionType);
+      logger.error(
+          "Decision type not found for value [{}]. UNKNOWN type will be assigned.", decisionType);
       return UNKNOWN;
     }
   }
-
 }

@@ -31,8 +31,7 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
 
   private String bpmnProcessId = BigVariableDataGenerator.PROCESS_BPMN_PROCESS_ID;
 
-  @Autowired
-  private EntityReader entityReader;
+  @Autowired private EntityReader entityReader;
 
   @Test
   public void testBigVariablesHasPreviewAndFullValue() {
@@ -40,14 +39,19 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
 
     ThreadUtil.sleepFor(5_000);
     SearchRequest searchRequest = new SearchRequest(variableTemplate.getAlias());
-    searchRequest.source()
-        .query(termsQuery(VariableTemplate.NAME, bpmnProcessId + "_var0",
-            bpmnProcessId + "_var1", bpmnProcessId + "_var2"));
-    final List<VariableEntity> vars = entityReader
-        .searchEntitiesFor(searchRequest, VariableEntity.class);
+    searchRequest
+        .source()
+        .query(
+            termsQuery(
+                VariableTemplate.NAME,
+                bpmnProcessId + "_var0",
+                bpmnProcessId + "_var1",
+                bpmnProcessId + "_var2"));
+    final List<VariableEntity> vars =
+        entityReader.searchEntitiesFor(searchRequest, VariableEntity.class);
 
     assertThat(vars).hasSize(3);
-    //then "value" contains truncated value
+    // then "value" contains truncated value
     Condition<String> suffix = new Condition<>(s -> s.contains(VAR_SUFFIX), "contains");
     Condition<String> length =
         new Condition<>(
@@ -64,9 +68,9 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
   public void testProcess() {
     SearchRequest searchRequest = new SearchRequest(processTemplate.getAlias());
     searchRequest.source().query(termQuery(EventTemplate.BPMN_PROCESS_ID, bpmnProcessId));
-    List<ProcessEntity> processes = entityReader.searchEntitiesFor(searchRequest, ProcessEntity.class);
+    List<ProcessEntity> processes =
+        entityReader.searchEntitiesFor(searchRequest, ProcessEntity.class);
     assertThat(processes).hasSize(1);
     assertThat(processes.get(0).getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
   }
-
 }

@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.rest.dto.listview;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 
 public enum ProcessInstanceStateDto {
-
   ACTIVE,
   INCIDENT,
   COMPLETED,
@@ -27,5 +26,4 @@ public enum ProcessInstanceStateDto {
     }
     return stateDto;
   }
-
 }

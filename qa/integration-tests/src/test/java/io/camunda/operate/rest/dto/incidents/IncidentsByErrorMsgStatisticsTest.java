@@ -6,9 +6,10 @@
  */
 package io.camunda.operate.rest.dto.incidents;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import org.junit.Test;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class IncidentsByErrorMsgStatisticsTest {
 
@@ -20,5 +21,4 @@ public class IncidentsByErrorMsgStatisticsTest {
     first.setInstancesWithErrorCount(3);
     assertThat(IncidentsByErrorMsgStatisticsDto.COMPARATOR.compare(first, second)).isLessThan(0);
   }
-
 }

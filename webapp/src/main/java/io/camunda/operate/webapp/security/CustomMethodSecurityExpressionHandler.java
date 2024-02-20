@@ -33,7 +33,7 @@ public class CustomMethodSecurityExpressionHandler extends DefaultMethodSecurity
     return root;
   }
 
-  private UserService<? extends Authentication> getUserService(){
+  private UserService<? extends Authentication> getUserService() {
     return beanFactory.getBean(UserService.class);
   }
 }

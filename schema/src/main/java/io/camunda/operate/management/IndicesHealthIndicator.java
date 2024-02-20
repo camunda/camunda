@@ -18,8 +18,7 @@ public class IndicesHealthIndicator implements HealthIndicator {
 
   private static final Logger logger = LoggerFactory.getLogger(IndicesHealthIndicator.class);
 
-  @Autowired
-  private IndicesCheck indicesCheck;
+  @Autowired private IndicesCheck indicesCheck;
 
   @Override
   public Health health() {

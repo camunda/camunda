@@ -16,12 +16,11 @@ import io.camunda.operate.store.BatchRequest;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import java.time.OffsetDateTime;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
-import java.util.*;
 
 @Component
 public class UserTaskZeebeRecordProcessor {
@@ -32,18 +31,19 @@ public class UserTaskZeebeRecordProcessor {
 
   private final ObjectMapper objectMapper;
 
-  public UserTaskZeebeRecordProcessor(final UserTaskTemplate userTaskTemplate, final ObjectMapper objectMapper){
+  public UserTaskZeebeRecordProcessor(
+      final UserTaskTemplate userTaskTemplate, final ObjectMapper objectMapper) {
     this.userTaskTemplate = userTaskTemplate;
     this.objectMapper = objectMapper;
   }
 
   private static final Set<String> CREATE_STATES = Set.of(UserTaskIntent.CREATED.name());
-  private static final Set<String> UPDATE_STATES = Set.of(
-    UserTaskIntent.ASSIGNED.name()
-    ,UserTaskIntent.MIGRATED.name()
-  );
+  private static final Set<String> UPDATE_STATES =
+      Set.of(UserTaskIntent.ASSIGNED.name(), UserTaskIntent.MIGRATED.name());
 
-  public void processUserTaskRecord(BatchRequest batchRequest, Record<UserTaskRecordValue> userTaskRecord) throws PersistenceException {
+  public void processUserTaskRecord(
+      BatchRequest batchRequest, Record<UserTaskRecordValue> userTaskRecord)
+      throws PersistenceException {
     final String intent = userTaskRecord.getIntent().name();
     logger.info("Intent is: {}", intent);
     var userTaskValue = userTaskRecord.getValue();
@@ -51,43 +51,58 @@ public class UserTaskZeebeRecordProcessor {
     try {
       userTaskEntity = createEntity(userTaskRecord);
     } catch (JsonProcessingException e) {
-      throw new OperateRuntimeException(String.format("Could not create UserTaskEntity from record value %s", userTaskValue), e);
+      throw new OperateRuntimeException(
+          String.format("Could not create UserTaskEntity from record value %s", userTaskValue), e);
     }
     if (CREATE_STATES.contains(intent)) {
       persistUserTask(userTaskEntity, batchRequest);
     } else if (UPDATE_STATES.contains(intent)) {
-      Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intent, userTaskValue, userTaskEntity);
+      Map<String, Object> updateFields =
+          getUpdateFieldsMapByIntent(intent, userTaskValue, userTaskEntity);
       updateUserTask(userTaskEntity, updateFields, batchRequest);
     } else {
       logger.debug("UserTask record with intent {} is ignored", intent);
     }
   }
 
-  private static Map<String, Object> getUpdateFieldsMapByIntent(String intent, UserTaskRecordValue userTaskValue, UserTaskEntity userTaskEntity) {
+  private static Map<String, Object> getUpdateFieldsMapByIntent(
+      String intent, UserTaskRecordValue userTaskValue, UserTaskEntity userTaskEntity) {
     final Map<String, Object> updateFields = new HashMap<>();
     if (intent.equals(UserTaskIntent.ASSIGNED.name())) {
       updateFields.put(UserTaskTemplate.ASSIGNEE, userTaskValue.getAssignee());
     }
     if (intent.equals(UserTaskIntent.MIGRATED.name())) {
       updateFields.put(UserTaskTemplate.BPMN_PROCESS_ID, userTaskEntity.getBpmnProcessId());
-      updateFields.put(UserTaskTemplate.PROCESS_DEFINITION_VERSION, userTaskEntity.getProcessDefinitionVersion());
-      updateFields.put(UserTaskTemplate.PROCESS_DEFINITION_KEY, userTaskEntity.getProcessDefinitionKey());
+      updateFields.put(
+          UserTaskTemplate.PROCESS_DEFINITION_VERSION,
+          userTaskEntity.getProcessDefinitionVersion());
+      updateFields.put(
+          UserTaskTemplate.PROCESS_DEFINITION_KEY, userTaskEntity.getProcessDefinitionKey());
       updateFields.put(UserTaskTemplate.ELEMENT_ID, userTaskEntity.getElementId());
     }
     return updateFields;
   }
 
-  private void updateUserTask(UserTaskEntity userTaskEntity, Map<String, Object> updateFields, BatchRequest batchRequest) throws PersistenceException {
-    batchRequest.update(userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), updateFields);
-    logger.debug("Updated UserTaskEntity {} with update fields {} to batch request", userTaskEntity.getId(), updateFields);
+  private void updateUserTask(
+      UserTaskEntity userTaskEntity, Map<String, Object> updateFields, BatchRequest batchRequest)
+      throws PersistenceException {
+    batchRequest.update(
+        userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), updateFields);
+    logger.debug(
+        "Updated UserTaskEntity {} with update fields {} to batch request",
+        userTaskEntity.getId(),
+        updateFields);
   }
 
-  private void persistUserTask(UserTaskEntity userTaskEntity, BatchRequest batchRequest) throws PersistenceException {
-    batchRequest.addWithId(userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), userTaskEntity);
+  private void persistUserTask(UserTaskEntity userTaskEntity, BatchRequest batchRequest)
+      throws PersistenceException {
+    batchRequest.addWithId(
+        userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), userTaskEntity);
     logger.debug("Added UserTaskEntity {} to batch request", userTaskEntity);
   }
 
-  private UserTaskEntity createEntity(Record<UserTaskRecordValue> userTaskRecord) throws JsonProcessingException {
+  private UserTaskEntity createEntity(Record<UserTaskRecordValue> userTaskRecord)
+      throws JsonProcessingException {
     UserTaskRecordValue userTaskRecordValue = userTaskRecord.getValue();
     return new UserTaskEntity()
         .setId(String.valueOf(userTaskRecordValue.getUserTaskKey()))
@@ -111,8 +126,7 @@ public class UserTaskZeebeRecordProcessor {
   }
 
   private OffsetDateTime toDateOrNull(String dateString) {
-    if (dateString == null)
-      return null;
+    if (dateString == null) return null;
     try {
       return OffsetDateTime.parse(dateString);
     } catch (Exception e) {

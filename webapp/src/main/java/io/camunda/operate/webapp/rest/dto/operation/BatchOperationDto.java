@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.rest.dto.operation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
-
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +29,8 @@ public class BatchOperationDto {
   private Integer operationsFinishedCount = 0;
 
   /**
-   * Sort values, define the position of batch operation in the list and may be used to search for previous of following page.
+   * Sort values, define the position of batch operation in the list and may be used to search for
+   * previous of following page.
    */
   private SortValuesWrapper[] sortValues;
 
@@ -115,7 +115,8 @@ public class BatchOperationDto {
     return this;
   }
 
-  public static BatchOperationDto createFrom(final BatchOperationEntity batchOperationEntity, ObjectMapper objectMapper) {
+  public static BatchOperationDto createFrom(
+      final BatchOperationEntity batchOperationEntity, ObjectMapper objectMapper) {
     return new BatchOperationDto()
         .setId(batchOperationEntity.getId())
         .setName(batchOperationEntity.getName())
@@ -125,8 +126,9 @@ public class BatchOperationDto {
         .setInstancesCount(batchOperationEntity.getInstancesCount())
         .setOperationsTotalCount(batchOperationEntity.getOperationsTotalCount())
         .setOperationsFinishedCount(batchOperationEntity.getOperationsFinishedCount())
-        //convert to String[]
-        .setSortValues(SortValuesWrapper.createFrom(batchOperationEntity.getSortValues(), objectMapper));
+        // convert to String[]
+        .setSortValues(
+            SortValuesWrapper.createFrom(batchOperationEntity.getSortValues(), objectMapper));
   }
 
   public static List<BatchOperationDto> createFrom(
@@ -134,39 +136,36 @@ public class BatchOperationDto {
     if (batchOperationEntities == null) {
       return new ArrayList<>();
     }
-    return batchOperationEntities.stream().filter(item -> item != null)
+    return batchOperationEntities.stream()
+        .filter(item -> item != null)
         .map(item -> createFrom(item, objectMapper))
         .collect(Collectors.toList());
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     BatchOperationDto that = (BatchOperationDto) o;
 
-    if (id != null ? !id.equals(that.id) : that.id != null)
-      return false;
-    if (name != null ? !name.equals(that.name) : that.name != null)
-      return false;
-    if (type != that.type)
-      return false;
+    if (id != null ? !id.equals(that.id) : that.id != null) return false;
+    if (name != null ? !name.equals(that.name) : that.name != null) return false;
+    if (type != that.type) return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
       return false;
-    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
-      return false;
-    if (instancesCount != null ? !instancesCount.equals(that.instancesCount) : that.instancesCount != null)
-      return false;
-    if (operationsTotalCount != null ? !operationsTotalCount.equals(that.operationsTotalCount) : that.operationsTotalCount != null)
-      return false;
-    if (operationsFinishedCount != null ? !operationsFinishedCount.equals(that.operationsFinishedCount) : that.operationsFinishedCount != null)
-      return false;
+    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null) return false;
+    if (instancesCount != null
+        ? !instancesCount.equals(that.instancesCount)
+        : that.instancesCount != null) return false;
+    if (operationsTotalCount != null
+        ? !operationsTotalCount.equals(that.operationsTotalCount)
+        : that.operationsTotalCount != null) return false;
+    if (operationsFinishedCount != null
+        ? !operationsFinishedCount.equals(that.operationsFinishedCount)
+        : that.operationsFinishedCount != null) return false;
     // Probably incorrect - comparing Object[] arrays with Arrays.equals
     return Arrays.equals(sortValues, that.sortValues);
-
   }
 
   @Override
@@ -178,7 +177,8 @@ public class BatchOperationDto {
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (instancesCount != null ? instancesCount.hashCode() : 0);
     result = 31 * result + (operationsTotalCount != null ? operationsTotalCount.hashCode() : 0);
-    result = 31 * result + (operationsFinishedCount != null ? operationsFinishedCount.hashCode() : 0);
+    result =
+        31 * result + (operationsFinishedCount != null ? operationsFinishedCount.hashCode() : 0);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

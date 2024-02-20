@@ -15,13 +15,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.operate.Application;
+import io.camunda.operate.management.IndicesHealthIndicator;
+import io.camunda.operate.rest.HealthCheckIT.AddManagementPropertiesInitializer;
+import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import io.camunda.operate.Application;
-import io.camunda.operate.rest.HealthCheckIT.AddManagementPropertiesInitializer;
-import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.management.IndicesHealthIndicator;
 import org.hamcrest.core.StringContains;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,17 +41,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 @AutoConfigureObservability(tracing = false)
-@SpringBootTest(
-    classes = { TestApplicationWithNoBeans.class, IndicesHealthIndicator.class })
+@SpringBootTest(classes = {TestApplicationWithNoBeans.class, IndicesHealthIndicator.class})
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 @RunWith(SpringRunner.class)
 public class HealthCheckIT {
 
-  @Autowired
-  private WebApplicationContext context;
+  @Autowired private WebApplicationContext context;
 
-  @MockBean
-  private IndicesHealthIndicator probes;
+  @MockBean private IndicesHealthIndicator probes;
 
   private MockMvc mockMvc;
 
@@ -87,9 +84,7 @@ public class HealthCheckIT {
         .andExpect(status().isOk())
         .andExpect(content().json("{\"status\":\"UP\"}"));
 
-    mockMvc
-        .perform(get("/actuator/health/readiness"))
-        .andExpect(status().isServiceUnavailable());
+    mockMvc.perform(get("/actuator/health/readiness")).andExpect(status().isServiceUnavailable());
     verify(probes, times(1)).getHealth(anyBoolean());
   }
 
@@ -98,26 +93,29 @@ public class HealthCheckIT {
     mockMvc
         .perform(get("/actuator/prometheus"))
         .andExpect(status().isOk())
-        .andExpect(content().string(StringContains.containsString(
-            "# HELP jvm_memory_used_bytes The amount of used memory\n" +
-            "# TYPE jvm_memory_used_bytes gauge")));
+        .andExpect(
+            content()
+                .string(
+                    StringContains.containsString(
+                        "# HELP jvm_memory_used_bytes The amount of used memory\n"
+                            + "# TYPE jvm_memory_used_bytes gauge")));
   }
 
-  public static class AddManagementPropertiesInitializer implements
-      ApplicationContextInitializer<ConfigurableApplicationContext> {
+  public static class AddManagementPropertiesInitializer
+      implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
       final Map<String, Object> map = Application.getManagementProperties();
       final List<String> properties = new ArrayList<>();
-      map.forEach((key,value) -> {
-        //not clear how to connect mockMvc to management port
-        if (!key.contains("port")) {
-          properties.add(key + "=" + value);
-        }
-      });
+      map.forEach(
+          (key, value) -> {
+            // not clear how to connect mockMvc to management port
+            if (!key.contains("port")) {
+              properties.add(key + "=" + value);
+            }
+          });
       TestPropertyValues.of(properties).applyTo(applicationContext.getEnvironment());
     }
   }
-
 }

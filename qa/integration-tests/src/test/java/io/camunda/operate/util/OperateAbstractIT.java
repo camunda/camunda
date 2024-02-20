@@ -7,30 +7,29 @@
 package io.camunda.operate.util;
 
 import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.Permission;
+import io.camunda.operate.webapp.security.UserService;
+import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.operate.zeebe.PartitionHolder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-
-import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
-import io.camunda.operate.webapp.security.UserService;
-import io.camunda.operate.webapp.security.tenant.TenantService;
-import io.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
-import static org.assertj.core.api.Assertions.assertThat;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -42,46 +41,48 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {TestApplication.class},
-  properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-    OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-    "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-    OperateProperties.PREFIX + ".multiTenancy.enabled = false"})
+    classes = {TestApplication.class},
+    properties = {
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
+      OperateProperties.PREFIX + ".multiTenancy.enabled = false"
+    })
 @WebAppConfiguration
-@TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@TestExecutionListeners(
+    listeners = DependencyInjectionTestExecutionListener.class,
+    mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 @WithMockUser(DEFAULT_USER)
 public abstract class OperateAbstractIT {
 
   public static final String DEFAULT_USER = "testuser";
 
-  @Rule
-  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
+  @Rule public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
 
   protected MockMvc mockMvc;
 
   protected OffsetDateTime testStartTime;
 
-  @MockBean
-  protected UserService userService;
+  @MockBean protected UserService userService;
 
-  @MockBean
-  protected TenantService tenantService;
+  @MockBean protected TenantService tenantService;
 
   @Before
   public void before() {
     testStartTime = OffsetDateTime.now();
     mockMvc = mockMvcTestRule.getMockMvc();
-    when(userService.getCurrentUser()).thenReturn(
-        new UserDto().setUserId(DEFAULT_USER)
-            .setPermissions(List.of(Permission.WRITE)));
+    when(userService.getCurrentUser())
+        .thenReturn(
+            new UserDto().setUserId(DEFAULT_USER).setPermissions(List.of(Permission.WRITE)));
     mockTenantResponse();
   }
 
   protected void mockTenantResponse() {
-    doReturn(TenantService.AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
+    doReturn(TenantService.AuthenticatedTenants.allTenants())
+        .when(tenantService)
+        .getAuthenticatedTenants();
   }
 
   protected MvcResult getRequest(String requestUrl) throws Exception {
@@ -90,92 +91,116 @@ public abstract class OperateAbstractIT {
 
   protected MvcResult getRequest(String requestUrl, MediaType responseMediaType) throws Exception {
     MockHttpServletRequestBuilder request = get(requestUrl).accept(responseMediaType);
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentTypeCompatibleWith(responseMediaType))
-      .andReturn();
+    MvcResult mvcResult =
+        mockMvc
+            .perform(request)
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(responseMediaType))
+            .andReturn();
 
     return mvcResult;
   }
 
-  protected MvcResult getRequestShouldFailWithException(String requestUrl, Class<? extends Exception> exceptionClass) throws Exception {
-    MockHttpServletRequestBuilder request = get(requestUrl).accept(mockMvcTestRule.getContentType());
+  protected MvcResult getRequestShouldFailWithException(
+      String requestUrl, Class<? extends Exception> exceptionClass) throws Exception {
+    MockHttpServletRequestBuilder request =
+        get(requestUrl).accept(mockMvcTestRule.getContentType());
 
-    return mockMvc.perform(request)
-      .andExpect(status().is4xxClientError())
-      .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(exceptionClass))
-      .andReturn();
+    return mockMvc
+        .perform(request)
+        .andExpect(status().is4xxClientError())
+        .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(exceptionClass))
+        .andReturn();
   }
 
-  protected MvcResult postRequestShouldFailWithException(String requestUrl, Class<? extends Exception> exceptionClass) throws Exception {
-    MockHttpServletRequestBuilder request = post(requestUrl)
-        .content("{}")
-        .contentType(mockMvcTestRule.getContentType())
-        .accept(mockMvcTestRule.getContentType());
+  protected MvcResult postRequestShouldFailWithException(
+      String requestUrl, Class<? extends Exception> exceptionClass) throws Exception {
+    MockHttpServletRequestBuilder request =
+        post(requestUrl)
+            .content("{}")
+            .contentType(mockMvcTestRule.getContentType())
+            .accept(mockMvcTestRule.getContentType());
 
-    return mockMvc.perform(request)
-      .andExpect(status().is4xxClientError())
-      .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(exceptionClass))
-      .andReturn();
+    return mockMvc
+        .perform(request)
+        .andExpect(status().is4xxClientError())
+        .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(exceptionClass))
+        .andReturn();
   }
 
   protected MvcResult postRequest(String requestUrl, Object query) throws Exception {
-    MockHttpServletRequestBuilder request = post(requestUrl)
-        .content(mockMvcTestRule.json(query))
-        .contentType(mockMvcTestRule.getContentType());
+    MockHttpServletRequestBuilder request =
+        post(requestUrl)
+            .content(mockMvcTestRule.json(query))
+            .contentType(mockMvcTestRule.getContentType());
 
-      return mockMvc.perform(request)
+    return mockMvc
+        .perform(request)
         .andExpect(status().isOk())
         .andExpect(content().contentTypeCompatibleWith(mockMvcTestRule.getContentType()))
         .andReturn();
   }
 
   protected MvcResult postRequestThatShouldFail(String requestUrl, Object query) throws Exception {
-    MockHttpServletRequestBuilder request = post(requestUrl)
-      .content(mockMvcTestRule.json(query))
-      .contentType(mockMvcTestRule.getContentType());
+    MockHttpServletRequestBuilder request =
+        post(requestUrl)
+            .content(mockMvcTestRule.json(query))
+            .contentType(mockMvcTestRule.getContentType());
 
-    return mockMvc.perform(request)
-            .andExpect(status()
-            .isBadRequest())
-            .andReturn();
+    return mockMvc.perform(request).andExpect(status().isBadRequest()).andReturn();
   }
 
-  protected MvcResult postRequestThatShouldFail(String requestUrl, String stringContent) throws Exception {
-    MockHttpServletRequestBuilder request = post(requestUrl)
-      .content(stringContent)
-      .contentType(mockMvcTestRule.getContentType());
+  protected MvcResult postRequestThatShouldFail(String requestUrl, String stringContent)
+      throws Exception {
+    MockHttpServletRequestBuilder request =
+        post(requestUrl).content(stringContent).contentType(mockMvcTestRule.getContentType());
 
-    return mockMvc.perform(request)
-            .andExpect(status()
-            .isBadRequest())
-            .andReturn();
+    return mockMvc.perform(request).andExpect(status().isBadRequest()).andReturn();
   }
 
   protected MvcResult getRequestShouldFailWithNoAuthorization(String requestUrl) throws Exception {
-    MockHttpServletRequestBuilder request = get(requestUrl).accept(mockMvcTestRule.getContentType());
+    MockHttpServletRequestBuilder request =
+        get(requestUrl).accept(mockMvcTestRule.getContentType());
 
-    return mockMvc.perform(request)
+    return mockMvc
+        .perform(request)
         .andExpect(status().isForbidden())
-        .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(NotAuthorizedException.class))
+        .andExpect(
+            result ->
+                assertThat(result.getResolvedException())
+                    .isInstanceOf(NotAuthorizedException.class))
         .andReturn();
   }
 
-  protected MvcResult postRequestShouldFailWithNoAuthorization(String requestUrl, Object query) throws Exception {
-    MockHttpServletRequestBuilder request = post(requestUrl).content(mockMvcTestRule.json(query)).contentType(mockMvcTestRule.getContentType());
+  protected MvcResult postRequestShouldFailWithNoAuthorization(String requestUrl, Object query)
+      throws Exception {
+    MockHttpServletRequestBuilder request =
+        post(requestUrl)
+            .content(mockMvcTestRule.json(query))
+            .contentType(mockMvcTestRule.getContentType());
 
-    return mockMvc.perform(request)
+    return mockMvc
+        .perform(request)
         .andExpect(status().isForbidden())
-        .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(NotAuthorizedException.class))
+        .andExpect(
+            result ->
+                assertThat(result.getResolvedException())
+                    .isInstanceOf(NotAuthorizedException.class))
         .andReturn();
   }
 
-  protected MvcResult deleteRequestShouldFailWithNoAuthorization(String requestUrl) throws Exception {
-    MockHttpServletRequestBuilder request = delete(requestUrl).accept(mockMvcTestRule.getContentType());
+  protected MvcResult deleteRequestShouldFailWithNoAuthorization(String requestUrl)
+      throws Exception {
+    MockHttpServletRequestBuilder request =
+        delete(requestUrl).accept(mockMvcTestRule.getContentType());
 
-    return mockMvc.perform(request)
+    return mockMvc
+        .perform(request)
         .andExpect(status().isForbidden())
-        .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(NotAuthorizedException.class))
+        .andExpect(
+            result ->
+                assertThat(result.getResolvedException())
+                    .isInstanceOf(NotAuthorizedException.class))
         .andReturn();
   }
 
@@ -187,7 +212,8 @@ public abstract class OperateAbstractIT {
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(message);
   }
 
-  protected void runArchiving(ProcessInstancesArchiverJob archiverJob, Callable<Void> esIndexRefresher) {
+  protected void runArchiving(
+      ProcessInstancesArchiverJob archiverJob, Callable<Void> esIndexRefresher) {
     try {
       int archived;
       int archivedTotal = 0;

@@ -7,12 +7,12 @@
 package io.camunda.operate.webapp.writer;
 
 import io.camunda.operate.entities.listview.ProcessInstanceState;
-
 import java.io.IOException;
 import java.util.List;
 
 public interface ProcessInstanceWriter {
-    List<ProcessInstanceState> STATES_FOR_DELETION = List.of(ProcessInstanceState.COMPLETED, ProcessInstanceState.CANCELED);
+  List<ProcessInstanceState> STATES_FOR_DELETION =
+      List.of(ProcessInstanceState.COMPLETED, ProcessInstanceState.CANCELED);
 
-    void deleteInstanceById(Long id) throws IOException;
+  void deleteInstanceById(Long id) throws IOException;
 }

@@ -29,23 +29,21 @@ public class ZeebePostImporter {
   @Qualifier("postImportThreadPoolScheduler")
   private ThreadPoolTaskScheduler postImportScheduler;
 
-  @Autowired
-  private PartitionHolder partitionHolder;
+  @Autowired private PartitionHolder partitionHolder;
 
-  @Autowired
-  private BeanFactory beanFactory;
+  @Autowired private BeanFactory beanFactory;
 
   private List<PostImportAction> postImportActions = new ArrayList<>();
 
   public void initPostImporters() {
     postImportActions.clear();
-    partitionHolder.getPartitionIds().stream().forEach(p ->
-        {
-          final PostImportAction postImportAction = beanFactory
-              .getBean(PostImportAction.class, p);
-          postImportActions.add(postImportAction);
-        }
-    );
+    partitionHolder.getPartitionIds().stream()
+        .forEach(
+            p -> {
+              final PostImportAction postImportAction =
+                  beanFactory.getBean(PostImportAction.class, p);
+              postImportActions.add(postImportAction);
+            });
   }
 
   public void start() {
@@ -57,5 +55,4 @@ public class ZeebePostImporter {
   public List<PostImportAction> getPostImportActions() {
     return postImportActions;
   }
-
 }

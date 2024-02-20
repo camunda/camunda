@@ -6,32 +6,30 @@
  */
 package io.camunda.operate.schema.opensearch;
 
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.MigrationException;
-
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
 import io.camunda.operate.schema.migration.BaseStepsRepository;
 import io.camunda.operate.schema.migration.Step;
 import io.camunda.operate.schema.migration.StepsRepository;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -50,8 +48,11 @@ public class OpensearchStepsRepository extends BaseStepsRepository implements St
   private final MigrationRepositoryIndex migrationRepositoryIndex;
 
   @Autowired
-  public OpensearchStepsRepository(final OperateProperties operateProperties,final @Qualifier("operateObjectMapper") ObjectMapper objectMapper,
-      final RichOpenSearchClient richOpenSearchClient, final MigrationRepositoryIndex migrationRepositoryIndex){
+  public OpensearchStepsRepository(
+      final OperateProperties operateProperties,
+      final @Qualifier("operateObjectMapper") ObjectMapper objectMapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final MigrationRepositoryIndex migrationRepositoryIndex) {
     this.operateProperties = operateProperties;
     this.objectMapper = objectMapper;
     this.richOpenSearchClient = richOpenSearchClient;
@@ -65,9 +66,7 @@ public class OpensearchStepsRepository extends BaseStepsRepository implements St
     try {
       Resource[] resources =
           resolver.getResources(
-              OpensearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER
-                  + "/*"
-                  + STEP_FILE_EXTENSION);
+              OpensearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
 
       for (Resource resource : resources) {
         logger.info("Read step {} ", resource.getFilename());
@@ -76,8 +75,9 @@ public class OpensearchStepsRepository extends BaseStepsRepository implements St
       steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
       return steps;
     } catch (FileNotFoundException ex) {
-      //ignore
-      logger.warn(String.format("Directory with migration steps was not found: %s", ex.getMessage()));
+      // ignore
+      logger.warn(
+          String.format("Directory with migration steps was not found: %s", ex.getMessage()));
     }
     return steps;
   }
@@ -86,9 +86,7 @@ public class OpensearchStepsRepository extends BaseStepsRepository implements St
     return objectMapper.readValue(is, Step.class);
   }
 
-  /**
-   * Returns the of repository. It is used as index name for elasticsearch
-   */
+  /** Returns the of repository. It is used as index name for elasticsearch */
   @Override
   public String getName() {
     return migrationRepositoryIndex.getFullQualifiedName();
@@ -105,35 +103,39 @@ public class OpensearchStepsRepository extends BaseStepsRepository implements St
 
   @Override
   public void save(final Step step) throws MigrationException, IOException {
-    var createdOrUpdated = richOpenSearchClient.doc().indexWithRetries(
-        indexRequestBuilder(getName()).id(idFromStep(step)).document(step));
+    var createdOrUpdated =
+        richOpenSearchClient
+            .doc()
+            .indexWithRetries(indexRequestBuilder(getName()).id(idFromStep(step)).document(step));
     if (createdOrUpdated) {
       logger.info("Step {}  saved.", step);
     } else {
-      throw new MigrationException(String.format("Error in save step %s:  document wasn't created/updated.", step));
+      throw new MigrationException(
+          String.format("Error in save step %s:  document wasn't created/updated.", step));
     }
   }
 
-  /**
-   * Returns all stored steps in repository index
-   */
+  /** Returns all stored steps in repository index */
   @Override
   public List<Step> findAll() {
-    logger.debug("Find all steps from Opensearch at {} ", operateProperties.getOpensearch().getUrl());
+    logger.debug(
+        "Find all steps from Opensearch at {} ", operateProperties.getOpensearch().getUrl());
     return richOpenSearchClient.doc().searchValues(searchRequestBuilder(getName()), Step.class);
   }
-  /**
-   * Returns all steps for an index that are not applied yet.
-   */
+
+  /** Returns all steps for an index that are not applied yet. */
   @Override
   public List<Step> findNotAppliedFor(final String indexName) {
-    logger.debug("Find 'not applied steps' for index {} from Opensearch at {}", indexName, operateProperties.getOpensearch().getUrl());
-      return richOpenSearchClient.doc().searchValues(searchRequestBuilder(getName())
-          .query(
-              and(
-                term(Step.INDEX_NAME + ".keyword", indexName),
-                term(Step.APPLIED, false)))
-      , Step.class);
+    logger.debug(
+        "Find 'not applied steps' for index {} from Opensearch at {}",
+        indexName,
+        operateProperties.getOpensearch().getUrl());
+    return richOpenSearchClient
+        .doc()
+        .searchValues(
+            searchRequestBuilder(getName())
+                .query(
+                    and(term(Step.INDEX_NAME + ".keyword", indexName), term(Step.APPLIED, false))),
+            Step.class);
   }
-
 }

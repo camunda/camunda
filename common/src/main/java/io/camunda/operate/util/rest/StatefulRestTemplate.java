@@ -18,11 +18,11 @@ import java.net.URL;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.cookie.CookieStore;
 import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.client5.http.cookie.BasicCookieStore;
+import org.apache.hc.client5.http.cookie.CookieStore;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.elasticsearch.ElasticsearchException;
@@ -39,8 +39,8 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Stateful Rest template that you can use to remember cookies, once you log in
- * with it will remember the JSESSIONID and sent it on subsequent requests.
+ * Stateful Rest template that you can use to remember cookies, once you log in with it will
+ * remember the JSESSIONID and sent it on subsequent requests.
  */
 @Component
 @Scope(SCOPE_PROTOTYPE)
@@ -57,7 +57,8 @@ public class StatefulRestTemplate extends RestTemplate {
   private final HttpClient httpClient;
   private final CookieStore cookieStore;
   private final HttpContext httpContext;
-  private final StatefulHttpComponentsClientHttpRequestFactory statefulHttpComponentsClientHttpRequestFactory;
+  private final StatefulHttpComponentsClientHttpRequestFactory
+      statefulHttpComponentsClientHttpRequestFactory;
   private String csrfToken;
   private String contextPath;
 
@@ -70,7 +71,8 @@ public class StatefulRestTemplate extends RestTemplate {
     cookieStore = new BasicCookieStore();
     httpContext = new BasicHttpContext();
     httpContext.setAttribute(HttpClientContext.COOKIE_STORE, getCookieStore());
-    statefulHttpComponentsClientHttpRequestFactory = new StatefulHttpComponentsClientHttpRequestFactory(httpClient, httpContext);
+    statefulHttpComponentsClientHttpRequestFactory =
+        new StatefulHttpComponentsClientHttpRequestFactory(httpClient, httpContext);
     super.setRequestFactory(statefulHttpComponentsClientHttpRequestFactory);
   }
 
@@ -87,17 +89,21 @@ public class StatefulRestTemplate extends RestTemplate {
   }
 
   @Override
-  public <T> ResponseEntity<T> exchange(RequestEntity<?> requestEntity, Class<T> responseType) throws RestClientException {
+  public <T> ResponseEntity<T> exchange(RequestEntity<?> requestEntity, Class<T> responseType)
+      throws RestClientException {
     final ResponseEntity<T> responseEntity = super.exchange(requestEntity, responseType);
     saveCSRFTokenWhenAvailable(responseEntity);
     return responseEntity;
   }
 
   @Override
-  public <T> ResponseEntity<T> postForEntity(URI url, Object request, Class<T> responseType) throws RestClientException {
-    RequestEntity<Object> requestEntity = RequestEntity.method(HttpMethod.POST, url)
-        .headers(getCsrfHeader())
-        .contentType(MediaType.APPLICATION_JSON).body(request);
+  public <T> ResponseEntity<T> postForEntity(URI url, Object request, Class<T> responseType)
+      throws RestClientException {
+    RequestEntity<Object> requestEntity =
+        RequestEntity.method(HttpMethod.POST, url)
+            .headers(getCsrfHeader())
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(request);
     final ResponseEntity<T> tResponseEntity = exchange(requestEntity, responseType);
     saveCSRFTokenWhenAvailable(tResponseEntity);
     return tResponseEntity;
@@ -112,13 +118,13 @@ public class StatefulRestTemplate extends RestTemplate {
   }
 
   public void loginWhenNeeded(String username, String password) {
-    //log in only once
+    // log in only once
     if (getCookieStore().getCookies().isEmpty()) {
       final ResponseEntity<Object> response = tryLoginAs(username, password);
       if (!response.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
         throw new OperateRuntimeException(
-            String.format("Unable to login user %s to %s:%s. Response: %s", username, host,
-                port, response));
+            String.format(
+                "Unable to login user %s to %s:%s. Response: %s", username, host, port, response));
       }
       saveCSRFTokenWhenAvailable(response);
     }
@@ -127,15 +133,19 @@ public class StatefulRestTemplate extends RestTemplate {
   private ResponseEntity<Object> tryLoginAs(final String username, final String password) {
     try {
       return RetryOperation.<ResponseEntity<Object>>newBuilder()
-          .retryConsumer(() -> postForEntity(
-              getURL(String.format(LOGIN_URL_PATTERN, username, password)), null, Object.class)
-              )
-              // retry for 5 minutes
-              .noOfRetry(50)
-              .delayInterval(6, TimeUnit.SECONDS)
-              .retryOn(IOException.class, RestClientException.class, ElasticsearchException.class)
-              .message("StatefulRestTemplate#tryLoginAs")
-              .build().retry();
+          .retryConsumer(
+              () ->
+                  postForEntity(
+                      getURL(String.format(LOGIN_URL_PATTERN, username, password)),
+                      null,
+                      Object.class))
+          // retry for 5 minutes
+          .noOfRetry(50)
+          .delayInterval(6, TimeUnit.SECONDS)
+          .retryOn(IOException.class, RestClientException.class, ElasticsearchException.class)
+          .message("StatefulRestTemplate#tryLoginAs")
+          .build()
+          .retry();
     } catch (Exception e) {
       throw new OperateRuntimeException("Unable to connect to Operate ", e);
     }

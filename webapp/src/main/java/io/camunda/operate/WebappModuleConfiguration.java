@@ -15,15 +15,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 @Configuration
-@ComponentScan(basePackages = "io.camunda.operate.webapp", nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@ConditionalOnProperty(name = "camunda.operate.webappEnabled", havingValue = "true", matchIfMissing = true)
+@ComponentScan(
+    basePackages = "io.camunda.operate.webapp",
+    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@ConditionalOnProperty(
+    name = "camunda.operate.webappEnabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public class WebappModuleConfiguration {
 
   private static final Logger logger = LoggerFactory.getLogger(WebappModuleConfiguration.class);
 
   @PostConstruct
-  public void logModule(){
+  public void logModule() {
     logger.info("Starting module: webapp");
   }
-
 }

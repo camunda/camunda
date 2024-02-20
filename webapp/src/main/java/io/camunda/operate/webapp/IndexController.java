@@ -15,8 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class IndexController {
 
-  @Autowired
-  private ServletContext context;
+  @Autowired private ServletContext context;
 
   @GetMapping("/index.html")
   public String index(Model model) {

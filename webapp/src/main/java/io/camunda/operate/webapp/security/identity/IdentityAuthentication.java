@@ -19,19 +19,19 @@ import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.util.StringUtils;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
-
-public class IdentityAuthentication extends AbstractAuthenticationToken implements Serializable, TenantAwareAuthentication {
+public class IdentityAuthentication extends AbstractAuthenticationToken
+    implements Serializable, TenantAwareAuthentication {
 
   private static final long serialVersionUID = 1L;
 
@@ -41,8 +41,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
   private String id;
   private String name;
   private List<String> permissions;
-  @JsonIgnore
-  private List<IdentityAuthorization> authorizations;
+  @JsonIgnore private List<IdentityAuthorization> authorizations;
   private String subject;
   private Date expires;
 
@@ -71,7 +70,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
   }
 
   private boolean hasRefreshTokenExpired() {
-    if(!StringUtils.hasText(tokens.getRefreshToken())) return true;
+    if (!StringUtils.hasText(tokens.getRefreshToken())) return true;
     try {
       final DecodedJWT refreshToken =
           getIdentity().authentication().decodeJWT(tokens.getRefreshToken());
@@ -96,7 +95,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
       if (hasRefreshTokenExpired()) {
         setAuthenticated(false);
         logger.info("No refresh token available. Authentication is invalid.");
-        throw new InsufficientAuthenticationException("Access token and refresh token are expired.");
+        throw new InsufficientAuthenticationException(
+            "Access token and refresh token are expired.");
       } else {
         logger.info("Get a new access token by using refresh token");
         try {
@@ -145,10 +145,13 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
   private void retrieveResourcePermissions() {
     if (getOperateProperties().getIdentity().isResourcePermissionsEnabled()) {
       try {
-        authorizations = IdentityAuthorization.createFrom(
-            getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
+        authorizations =
+            IdentityAuthorization.createFrom(
+                getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
       } catch (RestException ex) {
-        logger.warn("Unable to retrieve resource base permissions from Identity. Error: " + ex.getMessage(), ex);
+        logger.warn(
+            "Unable to retrieve resource base permissions from Identity. Error: " + ex.getMessage(),
+            ex);
         authorizations = new ArrayList<>();
       }
     }
@@ -161,9 +164,10 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
         final var identityTenants = getIdentity().tenants().forToken(accessToken);
 
         if (identityTenants != null) {
-          tenants = identityTenants.stream()
-              .map((t) -> new OperateTenant(t.getTenantId(), t.getName()))
-              .collect(Collectors.toList());
+          tenants =
+              identityTenants.stream()
+                  .map((t) -> new OperateTenant(t.getTenantId(), t.getName()))
+                  .collect(Collectors.toList());
         } else {
           tenants = new ArrayList<>();
         }
@@ -214,8 +218,10 @@ public class IdentityAuthentication extends AbstractAuthenticationToken implemen
   }
 
   private Tokens renewTokens(final String refreshToken) throws Exception {
-    return getIdentityRetryService().requestWithRetry(
-            () -> getIdentity().authentication().renewToken(refreshToken), "IdentityAuthentication#renewTokens");
+    return getIdentityRetryService()
+        .requestWithRetry(
+            () -> getIdentity().authentication().renewToken(refreshToken),
+            "IdentityAuthentication#renewTokens");
   }
 
   public IdentityAuthentication setExpires(final Date expires) {

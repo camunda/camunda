@@ -26,8 +26,8 @@ public class ContainerVersionsUtil {
       props.load(propsFile);
       return props.getProperty(propertyName);
     } catch (IOException e) {
-      throw new OperateRuntimeException("Unable to read the list of supported Zeebe zeebeVersions.", e);
+      throw new OperateRuntimeException(
+          "Unable to read the list of supported Zeebe zeebeVersions.", e);
     }
   }
-
 }

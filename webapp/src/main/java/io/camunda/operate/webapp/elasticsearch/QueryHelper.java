@@ -6,35 +6,6 @@
  */
 package io.camunda.operate.webapp.elasticsearch;
 
-import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
-import org.apache.commons.lang3.ArrayUtils;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
-import org.elasticsearch.index.query.ExistsQueryBuilder;
-import org.elasticsearch.index.query.Operator;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-
-import java.time.format.DateTimeFormatter;
-
 import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
@@ -50,22 +21,47 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.join.query.JoinQueryBuilders.hasChildQuery;
 
+import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
+import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
+import java.time.format.DateTimeFormatter;
+import org.apache.commons.lang3.ArrayUtils;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.ExistsQueryBuilder;
+import org.elasticsearch.index.query.Operator;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class QueryHelper {
   public static final String WILD_CARD = "*";
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
-  @Autowired
-  private DateTimeFormatter dateTimeFormatter;
+  @Autowired private DateTimeFormatter dateTimeFormatter;
 
   @Autowired(required = false)
   private PermissionsService permissionsService;
 
-  @Autowired
-  private ListViewTemplate listViewTemplate;
+  @Autowired private ListViewTemplate listViewTemplate;
 
   public SearchRequest createSearchRequest(ListViewQueryDto processInstanceRequest) {
     if (processInstanceRequest.isFinished()) {
@@ -77,14 +73,18 @@ public class QueryHelper {
   public QueryBuilder createRequestQuery(ListViewQueryDto request) {
     final QueryBuilder query = createQueryFragment(request);
 
-    final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
+    final TermQueryBuilder isProcessInstanceQuery =
+        termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
     final QueryBuilder queryBuilder = joinWithAnd(isProcessInstanceQuery, query);
 
     return constantScoreQuery(queryBuilder);
   }
+
   public ConstantScoreQueryBuilder createProcessInstancesQuery(ListViewQueryDto query) {
-    final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
-    final QueryBuilder queryBuilder = joinWithAnd(isProcessInstanceQuery, createQueryFragment(query));
+    final TermQueryBuilder isProcessInstanceQuery =
+        termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
+    final QueryBuilder queryBuilder =
+        joinWithAnd(isProcessInstanceQuery, createQueryFragment(query));
     return constantScoreQuery(queryBuilder);
   }
 
@@ -104,17 +104,18 @@ public class QueryHelper {
         createVariablesInQuery(query),
         createBatchOperationIdQuery(query),
         createParentInstanceIdQuery(query),
-        //TODO Elasticsearch changes
+        // TODO Elasticsearch changes
         createTenantIdQuery(query),
-        createReadPermissionQuery()
-    );
+        createReadPermissionQuery());
   }
 
   private QueryBuilder createReadPermissionQuery() {
     if (permissionsService == null) return null;
     var allowed = permissionsService.getProcessesWithPermission(IdentityPermission.READ);
     if (allowed == null) return null;
-    return allowed.isAll() ? QueryBuilders.matchAllQuery() : termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
+    return allowed.isAll()
+        ? QueryBuilders.matchAllQuery()
+        : termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
   }
 
   private QueryBuilder createBatchOperationIdQuery(ListViewQueryDto query) {
@@ -147,7 +148,8 @@ public class QueryHelper {
 
   private QueryBuilder createBpmnProcessIdQuery(ListViewQueryDto query) {
     if (!StringUtils.isEmpty(query.getBpmnProcessId())) {
-      final TermQueryBuilder bpmnProcessIdQ = termQuery(ListViewTemplate.BPMN_PROCESS_ID, query.getBpmnProcessId());
+      final TermQueryBuilder bpmnProcessIdQ =
+          termQuery(ListViewTemplate.BPMN_PROCESS_ID, query.getBpmnProcessId());
       TermQueryBuilder versionQ = null;
       if (query.getProcessVersion() != null) {
         versionQ = termQuery(ListViewTemplate.PROCESS_VERSION, query.getProcessVersion());
@@ -163,7 +165,12 @@ public class QueryHelper {
       if (variablesQuery.getName() == null) {
         throw new InvalidRequestException("Variables query must provide not-null variable name.");
       }
-      return hasChildQuery(VARIABLES_JOIN_RELATION,  joinWithAnd(termQuery(VAR_NAME, variablesQuery.getName()), termQuery(VAR_VALUE, variablesQuery.getValue())), None);
+      return hasChildQuery(
+          VARIABLES_JOIN_RELATION,
+          joinWithAnd(
+              termQuery(VAR_NAME, variablesQuery.getName()),
+              termQuery(VAR_VALUE, variablesQuery.getValue())),
+          None);
     }
     return null;
   }
@@ -174,7 +181,12 @@ public class QueryHelper {
       if (variablesQuery.getName() == null) {
         throw new InvalidRequestException("Variables query must provide not-null variable name.");
       }
-      return hasChildQuery(VARIABLES_JOIN_RELATION,  joinWithAnd(termQuery(VAR_NAME, variablesQuery.getName()), termsQuery(VAR_VALUE, variablesQuery.getValues())), None);
+      return hasChildQuery(
+          VARIABLES_JOIN_RELATION,
+          joinWithAnd(
+              termQuery(VAR_NAME, variablesQuery.getName()),
+              termsQuery(VAR_VALUE, variablesQuery.getValues())),
+          None);
     }
     return null;
   }
@@ -218,19 +230,23 @@ public class QueryHelper {
   }
 
   private QueryBuilder createErrorMessageAsAndMatchQuery(String errorMessage) {
-    return hasChildQuery(ACTIVITIES_JOIN_RELATION,QueryBuilders.matchQuery(ERROR_MSG, errorMessage).operator(Operator.AND), None);
+    return hasChildQuery(
+        ACTIVITIES_JOIN_RELATION,
+        QueryBuilders.matchQuery(ERROR_MSG, errorMessage).operator(Operator.AND),
+        None);
   }
 
   private QueryBuilder createErrorMessageAsWildcardQuery(String errorMessage) {
-    return hasChildQuery(ACTIVITIES_JOIN_RELATION,QueryBuilders.wildcardQuery(ERROR_MSG, errorMessage), None);
+    return hasChildQuery(
+        ACTIVITIES_JOIN_RELATION, QueryBuilders.wildcardQuery(ERROR_MSG, errorMessage), None);
   }
 
   private QueryBuilder createErrorMessageQuery(ListViewQueryDto query) {
     String errorMessage = query.getErrorMessage();
     if (!StringUtils.isEmpty(errorMessage)) {
-      if(errorMessage.contains(WILD_CARD)) {
+      if (errorMessage.contains(WILD_CARD)) {
         return createErrorMessageAsWildcardQuery(errorMessage.toLowerCase());
-      }else {
+      } else {
         return createErrorMessageAsAndMatchQuery(errorMessage);
       }
     }
@@ -255,30 +271,29 @@ public class QueryHelper {
     boolean finished = query.isFinished();
 
     if (!running && !finished) {
-      //empty list should be returned
+      // empty list should be returned
       return createMatchNoneQuery();
     }
 
     if (running && finished && active && incidents && completed && canceled) {
-      //select all
+      // select all
       return null;
     }
 
     QueryBuilder runningQuery = null;
 
     if (running && (active || incidents)) {
-      //running query
+      // running query
       runningQuery = boolQuery().mustNot(existsQuery(END_DATE));
 
       QueryBuilder activeQuery = createActiveQuery(query);
       QueryBuilder incidentsQuery = createIncidentsQuery(query);
 
       if (query.getActivityId() == null && query.isActive() && query.isIncidents()) {
-        //we request all running instances
+        // we request all running instances
       } else {
-        //some of the queries may be null
-        runningQuery = joinWithAnd(runningQuery,
-            joinWithOr(activeQuery, incidentsQuery));
+        // some of the queries may be null
+        runningQuery = joinWithAnd(runningQuery, joinWithOr(activeQuery, incidentsQuery));
       }
     }
 
@@ -286,14 +301,14 @@ public class QueryHelper {
 
     if (finished && (completed || canceled)) {
 
-      //add finished query
+      // add finished query
       finishedQuery = existsQuery(END_DATE);
 
       QueryBuilder completedQuery = createCompletedQuery(query);
       QueryBuilder canceledQuery = createCanceledQuery(query);
 
       if (query.getActivityId() == null && query.isCompleted() && query.isCanceled()) {
-        //we request all finished instances
+        // we request all finished instances
       } else {
         finishedQuery = joinWithAnd(finishedQuery, joinWithOr(completedQuery, canceledQuery));
       }
@@ -306,7 +321,6 @@ public class QueryHelper {
     }
 
     return processInstanceQuery;
-
   }
 
   private QueryBuilder createRetriesLeftQuery(ListViewQueryDto query) {
@@ -331,13 +345,19 @@ public class QueryHelper {
     }
     QueryBuilder completedActivityIdQuery = null;
     if (query.isCompleted()) {
-      completedActivityIdQuery = createActivityIdQuery(query.getActivityId(), FlowNodeState.COMPLETED);
+      completedActivityIdQuery =
+          createActivityIdQuery(query.getActivityId(), FlowNodeState.COMPLETED);
     }
     QueryBuilder canceledActivityIdQuery = null;
     if (query.isCanceled()) {
-      canceledActivityIdQuery = createActivityIdQuery(query.getActivityId(), FlowNodeState.TERMINATED);
+      canceledActivityIdQuery =
+          createActivityIdQuery(query.getActivityId(), FlowNodeState.TERMINATED);
     }
-    return joinWithOr(activeActivityIdQuery, incidentActivityIdQuery, completedActivityIdQuery, canceledActivityIdQuery);
+    return joinWithOr(
+        activeActivityIdQuery,
+        incidentActivityIdQuery,
+        completedActivityIdQuery,
+        canceledActivityIdQuery);
   }
 
   private QueryBuilder createCanceledQuery(ListViewQueryDto query) {
@@ -366,7 +386,6 @@ public class QueryHelper {
       return termQuery(INCIDENT, false);
     }
     return null;
-
   }
 
   private QueryBuilder createActivityIdQuery(String activityId, FlowNodeState state) {
@@ -377,7 +396,10 @@ public class QueryHelper {
       activityIsEndNodeQuery = termQuery(ACTIVITY_TYPE, FlowNodeType.END_EVENT.name());
     }
 
-    return hasChildQuery(ACTIVITIES_JOIN_RELATION,  joinWithAnd(activitiesQuery, activityIdQuery, activityIsEndNodeQuery), None);
+    return hasChildQuery(
+        ACTIVITIES_JOIN_RELATION,
+        joinWithAnd(activitiesQuery, activityIdQuery, activityIsEndNodeQuery),
+        None);
   }
 
   private QueryBuilder createActivityIdIncidentQuery(String activityId) {
@@ -385,7 +407,9 @@ public class QueryHelper {
     final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ID, activityId);
     final ExistsQueryBuilder incidentExists = existsQuery(ERROR_MSG);
 
-    return hasChildQuery(ACTIVITIES_JOIN_RELATION,  joinWithAnd(activitiesQuery, activityIdQuery, incidentExists), None);
+    return hasChildQuery(
+        ACTIVITIES_JOIN_RELATION,
+        joinWithAnd(activitiesQuery, activityIdQuery, incidentExists),
+        None);
   }
-
 }

@@ -50,9 +50,9 @@ public class DecisionInstanceInputEntity {
       return false;
     }
     final DecisionInstanceInputEntity that = (DecisionInstanceInputEntity) o;
-    return Objects.equals(id, that.id) &&
-        Objects.equals(name, that.name) &&
-        Objects.equals(value, that.value);
+    return Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value);
   }
 
   @Override

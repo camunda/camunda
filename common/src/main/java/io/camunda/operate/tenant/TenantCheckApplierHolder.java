@@ -7,6 +7,7 @@
 package io.camunda.operate.tenant;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import java.util.Optional;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -14,8 +15,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 
 @Conditional(OpensearchCondition.class)
 @Component

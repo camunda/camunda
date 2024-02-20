@@ -30,6 +30,8 @@ import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,33 +45,21 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.util.Arrays;
-import java.util.List;
-
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-    classes = {
-        TestApplicationWithNoBeans.class,
-        ProcessInstanceController.class
-    })
+@SpringBootTest(classes = {TestApplicationWithNoBeans.class, ProcessInstanceController.class})
 public class ProcessInstanceControllerIT {
 
-  @Autowired
-  private WebApplicationContext context;
+  @Autowired private WebApplicationContext context;
 
-  @Autowired
-  private ObjectMapper springObjectMapper;
+  @Autowired private ObjectMapper springObjectMapper;
 
   private MockMvc mockMvc;
 
-  @MockBean
-  private ProcessInstanceDao processInstanceDao;
+  @MockBean private ProcessInstanceDao processInstanceDao;
 
-  @MockBean
-  private SequenceFlowDao sequenceFlowDao;
+  @MockBean private SequenceFlowDao sequenceFlowDao;
 
-  @MockBean
-  private FlowNodeStatisticsDao flowNodeStatisticsDao;
+  @MockBean private FlowNodeStatisticsDao flowNodeStatisticsDao;
 
   @Before
   public void setupMockMvc() {
@@ -84,18 +74,17 @@ public class ProcessInstanceControllerIT {
 
   @Test
   public void shouldAcceptQueryWithSearchAfterAndSize() throws Exception {
-    assertPostToWithSucceed(URI + SEARCH, "{\"searchAfter\": [\"" + VERSION+"\"], \"size\": 7}");
-    verify(processInstanceDao).search(new Query<ProcessInstance>().setSearchAfter(new Object[]{
-        VERSION}).setSize(7));
+    assertPostToWithSucceed(URI + SEARCH, "{\"searchAfter\": [\"" + VERSION + "\"], \"size\": 7}");
+    verify(processInstanceDao)
+        .search(new Query<ProcessInstance>().setSearchAfter(new Object[] {VERSION}).setSize(7));
   }
 
   @Test
   public void shouldAcceptQueryWithSizeAndSortSpec() throws Exception {
-    assertPostToWithSucceed(URI + SEARCH,
-        "{\"size\": 7, \"sort\": [ "+ getSortFor(VERSION, Order.DESC)+" ] }");
-    verify(processInstanceDao).search(new Query<ProcessInstance>()
-        .setSize(7)
-        .setSort(Sort.listOf(VERSION,Order.DESC)));
+    assertPostToWithSucceed(
+        URI + SEARCH, "{\"size\": 7, \"sort\": [ " + getSortFor(VERSION, Order.DESC) + " ] }");
+    verify(processInstanceDao)
+        .search(new Query<ProcessInstance>().setSize(7).setSort(Sort.listOf(VERSION, Order.DESC)));
   }
 
   private String getSortFor(String field, Query.Sort.Order order) {
@@ -104,32 +93,31 @@ public class ProcessInstanceControllerIT {
 
   @Test
   public void shouldAcceptQueryWithFilter() throws Exception {
-    assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { \""+ VERSION +"\": \"1\" } }");
-    verify(processInstanceDao).search(new Query<ProcessInstance>()
-        .setFilter(new ProcessInstance().setProcessVersion(1)));
+    assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { \"" + VERSION + "\": \"1\" } }");
+    verify(processInstanceDao)
+        .search(new Query<ProcessInstance>().setFilter(new ProcessInstance().setProcessVersion(1)));
   }
 
   @Test
   public void shouldAcceptQueryWithParentKeyFilter() throws Exception {
-    assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { " +
-            "\"" + VERSION + "\": \"1\"," +
-            "\"parentKey\": 345} }");
-    verify(processInstanceDao).search(new Query<ProcessInstance>()
-            .setFilter(new ProcessInstance()
-                    .setProcessVersion(1)
-                    .setParentKey(345L)));
+    assertPostToWithSucceed(
+        URI + SEARCH, "{\"filter\": { " + "\"" + VERSION + "\": \"1\"," + "\"parentKey\": 345} }");
+    verify(processInstanceDao)
+        .search(
+            new Query<ProcessInstance>()
+                .setFilter(new ProcessInstance().setProcessVersion(1).setParentKey(345L)));
   }
 
   @Test
   public void shouldAcceptQueryWithParentProcessInstanceKeyFilter() throws Exception {
-    assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { " +
-            "\"" + VERSION + "\": \"1\"," +
-            "\"parentProcessInstanceKey\": 345} }");
+    assertPostToWithSucceed(
+        URI + SEARCH,
+        "{\"filter\": { " + "\"" + VERSION + "\": \"1\"," + "\"parentProcessInstanceKey\": 345} }");
 
-    verify(processInstanceDao).search(new Query<ProcessInstance>()
-            .setFilter(new ProcessInstance()
-                    .setProcessVersion(1)
-                    .setParentKey(345L)));
+    verify(processInstanceDao)
+        .search(
+            new Query<ProcessInstance>()
+                .setFilter(new ProcessInstance().setProcessVersion(1).setParentKey(345L)));
   }
 
   @Test
@@ -145,7 +133,8 @@ public class ProcessInstanceControllerIT {
 
   @Test
   public void shouldAcceptQueryWithFullFilterAndSortingAndPaging() throws Exception {
-    assertPostToWithSucceed(URI + SEARCH,
+    assertPostToWithSucceed(
+        URI + SEARCH,
         "{\"filter\": "
             + "{ "
             + "\"processVersion\": 5 ,"
@@ -154,39 +143,47 @@ public class ProcessInstanceControllerIT {
             + "\"tenantId\": \"tenantA\""
             + "},"
             + "\"size\": 17, "
-            + "\"sort\": ["+ getSortFor(VERSION, Order.DESC)+ "]"
+            + "\"sort\": ["
+            + getSortFor(VERSION, Order.DESC)
+            + "]"
             + "}");
-    verify(processInstanceDao).search(new Query<ProcessInstance>()
-        .setFilter(
-            new ProcessInstance()
-                .setBpmnProcessId("bpmnProcessId-23")
-                .setProcessVersion(5)
-                .setKey(4217L)
-                .setTenantId("tenantA"))
-        .setSort(Sort.listOf(VERSION, Order.DESC))
-        .setSize(17));
+    verify(processInstanceDao)
+        .search(
+            new Query<ProcessInstance>()
+                .setFilter(
+                    new ProcessInstance()
+                        .setBpmnProcessId("bpmnProcessId-23")
+                        .setProcessVersion(5)
+                        .setKey(4217L)
+                        .setTenantId("tenantA"))
+                .setSort(Sort.listOf(VERSION, Order.DESC))
+                .setSize(17));
   }
 
   @Test
   public void shouldReturnErrorMessageForListFailure() throws Exception {
-    final String expectedJSONContent = "{\"status\":500,\"message\":\"Error in retrieving data.\",\"instance\":\"47a7e1e4-5f09-4086-baa0-c9bcd40da029\",\"type\":\"API application error\"}";
+    final String expectedJSONContent =
+        "{\"status\":500,\"message\":\"Error in retrieving data.\",\"instance\":\"47a7e1e4-5f09-4086-baa0-c9bcd40da029\",\"type\":\"API application error\"}";
     // given
-    when(processInstanceDao.search(any(Query.class))).thenThrow(
-        new ServerException("Error in retrieving data.").setInstance("47a7e1e4-5f09-4086-baa0-c9bcd40da029"));
+    when(processInstanceDao.search(any(Query.class)))
+        .thenThrow(
+            new ServerException("Error in retrieving data.")
+                .setInstance("47a7e1e4-5f09-4086-baa0-c9bcd40da029"));
     // then
     assertPostToWithFailed(URI + SEARCH, "{}")
         .andExpect(status().isInternalServerError())
         .andExpect(content().string(expectedJSONContent));
   }
 
-
   @Test
   public void shouldReturnErrorMessageForByKeyFailure() throws Exception {
-    final String expectedJSONContent = "{\"status\":404,\"message\":\"Error in retrieving data for key.\",\"instance\":\"ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c\",\"type\":\"Requested resource not found\"}";
+    final String expectedJSONContent =
+        "{\"status\":404,\"message\":\"Error in retrieving data for key.\",\"instance\":\"ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c\",\"type\":\"Requested resource not found\"}";
     // given
-    when(processInstanceDao.byKey(any(Long.class))).thenThrow(
-        new ResourceNotFoundException("Error in retrieving data for key.")
-            .setInstance("ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c"));
+    when(processInstanceDao.byKey(any(Long.class)))
+        .thenThrow(
+            new ResourceNotFoundException("Error in retrieving data for key.")
+                .setInstance("ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c"));
     // then
     assertGetWithFailed(URI + "/235")
         .andExpect(status().isNotFound())
@@ -197,22 +194,25 @@ public class ProcessInstanceControllerIT {
   public void shouldDeleteByKey() throws Exception {
     final String expectedJSONContent = "{\"message\":\"Is deleted\",\"deleted\":1}";
     // given
-    when(processInstanceDao.delete(123L)).thenReturn(
-        new ChangeStatus().setDeleted(1).setMessage("Is deleted"));
+    when(processInstanceDao.delete(123L))
+        .thenReturn(new ChangeStatus().setDeleted(1).setMessage("Is deleted"));
     // then
-    mockMvc.perform(delete(URI+"/123"))
+    mockMvc
+        .perform(delete(URI + "/123"))
         .andExpect(status().isOk())
         .andExpect(content().string(expectedJSONContent));
   }
 
   @Test
   public void shouldReturnErrorMessageForDeleteByKeyFailure() throws Exception {
-    final String expectedJSONContent = "{\"status\":404,\"message\":\"Not found\",\"instance\":\"instanceValue\",\"type\":\"Requested resource not found\"}";
+    final String expectedJSONContent =
+        "{\"status\":404,\"message\":\"Not found\",\"instance\":\"instanceValue\",\"type\":\"Requested resource not found\"}";
     // given
-    when(processInstanceDao.delete(123L)).thenThrow(
-        new ResourceNotFoundException("Not found").setInstance("instanceValue"));
+    when(processInstanceDao.delete(123L))
+        .thenThrow(new ResourceNotFoundException("Not found").setInstance("instanceValue"));
     // then
-    mockMvc.perform(delete(URI + "/123"))
+    mockMvc
+        .perform(delete(URI + "/123"))
         .andExpect(status().is4xxClientError())
         .andExpect(content().string(expectedJSONContent));
   }
@@ -223,10 +223,14 @@ public class ProcessInstanceControllerIT {
     final Long processInstanceKey = 123L;
     // given
     Results<SequenceFlow> results = new Results<>();
-    when(sequenceFlowDao.search(new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey)).setSize(QueryValidator.MAX_QUERY_SIZE)))
+    when(sequenceFlowDao.search(
+            new Query<SequenceFlow>()
+                .setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey))
+                .setSize(QueryValidator.MAX_QUERY_SIZE)))
         .thenReturn(results);
     // then
-    assertGetWithSucceed(String.format("%s/%s/sequence-flows", URI, processInstanceKey)).andExpect(content().string(expectedJSONContent));
+    assertGetWithSucceed(String.format("%s/%s/sequence-flows", URI, processInstanceKey))
+        .andExpect(content().string(expectedJSONContent));
   }
 
   @Test
@@ -235,49 +239,67 @@ public class ProcessInstanceControllerIT {
     final Long processInstanceKey = 123L;
     // given
     Results<SequenceFlow> results = new Results<>();
-    results.getItems().addAll(Arrays.asList(new SequenceFlow().setActivityId("SF1"), new SequenceFlow().setActivityId("SF2")));
-    when(sequenceFlowDao.search(new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey)).setSize(QueryValidator.MAX_QUERY_SIZE)))
+    results
+        .getItems()
+        .addAll(
+            Arrays.asList(
+                new SequenceFlow().setActivityId("SF1"), new SequenceFlow().setActivityId("SF2")));
+    when(sequenceFlowDao.search(
+            new Query<SequenceFlow>()
+                .setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey))
+                .setSize(QueryValidator.MAX_QUERY_SIZE)))
         .thenReturn(results);
     // then
-    assertGetWithSucceed(String.format("%s/%s/sequence-flows", URI, processInstanceKey)).andExpect(content().string(expectedJSONContent));
+    assertGetWithSucceed(String.format("%s/%s/sequence-flows", URI, processInstanceKey))
+        .andExpect(content().string(expectedJSONContent));
   }
 
   @Test
   public void shouldReturnFlowNodeStatistics() throws Exception {
-    final String expectedJSONContent = "[{\"activityId\":\"A1\",\"active\":1,\"canceled\":2,\"incidents\":4,\"completed\":3},{\"activityId\":\"A2\",\"active\":5,\"canceled\":6,\"incidents\":8,\"completed\":7}]";
+    final String expectedJSONContent =
+        "[{\"activityId\":\"A1\",\"active\":1,\"canceled\":2,\"incidents\":4,\"completed\":3},{\"activityId\":\"A2\",\"active\":5,\"canceled\":6,\"incidents\":8,\"completed\":7}]";
     final Long processInstanceKey = 123L;
     // given
-    List<FlowNodeStatistics> results = Arrays.asList(
-        new FlowNodeStatistics().setActivityId("A1").setActive(1L).setCanceled(2L).setCompleted(3L).setIncidents(4L),
-        new FlowNodeStatistics().setActivityId("A2").setActive(5L).setCanceled(6L).setCompleted(7L).setIncidents(8L));
-    when(flowNodeStatisticsDao.getFlowNodeStatisticsForProcessInstance(processInstanceKey)).thenReturn(results);
+    List<FlowNodeStatistics> results =
+        Arrays.asList(
+            new FlowNodeStatistics()
+                .setActivityId("A1")
+                .setActive(1L)
+                .setCanceled(2L)
+                .setCompleted(3L)
+                .setIncidents(4L),
+            new FlowNodeStatistics()
+                .setActivityId("A2")
+                .setActive(5L)
+                .setCanceled(6L)
+                .setCompleted(7L)
+                .setIncidents(8L));
+    when(flowNodeStatisticsDao.getFlowNodeStatisticsForProcessInstance(processInstanceKey))
+        .thenReturn(results);
     // then
-    assertGetWithSucceed(String.format("%s/%s/statistics", URI, processInstanceKey)).andExpect(content().string(expectedJSONContent));
+    assertGetWithSucceed(String.format("%s/%s/statistics", URI, processInstanceKey))
+        .andExpect(content().string(expectedJSONContent));
   }
 
   protected ResultActions assertGetWithFailed(final String endpoint) throws Exception {
-    return mockMvc.perform(get(endpoint))
+    return mockMvc
+        .perform(get(endpoint))
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE));
   }
 
   protected ResultActions assertPostToWithFailed(final String endpoint, final String content)
       throws Exception {
-    return mockMvc.perform(post(endpoint)
-        .content(content)
-        .contentType(MediaType.APPLICATION_JSON));
+    return mockMvc.perform(post(endpoint).content(content).contentType(MediaType.APPLICATION_JSON));
   }
 
-  protected ResultActions assertGetWithSucceed(final String endpoint)
-      throws Exception {
-    return mockMvc.perform(get(endpoint))
-        .andExpect(status().isOk());
+  protected ResultActions assertGetWithSucceed(final String endpoint) throws Exception {
+    return mockMvc.perform(get(endpoint)).andExpect(status().isOk());
   }
 
   protected ResultActions assertPostToWithSucceed(final String endpoint, final String content)
       throws Exception {
-    return mockMvc.perform(post(endpoint)
-            .content(content)
-            .contentType(MediaType.APPLICATION_JSON))
+    return mockMvc
+        .perform(post(endpoint).content(content).contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
   }
 }

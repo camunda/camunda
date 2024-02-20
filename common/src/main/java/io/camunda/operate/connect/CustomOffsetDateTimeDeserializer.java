@@ -9,7 +9,6 @@ package io.camunda.operate.connect;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -26,16 +25,20 @@ public class CustomOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDat
   }
 
   @Override
-  public OffsetDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+  public OffsetDateTime deserialize(JsonParser parser, DeserializationContext context)
+      throws IOException {
 
     OffsetDateTime parsedDate;
     try {
       parsedDate = OffsetDateTime.parse(parser.getText(), this.formatter);
     } catch (DateTimeParseException exception) {
       //
-      parsedDate = ZonedDateTime
-          .parse(parser.getText(), DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.systemDefault()))
-          .toOffsetDateTime();
+      parsedDate =
+          ZonedDateTime.parse(
+                  parser.getText(),
+                  DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+                      .withZone(ZoneId.systemDefault()))
+              .toOffsetDateTime();
     }
     return parsedDate;
   }

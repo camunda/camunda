@@ -10,6 +10,5 @@ public interface DataGenerator {
 
   void createZeebeDataAsync(boolean manuallyCalled);
 
-  DataGenerator DO_NOTHING = (boolean manuallyCalled) -> {
-  };
+  DataGenerator DO_NOTHING = (boolean manuallyCalled) -> {};
 }

@@ -6,13 +6,13 @@
  */
 package io.camunda.operate.qa.performance;
 
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static java.lang.Math.abs;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.operate.Application;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.archiver.Archiver;
-import io.camunda.operate.zeebeimport.CountImportListener;
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import io.camunda.operate.Application;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.property.OperateProperties;
@@ -21,7 +21,11 @@ import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebe.ZeebeESConstants;
+import io.camunda.operate.zeebeimport.CountImportListener;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
@@ -35,14 +39,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static java.lang.Math.abs;
-import static org.assertj.core.api.Assertions.assertThat;
-
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ImportPerformanceStaticDataTest {
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportPerformanceStaticDataTest.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(ImportPerformanceStaticDataTest.class);
 
   private static final double PRECISION_RATE = 0.01;
 
@@ -52,13 +53,21 @@ public class ImportPerformanceStaticDataTest {
   @Before
   public void setup() {
     logger.info("Operate will be started");
-    final SpringApplication application = new SpringApplicationBuilder(Application.class)
-        .addCommandLineProperties(true)
-        .profiles(OperateProfileService.AUTH_PROFILE).application();
-    application.setDefaultProperties(Map.of("camunda.operate.importer.threadsCount", 5,
-        "camunda.operate.importer.queueSize", 7,
-        "camunda.operate.importer.readerThreadsCount", 5,
-        "spring.mvc.pathmatch.matching-strategy", "ANT_PATH_MATCHER"));
+    final SpringApplication application =
+        new SpringApplicationBuilder(Application.class)
+            .addCommandLineProperties(true)
+            .profiles(OperateProfileService.AUTH_PROFILE)
+            .application();
+    application.setDefaultProperties(
+        Map.of(
+            "camunda.operate.importer.threadsCount",
+            5,
+            "camunda.operate.importer.queueSize",
+            7,
+            "camunda.operate.importer.readerThreadsCount",
+            5,
+            "spring.mvc.pathmatch.matching-strategy",
+            "ANT_PATH_MATCHER"));
     applicationContext = application.run();
     operateProperties = applicationContext.getBean(OperateProperties.class);
   }
@@ -81,22 +90,28 @@ public class ImportPerformanceStaticDataTest {
 
     waitImportFinish();
 
-    logger.info("Data import completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
+    logger.info(
+        "Data import completed in: "
+            + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now())
+            + " s");
 
     try {
       assertData();
     } catch (AssertionError as) {
-      //wait more
+      // wait more
       logger.info("Assertion failed: " + as.getMessage() + " Wait more.");
       waitImportFinish();
-      logger.info("Data import completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
+      logger.info(
+          "Data import completed in: "
+              + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now())
+              + " s");
       assertData();
     }
-
   }
 
   private void waitImportFinish() {
-    final CountImportListener countImportListener = applicationContext.getBean(CountImportListener.class);
+    final CountImportListener countImportListener =
+        applicationContext.getBean(CountImportListener.class);
     int countImported = 0;
     while (countImportListener.getImportedCount() > countImported) {
       countImported = countImportListener.getImportedCount();
@@ -109,30 +124,44 @@ public class ImportPerformanceStaticDataTest {
   public void testBArchiver() throws ArchiverException {
     final Archiver archiver = applicationContext.getBean(Archiver.class);
     final PartitionHolder partitionHolder = applicationContext.getBean(PartitionHolder.class);
-    ProcessInstancesArchiverJob archiverJob = applicationContext.getBean(ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+    ProcessInstancesArchiverJob archiverJob =
+        applicationContext.getBean(
+            ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
     final int archivedCount = archiverJob.archiveNextBatch().join();
     assertThat(archivedCount).isEqualTo(1);
   }
 
   private void assertData() throws IOException {
-    final RestHighLevelClient esClient = applicationContext.getBean("esClient", RestHighLevelClient.class);
-    final RestHighLevelClient zeebeEsClient = applicationContext.getBean("zeebeEsClient", RestHighLevelClient.class);
+    final RestHighLevelClient esClient =
+        applicationContext.getBean("esClient", RestHighLevelClient.class);
+    final RestHighLevelClient zeebeEsClient =
+        applicationContext.getBean("zeebeEsClient", RestHighLevelClient.class);
 
-    //assert process count
-    int expectedCount = ElasticsearchUtil.getFieldCardinality(zeebeEsClient, getZeebeAliasName(ZeebeESConstants.PROCESS_INDEX_NAME), "value.bpmnProcessId");
+    // assert process count
+    int expectedCount =
+        ElasticsearchUtil.getFieldCardinality(
+            zeebeEsClient,
+            getZeebeAliasName(ZeebeESConstants.PROCESS_INDEX_NAME),
+            "value.bpmnProcessId");
     final ProcessIndex processIndex = applicationContext.getBean(ProcessIndex.class);
     int count = ElasticsearchUtil.getDocCount(esClient, processIndex.getAlias());
     assertThat(count).isEqualTo(expectedCount);
 
-    //assert process instances count
-    expectedCount = ElasticsearchUtil.getFieldCardinality(zeebeEsClient, getZeebeAliasName(ZeebeESConstants.PROCESS_INSTANCE_INDEX_NAME), "value.processInstanceKey");
+    // assert process instances count
+    expectedCount =
+        ElasticsearchUtil.getFieldCardinality(
+            zeebeEsClient,
+            getZeebeAliasName(ZeebeESConstants.PROCESS_INSTANCE_INDEX_NAME),
+            "value.processInstanceKey");
     final ListViewTemplate listViewTemplate = applicationContext.getBean(ListViewTemplate.class);
-    count = ElasticsearchUtil.getFieldCardinality(esClient, listViewTemplate.getAlias(), ListViewTemplate.PROCESS_INSTANCE_KEY);
-    assertThat(((double) abs(count - expectedCount)) / expectedCount).isLessThanOrEqualTo(PRECISION_RATE);
+    count =
+        ElasticsearchUtil.getFieldCardinality(
+            esClient, listViewTemplate.getAlias(), ListViewTemplate.PROCESS_INSTANCE_KEY);
+    assertThat(((double) abs(count - expectedCount)) / expectedCount)
+        .isLessThanOrEqualTo(PRECISION_RATE);
   }
 
   public String getZeebeAliasName(String name) {
     return String.format("%s-%s", operateProperties.getZeebeElasticsearch().getPrefix(), name);
   }
-
 }

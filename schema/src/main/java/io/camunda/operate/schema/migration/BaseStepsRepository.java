@@ -7,19 +7,18 @@
 package io.camunda.operate.schema.migration;
 
 import io.camunda.operate.exceptions.MigrationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public abstract class BaseStepsRepository implements StepsRepository{
+public abstract class BaseStepsRepository implements StepsRepository {
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   /**
-   * Updates Steps in index by comparing steps in json format with documents from index.
-   * If there are any new steps then they will be saved in index.
+   * Updates Steps in index by comparing steps in json format with documents from index. If there
+   * are any new steps then they will be saved in index.
    */
   @Override
   public void updateSteps() throws IOException, MigrationException {

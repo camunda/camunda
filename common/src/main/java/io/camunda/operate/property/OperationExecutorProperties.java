@@ -15,15 +15,16 @@ public class OperationExecutorProperties {
 
   public static final String WORKER_ID_DEFAULT = UUID.randomUUID().toString();
 
-  public static final long LOCK_TIMEOUT_DEFAULT = 60000L;   // 1 min
+  public static final long LOCK_TIMEOUT_DEFAULT = 60000L; // 1 min
 
   private static final int DEFAULT_IMPORT_THREADS_COUNT = 3;
 
   private static final int DEFAULT_IMPORT_QUEUE_SIZE = 10;
 
   /**
-   * Amount of process instances, that will be processed by one run of operation executor. This counts process instances, but can end up in more operations,
-   * as one process instance can have more than one scheduled operations.
+   * Amount of process instances, that will be processed by one run of operation executor. This
+   * counts process instances, but can end up in more operations, as one process instance can have
+   * more than one scheduled operations.
    */
   private int batchSize = BATCH_SIZE_DEFAULT;
 
@@ -31,9 +32,7 @@ public class OperationExecutorProperties {
 
   private String workerId = WORKER_ID_DEFAULT;
 
-  /**
-   * Milliseconds.
-   */
+  /** Milliseconds. */
   private long lockTimeout = LOCK_TIMEOUT_DEFAULT;
 
   private boolean executorEnabled = true;

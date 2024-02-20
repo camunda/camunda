@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.webapp.security;
 
+import static io.camunda.operate.OperateProfileService.AUTH_PROFILE;
+
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -16,22 +18,19 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
-import static io.camunda.operate.OperateProfileService.AUTH_PROFILE;
-
 @Profile(AUTH_PROFILE)
 @EnableWebSecurity
 @Configuration
 @Component("webSecurityConfig")
 public class WebSecurityConfig extends BaseWebConfigurer {
 
-  @Autowired
-  protected OAuth2WebConfigurer oAuth2WebConfigurer;
+  @Autowired protected OAuth2WebConfigurer oAuth2WebConfigurer;
 
-  @Autowired
-  private UserDetailsService userDetailsService;
+  @Autowired private UserDetailsService userDetailsService;
 
   @Override
-  protected void applyAuthenticationSettings(final AuthenticationManagerBuilder builder) throws Exception {
+  protected void applyAuthenticationSettings(final AuthenticationManagerBuilder builder)
+      throws Exception {
     builder.userDetailsService(userDetailsService);
   }
 
@@ -39,5 +38,4 @@ public class WebSecurityConfig extends BaseWebConfigurer {
   protected void applyOAuth2Settings(final HttpSecurity http) throws Exception {
     oAuth2WebConfigurer.configure(http);
   }
-
 }

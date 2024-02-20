@@ -50,9 +50,10 @@ public class OperateOpensearchProperties extends OpensearchProperties {
     this.numberOfReplicas = numberOfReplicas;
   }
 
-  public void setRefreshInterval(String refreshInterval){
+  public void setRefreshInterval(String refreshInterval) {
     this.refreshInterval = refreshInterval;
   }
+
   public String getRefreshInterval() {
     return refreshInterval;
   }

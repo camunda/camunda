@@ -9,7 +9,6 @@ package io.camunda.operate.connect;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,7 +22,8 @@ public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTim
   }
 
   @Override
-  public void serialize(OffsetDateTime value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+  public void serialize(OffsetDateTime value, JsonGenerator gen, SerializerProvider provider)
+      throws IOException {
     gen.writeString(value.format(this.formatter));
   }
 }

@@ -6,15 +6,13 @@
  */
 package io.camunda.operate.exceptions;
 
-
 public class PersistenceException extends Exception {
 
   private static final long serialVersionUID = 1L;
 
   private Integer failingRequestId;
 
-  public PersistenceException() {
-  }
+  public PersistenceException() {}
 
   public PersistenceException(String message) {
     super(message);

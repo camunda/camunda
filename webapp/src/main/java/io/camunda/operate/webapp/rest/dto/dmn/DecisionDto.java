@@ -13,8 +13,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(name = "Decision object")
 public class DecisionDto implements CreatableFromEntity<DecisionDto, DecisionDefinitionEntity> {
 
-  @Schema(description = "Unique id of the decision, must be used when filtering instances by decision ids.")
+  @Schema(
+      description =
+          "Unique id of the decision, must be used when filtering instances by decision ids.")
   private String id;
+
   private String name;
   private int version;
   private String decisionId;
@@ -57,8 +60,7 @@ public class DecisionDto implements CreatableFromEntity<DecisionDto, DecisionDef
 
   @Override
   public DecisionDto fillFrom(final DecisionDefinitionEntity decisionEntity) {
-    return this
-        .setId(decisionEntity.getId())
+    return this.setId(decisionEntity.getId())
         .setDecisionId(decisionEntity.getDecisionId())
         .setName(decisionEntity.getName())
         .setVersion(decisionEntity.getVersion());
@@ -66,19 +68,14 @@ public class DecisionDto implements CreatableFromEntity<DecisionDto, DecisionDef
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     DecisionDto that = (DecisionDto) o;
 
-    if (version != that.version)
-      return false;
-    if (id != null ? !id.equals(that.id) : that.id != null)
-      return false;
-    if (name != null ? !name.equals(that.name) : that.name != null)
-      return false;
+    if (version != that.version) return false;
+    if (id != null ? !id.equals(that.id) : that.id != null) return false;
+    if (name != null ? !name.equals(that.name) : that.name != null) return false;
     return decisionId != null ? decisionId.equals(that.decisionId) : that.decisionId == null;
   }
 
@@ -90,5 +87,4 @@ public class DecisionDto implements CreatableFromEntity<DecisionDto, DecisionDef
     result = 31 * result + (decisionId != null ? decisionId.hashCode() : 0);
     return result;
   }
-
 }

@@ -6,30 +6,27 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.NoSuchIndexException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-
 import io.camunda.operate.store.ZeebeStore;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-/**
- * Import job for one batch of Zeebe data.
- */
+/** Import job for one batch of Zeebe data. */
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class ImportJob implements Callable<Boolean> {
@@ -46,26 +43,20 @@ public class ImportJob implements Callable<Boolean> {
 
   private final OffsetDateTime creationTime;
 
-  @Autowired
-  private ImportBatchProcessorFactory importBatchProcessorFactory;
+  @Autowired private ImportBatchProcessorFactory importBatchProcessorFactory;
 
-  @Autowired
-  private ImportPositionHolder importPositionHolder;
+  @Autowired private ImportPositionHolder importPositionHolder;
 
-  @Autowired
-  private RecordsReaderHolder recordsReaderHolder;
+  @Autowired private RecordsReaderHolder recordsReaderHolder;
 
   @Autowired(required = false)
   private List<ImportListener> importListeners;
 
-  @Autowired
-  private ZeebeStore zeebeStore;
+  @Autowired private ZeebeStore zeebeStore;
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   public ImportJob(ImportBatch importBatch, ImportPositionEntity previousPosition) {
     this.importBatch = importBatch;
@@ -77,15 +68,15 @@ public class ImportJob implements Callable<Boolean> {
   public Boolean call() {
     processPossibleIndexChange();
 
-    //separate importBatch in sub-batches per index
+    // separate importBatch in sub-batches per index
     List<ImportBatch> subBatches = createSubBatchesPerIndexName();
 
-    for (ImportBatch subBatch: subBatches) {
+    for (ImportBatch subBatch : subBatches) {
       final boolean success = processOneIndexBatch(subBatch);
-      if (!success){
+      if (!success) {
         notifyImportListenersAsFailed(importBatch);
         return false;
-      } //else continue
+      } // else continue
     }
     importPositionHolder.recordLatestLoadedPosition(getLastProcessedPosition());
     for (ImportBatch subBatch : subBatches) {
@@ -95,43 +86,63 @@ public class ImportJob implements Callable<Boolean> {
   }
 
   private void processPossibleIndexChange() {
-    //if there was index change, comparing with previous batch, or there are more than one index in current batch, refresh Zeebe indices
+    // if there was index change, comparing with previous batch, or there are more than one index in
+    // current batch, refresh Zeebe indices
     final List<HitEntity> hits = importBatch.getHits();
     final boolean useOnlyPosition = operateProperties.getImporter().isUseOnlyPosition();
-    if (indexChange() || hits.stream().map(HitEntity::getIndex).collect(Collectors.toSet()).size() > 1) {
+    if (indexChange()
+        || hits.stream().map(HitEntity::getIndex).collect(Collectors.toSet()).size() > 1) {
       refreshZeebeIndices();
-      //reread batch
-      RecordsReader recordsReader = recordsReaderHolder.getRecordsReader(importBatch.getPartitionId(), importBatch.getImportValueType());
+      // reread batch
+      RecordsReader recordsReader =
+          recordsReaderHolder.getRecordsReader(
+              importBatch.getPartitionId(), importBatch.getImportValueType());
       if (recordsReader != null) {
         try {
           ImportBatch newImportBatch;
           if (useOnlyPosition == false && previousPosition.getSequence() > 0) {
-            newImportBatch = recordsReader.readNextBatchBySequence(previousPosition.getSequence(), importBatch.getLastProcessedSequence(objectMapper));
+            newImportBatch =
+                recordsReader.readNextBatchBySequence(
+                    previousPosition.getSequence(),
+                    importBatch.getLastProcessedSequence(objectMapper));
 
-            final Long lastSequenceFromInitialBatch = importBatch.getLastProcessedSequence(objectMapper);
-            final Long lastSequenceFromNewImportBatch = newImportBatch.getLastProcessedSequence(objectMapper);
+            final Long lastSequenceFromInitialBatch =
+                importBatch.getLastProcessedSequence(objectMapper);
+            final Long lastSequenceFromNewImportBatch =
+                newImportBatch.getLastProcessedSequence(objectMapper);
 
-            if (newImportBatch == null || newImportBatch.getHits() == null || lastSequenceFromInitialBatch > lastSequenceFromNewImportBatch) {
-              final String message = String.format("Warning! Import batch became smaller after reread. Should not happen. Will be retried. Expected last sequence %d, actual last sequence %d.",
-                  lastSequenceFromInitialBatch, lastSequenceFromNewImportBatch);
+            if (newImportBatch == null
+                || newImportBatch.getHits() == null
+                || lastSequenceFromInitialBatch > lastSequenceFromNewImportBatch) {
+              final String message =
+                  String.format(
+                      "Warning! Import batch became smaller after reread. Should not happen. Will be retried. Expected last sequence %d, actual last sequence %d.",
+                      lastSequenceFromInitialBatch, lastSequenceFromNewImportBatch);
               throw new OperateRuntimeException(message);
             }
 
           } else {
-            newImportBatch = recordsReader.readNextBatchByPositionAndPartition(
-                previousPosition.getPosition(), importBatch.getLastProcessedPosition(objectMapper));
+            newImportBatch =
+                recordsReader.readNextBatchByPositionAndPartition(
+                    previousPosition.getPosition(),
+                    importBatch.getLastProcessedPosition(objectMapper));
 
-            if (newImportBatch == null || newImportBatch.getHits() == null || newImportBatch.getHits().size() < importBatch.getHits().size()) {
-              throw new OperateRuntimeException("Warning! Import batch became smaller after reread. Should not happen. Will be retried.");
+            if (newImportBatch == null
+                || newImportBatch.getHits() == null
+                || newImportBatch.getHits().size() < importBatch.getHits().size()) {
+              throw new OperateRuntimeException(
+                  "Warning! Import batch became smaller after reread. Should not happen. Will be retried.");
             }
-
           }
           importBatch = newImportBatch;
         } catch (NoSuchIndexException ex) {
           logger.warn("Indices are not found" + importBatch.toString());
         }
       } else {
-        logger.warn("Unable to find records reader for partitionId {} and ImportValueType {}", importBatch.getPartitionId(), importBatch.getImportValueType());
+        logger.warn(
+            "Unable to find records reader for partitionId {} and ImportValueType {}",
+            importBatch.getPartitionId(),
+            importBatch.getImportValueType());
       }
     }
   }
@@ -139,7 +150,8 @@ public class ImportJob implements Callable<Boolean> {
   private boolean processOneIndexBatch(ImportBatch subBatch) {
     try {
       String version = extractZeebeVersionFromIndexName(subBatch.getLastRecordIndexName());
-      ImportBatchProcessor importBatchProcessor = importBatchProcessorFactory.getImportBatchProcessor(version);
+      ImportBatchProcessor importBatchProcessor =
+          importBatchProcessorFactory.getImportBatchProcessor(version);
       importBatchProcessor.performImport(subBatch);
       return true;
     } catch (Exception ex) {
@@ -159,14 +171,24 @@ public class ImportJob implements Callable<Boolean> {
       for (HitEntity hit : importBatch.getHits()) {
         String indexName = hit.getIndex();
         if (previousIndexName != null && !indexName.equals(previousIndexName)) {
-          //start new sub-batch
-          subBatches.add(new ImportBatch(importBatch.getPartitionId(), importBatch.getImportValueType(), subBatchHits, previousIndexName));
+          // start new sub-batch
+          subBatches.add(
+              new ImportBatch(
+                  importBatch.getPartitionId(),
+                  importBatch.getImportValueType(),
+                  subBatchHits,
+                  previousIndexName));
           subBatchHits = new ArrayList<>();
         }
         subBatchHits.add(hit);
         previousIndexName = indexName;
       }
-      subBatches.add(new ImportBatch(importBatch.getPartitionId(), importBatch.getImportValueType(), subBatchHits, previousIndexName));
+      subBatches.add(
+          new ImportBatch(
+              importBatch.getPartitionId(),
+              importBatch.getImportValueType(),
+              subBatchHits,
+              previousIndexName));
       return subBatches;
     }
   }
@@ -177,19 +199,23 @@ public class ImportJob implements Callable<Boolean> {
     if (split.length >= 3) {
       zeebeVersion = split[2].replace("-snapshot", "");
     } else {
-      //last version before introducing versions in index names was 0.22.0
+      // last version before introducing versions in index names was 0.22.0
       zeebeVersion = "0.22.0";
     }
     return zeebeVersion;
   }
 
   public void refreshZeebeIndices() {
-    final String indexPattern = importBatch.getImportValueType().getIndicesPattern(operateProperties.getZeebeElasticsearch().getPrefix());
+    final String indexPattern =
+        importBatch
+            .getImportValueType()
+            .getIndicesPattern(operateProperties.getZeebeElasticsearch().getPrefix());
     zeebeStore.refreshIndex(indexPattern);
   }
 
   public void recordLatestScheduledPosition() {
-    importPositionHolder.recordLatestScheduledPosition(importBatch.getAliasName(), importBatch.getPartitionId(), getLastProcessedPosition());
+    importPositionHolder.recordLatestScheduledPosition(
+        importBatch.getAliasName(), importBatch.getPartitionId(), getLastProcessedPosition());
   }
 
   public ImportPositionEntity getLastProcessedPosition() {
@@ -197,7 +223,12 @@ public class ImportJob implements Callable<Boolean> {
       long lastRecordPosition = importBatch.getLastProcessedPosition(objectMapper);
       long lastSequence = importBatch.getLastProcessedSequence(objectMapper);
       if (lastRecordPosition != 0 || lastSequence != 0) {
-        lastProcessedPosition = ImportPositionEntity.createFrom(lastSequence, previousPosition, lastRecordPosition, importBatch.getLastRecordIndexName());
+        lastProcessedPosition =
+            ImportPositionEntity.createFrom(
+                lastSequence,
+                previousPosition,
+                lastRecordPosition,
+                importBatch.getLastRecordIndexName());
       } else {
         lastProcessedPosition = previousPosition;
       }
@@ -210,7 +241,9 @@ public class ImportJob implements Callable<Boolean> {
   }
 
   public boolean indexChange() {
-    if (importBatch.getLastRecordIndexName() != null && previousPosition != null && previousPosition.getIndexName() != null) {
+    if (importBatch.getLastRecordIndexName() != null
+        && previousPosition != null
+        && previousPosition.getIndexName() != null) {
       return !importBatch.getLastRecordIndexName().equals(previousPosition.getIndexName());
     } else {
       return false;
@@ -236,5 +269,4 @@ public class ImportJob implements Callable<Boolean> {
   public OffsetDateTime getCreationTime() {
     return creationTime;
   }
-
 }

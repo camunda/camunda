@@ -12,7 +12,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.util.List;
 import java.util.Map;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,62 +23,61 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
-        TestApplicationWithNoBeans.class,
-        CCSaaSJwtAuthenticationTokenValidator.class,
-        OperateProperties.class,
+      TestApplicationWithNoBeans.class,
+      CCSaaSJwtAuthenticationTokenValidator.class,
+      OperateProperties.class,
     },
     properties = {
-        OperateProperties.PREFIX + ".client.audience = test.operate.camunda.com",
-        OperateProperties.PREFIX + ".cloud.clusterId = my-cluster",
-    }
-)
+      OperateProperties.PREFIX + ".client.audience = test.operate.camunda.com",
+      OperateProperties.PREFIX + ".cloud.clusterId = my-cluster",
+    })
 public class CCaaSJwtAuthenticationTokenValidatorIT {
 
-  @Autowired
-  private CCSaaSJwtAuthenticationTokenValidator jwtAuthenticationTokenValidator;
+  @Autowired private CCSaaSJwtAuthenticationTokenValidator jwtAuthenticationTokenValidator;
 
   @Test
-  public void shouldNotValidForWrongAudience(){
+  public void shouldNotValidForWrongAudience() {
     final JwtAuthenticationToken token =
         createJwtAuthenticationTokenWith("my.operate.camunda.com", "my-cluster");
     assertThat(jwtAuthenticationTokenValidator.isValid(token)).isFalse();
   }
 
   @Test
-  public void shouldNotValidForWrongScope(){
+  public void shouldNotValidForWrongScope() {
     final JwtAuthenticationToken token =
         createJwtAuthenticationTokenWith("my.operate.camunda.com", "your-cluster");
     assertThat(jwtAuthenticationTokenValidator.isValid(token)).isFalse();
   }
 
   @Test
-  public void shouldValid(){
+  public void shouldValid() {
     final JwtAuthenticationToken token =
         createJwtAuthenticationTokenWith("test.operate.camunda.com", "my-cluster");
     assertThat(jwtAuthenticationTokenValidator.isValid(token)).isTrue();
   }
 
   @Test
-  public void shouldInvalidDueToScopeIsNotStringOrList(){
+  public void shouldInvalidDueToScopeIsNotStringOrList() {
     final JwtAuthenticationToken token =
-        createJwtAuthenticationTokenWith("test.operate.camunda.com", Map.of("my-cluster","second-cluster"));
+        createJwtAuthenticationTokenWith(
+            "test.operate.camunda.com", Map.of("my-cluster", "second-cluster"));
     assertThat(jwtAuthenticationTokenValidator.isValid(token)).isFalse();
   }
 
   @Test
-  public void shouldInvalidDueToScopeIsNull(){
+  public void shouldInvalidDueToScopeIsNull() {
     final JwtAuthenticationToken token =
         createJwtAuthenticationTokenWith("test.operate.camunda.com", null);
     assertThat(jwtAuthenticationTokenValidator.isValid(token)).isFalse();
   }
 
-  protected JwtAuthenticationToken createJwtAuthenticationTokenWith(final String audience,final Object scope) {
+  protected JwtAuthenticationToken createJwtAuthenticationTokenWith(
+      final String audience, final Object scope) {
     return new JwtAuthenticationToken(
         Jwt.withTokenValue("token")
-        .audience(List.of(audience))
-        .header("alg", "HS256")
-        .claim("scope", scope)
-        .build()
-    );
+            .audience(List.of(audience))
+            .header("alg", "HS256")
+            .claim("scope", scope)
+            .build());
   }
 }

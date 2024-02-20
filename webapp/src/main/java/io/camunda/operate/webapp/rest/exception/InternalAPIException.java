@@ -28,5 +28,4 @@ public abstract class InternalAPIException extends RuntimeException {
     this.instance = instance;
     return this;
   }
-
 }

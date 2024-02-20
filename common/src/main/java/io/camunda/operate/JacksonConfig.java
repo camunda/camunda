@@ -18,13 +18,12 @@ import io.camunda.operate.connect.CustomInstantDeserializer;
 import io.camunda.operate.connect.CustomOffsetDateTimeDeserializer;
 import io.camunda.operate.connect.CustomOffsetDateTimeSerializer;
 import io.camunda.operate.data.OperateDateTimeFormatter;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @Configuration
 public class JacksonConfig {
@@ -32,8 +31,12 @@ public class JacksonConfig {
   public ObjectMapper objectMapper(OperateDateTimeFormatter dateTimeFormatter) {
 
     JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter.getGeneralDateTimeFormatter()));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter.getGeneralDateTimeFormatter()));
+    javaTimeModule.addSerializer(
+        OffsetDateTime.class,
+        new CustomOffsetDateTimeSerializer(dateTimeFormatter.getGeneralDateTimeFormatter()));
+    javaTimeModule.addDeserializer(
+        OffsetDateTime.class,
+        new CustomOffsetDateTimeDeserializer(dateTimeFormatter.getGeneralDateTimeFormatter()));
     javaTimeModule.addDeserializer(Instant.class, new CustomInstantDeserializer());
 
     return Jackson2ObjectMapperBuilder.json()
@@ -45,7 +48,7 @@ public class JacksonConfig {
             DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
             DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
         .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS)
-        //make sure that Jackson uses setters and getters, not fields
+        // make sure that Jackson uses setters and getters, not fields
         .visibility(PropertyAccessor.GETTER, Visibility.ANY)
         .visibility(PropertyAccessor.IS_GETTER, Visibility.ANY)
         .visibility(PropertyAccessor.SETTER, Visibility.ANY)
@@ -55,7 +58,8 @@ public class JacksonConfig {
   }
 
   // Some common components autowire the datetime formatter directly. To avoid potentially impacting
-  // critical code or needing to refactor in multiple places, expose the general date time formatter as
+  // critical code or needing to refactor in multiple places, expose the general date time formatter
+  // as
   // a bean just like it was before the introduction of the OperateDateTimeFormatter component
   @Bean
   public DateTimeFormatter dateTimeFormatter(OperateDateTimeFormatter dateTimeFormatter) {

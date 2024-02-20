@@ -6,23 +6,23 @@
  */
 package io.camunda.operate.entities;
 
-import java.util.Objects;
-
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
+import java.util.Objects;
 
 public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
 
   private Long processInstanceKey;
-  /**
-   * Attention! This field will be filled in only for data imported after v. 8.2.0.
-   */
+
+  /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
   private Long processDefinitionKey;
-  /**
-   * Attention! This field will be filled in only for data imported after v. 8.2.0.
-   */
+
+  /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
   private String bpmnProcessId;
+
   private String activityId;
-  private String tenantId = DEFAULT_TENANT_ID;;
+  private String tenantId = DEFAULT_TENANT_ID;
+  ;
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
@@ -71,21 +71,25 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     SequenceFlowEntity that = (SequenceFlowEntity) o;
-    return Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(processDefinitionKey,
-        that.processDefinitionKey) && Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(activityId,
-        that.activityId) && Objects.equals(tenantId, that.tenantId);
+    return Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(activityId, that.activityId)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), processInstanceKey, processDefinitionKey, bpmnProcessId, activityId,
+    return Objects.hash(
+        super.hashCode(),
+        processInstanceKey,
+        processDefinitionKey,
+        bpmnProcessId,
+        activityId,
         tenantId);
   }
 }

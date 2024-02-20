@@ -7,11 +7,8 @@
 package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.operate.webapp.security.Permission;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
-
-import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 
 @Component
 public final class PermissionConverter implements Converter<String, Permission> {

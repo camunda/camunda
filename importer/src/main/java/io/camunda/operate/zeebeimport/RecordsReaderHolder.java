@@ -6,24 +6,24 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import static io.camunda.operate.zeebe.ImportValueType.IMPORT_VALUE_TYPES;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import static io.camunda.operate.zeebe.ImportValueType.IMPORT_VALUE_TYPES;
 
 /**
- * Holder for all possible record readers.
- * It initializes the set of readers creating one reader per each pair [partition id, value type].
+ * Holder for all possible record readers. It initializes the set of readers creating one reader per
+ * each pair [partition id, value type].
  */
 @Component
 public class RecordsReaderHolder {
@@ -32,17 +32,14 @@ public class RecordsReaderHolder {
 
   private Set<RecordsReader> recordsReaders = null;
 
-  @Autowired
-  private BeanFactory beanFactory;
+  @Autowired private BeanFactory beanFactory;
 
-  @Autowired
-  private PartitionHolder partitionHolder;
+  @Autowired private PartitionHolder partitionHolder;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   public Set<RecordsReader> getAllRecordsReaders() {
-    if(CollectionUtil.isNotEmpty(recordsReaders)) {
+    if (CollectionUtil.isNotEmpty(recordsReaders)) {
       return recordsReaders;
     }
     recordsReaders = new HashSet<>();
@@ -53,19 +50,20 @@ public class RecordsReaderHolder {
     for (Integer partitionId : partitionIds) {
       // TODO what if it's not the final list of partitions
       for (ImportValueType importValueType : IMPORT_VALUE_TYPES) {
-        recordsReaders.add(beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));
+        recordsReaders.add(
+            beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));
       }
     }
     return recordsReaders;
   }
 
   public RecordsReader getRecordsReader(int partitionId, ImportValueType importValueType) {
-    for (RecordsReader recordsReader: recordsReaders) {
-      if (recordsReader.getPartitionId() == partitionId && recordsReader.getImportValueType().equals(importValueType)) {
+    for (RecordsReader recordsReader : recordsReaders) {
+      if (recordsReader.getPartitionId() == partitionId
+          && recordsReader.getImportValueType().equals(importValueType)) {
         return recordsReader;
       }
     }
     return null;
   }
-
 }

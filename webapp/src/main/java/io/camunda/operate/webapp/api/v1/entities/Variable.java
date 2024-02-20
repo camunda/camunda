@@ -75,6 +75,7 @@ public class Variable {
     this.value = value;
     return this;
   }
+
   public Boolean getTruncated() {
     return truncated;
   }
@@ -95,15 +96,16 @@ public class Variable {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     Variable variable = (Variable) o;
-    return Objects.equals(key, variable.key) && Objects.equals(processInstanceKey,
-        variable.processInstanceKey) && Objects.equals(scopeKey, variable.scopeKey) && Objects.equals(name,
-        variable.name) && Objects.equals(value, variable.value) && Objects.equals(truncated,
-        variable.truncated) && Objects.equals(tenantId, variable.tenantId);
+    return Objects.equals(key, variable.key)
+        && Objects.equals(processInstanceKey, variable.processInstanceKey)
+        && Objects.equals(scopeKey, variable.scopeKey)
+        && Objects.equals(name, variable.name)
+        && Objects.equals(value, variable.value)
+        && Objects.equals(truncated, variable.truncated)
+        && Objects.equals(tenantId, variable.tenantId);
   }
 
   @Override
@@ -113,8 +115,24 @@ public class Variable {
 
   @Override
   public String toString() {
-    return "Variable{" + "key=" + key + ", processInstanceKey=" + processInstanceKey + ", scopeKey=" + scopeKey
-        + ", name='" + name + '\'' + ", value='" + value + '\'' + ", truncated=" + truncated + ", tenantId='"
-        + tenantId + '\'' + '}';
+    return "Variable{"
+        + "key="
+        + key
+        + ", processInstanceKey="
+        + processInstanceKey
+        + ", scopeKey="
+        + scopeKey
+        + ", name='"
+        + name
+        + '\''
+        + ", value='"
+        + value
+        + '\''
+        + ", truncated="
+        + truncated
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

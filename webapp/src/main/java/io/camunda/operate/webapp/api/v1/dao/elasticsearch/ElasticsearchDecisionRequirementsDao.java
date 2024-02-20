@@ -6,6 +6,9 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -16,6 +19,8 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import java.io.IOException;
+import java.util.*;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -26,45 +31,44 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.*;
-
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-
 @Conditional(ElasticsearchCondition.class)
 @Component("ElasticsearchDecisionRequirementsDaoV1")
 public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<DecisionRequirements>
     implements DecisionRequirementsDao {
 
-  @Autowired
-  private DecisionRequirementsIndex decisionRequirementsIndex;
+  @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
 
   @Override
   public DecisionRequirements byKey(Long key) throws APIException {
     List<DecisionRequirements> decisionRequirements;
     try {
-      decisionRequirements = searchFor(new SearchSourceBuilder().query(termQuery(DecisionRequirementsIndex.KEY, key)));
+      decisionRequirements =
+          searchFor(new SearchSourceBuilder().query(termQuery(DecisionRequirementsIndex.KEY, key)));
     } catch (Exception e) {
-      throw new ServerException(String.format("Error in reading decision requirements for key %s", key), e);
+      throw new ServerException(
+          String.format("Error in reading decision requirements for key %s", key), e);
     }
     if (decisionRequirements.isEmpty()) {
-      throw new ResourceNotFoundException(String.format("No decision requirements found for key %s", key));
+      throw new ResourceNotFoundException(
+          String.format("No decision requirements found for key %s", key));
     }
     if (decisionRequirements.size() > 1) {
-      throw new ServerException(String.format("Found more than one decision requirements for key %s", key));
+      throw new ServerException(
+          String.format("Found more than one decision requirements for key %s", key));
     }
     return decisionRequirements.get(0);
   }
 
   @Override
   public List<DecisionRequirements> byKeys(Set<Long> keys) throws APIException {
-    final List<Long> nonNullKeys = (keys == null) ? List.of() : keys.stream().filter(Objects::nonNull).toList();
+    final List<Long> nonNullKeys =
+        (keys == null) ? List.of() : keys.stream().filter(Objects::nonNull).toList();
     if (nonNullKeys.isEmpty()) {
       return List.of();
     }
     try {
-      return searchFor(new SearchSourceBuilder().query(termsQuery(DecisionRequirementsIndex.KEY, nonNullKeys)));
+      return searchFor(
+          new SearchSourceBuilder().query(termsQuery(DecisionRequirementsIndex.KEY, nonNullKeys)));
     } catch (Exception e) {
       throw new ServerException("Error in reading decision requirements by keys", e);
     }
@@ -73,33 +77,48 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
   @Override
   public String xmlByKey(final Long key) throws APIException {
     try {
-      final SearchRequest searchRequest = new SearchRequest(decisionRequirementsIndex.getAlias())
-          .source(new SearchSourceBuilder()
-              .query(termQuery(DecisionRequirementsIndex.KEY, key)).fetchSource(DecisionRequirementsIndex.XML, null));
+      final SearchRequest searchRequest =
+          new SearchRequest(decisionRequirementsIndex.getAlias())
+              .source(
+                  new SearchSourceBuilder()
+                      .query(termQuery(DecisionRequirementsIndex.KEY, key))
+                      .fetchSource(DecisionRequirementsIndex.XML, null));
       final SearchResponse response = tenantAwareClient.search(searchRequest);
       if (response.getHits().getTotalHits().value == 1) {
         Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
         return (String) result.get(DecisionRequirementsIndex.XML);
       }
     } catch (IOException e) {
-      throw new ServerException(String.format("Error in reading decision requirements as xml for key %s", key), e);
+      throw new ServerException(
+          String.format("Error in reading decision requirements as xml for key %s", key), e);
     }
-    throw new ResourceNotFoundException(String.format("Decision requirements for key %s not found.", key));
+    throw new ResourceNotFoundException(
+        String.format("Decision requirements for key %s not found.", key));
   }
 
   @Override
-  public Results<DecisionRequirements> search(Query<DecisionRequirements> query) throws APIException {
+  public Results<DecisionRequirements> search(Query<DecisionRequirements> query)
+      throws APIException {
 
-    final SearchSourceBuilder searchSourceBuilder = buildQueryOn(query, DecisionRequirements.KEY, new SearchSourceBuilder());
+    final SearchSourceBuilder searchSourceBuilder =
+        buildQueryOn(query, DecisionRequirements.KEY, new SearchSourceBuilder());
     try {
-      final SearchRequest searchRequest = new SearchRequest().indices(decisionRequirementsIndex.getAlias()).source(searchSourceBuilder);
+      final SearchRequest searchRequest =
+          new SearchRequest()
+              .indices(decisionRequirementsIndex.getAlias())
+              .source(searchSourceBuilder);
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        List<DecisionRequirements> decisionRequirements = ElasticsearchUtil.mapSearchHits(searchHitArray, objectMapper, DecisionRequirements.class);
-        return new Results<DecisionRequirements>().setTotal(searchHits.getTotalHits().value).setItems(decisionRequirements).setSortValues(sortValues);
+        List<DecisionRequirements> decisionRequirements =
+            ElasticsearchUtil.mapSearchHits(
+                searchHitArray, objectMapper, DecisionRequirements.class);
+        return new Results<DecisionRequirements>()
+            .setTotal(searchHits.getTotalHits().value)
+            .setItems(decisionRequirements)
+            .setSortValues(sortValues);
       } else {
         return new Results<DecisionRequirements>().setTotal(searchHits.getTotalHits().value);
       }
@@ -108,27 +127,37 @@ public class ElasticsearchDecisionRequirementsDao extends ElasticsearchDao<Decis
     }
   }
 
-  protected List<DecisionRequirements> searchFor(final SearchSourceBuilder searchSource) throws IOException {
-    final SearchRequest searchRequest = new SearchRequest(decisionRequirementsIndex.getAlias()).source(searchSource);
-    return tenantAwareClient.search(searchRequest, () -> {
-      return ElasticsearchUtil.scroll(searchRequest, DecisionRequirements.class, objectMapper, elasticsearch);
-    });
+  protected List<DecisionRequirements> searchFor(final SearchSourceBuilder searchSource)
+      throws IOException {
+    final SearchRequest searchRequest =
+        new SearchRequest(decisionRequirementsIndex.getAlias()).source(searchSource);
+    return tenantAwareClient.search(
+        searchRequest,
+        () -> {
+          return ElasticsearchUtil.scroll(
+              searchRequest, DecisionRequirements.class, objectMapper, elasticsearch);
+        });
   }
 
   @Override
-  protected void buildFiltering(Query<DecisionRequirements> query, SearchSourceBuilder searchSourceBuilder) {
+  protected void buildFiltering(
+      Query<DecisionRequirements> query, SearchSourceBuilder searchSourceBuilder) {
     final DecisionRequirements filter = query.getFilter();
     if (filter != null) {
       List<QueryBuilder> queryBuilders = new ArrayList<>();
       queryBuilders.add(buildTermQuery(DecisionRequirements.ID, filter.getId()));
       queryBuilders.add(buildTermQuery(DecisionRequirements.KEY, filter.getKey()));
-      queryBuilders.add(buildTermQuery(DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()));
+      queryBuilders.add(
+          buildTermQuery(
+              DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()));
       queryBuilders.add(buildTermQuery(DecisionRequirements.TENANT_ID, filter.getTenantId()));
       queryBuilders.add(buildTermQuery(DecisionRequirements.NAME, filter.getName()));
       queryBuilders.add(buildTermQuery(DecisionRequirements.VERSION, filter.getVersion()));
-      queryBuilders.add(buildTermQuery(DecisionRequirements.RESOURCE_NAME, filter.getResourceName()));
+      queryBuilders.add(
+          buildTermQuery(DecisionRequirements.RESOURCE_NAME, filter.getResourceName()));
 
-      searchSourceBuilder.query(ElasticsearchUtil.joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {})));
+      searchSourceBuilder.query(
+          ElasticsearchUtil.joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {})));
     }
   }
 }

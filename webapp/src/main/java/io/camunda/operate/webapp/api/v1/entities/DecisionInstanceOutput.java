@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -69,7 +68,11 @@ public class DecisionInstanceOutput {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DecisionInstanceOutput that = (DecisionInstanceOutput) o;
-    return ruleIndex == that.ruleIndex && Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(value, that.value) && Objects.equals(ruleId, that.ruleId);
+    return ruleIndex == that.ruleIndex
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value)
+        && Objects.equals(ruleId, that.ruleId);
   }
 
   @Override
@@ -79,12 +82,21 @@ public class DecisionInstanceOutput {
 
   @Override
   public String toString() {
-    return "DecisionInstanceOutput{" +
-        "id='" + id + '\'' +
-        ", name='" + name + '\'' +
-        ", value='" + value + '\'' +
-        ", ruleId='" + ruleId + '\'' +
-        ", ruleIndex=" + ruleIndex +
-        '}';
+    return "DecisionInstanceOutput{"
+        + "id='"
+        + id
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", value='"
+        + value
+        + '\''
+        + ", ruleId='"
+        + ruleId
+        + '\''
+        + ", ruleIndex="
+        + ruleIndex
+        + '}';
   }
 }

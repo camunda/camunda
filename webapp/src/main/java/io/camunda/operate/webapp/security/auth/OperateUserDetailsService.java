@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.security.auth;
 
+import static io.camunda.operate.util.CollectionUtil.map;
 
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -13,6 +14,7 @@ import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.UserStore;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,15 +26,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.List;
-
-import static io.camunda.operate.util.CollectionUtil.map;
-
 @Configuration
-@Profile("!" + OperateProfileService.LDAP_AUTH_PROFILE
-    + " & !" + OperateProfileService.SSO_AUTH_PROFILE
-    + " & !" + OperateProfileService.IDENTITY_AUTH_PROFILE
-)
+@Profile(
+    "!"
+        + OperateProfileService.LDAP_AUTH_PROFILE
+        + " & !"
+        + OperateProfileService.SSO_AUTH_PROFILE
+        + " & !"
+        + OperateProfileService.IDENTITY_AUTH_PROFILE)
 public class OperateUserDetailsService implements UserDetailsService {
 
   private static final Logger logger = LoggerFactory.getLogger(OperateUserDetailsService.class);
@@ -40,11 +41,9 @@ public class OperateUserDetailsService implements UserDetailsService {
   private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
   private static final String READ_ONLY_USER = "view";
 
-  @Autowired
-  private UserStore userStore;
+  @Autowired private UserStore userStore;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @Bean
   public PasswordEncoder getPasswordEncoder() {
@@ -55,7 +54,10 @@ public class OperateUserDetailsService implements UserDetailsService {
     if (needsToCreateUser()) {
       String userId = operateProperties.getUserId();
       if (!userExists(userId)) {
-        addUserWith(userId, operateProperties.getDisplayName(), operateProperties.getPassword(),
+        addUserWith(
+            userId,
+            operateProperties.getDisplayName(),
+            operateProperties.getPassword(),
             operateProperties.getRoles());
       }
       if (!userExists(READ_ONLY_USER)) {
@@ -67,24 +69,28 @@ public class OperateUserDetailsService implements UserDetailsService {
     }
   }
 
-  private boolean needsToCreateUser(){
-    if(DatabaseInfo.isOpensearch()){
+  private boolean needsToCreateUser() {
+    if (DatabaseInfo.isOpensearch()) {
       return operateProperties.getOpensearch().isCreateSchema();
     } else {
       return operateProperties.getElasticsearch().isCreateSchema();
     }
   }
 
-  private OperateUserDetailsService addUserWith(final String userId, final String displayName,
-                                                final String password, final List<String> roles) {
+  private OperateUserDetailsService addUserWith(
+      final String userId,
+      final String displayName,
+      final String password,
+      final List<String> roles) {
     logger.info("Create user in {} for userId {}", DatabaseInfo.getCurrent().getCode(), userId);
     final String passwordEncoded = getPasswordEncoder().encode(password);
-    final UserEntity userEntity = new UserEntity()
-        .setId(userId)
-        .setUserId(userId)
-        .setDisplayName(displayName)
-        .setPassword(passwordEncoded)
-        .setRoles(roles);
+    final UserEntity userEntity =
+        new UserEntity()
+            .setId(userId)
+            .setUserId(userId)
+            .setDisplayName(displayName)
+            .setPassword(passwordEncoded)
+            .setRoles(roles);
     userStore.save(userEntity);
     return this;
   }
@@ -99,8 +105,8 @@ public class OperateUserDetailsService implements UserDetailsService {
           userEntity.getPassword(),
           map(userEntity.getRoles(), Role::fromString));
     } catch (NotFoundException e) {
-      throw new UsernameNotFoundException(String.format("User with userId '%s' not found.", userId),
-          e);
+      throw new UsernameNotFoundException(
+          String.format("User with userId '%s' not found.", userId), e);
     }
   }
 
@@ -111,5 +117,4 @@ public class OperateUserDetailsService implements UserDetailsService {
       return false;
     }
   }
-
 }

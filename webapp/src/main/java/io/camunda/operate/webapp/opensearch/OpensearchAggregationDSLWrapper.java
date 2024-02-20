@@ -7,6 +7,8 @@
 package io.camunda.operate.webapp.opensearch;
 
 import io.camunda.operate.store.opensearch.dsl.AggregationDSL;
+import java.util.List;
+import java.util.Map;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -23,17 +25,16 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-
 /**
- * Wrapper class around the static AggregationDSL interface. Enhances testability by allowing classes to utilize the
- * AggregationDSL class without static calls, enabling unit tests to mock this out and reduce test complexity
+ * Wrapper class around the static AggregationDSL interface. Enhances testability by allowing
+ * classes to utilize the AggregationDSL class without static calls, enabling unit tests to mock
+ * this out and reduce test complexity
  */
 @Component
 public class OpensearchAggregationDSLWrapper {
 
-  public BucketSortAggregation bucketSortAggregation(@Nullable Integer size, SortOptions... sortOptions) {
+  public BucketSortAggregation bucketSortAggregation(
+      @Nullable Integer size, SortOptions... sortOptions) {
     return AggregationDSL.bucketSortAggregation(size, sortOptions);
   }
 
@@ -49,7 +50,8 @@ public class OpensearchAggregationDSLWrapper {
     return AggregationDSL.calendarIntervalByAlias(alias);
   }
 
-  public DateHistogramAggregation dateHistogramAggregation(String field, String calendarIntervalAlias, String format, boolean keyed) {
+  public DateHistogramAggregation dateHistogramAggregation(
+      String field, String calendarIntervalAlias, String format, boolean keyed) {
     return AggregationDSL.dateHistogramAggregation(field, calendarIntervalAlias, format, keyed);
   }
 
@@ -65,7 +67,8 @@ public class OpensearchAggregationDSLWrapper {
     return AggregationDSL.termAggregation(field, size, orderBy);
   }
 
-  public TopHitsAggregation topHitsAggregation(List<String> sourceFields, int size, SortOptions... sortOptions) {
+  public TopHitsAggregation topHitsAggregation(
+      List<String> sourceFields, int size, SortOptions... sortOptions) {
     return AggregationDSL.topHitsAggregation(sourceFields, size, sortOptions);
   }
 
@@ -73,15 +76,18 @@ public class OpensearchAggregationDSLWrapper {
     return AggregationDSL.topHitsAggregation(size, sortOptions);
   }
 
-  public Aggregation withSubaggregations(DateHistogramAggregation aggregation, Map<String, Aggregation> aggregations) {
+  public Aggregation withSubaggregations(
+      DateHistogramAggregation aggregation, Map<String, Aggregation> aggregations) {
     return AggregationDSL.withSubaggregations(aggregation, aggregations);
   }
 
-  public Aggregation withSubaggregations(FiltersAggregation aggregation, Map<String, Aggregation> aggregations) {
+  public Aggregation withSubaggregations(
+      FiltersAggregation aggregation, Map<String, Aggregation> aggregations) {
     return AggregationDSL.withSubaggregations(aggregation, aggregations);
   }
 
-  public Aggregation withSubaggregations(ChildrenAggregation childrenAggregation, Map<String, Aggregation> aggregations) {
+  public Aggregation withSubaggregations(
+      ChildrenAggregation childrenAggregation, Map<String, Aggregation> aggregations) {
     return AggregationDSL.withSubaggregations(childrenAggregation, aggregations);
   }
 
@@ -89,7 +95,8 @@ public class OpensearchAggregationDSLWrapper {
     return AggregationDSL.withSubaggregations(query, aggregations);
   }
 
-  public Aggregation withSubaggregations(TermsAggregation aggregation, Map<String, Aggregation> aggregations) {
+  public Aggregation withSubaggregations(
+      TermsAggregation aggregation, Map<String, Aggregation> aggregations) {
     return AggregationDSL.withSubaggregations(aggregation, aggregations);
   }
 

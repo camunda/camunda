@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.data.generation;
 
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.util.concurrent.ThreadFactory;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
@@ -13,8 +15,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -23,15 +23,15 @@ public class DataGeneratorConfig {
 
   private static final int JOB_WORKER_MAX_JOBS_ACTIVE = 5;
 
-  @Autowired
-  private DataGeneratorProperties dataGeneratorProperties;
+  @Autowired private DataGeneratorProperties dataGeneratorProperties;
 
   public ZeebeClient createZeebeClient() {
     String gatewayAddress = dataGeneratorProperties.getZeebeGatewayAddress();
-    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder()
-      .gatewayAddress(gatewayAddress)
-      .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
-      .usePlaintext();
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress(gatewayAddress)
+            .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
+            .usePlaintext();
     return builder.build();
   }
 
@@ -41,14 +41,18 @@ public class DataGeneratorConfig {
   }
 
   @Bean
-  public RestHighLevelClient createRestHighLevelClient(){
+  public RestHighLevelClient createRestHighLevelClient() {
     return new RestHighLevelClient(
-      RestClient.builder(new HttpHost(dataGeneratorProperties.getElasticsearchHost(), dataGeneratorProperties.getElasticsearchPort(), "http")));
+        RestClient.builder(
+            new HttpHost(
+                dataGeneratorProperties.getElasticsearchHost(),
+                dataGeneratorProperties.getElasticsearchPort(),
+                "http")));
   }
 
-
   @Bean("dataGeneratorThreadPoolExecutor")
-  public ThreadPoolTaskExecutor getDataGeneratorTaskExecutor(DataGeneratorProperties dataGeneratorProperties) {
+  public ThreadPoolTaskExecutor getDataGeneratorTaskExecutor(
+      DataGeneratorProperties dataGeneratorProperties) {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setThreadFactory(getThreadFactory());
     executor.setCorePoolSize(dataGeneratorProperties.getThreadCount());
@@ -63,8 +67,9 @@ public class DataGeneratorConfig {
     return new CustomizableThreadFactory("data_generator_") {
       @Override
       public Thread newThread(final Runnable runnable) {
-        Thread thread = new DataGeneratorThread(this.getThreadGroup(), runnable,
-            this.nextThreadName(), createZeebeClient());
+        Thread thread =
+            new DataGeneratorThread(
+                this.getThreadGroup(), runnable, this.nextThreadName(), createZeebeClient());
         thread.setPriority(this.getThreadPriority());
         thread.setDaemon(this.isDaemon());
         return thread;
@@ -85,47 +90,55 @@ public class DataGeneratorConfig {
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(final ThreadGroup group,
-        final Runnable target, final ZeebeClient zeebeClient) {
+    public DataGeneratorThread(
+        final ThreadGroup group, final Runnable target, final ZeebeClient zeebeClient) {
       super(group, target);
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(final String name,
-        final ZeebeClient zeebeClient) {
+    public DataGeneratorThread(final String name, final ZeebeClient zeebeClient) {
       super(name);
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(final ThreadGroup group,
-        final String name, final ZeebeClient zeebeClient) {
+    public DataGeneratorThread(
+        final ThreadGroup group, final String name, final ZeebeClient zeebeClient) {
       super(group, name);
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(final Runnable target, final String name,
-        final ZeebeClient zeebeClient) {
+    public DataGeneratorThread(
+        final Runnable target, final String name, final ZeebeClient zeebeClient) {
       super(target, name);
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(final ThreadGroup group,
-        final Runnable target, final String name,
+    public DataGeneratorThread(
+        final ThreadGroup group,
+        final Runnable target,
+        final String name,
         final ZeebeClient zeebeClient) {
       super(group, target, name);
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(final ThreadGroup group,
-        final Runnable target, final String name, final long stackSize,
+    public DataGeneratorThread(
+        final ThreadGroup group,
+        final Runnable target,
+        final String name,
+        final long stackSize,
         final ZeebeClient zeebeClient) {
       super(group, target, name, stackSize);
       this.zeebeClient = zeebeClient;
     }
 
-    public DataGeneratorThread(final ThreadGroup group, final Runnable target, final String name,
+    public DataGeneratorThread(
+        final ThreadGroup group,
+        final Runnable target,
+        final String name,
         final long stackSize,
-        final boolean inheritThreadLocals, final ZeebeClient zeebeClient) {
+        final boolean inheritThreadLocals,
+        final ZeebeClient zeebeClient) {
       super(group, target, name, stackSize, inheritThreadLocals);
       this.zeebeClient = zeebeClient;
     }
@@ -134,5 +147,4 @@ public class DataGeneratorConfig {
       return zeebeClient;
     }
   }
-
 }

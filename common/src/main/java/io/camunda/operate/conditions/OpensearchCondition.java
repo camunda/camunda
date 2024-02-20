@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.conditions;
 
-public class OpensearchCondition extends DatabaseCondition{
+public class OpensearchCondition extends DatabaseCondition {
 
   private static final String DATABASE = "opensearch";
 

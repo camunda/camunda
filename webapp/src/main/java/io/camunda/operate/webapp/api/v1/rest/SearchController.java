@@ -22,16 +22,15 @@ public interface SearchController<T> {
   String BY_KEY = "/{key}";
 
   @ResponseStatus(HttpStatus.OK)
-  @PostMapping( value = SEARCH,
+  @PostMapping(
+      value = SEARCH,
       consumes = {MediaType.APPLICATION_JSON_VALUE},
-      produces = {MediaType.APPLICATION_JSON_VALUE}
-  )
+      produces = {MediaType.APPLICATION_JSON_VALUE})
   Results<T> search(Query<T> query);
 
   @ResponseStatus(HttpStatus.OK)
-  @GetMapping(value = BY_KEY,
-      produces = {MediaType.APPLICATION_JSON_VALUE}
-  )
+  @GetMapping(
+      value = BY_KEY,
+      produces = {MediaType.APPLICATION_JSON_VALUE})
   T byKey(@Valid @PathVariable final Long key);
-
 }

@@ -6,7 +6,6 @@
  */
 package io.camunda.operate.entities;
 
-
 public abstract class OperateEntity<T extends OperateEntity<T>> {
 
   private String id;
@@ -19,13 +18,11 @@ public abstract class OperateEntity<T extends OperateEntity<T>> {
     this.id = id;
     return (T) this;
   }
-  
+
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     OperateEntity<T> that = (OperateEntity<T>) o;
 
@@ -39,7 +36,6 @@ public abstract class OperateEntity<T extends OperateEntity<T>> {
 
   @Override
   public String toString() {
-    return "OperateEntity{"
-      + "id='" + id + "\'}";
+    return "OperateEntity{" + "id='" + id + "\'}";
   }
 }

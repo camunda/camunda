@@ -6,12 +6,12 @@
  */
 package io.camunda.operate.opensearch.client.async;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.opensearch.client.AbstractOpenSearchOperationIT;
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class OpenSearchAsyncTaskOperationsIT extends AbstractOpenSearchOperationIT {
   @Test
@@ -21,16 +21,23 @@ public class OpenSearchAsyncTaskOperationsIT extends AbstractOpenSearchOperation
     var missingTaskId = node + ":" + Long.MAX_VALUE;
 
     // when
-    ThrowableAssert.ThrowingCallable throwingCallable = () -> withThreadPoolTaskScheduler(scheduler -> {
-      try {
-        return richOpenSearchClient.async().task().totalImpactedByTask(missingTaskId, scheduler).get();
-      } catch (Exception e) {
-        if(e.getCause() instanceof OperateRuntimeException) {
-          throw (OperateRuntimeException) e.getCause();
-        }
-        throw new RuntimeException(e);
-      }
-    });
+    ThrowableAssert.ThrowingCallable throwingCallable =
+        () ->
+            withThreadPoolTaskScheduler(
+                scheduler -> {
+                  try {
+                    return richOpenSearchClient
+                        .async()
+                        .task()
+                        .totalImpactedByTask(missingTaskId, scheduler)
+                        .get();
+                  } catch (Exception e) {
+                    if (e.getCause() instanceof OperateRuntimeException) {
+                      throw (OperateRuntimeException) e.getCause();
+                    }
+                    throw new RuntimeException(e);
+                  }
+                });
 
     // then
     assertThatThrownBy(throwingCallable).isInstanceOf(OperateRuntimeException.class);

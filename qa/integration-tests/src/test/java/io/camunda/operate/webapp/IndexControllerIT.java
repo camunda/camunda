@@ -6,9 +6,9 @@
  */
 package io.camunda.operate.webapp;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_KEY;
 import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_VALUE;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.security.UserService;
@@ -26,29 +26,24 @@ import org.springframework.test.context.junit4.SpringRunner;
 @Ignore("Will be addressed in later issues")
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {
-        TestApplication.class
-    },
+    classes = {TestApplication.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
-        SPRING_THYMELEAF_PREFIX_KEY + " = " + SPRING_THYMELEAF_PREFIX_VALUE,
-        "server.servlet.context-path = " + IndexControllerIT.CONTEXT_PATH
-    }
-)
+      SPRING_THYMELEAF_PREFIX_KEY + " = " + SPRING_THYMELEAF_PREFIX_VALUE,
+      "server.servlet.context-path = " + IndexControllerIT.CONTEXT_PATH
+    })
 public class IndexControllerIT {
 
-  final static String CONTEXT_PATH = "/context-path-test/";
+  static final String CONTEXT_PATH = "/context-path-test/";
 
-  @Autowired
-  private TestRestTemplate webclient;
+  @Autowired private TestRestTemplate webclient;
 
-  @MockBean
-  private UserService userService;
+  @MockBean private UserService userService;
 
   @Test
   public void shouldReturnCurrentContextPath() {
     String baseTagWithContextPath = String.format("<base href=\"%s\"/>", CONTEXT_PATH);
-    ResponseEntity<String> response = webclient.getForEntity("/login",String.class);
+    ResponseEntity<String> response = webclient.getForEntity("/login", String.class);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).contains(baseTagWithContextPath);
   }

@@ -12,8 +12,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(name = "Process object")
 public class ProcessDto implements CreatableFromEntity<ProcessDto, ProcessEntity> {
 
-  @Schema(description = "Unique id of the process, must be used when filtering instances by process ids.")
+  @Schema(
+      description =
+          "Unique id of the process, must be used when filtering instances by process ids.")
   private String id;
+
   private String name;
   private int version;
   private String bpmnProcessId;
@@ -65,20 +68,17 @@ public class ProcessDto implements CreatableFromEntity<ProcessDto, ProcessEntity
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     ProcessDto that = (ProcessDto) o;
 
-    if (version != that.version)
-      return false;
-    if (id != null ? !id.equals(that.id) : that.id != null)
-      return false;
-    if (name != null ? !name.equals(that.name) : that.name != null)
-      return false;
-    return bpmnProcessId != null ? bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId == null;
+    if (version != that.version) return false;
+    if (id != null ? !id.equals(that.id) : that.id != null) return false;
+    if (name != null ? !name.equals(that.name) : that.name != null) return false;
+    return bpmnProcessId != null
+        ? bpmnProcessId.equals(that.bpmnProcessId)
+        : that.bpmnProcessId == null;
   }
 
   @Override
@@ -89,5 +89,4 @@ public class ProcessDto implements CreatableFromEntity<ProcessDto, ProcessEntity
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     return result;
   }
-
 }

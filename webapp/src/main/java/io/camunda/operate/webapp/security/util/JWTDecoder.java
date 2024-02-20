@@ -12,7 +12,6 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.Header;
 import com.auth0.jwt.interfaces.Payload;
-
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -21,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class is based on com.auth0.jwt.JWTDecoder
- * As we don't have access to it (default package accessible)
+ * This class is based on com.auth0.jwt.JWTDecoder As we don't have access to it (default package
+ * accessible)
  */
 public class JWTDecoder implements DecodedJWT, Serializable {
   private static final long serialVersionUID = 1873362438023312895L;
@@ -41,7 +40,8 @@ public class JWTDecoder implements DecodedJWT, Serializable {
     String payloadJson;
     try {
       headerJson = new String(Base64.getUrlDecoder().decode(this.parts[0]), StandardCharsets.UTF_8);
-      payloadJson = new String(Base64.getUrlDecoder().decode(this.parts[1]), StandardCharsets.UTF_8);
+      payloadJson =
+          new String(Base64.getUrlDecoder().decode(this.parts[1]), StandardCharsets.UTF_8);
     } catch (NullPointerException var6) {
       throw new JWTDecodeException("The UTF-8 Charset isn't initialized.", var6);
     } catch (IllegalArgumentException var7) {
@@ -129,17 +129,17 @@ public class JWTDecoder implements DecodedJWT, Serializable {
   }
 
   abstract static class TokenUtils {
-    TokenUtils() {
-    }
+    TokenUtils() {}
 
     static String[] splitToken(String token) throws JWTDecodeException {
       String[] parts = token.split("\\.");
       if (parts.length == 2 && token.endsWith(".")) {
-        parts = new String[]{parts[0], parts[1], ""};
+        parts = new String[] {parts[0], parts[1], ""};
       }
 
       if (parts.length != 3) {
-        throw new JWTDecodeException(String.format("The token was expected to have 3 parts, but got %s.", parts.length));
+        throw new JWTDecodeException(
+            String.format("The token was expected to have 3 parts, but got %s.", parts.length));
       } else {
         return parts;
       }

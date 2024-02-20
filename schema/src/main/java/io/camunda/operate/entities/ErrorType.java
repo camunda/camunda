@@ -43,7 +43,8 @@ public enum ErrorType {
     try {
       return ErrorType.valueOf(errorType);
     } catch (IllegalArgumentException ex) {
-      logger.error("Error type not found for value [{}]. UNKNOWN type will be assigned.", errorType);
+      logger.error(
+          "Error type not found for value [{}]. UNKNOWN type will be assigned.", errorType);
       return UNKNOWN;
     }
   }

@@ -6,8 +6,5 @@
  */
 package io.camunda.operate.schema.migration;
 
-/**
- * This migration step fills the new index with data. Does not require index of older version.
- */
-public interface DataInitializerStep {
-}
+/** This migration step fills the new index with data. Does not require index of older version. */
+public interface DataInitializerStep {}

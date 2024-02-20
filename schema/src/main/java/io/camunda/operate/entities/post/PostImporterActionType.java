@@ -7,7 +7,5 @@
 package io.camunda.operate.entities.post;
 
 public enum PostImporterActionType {
-
   INCIDENT
-
 }

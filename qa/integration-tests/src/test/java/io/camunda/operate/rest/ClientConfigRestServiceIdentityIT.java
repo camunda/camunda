@@ -6,6 +6,11 @@
  */
 package io.camunda.operate.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -21,52 +26,47 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @ActiveProfiles({"identity-auth", "test"})
 @SpringBootTest(
     classes = {
-        TestApplicationWithNoBeans.class,
-        OperateProfileService.class,
-        ClientConfig.class,
-        ClientConfigRestService.class,
-        JacksonConfig.class,
-        OperateDateTimeFormatter.class,
-        DatabaseInfo.class,
-        OperateProperties.class},
-    properties = {
-        OperateProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url"
-    }
-)
+      TestApplicationWithNoBeans.class,
+      OperateProfileService.class,
+      ClientConfig.class,
+      ClientConfigRestService.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class,
+      OperateProperties.class
+    },
+    properties = {OperateProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url"})
 public class ClientConfigRestServiceIdentityIT extends OperateAbstractIT {
 
   @Test
   public void testGetClientConfig() throws Exception {
     // when
     MockHttpServletRequestBuilder request = get("/client-config.js");
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentTypeCompatibleWith("text/javascript"))
-        .andReturn();
+    MvcResult mvcResult =
+        mockMvc
+            .perform(request)
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith("text/javascript"))
+            .andReturn();
 
     // then
-    assertThat(mvcResult.getResponse().getContentAsString()).isEqualTo(
-        "window.clientConfig = {"
-            + "\"isEnterprise\":false,"
-            + "\"canLogout\":true,"
-            + "\"contextPath\":\"\","
-            + "\"organizationId\":null,"
-            + "\"clusterId\":null,"
-            + "\"mixpanelAPIHost\":null,"
-            + "\"mixpanelToken\":null,"
-            + "\"isLoginDelegated\":true,"
-            + "\"tasklistUrl\":null,"
-            + "\"resourcePermissionsEnabled\":false,"
-            + "\"multiTenancyEnabled\":false"
-            + "};");
+    assertThat(mvcResult.getResponse().getContentAsString())
+        .isEqualTo(
+            "window.clientConfig = {"
+                + "\"isEnterprise\":false,"
+                + "\"canLogout\":true,"
+                + "\"contextPath\":\"\","
+                + "\"organizationId\":null,"
+                + "\"clusterId\":null,"
+                + "\"mixpanelAPIHost\":null,"
+                + "\"mixpanelToken\":null,"
+                + "\"isLoginDelegated\":true,"
+                + "\"tasklistUrl\":null,"
+                + "\"resourcePermissionsEnabled\":false,"
+                + "\"multiTenancyEnabled\":false"
+                + "};");
   }
-
 }

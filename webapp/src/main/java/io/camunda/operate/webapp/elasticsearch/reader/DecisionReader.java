@@ -22,14 +22,13 @@ import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -48,53 +47,56 @@ import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
-public class DecisionReader extends AbstractReader implements io.camunda.operate.webapp.reader.DecisionReader {
+public class DecisionReader extends AbstractReader
+    implements io.camunda.operate.webapp.reader.DecisionReader {
 
   private static final Logger logger = LoggerFactory.getLogger(DecisionReader.class);
 
-  @Autowired
-  private DecisionIndex decisionIndex;
+  @Autowired private DecisionIndex decisionIndex;
 
-  @Autowired
-  private DecisionRequirementsIndex decisionRequirementsIndex;
+  @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
 
   @Autowired(required = false)
   private PermissionsService permissionsService;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   private DecisionDefinitionEntity fromSearchHit(String processString) {
-    return ElasticsearchUtil
-        .fromSearchHit(processString, objectMapper, DecisionDefinitionEntity.class);
+    return ElasticsearchUtil.fromSearchHit(
+        processString, objectMapper, DecisionDefinitionEntity.class);
   }
 
   /**
    * Gets the DMN diagram XML as a string.
+   *
    * @param decisionDefinitionKey
    * @return
    */
   @Override
   public String getDiagram(Long decisionDefinitionKey) {
-    //get decisionRequirementsId
-    SearchRequest searchRequest = new SearchRequest(decisionIndex.getAlias())
-        .source(new SearchSourceBuilder().query(idsQuery().addIds(decisionDefinitionKey.toString())));
+    // get decisionRequirementsId
+    SearchRequest searchRequest =
+        new SearchRequest(decisionIndex.getAlias())
+            .source(
+                new SearchSourceBuilder()
+                    .query(idsQuery().addIds(decisionDefinitionKey.toString())));
     try {
       SearchResponse response = tenantAwareClient.search(searchRequest);
       if (response.getHits().getTotalHits().value == 0) {
-        throw new NotFoundException(
-            "No decision definition found for id " + decisionDefinitionKey);
+        throw new NotFoundException("No decision definition found for id " + decisionDefinitionKey);
       }
-      final Object key = response.getHits().getHits()[0].getSourceAsMap()
-          .get(DECISION_REQUIREMENTS_KEY);
-      //key is either Integer or Long depending on value
+      final Object key =
+          response.getHits().getHits()[0].getSourceAsMap().get(DECISION_REQUIREMENTS_KEY);
+      // key is either Integer or Long depending on value
       final Long decisionRequirementsId = Long.valueOf(String.valueOf(key));
 
-      //get XML
-      searchRequest = new SearchRequest(decisionRequirementsIndex.getAlias())
-          .source(new SearchSourceBuilder()
-              .query(idsQuery().addIds(String.valueOf(decisionRequirementsId)))
-              .fetchSource(XML, null));
+      // get XML
+      searchRequest =
+          new SearchRequest(decisionRequirementsIndex.getAlias())
+              .source(
+                  new SearchSourceBuilder()
+                      .query(idsQuery().addIds(String.valueOf(decisionRequirementsId)))
+                      .fetchSource(XML, null));
 
       response = tenantAwareClient.search(searchRequest);
 
@@ -109,8 +111,9 @@ public class DecisionReader extends AbstractReader implements io.camunda.operate
             String.format("Could not find DRD with id '%s'.", decisionRequirementsId));
       }
     } catch (IOException e) {
-      final String message = String
-          .format("Exception occurred, while obtaining the decision diagram: %s", e.getMessage());
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining the decision diagram: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
@@ -118,25 +121,31 @@ public class DecisionReader extends AbstractReader implements io.camunda.operate
 
   /**
    * Gets the decision by key
+   *
    * @param decisionDefinitionKey decisionDefinitionKey
    * @return decision
    */
   @Override
   public DecisionDefinitionEntity getDecision(Long decisionDefinitionKey) {
-    final SearchRequest searchRequest = new SearchRequest(decisionIndex.getAlias())
-        .source(new SearchSourceBuilder()
-            .query(termQuery(DecisionIndex.KEY, decisionDefinitionKey)));
+    final SearchRequest searchRequest =
+        new SearchRequest(decisionIndex.getAlias())
+            .source(
+                new SearchSourceBuilder()
+                    .query(termQuery(DecisionIndex.KEY, decisionDefinitionKey)));
     try {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
       if (response.getHits().getTotalHits().value == 1) {
         return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
       } else if (response.getHits().getTotalHits().value > 1) {
-        throw new NotFoundException(String.format("Could not find unique decision with key '%s'.", decisionDefinitionKey));
+        throw new NotFoundException(
+            String.format("Could not find unique decision with key '%s'.", decisionDefinitionKey));
       } else {
-        throw new NotFoundException(String.format("Could not find decision with key '%s'.", decisionDefinitionKey));
+        throw new NotFoundException(
+            String.format("Could not find decision with key '%s'.", decisionDefinitionKey));
       }
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining the decision: %s", e.getMessage());
+      final String message =
+          String.format("Exception occurred, while obtaining the decision: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
@@ -144,64 +153,78 @@ public class DecisionReader extends AbstractReader implements io.camunda.operate
 
   /**
    * Returns map of Decision entities grouped by decisionId.
+   *
    * @return
    */
   @Override
-  public Map<String, List<DecisionDefinitionEntity>> getDecisionsGrouped(DecisionRequestDto request) {
+  public Map<String, List<DecisionDefinitionEntity>> getDecisionsGrouped(
+      DecisionRequestDto request) {
     final String tenantsGroupsAggName = "group_by_tenantId";
     final String groupsAggName = "group_by_decisionId";
     final String decisionsAggName = "decisions";
 
     AggregationBuilder agg =
-      terms(tenantsGroupsAggName)
-        .field(DecisionIndex.TENANT_ID)
-        .size(ElasticsearchUtil.TERMS_AGG_SIZE)
-        .subAggregation(
-            terms(groupsAggName)
-              .field(DecisionIndex.DECISION_ID)
-              .size(ElasticsearchUtil.TERMS_AGG_SIZE)
-              .subAggregation(
-                topHits(decisionsAggName)
-                  .fetchSource(new String[] { DecisionIndex.ID, DecisionIndex.NAME, DecisionIndex.VERSION,
-                      DecisionIndex.DECISION_ID, DecisionIndex.TENANT_ID  }, null)
-                  .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
-                  .sort(DecisionIndex.VERSION, SortOrder.DESC)));
+        terms(tenantsGroupsAggName)
+            .field(DecisionIndex.TENANT_ID)
+            .size(ElasticsearchUtil.TERMS_AGG_SIZE)
+            .subAggregation(
+                terms(groupsAggName)
+                    .field(DecisionIndex.DECISION_ID)
+                    .size(ElasticsearchUtil.TERMS_AGG_SIZE)
+                    .subAggregation(
+                        topHits(decisionsAggName)
+                            .fetchSource(
+                                new String[] {
+                                  DecisionIndex.ID,
+                                  DecisionIndex.NAME,
+                                  DecisionIndex.VERSION,
+                                  DecisionIndex.DECISION_ID,
+                                  DecisionIndex.TENANT_ID
+                                },
+                                null)
+                            .size(ElasticsearchUtil.TOPHITS_AGG_SIZE)
+                            .sort(DecisionIndex.VERSION, SortOrder.DESC)));
 
-    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
-        .aggregation(agg)
-        .size(0);
+    SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().aggregation(agg).size(0);
 
     sourceBuilder.query(buildQuery(request.getTenantId()));
 
-    final SearchRequest searchRequest = new SearchRequest(decisionIndex.getAlias()).source(sourceBuilder);
+    final SearchRequest searchRequest =
+        new SearchRequest(decisionIndex.getAlias()).source(sourceBuilder);
 
     try {
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final Terms groups = searchResponse.getAggregations().get(tenantsGroupsAggName);
       Map<String, List<DecisionDefinitionEntity>> result = new HashMap<>();
 
-      groups.getBuckets().stream().forEach(b -> {
+      groups.getBuckets().stream()
+          .forEach(
+              b -> {
+                final String groupTenantId = b.getKeyAsString();
+                final Terms decisionGroups = b.getAggregations().get(groupsAggName);
 
-        final String groupTenantId = b.getKeyAsString();
-        final Terms decisionGroups = b.getAggregations().get(groupsAggName);
+                decisionGroups.getBuckets().stream()
+                    .forEach(
+                        tenantB -> {
+                          final String decisionId = tenantB.getKeyAsString();
+                          String groupKey = groupTenantId + "_" + decisionId;
+                          result.put(groupKey, new ArrayList<>());
 
-        decisionGroups.getBuckets().stream().forEach(tenantB -> {
-          final String decisionId = tenantB.getKeyAsString();
-          String groupKey = groupTenantId + "_" + decisionId;
-          result.put(groupKey, new ArrayList<>());
-
-          final TopHits processes = tenantB.getAggregations().get(decisionsAggName);
-          final SearchHit[] hits = processes.getHits().getHits();
-          for (SearchHit searchHit : hits) {
-            final DecisionDefinitionEntity decisionEntity = fromSearchHit(searchHit.getSourceAsString());
-            result.get(groupKey).add(decisionEntity);
-          }
-        });
-      });
+                          final TopHits processes = tenantB.getAggregations().get(decisionsAggName);
+                          final SearchHit[] hits = processes.getHits().getHits();
+                          for (SearchHit searchHit : hits) {
+                            final DecisionDefinitionEntity decisionEntity =
+                                fromSearchHit(searchHit.getSourceAsString());
+                            result.get(groupKey).add(decisionEntity);
+                          }
+                        });
+              });
 
       return result;
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining grouped processes: %s", e.getMessage());
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining grouped processes: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -224,5 +247,4 @@ public class DecisionReader extends AbstractReader implements io.camunda.operate
     }
     return q;
   }
-
 }

@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -40,7 +39,9 @@ public interface AuthenticationTestable {
   String SET_COOKIE_HEADER = "Set-Cookie";
 
   // Frontend is relying on this - see e2e tests
-  Pattern COOKIE_PATTERN = Pattern.compile("^" + OperateURIs.COOKIE_JSESSIONID + "=[0-9A-Z]{32}$", Pattern.CASE_INSENSITIVE);
+  Pattern COOKIE_PATTERN =
+      Pattern.compile(
+          "^" + OperateURIs.COOKIE_JSESSIONID + "=[0-9A-Z]{32}$", Pattern.CASE_INSENSITIVE);
   String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
 
   default HttpEntity<Map<String, String>> prepareRequestWithCookies(ResponseEntity<?> response) {
@@ -57,39 +58,43 @@ public interface AuthenticationTestable {
   }
 
   default List<String> getSessionCookies(ResponseEntity<?> response) {
-    return getCookies(response).stream().filter(key -> key.contains(COOKIE_JSESSIONID))
+    return getCookies(response).stream()
+        .filter(key -> key.contains(COOKIE_JSESSIONID))
         .collect(Collectors.toList());
   }
 
   default void assertThatCookiesAndSecurityHeadersAreSet(ResponseEntity<?> response) {
     List<String> cookies = getSessionCookies(response);
     assertThat(cookies).isNotEmpty();
-    String lastSetCookie = cookies.get(cookies.size()-1);
+    String lastSetCookie = cookies.get(cookies.size() - 1);
     assertThat(lastSetCookie.split(";")[0]).matches(COOKIE_PATTERN);
     assertSameSiteIsSet(lastSetCookie);
     assertThatSecurityHeadersAreSet(response);
   }
 
   default void assertThatSecurityHeadersAreSet(ResponseEntity<?> response) {
-    var cspHeaderValues = response.getHeaders().getOrEmpty(ContentSecurityPolicyServerHttpHeadersWriter.CONTENT_SECURITY_POLICY);
+    var cspHeaderValues =
+        response
+            .getHeaders()
+            .getOrEmpty(ContentSecurityPolicyServerHttpHeadersWriter.CONTENT_SECURITY_POLICY);
     assertThat(cspHeaderValues).isNotEmpty();
     assertThat(cspHeaderValues).first().isEqualTo(WebSecurityProperties.DEFAULT_SECURITY_POLICY);
   }
 
-  default void assertSameSiteIsSet(String cookie)  {
+  default void assertSameSiteIsSet(String cookie) {
     assertThat(cookie).contains("SameSite=Lax");
   }
 
   default void assertThatCookiesAreDeleted(ResponseEntity<?> response) {
     final String emptyValue = "=;";
     List<String> sessionCookies = getSessionCookies(response);
-    if(!sessionCookies.isEmpty()){
-      String lastSetCookie = sessionCookies.get(sessionCookies.size()-1);
+    if (!sessionCookies.isEmpty()) {
+      String lastSetCookie = sessionCookies.get(sessionCookies.size() - 1);
       assertThat(lastSetCookie).contains(COOKIE_JSESSIONID + emptyValue);
     }
   }
 
-  default ResponseEntity<Void> login(String username,String password) {
+  default ResponseEntity<Void> login(String username, String password) {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_FORM_URLENCODED);
 
@@ -97,7 +102,8 @@ public interface AuthenticationTestable {
     body.add("username", username);
     body.add("password", password);
 
-    return getTestRestTemplate().postForEntity(LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
+    return getTestRestTemplate()
+        .postForEntity(LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
   }
 
   default ResponseEntity<?> logout(ResponseEntity<?> previousResponse) {
@@ -106,8 +112,13 @@ public interface AuthenticationTestable {
   }
 
   default UserDto getCurrentUser(ResponseEntity<?> previousResponse) {
-    final ResponseEntity<UserDto> responseEntity = getTestRestTemplate().exchange(CURRENT_USER_URL, HttpMethod.GET,
-        prepareRequestWithCookies(previousResponse), UserDto.class);
+    final ResponseEntity<UserDto> responseEntity =
+        getTestRestTemplate()
+            .exchange(
+                CURRENT_USER_URL,
+                HttpMethod.GET,
+                prepareRequestWithCookies(previousResponse),
+                UserDto.class);
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     return responseEntity.getBody();
   }

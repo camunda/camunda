@@ -6,6 +6,9 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.IncidentEntity;
@@ -23,32 +26,23 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.operate.zeebe.ImportValueType;
+import java.util.List;
+import java.util.function.Predicate;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.List;
-import java.util.function.Predicate;
-
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
 
-  @Autowired
-  private ProcessInstanceReader processInstanceReader;
+  @Autowired private ProcessInstanceReader processInstanceReader;
 
-  @Autowired
-  private IncidentReader incidentReader;
+  @Autowired private IncidentReader incidentReader;
 
-  @Autowired
-  private ListViewReader listViewReader;
+  @Autowired private ListViewReader listViewReader;
 
-  @Autowired
-  private CancelProcessInstanceHandler cancelProcessInstanceHandler;
+  @Autowired private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
-  @Autowired
-  private TestZeebeRepository testZeebeRepository;
+  @Autowired private TestZeebeRepository testZeebeRepository;
 
   @Before
   public void before() {
@@ -62,38 +56,41 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
     final String processId = "process";
     final String taskId = "task";
     final String errorMessage = "Some error";
-    final Long processDefinitionKey = tester.deployProcess("single-task.bpmn")
-        .getProcessDefinitionKey();
-    final Long processInstanceKey = tester
-        .startProcessInstance(processId, null)
-        .and()
-        .failTask(taskId, errorMessage)
-        .getProcessInstanceKey();
+    final Long processDefinitionKey =
+        tester.deployProcess("single-task.bpmn").getProcessDefinitionKey();
+    final Long processInstanceKey =
+        tester
+            .startProcessInstance(processId, null)
+            .and()
+            .failTask(taskId, errorMessage)
+            .getProcessInstanceKey();
     processAllRecordsWithoutPostImporterAndWait(incidentsArePresentCheck, processInstanceKey, 1);
     Tuple<Long, Long> incidentData = findSingleZeebeIncidentData(processInstanceKey);
     tester.resolveIncident(incidentData.getRight(), incidentData.getLeft());
-    //let the Zeebe process incident RESOLVE and export
+    // let the Zeebe process incident RESOLVE and export
     while (countZeebeIncidentRecords(processInstanceKey) < 2) {
       ThreadUtil.sleepFor(1000L);
     }
     processAllRecordsWithoutPostImporterAndWait(postImporterQueueCountCheck, 2);
 
-    //when
-    //run with post importer
+    // when
+    // run with post importer
     processImportTypeAndWait(ImportValueType.INCIDENT, incidentsAreResolved, processInstanceKey, 1);
 
-    //then
-    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    // then
+    final ProcessInstanceForListViewEntity processInstanceEntity =
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceEntity.isIncident()).isFalse();
-    //and
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
+    // and
+    final List<IncidentEntity> allIncidents =
+        incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(0);
 
-    //and
+    // and
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.ACTIVE);
 
-    //and
+    // and
     final List<FlowNodeInstanceEntity> flowNodeInstances = getFlowNodeInstances(processInstanceKey);
     assertThat(flowNodeInstances).hasSize(2);
     assertThat(flowNodeInstances.get(1).getState()).isEqualTo(FlowNodeState.ACTIVE);
@@ -106,68 +103,65 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
     final String processId = "process";
     final String taskId = "task";
     final String errorMessage = "Some error";
-    final Long processDefinitionKey = tester.deployProcess("single-task.bpmn")
-        .getProcessDefinitionKey();
-    final Long processInstanceKey = tester
-        .startProcessInstance(processId, null)
-        .getProcessInstanceKey();
-    processRecordTypeWithoutPostImporterAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey);
-    tester
-        .processInstanceIsStarted()
-        .and()
-        .failTask(taskId, errorMessage);
+    final Long processDefinitionKey =
+        tester.deployProcess("single-task.bpmn").getProcessDefinitionKey();
+    final Long processInstanceKey =
+        tester.startProcessInstance(processId, null).getProcessInstanceKey();
+    processRecordTypeWithoutPostImporterAndWait(
+        ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey);
+    tester.processInstanceIsStarted().and().failTask(taskId, errorMessage);
 
-    //cancel and delete process instance
-    tester.cancelProcessInstanceOperation()
-        .and()
-        .executeOperations();
-    processRecordTypeWithoutPostImporterAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCanceledCheck, processInstanceKey);
-    tester
-        .deleteProcessInstance()
-        .and()
-        .executeOperations();
+    // cancel and delete process instance
+    tester.cancelProcessInstanceOperation().and().executeOperations();
+    processRecordTypeWithoutPostImporterAndWait(
+        ImportValueType.PROCESS_INSTANCE, processInstanceIsCanceledCheck, processInstanceKey);
+    tester.deleteProcessInstance().and().executeOperations();
 
-    //create the 2nd instance with new incident
-    final Long processInstanceKey2 = tester
-        .startProcessInstance(processId, null)
-        .getProcessInstanceKey();
-    processRecordTypeWithoutPostImporterAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey2);
-    tester
-        .processInstanceIsStarted()
-        .and()
-        .failTask(taskId, errorMessage);
+    // create the 2nd instance with new incident
+    final Long processInstanceKey2 =
+        tester.startProcessInstance(processId, null).getProcessInstanceKey();
+    processRecordTypeWithoutPostImporterAndWait(
+        ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey2);
+    tester.processInstanceIsStarted().and().failTask(taskId, errorMessage);
 
-    //when
-    //run with post importer
+    // when
+    // run with post importer
     processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsActiveCheck, processInstanceKey2);
 
-    //then
-    final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey2);
+    // then
+    final ProcessInstanceForListViewEntity processInstanceEntity =
+        processInstanceReader.getProcessInstanceByKey(processInstanceKey2);
     assertThat(processInstanceEntity.isIncident()).isTrue();
-    //and
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey2);
+    // and
+    final List<IncidentEntity> allIncidents =
+        incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey2);
     assertThat(allIncidents).hasSize(1);
 
-    //and
+    // and
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
 
-    //and
-    final List<FlowNodeInstanceEntity> flowNodeInstances = getFlowNodeInstances(processInstanceKey2);
+    // and
+    final List<FlowNodeInstanceEntity> flowNodeInstances =
+        getFlowNodeInstances(processInstanceKey2);
     assertThat(flowNodeInstances).hasSize(2);
     assertThat(flowNodeInstances.get(1).getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(flowNodeInstances.get(1).isIncident()).isTrue();
   }
 
   private Tuple<Long, Long> findSingleZeebeIncidentData(Long processInstanceKey) {
-    record Value(Long jobKey){};
-    record Result(Long key, Value value){};
+    record Value(Long jobKey) {}
+    ;
+    record Result(Long key, Value value) {}
+    ;
 
     var index = zeebeRule.getPrefix() + "_incident*";
-    List<Tuple<Long, Long>> tuples = testZeebeRepository.scrollTerm(index, "value.processInstanceKey", processInstanceKey, Result.class)
-      .stream()
-      .map(result -> new Tuple<>(result.key, result.value.jobKey))
-      .toList();
+    List<Tuple<Long, Long>> tuples =
+        testZeebeRepository
+            .scrollTerm(index, "value.processInstanceKey", processInstanceKey, Result.class)
+            .stream()
+            .map(result -> new Tuple<>(result.key, result.value.jobKey))
+            .toList();
 
     assertThat(tuples).hasSize(1);
     return tuples.get(0);
@@ -175,19 +169,23 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
 
   private long countZeebeIncidentRecords(Long processInstanceKey) {
     var index = zeebeRule.getPrefix() + "_incident*";
-    return testZeebeRepository.scrollTerm(index, "value.processInstanceKey", processInstanceKey, Object.class).size();
+    return testZeebeRepository
+        .scrollTerm(index, "value.processInstanceKey", processInstanceKey, Object.class)
+        .size();
   }
 
-  protected void processImportTypeAndWait(ImportValueType importValueType,
-      Predicate<Object[]> waitTill, Object... arguments) {
+  protected void processImportTypeAndWait(
+      ImportValueType importValueType, Predicate<Object[]> waitTill, Object... arguments) {
     searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
   }
 
-  private void processAllRecordsWithoutPostImporterAndWait(Predicate<Object[]> waitTill, Object... arguments) {
+  private void processAllRecordsWithoutPostImporterAndWait(
+      Predicate<Object[]> waitTill, Object... arguments) {
     searchTestRule.processAllRecordsAndWait(false, waitTill, null, arguments);
   }
 
-  private void processRecordTypeWithoutPostImporterAndWait(ImportValueType valueType, Predicate<Object[]> waitTill, Object... arguments) {
+  private void processRecordTypeWithoutPostImporterAndWait(
+      ImportValueType valueType, Predicate<Object[]> waitTill, Object... arguments) {
     searchTestRule.processRecordsWithTypeAndWait(valueType, false, waitTill, arguments);
   }
 
@@ -203,5 +201,4 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
   protected List<FlowNodeInstanceEntity> getFlowNodeInstances(Long processInstanceKey) {
     return tester.getAllFlowNodeInstances(processInstanceKey);
   }
-
 }

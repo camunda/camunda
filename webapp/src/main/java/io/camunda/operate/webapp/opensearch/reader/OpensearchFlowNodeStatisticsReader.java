@@ -6,31 +6,6 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.store.opensearch.dsl.RequestDSL;
-import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.Convertable;
-import io.camunda.operate.util.MapPath;
-import io.camunda.operate.webapp.opensearch.OpenSearchQueryHelper;
-import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
-import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_STATE;
@@ -47,20 +22,39 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
+import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.util.Convertable;
+import io.camunda.operate.util.MapPath;
+import io.camunda.operate.webapp.opensearch.OpenSearchQueryHelper;
+import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
+import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsReader {
 
-  @Autowired
-  private ListViewTemplate listViewTemplate;
+  @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired
-  private OpenSearchQueryHelper openSearchQueryHelper;
+  @Autowired private OpenSearchQueryHelper openSearchQueryHelper;
 
-  @Autowired
-  private RichOpenSearchClient richOpenSearchClient;
-
+  @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @FunctionalInterface
   private interface MapUpdater {
@@ -71,7 +65,7 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
   public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(ListViewQueryDto query) {
     SearchRequest.Builder searchRequest;
 
-    if( !query.isFinished()) {
+    if (!query.isFinished()) {
       searchRequest = createQuery(query, RequestDSL.QueryType.ONLY_RUNTIME);
     } else {
       searchRequest = createQuery(query, RequestDSL.QueryType.ALL);
@@ -81,9 +75,10 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
     return statisticsMap.values();
   }
 
-  private SearchRequest.Builder createQuery(ListViewQueryDto query, RequestDSL.QueryType queryType){
+  private SearchRequest.Builder createQuery(
+      ListViewQueryDto query, RequestDSL.QueryType queryType) {
     Map<String, Aggregation> subAggregations = new HashMap<>();
-    if (query.isActive()){
+    if (query.isActive()) {
       subAggregations.put(AGG_ACTIVE_ACTIVITIES, getActiveFlowNodesAggregation());
     }
     if (query.isCanceled()) {
@@ -95,114 +90,144 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
     subAggregations.put(AGG_FINISHED_ACTIVITIES, getFinishedActivitiesAggregation());
 
     return searchRequestBuilder(listViewTemplate, queryType)
-        .query(withTenantCheck(constantScore(openSearchQueryHelper.createQueryFragment(query, queryType))))
+        .query(
+            withTenantCheck(
+                constantScore(openSearchQueryHelper.createQueryFragment(query, queryType))))
         .size(0)
-        .aggregations(AGG_ACTIVITIES,
+        .aggregations(
+            AGG_ACTIVITIES,
             withSubaggregations(children(ACTIVITIES_JOIN_RELATION), subAggregations));
   }
 
-  private Aggregation getTerminatedActivitiesAggregation(){
+  private Aggregation getTerminatedActivitiesAggregation() {
     return withSubaggregations(
-        term(ACTIVITY_STATE, FlowNodeState.TERMINATED.name()),
+        term(ACTIVITY_STATE, FlowNodeState.TERMINATED.name()), uniqueActivitiesAggregation());
+  }
+
+  private Aggregation getActiveFlowNodesAggregation() {
+    return withSubaggregations(
+        and(term(INCIDENT, false), term(ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())),
         uniqueActivitiesAggregation());
   }
 
-  private Aggregation getActiveFlowNodesAggregation(){
-    return withSubaggregations(and(
-            term(INCIDENT, false),
-            term(ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())
-        ),
+  private Aggregation getIncidentActivitiesAggregation() {
+    return withSubaggregations(
+        and(term(INCIDENT, true), term(ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())),
         uniqueActivitiesAggregation());
   }
 
-  private Aggregation getIncidentActivitiesAggregation(){
-    return withSubaggregations( and(
-        term(INCIDENT, true),
-        term(ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())
-      ),
-     uniqueActivitiesAggregation());
-  }
-
-  private Aggregation getFinishedActivitiesAggregation(){
+  private Aggregation getFinishedActivitiesAggregation() {
     return withSubaggregations(
         and(
             term(ACTIVITY_TYPE, FlowNodeType.END_EVENT.toString()),
-            term(ACTIVITY_STATE, FlowNodeState.COMPLETED.toString())
-        ),
+            term(ACTIVITY_STATE, FlowNodeState.COMPLETED.toString())),
         uniqueActivitiesAggregation());
   }
 
-  private Map<String,Aggregation> uniqueActivitiesAggregation(){
-    return  Map.of(AGG_UNIQUE_ACTIVITIES, withSubaggregations(
-        termAggregation(ACTIVITY_ID, TERMS_AGG_SIZE),
-        Map.of(AGG_ACTIVITY_TO_PROCESS, parent(ACTIVITIES_JOIN_RELATION)._toAggregation())));
+  private Map<String, Aggregation> uniqueActivitiesAggregation() {
+    return Map.of(
+        AGG_UNIQUE_ACTIVITIES,
+        withSubaggregations(
+            termAggregation(ACTIVITY_ID, TERMS_AGG_SIZE),
+            Map.of(AGG_ACTIVITY_TO_PROCESS, parent(ACTIVITIES_JOIN_RELATION)._toAggregation())));
   }
 
-  private Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(SearchRequest.Builder searchRequest) {
+  private Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(
+      SearchRequest.Builder searchRequest) {
     Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
     Map<String, Object> result = richOpenSearchClient.doc().searchAsMap(searchRequest);
-    Optional<Map<String, Object>> maybeActivities = MapPath.from(result)
-      .getByPath("aggregations", "children#activities")
-      .flatMap(Convertable::to);
+    Optional<Map<String, Object>> maybeActivities =
+        MapPath.from(result)
+            .getByPath("aggregations", "children#activities")
+            .flatMap(Convertable::to);
 
-    maybeActivities.ifPresent( activities ->
-      CollectionUtil.asMap(
-              AGG_ACTIVE_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater) FlowNodeStatisticsDto::addActive,
-              AGG_INCIDENT_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater) FlowNodeStatisticsDto::addIncidents,
-              AGG_TERMINATED_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater) FlowNodeStatisticsDto::addCanceled,
-              AGG_FINISHED_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater) FlowNodeStatisticsDto::addCompleted)
-          .forEach((aggName, mapUpdater) -> collectStatisticsFor(statisticsMap, activities, aggName, (OpensearchFlowNodeStatisticsReader.MapUpdater) mapUpdater))
-    );
+    maybeActivities.ifPresent(
+        activities ->
+            CollectionUtil.asMap(
+                    AGG_ACTIVE_ACTIVITIES,
+                        (OpensearchFlowNodeStatisticsReader.MapUpdater)
+                            FlowNodeStatisticsDto::addActive,
+                    AGG_INCIDENT_ACTIVITIES,
+                        (OpensearchFlowNodeStatisticsReader.MapUpdater)
+                            FlowNodeStatisticsDto::addIncidents,
+                    AGG_TERMINATED_ACTIVITIES,
+                        (OpensearchFlowNodeStatisticsReader.MapUpdater)
+                            FlowNodeStatisticsDto::addCanceled,
+                    AGG_FINISHED_ACTIVITIES,
+                        (OpensearchFlowNodeStatisticsReader.MapUpdater)
+                            FlowNodeStatisticsDto::addCompleted)
+                .forEach(
+                    (aggName, mapUpdater) ->
+                        collectStatisticsFor(
+                            statisticsMap,
+                            activities,
+                            aggName,
+                            (OpensearchFlowNodeStatisticsReader.MapUpdater) mapUpdater)));
     return statisticsMap;
 
     /* Original implementation */
 
-//    Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
-//    var aggregations = richOpenSearchClient.doc().searchAggregations(searchRequest);
-//    if (aggregations != null) {
-//      var activities = aggregations.get(AGG_ACTIVITIES);
-//      CollectionUtil.asMap(
-//        AGG_ACTIVE_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater) FlowNodeStatisticsDto::addActive,
-//        AGG_INCIDENT_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater) FlowNodeStatisticsDto::addIncidents,
-//        AGG_TERMINATED_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater) FlowNodeStatisticsDto::addCanceled,
-//        AGG_FINISHED_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater) FlowNodeStatisticsDto::addCompleted)
-//        .forEach((aggName, mapUpdater) -> collectStatisticsFor(statisticsMap, activities, aggName, (OpensearchFlowNodeStatisticsReader.MapUpdater) mapUpdater));
-//    }
-//    return statisticsMap;
+    //    Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
+    //    var aggregations = richOpenSearchClient.doc().searchAggregations(searchRequest);
+    //    if (aggregations != null) {
+    //      var activities = aggregations.get(AGG_ACTIVITIES);
+    //      CollectionUtil.asMap(
+    //        AGG_ACTIVE_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater)
+    // FlowNodeStatisticsDto::addActive,
+    //        AGG_INCIDENT_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater)
+    // FlowNodeStatisticsDto::addIncidents,
+    //        AGG_TERMINATED_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater)
+    // FlowNodeStatisticsDto::addCanceled,
+    //        AGG_FINISHED_ACTIVITIES, (OpensearchFlowNodeStatisticsReader.MapUpdater)
+    // FlowNodeStatisticsDto::addCompleted)
+    //        .forEach((aggName, mapUpdater) -> collectStatisticsFor(statisticsMap, activities,
+    // aggName, (OpensearchFlowNodeStatisticsReader.MapUpdater) mapUpdater));
+    //    }
+    //    return statisticsMap;
   }
 
-  private void collectStatisticsFor(Map<String, FlowNodeStatisticsDto> statisticsMap, Map<String, Object> activities, String aggName, MapUpdater mapUpdater) {
-    Optional<List<Map<String, Object>>> maybeUniqueActivitiesBuckets = MapPath.from(activities)
-      .getByPath("filter#" + aggName, "sterms#" + AGG_UNIQUE_ACTIVITIES, "buckets")
-      .flatMap(Convertable::to);
+  private void collectStatisticsFor(
+      Map<String, FlowNodeStatisticsDto> statisticsMap,
+      Map<String, Object> activities,
+      String aggName,
+      MapUpdater mapUpdater) {
+    Optional<List<Map<String, Object>>> maybeUniqueActivitiesBuckets =
+        MapPath.from(activities)
+            .getByPath("filter#" + aggName, "sterms#" + AGG_UNIQUE_ACTIVITIES, "buckets")
+            .flatMap(Convertable::to);
 
-    maybeUniqueActivitiesBuckets.ifPresent( buckets ->
-        buckets.forEach( bucket -> {
-          String activityId = (String) bucket.get("key");
-          final long docCount = (Integer) MapPath.from(bucket)
-            .getByPath("parent#" + AGG_ACTIVITY_TO_PROCESS, "doc_count")
-            .flatMap(Convertable::to)
-            .get();  //number of process instances
+    maybeUniqueActivitiesBuckets.ifPresent(
+        buckets ->
+            buckets.forEach(
+                bucket -> {
+                  String activityId = (String) bucket.get("key");
+                  final long docCount =
+                      (Integer)
+                          MapPath.from(bucket)
+                              .getByPath("parent#" + AGG_ACTIVITY_TO_PROCESS, "doc_count")
+                              .flatMap(Convertable::to)
+                              .get(); // number of process instances
 
-          statisticsMap.putIfAbsent(activityId, new FlowNodeStatisticsDto(activityId));
-          mapUpdater.updateMapEntry(statisticsMap.get(activityId), docCount);
-          })
-      );
+                  statisticsMap.putIfAbsent(activityId, new FlowNodeStatisticsDto(activityId));
+                  mapUpdater.updateMapEntry(statisticsMap.get(activityId), docCount);
+                }));
 
-/* Original implementation */
+    /* Original implementation */
 
-//    var incidentsActivitiesAggregation = activities.children().aggregations().get(aggName);
-//    if(incidentsActivitiesAggregation != null){
-//        var uniqueActivities = incidentsActivitiesAggregation.filter().aggregations().get(AGG_UNIQUE_ACTIVITIES);
-//        uniqueActivities.sterms().buckets().array().forEach(b -> {
-//          String activityId = b.key();
-//          var aggregation = b.aggregations().get(AGG_ACTIVITY_TO_PROCESS);
-//          final long docCount = aggregation.topHits().hits().total().value();  //number of process instances
-//          if (statisticsMap.get(activityId) == null) {
-//            statisticsMap.put(activityId, new FlowNodeStatisticsDto(activityId));
-//          }
-//          mapUpdater.updateMapEntry(statisticsMap.get(activityId), docCount);
-//        });
-//    }
+    //    var incidentsActivitiesAggregation = activities.children().aggregations().get(aggName);
+    //    if(incidentsActivitiesAggregation != null){
+    //        var uniqueActivities =
+    // incidentsActivitiesAggregation.filter().aggregations().get(AGG_UNIQUE_ACTIVITIES);
+    //        uniqueActivities.sterms().buckets().array().forEach(b -> {
+    //          String activityId = b.key();
+    //          var aggregation = b.aggregations().get(AGG_ACTIVITY_TO_PROCESS);
+    //          final long docCount = aggregation.topHits().hits().total().value();  //number of
+    // process instances
+    //          if (statisticsMap.get(activityId) == null) {
+    //            statisticsMap.put(activityId, new FlowNodeStatisticsDto(activityId));
+    //          }
+    //          mapUpdater.updateMapEntry(statisticsMap.get(activityId), docCount);
+    //        });
+    //    }
   }
 }

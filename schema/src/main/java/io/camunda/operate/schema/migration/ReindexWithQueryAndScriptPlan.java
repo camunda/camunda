@@ -6,7 +6,6 @@
  */
 package io.camunda.operate.schema.migration;
 
-
 import java.util.List;
 
 public interface ReindexWithQueryAndScriptPlan extends Plan {
@@ -18,5 +17,4 @@ public interface ReindexWithQueryAndScriptPlan extends Plan {
   ReindexWithQueryAndScriptPlan setSteps(List<Step> steps);
 
   ReindexWithQueryAndScriptPlan setListViewIndexName(String listViewIndexName);
-
 }

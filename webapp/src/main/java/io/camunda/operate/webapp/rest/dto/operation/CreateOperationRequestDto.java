@@ -10,8 +10,7 @@ import io.camunda.operate.entities.OperationType;
 
 public class CreateOperationRequestDto {
 
-  public CreateOperationRequestDto() {
-  }
+  public CreateOperationRequestDto() {}
 
   public CreateOperationRequestDto(OperationType operationType) {
     this.operationType = operationType;
@@ -19,19 +18,13 @@ public class CreateOperationRequestDto {
 
   private OperationType operationType;
 
-  /**
-   * Batch operation name.
-   */
+  /** Batch operation name. */
   private String name;
 
-  /**
-   * RESOLVE_INCIDENT operation.
-   */
+  /** RESOLVE_INCIDENT operation. */
   private String incidentId;
 
-  /**
-   * UPDATE_VARIABLE operation.
-   */
+  /** UPDATE_VARIABLE operation. */
   private String variableScopeId;
 
   private String variableName;
@@ -89,25 +82,23 @@ public class CreateOperationRequestDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     CreateOperationRequestDto that = (CreateOperationRequestDto) o;
 
-    if (operationType != that.operationType)
-      return false;
-    if (name != null ? !name.equals(that.name) : that.name != null)
-      return false;
+    if (operationType != that.operationType) return false;
+    if (name != null ? !name.equals(that.name) : that.name != null) return false;
     if (incidentId != null ? !incidentId.equals(that.incidentId) : that.incidentId != null)
       return false;
-    if (variableScopeId != null ? !variableScopeId.equals(that.variableScopeId) : that.variableScopeId != null)
-      return false;
+    if (variableScopeId != null
+        ? !variableScopeId.equals(that.variableScopeId)
+        : that.variableScopeId != null) return false;
     if (variableName != null ? !variableName.equals(that.variableName) : that.variableName != null)
       return false;
-    return variableValue != null ? variableValue.equals(that.variableValue) : that.variableValue == null;
-
+    return variableValue != null
+        ? variableValue.equals(that.variableValue)
+        : that.variableValue == null;
   }
 
   @Override
@@ -123,7 +114,24 @@ public class CreateOperationRequestDto {
 
   @Override
   public String toString() {
-    return "CreateOperationRequestDto{" + "operationType=" + operationType + ", name='" + name + '\'' + ", incidentId='" + incidentId + '\''
-        + ", variableScopeId='" + variableScopeId + '\'' + ", variableName='" + variableName + '\'' + ", variableValue='" + variableValue + '\'' + '}';
+    return "CreateOperationRequestDto{"
+        + "operationType="
+        + operationType
+        + ", name='"
+        + name
+        + '\''
+        + ", incidentId='"
+        + incidentId
+        + '\''
+        + ", variableScopeId='"
+        + variableScopeId
+        + '\''
+        + ", variableName='"
+        + variableName
+        + '\''
+        + ", variableValue='"
+        + variableValue
+        + '\''
+        + '}';
   }
 }

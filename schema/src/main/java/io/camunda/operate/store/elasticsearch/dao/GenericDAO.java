@@ -9,31 +9,30 @@ package io.camunda.operate.store.elasticsearch.dao;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.OperateEntity;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
 import io.camunda.operate.store.elasticsearch.dao.response.InsertResponse;
 import io.camunda.operate.store.elasticsearch.dao.response.SearchResponse;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.util.ElasticsearchUtil;
+import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.xcontent.XContentType;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.reflect.ParameterizedType;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
 
@@ -75,8 +74,8 @@ public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
   }
 
   /**
-   * Returns the Elasticsearch IndexRequest.
-   * This is for a very specific use case. We'd rather leave this DAO class clean and not return any elastic class
+   * Returns the Elasticsearch IndexRequest. This is for a very specific use case. We'd rather leave
+   * this DAO class clean and not return any elastic class
    *
    * @param entity
    * @return insert request
@@ -154,10 +153,14 @@ public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
 
       final List<AggregationResponse.AggregationValue> values =
           buckets.stream()
-              .map(it -> new AggregationResponse.AggregationValue(String.valueOf(it.getKey()), it.getDocCount()))
+              .map(
+                  it ->
+                      new AggregationResponse.AggregationValue(
+                          String.valueOf(it.getKey()), it.getDocCount()))
               .collect(Collectors.toList());
 
-      long sumOfOtherDocCounts = ((ParsedStringTerms) group).getSumOfOtherDocCounts(); // size of documents not in result
+      long sumOfOtherDocCounts =
+          ((ParsedStringTerms) group).getSumOfOtherDocCounts(); // size of documents not in result
       long total = sumOfOtherDocCounts + values.size(); // size of result + other docs
       return new AggregationResponse(false, values, total);
     } catch (IOException e) {

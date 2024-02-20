@@ -11,7 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 public interface ListViewStore {
-  Map<Long,String> getListViewIndicesForProcessInstances(List<Long> processInstanceIds) throws IOException;
+  Map<Long, String> getListViewIndicesForProcessInstances(List<Long> processInstanceIds)
+      throws IOException;
 
   String findProcessInstanceTreePathFor(final long processInstanceKey);
 

@@ -23,18 +23,18 @@ public class ZeebeConnector {
 
   private static final int JOB_WORKER_MAX_JOBS_ACTIVE = 5;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
-  @Bean //will be closed automatically
+  @Bean // will be closed automatically
   public ZeebeClient zeebeClient() {
     return newZeebeClient(operateProperties.getZeebe());
   }
 
   public ZeebeClient newZeebeClient(final ZeebeProperties zeebeProperties) {
-    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder()
-        .gatewayAddress(zeebeProperties.getGatewayAddress())
-        .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress(zeebeProperties.getGatewayAddress())
+            .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
     if (zeebeProperties.isSecure()) {
       builder.caCertificatePath(zeebeProperties.getCertificatePath());
       logger.info("Use TLS connection to zeebe");
@@ -44,5 +44,4 @@ public class ZeebeConnector {
     }
     return builder.build();
   }
-
 }

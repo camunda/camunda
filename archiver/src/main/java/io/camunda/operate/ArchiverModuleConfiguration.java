@@ -19,19 +19,23 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 @Configuration
-@ComponentScan(basePackages = "io.camunda.operate.archiver", nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@ConditionalOnProperty(name = "camunda.operate.archiverEnabled", havingValue = "true", matchIfMissing = true)
+@ComponentScan(
+    basePackages = "io.camunda.operate.archiver",
+    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@ConditionalOnProperty(
+    name = "camunda.operate.archiverEnabled",
+    havingValue = "true",
+    matchIfMissing = true)
 public class ArchiverModuleConfiguration {
 
   private static final Logger logger = LoggerFactory.getLogger(ArchiverModuleConfiguration.class);
 
   @PostConstruct
-  public void logModule(){
+  public void logModule() {
     logger.info("Starting module: archiver");
   }
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @Bean("archiverThreadPoolExecutor")
   public ThreadPoolTaskScheduler getTaskScheduler() {
@@ -41,5 +45,4 @@ public class ArchiverModuleConfiguration {
     scheduler.initialize();
     return scheduler;
   }
-
 }

@@ -14,13 +14,14 @@ import org.springframework.stereotype.Component;
 @Component
 public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @Override
   public String getFullQualifiedName() {
-    var indexPrefix = DatabaseInfo.isOpensearch() ? operateProperties.getOpensearch().getIndexPrefix() : operateProperties.getElasticsearch().getIndexPrefix();
+    var indexPrefix =
+        DatabaseInfo.isOpensearch()
+            ? operateProperties.getOpensearch().getIndexPrefix()
+            : operateProperties.getElasticsearch().getIndexPrefix();
     return String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
   }
-
 }

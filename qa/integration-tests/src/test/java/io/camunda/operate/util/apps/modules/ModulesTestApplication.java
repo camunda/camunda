@@ -7,8 +7,8 @@
 package io.camunda.operate.util.apps.modules;
 
 import io.camunda.operate.Application;
-import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.data.DataGenerator;
+import io.camunda.operate.util.TestApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -18,16 +18,23 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 @SpringBootApplication
-@ComponentScan(basePackages = "io.camunda.operate",
-  excludeFilters = {
-    @ComponentScan.Filter(type=FilterType.REGEX,pattern="io\\.camunda\\.operate\\.util\\.apps\\..*"),
-      @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.webapp\\..*"),
-      @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.archiver\\..*"),
-      @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.it\\..*"),
-      @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = TestApplication.class),
-      @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = Application.class)
-  },
-  nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@ComponentScan(
+    basePackages = "io.camunda.operate",
+    excludeFilters = {
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.operate\\.util\\.apps\\..*"),
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.operate\\.webapp\\..*"),
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.operate\\.archiver\\..*"),
+      @ComponentScan.Filter(type = FilterType.REGEX, pattern = "io\\.camunda\\.operate\\.it\\..*"),
+      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TestApplication.class),
+      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = Application.class)
+    },
+    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class ModulesTestApplication {
 
   public static void main(String[] args) throws Exception {
@@ -39,5 +46,4 @@ public class ModulesTestApplication {
   public DataGenerator stubDataGenerator() {
     return DataGenerator.DO_NOTHING;
   }
-
 }

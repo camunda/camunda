@@ -11,15 +11,15 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.property.OperateProperties;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.cache.ProcessCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +32,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-/**
- * Class that sends notifications about the created incidents on configured URL.
- */
+/** Class that sends notifications about the created incidents on configured URL. */
 @Component
 public class IncidentNotifier {
 
@@ -57,21 +55,17 @@ public class IncidentNotifier {
   protected static final String FIELD_NAME_PROCESS_NAME = "processName";
   protected static final String FIELD_NAME_PROCESS_VERSION = "processVersion";
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private M2mTokenManager m2mTokenManager;
+  @Autowired private M2mTokenManager m2mTokenManager;
 
   @Autowired
   @Qualifier("incidentNotificationRestTemplate")
   private RestTemplate restTemplate;
 
-  @Autowired
-  private ProcessCache processCache;
+  @Autowired private ProcessCache processCache;
 
   public void notifyOnIncidents(List<IncidentEntity> incidents) {
     try {
@@ -81,7 +75,7 @@ public class IncidentNotifier {
         logger.debug("Incident notification is sent");
       } else if (status.isSameCodeAs(HttpStatus.UNAUTHORIZED)) {
         logger.debug("Incident notification recieved 401 response");
-        //retry
+        // retry
         status = notifyOnIncidents(incidents, m2mTokenManager.getToken(true));
         if (status.is2xxSuccessful()) {
           logger.debug("Incident notification is sent");
@@ -107,19 +101,20 @@ public class IncidentNotifier {
     headers.setBearerAuth(m2mToken);
 
     HttpEntity<String> request = new HttpEntity<>(payload, headers);
-    final ResponseEntity<String> response = restTemplate
-        .postForEntity(webhookURL, request, String.class);
+    final ResponseEntity<String> response =
+        restTemplate.postForEntity(webhookURL, request, String.class);
     return response.getStatusCode();
   }
 
   private String getIncidentsAsJSON(final List<IncidentEntity> incidents)
       throws JsonProcessingException {
     final List<Map<String, Object>> incidentList = new ArrayList<>();
-    for (IncidentEntity inc: incidents) {
+    for (IncidentEntity inc : incidents) {
       Map<String, Object> incidentFields = new HashMap<>();
       incidentFields.put(FIELD_NAME_MESSAGE, MESSAGE);
       incidentFields.put(FIELD_NAME_ID, inc.getId());
-      incidentFields.put(FIELD_NAME_PROCESS_INSTANCE_ID, String.valueOf(inc.getProcessInstanceKey()));
+      incidentFields.put(
+          FIELD_NAME_PROCESS_INSTANCE_ID, String.valueOf(inc.getProcessInstanceKey()));
       incidentFields.put(FIELD_NAME_CREATION_TIME, inc.getCreationTime());
       incidentFields.put(FIELD_NAME_STATE, inc.getState());
       incidentFields.put(FIELD_NAME_ERROR_MESSAGE, inc.getErrorMessage());
@@ -128,8 +123,8 @@ public class IncidentNotifier {
       incidentFields.put(FIELD_NAME_FLOW_NODE_INSTANCE_KEY, inc.getFlowNodeInstanceKey());
       incidentFields.put(FIELD_NAME_JOB_KEY, inc.getJobKey());
       incidentFields.put(FIELD_NAME_PROCESS_KEY, inc.getProcessDefinitionKey());
-      final Optional<ProcessEntity> process = processCache
-          .findOrWaitProcess(inc.getProcessDefinitionKey(), 2, 1000L);
+      final Optional<ProcessEntity> process =
+          processCache.findOrWaitProcess(inc.getProcessDefinitionKey(), 2, 1000L);
       if (process.isPresent()) {
         incidentFields.put(FIELD_NAME_BPMN_PROCESS_ID, process.get().getBpmnProcessId());
         incidentFields.put(FIELD_NAME_PROCESS_NAME, process.get().getName());
@@ -139,5 +134,4 @@ public class IncidentNotifier {
     }
     return objectMapper.writeValueAsString(asMap(FIELD_NAME_ALERTS, incidentList));
   }
-
 }

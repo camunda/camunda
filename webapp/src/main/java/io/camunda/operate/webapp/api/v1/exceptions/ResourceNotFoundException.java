@@ -13,5 +13,4 @@ public class ResourceNotFoundException extends APIException {
   public ResourceNotFoundException(final String message) {
     super(message);
   }
-
 }

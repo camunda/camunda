@@ -12,26 +12,23 @@ import java.util.Objects;
 
 public class EventMetadataEntity {
 
-  /**
-  * Job data.
-  */
+  /** Job data. */
   private String jobType;
+
   private Integer jobRetries;
   private String jobWorker;
   private OffsetDateTime jobDeadline;
   private Map<String, String> jobCustomHeaders;
   private Long jobKey;
 
-  /**
-  * Incident data.
-  */
+  /** Incident data. */
   private ErrorType incidentErrorType;
+
   private String incidentErrorMessage;
 
-  /**
-   * Message data.
-   */
+  /** Message data. */
   private String messageName;
+
   private String correlationKey;
 
   public String getJobType() {
@@ -125,21 +122,30 @@ public class EventMetadataEntity {
       return false;
     }
     final EventMetadataEntity that = (EventMetadataEntity) o;
-    return Objects.equals(jobType, that.jobType) &&
-        Objects.equals(jobRetries, that.jobRetries) &&
-        Objects.equals(jobWorker, that.jobWorker) &&
-        Objects.equals(jobDeadline, that.jobDeadline) &&
-        Objects.equals(jobCustomHeaders, that.jobCustomHeaders) &&
-        Objects.equals(jobKey, that.jobKey) &&
-        incidentErrorType == that.incidentErrorType &&
-        Objects.equals(incidentErrorMessage, that.incidentErrorMessage) &&
-        Objects.equals(messageName, that.messageName) &&
-        Objects.equals(correlationKey, that.correlationKey);
+    return Objects.equals(jobType, that.jobType)
+        && Objects.equals(jobRetries, that.jobRetries)
+        && Objects.equals(jobWorker, that.jobWorker)
+        && Objects.equals(jobDeadline, that.jobDeadline)
+        && Objects.equals(jobCustomHeaders, that.jobCustomHeaders)
+        && Objects.equals(jobKey, that.jobKey)
+        && incidentErrorType == that.incidentErrorType
+        && Objects.equals(incidentErrorMessage, that.incidentErrorMessage)
+        && Objects.equals(messageName, that.messageName)
+        && Objects.equals(correlationKey, that.correlationKey);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(jobType, jobRetries, jobWorker, jobDeadline, jobCustomHeaders, jobKey,
-        incidentErrorType, incidentErrorMessage, messageName, correlationKey);
+    return Objects.hash(
+        jobType,
+        jobRetries,
+        jobWorker,
+        jobDeadline,
+        jobCustomHeaders,
+        jobKey,
+        incidentErrorType,
+        incidentErrorMessage,
+        messageName,
+        correlationKey);
   }
 }

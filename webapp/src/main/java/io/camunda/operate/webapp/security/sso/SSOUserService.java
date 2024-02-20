@@ -6,41 +6,35 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
-import io.camunda.operate.webapp.security.AbstractUserService;
-import io.camunda.operate.webapp.security.Permission;
-import io.camunda.operate.webapp.security.UserService;
+import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
 
-import java.util.List;
-import java.util.Map;
-
+import com.auth0.jwt.interfaces.Claim;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.rest.dto.UserDto;
+import io.camunda.operate.webapp.security.AbstractUserService;
+import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
-import com.auth0.jwt.interfaces.Claim;
-
-import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
 
 @Component
 @Profile(SSO_AUTH_PROFILE)
 public class SSOUserService extends AbstractUserService<AbstractAuthenticationToken> {
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
-  @Autowired
-  private C8ConsoleService c8ConsoleService;
+  @Autowired private C8ConsoleService c8ConsoleService;
 
   @Override
-  public UserDto createUserDtoFrom(
-      final AbstractAuthenticationToken abstractAuthentication) {
+  public UserDto createUserDtoFrom(final AbstractAuthenticationToken abstractAuthentication) {
     if (abstractAuthentication instanceof TokenAuthentication) {
       return getUserDtoFor((TokenAuthentication) abstractAuthentication);
-    } else if (abstractAuthentication instanceof JwtAuthenticationToken){
+    } else if (abstractAuthentication instanceof JwtAuthenticationToken) {
       return getUserDtoFor((JwtAuthenticationToken) abstractAuthentication);
     } else {
       return null;
@@ -50,9 +44,10 @@ public class SSOUserService extends AbstractUserService<AbstractAuthenticationTo
   @Override
   public String getUserToken(final AbstractAuthenticationToken authentication) {
     if (authentication instanceof TokenAuthentication) {
-      return ((TokenAuthentication)authentication).getNewTokenByRefreshToken();
+      return ((TokenAuthentication) authentication).getNewTokenByRefreshToken();
     } else {
-      throw new UnsupportedOperationException("Not supported for token class: " + authentication.getClass().getName());
+      throw new UnsupportedOperationException(
+          "Not supported for token class: " + authentication.getClass().getName());
     }
   }
 
@@ -74,13 +69,17 @@ public class SSOUserService extends AbstractUserService<AbstractAuthenticationTo
       name = claims.get(operateProperties.getAuth0().getNameKey()).asString();
     }
     final ClusterMetadata clusterMetadata = c8ConsoleService.getClusterMetadata();
-    Map<ClusterMetadata.AppName,String> appNames2Urls = Map.of();
-    if ( clusterMetadata != null ) {
+    Map<ClusterMetadata.AppName, String> appNames2Urls = Map.of();
+    if (clusterMetadata != null) {
       appNames2Urls = clusterMetadata.getUrls();
     }
-    return new UserDto().setUserId(authentication.getName()).setDisplayName(name).setCanLogout(false)
+    return new UserDto()
+        .setUserId(authentication.getName())
+        .setDisplayName(name)
+        .setCanLogout(false)
         .setPermissions(authentication.getPermissions())
         .setRoles(authentication.getRoles(operateProperties.getAuth0().getOrganizationsKey()))
-        .setSalesPlanType(authentication.getSalesPlanType()).setC8Links(appNames2Urls);
+        .setSalesPlanType(authentication.getSalesPlanType())
+        .setC8Links(appNames2Urls);
   }
 }

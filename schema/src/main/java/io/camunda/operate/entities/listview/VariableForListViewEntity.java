@@ -8,7 +8,6 @@ package io.camunda.operate.entities.listview;
 
 import io.camunda.operate.entities.OperateZeebeEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-
 import java.util.Objects;
 
 public class VariableForListViewEntity extends OperateZeebeEntity {
@@ -20,7 +19,8 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
 
   private String tenantId;
 
-  private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.VARIABLES_JOIN_RELATION);
+  private ListViewJoinRelation joinRelation =
+      new ListViewJoinRelation(ListViewTemplate.VARIABLES_JOIN_RELATION);
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
@@ -77,20 +77,21 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     VariableForListViewEntity that = (VariableForListViewEntity) o;
-    return Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(scopeKey,
-        that.scopeKey) && Objects.equals(varName, that.varName) && Objects.equals(varValue,
-        that.varValue) && Objects.equals(tenantId, that.tenantId) && Objects.equals(joinRelation, that.joinRelation);
+    return Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(scopeKey, that.scopeKey)
+        && Objects.equals(varName, that.varName)
+        && Objects.equals(varValue, that.varValue)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(joinRelation, that.joinRelation);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), processInstanceKey, scopeKey, varName, varValue, tenantId, joinRelation);
+    return Objects.hash(
+        super.hashCode(), processInstanceKey, scopeKey, varName, varValue, tenantId, joinRelation);
   }
 }

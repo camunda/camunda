@@ -9,8 +9,7 @@ package io.camunda.operate.webapp.api.v1.dao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
-public interface DecisionInstanceDao extends
-    SearchableDao<DecisionInstance> {
+public interface DecisionInstanceDao extends SearchableDao<DecisionInstance> {
 
   DecisionInstance byId(String id) throws APIException;
 }

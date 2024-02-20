@@ -26,12 +26,13 @@ import java.util.stream.Collectors;
 
 public class IncidentDto {
 
-  public static final Comparator<IncidentDto> INCIDENT_DEFAULT_COMPARATOR = (o1, o2) -> {
-    if (o1.getErrorType().equals(o2.getErrorType())) {
-      return o1.getId().compareTo(o2.getId());
-    }
-    return o1.getErrorType().compareTo(o2.getErrorType());
-  };
+  public static final Comparator<IncidentDto> INCIDENT_DEFAULT_COMPARATOR =
+      (o1, o2) -> {
+        if (o1.getErrorType().equals(o2.getErrorType())) {
+          return o1.getId().compareTo(o2.getId());
+        }
+        return o1.getErrorType().compareTo(o2.getErrorType());
+      };
 
   public static final String FALLBACK_PROCESS_DEFINITION_NAME = "Unknown process";
 
@@ -70,8 +71,7 @@ public class IncidentDto {
     return errorType;
   }
 
-  public IncidentDto setErrorType(
-      final ErrorTypeDto errorType) {
+  public IncidentDto setErrorType(final ErrorTypeDto errorType) {
     this.errorType = errorType;
     return this;
   }
@@ -143,8 +143,7 @@ public class IncidentDto {
     return rootCauseInstance;
   }
 
-  public IncidentDto setRootCauseInstance(
-      final ProcessInstanceReferenceDto rootCauseInstance) {
+  public IncidentDto setRootCauseInstance(final ProcessInstanceReferenceDto rootCauseInstance) {
     this.rootCauseInstance = rootCauseInstance;
     return this;
   }
@@ -153,56 +152,70 @@ public class IncidentDto {
     return rootCauseDecision;
   }
 
-  public IncidentDto setRootCauseDecision(
-      final DecisionInstanceReferenceDto rootCauseDecision) {
+  public IncidentDto setRootCauseDecision(final DecisionInstanceReferenceDto rootCauseDecision) {
     this.rootCauseDecision = rootCauseDecision;
     return this;
   }
 
-  public static <T> IncidentDto createFrom(final IncidentEntity incidentEntity,
-      final Map<Long, String> processNames, IncidentDataHolder incidentData,
+  public static <T> IncidentDto createFrom(
+      final IncidentEntity incidentEntity,
+      final Map<Long, String> processNames,
+      IncidentDataHolder incidentData,
       DecisionInstanceReferenceDto rootCauseDecision) {
-    return createFrom(incidentEntity, Collections.emptyList(), processNames, incidentData, rootCauseDecision);
+    return createFrom(
+        incidentEntity, Collections.emptyList(), processNames, incidentData, rootCauseDecision);
   }
 
-  public static IncidentDto createFrom(IncidentEntity incidentEntity,
-      List<OperationEntity> operations, Map<Long, String> processNames,
-      IncidentDataHolder incidentData, DecisionInstanceReferenceDto rootCauseDecision) {
+  public static IncidentDto createFrom(
+      IncidentEntity incidentEntity,
+      List<OperationEntity> operations,
+      Map<Long, String> processNames,
+      IncidentDataHolder incidentData,
+      DecisionInstanceReferenceDto rootCauseDecision) {
     if (incidentEntity == null) {
       return null;
     }
 
-    IncidentDto incident = new IncidentDto().setId(incidentEntity.getId())
-        .setFlowNodeId(incidentEntity.getFlowNodeId())
-        .setFlowNodeInstanceId(ConversionUtils.toStringOrNull(incidentEntity.getFlowNodeInstanceKey()))
-        .setErrorMessage(incidentEntity.getErrorMessage())
-        .setErrorType(ErrorTypeDto.createFrom(incidentEntity.getErrorType()))
-        .setJobId(ConversionUtils.toStringOrNull(incidentEntity.getJobKey()))
-        .setCreationTime(incidentEntity.getCreationTime());
+    IncidentDto incident =
+        new IncidentDto()
+            .setId(incidentEntity.getId())
+            .setFlowNodeId(incidentEntity.getFlowNodeId())
+            .setFlowNodeInstanceId(
+                ConversionUtils.toStringOrNull(incidentEntity.getFlowNodeInstanceKey()))
+            .setErrorMessage(incidentEntity.getErrorMessage())
+            .setErrorType(ErrorTypeDto.createFrom(incidentEntity.getErrorType()))
+            .setJobId(ConversionUtils.toStringOrNull(incidentEntity.getJobKey()))
+            .setCreationTime(incidentEntity.getCreationTime());
 
     if (operations != null && operations.size() > 0) {
       OperationEntity lastOperation = operations.get(0); // operations are
-                                                         // sorted by start date
-                                                         // descendant
-      incident.setLastOperation(DtoCreator.create(lastOperation, OperationDto.class))
-          .setHasActiveOperation(operations.stream().anyMatch(
-              o -> o.getState().equals(OperationState.SCHEDULED) || o.getState()
-                  .equals(OperationState.LOCKED) || o.getState().equals(OperationState.SENT)));
+      // sorted by start date
+      // descendant
+      incident
+          .setLastOperation(DtoCreator.create(lastOperation, OperationDto.class))
+          .setHasActiveOperation(
+              operations.stream()
+                  .anyMatch(
+                      o ->
+                          o.getState().equals(OperationState.SCHEDULED)
+                              || o.getState().equals(OperationState.LOCKED)
+                              || o.getState().equals(OperationState.SENT)));
     }
 
-    //do not return root cause when it's a "local" incident
-    if (incidentData != null && incident.getFlowNodeInstanceId() != incidentData
-        .getFinalFlowNodeInstanceId()) {
+    // do not return root cause when it's a "local" incident
+    if (incidentData != null
+        && incident.getFlowNodeInstanceId() != incidentData.getFinalFlowNodeInstanceId()) {
       incident.setFlowNodeId(incidentData.getFinalFlowNodeId());
       incident.setFlowNodeInstanceId(incidentData.getFinalFlowNodeInstanceId());
 
-      final ProcessInstanceReferenceDto rootCauseInstance = new ProcessInstanceReferenceDto()
-          .setInstanceId(String.valueOf(incidentEntity.getProcessInstanceKey()))
-          .setProcessDefinitionId(String.valueOf(incidentEntity.getProcessDefinitionKey()));
+      final ProcessInstanceReferenceDto rootCauseInstance =
+          new ProcessInstanceReferenceDto()
+              .setInstanceId(String.valueOf(incidentEntity.getProcessInstanceKey()))
+              .setProcessDefinitionId(String.valueOf(incidentEntity.getProcessDefinitionKey()));
       if (processNames != null
           && processNames.get(incidentEntity.getProcessDefinitionKey()) != null) {
-        rootCauseInstance
-            .setProcessDefinitionName(processNames.get(incidentEntity.getProcessDefinitionKey()));
+        rootCauseInstance.setProcessDefinitionName(
+            processNames.get(incidentEntity.getProcessDefinitionKey()));
       } else {
         rootCauseInstance.setProcessDefinitionName(FALLBACK_PROCESS_DEFINITION_NAME);
       }
@@ -216,16 +229,22 @@ public class IncidentDto {
     return incident;
   }
 
-  public static List<IncidentDto> createFrom(List<IncidentEntity> incidentEntities,
+  public static List<IncidentDto> createFrom(
+      List<IncidentEntity> incidentEntities,
       Map<Long, List<OperationEntity>> operations,
       Map<Long, String> processNames,
       Map<String, IncidentDataHolder> incidentData) {
     if (incidentEntities != null) {
       return incidentEntities.stream()
           .filter(inc -> inc != null)
-          .map(inc ->
-              createFrom(inc, operations.get(inc.getKey()), processNames,
-                  incidentData.get(inc.getId()), null))
+          .map(
+              inc ->
+                  createFrom(
+                      inc,
+                      operations.get(inc.getKey()),
+                      processNames,
+                      incidentData.get(inc.getId()),
+                      null))
           .collect(Collectors.toList());
     }
     return new ArrayList<>();
@@ -245,28 +264,65 @@ public class IncidentDto {
       return false;
     }
     final IncidentDto that = (IncidentDto) o;
-    return hasActiveOperation == that.hasActiveOperation &&
-        Objects.equals(id, that.id) &&
-        Objects.equals(errorType, that.errorType) &&
-        Objects.equals(errorMessage, that.errorMessage) &&
-        Objects.equals(flowNodeId, that.flowNodeId) &&
-        Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId) &&
-        Objects.equals(jobId, that.jobId) &&
-        Objects.equals(creationTime, that.creationTime) &&
-        Objects.equals(lastOperation, that.lastOperation) &&
-        Objects.equals(rootCauseInstance, that.rootCauseInstance) &&
-        Objects.equals(rootCauseDecision, that.rootCauseDecision);
+    return hasActiveOperation == that.hasActiveOperation
+        && Objects.equals(id, that.id)
+        && Objects.equals(errorType, that.errorType)
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
+        && Objects.equals(jobId, that.jobId)
+        && Objects.equals(creationTime, that.creationTime)
+        && Objects.equals(lastOperation, that.lastOperation)
+        && Objects.equals(rootCauseInstance, that.rootCauseInstance)
+        && Objects.equals(rootCauseDecision, that.rootCauseDecision);
   }
 
   @Override
   public int hashCode() {
-    return Objects
-        .hash(id, errorType, errorMessage, flowNodeId, flowNodeInstanceId, jobId, creationTime,
-            hasActiveOperation, lastOperation, rootCauseInstance, rootCauseDecision);
+    return Objects.hash(
+        id,
+        errorType,
+        errorMessage,
+        flowNodeId,
+        flowNodeInstanceId,
+        jobId,
+        creationTime,
+        hasActiveOperation,
+        lastOperation,
+        rootCauseInstance,
+        rootCauseDecision);
   }
 
   @Override
   public String toString() {
-    return "IncidentDto{" + "id='" + id + '\'' + ", errorType=" + errorType + ", errorMessage='" + errorMessage + '\'' + ", flowNodeId='" + flowNodeId + '\'' + ", flowNodeInstanceId='" + flowNodeInstanceId + '\'' + ", jobId='" + jobId + '\'' + ", creationTime=" + creationTime + ", hasActiveOperation=" + hasActiveOperation + ", lastOperation=" + lastOperation + ", rootCauseInstance=" + rootCauseInstance + ", rootCauseDecision=" + rootCauseDecision + '}';
+    return "IncidentDto{"
+        + "id='"
+        + id
+        + '\''
+        + ", errorType="
+        + errorType
+        + ", errorMessage='"
+        + errorMessage
+        + '\''
+        + ", flowNodeId='"
+        + flowNodeId
+        + '\''
+        + ", flowNodeInstanceId='"
+        + flowNodeInstanceId
+        + '\''
+        + ", jobId='"
+        + jobId
+        + '\''
+        + ", creationTime="
+        + creationTime
+        + ", hasActiveOperation="
+        + hasActiveOperation
+        + ", lastOperation="
+        + lastOperation
+        + ", rootCauseInstance="
+        + rootCauseInstance
+        + ", rootCauseDecision="
+        + rootCauseDecision
+        + '}';
   }
 }

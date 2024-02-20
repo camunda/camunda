@@ -31,5 +31,4 @@ public class DecisionRequirementsIndex extends AbstractIndexDescriptor implement
   public String getVersion() {
     return "8.3.0";
   }
-
 }

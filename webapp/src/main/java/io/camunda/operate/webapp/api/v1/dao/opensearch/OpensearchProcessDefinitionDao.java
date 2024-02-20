@@ -17,27 +17,30 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<ProcessDefinition, ProcessDefinition> implements ProcessDefinitionDao {
+public class OpensearchProcessDefinitionDao
+    extends OpensearchKeyFilteringDao<ProcessDefinition, ProcessDefinition>
+    implements ProcessDefinitionDao {
 
   private final ProcessIndex processIndex;
-  public OpensearchProcessDefinitionDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                                        RichOpenSearchClient richOpenSearchClient, ProcessIndex processIndex) {
+
+  public OpensearchProcessDefinitionDao(
+      OpensearchQueryDSLWrapper queryDSLWrapper,
+      OpensearchRequestDSLWrapper requestDSLWrapper,
+      RichOpenSearchClient richOpenSearchClient,
+      ProcessIndex processIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.processIndex = processIndex;
   }
-
-
 
   @Override
   protected String getKeyFieldName() {
@@ -62,18 +65,22 @@ public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<Pr
   @Override
   public String xmlByKey(Long key) throws APIException {
     validateKey(key);
-    var request =requestDSLWrapper.searchRequestBuilder(processIndex.getAlias())
-        .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.term(ProcessIndex.KEY, key)))
-        .source(queryDSLWrapper.sourceInclude(ProcessIndex.BPMN_XML));
+    var request =
+        requestDSLWrapper
+            .searchRequestBuilder(processIndex.getAlias())
+            .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.term(ProcessIndex.KEY, key)))
+            .source(queryDSLWrapper.sourceInclude(ProcessIndex.BPMN_XML));
     try {
       var response = richOpenSearchClient.doc().search(request, Map.class);
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source().get(ProcessIndex.BPMN_XML).toString();
       }
     } catch (Exception e) {
-      throw new ServerException(String.format("Error in reading process definition as xml for key %s", key), e);
+      throw new ServerException(
+          String.format("Error in reading process definition as xml for key %s", key), e);
     }
-    throw new ResourceNotFoundException(String.format("Process definition for key %s not found.", key));
+    throw new ResourceNotFoundException(
+        String.format("Process definition for key %s not found.", key));
   }
 
   @Override
@@ -95,13 +102,16 @@ public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<Pr
   protected void buildFiltering(Query<ProcessDefinition> query, SearchRequest.Builder request) {
     final ProcessDefinition filter = query.getFilter();
     if (filter != null) {
-      var queryTerms = Stream.of(
-          queryDSLWrapper.term(ProcessDefinition.NAME, filter.getName()),
-          queryDSLWrapper.term(ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()),
-          queryDSLWrapper.term(ProcessDefinition.TENANT_ID, filter.getTenantId()),
-          queryDSLWrapper.term(ProcessDefinition.VERSION, filter.getVersion()),
-          queryDSLWrapper.term(ProcessDefinition.KEY, filter.getKey())
-      ).filter(Objects::nonNull).collect(Collectors.toList());
+      var queryTerms =
+          Stream.of(
+                  queryDSLWrapper.term(ProcessDefinition.NAME, filter.getName()),
+                  queryDSLWrapper.term(
+                      ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()),
+                  queryDSLWrapper.term(ProcessDefinition.TENANT_ID, filter.getTenantId()),
+                  queryDSLWrapper.term(ProcessDefinition.VERSION, filter.getVersion()),
+                  queryDSLWrapper.term(ProcessDefinition.KEY, filter.getKey()))
+              .filter(Objects::nonNull)
+              .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
         request.query(queryDSLWrapper.and(queryTerms));

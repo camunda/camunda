@@ -11,31 +11,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateAbstractIT;
-import java.util.List;
-
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class DMNQueryIT extends OperateAbstractIT {
 
-  @Rule
-  public SearchTestRule searchTestRule = new SearchTestRule();
+  @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
-  @Autowired
-  private DecisionInstanceTemplate decisionInstanceTemplate;
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
-  @Autowired
-  private TestSearchRepository testSearchRepository;
+  @Autowired private TestSearchRepository testSearchRepository;
 
   @Test
   public void testReadWriteDecisions() throws Exception {
     createData();
 
-    final List<DecisionInstanceEntity> decisionInstances = testSearchRepository.searchAll(decisionInstanceTemplate.getFullQualifiedName(), DecisionInstanceEntity.class);
+    final List<DecisionInstanceEntity> decisionInstances =
+        testSearchRepository.searchAll(
+            decisionInstanceTemplate.getFullQualifiedName(), DecisionInstanceEntity.class);
 
     assertThat(decisionInstances).hasSize(2);
     assertThat(decisionInstances.get(0).getEvaluatedInputs()).hasSize(2);
@@ -45,5 +43,4 @@ public class DMNQueryIT extends OperateAbstractIT {
   protected void createData() {
     searchTestRule.persistNew(createDecisionInstanceEntity(), createDecisionInstanceEntity());
   }
-
 }

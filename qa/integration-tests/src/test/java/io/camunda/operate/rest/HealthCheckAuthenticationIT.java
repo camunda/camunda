@@ -6,6 +6,10 @@
  */
 package io.camunda.operate.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.BDDMockito.given;
+
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OpensearchConnector;
@@ -24,6 +28,7 @@ import io.camunda.operate.webapp.security.WebSecurityConfig;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
+import java.io.IOException;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,18 +44,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.IOException;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.BDDMockito.given;
-
-/**
- * Tests the health check with enabled authentication.
- */
+/** Tests the health check with enabled authentication. */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {
+    classes = {
       OperateProperties.class,
       TestApplicationWithNoBeans.class,
       IndicesHealthIndicator.class,
@@ -67,40 +64,40 @@ import static org.mockito.BDDMockito.given;
       OpensearchTaskStore.class,
       RichOpenSearchClient.class,
       OpensearchConnector.class,
-  },
-  webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
+    },
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 @ActiveProfiles(OperateProfileService.AUTH_PROFILE)
 public class HealthCheckAuthenticationIT {
 
-  @MockBean
-  private UserDetailsService userDetailsService;
+  @MockBean private UserDetailsService userDetailsService;
 
-  @Autowired
-  private TestRestTemplate testRestTemplate;
+  @Autowired private TestRestTemplate testRestTemplate;
 
-  @MockBean
-  private IndicesHealthIndicator probes;
+  @MockBean private IndicesHealthIndicator probes;
 
-  @Autowired
-  private TaskStore taskStore;
+  @Autowired private TaskStore taskStore;
 
   @Test
   public void testHealthStateEndpointIsNotSecured() {
     given(probes.getHealth(anyBoolean())).willReturn(Health.up().build());
 
-    final ResponseEntity<String> response = testRestTemplate.getForEntity("/actuator/health/liveness", String.class);
+    final ResponseEntity<String> response =
+        testRestTemplate.getForEntity("/actuator/health/liveness", String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
 
-
   @Ignore // unless you have a reindex task in ELS for mentioned indices
   @Test
   public void testAccessElasticsearchTaskStatusFields() throws IOException {
-    assertThat(taskStore.getRunningReindexTasksIdsFor("operate-flownode-instances-1.3.0_*", "operate-flownode-instance-8.2.0_")).isEmpty();
-    assertThat(taskStore.getRunningReindexTasksIdsFor("operate-flownode-instance-1.3.0_*", "operate-flownode-instance-8.2.0_")).hasSize(1);
+    assertThat(
+            taskStore.getRunningReindexTasksIdsFor(
+                "operate-flownode-instances-1.3.0_*", "operate-flownode-instance-8.2.0_"))
+        .isEmpty();
+    assertThat(
+            taskStore.getRunningReindexTasksIdsFor(
+                "operate-flownode-instance-1.3.0_*", "operate-flownode-instance-8.2.0_"))
+        .hasSize(1);
   }
-
 }

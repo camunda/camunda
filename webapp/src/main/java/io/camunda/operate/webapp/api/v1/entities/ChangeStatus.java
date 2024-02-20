@@ -31,7 +31,6 @@ public class ChangeStatus {
     return this;
   }
 
-
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -51,9 +50,6 @@ public class ChangeStatus {
 
   @Override
   public String toString() {
-    return "ChangeStatus{" +
-        "message='" + message + '\'' +
-        ", deleted=" + deleted +
-        '}';
+    return "ChangeStatus{" + "message='" + message + '\'' + ", deleted=" + deleted + '}';
   }
 }

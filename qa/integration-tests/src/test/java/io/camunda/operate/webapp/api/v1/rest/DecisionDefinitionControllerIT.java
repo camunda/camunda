@@ -22,11 +22,9 @@ import io.camunda.operate.webapp.api.v1.dao.DecisionDefinitionDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-
+import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import java.util.ArrayList;
 import java.util.List;
-
-import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,20 +39,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-    classes = {
-        TestApplicationWithNoBeans.class,
-        DecisionDefinitionController.class
-    })
+@SpringBootTest(classes = {TestApplicationWithNoBeans.class, DecisionDefinitionController.class})
 public class DecisionDefinitionControllerIT {
 
-  @Autowired
-  WebApplicationContext context;
+  @Autowired WebApplicationContext context;
 
   private MockMvc mockMvc;
 
-  @MockBean
-  private DecisionDefinitionDao decisionDefinitionDao;
+  @MockBean private DecisionDefinitionDao decisionDefinitionDao;
 
   @Before
   public void setupMockMvc() {
@@ -63,7 +55,8 @@ public class DecisionDefinitionControllerIT {
 
   @Test
   public void shouldReturnDecisionDefinitionForByKeyAsJSON() throws Exception {
-    final String expectedJSONContent = "{\"key\":0,\"decisionId\":\"decisionId-0\",\"name\":\"name-0\",\"version\":0}";
+    final String expectedJSONContent =
+        "{\"key\":0,\"decisionId\":\"decisionId-0\",\"name\":\"name-0\",\"version\":0}";
     // given
     List<DecisionDefinition> decisionDefinitions = createDecisionDefinitionsOf(1);
     when(decisionDefinitionDao.byKey(0L)).thenReturn(decisionDefinitions.get(0));
@@ -73,12 +66,17 @@ public class DecisionDefinitionControllerIT {
 
   @Test
   public void shouldReturnErrorMessageForByKeyFailure() throws Exception {
-    final String expectedJSONContent = "{\"status\":404,\"message\":\"Error in retrieving data for key.\",\"instance\":\"ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c\",\"type\":\"Requested resource not found\"}";
+    final String expectedJSONContent =
+        "{\"status\":404,\"message\":\"Error in retrieving data for key.\",\"instance\":\"ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c\",\"type\":\"Requested resource not found\"}";
     // given
-    when(decisionDefinitionDao.byKey(any(Long.class))).thenThrow(
-        new ResourceNotFoundException("Error in retrieving data for key.").setInstance("ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c"));
+    when(decisionDefinitionDao.byKey(any(Long.class)))
+        .thenThrow(
+            new ResourceNotFoundException("Error in retrieving data for key.")
+                .setInstance("ab1d796b-fc25-4cb0-a5c5-8e4c2f9abb7c"));
     // then
-    assertGetWithFailed(URI + "/235").andExpect(status().isNotFound()).andExpect(content().string(expectedJSONContent));
+    assertGetWithFailed(URI + "/235")
+        .andExpect(status().isNotFound())
+        .andExpect(content().string(expectedJSONContent));
   }
 
   @Test
@@ -89,28 +87,37 @@ public class DecisionDefinitionControllerIT {
 
   @Test
   public void shouldAcceptQueryWithSearchAfterAndSize() throws Exception {
-    assertPostToWithSucceed(DecisionDefinitionController.URI + SEARCH , "{\"searchAfter\": [\"name\"], \"size\": 7}");
-    verify(decisionDefinitionDao).search(new Query<DecisionDefinition>().setSearchAfter(new Object[]{"name"}).setSize(7));
+    assertPostToWithSucceed(
+        DecisionDefinitionController.URI + SEARCH, "{\"searchAfter\": [\"name\"], \"size\": 7}");
+    verify(decisionDefinitionDao)
+        .search(new Query<DecisionDefinition>().setSearchAfter(new Object[] {"name"}).setSize(7));
   }
 
   @Test
   public void shouldAcceptQueryWithSizeAndSortSpec() throws Exception {
-    assertPostToWithSucceed(DecisionDefinitionController.URI + SEARCH, "{\"size\": 7, \"sort\":  [{\"field\":\"name\", \"order\":\"DESC\"}] }");
-    verify(decisionDefinitionDao).search(new Query<DecisionDefinition>()
-        .setSize(7)
-        .setSort(Query.Sort.listOf(DecisionDefinition.NAME, Query.Sort.Order.DESC)));
+    assertPostToWithSucceed(
+        DecisionDefinitionController.URI + SEARCH,
+        "{\"size\": 7, \"sort\":  [{\"field\":\"name\", \"order\":\"DESC\"}] }");
+    verify(decisionDefinitionDao)
+        .search(
+            new Query<DecisionDefinition>()
+                .setSize(7)
+                .setSort(Query.Sort.listOf(DecisionDefinition.NAME, Query.Sort.Order.DESC)));
   }
 
   @Test
   public void shouldAcceptQueryWithFilter() throws Exception {
-    assertPostToWithSucceed(DecisionDefinitionController.URI + SEARCH, "{\"filter\": { \"name\": \"hase\" } }");
-    verify(decisionDefinitionDao).search(new Query<DecisionDefinition>()
-        .setFilter(new DecisionDefinition().setName("hase")));
+    assertPostToWithSucceed(
+        DecisionDefinitionController.URI + SEARCH, "{\"filter\": { \"name\": \"hase\" } }");
+    verify(decisionDefinitionDao)
+        .search(
+            new Query<DecisionDefinition>().setFilter(new DecisionDefinition().setName("hase")));
   }
 
   @Test
   public void shouldAcceptQueryWithFullFilterAndSortingAndPaging() throws Exception {
-    assertPostToWithSucceed(DecisionDefinitionController.URI + SEARCH,
+    assertPostToWithSucceed(
+        DecisionDefinitionController.URI + SEARCH,
         "{\"filter\": "
             + "{ \"name\": \"hase\","
             + "\"version\": 5 ,"
@@ -121,24 +128,29 @@ public class DecisionDefinitionControllerIT {
             + "\"size\": 17, "
             + "\"sort\": [{\"field\":\"version\", \"order\":\"DESC\"}]"
             + "}");
-    verify(decisionDefinitionDao).search(new Query<DecisionDefinition>()
-        .setFilter(
-            new DecisionDefinition()
-                .setName("hase")
-                .setVersion(5)
-                .setDecisionId("decisionId-23")
-                .setKey(4217L)
-                .setTenantId("tenantA"))
-        .setSort(Query.Sort.listOf(VERSION, Query.Sort.Order.DESC))
-        .setSize(17));
+    verify(decisionDefinitionDao)
+        .search(
+            new Query<DecisionDefinition>()
+                .setFilter(
+                    new DecisionDefinition()
+                        .setName("hase")
+                        .setVersion(5)
+                        .setDecisionId("decisionId-23")
+                        .setKey(4217L)
+                        .setTenantId("tenantA"))
+                .setSort(Query.Sort.listOf(VERSION, Query.Sort.Order.DESC))
+                .setSize(17));
   }
 
   @Test
   public void shouldReturnErrorMessageForListFailure() throws Exception {
-    final String expectedJSONContent = "{\"status\":500,\"message\":\"Error in retrieving data.\",\"instance\":\"47a7e1e4-5f09-4086-baa0-c9bcd40da029\",\"type\":\"API application error\"}";
+    final String expectedJSONContent =
+        "{\"status\":500,\"message\":\"Error in retrieving data.\",\"instance\":\"47a7e1e4-5f09-4086-baa0-c9bcd40da029\",\"type\":\"API application error\"}";
     // given
-    when(decisionDefinitionDao.search(any(Query.class))).thenThrow(
-        new ServerException("Error in retrieving data.").setInstance("47a7e1e4-5f09-4086-baa0-c9bcd40da029"));
+    when(decisionDefinitionDao.search(any(Query.class)))
+        .thenThrow(
+            new ServerException("Error in retrieving data.")
+                .setInstance("47a7e1e4-5f09-4086-baa0-c9bcd40da029"));
     // then
     assertPostToWithFailed(DecisionDefinitionController.URI + SEARCH, "{}")
         .andExpect(status().isInternalServerError())
@@ -150,28 +162,32 @@ public class DecisionDefinitionControllerIT {
   }
 
   protected ResultActions assertGetWithFailed(final String endpoint) throws Exception {
-    return mockMvc.perform(get(endpoint)).andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE));
+    return mockMvc
+        .perform(get(endpoint))
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE));
   }
 
   protected ResultActions assertPostToWithFailed(final String endpoint, final String content)
       throws Exception {
-    return mockMvc.perform(post(endpoint)
-        .content(content)
-        .contentType(MediaType.APPLICATION_JSON));
+    return mockMvc.perform(post(endpoint).content(content).contentType(MediaType.APPLICATION_JSON));
   }
 
   protected ResultActions assertPostToWithSucceed(final String endpoint, final String content)
       throws Exception {
-    return mockMvc.perform(post(endpoint)
-            .content(content)
-            .contentType(MediaType.APPLICATION_JSON))
+    return mockMvc
+        .perform(post(endpoint).content(content).contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
   }
 
   protected List<DecisionDefinition> createDecisionDefinitionsOf(final int number) {
     final List<DecisionDefinition> decisionDefinitions = new ArrayList<>();
     for (int i = 0; i < number; i++) {
-      decisionDefinitions.add(new DecisionDefinition().setDecisionId("decisionId-" + i).setName("name-" + i).setKey(i).setVersion(i));
+      decisionDefinitions.add(
+          new DecisionDefinition()
+              .setDecisionId("decisionId-" + i)
+              .setName("name-" + i)
+              .setKey(i)
+              .setVersion(i));
     }
     return decisionDefinitions;
   }

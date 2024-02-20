@@ -32,7 +32,7 @@ public class ImportProperties {
 
   private int postImportThreadsCount = DEFAULT_POST_IMPORT_THREADS_COUNT;
 
-  //is here for testing purposes
+  // is here for testing purposes
   private boolean postImportEnabled = true;
 
   private boolean postImporterIgnoreMissingData = false;
@@ -47,8 +47,8 @@ public class ImportProperties {
   private int readerBackoff = DEFAULT_READER_BACKOFF;
 
   /**
-   * The property is not used anymore. Instead of a backoff,
-   * the records reader gets rescheduled once the queue has capacity.
+   * The property is not used anymore. Instead of a backoff, the records reader gets rescheduled
+   * once the queue has capacity.
    */
   @Deprecated(since = "8.1.0")
   private int schedulerBackoff = DEFAULT_SCHEDULER_BACKOFF;
@@ -57,24 +57,22 @@ public class ImportProperties {
 
   private int importPositionUpdateInterval = DEFAULT_IMPORT_POSITION_UPDATE_INTERVAL;
 
-  /**
-   * Indicates, whether loading of Zeebe data should start on startup.
-   */
+  /** Indicates, whether loading of Zeebe data should start on startup. */
   private boolean startLoadingDataOnStartup = true;
 
-  /**
-   * Variable size under which we won't store preview separately.
-   */
+  /** Variable size under which we won't store preview separately. */
   private int variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
   /**
-   * When we build hierarchies for flow node instances (e.g. subprocess -> task inside subprocess) and for process instances
-   * parent instance -> child instance), we normally read data only from runtime indices. But it may occur that data was partially archived already.
-   * In this case import process will be stuck with errors "Unable to find parent tree path for flow node instance" or
-   * "Unable to find parent tree path for parent instance". This parameter allows to read parent instances from archived indices.
-   * Should not be set true forever for performance reasons.
+   * When we build hierarchies for flow node instances (e.g. subprocess -> task inside subprocess)
+   * and for process instances parent instance -> child instance), we normally read data only from
+   * runtime indices. But it may occur that data was partially archived already. In this case import
+   * process will be stuck with errors "Unable to find parent tree path for flow node instance" or
+   * "Unable to find parent tree path for parent instance". This parameter allows to read parent
+   * instances from archived indices. Should not be set true forever for performance reasons.
    */
   private boolean readArchivedParents = false;
+
   private int maxEmptyRuns = DEFAULT_MAX_EMPTY_RUNS;
 
   public boolean isStartLoadingDataOnStartup() {

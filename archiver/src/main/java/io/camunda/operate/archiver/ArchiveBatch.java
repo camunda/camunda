@@ -10,32 +10,32 @@ import java.util.List;
 
 public class ArchiveBatch {
 
-    private String finishDate;
-    private List<Object> ids;
+  private String finishDate;
+  private List<Object> ids;
 
-    public ArchiveBatch(String finishDate, List<Object> ids) {
-        this.finishDate = finishDate;
-        this.ids = ids;
-    }
+  public ArchiveBatch(String finishDate, List<Object> ids) {
+    this.finishDate = finishDate;
+    this.ids = ids;
+  }
 
-    public String getFinishDate() {
-        return finishDate;
-    }
+  public String getFinishDate() {
+    return finishDate;
+  }
 
-    public void setFinishDate(String finishDate) {
-        this.finishDate = finishDate;
-    }
+  public void setFinishDate(String finishDate) {
+    this.finishDate = finishDate;
+  }
 
-    public List<Object> getIds() {
-        return ids;
-    }
+  public List<Object> getIds() {
+    return ids;
+  }
 
-    public void setIds(List<Object> ids) {
-        this.ids = ids;
-    }
+  public void setIds(List<Object> ids) {
+    this.ids = ids;
+  }
 
-    @Override
-    public String toString() {
-        return "ArchiveBatch{" + "finishDate='" + finishDate + '\'' + ", ids=" + ids + '}';
-    }
+  @Override
+  public String toString() {
+    return "ArchiveBatch{" + "finishDate='" + finishDate + '\'' + ", ids=" + ids + '}';
+  }
 }

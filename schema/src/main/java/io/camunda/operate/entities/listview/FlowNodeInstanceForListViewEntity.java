@@ -11,36 +11,31 @@ import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.OperateZeebeEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNodeInstanceForListViewEntity> {
+public class FlowNodeInstanceForListViewEntity
+    extends OperateZeebeEntity<FlowNodeInstanceForListViewEntity> {
 
   private Long processInstanceKey;
   private String activityId;
   private FlowNodeState activityState;
   private FlowNodeType activityType;
-  @Deprecated
-  @JsonIgnore
-  private List<Long> incidentKeys = new ArrayList<>();
+  @Deprecated @JsonIgnore private List<Long> incidentKeys = new ArrayList<>();
   private String errorMessage;
   private boolean incident;
   private boolean jobFailedWithRetriesLeft = false;
 
   private String tenantId;
 
-  @Deprecated
-  @JsonIgnore
-  private boolean pendingIncident;
+  @Deprecated @JsonIgnore private boolean pendingIncident;
 
-  private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
+  private ListViewJoinRelation joinRelation =
+      new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
 
-  @JsonIgnore
-  private Long startTime;
-  @JsonIgnore
-  private Long endTime;
+  @JsonIgnore private Long startTime;
+  @JsonIgnore private Long endTime;
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
@@ -151,29 +146,37 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
     return jobFailedWithRetriesLeft;
   }
 
-  public FlowNodeInstanceForListViewEntity setJobFailedWithRetriesLeft(boolean jobFailedWithRetriesLeft) {
+  public FlowNodeInstanceForListViewEntity setJobFailedWithRetriesLeft(
+      boolean jobFailedWithRetriesLeft) {
     this.jobFailedWithRetriesLeft = jobFailedWithRetriesLeft;
     return this;
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
-    return incident == that.incident && Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(
-        activityId,
-        that.activityId) && activityState == that.activityState && activityType == that.activityType && Objects.equals(
-        errorMessage, that.errorMessage) && Objects.equals(joinRelation, that.joinRelation);
+    return incident == that.incident
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(activityId, that.activityId)
+        && activityState == that.activityState
+        && activityType == that.activityType
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(joinRelation, that.joinRelation);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), processInstanceKey, activityId, activityState, activityType, errorMessage,
-        incident, joinRelation);
+    return Objects.hash(
+        super.hashCode(),
+        processInstanceKey,
+        activityId,
+        activityState,
+        activityType,
+        errorMessage,
+        incident,
+        joinRelation);
   }
 }

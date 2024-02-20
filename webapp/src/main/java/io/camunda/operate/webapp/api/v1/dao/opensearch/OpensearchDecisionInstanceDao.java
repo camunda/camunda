@@ -18,28 +18,32 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchDecisionInstanceDao extends OpensearchSearchableDao<DecisionInstance, DecisionInstance> implements DecisionInstanceDao {
+public class OpensearchDecisionInstanceDao
+    extends OpensearchSearchableDao<DecisionInstance, DecisionInstance>
+    implements DecisionInstanceDao {
 
   private final DecisionInstanceTemplate decisionInstanceTemplate;
 
   private final OperateDateTimeFormatter dateTimeFormatter;
 
-  public OpensearchDecisionInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                                       RichOpenSearchClient richOpenSearchClient, DecisionInstanceTemplate decisionInstanceTemplate,
-                                       OperateDateTimeFormatter dateTimeFormatter){
-    super(queryDSLWrapper, requestDSLWrapper,richOpenSearchClient);
+  public OpensearchDecisionInstanceDao(
+      OpensearchQueryDSLWrapper queryDSLWrapper,
+      OpensearchRequestDSLWrapper requestDSLWrapper,
+      RichOpenSearchClient richOpenSearchClient,
+      DecisionInstanceTemplate decisionInstanceTemplate,
+      OperateDateTimeFormatter dateTimeFormatter) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionInstanceTemplate = decisionInstanceTemplate;
     this.dateTimeFormatter = dateTimeFormatter;
   }
@@ -48,8 +52,7 @@ public class OpensearchDecisionInstanceDao extends OpensearchSearchableDao<Decis
   protected DecisionInstance convertInternalToApiResult(DecisionInstance internalResult) {
     if (internalResult != null && StringUtils.isNotEmpty(internalResult.getEvaluationDate())) {
       internalResult.setEvaluationDate(
-          dateTimeFormatter.convertGeneralToApiDateTime(
-              internalResult.getEvaluationDate()));
+          dateTimeFormatter.convertGeneralToApiDateTime(internalResult.getEvaluationDate()));
     }
 
     return internalResult;
@@ -63,24 +66,36 @@ public class OpensearchDecisionInstanceDao extends OpensearchSearchableDao<Decis
 
     List<DecisionInstance> decisionInstances;
     try {
-      var request = requestDSLWrapper.searchRequestBuilder(getIndexName())
-          .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.term(DecisionInstanceTemplate.ID, id)));
-      decisionInstances = richOpenSearchClient.doc().searchValues(request, getInternalDocumentModelClass());
+      var request =
+          requestDSLWrapper
+              .searchRequestBuilder(getIndexName())
+              .query(
+                  queryDSLWrapper.withTenantCheck(
+                      queryDSLWrapper.term(DecisionInstanceTemplate.ID, id)));
+      decisionInstances =
+          richOpenSearchClient.doc().searchValues(request, getInternalDocumentModelClass());
     } catch (Exception e) {
-      throw new ServerException(String.format("Error in reading decision instance for id %s", id), e);
+      throw new ServerException(
+          String.format("Error in reading decision instance for id %s", id), e);
     }
     if (decisionInstances.isEmpty()) {
-      throw new ResourceNotFoundException(String.format("No decision instance found for id %s", id));
+      throw new ResourceNotFoundException(
+          String.format("No decision instance found for id %s", id));
     }
     if (decisionInstances.size() > 1) {
-      throw new ServerException(String.format("Found more than one decision instance for id %s", id));
+      throw new ServerException(
+          String.format("Found more than one decision instance for id %s", id));
     }
     return decisionInstances.get(0);
   }
 
   @Override
   protected SearchRequest.Builder buildSearchRequest(Query<DecisionInstance> query) {
-    return super.buildSearchRequest(query).source(queryDSLWrapper.sourceExclude(DecisionInstanceTemplate.EVALUATED_INPUTS, DecisionInstanceTemplate.EVALUATED_OUTPUTS));
+    return super.buildSearchRequest(query)
+        .source(
+            queryDSLWrapper.sourceExclude(
+                DecisionInstanceTemplate.EVALUATED_INPUTS,
+                DecisionInstanceTemplate.EVALUATED_OUTPUTS));
   }
 
   @Override
@@ -102,22 +117,35 @@ public class OpensearchDecisionInstanceDao extends OpensearchSearchableDao<Decis
   protected void buildFiltering(Query<DecisionInstance> query, SearchRequest.Builder request) {
     final DecisionInstance filter = query.getFilter();
     if (filter != null) {
-      var queryTerms = Stream.of(
-        queryDSLWrapper.term(DecisionInstance.ID, filter.getId()),
-        queryDSLWrapper.term(DecisionInstance.KEY, filter.getKey()),
-        queryDSLWrapper.term(DecisionInstance.STATE, filter.getState() == null ? null : filter.getState().name()),
-        queryDSLWrapper.matchDateQuery(DecisionInstance.EVALUATION_DATE,
-            filter.getEvaluationDate(), dateTimeFormatter.getApiDateTimeFormatString()),
-        queryDSLWrapper.term(DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure()),
-        queryDSLWrapper.term(DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
-        queryDSLWrapper.term(DecisionInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
-        queryDSLWrapper.term(DecisionInstance.DECISION_ID, filter.getDecisionId()),
-        queryDSLWrapper.term(DecisionInstance.TENANT_ID, filter.getTenantId()),
-        queryDSLWrapper.term(DecisionInstance.DECISION_DEFINITION_ID, filter.getDecisionDefinitionId()),
-        queryDSLWrapper.term(DecisionInstance.DECISION_NAME, filter.getDecisionName()),
-        queryDSLWrapper.term(DecisionInstance.DECISION_VERSION, filter.getDecisionVersion()),
-        queryDSLWrapper.term(DecisionInstance.DECISION_TYPE, filter.getDecisionType() == null ? null : filter.getDecisionType().name())
-      ).filter(Objects::nonNull).collect(Collectors.toList());
+      var queryTerms =
+          Stream.of(
+                  queryDSLWrapper.term(DecisionInstance.ID, filter.getId()),
+                  queryDSLWrapper.term(DecisionInstance.KEY, filter.getKey()),
+                  queryDSLWrapper.term(
+                      DecisionInstance.STATE,
+                      filter.getState() == null ? null : filter.getState().name()),
+                  queryDSLWrapper.matchDateQuery(
+                      DecisionInstance.EVALUATION_DATE,
+                      filter.getEvaluationDate(),
+                      dateTimeFormatter.getApiDateTimeFormatString()),
+                  queryDSLWrapper.term(
+                      DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure()),
+                  queryDSLWrapper.term(
+                      DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
+                  queryDSLWrapper.term(
+                      DecisionInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
+                  queryDSLWrapper.term(DecisionInstance.DECISION_ID, filter.getDecisionId()),
+                  queryDSLWrapper.term(DecisionInstance.TENANT_ID, filter.getTenantId()),
+                  queryDSLWrapper.term(
+                      DecisionInstance.DECISION_DEFINITION_ID, filter.getDecisionDefinitionId()),
+                  queryDSLWrapper.term(DecisionInstance.DECISION_NAME, filter.getDecisionName()),
+                  queryDSLWrapper.term(
+                      DecisionInstance.DECISION_VERSION, filter.getDecisionVersion()),
+                  queryDSLWrapper.term(
+                      DecisionInstance.DECISION_TYPE,
+                      filter.getDecisionType() == null ? null : filter.getDecisionType().name()))
+              .filter(Objects::nonNull)
+              .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
         request.query(queryDSLWrapper.and(queryTerms));

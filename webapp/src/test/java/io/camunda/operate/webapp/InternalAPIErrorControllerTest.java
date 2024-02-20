@@ -6,6 +6,10 @@
  */
 package io.camunda.operate.webapp;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.webapp.rest.exception.Error;
@@ -22,15 +26,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class InternalAPIErrorControllerTest {
 
-  @Mock
-  private OperateProfileService mockProfileService;
+  @Mock private OperateProfileService mockProfileService;
 
   private InternalAPIErrorController underTest;
 
@@ -38,8 +37,7 @@ public class InternalAPIErrorControllerTest {
 
   @BeforeEach
   public void setup() {
-    underTest = new InternalAPIErrorController() {
-    };
+    underTest = new InternalAPIErrorController() {};
 
     ReflectionTestUtils.setField(underTest, "operateProfileService", mockProfileService);
     when(mockProfileService.getMessageByProfileFor(any())).thenReturn(EXCEPTION_MESSAGE);
@@ -66,7 +64,7 @@ public class InternalAPIErrorControllerTest {
   @Test
   public void testHandleRuntimeNotFoundException() {
     io.camunda.operate.store.NotFoundException exception =
-            new io.camunda.operate.store.NotFoundException("not found exception");
+        new io.camunda.operate.store.NotFoundException("not found exception");
 
     ResponseEntity<Error> result = underTest.handleRuntimeNotFoundException(exception);
 

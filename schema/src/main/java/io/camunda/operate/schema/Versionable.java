@@ -13,5 +13,4 @@ public interface Versionable {
   default String getVersion() {
     return DEFAULT_SCHEMA_VERSION;
   }
-
 }

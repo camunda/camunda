@@ -44,7 +44,8 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_PROCESS_STATISTICS_URL = "/api/process-instances/statistics";
   private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
-  private static final String QUERY_PROCESS_CORE_STATISTICS_URL = "/api/process-instances/core-statistics";
+  private static final String QUERY_PROCESS_CORE_STATISTICS_URL =
+      "/api/process-instances/core-statistics";
 
   public static final String PARENT_PROCESS_ID = "parentProcess";
   public static final String CALLED_PROCESS_ID = "process";
@@ -79,17 +80,15 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
             .serviceTask(TASK_ID_2)
             .zeebeJobType(TASK_ID_2)
             .done();
-    calledProcessDefinitionKey = tester
-        .deployProcess(childProcess, "calledProcess.bpmn")
-        .getProcessDefinitionKey();
-    parentProcessDefinitionKey = tester
-        .deployProcess(parentProcess, "testProcess.bpmn")
-        .getProcessDefinitionKey();
+    calledProcessDefinitionKey =
+        tester.deployProcess(childProcess, "calledProcess.bpmn").getProcessDefinitionKey();
+    parentProcessDefinitionKey =
+        tester.deployProcess(parentProcess, "testProcess.bpmn").getProcessDefinitionKey();
 
-    incidentProcessInstanceKey = tester
-        .startProcessInstance(PARENT_PROCESS_ID, null)
-        .getProcessInstanceKey();
-    tester.waitUntil()
+    incidentProcessInstanceKey =
+        tester.startProcessInstance(PARENT_PROCESS_ID, null).getProcessInstanceKey();
+    tester
+        .waitUntil()
         .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 1)
         .and()
         .failTask(TASK_ID, "Error in called process task")
@@ -97,44 +96,40 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
         .waitUntil()
         .incidentsInAnyInstanceAreActive(2)
         .and()
-        .resolveIncident()        //incident for TASK_ID_2 is resolved
+        .resolveIncident() // incident for TASK_ID_2 is resolved
         .waitUntil()
         .incidentsInAnyInstanceAreActive(1);
 
-    activeProcessInstanceKey = tester
-        .startProcessInstance(PARENT_PROCESS_ID, null)
-        .getProcessInstanceKey();
+    activeProcessInstanceKey =
+        tester.startProcessInstance(PARENT_PROCESS_ID, null).getProcessInstanceKey();
 
     tester
         .startProcessInstance(PARENT_PROCESS_ID, null)
-        .and().waitUntil()
+        .and()
+        .waitUntil()
         .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 3)
         .flowNodesInAnyInstanceAreActive(TASK_ID, 3)
         .flowNodesInAnyInstanceAreActive(TASK_ID_2, 3);
   }
 
-
-  /**
-   * Core statistics will count 2 as incidents and 4 as running.
-   */
+  /** Core statistics will count 2 as incidents and 4 as running. */
   @Test
   public void testIncidentPropagatedInCoreStatistics() throws Exception {
-    //when
-    ProcessInstanceCoreStatisticsDto coreStatistics = mockMvcTestRule
-        .fromResponse(getRequest(QUERY_PROCESS_CORE_STATISTICS_URL),
-            ProcessInstanceCoreStatisticsDto.class);
+    // when
+    ProcessInstanceCoreStatisticsDto coreStatistics =
+        mockMvcTestRule.fromResponse(
+            getRequest(QUERY_PROCESS_CORE_STATISTICS_URL), ProcessInstanceCoreStatisticsDto.class);
     // then return zero statistics
     assertEquals(6L, coreStatistics.getRunning().longValue());
     assertEquals(4L, coreStatistics.getActive().longValue());
     assertEquals(2L, coreStatistics.getWithIncidents().longValue());
-
   }
 
   @Test
   public void testIncidentPropagatedInIncidentsByProcess() throws Exception {
     List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
     assertThat(processGroups).hasSize(2);
-    for(IncidentsByProcessGroupStatisticsDto stat: processGroups) {
+    for (IncidentsByProcessGroupStatisticsDto stat : processGroups) {
       assertThat(stat.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
       assertThat(stat.getActiveInstancesCount()).isEqualTo(2);
     }
@@ -142,26 +137,41 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testStatistics() throws Exception {
-    //statistics for parent process
+    // statistics for parent process
     ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(parentProcessDefinitionKey);
 
     List<FlowNodeStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
     assertThat(activityStatisticsDtos).hasSize(1);
-    assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals(CALL_ACTIVITY_ID)).allMatch(ai->
-      ai.getActive().equals(2L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(1L)
-    );
+    assertThat(activityStatisticsDtos)
+        .filteredOn(ai -> ai.getActivityId().equals(CALL_ACTIVITY_ID))
+        .allMatch(
+            ai ->
+                ai.getActive().equals(2L)
+                    && ai.getCanceled().equals(0L)
+                    && ai.getCompleted().equals(0L)
+                    && ai.getIncidents().equals(1L));
 
-    //statistics for called process
+    // statistics for called process
     queryRequest = createGetAllProcessInstancesQuery(calledProcessDefinitionKey);
 
     activityStatisticsDtos = getActivityStatistics(queryRequest);
     assertThat(activityStatisticsDtos).hasSize(2);
-    assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals(TASK_ID)).allMatch(ai->
-      ai.getActive().equals(2L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(1L)
-    );
-    assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals(TASK_ID_2)).allMatch(ai->
-      ai.getActive().equals(3L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(0L)
-    );
+    assertThat(activityStatisticsDtos)
+        .filteredOn(ai -> ai.getActivityId().equals(TASK_ID))
+        .allMatch(
+            ai ->
+                ai.getActive().equals(2L)
+                    && ai.getCanceled().equals(0L)
+                    && ai.getCompleted().equals(0L)
+                    && ai.getIncidents().equals(1L));
+    assertThat(activityStatisticsDtos)
+        .filteredOn(ai -> ai.getActivityId().equals(TASK_ID_2))
+        .allMatch(
+            ai ->
+                ai.getActive().equals(3L)
+                    && ai.getCanceled().equals(0L)
+                    && ai.getCompleted().equals(0L)
+                    && ai.getIncidents().equals(0L));
   }
 
   @Test
@@ -169,21 +179,23 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
     ListViewQueryDto queryRequest = createGetAllRunningQuery().setActive(false);
     ListViewResponseDto instanceList = getProcessInstanceList(new ListViewRequestDto(queryRequest));
     assertThat(instanceList.getTotalCount()).isEqualTo(2);
-    assertThat(instanceList.getProcessInstances()).extracting("processName")
+    assertThat(instanceList.getProcessInstances())
+        .extracting("processName")
         .containsExactlyInAnyOrder(PARENT_PROCESS_ID, CALLED_PROCESS_ID);
     assertThat(instanceList.getProcessInstances()).extracting("state").containsOnly(INCIDENT);
 
     queryRequest = createGetAllRunningQuery().setIncidents(false);
     instanceList = getProcessInstanceList(new ListViewRequestDto(queryRequest));
     assertThat(instanceList.getTotalCount()).isEqualTo(4);
-    assertThat(instanceList.getProcessInstances()).extracting("processName")
+    assertThat(instanceList.getProcessInstances())
+        .extracting("processName")
         .containsAll(List.of(PARENT_PROCESS_ID, CALLED_PROCESS_ID));
   }
 
   @Test
   public void testFlowNodeStates() throws Exception {
-    Map<String, FlowNodeStateDto> flowNodeStates = getFlowNodeStateDtos(
-        String.valueOf(incidentProcessInstanceKey));
+    Map<String, FlowNodeStateDto> flowNodeStates =
+        getFlowNodeStateDtos(String.valueOf(incidentProcessInstanceKey));
     assertThat(flowNodeStates).hasSize(2);
     assertThat(flowNodeStates.get(CALL_ACTIVITY_ID)).isEqualTo(FlowNodeStateDto.INCIDENT);
 
@@ -194,8 +206,8 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testSingleProcessInstance() throws Exception {
-    ListViewProcessInstanceDto instance = getProcessInstanceById(String.valueOf(
-        incidentProcessInstanceKey));
+    ListViewProcessInstanceDto instance =
+        getProcessInstanceById(String.valueOf(incidentProcessInstanceKey));
     assertThat(instance.getBpmnProcessId()).isEqualTo(PARENT_PROCESS_ID);
     assertThat(instance.getState()).isEqualTo(INCIDENT);
 
@@ -207,18 +219,21 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testFlowNodeInstances() throws Exception {
     String processInstanceId = String.valueOf(incidentProcessInstanceKey);
-    FlowNodeInstanceQueryDto request = new FlowNodeInstanceQueryDto(
-        processInstanceId, processInstanceId);
+    FlowNodeInstanceQueryDto request =
+        new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId);
     List<FlowNodeInstanceDto> instances = getFlowNodeInstanceOneListFromRest(request);
-    assertThat(instances).filteredOn(i -> i.getFlowNodeId().equals(CALL_ACTIVITY_ID))
-        .extracting("state").containsOnly(FlowNodeStateDto.INCIDENT);
+    assertThat(instances)
+        .filteredOn(i -> i.getFlowNodeId().equals(CALL_ACTIVITY_ID))
+        .extracting("state")
+        .containsOnly(FlowNodeStateDto.INCIDENT);
 
     processInstanceId = String.valueOf(activeProcessInstanceKey);
-    request = new FlowNodeInstanceQueryDto(
-        processInstanceId, processInstanceId);
+    request = new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId);
     instances = getFlowNodeInstanceOneListFromRest(request);
-    assertThat(instances).filteredOn(i -> i.getFlowNodeId().equals(CALL_ACTIVITY_ID))
-        .extracting("state").containsOnly(FlowNodeStateDto.ACTIVE);
+    assertThat(instances)
+        .filteredOn(i -> i.getFlowNodeId().equals(CALL_ACTIVITY_ID))
+        .extracting("state")
+        .containsOnly(FlowNodeStateDto.ACTIVE);
   }
 
   private ListViewQueryDto createGetAllProcessInstancesQuery(Long... processDefinitionKeys) {
@@ -229,42 +244,46 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
     return q;
   }
 
-  private List<FlowNodeStatisticsDto> getActivityStatistics(ListViewQueryDto query) throws Exception {
-    return mockMvcTestRule.listFromResponse(postRequest(QUERY_PROCESS_STATISTICS_URL, query), FlowNodeStatisticsDto.class);
+  private List<FlowNodeStatisticsDto> getActivityStatistics(ListViewQueryDto query)
+      throws Exception {
+    return mockMvcTestRule.listFromResponse(
+        postRequest(QUERY_PROCESS_STATISTICS_URL, query), FlowNodeStatisticsDto.class);
   }
 
   private ListViewResponseDto getProcessInstanceList(ListViewRequestDto request) throws Exception {
-    return mockMvcTestRule
-        .fromResponse(postRequest(PROCESS_INSTANCE_URL, request), new TypeReference<>() {
-        });
+    return mockMvcTestRule.fromResponse(
+        postRequest(PROCESS_INSTANCE_URL, request), new TypeReference<>() {});
   }
 
   private List<IncidentsByProcessGroupStatisticsDto> requestIncidentsByProcess() throws Exception {
-    return mockMvcTestRule.listFromResponse(getRequest(QUERY_INCIDENTS_BY_PROCESS_URL), IncidentsByProcessGroupStatisticsDto.class);
+    return mockMvcTestRule.listFromResponse(
+        getRequest(QUERY_INCIDENTS_BY_PROCESS_URL), IncidentsByProcessGroupStatisticsDto.class);
   }
 
-  private Map<String, FlowNodeStateDto> getFlowNodeStateDtos(String processInstanceId) throws Exception {
-    MvcResult mvcResult = getRequest(String.format(ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/%s/flow-node-states", processInstanceId));
-    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
+  private Map<String, FlowNodeStateDto> getFlowNodeStateDtos(String processInstanceId)
+      throws Exception {
+    MvcResult mvcResult =
+        getRequest(
+            String.format(
+                ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/%s/flow-node-states",
+                processInstanceId));
+    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
   }
 
   private ListViewProcessInstanceDto getProcessInstanceById(final String processInstanceId)
       throws Exception {
     String url = String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
     final MvcResult result = getRequest(url);
-    return mockMvcTestRule.fromResponse(result, new TypeReference<>() {
-    });
+    return mockMvcTestRule.fromResponse(result, new TypeReference<>() {});
   }
 
   private List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
       FlowNodeInstanceQueryDto query) throws Exception {
     FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
     MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
-    final Map<String, FlowNodeInstanceResponseDto> response = mockMvcTestRule
-        .fromResponse(mvcResult, new TypeReference<>() {
-        });
+    final Map<String, FlowNodeInstanceResponseDto> response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(response).hasSize(1);
     return response.values().iterator().next().getChildren();
   }
-
 }

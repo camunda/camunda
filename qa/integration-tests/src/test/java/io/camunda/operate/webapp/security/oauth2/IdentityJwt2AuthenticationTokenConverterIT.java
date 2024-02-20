@@ -18,7 +18,6 @@ import static org.mockito.Mockito.when;
 import com.auth0.jwt.exceptions.InvalidClaimException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
@@ -30,10 +29,8 @@ import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
-
 import java.io.IOException;
 import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,35 +50,25 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
-        TestApplicationWithNoBeans.class,
-        IdentityJwt2AuthenticationTokenConverter.class,
-        OperateProperties.class
+      TestApplicationWithNoBeans.class,
+      IdentityJwt2AuthenticationTokenConverter.class,
+      OperateProperties.class
     },
-    properties = {
-        OperateProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url"
-    }
-)
+    properties = {OperateProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url"})
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
 public class IdentityJwt2AuthenticationTokenConverterIT {
 
-  @Autowired
-  @SpyBean
-  private IdentityJwt2AuthenticationTokenConverter tokenConverter;
+  @Autowired @SpyBean private IdentityJwt2AuthenticationTokenConverter tokenConverter;
 
-  @MockBean
-  private Identity identity;
+  @MockBean private Identity identity;
 
-  @MockBean
-  private Tenants tenants;
+  @MockBean private Tenants tenants;
 
-  @Mock
-  private Authentication authentication;
+  @Mock private Authentication authentication;
 
-  @SpyBean
-  private OperateProperties operateProperties;
+  @SpyBean private OperateProperties operateProperties;
 
-  @Autowired
-  private ApplicationContext applicationContext;
+  @Autowired private ApplicationContext applicationContext;
 
   @Before
   public void setup() {
@@ -89,15 +76,17 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
   }
 
   @Test(expected = InsufficientAuthenticationException.class)
-  public void shouldFailIfClaimIsInvalid(){
-    when(identity.authentication()).thenThrow(
-        new InvalidClaimException("The Claim 'aud' value doesn't contain the required audience."));
+  public void shouldFailIfClaimIsInvalid() {
+    when(identity.authentication())
+        .thenThrow(
+            new InvalidClaimException(
+                "The Claim 'aud' value doesn't contain the required audience."));
     final Jwt token = createJwtTokenWith();
     tokenConverter.convert(token);
   }
 
   @Test(expected = InsufficientAuthenticationException.class)
-  public void shouldFailIfTokenVerificationFails(){
+  public void shouldFailIfTokenVerificationFails() {
     when(identity.authentication())
         .thenThrow(new RuntimeException("Any exception during token verification"));
     final Jwt token = createJwtTokenWith();
@@ -105,7 +94,7 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
   }
 
   @Test
-  public void shouldConvert(){
+  public void shouldConvert() {
     when(identity.authentication()).thenReturn(authentication);
     when(authentication.verifyToken(any())).thenReturn(null);
     final Jwt token = createJwtTokenWith();
@@ -124,30 +113,34 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     doReturn(multiTenancyProperties).when(operateProperties).getMultiTenancy();
     doReturn(true).when(multiTenancyProperties).isEnabled();
 
-    List<Tenant> tenants = new ObjectMapper().readValue(
-        this.getClass().getResource("/security/identity/tenants.json"), new TypeReference<>() {
-        });
+    List<Tenant> tenants =
+        new ObjectMapper()
+            .readValue(
+                this.getClass().getResource("/security/identity/tenants.json"),
+                new TypeReference<>() {});
     doReturn(tenants).when(this.tenants).forToken(any());
-
 
     final Jwt token = createJwtTokenWith();
     final AbstractAuthenticationToken authenticationToken = tokenConverter.convert(token);
     assertThat(authenticationToken).isInstanceOf(TenantAwareAuthentication.class);
     final var tenantAwareAuth = (TenantAwareAuthentication) authenticationToken;
 
-//    //then tenants are properly converted and returned by tenant aware authentication
+    //    //then tenants are properly converted and returned by tenant aware authentication
     List<OperateTenant> returnedTenants = tenantAwareAuth.getTenants();
 
     assertThat(returnedTenants).hasSize(3);
 
-    assertThat(returnedTenants).filteredOn(
-            t -> t.getTenantId().equals("<default>") && t.getName().equals("Default")).hasSize(1);
+    assertThat(returnedTenants)
+        .filteredOn(t -> t.getTenantId().equals("<default>") && t.getName().equals("Default"))
+        .hasSize(1);
 
-    assertThat(returnedTenants).filteredOn(
-        t -> t.getTenantId().equals("tenant-a") && t.getName().equals("Tenant A")).hasSize(1);
+    assertThat(returnedTenants)
+        .filteredOn(t -> t.getTenantId().equals("tenant-a") && t.getName().equals("Tenant A"))
+        .hasSize(1);
 
-    assertThat(returnedTenants).filteredOn(
-        t -> t.getTenantId().equals("tenant-b") && t.getName().equals("Tenant B")).hasSize(1);
+    assertThat(returnedTenants)
+        .filteredOn(t -> t.getTenantId().equals("tenant-b") && t.getName().equals("Tenant B"))
+        .hasSize(1);
   }
 
   @Test
@@ -165,7 +158,7 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     assertThat(authenticationToken).isInstanceOf(TenantAwareAuthentication.class);
     final var tenantAwareAuth = (TenantAwareAuthentication) authenticationToken;
 
-    //then no Identity is called
+    // then no Identity is called
     assertThat(tenantAwareAuth.getTenants()).isNull();
     verifyNoInteractions(tenants);
   }
@@ -191,9 +184,9 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
 
   protected Jwt createJwtTokenWith() {
     return Jwt.withTokenValue("token")
-            .audience(List.of("audience"))
-            .header("alg", "HS256")
-            .claim("foo", "bar")
+        .audience(List.of("audience"))
+        .header("alg", "HS256")
+        .claim("foo", "bar")
         .build();
   }
 }

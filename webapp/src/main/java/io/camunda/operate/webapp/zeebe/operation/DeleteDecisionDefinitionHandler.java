@@ -13,29 +13,25 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.writer.DecisionWriter;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
-
-/**
- * Operation handler to delete decision definitions and related data
- */
+/** Operation handler to delete decision definitions and related data */
 @Component
-public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler implements OperationHandler {
+public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
+    implements OperationHandler {
 
-  private static final Logger logger = LoggerFactory.getLogger(DeleteDecisionDefinitionHandler.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(DeleteDecisionDefinitionHandler.class);
 
-  @Autowired
-  private OperationsManager operationsManager;
+  @Autowired private OperationsManager operationsManager;
 
-  @Autowired
-  private DecisionReader decisionReader;
+  @Autowired private DecisionReader decisionReader;
 
-  @Autowired
-  private DecisionWriter decisionWriter;
+  @Autowired private DecisionWriter decisionWriter;
 
   @Override
   public void handleWithException(OperationEntity operation) throws Exception {
@@ -45,32 +41,45 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler im
       return;
     }
 
-    DecisionDefinitionEntity decisionDefinition = decisionReader.getDecision(operation.getDecisionDefinitionKey());
+    DecisionDefinitionEntity decisionDefinition =
+        decisionReader.getDecision(operation.getDecisionDefinitionKey());
     long decisionRequirementsKey = decisionDefinition.getDecisionRequirementsKey();
     long deleted;
 
-    logger.info(String.format("Operation [%s]: Sending Zeebe delete command for decisionRequirementsKey [%s]...", operation.getId(), decisionRequirementsKey));
+    logger.info(
+        String.format(
+            "Operation [%s]: Sending Zeebe delete command for decisionRequirementsKey [%s]...",
+            operation.getId(), decisionRequirementsKey));
     zeebeClient.newDeleteResourceCommand(decisionRequirementsKey).send().join();
     markAsSent(operation);
-    logger.info(String.format("Operation [%s]: Delete command sent to Zeebe for decisionRequirementsKey [%s]", operation.getId(), decisionRequirementsKey));
+    logger.info(
+        String.format(
+            "Operation [%s]: Delete command sent to Zeebe for decisionRequirementsKey [%s]",
+            operation.getId(), decisionRequirementsKey));
 
     deleted = decisionWriter.deleteDecisionInstancesFor(decisionRequirementsKey);
     updateInstancesInBatchOperation(operation, deleted);
-    logger.info(String.format("Operation [%s]: Deleted %s decision instances", operation.getId(), deleted));
+    logger.info(
+        String.format("Operation [%s]: Deleted %s decision instances", operation.getId(), deleted));
 
     deleted = decisionWriter.deleteDecisionDefinitionsFor(decisionRequirementsKey);
-    logger.info(String.format("Operation [%s]: Deleted %s decision definitions", operation.getId(), deleted));
+    logger.info(
+        String.format(
+            "Operation [%s]: Deleted %s decision definitions", operation.getId(), deleted));
 
     deleted = decisionWriter.deleteDecisionRequirements(decisionRequirementsKey);
     completeOperation(operation);
-    logger.info(String.format("Operation [%s]: Deleted %s decision requirements", operation.getId(), deleted));
+    logger.info(
+        String.format(
+            "Operation [%s]: Deleted %s decision requirements", operation.getId(), deleted));
   }
 
   private void completeOperation(final OperationEntity operation) throws PersistenceException {
     operationsManager.completeOperation(operation);
   }
 
-  private void updateInstancesInBatchOperation(final OperationEntity operation, long increment) throws PersistenceException {
+  private void updateInstancesInBatchOperation(final OperationEntity operation, long increment)
+      throws PersistenceException {
     operationsManager.updateInstancesInBatchOperation(operation.getBatchOperationId(), increment);
   }
 

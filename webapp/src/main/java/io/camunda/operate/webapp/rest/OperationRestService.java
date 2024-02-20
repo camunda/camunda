@@ -10,11 +10,10 @@ import static io.camunda.operate.webapp.rest.OperationRestService.OPERATION_URL;
 
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
-
-import io.camunda.operate.webapp.rest.dto.OperationDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,13 +27,11 @@ public class OperationRestService extends InternalAPIErrorController {
 
   public static final String OPERATION_URL = "/api/operations";
 
-  @Autowired
-  private OperationReader operationReader;
+  @Autowired private OperationReader operationReader;
 
   @Operation(summary = "Get single operation")
   @GetMapping
   public List<OperationDto> getOperation(@RequestParam String batchOperationId) {
     return operationReader.getOperationsByBatchOperationId(batchOperationId);
   }
-
 }

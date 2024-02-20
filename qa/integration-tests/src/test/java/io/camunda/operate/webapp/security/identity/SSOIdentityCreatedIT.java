@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.identity.sdk.Identity;
 import io.camunda.operate.property.OperateProperties;
 import org.junit.Test;
@@ -16,32 +18,25 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @RunWith(SpringRunner.class)
 @ActiveProfiles({"sso-auth"})
 @SpringBootTest(
-    classes = {
-        IdentityConfigurer.class,
-        OperateProperties.class},
+    classes = {IdentityConfigurer.class, OperateProperties.class},
     properties = {
-        OperateProperties.PREFIX + ".identity.resourcePermissionsEnabled = true",
-        "camunda.identity.baseUrl=http://IdentiyURL:8080"
-    }
-)
+      OperateProperties.PREFIX + ".identity.resourcePermissionsEnabled = true",
+      "camunda.identity.baseUrl=http://IdentiyURL:8080"
+    })
 public class SSOIdentityCreatedIT {
 
   @Autowired
   @Qualifier("saasIdentity")
   private Identity identity;
 
-  @Autowired
-  private PermissionsService permissionsService;
+  @Autowired private PermissionsService permissionsService;
 
   @Test
   public void testIdentityIsCreated() {
     assertThat(identity).isNotNull();
     assertThat(permissionsService).isNotNull();
   }
-
 }

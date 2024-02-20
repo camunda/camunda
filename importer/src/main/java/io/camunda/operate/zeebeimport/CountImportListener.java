@@ -32,5 +32,4 @@ public class CountImportListener implements ImportListener {
   public int getScheduledCount() {
     return scheduledCount.get();
   }
-
 }

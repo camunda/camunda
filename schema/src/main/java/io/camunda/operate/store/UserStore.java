@@ -11,5 +11,6 @@ import io.camunda.operate.entities.UserEntity;
 public interface UserStore {
 
   UserEntity getById(String id);
+
   void save(UserEntity userEntity);
 }

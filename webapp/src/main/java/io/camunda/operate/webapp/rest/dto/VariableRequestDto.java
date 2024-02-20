@@ -6,15 +6,16 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
+import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 
 @Schema(description = "Process instances variables request")
 public class VariableRequestDto extends PaginatedQuery<VariableRequestDto> {
 
   @Schema(
-      description = "Variable scope. Must be processInstanceId for process instance level variables.")
+      description =
+          "Variable scope. Must be processInstanceId for process instance level variables.")
   private String scopeId;
 
   public String getScopeId() {
@@ -66,8 +67,6 @@ public class VariableRequestDto extends PaginatedQuery<VariableRequestDto> {
 
   @Override
   public String toString() {
-    return "VariableRequestDto{" +
-        "scopeId='" + scopeId + '\'' +
-        '}';
+    return "VariableRequestDto{" + "scopeId='" + scopeId + '\'' + '}';
   }
 }

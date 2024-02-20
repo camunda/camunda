@@ -10,7 +10,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 
 public class NotFoundException extends OperateRuntimeException {
 
-  public NotFoundException(String message){
+  public NotFoundException(String message) {
     super(message);
   }
 }

@@ -6,6 +6,11 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
+import static io.camunda.operate.qa.util.TestContainerUtil.TENANT_1;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
+
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.property.OperateProperties;
@@ -17,6 +22,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.security.tenant.TenantService;
+import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,25 +33,19 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.List;
-
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
-import static io.camunda.operate.qa.util.TestContainerUtil.TENANT_1;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doReturn;
-
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = { TestApplication.class},
-    properties = { OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-        "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-        OperateProperties.PREFIX + ".multiTenancy.enabled = true"})
-@ActiveProfiles({ OperateProfileService.IDENTITY_AUTH_PROFILE, "test" })
+    classes = {TestApplication.class},
+    properties = {
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
+      OperateProperties.PREFIX + ".multiTenancy.enabled = true"
+    })
+@ActiveProfiles({OperateProfileService.IDENTITY_AUTH_PROFILE, "test"})
 public class ImportMultitenancyZeebeIT extends IdentityOperateZeebeAbstractIT {
 
-  @Autowired
-  private ListViewReader listViewReader;
+  @Autowired private ListViewReader listViewReader;
 
   private String defaultTenantId = "<default>";
 
@@ -61,30 +61,34 @@ public class ImportMultitenancyZeebeIT extends IdentityOperateZeebeAbstractIT {
 
   @Test
   public void testTenantIsAssignedAndImported() {
-    doReturn(TenantService.AuthenticatedTenants.assignedTenants(List.of(TENANT_1))).when(tenantService)
+    doReturn(TenantService.AuthenticatedTenants.assignedTenants(List.of(TENANT_1)))
+        .when(tenantService)
         .getAuthenticatedTenants();
 
     // having
     String processId = "demoProcess";
     final Long processDefinitionKey = deployProcessWithTenant(TENANT_1, "demoProcess_v_1.bpmn");
 
-    //when
-    final Long processInstanceKey = tester.startProcessInstance(processId, null, "{\"a\": \"b\"}", TENANT_1)
-        .getProcessInstanceKey();
+    // when
+    final Long processInstanceKey =
+        tester
+            .startProcessInstance(processId, null, "{\"a\": \"b\"}", TENANT_1)
+            .getProcessInstanceKey();
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
     searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "a");
 
-    //then
-    //assert process instance
+    // then
+    // assert process instance
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
     assertThat(pi.getTenantId()).isEqualTo(TENANT_1);
-    //assert flow node instances
-    final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
-        .getAllFlowNodeInstances(processInstanceKey);
+    // assert flow node instances
+    final List<FlowNodeInstanceEntity> allFlowNodeInstances =
+        tester.getAllFlowNodeInstances(processInstanceKey);
     assertThat(allFlowNodeInstances).extracting("tenantId").containsOnly(TENANT_1);
   }
 
-  private ListViewProcessInstanceDto getSingleProcessInstanceForListView(ListViewRequestDto request) {
+  private ListViewProcessInstanceDto getSingleProcessInstanceForListView(
+      ListViewRequestDto request) {
     final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(request);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
     assertThat(listViewResponse.getProcessInstances()).hasSize(1);
@@ -94,5 +98,4 @@ public class ImportMultitenancyZeebeIT extends IdentityOperateZeebeAbstractIT {
   private ListViewProcessInstanceDto getSingleProcessInstanceForListView() {
     return getSingleProcessInstanceForListView(createGetAllProcessInstancesRequest());
   }
-
 }

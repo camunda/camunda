@@ -10,7 +10,8 @@ import io.camunda.operate.schema.backup.Prio3Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class IncidentTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant, Prio3Backup {
+public class IncidentTemplate extends AbstractTemplateDescriptor
+    implements ProcessInstanceDependant, Prio3Backup {
 
   public static final String INDEX_NAME = "incident";
 
@@ -35,7 +36,8 @@ public class IncidentTemplate extends AbstractTemplateDescriptor implements Proc
   }
 
   @Override
-  //we have to use version 8.3.1 here, as we mistakenly released 8.3.0 index version in Operate 8.2.6
+  // we have to use version 8.3.1 here, as we mistakenly released 8.3.0 index version in Operate
+  // 8.2.6
   public String getVersion() {
     return "8.3.1";
   }

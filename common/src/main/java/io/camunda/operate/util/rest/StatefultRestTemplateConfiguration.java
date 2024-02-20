@@ -7,7 +7,6 @@
 package io.camunda.operate.util.rest;
 
 import java.util.function.BiFunction;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,5 +21,4 @@ public class StatefultRestTemplateConfiguration {
   public BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory() {
     return (host, port) -> new StatefulRestTemplate(host, port, contextPath);
   }
-
 }

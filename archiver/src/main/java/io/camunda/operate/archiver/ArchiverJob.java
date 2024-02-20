@@ -10,10 +10,9 @@ import java.util.concurrent.CompletableFuture;
 
 public interface ArchiverJob extends Runnable {
 
-    CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch);
+  CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch);
 
-    CompletableFuture<ArchiveBatch> getNextBatch();
+  CompletableFuture<ArchiveBatch> getNextBatch();
 
-    CompletableFuture<Integer> archiveNextBatch();
-
+  CompletableFuture<Integer> archiveNextBatch();
 }

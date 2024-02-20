@@ -13,8 +13,27 @@ public class SetBpmnProcessIdStep extends AbstractStep {
 
   @Override
   public String toString() {
-    return "SetBpmnProcessIdStep{" + "content='" + getContent() + '\'' + ", description='" + getDescription() + '\'' + ", createdDate="
-        + getCreatedDate() + ", appliedDate=" + getAppliedDate() + ", indexName='" + getIndexName() + '\'' + ", isApplied="
-        + isApplied() + ", version='" + getVersion() + '\'' + ", order=" + getOrder() + '}';
+    return "SetBpmnProcessIdStep{"
+        + "content='"
+        + getContent()
+        + '\''
+        + ", description='"
+        + getDescription()
+        + '\''
+        + ", createdDate="
+        + getCreatedDate()
+        + ", appliedDate="
+        + getAppliedDate()
+        + ", indexName='"
+        + getIndexName()
+        + '\''
+        + ", isApplied="
+        + isApplied()
+        + ", version='"
+        + getVersion()
+        + '\''
+        + ", order="
+        + getOrder()
+        + '}';
   }
 }

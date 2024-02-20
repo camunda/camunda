@@ -44,8 +44,8 @@ public class DecisionInstanceListResponseDto {
       return false;
     }
     final DecisionInstanceListResponseDto that = (DecisionInstanceListResponseDto) o;
-    return totalCount == that.totalCount &&
-        Objects.equals(decisionInstances, that.decisionInstances);
+    return totalCount == that.totalCount
+        && Objects.equals(decisionInstances, that.decisionInstances);
   }
 
   @Override

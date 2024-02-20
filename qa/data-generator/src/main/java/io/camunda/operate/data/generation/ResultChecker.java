@@ -6,10 +6,13 @@
  */
 package io.camunda.operate.data.generation;
 
-import java.io.IOException;
-import java.util.function.Supplier;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static java.lang.Math.abs;
+
 import io.camunda.operate.qa.util.ElasticsearchUtil;
 import io.camunda.operate.zeebe.ZeebeESConstants;
+import java.io.IOException;
+import java.util.function.Supplier;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -17,8 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import static java.lang.Math.abs;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 @Component
 public class ResultChecker {
@@ -27,27 +28,26 @@ public class ResultChecker {
 
   private static final double PRECISION_RATE = 0.01;
 
-  @Autowired
-  private DataGeneratorProperties dataGeneratorProperties;
+  @Autowired private DataGeneratorProperties dataGeneratorProperties;
 
-  @Autowired
-  private RestHighLevelClient esClient;
+  @Autowired private RestHighLevelClient esClient;
 
   public void assertResults() throws IOException {
     sleepFor(1000L);
     esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
     assertProcessCount();
     assertProcessInstanceCount();
-//    assertIncidentCount();
+    //    assertIncidentCount();
     logger.info("Assertions passed");
   }
 
-  private boolean assertDocsCountWithRetry(int lastCount, int expectedCount, Supplier<Integer> cardinalityCounter) {
+  private boolean assertDocsCountWithRetry(
+      int lastCount, int expectedCount, Supplier<Integer> cardinalityCounter) {
     int newCount = cardinalityCounter.get();
     logger.info("Asserting amount: {}", newCount);
-    if (((double)abs(newCount - expectedCount)) / expectedCount <= PRECISION_RATE) {
+    if (((double) abs(newCount - expectedCount)) / expectedCount <= PRECISION_RATE) {
       return true;
-    } else if (newCount > lastCount){   //data is still loading
+    } else if (newCount > lastCount) { // data is still loading
       logger.info("Not enough. Will wait and retry");
       try {
         esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
@@ -64,46 +64,62 @@ public class ResultChecker {
 
   private void assertProcessCount() {
     final int expectedCount = dataGeneratorProperties.getProcessCount() + 3;
-    final Supplier<Integer> processCounter = () -> {
-      try {
-        return ElasticsearchUtil.getFieldCardinality(esClient, getAliasName(ZeebeESConstants.PROCESS_INDEX_NAME), "value.bpmnProcessId");
-      } catch (IOException e) {
-        throw new DataGenerationException("Exception occurred while performing assertions", e);
-      }
-    };
+    final Supplier<Integer> processCounter =
+        () -> {
+          try {
+            return ElasticsearchUtil.getFieldCardinality(
+                esClient, getAliasName(ZeebeESConstants.PROCESS_INDEX_NAME), "value.bpmnProcessId");
+          } catch (IOException e) {
+            throw new DataGenerationException("Exception occurred while performing assertions", e);
+          }
+        };
     if (!assertDocsCountWithRetry(0, expectedCount, processCounter)) {
-      throw new DataGenerationException(String.format("Expected to have %s processes, but was %s", expectedCount, processCounter.get()));
+      throw new DataGenerationException(
+          String.format(
+              "Expected to have %s processes, but was %s", expectedCount, processCounter.get()));
     }
   }
 
   private void assertProcessInstanceCount() {
-    final int expectedCount = dataGeneratorProperties.getProcessInstanceCount() + dataGeneratorProperties.getCallActivityProcessInstanceCount() * 3 + 1;
-    final Supplier<Integer> processCounter = () -> {
-      try {
-        return ElasticsearchUtil.getFieldCardinality(esClient, getAliasName(ZeebeESConstants.PROCESS_INSTANCE_INDEX_NAME), "value.processInstanceKey");
-      } catch (IOException e) {
-        throw new DataGenerationException("Exception occurred while performing assertions", e);
-      }
-    };
+    final int expectedCount =
+        dataGeneratorProperties.getProcessInstanceCount()
+            + dataGeneratorProperties.getCallActivityProcessInstanceCount() * 3
+            + 1;
+    final Supplier<Integer> processCounter =
+        () -> {
+          try {
+            return ElasticsearchUtil.getFieldCardinality(
+                esClient,
+                getAliasName(ZeebeESConstants.PROCESS_INSTANCE_INDEX_NAME),
+                "value.processInstanceKey");
+          } catch (IOException e) {
+            throw new DataGenerationException("Exception occurred while performing assertions", e);
+          }
+        };
     if (!assertDocsCountWithRetry(0, expectedCount, processCounter)) {
-      throw new DataGenerationException(String.format("Expected to have %s process instances, but was %s", expectedCount, processCounter.get()));
+      throw new DataGenerationException(
+          String.format(
+              "Expected to have %s process instances, but was %s",
+              expectedCount, processCounter.get()));
     }
   }
 
-//  private void assertIncidentCount() {
-//    try {
-//      int processInstanceCount = getFieldCardinality(getAliasName(INCIDENT_INDEX_NAME), "value.processInstanceKey");
-//      final int expectedProcessInstanceCount = dataGeneratorProperties.getProcessInstanceCount();
-//      if (processInstanceCount != expectedProcessInstanceCount) {
-//        throw new DataGenerationException(String.format("Expected to have %s process instances, but was %s", expectedProcessInstanceCount, processInstanceCount));
-//      }
-//    } catch (IOException ex) {
-//      throw new DataGenerationException("Exception occurred while performing assertions", ex);
-//    }
-//  }
+  //  private void assertIncidentCount() {
+  //    try {
+  //      int processInstanceCount = getFieldCardinality(getAliasName(INCIDENT_INDEX_NAME),
+  // "value.processInstanceKey");
+  //      final int expectedProcessInstanceCount =
+  // dataGeneratorProperties.getProcessInstanceCount();
+  //      if (processInstanceCount != expectedProcessInstanceCount) {
+  //        throw new DataGenerationException(String.format("Expected to have %s process instances,
+  // but was %s", expectedProcessInstanceCount, processInstanceCount));
+  //      }
+  //    } catch (IOException ex) {
+  //      throw new DataGenerationException("Exception occurred while performing assertions", ex);
+  //    }
+  //  }
 
   public String getAliasName(String name) {
     return String.format("%s-%s", dataGeneratorProperties.getZeebeElasticsearchPrefix(), name);
   }
-
 }

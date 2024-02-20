@@ -11,6 +11,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
+import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,8 +22,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import java.util.UUID;
-
 public abstract class ErrorController {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
@@ -32,11 +31,12 @@ public abstract class ErrorController {
   public ResponseEntity<Error> handleAccessDeniedException(AccessDeniedException exception) {
     logger.error(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
-    final Error error = new Error()
-        .setType(exception.getClass().getSimpleName())
-        .setInstance(UUID.randomUUID().toString())
-        .setStatus(HttpStatus.FORBIDDEN.value())
-        .setMessage(exception.getMessage());
+    final Error error =
+        new Error()
+            .setType(exception.getClass().getSimpleName())
+            .setInstance(UUID.randomUUID().toString())
+            .setStatus(HttpStatus.FORBIDDEN.value())
+            .setMessage(exception.getMessage());
     return ResponseEntity.status(HttpStatus.FORBIDDEN)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
@@ -47,11 +47,12 @@ public abstract class ErrorController {
   public ResponseEntity<Error> handleInvalidRequest(ClientException exception) {
     logger.error(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
-    final Error error = new Error()
-        .setType(ClientException.TYPE)
-        .setInstance(exception.getInstance())
-        .setStatus(HttpStatus.BAD_REQUEST.value())
-        .setMessage(exception.getMessage());
+    final Error error =
+        new Error()
+            .setType(ClientException.TYPE)
+            .setInstance(exception.getInstance())
+            .setStatus(HttpStatus.BAD_REQUEST.value())
+            .setMessage(exception.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
@@ -61,8 +62,7 @@ public abstract class ErrorController {
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Error> handleException(Exception exception) {
     // Show client only detail message, log all messages
-    return handleInvalidRequest(new ClientException(getOnlyDetailMessage(exception), exception)
-    );
+    return handleInvalidRequest(new ClientException(getOnlyDetailMessage(exception), exception));
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -70,11 +70,12 @@ public abstract class ErrorController {
   public ResponseEntity<Error> handleInvalidRequest(ValidationException exception) {
     logger.error(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
-    final Error error = new Error()
-        .setType(ValidationException.TYPE)
-        .setInstance(exception.getInstance())
-        .setStatus(HttpStatus.BAD_REQUEST.value())
-        .setMessage(exception.getMessage());
+    final Error error =
+        new Error()
+            .setType(ValidationException.TYPE)
+            .setInstance(exception.getInstance())
+            .setStatus(HttpStatus.BAD_REQUEST.value())
+            .setMessage(exception.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
@@ -85,11 +86,12 @@ public abstract class ErrorController {
   public ResponseEntity<Error> handleNotFound(ResourceNotFoundException exception) {
     logger.error(getSummary(exception));
     logger.debug(exception.getMessage(), exception);
-    final Error error = new Error()
-        .setType(ResourceNotFoundException.TYPE)
-        .setInstance(exception.getInstance())
-        .setStatus(HttpStatus.NOT_FOUND.value())
-        .setMessage(exception.getMessage());
+    final Error error =
+        new Error()
+            .setType(ResourceNotFoundException.TYPE)
+            .setInstance(exception.getInstance())
+            .setStatus(HttpStatus.NOT_FOUND.value())
+            .setMessage(exception.getMessage());
     return ResponseEntity.status(HttpStatus.NOT_FOUND)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
@@ -99,11 +101,12 @@ public abstract class ErrorController {
   @ExceptionHandler(ServerException.class)
   public ResponseEntity<Error> handleServerException(ServerException exception) {
     logger.error(exception.getMessage(), exception);
-    final Error error = new Error()
-        .setType(ServerException.TYPE)
-        .setInstance(exception.getInstance())
-        .setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-        .setMessage(exception.getMessage());
+    final Error error =
+        new Error()
+            .setType(ServerException.TYPE)
+            .setInstance(exception.getInstance())
+            .setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .setMessage(exception.getMessage());
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);

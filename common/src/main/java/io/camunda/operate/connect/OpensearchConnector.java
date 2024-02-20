@@ -16,6 +16,21 @@ import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.SslProperties;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import javax.net.ssl.SSLContext;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import org.apache.hc.client5.http.auth.AuthScope;
@@ -55,23 +70,6 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
-
-import javax.net.ssl.SSLContext;
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-
 
 @Configuration
 @Conditional(OpensearchCondition.class)
@@ -125,7 +123,7 @@ public class OpensearchConnector {
   public OpenSearchAsyncClient createAsyncOsClient(OpensearchProperties osConfig) {
     LOGGER.debug("Creating Async OpenSearch connection...");
     LOGGER.debug("Creating OpenSearch connection...");
-    if( isAws()){
+    if (isAws()) {
       return getAwsAsyncClient(osConfig);
     }
     final HttpHost host = getHttpHost(osConfig);
@@ -174,13 +172,13 @@ public class OpensearchConnector {
     return openSearchAsyncClient;
   }
 
-  private boolean isAws(){
+  private boolean isAws() {
     AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
     try {
       credentialsProvider.resolveCredentials();
       LOGGER.info("AWS Credentials can be resolved. Use AWS Opensearch");
       return true;
-    } catch(Exception e){
+    } catch (Exception e) {
       LOGGER.warn("AWS not configured due to: {} ", e.getMessage());
       return false;
     }
@@ -188,7 +186,7 @@ public class OpensearchConnector {
 
   public OpenSearchClient createOsClient(OpensearchProperties osConfig) {
     LOGGER.debug("Creating OpenSearch connection...");
-    if(isAws()){
+    if (isAws()) {
       return getAwsClient(osConfig);
     }
     final HttpHost host = getHttpHost(osConfig);
@@ -230,26 +228,28 @@ public class OpensearchConnector {
   private OpenSearchClient getAwsClient(OpensearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
     SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-    AwsSdk2Transport transport = new AwsSdk2Transport(
-        httpClient,
-        osConfig.getHost(),
-        Region.of(region),
-        AwsSdk2TransportOptions.builder()
-            .setMapper(new JacksonJsonpMapper(objectMapper))
-            .build());
+    AwsSdk2Transport transport =
+        new AwsSdk2Transport(
+            httpClient,
+            osConfig.getHost(),
+            Region.of(region),
+            AwsSdk2TransportOptions.builder()
+                .setMapper(new JacksonJsonpMapper(objectMapper))
+                .build());
     return new ExtendedOpenSearchClient(transport);
   }
 
   private OpenSearchAsyncClient getAwsAsyncClient(OpensearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
     SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-    AwsSdk2Transport transport = new AwsSdk2Transport(
-        httpClient,
-        osConfig.getHost(),
-        Region.of(region),
-        AwsSdk2TransportOptions.builder()
-            .setMapper(new JacksonJsonpMapper(objectMapper))
-            .build());
+    AwsSdk2Transport transport =
+        new AwsSdk2Transport(
+            httpClient,
+            osConfig.getHost(),
+            Region.of(region),
+            AwsSdk2TransportOptions.builder()
+                .setMapper(new JacksonJsonpMapper(objectMapper))
+                .build());
     return new OpenSearchAsyncClient(transport);
   }
 
@@ -430,5 +430,4 @@ public class OpensearchConnector {
         .onRetriesExceeded(
             e -> LOGGER.error("Retries {} exceeded for {}", e.getAttemptCount(), logMessage));
   }
-
 }

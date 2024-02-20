@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.modules;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.operate.ArchiverModuleConfiguration;
 import io.camunda.operate.ImportModuleConfiguration;
 import io.camunda.operate.WebappModuleConfiguration;
@@ -13,10 +15,12 @@ import io.camunda.operate.property.OperateProperties;
 import org.junit.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.TestPropertySource;
-import static org.assertj.core.api.Assertions.assertThat;
 
-@TestPropertySource(properties = {OperateProperties.PREFIX + ".webappEnabled = false",
-    OperateProperties.PREFIX + ".archiverEnabled = false"})
+@TestPropertySource(
+    properties = {
+      OperateProperties.PREFIX + ".webappEnabled = false",
+      OperateProperties.PREFIX + ".archiverEnabled = false"
+    })
 public class OnlyImportIT extends ModuleAbstractIT {
 
   @Test
@@ -33,5 +37,4 @@ public class OnlyImportIT extends ModuleAbstractIT {
   public void testArchiverModuleIsNotPresent() {
     applicationContext.getBean(ArchiverModuleConfiguration.class);
   }
-
 }

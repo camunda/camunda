@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 @Configuration
-@ComponentScan(basePackages = "io.camunda.operate.qa",
+@ComponentScan(
+    basePackages = "io.camunda.operate.qa",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-public class TestConfig {
-}
+public class TestConfig {}

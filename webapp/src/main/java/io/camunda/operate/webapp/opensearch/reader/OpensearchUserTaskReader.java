@@ -6,18 +6,17 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.UserTaskEntity;
 import io.camunda.operate.schema.templates.UserTaskTemplate;
 import io.camunda.operate.webapp.reader.UserTaskReader;
+import java.util.List;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -25,13 +24,14 @@ public class OpensearchUserTaskReader extends OpensearchAbstractReader implement
 
   private final UserTaskTemplate userTaskTemplate;
 
-  public OpensearchUserTaskReader(final UserTaskTemplate userTaskTemplate){
+  public OpensearchUserTaskReader(final UserTaskTemplate userTaskTemplate) {
     this.userTaskTemplate = userTaskTemplate;
   }
+
   @Override
   public List<UserTaskEntity> getUserTasks() {
-    var request = searchRequestBuilder(userTaskTemplate.getAlias())
-        .query(withTenantCheck(matchAll()));
-    return richOpenSearchClient.doc().searchValues(request,UserTaskEntity.class);
+    var request =
+        searchRequestBuilder(userTaskTemplate.getAlias()).query(withTenantCheck(matchAll()));
+    return richOpenSearchClient.doc().searchValues(request, UserTaskEntity.class);
   }
 }

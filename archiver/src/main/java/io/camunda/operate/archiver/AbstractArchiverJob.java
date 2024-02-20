@@ -9,15 +9,14 @@ package io.camunda.operate.archiver;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.BackoffIdleStrategy;
 import jakarta.annotation.PreDestroy;
+import java.time.Instant;
+import java.util.Date;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-
-import java.time.Instant;
-import java.util.Date;
-import java.util.concurrent.CompletableFuture;
 
 public abstract class AbstractArchiverJob implements ArchiverJob {
 
@@ -35,8 +34,7 @@ public abstract class AbstractArchiverJob implements ArchiverJob {
   @Qualifier("archiverThreadPoolExecutor")
   protected ThreadPoolTaskScheduler archiverExecutor;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   public AbstractArchiverJob() {
     this.idleStrategy = new BackoffIdleStrategy(2_000, 1.2f, 60_000);
@@ -47,34 +45,39 @@ public abstract class AbstractArchiverJob implements ArchiverJob {
   public void run() {
 
     archiveNextBatch()
-      .thenApply((count) -> {
-        errorStrategy.reset();
+        .thenApply(
+            (count) -> {
+              errorStrategy.reset();
 
-        if (count >= operateProperties.getArchiver().getRolloverBatchSize()) {
-          idleStrategy.reset();
-        } else {
-          idleStrategy.idle();
-        }
+              if (count >= operateProperties.getArchiver().getRolloverBatchSize()) {
+                idleStrategy.reset();
+              } else {
+                idleStrategy.idle();
+              }
 
-        final var delay = Math.max(
-            operateProperties.getArchiver().getDelayBetweenRuns(),
-            idleStrategy.idleTime());
+              final var delay =
+                  Math.max(
+                      operateProperties.getArchiver().getDelayBetweenRuns(),
+                      idleStrategy.idleTime());
 
-        return delay;
-      })
-      .exceptionally((t) -> {
-        logger.error("Error occurred while archiving data. Will be retried.", t);
-        errorStrategy.idle();
-        final var delay = Math.max(
-            operateProperties.getArchiver().getDelayBetweenRuns(),
-            errorStrategy.idleTime());
-        return delay;
-      })
-      .thenAccept((delay) -> {
-        if (!shutdown) {
-          archiverExecutor.schedule(this, Date.from(Instant.now().plusMillis(delay)));
-        }
-      });
+              return delay;
+            })
+        .exceptionally(
+            (t) -> {
+              logger.error("Error occurred while archiving data. Will be retried.", t);
+              errorStrategy.idle();
+              final var delay =
+                  Math.max(
+                      operateProperties.getArchiver().getDelayBetweenRuns(),
+                      errorStrategy.idleTime());
+              return delay;
+            })
+        .thenAccept(
+            (delay) -> {
+              if (!shutdown) {
+                archiverExecutor.schedule(this, Date.from(Instant.now().plusMillis(delay)));
+              }
+            });
   }
 
   @Override

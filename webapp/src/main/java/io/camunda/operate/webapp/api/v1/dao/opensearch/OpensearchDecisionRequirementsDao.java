@@ -17,25 +17,29 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao<DecisionRequirements, DecisionRequirements> implements DecisionRequirementsDao {
+public class OpensearchDecisionRequirementsDao
+    extends OpensearchKeyFilteringDao<DecisionRequirements, DecisionRequirements>
+    implements DecisionRequirementsDao {
 
   private final DecisionRequirementsIndex decisionRequirementsIndex;
 
-  public OpensearchDecisionRequirementsDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                                           RichOpenSearchClient richOpenSearchClient, DecisionRequirementsIndex decisionRequirementsIndex){
+  public OpensearchDecisionRequirementsDao(
+      OpensearchQueryDSLWrapper queryDSLWrapper,
+      OpensearchRequestDSLWrapper requestDSLWrapper,
+      RichOpenSearchClient richOpenSearchClient,
+      DecisionRequirementsIndex decisionRequirementsIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionRequirementsIndex = decisionRequirementsIndex;
   }
@@ -67,14 +71,16 @@ public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao
 
   @Override
   public List<DecisionRequirements> byKeys(Set<Long> keys) throws APIException {
-    final List<Long> nonNullKeys = (keys == null) ? List.of() : keys.stream().filter(Objects::nonNull).toList();
+    final List<Long> nonNullKeys =
+        (keys == null) ? List.of() : keys.stream().filter(Objects::nonNull).toList();
     if (nonNullKeys.isEmpty()) {
       return List.of();
     }
-    try{
-      var request = requestDSLWrapper.searchRequestBuilder(
-          getIndexName()).query(
-              queryDSLWrapper.longTerms(getKeyFieldName(), nonNullKeys));
+    try {
+      var request =
+          requestDSLWrapper
+              .searchRequestBuilder(getIndexName())
+              .query(queryDSLWrapper.longTerms(getKeyFieldName(), nonNullKeys));
       return richOpenSearchClient.doc().scrollValues(request, DecisionRequirements.class);
     } catch (Exception e) {
       throw new ServerException("Error in reading decision requirements by keys", e);
@@ -84,18 +90,24 @@ public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao
   @Override
   public String xmlByKey(Long key) throws APIException {
     validateKey(key);
-    var request =requestDSLWrapper.searchRequestBuilder(getIndexName())
-        .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.term(DecisionRequirements.KEY, key)))
-        .source(queryDSLWrapper.sourceInclude(DecisionRequirementsIndex.XML));
+    var request =
+        requestDSLWrapper
+            .searchRequestBuilder(getIndexName())
+            .query(
+                queryDSLWrapper.withTenantCheck(
+                    queryDSLWrapper.term(DecisionRequirements.KEY, key)))
+            .source(queryDSLWrapper.sourceInclude(DecisionRequirementsIndex.XML));
     try {
       var response = richOpenSearchClient.doc().search(request, Map.class);
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source().get(DecisionRequirementsIndex.XML).toString();
       }
     } catch (Exception e) {
-      throw new ServerException(String.format("Error in reading decision requirements as xml for key %s", key), e);
+      throw new ServerException(
+          String.format("Error in reading decision requirements as xml for key %s", key), e);
     }
-    throw new ResourceNotFoundException(String.format("Decision requirements for key %s not found.", key));
+    throw new ResourceNotFoundException(
+        String.format("Decision requirements for key %s not found.", key));
   }
 
   @Override
@@ -117,15 +129,20 @@ public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao
   protected void buildFiltering(Query<DecisionRequirements> query, SearchRequest.Builder request) {
     final DecisionRequirements filter = query.getFilter();
     if (filter != null) {
-      var queryTerms = Stream.of(
-        queryDSLWrapper.term(DecisionRequirements.ID, filter.getId()),
-        queryDSLWrapper.term(DecisionRequirements.KEY, filter.getKey()),
-        queryDSLWrapper.term(DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
-        queryDSLWrapper.term(DecisionRequirements.TENANT_ID, filter.getTenantId()),
-        queryDSLWrapper.term(DecisionRequirements.NAME, filter.getName()),
-        queryDSLWrapper.term(DecisionRequirements.VERSION, filter.getVersion()),
-        queryDSLWrapper.term(DecisionRequirements.RESOURCE_NAME, filter.getResourceName())
-      ).filter(Objects::nonNull).collect(Collectors.toList());
+      var queryTerms =
+          Stream.of(
+                  queryDSLWrapper.term(DecisionRequirements.ID, filter.getId()),
+                  queryDSLWrapper.term(DecisionRequirements.KEY, filter.getKey()),
+                  queryDSLWrapper.term(
+                      DecisionRequirements.DECISION_REQUIREMENTS_ID,
+                      filter.getDecisionRequirementsId()),
+                  queryDSLWrapper.term(DecisionRequirements.TENANT_ID, filter.getTenantId()),
+                  queryDSLWrapper.term(DecisionRequirements.NAME, filter.getName()),
+                  queryDSLWrapper.term(DecisionRequirements.VERSION, filter.getVersion()),
+                  queryDSLWrapper.term(
+                      DecisionRequirements.RESOURCE_NAME, filter.getResourceName()))
+              .filter(Objects::nonNull)
+              .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
         request.query(queryDSLWrapper.and(queryTerms));

@@ -5,17 +5,18 @@
  * except in compliance with the proprietary license.
  */
 package io.camunda.operate.util;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 //
-// Taken from https://stackoverflow.com/questions/13239972/how-do-you-implement-a-re-try-catch and slightly modified
+// Taken from https://stackoverflow.com/questions/13239972/how-do-you-implement-a-re-try-catch and
+// slightly modified
 //
 public class RetryOperation<T> {
 
@@ -26,6 +27,7 @@ public class RetryOperation<T> {
   public static interface RetryPredicate<T> {
     boolean shouldRetry(T t);
   }
+
   private static final Logger logger = LoggerFactory.getLogger(RetryOperation.class);
 
   private RetryConsumer<T> retryConsumer;
@@ -45,8 +47,7 @@ public class RetryOperation<T> {
     private Class<? extends Throwable>[] exceptionClasses;
     private String message = "";
 
-    private OperationBuilder() {
-    }
+    private OperationBuilder() {}
 
     public OperationBuilder<T> retryConsumer(final RetryConsumer<T> retryConsumer) {
       this.iRetryConsumer = retryConsumer;
@@ -75,7 +76,7 @@ public class RetryOperation<T> {
       return this;
     }
 
-    public OperationBuilder<T> message(final String message){
+    public OperationBuilder<T> message(final String message) {
       this.message = message;
       return this;
     }
@@ -91,7 +92,14 @@ public class RetryOperation<T> {
       }
       iNoOfRetry = iNoOfRetry == 0 ? 1 : iNoOfRetry;
       iTimeUnit = Objects.isNull(iTimeUnit) ? TimeUnit.MILLISECONDS : iTimeUnit;
-      return new RetryOperation<>(iRetryConsumer, iNoOfRetry, iDelayInterval, iTimeUnit, iRetryPredicate, exceptionList, message);
+      return new RetryOperation<>(
+          iRetryConsumer,
+          iNoOfRetry,
+          iDelayInterval,
+          iTimeUnit,
+          iRetryPredicate,
+          exceptionList,
+          message);
     }
   }
 
@@ -99,8 +107,14 @@ public class RetryOperation<T> {
     return new OperationBuilder<>();
   }
 
-  private RetryOperation(RetryConsumer<T> retryConsumer, int noOfRetry, int delayInterval, TimeUnit timeUnit, RetryPredicate<T> retryPredicate,
-      List<Class<? extends Throwable>> exceptionList, String message) {
+  private RetryOperation(
+      RetryConsumer<T> retryConsumer,
+      int noOfRetry,
+      int delayInterval,
+      TimeUnit timeUnit,
+      RetryPredicate<T> retryPredicate,
+      List<Class<? extends Throwable>> exceptionList,
+      String message) {
     this.retryConsumer = retryConsumer;
     this.noOfRetry = noOfRetry;
     this.delayInterval = delayInterval;
@@ -136,7 +150,8 @@ public class RetryOperation<T> {
   }
 
   private int handleException(int retries, Exception e) throws Exception {
-    if (exceptionList.isEmpty() || exceptionList.stream().anyMatch(ex -> ex.isAssignableFrom(e.getClass()))) {
+    if (exceptionList.isEmpty()
+        || exceptionList.stream().anyMatch(ex -> ex.isAssignableFrom(e.getClass()))) {
       // exception is accepted, continue retry.
       retries = increaseRetryCountAndSleep(retries);
       if (retries == noOfRetry) {
@@ -155,9 +170,11 @@ public class RetryOperation<T> {
     if (retries < noOfRetry && delayInterval > 0) {
       try {
         if (retries % 20 == 0) {
-          logger.info("{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
+          logger.info(
+              "{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
         } else {
-          logger.debug("{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
+          logger.debug(
+              "{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
         }
         timeUnit.sleep(delayInterval);
       } catch (InterruptedException ignore) {

@@ -18,4 +18,3 @@ public class ValidationException extends APIException {
     super(message, cause);
   }
 }
-

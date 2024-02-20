@@ -7,7 +7,6 @@
 package io.camunda.operate.entities.post;
 
 import io.camunda.operate.entities.OperateEntity;
-
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
@@ -92,22 +91,29 @@ public class PostImporterQueueEntity extends OperateEntity<PostImporterQueueEnti
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     PostImporterQueueEntity that = (PostImporterQueueEntity) o;
-    return Objects.equals(key, that.key) && actionType == that.actionType && Objects.equals(intent,
-        that.intent) && Objects.equals(creationTime, that.creationTime) && Objects.equals(partitionId,
-        that.partitionId) && Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(position,
-        that.position);
+    return Objects.equals(key, that.key)
+        && actionType == that.actionType
+        && Objects.equals(intent, that.intent)
+        && Objects.equals(creationTime, that.creationTime)
+        && Objects.equals(partitionId, that.partitionId)
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(position, that.position);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), key, actionType, intent, creationTime, partitionId, processInstanceKey,
+    return Objects.hash(
+        super.hashCode(),
+        key,
+        actionType,
+        intent,
+        creationTime,
+        partitionId,
+        processInstanceKey,
         position);
   }
 }

@@ -30,15 +30,11 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 @SpringBootTest(
-    classes = {
-        ZeebeConnector.class,
-        OperateProperties.class
-    },
+    classes = {ZeebeConnector.class, OperateProperties.class},
     properties = {
-        OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-    }
-)
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+    })
 @RunWith(SpringRunner.class)
 public class ZeebeConnectorSecureIT {
 
@@ -47,34 +43,40 @@ public class ZeebeConnectorSecureIT {
   private final MountableFile certsDir = MountableFile.forClasspathResource("certs");
 
   @Rule
-  public ZeebeContainer zeebeContainer = new ZeebeContainer(
-      DockerImageName.parse(String.format("%s:%s",
-          ZeebeDefaults.getInstance().getDefaultImage(),
-          ContainerVersionsUtil.readProperty(ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME))))
-      .withFileSystemBind(certsDir
-          .getFilesystemPath(), "/usr/local/zeebe/certs")
-      .withEnv(Map.of(
-          "ZEEBE_BROKER_GATEWAY_SECURITY_CERTIFICATECHAINPATH",
-          "/usr/local/zeebe/certs/" + CERTIFICATE_FILE,
-          "ZEEBE_BROKER_GATEWAY_SECURITY_PRIVATEKEYPATH",
-          "/usr/local/zeebe/certs/" + PRIVATE_KEY_FILE,
-          "ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED", "true")
-      )
-      // Can't use connection wait strategy because of TLS
-      .waitingFor(new LogMessageWaitStrategy().withRegEx(".*Broker is ready!.*")
-          .withStartupTimeout(Duration.ofSeconds(101)));
+  public ZeebeContainer zeebeContainer =
+      new ZeebeContainer(
+              DockerImageName.parse(
+                  String.format(
+                      "%s:%s",
+                      ZeebeDefaults.getInstance().getDefaultImage(),
+                      ContainerVersionsUtil.readProperty(
+                          ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME))))
+          .withFileSystemBind(certsDir.getFilesystemPath(), "/usr/local/zeebe/certs")
+          .withEnv(
+              Map.of(
+                  "ZEEBE_BROKER_GATEWAY_SECURITY_CERTIFICATECHAINPATH",
+                  "/usr/local/zeebe/certs/" + CERTIFICATE_FILE,
+                  "ZEEBE_BROKER_GATEWAY_SECURITY_PRIVATEKEYPATH",
+                  "/usr/local/zeebe/certs/" + PRIVATE_KEY_FILE,
+                  "ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED",
+                  "true"))
+          // Can't use connection wait strategy because of TLS
+          .waitingFor(
+              new LogMessageWaitStrategy()
+                  .withRegEx(".*Broker is ready!.*")
+                  .withStartupTimeout(Duration.ofSeconds(101)));
 
-  @Autowired
-  ZeebeConnector zeebeConnector;
+  @Autowired ZeebeConnector zeebeConnector;
 
   @Test
-  public void shouldConnectWithTLS(){
+  public void shouldConnectWithTLS() {
     // given
-    final ZeebeClient zeebeClient = zeebeConnector.newZeebeClient(
-        new ZeebeProperties()
-          .setGatewayAddress(zeebeContainer.getExternalGatewayAddress())
-          .setSecure(true)
-          .setCertificatePath(certsDir.getFilesystemPath() + "/" + CERTIFICATE_FILE));
+    final ZeebeClient zeebeClient =
+        zeebeConnector.newZeebeClient(
+            new ZeebeProperties()
+                .setGatewayAddress(zeebeContainer.getExternalGatewayAddress())
+                .setSecure(true)
+                .setCertificatePath(certsDir.getFilesystemPath() + "/" + CERTIFICATE_FILE));
     // when
     List<BrokerInfo> brokerInfos = zeebeClient.newTopologyRequest().send().join().getBrokers();
     // then

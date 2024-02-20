@@ -6,25 +6,23 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import java.util.Set;
+import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.operate.entities.OperationType.RESOLVE_INCIDENT;
+
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
-import static io.camunda.operate.entities.OperationType.RESOLVE_INCIDENT;
 
-/**
- * Resolve the incident.
- */
+/** Resolve the incident. */
 @Component
 public class ResolveIncidentHandler extends AbstractOperationHandler implements OperationHandler {
 
-  @Autowired
-  private IncidentReader incidentReader;
+  @Autowired private IncidentReader incidentReader;
 
   @Override
   public void handleWithException(OperationEntity operation) throws Exception {
@@ -48,7 +46,6 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
     zeebeClient.newResolveIncidentCommand(incident.getKey()).send().join();
     // mark operation as sent
     markAsSent(operation);
-
   }
 
   @Override

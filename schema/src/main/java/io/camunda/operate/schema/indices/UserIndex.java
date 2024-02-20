@@ -10,7 +10,7 @@ import io.camunda.operate.schema.backup.Prio4Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserIndex extends AbstractIndexDescriptor  implements Prio4Backup {
+public class UserIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "user";
   public static final String ID = "id";

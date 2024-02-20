@@ -19,7 +19,7 @@ public class TestFixture extends AbstractTestFixture {
   public void setup(TestContext testContext) {
     super.setup(testContext);
     startZeebeAndOperate();
-    //no additional data is needed
+    // no additional data is needed
     stopZeebeAndOperate(testContext);
   }
 
@@ -27,5 +27,4 @@ public class TestFixture extends AbstractTestFixture {
   public String getVersion() {
     return VERSION;
   }
-
 }

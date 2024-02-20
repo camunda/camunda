@@ -43,59 +43,77 @@ public class VariableController extends ErrorController implements SearchControl
   public static final String URI = "/v1/variables";
   public static final String BY_PROCESS_INSTANCE_KEY = "/process-instance/{key}";
 
-  @Autowired
-  private VariableDao variableDao;
+  @Autowired private VariableDao variableDao;
 
   private final QueryValidator<Variable> queryValidator = new QueryValidator<>();
 
   @Operation(
       summary = "Search variables for process instances",
-      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
+      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
       responses = {
-          @ApiResponse(
-              description = "Success",
-              responseCode = "200"
-          ),
-          @ApiResponse(
-              description = ServerException.TYPE,
-              responseCode = "500",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ClientException.TYPE,
-              responseCode = "400",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ValidationException.TYPE,
-              responseCode = "400",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          )
+        @ApiResponse(description = "Success", responseCode = "200"),
+        @ApiResponse(
+            description = ServerException.TYPE,
+            responseCode = "500",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ClientException.TYPE,
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ValidationException.TYPE,
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
       })
-  @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Search variables", content =
-   @Content(examples = {
-        @ExampleObject(name = "All", value = "{}",description = "Returns all variables (default return list size is 10)"),
-        @ExampleObject(name = "Size", value = "{ \"size\": 20 }",description = "Returns 20 variables "),
-        @ExampleObject(name = "Filter and sort", value = "{"
-            + "  \"filter\": {"
-            + "    \"processInstanceKey\": \"9007199254741196\""
-            + "  },"
-            + "  \"sort\": [{\"field\":\"name\",\"order\":\"ASC\"}]"
-            + "}",description = "Returns all variables with 'processInstanceKey' '9007199254741196' sorted ascending by name"),
-        @ExampleObject(name = "Paging", value = "{"
-            + "  \"filter\": {"
-            + "    \"processInstanceKey\": \"9007199254741196\""
-            + "  },"
-            + "  \"sort\": [{\"field\":\"name\",\"order\":\"ASC\"}],"
-            + "  \"searchAfter\":["
-            + "    \"small\","
-            + "    9007199254741200"
-            + "  ]"
-            + "}",
-           description = "Returns next variables for 'processInstanceKey' ascending by 'name'. (Copy value of 'sortValues' field of previous results) "),
-      }
-    )
-  )
+  @io.swagger.v3.oas.annotations.parameters.RequestBody(
+      description = "Search variables",
+      content =
+          @Content(
+              examples = {
+                @ExampleObject(
+                    name = "All",
+                    value = "{}",
+                    description = "Returns all variables (default return list size is 10)"),
+                @ExampleObject(
+                    name = "Size",
+                    value = "{ \"size\": 20 }",
+                    description = "Returns 20 variables "),
+                @ExampleObject(
+                    name = "Filter and sort",
+                    value =
+                        "{"
+                            + "  \"filter\": {"
+                            + "    \"processInstanceKey\": \"9007199254741196\""
+                            + "  },"
+                            + "  \"sort\": [{\"field\":\"name\",\"order\":\"ASC\"}]"
+                            + "}",
+                    description =
+                        "Returns all variables with 'processInstanceKey' '9007199254741196' sorted ascending by name"),
+                @ExampleObject(
+                    name = "Paging",
+                    value =
+                        "{"
+                            + "  \"filter\": {"
+                            + "    \"processInstanceKey\": \"9007199254741196\""
+                            + "  },"
+                            + "  \"sort\": [{\"field\":\"name\",\"order\":\"ASC\"}],"
+                            + "  \"searchAfter\":["
+                            + "    \"small\","
+                            + "    9007199254741200"
+                            + "  ]"
+                            + "}",
+                    description =
+                        "Returns next variables for 'processInstanceKey' ascending by 'name'. (Copy value of 'sortValues' field of previous results) "),
+              }))
   @Override
   public Results<Variable> search(@RequestBody final Query<Variable> query) {
     logger.debug("search for query {}", query);
@@ -105,30 +123,34 @@ public class VariableController extends ErrorController implements SearchControl
 
   @Operation(
       summary = "Get variable by key",
-      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
+      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
       responses = {
-          @ApiResponse(
-              description = "Success",
-              responseCode = "200"
-          ),
-          @ApiResponse(
-              description = ServerException.TYPE,
-              responseCode = "500",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ClientException.TYPE,
-              responseCode = "400",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          ),
-          @ApiResponse(
-              description = ResourceNotFoundException.TYPE,
-              responseCode = "404",
-              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
-          )
+        @ApiResponse(description = "Success", responseCode = "200"),
+        @ApiResponse(
+            description = ServerException.TYPE,
+            responseCode = "500",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ClientException.TYPE,
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ResourceNotFoundException.TYPE,
+            responseCode = "404",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
       })
   @Override
-  public Variable byKey(@Parameter(description = "Key of variable",required = true) @PathVariable final Long key) {
+  public Variable byKey(
+      @Parameter(description = "Key of variable", required = true) @PathVariable final Long key) {
     return variableDao.byKey(key);
   }
 }

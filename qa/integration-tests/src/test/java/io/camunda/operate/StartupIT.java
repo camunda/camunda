@@ -6,10 +6,13 @@
  */
 package io.camunda.operate;
 
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.github.dockerjava.api.command.CreateContainerCmd;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.qa.util.TestContext;
-import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,9 +27,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
-import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
-import static org.assertj.core.api.Assertions.assertThat;
-
 @RunWith(SpringRunner.class)
 @IfProfileValue(name = "spring.profiles.active", value = "docker-test")
 public class StartupIT {
@@ -35,9 +35,9 @@ public class StartupIT {
 
   public TestRestTemplate restTemplate = new TestRestTemplate();
 
-//  values for local test:
-//  private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
-//  public static final String VERSION = "8.1.0-alpha4";
+  //  values for local test:
+  //  private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
+  //  public static final String VERSION = "8.1.0-alpha4";
   private static final String OPERATE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/operate";
   public static final String VERSION = "current-test";
   private TestContainerUtil testContainerUtil = new TestContainerUtil();
@@ -49,20 +49,27 @@ public class StartupIT {
     testContext = new TestContext();
     testContainerUtil.startElasticsearch(testContext);
 
-    testContainerUtil.startZeebe(ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME), testContext);
+    testContainerUtil.startZeebe(
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME), testContext);
 
-    operateContainer = testContainerUtil.createOperateContainer(OPERATE_TEST_DOCKER_IMAGE, VERSION, testContext)
-        .withCreateContainerCmdModifier(cmd -> ((CreateContainerCmd)cmd).withUser("1000620000:0"))
-        .withLogConsumer(new Slf4jLogConsumer(logger));
+    operateContainer =
+        testContainerUtil
+            .createOperateContainer(OPERATE_TEST_DOCKER_IMAGE, VERSION, testContext)
+            .withCreateContainerCmdModifier(
+                cmd -> ((CreateContainerCmd) cmd).withUser("1000620000:0"))
+            .withLogConsumer(new Slf4jLogConsumer(logger));
 
     String elsHost = testContext.getInternalElsHost();
     Integer elsPort = testContext.getInternalElsPort();
 
     operateContainer
-        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
+        .withEnv(
+            "CAMUNDA_OPERATE_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HOST", elsHost)
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_PORT", String.valueOf(elsPort))
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
+        .withEnv(
+            "CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL",
+            String.format("http://%s:%s", elsHost, elsPort))
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_HOST", elsHost)
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
 
@@ -70,14 +77,20 @@ public class StartupIT {
     logger.info("************ Operate started  ************");
 
     // when
-    ResponseEntity<String> clientConfig = restTemplate.getForEntity(
-        String.format("http://%s:%s/client-config.js", testContext.getExternalOperateHost(),
-            testContext.getExternalOperatePort()), String.class);
+    ResponseEntity<String> clientConfig =
+        restTemplate.getForEntity(
+            String.format(
+                "http://%s:%s/client-config.js",
+                testContext.getExternalOperateHost(), testContext.getExternalOperatePort()),
+            String.class);
 
-    //then
+    // then
     assertThat(clientConfig.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(
-        clientConfig.getHeaders().getContentType().isCompatibleWith(MediaType.parseMediaType("text/javascript")));
+        clientConfig
+            .getHeaders()
+            .getContentType()
+            .isCompatibleWith(MediaType.parseMediaType("text/javascript")));
     assertThat(clientConfig.getBody()).isNotNull();
   }
 
@@ -89,5 +102,4 @@ public class StartupIT {
     testContainerUtil.stopElasticsearch();
     testContainerUtil.stopZeebeAndOperate(testContext);
   }
-
 }

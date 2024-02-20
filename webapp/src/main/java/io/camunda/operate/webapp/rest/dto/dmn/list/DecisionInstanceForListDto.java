@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
-
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,8 +28,8 @@ public class DecisionInstanceForListDto {
   private String tenantId;
 
   /**
-   * Sort values, define the position of process instance in the list and may be used to search
-   * for previous or following page.
+   * Sort values, define the position of process instance in the list and may be used to search for
+   * previous or following page.
    */
   private SortValuesWrapper[] sortValues;
 
@@ -42,8 +41,7 @@ public class DecisionInstanceForListDto {
     return state;
   }
 
-  public DecisionInstanceForListDto setState(
-      final DecisionInstanceStateDto state) {
+  public DecisionInstanceForListDto setState(final DecisionInstanceStateDto state) {
     this.state = state;
     return this;
   }
@@ -107,8 +105,10 @@ public class DecisionInstanceForListDto {
     return this;
   }
 
-  public static DecisionInstanceForListDto createFrom(final DecisionInstanceEntity entity, ObjectMapper objectMapper) {
-    return new DecisionInstanceForListDto().setDecisionName(entity.getDecisionName())
+  public static DecisionInstanceForListDto createFrom(
+      final DecisionInstanceEntity entity, ObjectMapper objectMapper) {
+    return new DecisionInstanceForListDto()
+        .setDecisionName(entity.getDecisionName())
         .setDecisionVersion(entity.getDecisionVersion())
         .setEvaluationDate(entity.getEvaluationDate())
         .setId(entity.getId())
@@ -123,34 +123,59 @@ public class DecisionInstanceForListDto {
     if (decisionInstanceEntities == null) {
       return new ArrayList<>();
     }
-    return decisionInstanceEntities.stream().filter(item -> item != null)
+    return decisionInstanceEntities.stream()
+        .filter(item -> item != null)
         .map(item -> createFrom(item, objectMapper))
         .collect(Collectors.toList());
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     DecisionInstanceForListDto that = (DecisionInstanceForListDto) o;
-    return Objects.equals(id, that.id) && state == that.state && Objects.equals(decisionName,
-        that.decisionName) && Objects.equals(decisionVersion, that.decisionVersion) && Objects.equals(evaluationDate,
-        that.evaluationDate) && Objects.equals(processInstanceId, that.processInstanceId) && Objects.equals(tenantId,
-        that.tenantId) && Arrays.equals(sortValues, that.sortValues);
+    return Objects.equals(id, that.id)
+        && state == that.state
+        && Objects.equals(decisionName, that.decisionName)
+        && Objects.equals(decisionVersion, that.decisionVersion)
+        && Objects.equals(evaluationDate, that.evaluationDate)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(tenantId, that.tenantId)
+        && Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(id, state, decisionName, decisionVersion, evaluationDate, processInstanceId, tenantId);
+    int result =
+        Objects.hash(
+            id, state, decisionName, decisionVersion, evaluationDate, processInstanceId, tenantId);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
 
   @Override
   public String toString() {
-    return "DecisionInstanceForListDto{" + "id='" + id + '\'' + ", state=" + state + ", decisionName='" + decisionName + '\'' + ", decisionVersion=" + decisionVersion + ", evaluationDate=" + evaluationDate + ", processInstanceId='" + processInstanceId + '\'' + ", tenantId='" + tenantId + '\'' + ", sortValues=" + Arrays.toString(
-        sortValues) + '}';
+    return "DecisionInstanceForListDto{"
+        + "id='"
+        + id
+        + '\''
+        + ", state="
+        + state
+        + ", decisionName='"
+        + decisionName
+        + '\''
+        + ", decisionVersion="
+        + decisionVersion
+        + ", evaluationDate="
+        + evaluationDate
+        + ", processInstanceId='"
+        + processInstanceId
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", sortValues="
+        + Arrays.toString(sortValues)
+        + '}';
   }
 }

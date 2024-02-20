@@ -11,8 +11,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum IncidentState {
-
-  ACTIVE("CREATED"), RESOLVED("RESOLVED"), PENDING(null);
+  ACTIVE("CREATED"),
+  RESOLVED("RESOLVED"),
+  PENDING(null);
 
   private static Map<String, IncidentState> intentMap = new HashMap<>();
 

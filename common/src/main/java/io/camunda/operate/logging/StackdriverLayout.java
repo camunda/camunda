@@ -151,8 +151,7 @@ public final class StackdriverLayout extends AbstractLayout<byte[]> implements L
     return builder.build();
   }
 
-  public static class Builder<B extends Builder<B>>
-      extends AbstractLayout.Builder<B>
+  public static class Builder<B extends Builder<B>> extends AbstractLayout.Builder<B>
       implements org.apache.logging.log4j.core.util.Builder<StackdriverLayout> {
 
     @PluginBuilderAttribute("serviceName")

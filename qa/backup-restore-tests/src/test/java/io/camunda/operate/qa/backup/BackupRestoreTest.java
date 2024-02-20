@@ -43,7 +43,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(classes = { TestConfig.class })
+@ContextConfiguration(classes = {TestConfig.class})
 public class BackupRestoreTest {
 
   private static final Logger logger = LoggerFactory.getLogger(BackupRestoreTest.class);
@@ -54,11 +54,9 @@ public class BackupRestoreTest {
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
 
-  @Autowired
-  private OperateAPICaller operateAPICaller;
+  @Autowired private OperateAPICaller operateAPICaller;
 
-  @Autowired
-  private DataGenerator dataGenerator;
+  @Autowired private DataGenerator dataGenerator;
 
   private GenericContainer operateContainer;
 
@@ -88,16 +86,28 @@ public class BackupRestoreTest {
 
   private void deleteOperateIndices() throws Exception {
     try {
-      testContext.getEsClient().indices().delete(new DeleteIndexRequest("operate*"), RequestOptions.DEFAULT);
-      //we need to remove Zeebe indices as otherwise Operate will start importing data at once and we won't be able to assert the older state of data (from backup)
-      testContext.getEsClient().indices().delete(new DeleteIndexRequest(ZEEBE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT);
+      testContext
+          .getEsClient()
+          .indices()
+          .delete(new DeleteIndexRequest("operate*"), RequestOptions.DEFAULT);
+      // we need to remove Zeebe indices as otherwise Operate will start importing data at once and
+      // we won't be able to assert the older state of data (from backup)
+      testContext
+          .getEsClient()
+          .indices()
+          .delete(new DeleteIndexRequest(ZEEBE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT);
       RetryOperation.newBuilder()
           .noOfRetry(10)
           .delayInterval(2000, TimeUnit.MILLISECONDS)
-          .retryPredicate(result -> !(boolean)result)
-          .retryConsumer(() -> !testContext.getEsClient().indices()
-                .exists(new GetIndexRequest("operate*", ZEEBE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT)
-          )
+          .retryPredicate(result -> !(boolean) result)
+          .retryConsumer(
+              () ->
+                  !testContext
+                      .getEsClient()
+                      .indices()
+                      .exists(
+                          new GetIndexRequest("operate*", ZEEBE_INDEX_PREFIX + "*"),
+                          RequestOptions.DEFAULT))
           .build()
           .retry();
       logger.info("************ Operate indices deleted ************");
@@ -114,12 +124,13 @@ public class BackupRestoreTest {
     RetryOperation.newBuilder()
         .noOfRetry(10)
         .delayInterval(2000, TimeUnit.MILLISECONDS)
-        .retryPredicate(result -> !(boolean)result)
-        .retryConsumer(() -> {
-          GetBackupStateResponseDto backupState = operateAPICaller.getBackupState(BACKUP_ID);
-          assertThat(backupState.getState()).isIn(IN_PROGRESS, COMPLETED);
-          return backupState.getState().equals(COMPLETED);
-        })
+        .retryPredicate(result -> !(boolean) result)
+        .retryConsumer(
+            () -> {
+              GetBackupStateResponseDto backupState = operateAPICaller.getBackupState(BACKUP_ID);
+              assertThat(backupState.getState()).isIn(IN_PROGRESS, COMPLETED);
+              return backupState.getState().equals(COMPLETED);
+            })
         .build()
         .retry();
     logger.info("************ Backup created ************");
@@ -128,8 +139,10 @@ public class BackupRestoreTest {
   private void startAllApps() throws IOException {
     testContainerUtil.startElasticsearch(testContext);
     testContainerUtil.checkElasctisearchHealth(testContext);
-    testContext.setEsClient(new RestHighLevelClient(
-        RestClient.builder(new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
+    testContext.setEsClient(
+        new RestHighLevelClient(
+            RestClient.builder(
+                new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createSnapshotRepository(testContext);
 
     String zeebeVersion = ZeebeClient.class.getPackage().getImplementationVersion();
@@ -138,12 +151,13 @@ public class BackupRestoreTest {
     }
     testContainerUtil.startZeebe(zeebeVersion, testContext);
 
-    operateContainer = testContainerUtil.createOperateContainer(OPERATE_TEST_DOCKER_IMAGE, VERSION, testContext)
-        .withLogConsumer(new Slf4jLogConsumer(logger));
+    operateContainer =
+        testContainerUtil
+            .createOperateContainer(OPERATE_TEST_DOCKER_IMAGE, VERSION, testContext)
+            .withLogConsumer(new Slf4jLogConsumer(logger));
     operateContainer.withEnv("CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME", REPOSITORY_NAME);
 
     startOperate();
-
   }
 
   private void startOperate() {
@@ -159,29 +173,42 @@ public class BackupRestoreTest {
   }
 
   private void restoreBackup() {
-    snapshots.stream().forEach(snapshot -> {
-      try {
-        testContext.getEsClient().snapshot().restore(new RestoreSnapshotRequest(REPOSITORY_NAME, snapshot).waitForCompletion(true), RequestOptions.DEFAULT);
-      } catch (IOException e) {
-        throw new OperateRuntimeException("Exception occurred while restoring the backup: " + e.getMessage(), e);
-      }
-    });
+    snapshots.stream()
+        .forEach(
+            snapshot -> {
+              try {
+                testContext
+                    .getEsClient()
+                    .snapshot()
+                    .restore(
+                        new RestoreSnapshotRequest(REPOSITORY_NAME, snapshot)
+                            .waitForCompletion(true),
+                        RequestOptions.DEFAULT);
+              } catch (IOException e) {
+                throw new OperateRuntimeException(
+                    "Exception occurred while restoring the backup: " + e.getMessage(), e);
+              }
+            });
     logger.info("************ Backup restored ************");
   }
 
   private void createSnapshotRepository(BackupRestoreTestContext testContext) throws IOException {
-    testContext.getEsClient().snapshot().createRepository(
-        new PutRepositoryRequest(REPOSITORY_NAME).type(FsRepository.TYPE).settings(asMap("location", REPOSITORY_NAME)),
-        RequestOptions.DEFAULT);
+    testContext
+        .getEsClient()
+        .snapshot()
+        .createRepository(
+            new PutRepositoryRequest(REPOSITORY_NAME)
+                .type(FsRepository.TYPE)
+                .settings(asMap("location", REPOSITORY_NAME)),
+            RequestOptions.DEFAULT);
   }
-
 }
 
 @Configuration
-@ComponentScan(basePackages = {
-    "io.camunda.operate.util.rest",
-    "io.camunda.operate.qa.backup",
-    "io.camunda.operate.webapp.rest.dto"})
-class TestConfig {
-
-}
+@ComponentScan(
+    basePackages = {
+      "io.camunda.operate.util.rest",
+      "io.camunda.operate.qa.backup",
+      "io.camunda.operate.webapp.rest.dto"
+    })
+class TestConfig {}

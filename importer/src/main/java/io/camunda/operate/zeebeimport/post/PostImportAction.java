@@ -13,5 +13,4 @@ public interface PostImportAction extends Runnable {
   boolean performOneRound() throws IOException;
 
   void clearCache();
-
 }

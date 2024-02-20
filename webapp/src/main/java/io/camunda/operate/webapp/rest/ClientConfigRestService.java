@@ -16,12 +16,10 @@ public class ClientConfigRestService extends InternalAPIErrorController {
 
   public static final String CLIENT_CONFIG_RESOURCE = "/client-config.js";
 
-  @Autowired
-  private ClientConfig clientConfig;
+  @Autowired private ClientConfig clientConfig;
 
   @GetMapping(path = CLIENT_CONFIG_RESOURCE, produces = "text/javascript")
   public String getClientConfig() {
-      return clientConfig.asJson();
+    return clientConfig.asJson();
   }
-
 }

@@ -6,6 +6,15 @@
  */
 package io.camunda.operate.schema.migration.elasticsearch;
 
+import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.scroll;
+import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.IncidentEntity;
@@ -20,6 +29,11 @@ import io.camunda.operate.schema.migration.Step;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -36,39 +50,20 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.scroll;
-import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
-
-
 @Component
 @Conditional(ElasticsearchCondition.class)
 @Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQueuePlan {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchFillPostImporterQueuePlan.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(ElasticsearchFillPostImporterQueuePlan.class);
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
-  @Autowired
-  private MigrationProperties migrationProperties;
+  @Autowired private MigrationProperties migrationProperties;
 
-  @Autowired
-  private ObjectMapper objectMapper;
-  @Autowired
-  private RestHighLevelClient esClient;
+  @Autowired private ObjectMapper objectMapper;
+  @Autowired private RestHighLevelClient esClient;
 
   private Long flowNodesWithIncidentsCount;
   private List<Step> steps;
@@ -90,7 +85,8 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
   }
 
   @Override
-  public FillPostImporterQueuePlan setPostImporterQueueIndexName(String postImporterQueueIndexName) {
+  public FillPostImporterQueuePlan setPostImporterQueueIndexName(
+      String postImporterQueueIndexName) {
     this.postImporterQueueIndexName = postImporterQueueIndexName;
     return this;
   }
@@ -114,55 +110,79 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
       return;
     }
 
-    //iterate over flow node instances with pending incidents
+    // iterate over flow node instances with pending incidents
     String incidentKeysFieldName = "incidentKeys";
-    SearchRequest searchRequest = new SearchRequest(listViewIndexName + "*")
-        .source(new SearchSourceBuilder()
-            .query(joinWithAnd(
-                termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
-                termQuery("pendingIncident", true)))
-            .fetchSource(incidentKeysFieldName, null)
-            .sort(ListViewTemplate.ID)
-            .size(operateProperties.getElasticsearch().getBatchSize()));
+    SearchRequest searchRequest =
+        new SearchRequest(listViewIndexName + "*")
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        joinWithAnd(
+                            termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
+                            termQuery("pendingIncident", true)))
+                    .fetchSource(incidentKeysFieldName, null)
+                    .sort(ListViewTemplate.ID)
+                    .size(operateProperties.getElasticsearch().getBatchSize()));
 
     try {
-      scroll(searchRequest, rethrowConsumer(hits -> {
-        if (flowNodesWithIncidentsCount == null) {
-          flowNodesWithIncidentsCount = hits.getTotalHits().value;
-        }
-        final List<IncidentEntity> incidents = getIncidentEntities(incidentKeysFieldName, esClient, hits);
-        BulkRequest bulkRequest = new BulkRequest();
-        final int[] index = { 0 };
-        for (IncidentEntity incident : incidents) {
-          index[0]++;
-          PostImporterQueueEntity entity = createPostImporterQueueEntity(incident, index[0]);
-          bulkRequest.add(new IndexRequest().index(postImporterQueueIndexName)
-              .source(objectMapper.writeValueAsString(entity), XContentType.JSON));
-        }
-        ElasticsearchUtil.processBulkRequest(esClient, bulkRequest,
-            operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
-      }), esClient, migrationProperties.getScrollKeepAlive());
+      scroll(
+          searchRequest,
+          rethrowConsumer(
+              hits -> {
+                if (flowNodesWithIncidentsCount == null) {
+                  flowNodesWithIncidentsCount = hits.getTotalHits().value;
+                }
+                final List<IncidentEntity> incidents =
+                    getIncidentEntities(incidentKeysFieldName, esClient, hits);
+                BulkRequest bulkRequest = new BulkRequest();
+                final int[] index = {0};
+                for (IncidentEntity incident : incidents) {
+                  index[0]++;
+                  PostImporterQueueEntity entity =
+                      createPostImporterQueueEntity(incident, index[0]);
+                  bulkRequest.add(
+                      new IndexRequest()
+                          .index(postImporterQueueIndexName)
+                          .source(objectMapper.writeValueAsString(entity), XContentType.JSON));
+                }
+                ElasticsearchUtil.processBulkRequest(
+                    esClient,
+                    bulkRequest,
+                    operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+              }),
+          esClient,
+          migrationProperties.getScrollKeepAlive());
     } catch (Exception e) {
       throw new MigrationException(e.getMessage(), e);
     }
   }
 
-  private List<IncidentEntity> getIncidentEntities(String incidentKeysFieldName, RestHighLevelClient esClient,
-      SearchHits hits) throws IOException {
-    List<Long> incidentKeys = Arrays.stream(hits.getHits())
-        .map(sh -> (List<Long>)sh.getSourceAsMap().get(incidentKeysFieldName))
-        .flatMap(List::stream).collect(Collectors.toList());
-    SearchRequest incidentSearchRequest = new SearchRequest(incidentsIndexName + "*").source(
-        new SearchSourceBuilder().query(termsQuery(IncidentTemplate.ID, incidentKeys)).sort(IncidentTemplate.ID)
-            .size(operateProperties.getElasticsearch().getBatchSize()));
+  private List<IncidentEntity> getIncidentEntities(
+      String incidentKeysFieldName, RestHighLevelClient esClient, SearchHits hits)
+      throws IOException {
+    List<Long> incidentKeys =
+        Arrays.stream(hits.getHits())
+            .map(sh -> (List<Long>) sh.getSourceAsMap().get(incidentKeysFieldName))
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
+    SearchRequest incidentSearchRequest =
+        new SearchRequest(incidentsIndexName + "*")
+            .source(
+                new SearchSourceBuilder()
+                    .query(termsQuery(IncidentTemplate.ID, incidentKeys))
+                    .sort(IncidentTemplate.ID)
+                    .size(operateProperties.getElasticsearch().getBatchSize()));
 
-    final SearchResponse incidentsResponse = esClient.search(incidentSearchRequest, RequestOptions.DEFAULT);
-    final List<IncidentEntity> incidents = ElasticsearchUtil.mapSearchHits(incidentsResponse.getHits().getHits(),
-        objectMapper, IncidentEntity.class);
+    final SearchResponse incidentsResponse =
+        esClient.search(incidentSearchRequest, RequestOptions.DEFAULT);
+    final List<IncidentEntity> incidents =
+        ElasticsearchUtil.mapSearchHits(
+            incidentsResponse.getHits().getHits(), objectMapper, IncidentEntity.class);
     return incidents;
   }
 
-  private PostImporterQueueEntity createPostImporterQueueEntity(IncidentEntity incident, long index) {
+  private PostImporterQueueEntity createPostImporterQueueEntity(
+      IncidentEntity incident, long index) {
     return new PostImporterQueueEntity()
         .setId(String.format("%s-%s", incident.getId(), incident.getState().getZeebeIntent()))
         .setCreationTime(OffsetDateTime.now())
@@ -179,14 +199,33 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
       throws MigrationException {
     long dstCount = schemaManager.getNumberOfDocumentsFor(postImporterQueueIndexName);
     if (flowNodesWithIncidentsCount != null && flowNodesWithIncidentsCount > dstCount) {
-      throw new MigrationException(String.format(
-          "Exception occurred when migrating %s. Number of flow nodes with pending incidents: %s, number of documents in post-importer-queue: %s",
-          postImporterQueueIndexName, flowNodesWithIncidentsCount,  dstCount));
+      throw new MigrationException(
+          String.format(
+              "Exception occurred when migrating %s. Number of flow nodes with pending incidents: %s, number of documents in post-importer-queue: %s",
+              postImporterQueueIndexName, flowNodesWithIncidentsCount, dstCount));
     }
   }
 
   @Override
   public String toString() {
-    return "ElasticsearchFillPostImporterQueuePlan{" + "listViewIndexName='" + listViewIndexName + '\'' + ", incidentsIndexName='" + incidentsIndexName + '\'' + ", postImporterQueueIndexName='" + postImporterQueueIndexName + '\'' + ", operateProperties=" + operateProperties + ", migrationProperties=" + migrationProperties + ", objectMapper=" + objectMapper + ", flowNodesWithIncidentsCount=" + flowNodesWithIncidentsCount + '}';
+    return "ElasticsearchFillPostImporterQueuePlan{"
+        + "listViewIndexName='"
+        + listViewIndexName
+        + '\''
+        + ", incidentsIndexName='"
+        + incidentsIndexName
+        + '\''
+        + ", postImporterQueueIndexName='"
+        + postImporterQueueIndexName
+        + '\''
+        + ", operateProperties="
+        + operateProperties
+        + ", migrationProperties="
+        + migrationProperties
+        + ", objectMapper="
+        + objectMapper
+        + ", flowNodesWithIncidentsCount="
+        + flowNodesWithIncidentsCount
+        + '}';
   }
 }

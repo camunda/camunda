@@ -6,6 +6,11 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import static io.camunda.operate.schema.indices.MetricIndex.*;
+import static io.camunda.operate.schema.indices.MetricIndex.VALUE;
+import static io.camunda.operate.store.elasticsearch.dao.Query.range;
+import static io.camunda.operate.store.elasticsearch.dao.Query.whereEquals;
+
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -16,26 +21,19 @@ import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.elasticsearch.dao.Query;
 import io.camunda.operate.store.elasticsearch.dao.UsageMetricDAO;
 import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
+import java.time.OffsetDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-
-import static io.camunda.operate.schema.indices.MetricIndex.*;
-import static io.camunda.operate.schema.indices.MetricIndex.VALUE;
-import static io.camunda.operate.store.elasticsearch.dao.Query.range;
-import static io.camunda.operate.store.elasticsearch.dao.Query.whereEquals;
-
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchMetricsStore implements MetricsStore {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchMetricsStore.class);
-  @Autowired
-  private MetricIndex metricIndex;
+  @Autowired private MetricIndex metricIndex;
 
   @Autowired private UsageMetricDAO dao;
 
@@ -59,8 +57,8 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   }
 
   @Override
-  public Long retrieveDecisionInstanceCount(final OffsetDateTime startTime,
-                                            final OffsetDateTime endTime) {
+  public Long retrieveDecisionInstanceCount(
+      final OffsetDateTime startTime, final OffsetDateTime endTime) {
     int limit = 1; // limiting to one, as we just care about the total documents number
     final Query query =
         Query.whereEquals(EVENT, MetricsStore.EVENT_DECISION_INSTANCE_EVALUATED)
@@ -78,20 +76,31 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   }
 
   @Override
-  public void registerProcessInstanceStartEvent(String processInstanceKey, String tenantId, OffsetDateTime timestamp, BatchRequest batchRequest)
+  public void registerProcessInstanceStartEvent(
+      String processInstanceKey,
+      String tenantId,
+      OffsetDateTime timestamp,
+      BatchRequest batchRequest)
       throws PersistenceException {
-    final MetricEntity metric = createProcessInstanceStartedKey(processInstanceKey, tenantId, timestamp);
+    final MetricEntity metric =
+        createProcessInstanceStartedKey(processInstanceKey, tenantId, timestamp);
     batchRequest.add(metricIndex.getFullQualifiedName(), metric);
   }
 
   @Override
-  public void registerDecisionInstanceCompleteEvent(final String decisionInstanceKey, String tenantId,
-      final OffsetDateTime timestamp, BatchRequest batchRequest) throws PersistenceException {
-    final MetricEntity metric = createDecisionsInstanceEvaluatedKey(decisionInstanceKey, tenantId, timestamp);
+  public void registerDecisionInstanceCompleteEvent(
+      final String decisionInstanceKey,
+      String tenantId,
+      final OffsetDateTime timestamp,
+      BatchRequest batchRequest)
+      throws PersistenceException {
+    final MetricEntity metric =
+        createDecisionsInstanceEvaluatedKey(decisionInstanceKey, tenantId, timestamp);
     batchRequest.add(metricIndex.getFullQualifiedName(), metric);
   }
 
-  private MetricEntity createProcessInstanceStartedKey(String processInstanceKey, String tenantId, OffsetDateTime timestamp) {
+  private MetricEntity createProcessInstanceStartedKey(
+      String processInstanceKey, String tenantId, OffsetDateTime timestamp) {
     return new MetricEntity()
         .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
         .setValue(processInstanceKey)
@@ -99,7 +108,8 @@ public class ElasticsearchMetricsStore implements MetricsStore {
         .setTenantId(tenantId);
   }
 
-  private MetricEntity createDecisionsInstanceEvaluatedKey(String decisionInstanceKey, String tenantId, OffsetDateTime timestamp) {
+  private MetricEntity createDecisionsInstanceEvaluatedKey(
+      String decisionInstanceKey, String tenantId, OffsetDateTime timestamp) {
     return new MetricEntity()
         .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
         .setValue(decisionInstanceKey)

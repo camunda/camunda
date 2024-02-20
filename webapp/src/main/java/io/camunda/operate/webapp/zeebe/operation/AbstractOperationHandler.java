@@ -6,48 +6,45 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import java.util.Arrays;
-import java.util.List;
 import io.camunda.operate.Metrics;
-import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import java.util.Arrays;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 
 public abstract class AbstractOperationHandler implements OperationHandler {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractOperationHandler.class);
-  private static final List<Status.Code> RETRY_STATUSES = Arrays
-      .asList(Status.UNAVAILABLE.getCode(), Status.RESOURCE_EXHAUSTED.getCode(), Status.DEADLINE_EXCEEDED.getCode());
+  private static final List<Status.Code> RETRY_STATUSES =
+      Arrays.asList(
+          Status.UNAVAILABLE.getCode(),
+          Status.RESOURCE_EXHAUSTED.getCode(),
+          Status.DEADLINE_EXCEEDED.getCode());
 
-  @Autowired
-  protected ZeebeClient zeebeClient;
-  @Autowired
-  protected BatchOperationWriter batchOperationWriter;
+  @Autowired protected ZeebeClient zeebeClient;
+  @Autowired protected BatchOperationWriter batchOperationWriter;
 
-  @Autowired
-  private OperationsManager operationsManager;
+  @Autowired private OperationsManager operationsManager;
 
-  @Autowired
-  protected OperateProperties operateProperties;
+  @Autowired protected OperateProperties operateProperties;
 
-  @Autowired
-  protected Metrics metrics;
+  @Autowired protected Metrics metrics;
 
   // Needed for tests
   public void setZeebeClient(final ZeebeClient zeebeClient) {
     this.zeebeClient = zeebeClient;
   }
-
 
   @Override
   public void handle(OperationEntity operation) {
@@ -55,15 +52,24 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       handleWithException(operation);
     } catch (Exception ex) {
       if (isExceptionRetriable(ex)) {
-        //leave the operation locked -> when it expires, operation will be retried
-        logger.error(String.format("Unable to process operation with id %s. Reason: %s. Will be retried.", operation.getId(), ex.getMessage()), ex);
+        // leave the operation locked -> when it expires, operation will be retried
+        logger.error(
+            String.format(
+                "Unable to process operation with id %s. Reason: %s. Will be retried.",
+                operation.getId(), ex.getMessage()),
+            ex);
       } else {
         try {
-          failOperation(operation, String.format("Unable to process operation: %s", ex.getMessage()));
+          failOperation(
+              operation, String.format("Unable to process operation: %s", ex.getMessage()));
         } catch (PersistenceException e) {
           //
         }
-        logger.error(String.format("Unable to process operation with id %s. Reason: %s. Will NOT be retried.", operation.getId(), ex.getMessage()), ex);
+        logger.error(
+            String.format(
+                "Unable to process operation with id %s. Reason: %s. Will NOT be retried.",
+                operation.getId(), ex.getMessage()),
+            ex);
       }
     }
   }
@@ -76,7 +82,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   private StatusRuntimeException extractStatusRuntimeException(Throwable ex) {
     if (ex.getCause() != null) {
       if (ex.getCause() instanceof StatusRuntimeException) {
-        return (StatusRuntimeException)ex.getCause();
+        return (StatusRuntimeException) ex.getCause();
       } else {
         return extractStatusRuntimeException(ex.getCause());
       }
@@ -85,10 +91,17 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   }
 
   protected void recordCommandMetric(final OperationEntity operation) {
-    metrics.recordCounts(Metrics.COUNTER_NAME_COMMANDS, 1, Metrics.TAG_KEY_STATUS,operation.getState().name(),Metrics.TAG_KEY_TYPE, operation.getType().name());
+    metrics.recordCounts(
+        Metrics.COUNTER_NAME_COMMANDS,
+        1,
+        Metrics.TAG_KEY_STATUS,
+        operation.getState().name(),
+        Metrics.TAG_KEY_TYPE,
+        operation.getType().name());
   }
 
-  protected void failOperation(OperationEntity operation, String errorMsg) throws PersistenceException {
+  protected void failOperation(OperationEntity operation, String errorMsg)
+      throws PersistenceException {
     if (isLocked(operation)) {
       operation.setState(OperationState.FAILED);
       operation.setLockExpirationTime(null);
@@ -98,7 +111,8 @@ public abstract class AbstractOperationHandler implements OperationHandler {
         operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId());
       }
       batchOperationWriter.updateOperation(operation);
-      logger.debug("Operation {} failed with message: {} ", operation.getId(), operation.getErrorMessage());
+      logger.debug(
+          "Operation {} failed with message: {} ", operation.getId(), operation.getErrorMessage());
     }
     recordCommandMetric(operation);
   }
@@ -113,7 +127,8 @@ public abstract class AbstractOperationHandler implements OperationHandler {
     this.markAsSent(operation, null);
   }
 
-  protected void markAsSent(OperationEntity operation, Long zeebeCommandKey) throws PersistenceException {
+  protected void markAsSent(OperationEntity operation, Long zeebeCommandKey)
+      throws PersistenceException {
     if (isLocked(operation)) {
       operation.setState(OperationState.SENT);
       operation.setLockExpirationTime(null);

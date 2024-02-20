@@ -11,44 +11,46 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.cache.ProcessCache;
 import org.junit.After;
 import org.junit.Test;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 
 public class ProcessCacheZeebeIT extends OperateZeebeAbstractIT {
 
-  @SpyBean
-  private ProcessCache processCache;
+  @SpyBean private ProcessCache processCache;
 
   @After
   public void after() {
-    //clean the cache
+    // clean the cache
     processCache.clearCache();
     super.after();
   }
 
   @Test
   public void testProcessDoesNotExist() {
-    final String processNameDefault = processCache.getProcessNameOrDefaultValue(2L,"default_value");
+    final String processNameDefault =
+        processCache.getProcessNameOrDefaultValue(2L, "default_value");
     assertThat(processNameDefault).isEqualTo("default_value");
   }
 
   @Test
   public void testProcessVersionAndNameReturnedAndReused() {
-    Long processDefinitionKey1 = ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
-    Long processDefinitionKey2 = ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
+    Long processDefinitionKey1 =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
+    Long processDefinitionKey2 =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
 
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
 
-    String demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1,null);
+    String demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1, null);
     assertThat(demoProcessName).isNotNull();
 
-    //request once again, the cache should be used
-    demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1,null);
+    // request once again, the cache should be used
+    demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1, null);
     assertThat(demoProcessName).isNotNull();
 
     verify(processCache, times(1)).putToCache(any(), any());
@@ -56,16 +58,19 @@ public class ProcessCacheZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testProcessFlowNodeNameReturnedAndReused() {
-    Long processDefinitionKey1 = ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
-    Long processDefinitionKey2 = ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
+    Long processDefinitionKey1 =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
+    Long processDefinitionKey2 =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
 
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
 
-    String flowNodeName = processCache.getFlowNodeNameOrDefaultValue(processDefinitionKey1, "start", null);
+    String flowNodeName =
+        processCache.getFlowNodeNameOrDefaultValue(processDefinitionKey1, "start", null);
     assertThat(flowNodeName).isEqualTo("start");
 
-    //request once again, the cache should be used
+    // request once again, the cache should be used
     flowNodeName = processCache.getFlowNodeNameOrDefaultValue(processDefinitionKey1, "start", null);
     assertThat(flowNodeName).isEqualTo("start");
 

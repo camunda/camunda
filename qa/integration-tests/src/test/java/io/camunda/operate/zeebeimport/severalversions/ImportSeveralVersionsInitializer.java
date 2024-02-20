@@ -6,16 +6,16 @@
  */
 package io.camunda.operate.zeebeimport.severalversions;
 
-import static io.camunda.operate.qa.util.TestContainerUtil.PROPERTIES_PREFIX;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.VERSIONS_DELIMITER;
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_VERSIONS_PROPERTY_NAME;
+import static io.camunda.operate.qa.util.TestContainerUtil.PROPERTIES_PREFIX;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.ElasticsearchUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
-import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -29,7 +29,8 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.support.TestPropertySourceUtils;
 
-public class ImportSeveralVersionsInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+public class ImportSeveralVersionsInitializer
+    implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
   public static final String OPERATE_PREFIX = "several-versions-operate";
   public static final String ZEEBE_PREFIX = "several-versions-zeebe";
@@ -50,8 +51,7 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
   private int incidentCount;
   private String processId;
 
-  @Autowired
-  private TestContainerUtil testContainerUtil;
+  @Autowired private TestContainerUtil testContainerUtil;
 
   public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
 
@@ -59,10 +59,12 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
 
     generateDataForAllVersions();
 
-    //prepare Operate configuration
-    TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext,
+    // prepare Operate configuration
+    TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
+        configurableApplicationContext,
         getOperateProperties(zeebeContainer.getExternalGatewayAddress()));
-    TestPropertySourceUtils.addInlinedPropertiesToEnvironment(configurableApplicationContext,
+    TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
+        configurableApplicationContext,
         "test.wiCount=" + wiCount,
         "test.finishedCount=" + finishedCount,
         "test.incidentCount=" + incidentCount);
@@ -73,9 +75,11 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
 
   private String[] getOperateProperties(final String gatewayAddress) {
     return new String[] {
-        PROPERTIES_PREFIX + ".zeebeElasticsearch.prefix=" + ImportSeveralVersionsInitializer.ZEEBE_PREFIX,
-        PROPERTIES_PREFIX + ".zeebe.gatewayAddress=" + gatewayAddress,
-        PROPERTIES_PREFIX + ".importer.startLoadingDataOnStartup=false"
+      PROPERTIES_PREFIX
+          + ".zeebeElasticsearch.prefix="
+          + ImportSeveralVersionsInitializer.ZEEBE_PREFIX,
+      PROPERTIES_PREFIX + ".zeebe.gatewayAddress=" + gatewayAddress,
+      PROPERTIES_PREFIX + ".importer.startLoadingDataOnStartup=false"
     };
   }
 
@@ -92,19 +96,21 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
   }
 
   private void generateDataForAllVersions() {
-    //read list of supported zeebeVersions
-    String[] zeebeVersions = ContainerVersionsUtil.readProperty(ZEEBE_VERSIONS_PROPERTY_NAME)
-        .split(VERSIONS_DELIMITER);
+    // read list of supported zeebeVersions
+    String[] zeebeVersions =
+        ContainerVersionsUtil.readProperty(ZEEBE_VERSIONS_PROPERTY_NAME).split(VERSIONS_DELIMITER);
 
     for (String version : zeebeVersions) {
       closeClient();
       testContainerUtil.stopZeebe(tmpFolder);
       zeebeContainer = testContainerUtil.startZeebe(tmpFolder.getPath(), version, ZEEBE_PREFIX, 1);
-      client = ZeebeClient.newClientBuilder()
-          .gatewayAddress(zeebeContainer.getExternalGatewayAddress()).usePlaintext().build();
+      client =
+          ZeebeClient.newClientBuilder()
+              .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+              .usePlaintext()
+              .build();
       generateDataForCurrentVersion();
     }
-
   }
 
   public void closeClient() {
@@ -129,12 +135,15 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
     while (exported < wiCount && attempts < 10) {
       sleepFor(1000);
       try {
-        exported = ElasticsearchUtil.getFieldCardinality(testContainerUtil.getEsClient(),
-            getZeebeAliasName("process-instance"), "value.processInstanceKey");
+        exported =
+            ElasticsearchUtil.getFieldCardinality(
+                testContainerUtil.getEsClient(),
+                getZeebeAliasName("process-instance"),
+                "value.processInstanceKey");
       } catch (IOException e) {
         fail("Unable to check for exported data", e);
       } catch (ElasticsearchStatusException ex) {
-        //try again
+        // try again
       }
       attempts++;
     }
@@ -177,7 +186,8 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
   private BpmnModelInstance createModel() {
     return Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
         .startEvent("start")
-        .serviceTask("task1").zeebeJobType(JOB_TYPE)
+        .serviceTask("task1")
+        .zeebeJobType(JOB_TYPE)
         .endEvent()
         .done();
   }
@@ -185,5 +195,4 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
   private String getZeebeAliasName(String name) {
     return String.format(ZEEBE_PREFIX + "-" + name);
   }
-
 }

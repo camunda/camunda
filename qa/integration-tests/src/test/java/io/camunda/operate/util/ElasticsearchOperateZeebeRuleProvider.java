@@ -6,6 +6,9 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
@@ -14,6 +17,11 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.containers.ZeebeContainer;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -31,33 +39,23 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-
-import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
-import static org.assertj.core.api.Assertions.assertThat;
-
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRuleProvider {
 
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchOperateZeebeRuleProvider.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(ElasticsearchOperateZeebeRuleProvider.class);
   public static final String YYYY_MM_DD = "uuuu-MM-dd";
 
-  @Autowired
-  public OperateProperties operateProperties;
+  @Autowired public OperateProperties operateProperties;
 
   @Autowired
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
-  @Autowired
-  private TestContainerUtil testContainerUtil;
+  @Autowired private TestContainerUtil testContainerUtil;
 
   protected ZeebeContainer zeebeContainer;
   private ZeebeClient client;
@@ -77,16 +75,24 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   public void updateRefreshInterval(String value) {
     try {
       GetComponentTemplatesRequest getRequest = new GetComponentTemplatesRequest(prefix);
-      GetComponentTemplatesResponse response = zeebeEsClient.cluster().getComponentTemplate(getRequest, RequestOptions.DEFAULT);
+      GetComponentTemplatesResponse response =
+          zeebeEsClient.cluster().getComponentTemplate(getRequest, RequestOptions.DEFAULT);
       ComponentTemplate componentTemplate = response.getComponentTemplates().get(prefix);
       Settings settings = componentTemplate.template().settings();
 
       PutComponentTemplateRequest request = new PutComponentTemplateRequest().name(prefix);
-      Settings newSettings = Settings.builder().put(settings).put("index.refresh_interval", value).build();
-      Template newTemplate = new Template(newSettings, componentTemplate.template().mappings(), null);
+      Settings newSettings =
+          Settings.builder().put(settings).put("index.refresh_interval", value).build();
+      Template newTemplate =
+          new Template(newSettings, componentTemplate.template().mappings(), null);
       ComponentTemplate newComponentTemplate = new ComponentTemplate(newTemplate, null, null);
       request.componentTemplate(newComponentTemplate);
-      assertThat(zeebeEsClient.cluster().putComponentTemplate(request, RequestOptions.DEFAULT).isAcknowledged()).isTrue();
+      assertThat(
+              zeebeEsClient
+                  .cluster()
+                  .putComponentTemplate(request, RequestOptions.DEFAULT)
+                  .isAcknowledged())
+          .isTrue();
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }
@@ -94,7 +100,8 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   public void refreshIndices(Instant instant) {
     try {
-      String date = DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
+      String date =
+          DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
       RefreshRequest refreshRequest = new RefreshRequest(prefix + "*" + date);
       zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (IOException ex) {
@@ -127,33 +134,35 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
    */
   public void startZeebe() {
 
-    final String zeebeVersion = ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
-    zeebeContainer = testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
+    final String zeebeVersion =
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
+    zeebeContainer =
+        testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
 
-    client = ZeebeClient.newClientBuilder()
-        .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
-        .usePlaintext()
-        .defaultRequestTimeout(REQUEST_TIMEOUT)
-    .build();
+    client =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+            .usePlaintext()
+            .defaultRequestTimeout(REQUEST_TIMEOUT)
+            .build();
 
     testZeebeIsReady();
-
   }
 
   private void testZeebeIsReady() {
-    //get topology to check that cluster is available and ready for work
+    // get topology to check that cluster is available and ready for work
     Topology topology = null;
     while (topology == null) {
       try {
         topology = client.newTopologyRequest().send().join();
       } catch (ClientException ex) {
         ex.printStackTrace();
-        //retry
+        // retry
       } catch (Exception e) {
         logger.error("Topology cannot be retrieved.");
         e.printStackTrace();
         break;
-        //exit
+        // exit
       }
     }
   }

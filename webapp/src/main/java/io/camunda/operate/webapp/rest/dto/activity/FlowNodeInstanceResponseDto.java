@@ -9,19 +9,16 @@ package io.camunda.operate.webapp.rest.dto.activity;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Represents the list of flow node instances - direct children of one parent.
- */
+/** Represents the list of flow node instances - direct children of one parent. */
 public class FlowNodeInstanceResponseDto {
 
   private Boolean isRunning;
   private List<FlowNodeInstanceDto> children;
 
-  public FlowNodeInstanceResponseDto() {
-  }
+  public FlowNodeInstanceResponseDto() {}
 
-  public FlowNodeInstanceResponseDto(final Boolean running,
-      final List<FlowNodeInstanceDto> children) {
+  public FlowNodeInstanceResponseDto(
+      final Boolean running, final List<FlowNodeInstanceDto> children) {
     this.isRunning = running;
     this.children = children;
   }
@@ -30,8 +27,7 @@ public class FlowNodeInstanceResponseDto {
     return children;
   }
 
-  public FlowNodeInstanceResponseDto setChildren(
-      final List<FlowNodeInstanceDto> children) {
+  public FlowNodeInstanceResponseDto setChildren(final List<FlowNodeInstanceDto> children) {
     this.children = children;
     return this;
   }
@@ -57,8 +53,7 @@ public class FlowNodeInstanceResponseDto {
       return false;
     }
     final FlowNodeInstanceResponseDto that = (FlowNodeInstanceResponseDto) o;
-    return Objects.equals(isRunning, that.isRunning) &&
-        Objects.equals(children, that.children);
+    return Objects.equals(isRunning, that.isRunning) && Objects.equals(children, that.children);
   }
 
   @Override

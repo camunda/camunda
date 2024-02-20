@@ -11,14 +11,15 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
-import org.opensearch.client.opensearch.core.SearchRequest;
-
 import java.util.List;
+import org.opensearch.client.opensearch.core.SearchRequest;
 
 public abstract class OpensearchKeyFilteringDao<T, R> extends OpensearchSearchableDao<T, R> {
 
-  public OpensearchKeyFilteringDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                                   RichOpenSearchClient richOpenSearchClient) {
+  public OpensearchKeyFilteringDao(
+      OpensearchQueryDSLWrapper queryDSLWrapper,
+      OpensearchRequestDSLWrapper requestDSLWrapper,
+      RichOpenSearchClient richOpenSearchClient) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
   }
 
@@ -41,8 +42,10 @@ public abstract class OpensearchKeyFilteringDao<T, R> extends OpensearchSearchab
   }
 
   protected List<R> searchByKey(Long key) {
-    SearchRequest.Builder request = requestDSLWrapper.searchRequestBuilder(getIndexName())
-        .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.term(getKeyFieldName(), key)));
+    SearchRequest.Builder request =
+        requestDSLWrapper
+            .searchRequestBuilder(getIndexName())
+            .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.term(getKeyFieldName(), key)));
 
     return richOpenSearchClient.doc().searchValues(request, getInternalDocumentModelClass());
   }

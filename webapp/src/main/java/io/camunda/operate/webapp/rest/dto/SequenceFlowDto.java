@@ -6,8 +6,6 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import static io.camunda.operate.util.CollectionUtil.map;
-
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.util.ConversionUtils;
 
@@ -37,24 +35,21 @@ public class SequenceFlowDto implements CreatableFromEntity<SequenceFlowDto, Seq
 
   @Override
   public SequenceFlowDto fillFrom(final SequenceFlowEntity entity) {
-    return this
-        .setProcessInstanceId(ConversionUtils.toStringOrNull(entity.getProcessInstanceKey()))
+    return this.setProcessInstanceId(ConversionUtils.toStringOrNull(entity.getProcessInstanceKey()))
         .setActivityId(entity.getActivityId());
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     SequenceFlowDto that = (SequenceFlowDto) o;
 
-    if (processInstanceId != null ? !processInstanceId.equals(that.processInstanceId) : that.processInstanceId != null)
-      return false;
+    if (processInstanceId != null
+        ? !processInstanceId.equals(that.processInstanceId)
+        : that.processInstanceId != null) return false;
     return activityId != null ? activityId.equals(that.activityId) : that.activityId == null;
-
   }
 
   @Override

@@ -8,6 +8,9 @@ package io.camunda.operate.store.opensearch.dsl;
 
 import io.camunda.operate.tenant.TenantCheckApplierHolder;
 import io.camunda.operate.util.CollectionUtil;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
@@ -32,23 +35,20 @@ import org.opensearch.client.opensearch._types.query_dsl.TermsQueryField;
 import org.opensearch.client.opensearch._types.query_dsl.WildcardQuery;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-
 public interface QueryDSL {
   String DEFAULT_SCRIPT_LANG = "painless";
 
   private static <A> List<A> nonNull(A[] items) {
     return nonNull(Arrays.asList(items));
   }
+
   private static <A> List<A> nonNull(Collection<A> items) {
     return items.stream().filter(Objects::nonNull).toList();
   }
 
   private static Map<String, JsonData> jsonParams(Map<String, Object> params) {
-    return params.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
+    return params.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
   }
 
   static Query and(Query... queries) {
@@ -62,14 +62,14 @@ public interface QueryDSL {
   static Query withTenantCheck(Query query) {
     try {
       return TenantCheckApplierHolder.getOpenSearchTenantCheckApplier()
-      .map(tenantCheckApplier -> tenantCheckApplier.apply(query))
-      .orElse(query);
+          .map(tenantCheckApplier -> tenantCheckApplier.apply(query))
+          .orElse(query);
     } catch (Exception e) {
       /* In integration tests under some circumstances tenantCheckApplier.apply throws NPE due to some tricky bean wiring/mocking issues.
-         E.g. only when all tests from io.camunda.operate.elasticsearch in operate-qa-it-tests are run then only all FlowNodeInstanceReaderIT tests fail,
-         while running separately all tests from FlowNodeInstanceReaderIT passes successfully (i.e. doesn't reproduce when run separately from other IT tests).
-         Thus falling back here to the tenant-unaware query, as it should impact only tests. Would be nice to find a better solution for this issue.
-       */
+        E.g. only when all tests from io.camunda.operate.elasticsearch in operate-qa-it-tests are run then only all FlowNodeInstanceReaderIT tests fail,
+        while running separately all tests from FlowNodeInstanceReaderIT passes successfully (i.e. doesn't reproduce when run separately from other IT tests).
+        Thus falling back here to the tenant-unaware query, as it should impact only tests. Would be nice to find a better solution for this issue.
+      */
       return query;
     }
   }
@@ -95,7 +95,8 @@ public interface QueryDSL {
   }
 
   static Query hasChildQuery(String type, Query query) {
-    return HasChildQuery.of(q -> q.query(query).type(type).scoreMode(ChildScoreMode.None))._toQuery();
+    return HasChildQuery.of(q -> q.query(query).type(type).scoreMode(ChildScoreMode.None))
+        ._toQuery();
   }
 
   static Query ids(List<String> ids) {
@@ -124,18 +125,22 @@ public interface QueryDSL {
 
   static <A> Query terms(String field, Collection<A> values, Function<A, FieldValue> toFieldValue) {
     final List<FieldValue> fieldValues = values.stream().map(toFieldValue).toList();
-    return TermsQuery.of(q -> q
-      .field(field)
-      .terms(TermsQueryField.of(f -> f.value(fieldValues)))
-    )._toQuery();
+    return TermsQuery.of(q -> q.field(field).terms(TermsQueryField.of(f -> f.value(fieldValues))))
+        ._toQuery();
   }
 
   static <A> Query lte(String field, A lte) {
     return RangeQuery.of(q -> q.field(field).lte(json(lte)))._toQuery();
   }
 
-  static <A> Query match(String field, A value, Operator operator, Function<A, FieldValue> toFieldValue) {
-    return new MatchQuery.Builder().field(field).query(toFieldValue.apply(value)).operator(operator) .build()._toQuery();
+  static <A> Query match(
+      String field, A value, Operator operator, Function<A, FieldValue> toFieldValue) {
+    return new MatchQuery.Builder()
+        .field(field)
+        .query(toFieldValue.apply(value))
+        .operator(operator)
+        .build()
+        ._toQuery();
   }
 
   static Query match(String field, String value, Operator operator) {
@@ -167,11 +172,9 @@ public interface QueryDSL {
   }
 
   static Script script(String script, Map<String, Object> params) {
-    return new Script.Builder().inline(b -> b
-      .source(script)
-      .params(jsonParams(params))
-      .lang(DEFAULT_SCRIPT_LANG)
-    ).build();
+    return new Script.Builder()
+        .inline(b -> b.source(script).params(jsonParams(params)).lang(DEFAULT_SCRIPT_LANG))
+        .build();
   }
 
   static SortOptions sortOptions(String field, SortOrder sortOrder) {
@@ -179,7 +182,9 @@ public interface QueryDSL {
   }
 
   static SortOptions sortOptions(String field, SortOrder sortOrder, String missing) {
-    return SortOptions.of(so -> so.field(sf -> sf.field(field).order(sortOrder).missing(m -> m.stringValue(missing))));
+    return SortOptions.of(
+        so ->
+            so.field(sf -> sf.field(field).order(sortOrder).missing(m -> m.stringValue(missing))));
   }
 
   static SourceConfig sourceInclude(String... fields) {
@@ -194,9 +199,8 @@ public interface QueryDSL {
 
   static SourceConfig sourceIncludesExcludes(String[] includes, String[] excludes) {
     return sourceIncludesExcludes(
-        includes == null? List.of() : List.of(includes),
-        excludes == null? List.of() : List.of(excludes)
-    );
+        includes == null ? List.of() : List.of(includes),
+        excludes == null ? List.of() : List.of(excludes));
   }
 
   static SourceConfig sourceExclude(List<String> fields) {
@@ -241,12 +245,10 @@ public interface QueryDSL {
 
   static Query matchDateQuery(final String name, final String dateAsString, String dateFormat) {
     // Used to match in different time ranges like hours, minutes etc
-    // See: https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
-    return RangeQuery.of(q ->
-        q.field(name)
-            .gte(json(dateAsString))
-            .lte(json(dateAsString))
-            .format(dateFormat)
-    )._toQuery();
+    // See:
+    // https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
+    return RangeQuery.of(
+            q -> q.field(name).gte(json(dateAsString)).lte(json(dateAsString)).format(dateFormat))
+        ._toQuery();
   }
 }

@@ -24,17 +24,20 @@ public abstract class VariablesUtil {
     return createBigVarsWithSuffix(null, size, varSuffix);
   }
 
-  public static String createBigVarsWithSuffix(final String varNamePrefix, final int size,
-      final String varSuffix) {
+  public static String createBigVarsWithSuffix(
+      final String varNamePrefix, final int size, final String varSuffix) {
     StringBuffer vars = new StringBuffer("{");
     for (int i = 0; i < 3; i++) {
       if (vars.length() > 1) {
         vars.append(",\n");
       }
-      vars.append("\"").append(varNamePrefix == null ? "" : varNamePrefix + "_").append("var")
+      vars.append("\"")
+          .append(varNamePrefix == null ? "" : varNamePrefix + "_")
+          .append("var")
           .append(i)
           .append("\": \"")
-          .append(createBigVariable(size)).append(varSuffix == null ? VAR_SUFFIX : varSuffix)
+          .append(createBigVariable(size))
+          .append(varSuffix == null ? VAR_SUFFIX : varSuffix)
           .append("\"");
     }
     vars.append("}");
@@ -55,10 +58,10 @@ public abstract class VariablesUtil {
     payload.put("var1", "value1");
     int numberOfVars = 600;
     IntStream.range(0, numberOfVars)
-        .forEach(value -> {
-          payload.put("many_vars_" + value, "value_" + value);
-        });
+        .forEach(
+            value -> {
+              payload.put("many_vars_" + value, "value_" + value);
+            });
     return new Gson().toJson(payload);
   }
-
 }

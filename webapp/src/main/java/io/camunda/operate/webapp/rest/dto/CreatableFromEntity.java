@@ -9,5 +9,4 @@ package io.camunda.operate.webapp.rest.dto;
 public interface CreatableFromEntity<T extends CreatableFromEntity<T, E>, E extends Object> {
 
   T fillFrom(E entity);
-
 }

@@ -13,13 +13,11 @@ public class VariablesQueryDto {
 
   private String name;
 
-  @Deprecated
-  private String value;
+  @Deprecated private String value;
 
   private String[] values;
 
-  public VariablesQueryDto() {
-  }
+  public VariablesQueryDto() {}
 
   public VariablesQueryDto(String variableName, String variableValue) {
     this.name = variableName;
@@ -59,12 +57,12 @@ public class VariablesQueryDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     VariablesQueryDto that = (VariablesQueryDto) o;
-    return Objects.equals(name, that.name) && Objects.equals(value, that.value) && Arrays.equals(values, that.values);
+    return Objects.equals(name, that.name)
+        && Objects.equals(value, that.value)
+        && Arrays.equals(values, that.values);
   }
 
   @Override

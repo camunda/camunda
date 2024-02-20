@@ -8,15 +8,13 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.operate.schema.indices.DecisionIndex;
-
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DecisionDefinition {
 
   // Used for index field search and sorting
-  public static final String
-      ID = DecisionIndex.ID,
+  public static final String ID = DecisionIndex.ID,
       KEY = DecisionIndex.KEY,
       DECISION_ID = DecisionIndex.DECISION_ID,
       TENANT_ID = DecisionIndex.TENANT_ID,
@@ -130,30 +128,65 @@ public class DecisionDefinition {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     DecisionDefinition that = (DecisionDefinition) o;
-    return Objects.equals(id, that.id) && Objects.equals(key, that.key) && Objects.equals(decisionId,
-        that.decisionId) && Objects.equals(name, that.name) && Objects.equals(version, that.version) && Objects.equals(
-        decisionRequirementsId, that.decisionRequirementsId) && Objects.equals(decisionRequirementsKey,
-        that.decisionRequirementsKey) && Objects.equals(decisionRequirementsName,
-        that.decisionRequirementsName) && Objects.equals(decisionRequirementsVersion,
-        that.decisionRequirementsVersion) && Objects.equals(tenantId, that.tenantId);
+    return Objects.equals(id, that.id)
+        && Objects.equals(key, that.key)
+        && Objects.equals(decisionId, that.decisionId)
+        && Objects.equals(name, that.name)
+        && Objects.equals(version, that.version)
+        && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
+        && Objects.equals(decisionRequirementsKey, that.decisionRequirementsKey)
+        && Objects.equals(decisionRequirementsName, that.decisionRequirementsName)
+        && Objects.equals(decisionRequirementsVersion, that.decisionRequirementsVersion)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, key, decisionId, name, version, decisionRequirementsId, decisionRequirementsKey,
-        decisionRequirementsName, decisionRequirementsVersion, tenantId);
+    return Objects.hash(
+        id,
+        key,
+        decisionId,
+        name,
+        version,
+        decisionRequirementsId,
+        decisionRequirementsKey,
+        decisionRequirementsName,
+        decisionRequirementsVersion,
+        tenantId);
   }
 
   @Override
   public String toString() {
-    return "DecisionDefinition{" + "id='" + id + '\'' + ", key=" + key + ", decisionId='" + decisionId + '\'' + ", name='"
-        + name + '\'' + ", version=" + version + ", decisionRequirementsId='" + decisionRequirementsId + '\''
-        + ", decisionRequirementsKey=" + decisionRequirementsKey + ", decisionRequirementsName='" + decisionRequirementsName
-        + '\'' + ", decisionRequirementsVersion=" + decisionRequirementsVersion + ", tenantId='" + tenantId + '\'' + '}';
+    return "DecisionDefinition{"
+        + "id='"
+        + id
+        + '\''
+        + ", key="
+        + key
+        + ", decisionId='"
+        + decisionId
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", version="
+        + version
+        + ", decisionRequirementsId='"
+        + decisionRequirementsId
+        + '\''
+        + ", decisionRequirementsKey="
+        + decisionRequirementsKey
+        + ", decisionRequirementsName='"
+        + decisionRequirementsName
+        + '\''
+        + ", decisionRequirementsVersion="
+        + decisionRequirementsVersion
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

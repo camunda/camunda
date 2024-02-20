@@ -12,6 +12,7 @@ import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,18 +20,20 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component("schemaManager")
 @Conditional(OpensearchCondition.class)
 @Profile("test")
-public class TestOpensearchSchemaManager extends OpensearchSchemaManager implements  TestSchemaManager {
+public class TestOpensearchSchemaManager extends OpensearchSchemaManager
+    implements TestSchemaManager {
 
   private static final Logger logger = LoggerFactory.getLogger(TestOpensearchSchemaManager.class);
 
   @Autowired
-  public TestOpensearchSchemaManager(final OperateProperties operateProperties,final RichOpenSearchClient richOpenSearchClient,
-      final List<TemplateDescriptor> templateDescriptors,final List<IndexDescriptor> indexDescriptors) {
+  public TestOpensearchSchemaManager(
+      final OperateProperties operateProperties,
+      final RichOpenSearchClient richOpenSearchClient,
+      final List<TemplateDescriptor> templateDescriptors,
+      final List<IndexDescriptor> indexDescriptors) {
     super(operateProperties, richOpenSearchClient, templateDescriptors, indexDescriptors);
   }
 

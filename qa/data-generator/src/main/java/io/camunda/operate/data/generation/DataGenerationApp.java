@@ -14,11 +14,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class DataGenerationApp implements CommandLineRunner {
 
-  @Autowired
-  private DataGenerator dataGenerator;
+  @Autowired private DataGenerator dataGenerator;
 
-  @Autowired
-  private ResultChecker resultChecker;
+  @Autowired private ResultChecker resultChecker;
 
   public static void main(String[] args) {
     SpringApplication.run(DataGenerationApp.class, args);
@@ -30,5 +28,4 @@ public class DataGenerationApp implements CommandLineRunner {
     resultChecker.assertResults();
     System.exit(0);
   }
-
 }

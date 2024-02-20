@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.rest.dto.dmn;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 
 public enum DecisionInstanceStateDto {
-
   FAILED,
   EVALUATED,
   UNKNOWN,
@@ -25,5 +24,4 @@ public enum DecisionInstanceStateDto {
     }
     return stateDto;
   }
-
 }

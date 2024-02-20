@@ -39,8 +39,6 @@ public class EnterpriseDto {
 
   @Override
   public String toString() {
-    return "EnterpriseDto{" +
-        "enterprise=" + enterprise +
-        '}';
+    return "EnterpriseDto{" + "enterprise=" + enterprise + '}';
   }
 }

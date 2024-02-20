@@ -10,6 +10,5 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 public interface JwtAuthenticationTokenValidator {
 
-   boolean isValid(JwtAuthenticationToken token);
-
+  boolean isValid(JwtAuthenticationToken token);
 }

@@ -8,7 +8,4 @@ package io.camunda.operate.webapp.api.v1.dao;
 
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 
-public interface SequenceFlowDao extends
-    SearchableDao<SequenceFlow> {
-}
-
+public interface SequenceFlowDao extends SearchableDao<SequenceFlow> {}

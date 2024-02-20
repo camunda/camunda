@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.exceptions;
 
-public class ServerException extends APIException{
+public class ServerException extends APIException {
 
   public static final String TYPE = "API application error";
 

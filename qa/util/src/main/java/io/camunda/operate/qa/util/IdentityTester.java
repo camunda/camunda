@@ -6,16 +6,16 @@
  */
 package io.camunda.operate.qa.util;
 
+import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_KEY;
+import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_VALUE;
+import static io.camunda.operate.qa.util.TestContainerUtil.*;
+import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
+
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.zeebe.client.impl.util.Environment;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
-
-import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_VALUE;
-import static io.camunda.operate.qa.util.TestContainerUtil.*;
-import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
 
 public class IdentityTester {
 
@@ -56,9 +56,8 @@ public class IdentityTester {
 
   public static void registerProperties(
       DynamicPropertyRegistry registry, boolean multiTenancyEnabled) {
-    registry.add(
-        "camunda.identity.baseUrl", () -> testContext.getExternalIdentityBaseUrl());
-//    registry.add("camunda.operate.identity.resourcePermissionsEnabled", () -> true);
+    registry.add("camunda.identity.baseUrl", () -> testContext.getExternalIdentityBaseUrl());
+    //    registry.add("camunda.operate.identity.resourcePermissionsEnabled", () -> true);
     registry.add(
         "camunda.identity.issuerBackendUrl",
         () -> testContext.getExternalKeycloakBaseUrl() + "/auth/realms/camunda-platform");
@@ -77,8 +76,6 @@ public class IdentityTester {
         "management.endpoints.web.exposure.include", () -> "info,prometheus,loggers,usage-metrics");
     registry.add(SPRING_THYMELEAF_PREFIX_KEY, () -> SPRING_THYMELEAF_PREFIX_VALUE);
     registry.add("server.servlet.session.cookie.name", () -> COOKIE_JSESSIONID);
-    registry.add(
-        "camunda.operate.multiTenancy.enabled", () -> String.valueOf(multiTenancyEnabled));
+    registry.add("camunda.operate.multiTenancy.enabled", () -> String.valueOf(multiTenancyEnabled));
   }
-
 }

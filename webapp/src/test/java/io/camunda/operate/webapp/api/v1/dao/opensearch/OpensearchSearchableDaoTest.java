@@ -6,11 +6,20 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import java.util.Collections;
+import java.util.LinkedList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,48 +32,44 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.core.search.TotalHits;
 
-import java.util.Collections;
-import java.util.LinkedList;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class OpensearchSearchableDaoTest {
 
-  @Mock
-  private OpensearchQueryDSLWrapper mockQueryWrapper;
+  @Mock private OpensearchQueryDSLWrapper mockQueryWrapper;
 
-  @Mock
-  private OpensearchRequestDSLWrapper mockRequestWrapper;
+  @Mock private OpensearchRequestDSLWrapper mockRequestWrapper;
 
-  @Mock
-  private RichOpenSearchClient mockOpensearchClient;
+  @Mock private RichOpenSearchClient mockOpensearchClient;
 
   private OpensearchSearchableDao<Object, Object> underTest;
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchSearchableDao<>(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient) {
-      @Override
-      protected String getUniqueSortKey() { return null; }
+    underTest =
+        new OpensearchSearchableDao<>(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient) {
+          @Override
+          protected String getUniqueSortKey() {
+            return null;
+          }
 
-      @Override
-      protected Class getInternalDocumentModelClass() { return Object.class; }
+          @Override
+          protected Class getInternalDocumentModelClass() {
+            return Object.class;
+          }
 
-      @Override
-      protected String getIndexName() { return "index"; }
+          @Override
+          protected String getIndexName() {
+            return "index";
+          }
 
-      @Override
-      protected void buildFiltering(Query query, SearchRequest.Builder request) {}
+          @Override
+          protected void buildFiltering(Query query, SearchRequest.Builder request) {}
 
-      @Override
-      protected Object convertInternalToApiResult(Object internalResult) { return internalResult; }
-    };
+          @Override
+          protected Object convertInternalToApiResult(Object internalResult) {
+            return internalResult;
+          }
+        };
   }
 
   @Test
@@ -100,7 +105,7 @@ public class OpensearchSearchableDaoTest {
 
   @Test
   public void testBuildPagingWithSortAfter() {
-    Query<Object> inputQuery = new Query<>().setSize(2).setSearchAfter(new String[]{"foo"});
+    Query<Object> inputQuery = new Query<>().setSize(2).setSearchAfter(new String[] {"foo"});
     SearchRequest.Builder request = Mockito.mock(SearchRequest.Builder.class);
 
     underTest.buildPaging(inputQuery, request);

@@ -33,7 +33,8 @@ public interface NumberThrottleable {
       this.currentSize = originalSize;
     }
 
-    @Override public void throttle() {
+    @Override
+    public void throttle() {
       changedSizeUsed = 0;
       currentSize = currentSize / throttleFactor;
       if (currentSize < 2) {
@@ -41,12 +42,14 @@ public interface NumberThrottleable {
       }
     }
 
-    @Override public void reset() {
+    @Override
+    public void reset() {
       changedSizeUsed = 0;
       currentSize = originalSize;
     }
 
-    @Override public int get() {
+    @Override
+    public int get() {
       if (currentSize < originalSize) {
         changedSizeUsed += 1;
       }
@@ -64,7 +67,8 @@ public interface NumberThrottleable {
       return changedSizeUsed * currentSize * 2 > originalSize;
     }
 
-    @Override public int getOriginal() {
+    @Override
+    public int getOriginal() {
       return originalSize;
     }
   }

@@ -24,7 +24,8 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.util.NumberThrottleable;
 import io.camunda.operate.zeebe.ImportValueType;
-
+import io.camunda.operate.zeebeimport.*;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -37,9 +38,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
-
-import io.camunda.operate.zeebeimport.*;
-import jakarta.annotation.PostConstruct;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -64,9 +62,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 /**
- * Represents Zeebe data reader for one partition and one value type. After reading the data is also schedules the jobs
- * for import execution. Each reader can have its own backoff, so that we make a pause in case there is no data currently
- * for given partition and value type.
+ * Represents Zeebe data reader for one partition and one value type. After reading the data is also
+ * schedules the jobs for import execution. Each reader can have its own backoff, so that we make a
+ * pause in case there is no data currently for given partition and value type.
  */
 @Conditional(ElasticsearchCondition.class)
 @Component
@@ -74,25 +72,19 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchRecordsReader implements RecordsReader {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchRecordsReader.class);
-  /**
-   * Partition id.
-   */
+
+  /** Partition id. */
   private final int partitionId;
 
-  /**
-   * Value type.
-   */
+  /** Value type. */
   private final ImportValueType importValueType;
 
-  /**
-   * The queue of executed tasks for execution.
-   */
+  /** The queue of executed tasks for execution. */
   private final BlockingQueue<Callable<Boolean>> importJobs;
+
   private NumberThrottleable batchSizeThrottle;
 
-  /**
-   * The job that we are currently busy with.
-   */
+  /** The job that we are currently busy with. */
   private Callable<Boolean> active;
 
   private ImportJob pendingImportJob;
@@ -111,26 +103,23 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   @Qualifier("recordsReaderThreadPoolExecutor")
   private ThreadPoolTaskScheduler readersExecutor;
 
-  @Autowired
-  private ImportPositionHolder importPositionHolder;
+  @Autowired private ImportPositionHolder importPositionHolder;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @Autowired
   @Qualifier("zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  @Autowired
-  private BeanFactory beanFactory;
+  @Autowired private BeanFactory beanFactory;
 
-  @Autowired
-  private Metrics metrics;
+  @Autowired private Metrics metrics;
 
   @Autowired(required = false)
   private List<ImportListener> importListeners;
 
-  public ElasticsearchRecordsReader(int partitionId, ImportValueType importValueType, int queueSize) {
+  public ElasticsearchRecordsReader(
+      int partitionId, ImportValueType importValueType, int queueSize) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
     this.importJobs = new LinkedBlockingQueue<>(queueSize);
@@ -138,9 +127,11 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   @PostConstruct
-  private void postConstruct(){
-    this.batchSizeThrottle = new NumberThrottleable.DivideNumberThrottle(operateProperties.getZeebeElasticsearch().getBatchSize());
-    //1st sequence of next partition - 1
+  private void postConstruct() {
+    this.batchSizeThrottle =
+        new NumberThrottleable.DivideNumberThrottle(
+            operateProperties.getZeebeElasticsearch().getBatchSize());
+    // 1st sequence of next partition - 1
     this.maxPossibleSequence = sequence(partitionId + 1, 0) - 1;
     this.countEmptyRuns = 0;
   }
@@ -159,10 +150,17 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     final int readerBackoff = operateProperties.getImporter().getReaderBackoff();
     final boolean useOnlyPosition = operateProperties.getImporter().isUseOnlyPosition();
     try {
-      metrics.registerGaugeQueueSize(GAUGE_IMPORT_QUEUE_SIZE, importJobs, TAG_KEY_PARTITION,
-          String.valueOf(partitionId), TAG_KEY_TYPE, importValueType.name());
+      metrics.registerGaugeQueueSize(
+          GAUGE_IMPORT_QUEUE_SIZE,
+          importJobs,
+          TAG_KEY_PARTITION,
+          String.valueOf(partitionId),
+          TAG_KEY_TYPE,
+          importValueType.name());
       ImportBatch importBatch;
-      final ImportPositionEntity latestPosition = importPositionHolder.getLatestScheduledPosition(importValueType.getAliasTemplate(), partitionId);
+      final ImportPositionEntity latestPosition =
+          importPositionHolder.getLatestScheduledPosition(
+              importValueType.getAliasTemplate(), partitionId);
       if (useOnlyPosition == false && latestPosition != null && latestPosition.getSequence() > 0) {
         logger.debug("Use import for {} ( {} ) by sequence", importValueType.name(), partitionId);
         importBatch = readNextBatchBySequence(latestPosition.getSequence());
@@ -171,7 +169,9 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         importBatch = readNextBatchByPositionAndPartition(latestPosition.getPosition(), null);
       }
       Integer nextRunDelay = null;
-      if (importBatch == null || importBatch.getHits() == null || importBatch.getHits().size() == 0) {
+      if (importBatch == null
+          || importBatch.getHits() == null
+          || importBatch.getHits().size() == 0) {
         nextRunDelay = readerBackoff;
       } else {
         final var importJob = createImportJob(latestPosition, importBatch);
@@ -189,7 +189,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         rescheduleReader(nextRunDelay);
       }
     } catch (NoSuchIndexException ex) {
-      //if no index found, we back off current reader
+      // if no index found, we back off current reader
       if (autoContinue) {
         rescheduleReader(readerBackoff);
       }
@@ -206,48 +206,62 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   @Override
-  public ImportBatch readNextBatchBySequence(final Long sequence, final Long lastSequence) throws NoSuchIndexException {
-    final String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
+  public ImportBatch readNextBatchBySequence(final Long sequence, final Long lastSequence)
+      throws NoSuchIndexException {
+    final String aliasName =
+        importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
     int batchSize = batchSizeThrottle.get();
-    if( batchSize != batchSizeThrottle.getOriginal() ){
-      logger.warn("Use new batch size {} (original {})", batchSize ,batchSizeThrottle.getOriginal());
+    if (batchSize != batchSizeThrottle.getOriginal()) {
+      logger.warn(
+          "Use new batch size {} (original {})", batchSize, batchSizeThrottle.getOriginal());
     }
     final long lessThanEqualsSequence;
     final int maxNumberOfHits;
 
     if (lastSequence != null && lastSequence > 0) {
-      //in worst case all the records are duplicated
+      // in worst case all the records are duplicated
       maxNumberOfHits = (int) ((lastSequence - sequence) * 2);
       lessThanEqualsSequence = lastSequence;
       logger.debug(
           "Import batch reread was called. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
-          importValueType, partitionId, sequence, lessThanEqualsSequence, maxNumberOfHits);
+          importValueType,
+          partitionId,
+          sequence,
+          lessThanEqualsSequence,
+          maxNumberOfHits);
     } else {
       maxNumberOfHits = batchSize;
       if (countEmptyRuns == operateProperties.getImporter().getMaxEmptyRuns()) {
         lessThanEqualsSequence = maxPossibleSequence;
         countEmptyRuns = 0;
-        logger.debug("Max empty runs reached. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
-            importValueType, partitionId, sequence, lessThanEqualsSequence, maxNumberOfHits);
+        logger.debug(
+            "Max empty runs reached. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
+            importValueType,
+            partitionId,
+            sequence,
+            lessThanEqualsSequence,
+            maxNumberOfHits);
       } else {
         lessThanEqualsSequence = sequence + batchSize;
       }
     }
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-        .sort(ImportPositionIndex.SEQUENCE, SortOrder.ASC)
-        .query(rangeQuery(ImportPositionIndex.SEQUENCE)
-            .gt(sequence)
-            .lte(lessThanEqualsSequence))
-        .size(maxNumberOfHits >= QUERY_MAX_SIZE ? QUERY_MAX_SIZE : maxNumberOfHits);
+    SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .sort(ImportPositionIndex.SEQUENCE, SortOrder.ASC)
+            .query(
+                rangeQuery(ImportPositionIndex.SEQUENCE).gt(sequence).lte(lessThanEqualsSequence))
+            .size(maxNumberOfHits >= QUERY_MAX_SIZE ? QUERY_MAX_SIZE : maxNumberOfHits);
 
-    final SearchRequest searchRequest = new SearchRequest(aliasName)
-        .source(searchSourceBuilder)
-        .routing(String.valueOf(partitionId))
-        .requestCache(false);
+    final SearchRequest searchRequest =
+        new SearchRequest(aliasName)
+            .source(searchSourceBuilder)
+            .routing(String.valueOf(partitionId))
+            .requestCache(false);
 
     try {
-      final HitEntity[] hits = withTimerSearchHits(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
+      final HitEntity[] hits =
+          withTimerSearchHits(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
       if (hits.length == 0) {
         countEmptyRuns++;
       } else {
@@ -258,17 +272,26 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
-        final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, ex.getMessage());
+        final String message =
+            String.format(
+                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
+                aliasName, ex.getMessage());
         throw new OperateRuntimeException(message, ex);
       }
     } catch (Exception e) {
-      if( e.getMessage().contains("entity content is too long")){
-        logger.info("{}. Will decrease batch size for {}-{}", e.getMessage(), importValueType.name(), partitionId);
+      if (e.getMessage().contains("entity content is too long")) {
+        logger.info(
+            "{}. Will decrease batch size for {}-{}",
+            e.getMessage(),
+            importValueType.name(),
+            partitionId);
         batchSizeThrottle.throttle();
         return readNextBatchBySequence(sequence, lastSequence);
       } else {
-        final String message = String.format(
-            "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, e.getMessage());
+        final String message =
+            String.format(
+                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
+                aliasName, e.getMessage());
         throw new OperateRuntimeException(message, e);
       }
     }
@@ -285,7 +308,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       SearchResponse response = zeebeEsClient.search(searchRequest, requestOptions);
       checkForFailedShards(response);
 
-      searchHits.addAll(Arrays.stream(response.getHits().getHits()).map(this::searchHitToOperateHit).toList());
+      searchHits.addAll(
+          Arrays.stream(response.getHits().getHits()).map(this::searchHitToOperateHit).toList());
 
       if (scrollNeeded) {
         scrollId = response.getScrollId();
@@ -297,7 +321,10 @@ public class ElasticsearchRecordsReader implements RecordsReader {
           checkForFailedShards(response);
 
           scrollId = response.getScrollId();
-          searchHits.addAll(Arrays.stream(response.getHits().getHits()).map(this::searchHitToOperateHit).toList());
+          searchHits.addAll(
+              Arrays.stream(response.getHits().getHits())
+                  .map(this::searchHitToOperateHit)
+                  .toList());
         } while (response.getHits().getHits().length != 0);
       }
       return searchHits.toArray(new HitEntity[0]);
@@ -308,20 +335,23 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     }
   }
 
-  private HitEntity searchHitToOperateHit(SearchHit searchHit){
-    return new HitEntity().setIndex(searchHit.getIndex()).setSourceAsString(searchHit.getSourceAsString());
+  private HitEntity searchHitToOperateHit(SearchHit searchHit) {
+    return new HitEntity()
+        .setIndex(searchHit.getIndex())
+        .setSourceAsString(searchHit.getSourceAsString());
   }
 
   private void rescheduleReader(Integer readerDelay) {
     if (readerDelay != null) {
-      readersExecutor.schedule(this,
-          Date.from(OffsetDateTime.now().plus(readerDelay, ChronoUnit.MILLIS).toInstant()));
+      readersExecutor.schedule(
+          this, Date.from(OffsetDateTime.now().plus(readerDelay, ChronoUnit.MILLIS).toInstant()));
     } else {
       readersExecutor.submit(this);
     }
   }
 
-  private ImportJob createImportJob(final ImportPositionEntity latestPosition, final ImportBatch importBatch) {
+  private ImportJob createImportJob(
+      final ImportPositionEntity latestPosition, final ImportBatch importBatch) {
     return beanFactory.getBean(ImportJob.class, importBatch, latestPosition);
   }
 
@@ -334,10 +364,14 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   private void importJobScheduledSucceeded(final ImportJob job) {
-    metrics.getTimer(Metrics.TIMER_NAME_IMPORT_JOB_SCHEDULED_TIME,
-        Metrics.TAG_KEY_TYPE, importValueType.name(),
-        Metrics.TAG_KEY_PARTITION, String.valueOf(partitionId))
-    .record(Duration.between(job.getCreationTime(), OffsetDateTime.now()));
+    metrics
+        .getTimer(
+            Metrics.TIMER_NAME_IMPORT_JOB_SCHEDULED_TIME,
+            Metrics.TAG_KEY_TYPE,
+            importValueType.name(),
+            Metrics.TAG_KEY_PARTITION,
+            String.valueOf(partitionId))
+        .record(Duration.between(job.getCreationTime(), OffsetDateTime.now()));
 
     final var batch = job.getImportBatch();
     batch.setScheduledTime(OffsetDateTime.now());
@@ -353,11 +387,14 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   @Override
-  public ImportBatch readNextBatchByPositionAndPartition(long positionFrom, Long positionTo) throws NoSuchIndexException {
-    String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
+  public ImportBatch readNextBatchByPositionAndPartition(long positionFrom, Long positionTo)
+      throws NoSuchIndexException {
+    String aliasName =
+        importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
     try {
       final SearchRequest searchRequest = createSearchQuery(aliasName, positionFrom, positionTo);
-      final SearchResponse searchResponse = withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
+      final SearchResponse searchResponse =
+          withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
       checkForFailedShards(searchResponse);
 
       return createImportBatch(searchResponse);
@@ -365,16 +402,21 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
-        final String message = String.format("Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, ex.getMessage());
+        final String message =
+            String.format(
+                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
+                aliasName, ex.getMessage());
         throw new OperateRuntimeException(message, ex);
       }
     } catch (Exception e) {
-      if( e.getMessage().contains("entity content is too long")) {
+      if (e.getMessage().contains("entity content is too long")) {
         batchSizeThrottle.throttle();
         return readNextBatchByPositionAndPartition(positionFrom, positionTo);
-      }else {
-        final String message = String.format(
-            "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s", aliasName, e.getMessage());
+      } else {
+        final String message =
+            String.format(
+                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
+                aliasName, e.getMessage());
         throw new OperateRuntimeException(message, e);
       }
     }
@@ -382,13 +424,19 @@ public class ElasticsearchRecordsReader implements RecordsReader {
 
   private void checkForFailedShards(SearchResponse searchResponse) {
     if (searchResponse.getFailedShards() > 0) {
-      throw new OperateRuntimeException("Some ES shards failed. Ignoring search response and retrying, to prevent data loss.");
+      throw new OperateRuntimeException(
+          "Some ES shards failed. Ignoring search response and retrying, to prevent data loss.");
     }
   }
 
   private ImportBatch createImportBatch(SearchResponse searchResponse) {
     SearchHit[] hits = searchResponse.getHits().getHits();
-    final List<HitEntity> newHits = Arrays.stream(hits).map(h -> new HitEntity().setIndex(h.getIndex()).setSourceAsString(h.getSourceAsString())).toList();
+    final List<HitEntity> newHits =
+        Arrays.stream(hits)
+            .map(
+                h ->
+                    new HitEntity().setIndex(h.getIndex()).setSourceAsString(h.getSourceAsString()))
+            .toList();
     String indexName = null;
     if (hits.length > 0) {
       indexName = hits[hits.length - 1].getIndex();
@@ -409,16 +457,28 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     if (positionTo != null) {
       positionQ = positionQ.lte(positionTo);
     }
-    final QueryBuilder queryBuilder = joinWithAnd(positionQ,
-        termQuery(PARTITION_ID_FIELD_NAME, partitionId));
+    final QueryBuilder queryBuilder =
+        joinWithAnd(positionQ, termQuery(PARTITION_ID_FIELD_NAME, partitionId));
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).sort(ImportPositionIndex.POSITION, SortOrder.ASC);
+    SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(queryBuilder)
+            .sort(ImportPositionIndex.POSITION, SortOrder.ASC);
     if (positionTo == null) {
       searchSourceBuilder = searchSourceBuilder.size(batchSizeThrottle.get());
     } else {
-      logger.debug("Import batch reread was called. Data type {}, partitionId {}, positionFrom {}, positionTo {}.", importValueType, partitionId, positionFrom, positionTo);
-      int size = (int)(positionTo - positionFrom);
-      searchSourceBuilder = searchSourceBuilder.size(size <= 0 || size > QUERY_MAX_SIZE ? QUERY_MAX_SIZE : size); //this size will be bigger than needed
+      logger.debug(
+          "Import batch reread was called. Data type {}, partitionId {}, positionFrom {}, positionTo {}.",
+          importValueType,
+          partitionId,
+          positionFrom,
+          positionTo);
+      int size = (int) (positionTo - positionFrom);
+      searchSourceBuilder =
+          searchSourceBuilder.size(
+              size <= 0 || size > QUERY_MAX_SIZE
+                  ? QUERY_MAX_SIZE
+                  : size); // this size will be bigger than needed
     }
     return new SearchRequest(aliasName)
         .source(searchSourceBuilder)
@@ -427,36 +487,45 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY,
-        Metrics.TAG_KEY_TYPE, importValueType.name(),
-        Metrics.TAG_KEY_PARTITION, String.valueOf(partitionId))
-    .recordCallable(callable);
+    return metrics
+        .getTimer(
+            Metrics.TIMER_NAME_IMPORT_QUERY,
+            Metrics.TAG_KEY_TYPE,
+            importValueType.name(),
+            Metrics.TAG_KEY_PARTITION,
+            String.valueOf(partitionId))
+        .recordCallable(callable);
   }
 
   private HitEntity[] withTimerSearchHits(Callable<HitEntity[]> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY,
-            Metrics.TAG_KEY_TYPE, importValueType.name(),
-            Metrics.TAG_KEY_PARTITION, String.valueOf(partitionId))
+    return metrics
+        .getTimer(
+            Metrics.TIMER_NAME_IMPORT_QUERY,
+            Metrics.TAG_KEY_TYPE,
+            importValueType.name(),
+            Metrics.TAG_KEY_PARTITION,
+            String.valueOf(partitionId))
         .recordCallable(callable);
   }
 
   private boolean tryToScheduleImportJob(final ImportJob importJob, final boolean skipPendingJob) {
-    return withReschedulingImportJobLock(() -> {
-      var scheduled = false;
-      var retries = 3;
+    return withReschedulingImportJobLock(
+        () -> {
+          var scheduled = false;
+          var retries = 3;
 
-      while (!scheduled && retries > 0) {
-        scheduled = importJobs.offer(executeJob(importJob));
-        retries = retries - 1;
-      }
+          while (!scheduled && retries > 0) {
+            scheduled = importJobs.offer(executeJob(importJob));
+            retries = retries - 1;
+          }
 
-      pendingImportJob = skipPendingJob || scheduled ? null : importJob;
-      if (scheduled && active == null) {
-        executeNext();
-      }
+          pendingImportJob = skipPendingJob || scheduled ? null : importJob;
+          if (scheduled && active == null) {
+            executeNext();
+          }
 
-      return scheduled;
-    });
+          return scheduled;
+        });
   }
 
   private Callable<Boolean> executeJob(final ImportJob job) {
@@ -467,14 +536,14 @@ public class ElasticsearchRecordsReader implements RecordsReader {
           executeNext();
           rescheduleRecordsReaderIfNecessary();
         } else {
-          //retry the same job
+          // retry the same job
           sleepFor(2000L);
           execute(active);
         }
         return imported;
       } catch (final Exception ex) {
         logger.error("Exception occurred when importing data: " + ex.getMessage(), ex);
-        //retry the same job
+        // retry the same job
         sleepFor(2000L);
         execute(active);
         return false;
@@ -485,24 +554,25 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   private void executeNext() {
     if ((active = importJobs.poll()) != null) {
       importExecutor.submit(active);
-      //TODO what to do with failing jobs
+      // TODO what to do with failing jobs
       logger.debug("Submitted next job");
     }
   }
 
   private void execute(Callable<Boolean> job) {
     importExecutor.submit(job);
-    //TODO what to do with failing jobs
+    // TODO what to do with failing jobs
     logger.debug("Submitted the same job");
   }
 
   private void rescheduleRecordsReaderIfNecessary() {
-    withReschedulingImportJobLock(() -> {
-      if (hasPendingImportJobToReschedule() && shouldReschedulePendingImportJob()) {
-        startRescheduling();
-        readersExecutor.submit(this::reschedulePendingImportJob);
-      }
-    });
+    withReschedulingImportJobLock(
+        () -> {
+          if (hasPendingImportJobToReschedule() && shouldReschedulePendingImportJob()) {
+            startRescheduling();
+            readersExecutor.submit(this::reschedulePendingImportJob);
+          }
+        });
   }
 
   private void reschedulePendingImportJob() {
@@ -513,11 +583,12 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       // reset state and schedule reader so that
       // the reader starts from the last loaded
       // position again
-      withReschedulingImportJobLock(() -> {
-        pendingImportJob = null;
-        completeRescheduling();
-        readersExecutor.submit(this);
-      });
+      withReschedulingImportJobLock(
+          () -> {
+            pendingImportJob = null;
+            completeRescheduling();
+            readersExecutor.submit(this);
+          });
     }
   }
 
@@ -538,10 +609,11 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   private void withReschedulingImportJobLock(final Runnable action) {
-    withReschedulingImportJobLock(() -> {
-      action.run();
-      return null;
-    });
+    withReschedulingImportJobLock(
+        () -> {
+          action.run();
+          return null;
+        });
   }
 
   private <T> T withReschedulingImportJobLock(final Callable<T> action) {
@@ -554,6 +626,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       schedulingImportJobLock.unlock();
     }
   }
+
   @Override
   public int getPartitionId() {
     return partitionId;
@@ -568,6 +641,4 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   public BlockingQueue<Callable<Boolean>> getImportJobs() {
     return importJobs;
   }
-
 }
-

@@ -8,17 +8,15 @@ package io.camunda.operate.schema.migration;
 
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.schema.SchemaManager;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-/**
- * A plan consists of executable Steps.
- * The plan can be execute on schema manager
- */
+
+/** A plan consists of executable Steps. The plan can be execute on schema manager */
 public interface Plan {
 
-  String PRESERVE_INDEX_SUFFIX_SCRIPT = "ctx._index = params.dstIndex+'_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()));";
+  String PRESERVE_INDEX_SUFFIX_SCRIPT =
+      "ctx._index = params.dstIndex+'_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()));";
 
   default List<Step> getSteps() {
     return Collections.emptyList();
@@ -26,7 +24,6 @@ public interface Plan {
 
   void executeOn(final SchemaManager schemaManager) throws IOException, MigrationException;
 
-  default void validateMigrationResults(final SchemaManager schemaManager) throws MigrationException {
-  }
-
+  default void validateMigrationResults(final SchemaManager schemaManager)
+      throws MigrationException {}
 }

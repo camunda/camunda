@@ -16,8 +16,8 @@ import io.camunda.operate.qa.util.TestSchemaManager;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.UserDto;
-import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,30 +29,30 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {TestApplication.class, OAuth2WebConfigurer.class,
-        TestElasticsearchSchemaManager.class},
-    properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-        "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"}
-)
-public class ProbesTestIT{
+    classes = {
+      TestApplication.class,
+      OAuth2WebConfigurer.class,
+      TestElasticsearchSchemaManager.class
+    },
+    properties = {
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
+    })
+public class ProbesTestIT {
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
-  @Autowired
-  private TestSchemaManager schemaManager;
+  @Autowired private TestSchemaManager schemaManager;
 
-  @Autowired
-  private IndicesCheck probes;
+  @Autowired private IndicesCheck probes;
 
-  @MockBean
-  private UserService userService;
+  @MockBean private UserService userService;
 
   @Before
   public void before() {
     when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId("testuser"));
-    schemaManager.setIndexPrefix("test-probes-"+TestUtil.createRandomString(5));
+    schemaManager.setIndexPrefix("test-probes-" + TestUtil.createRandomString(5));
   }
 
   @After

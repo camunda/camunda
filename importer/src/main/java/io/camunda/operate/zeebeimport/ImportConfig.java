@@ -16,8 +16,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 @Configuration
 public class ImportConfig {
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @Bean("importThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {

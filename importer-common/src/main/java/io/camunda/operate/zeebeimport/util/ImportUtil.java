@@ -6,9 +6,9 @@
  */
 package io.camunda.operate.zeebeimport.util;
 
-import org.springframework.util.StringUtils;
-
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+
+import org.springframework.util.StringUtils;
 
 public abstract class ImportUtil {
 
@@ -18,5 +18,4 @@ public abstract class ImportUtil {
     }
     return tenantId;
   }
-
 }

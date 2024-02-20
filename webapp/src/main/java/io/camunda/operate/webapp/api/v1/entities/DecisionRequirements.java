@@ -8,15 +8,13 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
-
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DecisionRequirements {
 
   // Used for index field search and sorting
-  public static final String
-      ID = DecisionRequirementsIndex.ID,
+  public static final String ID = DecisionRequirementsIndex.ID,
       KEY = DecisionRequirementsIndex.KEY,
       DECISION_REQUIREMENTS_ID = DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID,
       NAME = DecisionRequirementsIndex.NAME,
@@ -97,14 +95,16 @@ public class DecisionRequirements {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     DecisionRequirements that = (DecisionRequirements) o;
-    return Objects.equals(id, that.id) && Objects.equals(key, that.key) && Objects.equals(decisionRequirementsId,
-        that.decisionRequirementsId) && Objects.equals(name, that.name) && Objects.equals(version,
-        that.version) && Objects.equals(resourceName, that.resourceName) && Objects.equals(tenantId, that.tenantId);
+    return Objects.equals(id, that.id)
+        && Objects.equals(key, that.key)
+        && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
+        && Objects.equals(name, that.name)
+        && Objects.equals(version, that.version)
+        && Objects.equals(resourceName, that.resourceName)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
@@ -114,8 +114,26 @@ public class DecisionRequirements {
 
   @Override
   public String toString() {
-    return "DecisionRequirements{" + "id='" + id + '\'' + ", key=" + key + ", decisionRequirementsId='" + decisionRequirementsId
-        + '\'' + ", name='" + name + '\'' + ", version=" + version + ", resourceName='" + resourceName + '\'' + ", tenantId='"
-        + tenantId + '\'' + '}';
+    return "DecisionRequirements{"
+        + "id='"
+        + id
+        + '\''
+        + ", key="
+        + key
+        + ", decisionRequirementsId='"
+        + decisionRequirementsId
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", version="
+        + version
+        + ", resourceName='"
+        + resourceName
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

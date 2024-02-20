@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 
 public abstract class DtoCreator {
 
-  public static <T extends CreatableFromEntity<T, E>, E extends Object> T create(E from,
-      Class<T> clazz) {
+  public static <T extends CreatableFromEntity<T, E>, E extends Object> T create(
+      E from, Class<T> clazz) {
     if (from == null) {
       return null;
     }
@@ -23,7 +23,10 @@ public abstract class DtoCreator {
       T newDto = clazz.getDeclaredConstructor().newInstance();
       newDto.fillFrom(from);
       return newDto;
-    } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+    } catch (InstantiationException
+        | IllegalAccessException
+        | InvocationTargetException
+        | NoSuchMethodException e) {
       throw new OperateRuntimeException("Not implemented");
     }
   }
@@ -33,9 +36,9 @@ public abstract class DtoCreator {
     if (entities == null) {
       return new ArrayList<>();
     }
-    return entities.stream().filter(item -> item != null)
+    return entities.stream()
+        .filter(item -> item != null)
         .map(item -> create(item, clazz))
         .collect(Collectors.toList());
   }
-
 }

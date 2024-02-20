@@ -6,11 +6,18 @@
  */
 package io.camunda.operate.metric;
 
-import io.camunda.operate.store.MetricsStore;
+import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
+import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.management.dto.UsageMetricDTO;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,25 +29,19 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {TestApplication.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
-        OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-        "management.endpoints.web.exposure.include = usage-metrics",
-        "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      "management.endpoints.web.exposure.include = usage-metrics",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
-@TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@TestExecutionListeners(
+    listeners = DependencyInjectionTestExecutionListener.class,
+    mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 @WithMockUser(DEFAULT_USER)
 public class UsageMetricIT {
 
@@ -60,7 +61,8 @@ public class UsageMetricIT {
     parameters.put("startTime", "1970-11-14T10:50:26.963-0100");
     parameters.put("endTime", "1970-11-14T10:50:26.963-0100");
     final ResponseEntity<UsageMetricDTO> response =
-        testRestTemplate.getForEntity(PROCESS_INSTANCE_METRIC_ENDPOINT, UsageMetricDTO.class, parameters);
+        testRestTemplate.getForEntity(
+            PROCESS_INSTANCE_METRIC_ENDPOINT, UsageMetricDTO.class, parameters);
 
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody().getTotal()).isEqualTo(3L);
@@ -74,10 +76,10 @@ public class UsageMetricIT {
     parameters.put("startTime", "1970-11-14T10:50:26.963-0100");
     parameters.put("endTime", "1970-11-14T10:50:26.963-0100");
     final ResponseEntity<UsageMetricDTO> response =
-        testRestTemplate.getForEntity(DECISION_EVALUATION_METRIC_ENDPOINT, UsageMetricDTO.class, parameters);
+        testRestTemplate.getForEntity(
+            DECISION_EVALUATION_METRIC_ENDPOINT, UsageMetricDTO.class, parameters);
 
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody().getTotal()).isEqualTo(4L);
   }
-
 }

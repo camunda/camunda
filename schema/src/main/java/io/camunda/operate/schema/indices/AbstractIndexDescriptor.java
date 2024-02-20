@@ -16,16 +16,18 @@ import org.springframework.stereotype.Component;
 @DependsOn("databaseInfo")
 public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
-  @Autowired
-  protected OperateProperties operateProperties;
+  @Autowired protected OperateProperties operateProperties;
 
   @Override
   public String getFullQualifiedName() {
-    if(DatabaseInfo.isElasticsearch()) {
-      return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getIndexName(), getVersion());
-    }else{
-      return String.format("%s-%s-%s_", operateProperties.getOpensearch().getIndexPrefix(), getIndexName(), getVersion());
+    if (DatabaseInfo.isElasticsearch()) {
+      return String.format(
+          "%s-%s-%s_",
+          operateProperties.getElasticsearch().getIndexPrefix(), getIndexName(), getVersion());
+    } else {
+      return String.format(
+          "%s-%s-%s_",
+          operateProperties.getOpensearch().getIndexPrefix(), getIndexName(), getVersion());
     }
   }
-
 }

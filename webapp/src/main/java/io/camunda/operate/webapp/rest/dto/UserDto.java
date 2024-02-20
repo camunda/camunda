@@ -5,12 +5,11 @@
  * except in compliance with the proprietary license.
  */
 package io.camunda.operate.webapp.rest.dto;
+
 import io.camunda.operate.webapp.security.Permission;
-
-import java.util.*;
-
 import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
+import java.util.*;
 import org.springframework.util.StringUtils;
 
 public class UserDto {
@@ -29,7 +28,7 @@ public class UserDto {
 
   private String salesPlanType;
 
-  private Map<ClusterMetadata.AppName,String> c8Links =  new HashMap<>();
+  private Map<ClusterMetadata.AppName, String> c8Links = new HashMap<>();
 
   public boolean isCanLogout() {
     return canLogout;
@@ -50,7 +49,7 @@ public class UserDto {
   }
 
   public String getDisplayName() {
-    if (!StringUtils.hasText(displayName)){
+    if (!StringUtils.hasText(displayName)) {
       return userId;
     }
     return displayName;
@@ -61,7 +60,7 @@ public class UserDto {
     return this;
   }
 
-  //TODO: Remove when frontend has removed usage of username
+  // TODO: Remove when frontend has removed usage of username
   public String getUsername() {
     return getDisplayName();
   }
@@ -107,11 +106,12 @@ public class UserDto {
   }
 
   public UserDto setC8Links(Map<ClusterMetadata.AppName, String> c8Links) {
-    if(c8Links!=null){
+    if (c8Links != null) {
       this.c8Links = c8Links;
     }
     return this;
   }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -121,11 +121,13 @@ public class UserDto {
       return false;
     }
     final UserDto userDto = (UserDto) o;
-    return canLogout == userDto.canLogout && userId.equals(userDto.userId) && displayName.equals(
-        userDto.displayName) && permissions.equals(userDto.permissions) &&
-        Objects.equals(roles, userDto.roles) &&
-        Objects.equals(salesPlanType, userDto.salesPlanType) &&
-        Objects.equals(c8Links, userDto.c8Links);
+    return canLogout == userDto.canLogout
+        && userId.equals(userDto.userId)
+        && displayName.equals(userDto.displayName)
+        && permissions.equals(userDto.permissions)
+        && Objects.equals(roles, userDto.roles)
+        && Objects.equals(salesPlanType, userDto.salesPlanType)
+        && Objects.equals(c8Links, userDto.c8Links);
   }
 
   @Override

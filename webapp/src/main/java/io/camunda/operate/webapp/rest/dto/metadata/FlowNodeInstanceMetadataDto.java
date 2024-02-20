@@ -16,10 +16,9 @@ import java.util.Objects;
 
 public class FlowNodeInstanceMetadataDto {
 
-  /**
-   * Flow node data.
-   */
+  /** Flow node data. */
   private String flowNodeId;
+
   private String flowNodeInstanceId;
   private FlowNodeType flowNodeType;
   private OffsetDateTime startDate;
@@ -30,19 +29,18 @@ public class FlowNodeInstanceMetadataDto {
   private String calledDecisionDefinitionName;
 
   private String eventId;
-  /**
-   * Job data.
-   */
+
+  /** Job data. */
   private String jobType;
+
   private Integer jobRetries;
   private String jobWorker;
   private OffsetDateTime jobDeadline;
   private Map<String, String> jobCustomHeaders;
 
-  /**
-   * Message data.
-   */
+  /** Message data. */
   private String messageName;
+
   private String correlationKey;
 
   public String getFlowNodeId() {
@@ -67,8 +65,7 @@ public class FlowNodeInstanceMetadataDto {
     return flowNodeType;
   }
 
-  public FlowNodeInstanceMetadataDto setFlowNodeType(
-      final FlowNodeType flowNodeType) {
+  public FlowNodeInstanceMetadataDto setFlowNodeType(final FlowNodeType flowNodeType) {
     this.flowNodeType = flowNodeType;
     return this;
   }
@@ -204,16 +201,21 @@ public class FlowNodeInstanceMetadataDto {
     return this;
   }
 
-  public static FlowNodeInstanceMetadataDto createFrom(FlowNodeInstanceEntity flowNodeInstance,
-      EventEntity eventEntity, String calledProcessInstanceId, String calledProcessDefinitionName,
-      String calledDecisionInstanceId, String calledDecisionDefinitionName) {
-    FlowNodeInstanceMetadataDto metadataDto = new FlowNodeInstanceMetadataDto()
-    //flow node instance data
-        .setFlowNodeInstanceId(flowNodeInstance.getId())
-        .setFlowNodeId(flowNodeInstance.getFlowNodeId())
-        .setFlowNodeType(flowNodeInstance.getType())
-        .setStartDate(flowNodeInstance.getStartDate())
-        .setEndDate(flowNodeInstance.getEndDate());
+  public static FlowNodeInstanceMetadataDto createFrom(
+      FlowNodeInstanceEntity flowNodeInstance,
+      EventEntity eventEntity,
+      String calledProcessInstanceId,
+      String calledProcessDefinitionName,
+      String calledDecisionInstanceId,
+      String calledDecisionDefinitionName) {
+    FlowNodeInstanceMetadataDto metadataDto =
+        new FlowNodeInstanceMetadataDto()
+            // flow node instance data
+            .setFlowNodeInstanceId(flowNodeInstance.getId())
+            .setFlowNodeId(flowNodeInstance.getFlowNodeId())
+            .setFlowNodeType(flowNodeInstance.getType())
+            .setStartDate(flowNodeInstance.getStartDate())
+            .setEndDate(flowNodeInstance.getEndDate());
     if (calledProcessInstanceId != null) {
       metadataDto.setCalledProcessInstanceId(calledProcessInstanceId);
     }
@@ -227,11 +229,12 @@ public class FlowNodeInstanceMetadataDto {
       metadataDto.setCalledDecisionDefinitionName(calledDecisionDefinitionName);
     }
 
-    //last event data
+    // last event data
     metadataDto.setEventId(eventEntity.getId());
     EventMetadataEntity eventMetadataEntity = eventEntity.getMetadata();
     if (eventMetadataEntity != null) {
-      metadataDto.setJobCustomHeaders(eventMetadataEntity.getJobCustomHeaders())
+      metadataDto
+          .setJobCustomHeaders(eventMetadataEntity.getJobCustomHeaders())
           .setJobDeadline(eventMetadataEntity.getJobDeadline())
           .setJobRetries(eventMetadataEntity.getJobRetries())
           .setJobType(eventMetadataEntity.getJobType())
@@ -252,53 +255,95 @@ public class FlowNodeInstanceMetadataDto {
       return false;
     }
     final FlowNodeInstanceMetadataDto that = (FlowNodeInstanceMetadataDto) o;
-    return Objects.equals(flowNodeId, that.flowNodeId) &&
-        Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId) &&
-        flowNodeType == that.flowNodeType &&
-        Objects.equals(startDate, that.startDate) &&
-        Objects.equals(endDate, that.endDate) &&
-        Objects.equals(calledProcessInstanceId, that.calledProcessInstanceId) &&
-        Objects.equals(calledProcessDefinitionName, that.calledProcessDefinitionName) &&
-        Objects.equals(calledDecisionInstanceId, that.calledDecisionInstanceId) &&
-        Objects.equals(calledDecisionDefinitionName, that.calledDecisionDefinitionName) &&
-        Objects.equals(eventId, that.eventId) &&
-        Objects.equals(jobType, that.jobType) &&
-        Objects.equals(jobRetries, that.jobRetries) &&
-        Objects.equals(jobWorker, that.jobWorker) &&
-        Objects.equals(jobDeadline, that.jobDeadline) &&
-        Objects.equals(jobCustomHeaders, that.jobCustomHeaders) &&
-        Objects.equals(messageName, that.messageName) &&
-        Objects.equals(correlationKey, that.correlationKey);
+    return Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
+        && flowNodeType == that.flowNodeType
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && Objects.equals(calledProcessInstanceId, that.calledProcessInstanceId)
+        && Objects.equals(calledProcessDefinitionName, that.calledProcessDefinitionName)
+        && Objects.equals(calledDecisionInstanceId, that.calledDecisionInstanceId)
+        && Objects.equals(calledDecisionDefinitionName, that.calledDecisionDefinitionName)
+        && Objects.equals(eventId, that.eventId)
+        && Objects.equals(jobType, that.jobType)
+        && Objects.equals(jobRetries, that.jobRetries)
+        && Objects.equals(jobWorker, that.jobWorker)
+        && Objects.equals(jobDeadline, that.jobDeadline)
+        && Objects.equals(jobCustomHeaders, that.jobCustomHeaders)
+        && Objects.equals(messageName, that.messageName)
+        && Objects.equals(correlationKey, that.correlationKey);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(flowNodeId, flowNodeInstanceId, flowNodeType, startDate, endDate,
-        calledProcessInstanceId, calledProcessDefinitionName, calledDecisionInstanceId,
-        calledDecisionDefinitionName, eventId, jobType, jobRetries, jobWorker, jobDeadline,
-        jobCustomHeaders, messageName, correlationKey);
+    return Objects.hash(
+        flowNodeId,
+        flowNodeInstanceId,
+        flowNodeType,
+        startDate,
+        endDate,
+        calledProcessInstanceId,
+        calledProcessDefinitionName,
+        calledDecisionInstanceId,
+        calledDecisionDefinitionName,
+        eventId,
+        jobType,
+        jobRetries,
+        jobWorker,
+        jobDeadline,
+        jobCustomHeaders,
+        messageName,
+        correlationKey);
   }
 
   @Override
   public String toString() {
-    return "FlowNodeInstanceMetadataDto{" +
-        "flowNodeId='" + flowNodeId + '\'' +
-        ", flowNodeInstanceId='" + flowNodeInstanceId + '\'' +
-        ", flowNodeType=" + flowNodeType +
-        ", startDate=" + startDate +
-        ", endDate=" + endDate +
-        ", calledProcessInstanceId='" + calledProcessInstanceId + '\'' +
-        ", calledProcessDefinitionName='" + calledProcessDefinitionName + '\'' +
-        ", calledDecisionInstanceId='" + calledDecisionInstanceId + '\'' +
-        ", calledDecisionDefinitionName='" + calledDecisionDefinitionName + '\'' +
-        ", eventId='" + eventId + '\'' +
-        ", jobType='" + jobType + '\'' +
-        ", jobRetries=" + jobRetries +
-        ", jobWorker='" + jobWorker + '\'' +
-        ", jobDeadline=" + jobDeadline +
-        ", jobCustomHeaders=" + jobCustomHeaders +
-        ", messageName='" + messageName + '\'' +
-        ", correlationKey='" + correlationKey + '\'' +
-        '}';
+    return "FlowNodeInstanceMetadataDto{"
+        + "flowNodeId='"
+        + flowNodeId
+        + '\''
+        + ", flowNodeInstanceId='"
+        + flowNodeInstanceId
+        + '\''
+        + ", flowNodeType="
+        + flowNodeType
+        + ", startDate="
+        + startDate
+        + ", endDate="
+        + endDate
+        + ", calledProcessInstanceId='"
+        + calledProcessInstanceId
+        + '\''
+        + ", calledProcessDefinitionName='"
+        + calledProcessDefinitionName
+        + '\''
+        + ", calledDecisionInstanceId='"
+        + calledDecisionInstanceId
+        + '\''
+        + ", calledDecisionDefinitionName='"
+        + calledDecisionDefinitionName
+        + '\''
+        + ", eventId='"
+        + eventId
+        + '\''
+        + ", jobType='"
+        + jobType
+        + '\''
+        + ", jobRetries="
+        + jobRetries
+        + ", jobWorker='"
+        + jobWorker
+        + '\''
+        + ", jobDeadline="
+        + jobDeadline
+        + ", jobCustomHeaders="
+        + jobCustomHeaders
+        + ", messageName='"
+        + messageName
+        + '\''
+        + ", correlationKey='"
+        + correlationKey
+        + '\''
+        + '}';
   }
 }

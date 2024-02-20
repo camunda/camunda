@@ -24,8 +24,10 @@ public class ElasticsearchZeebeManager extends ZeebeContainerManager {
 
   private final RestHighLevelClient zeebeEsClient;
 
-  public ElasticsearchZeebeManager(OperateProperties operateProperties, TestContainerUtil testContainerUtil,
-                                   @Qualifier("zeebeEsClient") RestHighLevelClient zeebeEsClient) {
+  public ElasticsearchZeebeManager(
+      OperateProperties operateProperties,
+      TestContainerUtil testContainerUtil,
+      @Qualifier("zeebeEsClient") RestHighLevelClient zeebeEsClient) {
     super(operateProperties, testContainerUtil);
     this.zeebeEsClient = zeebeEsClient;
   }

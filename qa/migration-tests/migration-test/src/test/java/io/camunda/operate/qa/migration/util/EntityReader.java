@@ -7,16 +7,16 @@
 package io.camunda.operate.qa.migration.util;
 
 import static io.camunda.operate.util.ElasticsearchUtil.mapSearchHits;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
-
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class EntityReader {
 
@@ -39,7 +39,8 @@ public class EntityReader {
 
   public long countEntitiesFor(String index) {
     try {
-      SearchResponse searchResponse = esClient.search(new SearchRequest(index), RequestOptions.DEFAULT);
+      SearchResponse searchResponse =
+          esClient.search(new SearchRequest(index), RequestOptions.DEFAULT);
       return searchResponse.getHits().getTotalHits().value;
     } catch (IOException e) {
       throw new UncheckedIOException(e);
@@ -55,5 +56,4 @@ public class EntityReader {
       throw new UncheckedIOException(e);
     }
   }
-
 }

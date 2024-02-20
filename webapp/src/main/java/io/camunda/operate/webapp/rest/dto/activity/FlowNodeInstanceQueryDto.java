@@ -12,39 +12,34 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 import java.util.Objects;
 
-/**
- * The query to get the list of batch operations, created by current user.
- */
+/** The query to get the list of batch operations, created by current user. */
 public class FlowNodeInstanceQueryDto {
 
   private String processInstanceId;
 
   private String treePath;
 
-  /**
-   * Search for the flow node instances that goes before the given sort values
-   */
+  /** Search for the flow node instances that goes before the given sort values */
   private SortValuesWrapper[] searchBefore;
+
   /**
-   * Search for the flow node instances that goes before the given sort values plus same sort values.
+   * Search for the flow node instances that goes before the given sort values plus same sort
+   * values.
    */
   private SortValuesWrapper[] searchBeforeOrEqual;
-  /**
-   * Search for the flow node instances that goes exactly after the given sort values.
-   */
+
+  /** Search for the flow node instances that goes exactly after the given sort values. */
   private SortValuesWrapper[] searchAfter;
+
   /**
    * Search for the flow node instances that goes after the given sort values plus same sort values.
    */
   private SortValuesWrapper[] searchAfterOrEqual;
 
-  /**
-   * Page size.
-   */
+  /** Page size. */
   private Integer pageSize;
 
-  public FlowNodeInstanceQueryDto() {
-  }
+  public FlowNodeInstanceQueryDto() {}
 
   public FlowNodeInstanceQueryDto(final String processInstanceId, final String treePath) {
     this.processInstanceId = processInstanceId;
@@ -69,7 +64,9 @@ public class FlowNodeInstanceQueryDto {
     return this;
   }
 
-  @Schema(description= "Array of two strings: copy/paste of sortValues field from one of the operations.",
+  @Schema(
+      description =
+          "Array of two strings: copy/paste of sortValues field from one of the operations.",
       example = "[\"9223372036854775807\", \"1583836503404\"]")
   public Object[] getSearchBefore() {
     return searchBefore;
@@ -88,7 +85,8 @@ public class FlowNodeInstanceQueryDto {
     return searchBeforeOrEqual;
   }
 
-  public FlowNodeInstanceQueryDto setSearchBeforeOrEqual(final SortValuesWrapper[] searchBeforeOrEqual) {
+  public FlowNodeInstanceQueryDto setSearchBeforeOrEqual(
+      final SortValuesWrapper[] searchBeforeOrEqual) {
     this.searchBeforeOrEqual = searchBeforeOrEqual;
     return this;
   }
@@ -97,7 +95,9 @@ public class FlowNodeInstanceQueryDto {
     return SortValuesWrapper.convertSortValues(searchBeforeOrEqual, objectMapper);
   }
 
-  @Schema(description= "Array of two strings: copy/paste of sortValues field from one of the operations.",
+  @Schema(
+      description =
+          "Array of two strings: copy/paste of sortValues field from one of the operations.",
       example = "[\"1583836151645\", \"1583836128180\"]")
   public SortValuesWrapper[] getSearchAfter() {
     return searchAfter;
@@ -116,7 +116,8 @@ public class FlowNodeInstanceQueryDto {
     return searchAfterOrEqual;
   }
 
-  public FlowNodeInstanceQueryDto setSearchAfterOrEqual(final SortValuesWrapper[] searchAfterOrEqual) {
+  public FlowNodeInstanceQueryDto setSearchAfterOrEqual(
+      final SortValuesWrapper[] searchAfterOrEqual) {
     this.searchAfterOrEqual = searchAfterOrEqual;
     return this;
   }
@@ -154,13 +155,13 @@ public class FlowNodeInstanceQueryDto {
       return false;
     }
     final FlowNodeInstanceQueryDto queryDto = (FlowNodeInstanceQueryDto) o;
-    return Objects.equals(processInstanceId, queryDto.processInstanceId) &&
-        Objects.equals(treePath, queryDto.treePath) &&
-        Arrays.equals(searchBefore, queryDto.searchBefore) &&
-        Arrays.equals(searchBeforeOrEqual, queryDto.searchBeforeOrEqual) &&
-        Arrays.equals(searchAfter, queryDto.searchAfter) &&
-        Arrays.equals(searchAfterOrEqual, queryDto.searchAfterOrEqual) &&
-        Objects.equals(pageSize, queryDto.pageSize);
+    return Objects.equals(processInstanceId, queryDto.processInstanceId)
+        && Objects.equals(treePath, queryDto.treePath)
+        && Arrays.equals(searchBefore, queryDto.searchBefore)
+        && Arrays.equals(searchBeforeOrEqual, queryDto.searchBeforeOrEqual)
+        && Arrays.equals(searchAfter, queryDto.searchAfter)
+        && Arrays.equals(searchAfterOrEqual, queryDto.searchAfterOrEqual)
+        && Objects.equals(pageSize, queryDto.pageSize);
   }
 
   @Override

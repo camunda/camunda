@@ -16,8 +16,8 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.property.ImportProperties;
-import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.operate.qa.util.TestContext;
+import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -43,11 +43,14 @@ public class BigVariableDataGenerator {
   protected static final String ACTIVITY_ID = "task";
   private ZeebeClient zeebeClient;
 
-  @Autowired
-  private RestHighLevelClient esClient;
+  @Autowired private RestHighLevelClient esClient;
 
   private void init(TestContext testContext) {
-    zeebeClient = ZeebeClient.newClientBuilder().gatewayAddress(testContext.getExternalZeebeContactPoint()).usePlaintext().build();
+    zeebeClient =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress(testContext.getExternalZeebeContactPoint())
+            .usePlaintext()
+            .build();
   }
 
   public void createData(TestContext testContext) throws Exception {
@@ -61,9 +64,9 @@ public class BigVariableDataGenerator {
 
       waitUntilAllDataIsImported();
 
-      logger.info("Data generation completed in: {} s",
-          ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime
-              .now()));
+      logger.info(
+          "Data generation completed in: {} s",
+          ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
       testContext.addProcess(PROCESS_BPMN_PROCESS_ID);
     } finally {
       closeClients();
@@ -71,36 +74,38 @@ public class BigVariableDataGenerator {
   }
 
   private void deployProcess() {
-    BpmnModelInstance process = Bpmn.createExecutableProcess(PROCESS_BPMN_PROCESS_ID)
-        .startEvent("start")
-        .serviceTask(ACTIVITY_ID).zeebeJobType(ACTIVITY_ID)
-        .endEvent()
-        .done();
-    String processDefinitionKey = ZeebeTestUtil
-        .deployProcess(zeebeClient, process, "bigvariableProcess.bpmn");
+    BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_BPMN_PROCESS_ID)
+            .startEvent("start")
+            .serviceTask(ACTIVITY_ID)
+            .zeebeJobType(ACTIVITY_ID)
+            .endEvent()
+            .done();
+    String processDefinitionKey =
+        ZeebeTestUtil.deployProcess(zeebeClient, process, "bigvariableProcess.bpmn");
     logger.info("Deployed process {} with key {}", PROCESS_BPMN_PROCESS_ID, processDefinitionKey);
   }
 
   private void startProcessInstance() {
     final int size = ImportProperties.DEFAULT_VARIABLE_SIZE_THRESHOLD;
     String vars = createBigVarsWithSuffix(PROCESS_BPMN_PROCESS_ID, size, VAR_SUFFIX);
-    ZeebeTestUtil
-        .startProcessInstance(zeebeClient, PROCESS_BPMN_PROCESS_ID, vars);
+    ZeebeTestUtil.startProcessInstance(zeebeClient, PROCESS_BPMN_PROCESS_ID, vars);
     logger.info("Started process instance with id {} ", PROCESS_BPMN_PROCESS_ID);
   }
 
   private void waitUntilAllDataIsImported() throws IOException {
     logger.info("Wait till data is imported.");
     SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
-    searchRequest.source().query(joinWithAnd(
-        termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
-        termQuery(ListViewTemplate.ACTIVITY_ID, ACTIVITY_ID),
-        termQuery(ACTIVITY_STATE, ACTIVE)
-        )
-    );
+    searchRequest
+        .source()
+        .query(
+            joinWithAnd(
+                termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
+                termQuery(ListViewTemplate.ACTIVITY_ID, ACTIVITY_ID),
+                termQuery(ACTIVITY_STATE, ACTIVE)));
     SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     int count = 0, maxWait = 101;
-    while(searchResponse.getHits().getTotalHits().value < 1  && count < maxWait) {
+    while (searchResponse.getHits().getTotalHits().value < 1 && count < maxWait) {
       count++;
       ThreadUtil.sleepFor(2000L);
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -120,5 +125,4 @@ public class BigVariableDataGenerator {
       zeebeClient = null;
     }
   }
-
 }

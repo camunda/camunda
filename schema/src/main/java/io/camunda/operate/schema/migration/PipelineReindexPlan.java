@@ -8,11 +8,10 @@ package io.camunda.operate.schema.migration;
 
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.schema.SchemaManager;
-
 import java.util.List;
 import java.util.Optional;
 
-public abstract class PipelineReindexPlan implements ReindexPlan{
+public abstract class PipelineReindexPlan implements ReindexPlan {
 
   protected List<Step> steps = List.of();
   protected String srcIndex;
@@ -35,12 +34,14 @@ public abstract class PipelineReindexPlan implements ReindexPlan{
     this.steps = steps;
     return this;
   }
+
   @Override
   public List<Step> getSteps() {
     return steps;
   }
 
-  protected Optional<String> createPipelineFromSteps(final SchemaManager schemaManager) throws MigrationException {
+  protected Optional<String> createPipelineFromSteps(final SchemaManager schemaManager)
+      throws MigrationException {
     if (steps.isEmpty()) {
       return Optional.empty();
     }

@@ -28,5 +28,4 @@ public class BatchOperationTemplate extends AbstractTemplateDescriptor implement
   public String getIndexName() {
     return INDEX_NAME;
   }
-
 }

@@ -7,9 +7,9 @@
 package io.camunda.operate.store.elasticsearch;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
+import java.io.IOException;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.support.IndicesOptions;
@@ -23,8 +23,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchZeebeStore implements ZeebeStore {
@@ -35,14 +33,14 @@ public class ElasticsearchZeebeStore implements ZeebeStore {
   @Qualifier("zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @Override
   public void refreshIndex(String indexPattern) {
     RefreshRequest refreshRequest = new RefreshRequest(indexPattern);
     try {
-      RefreshResponse refresh = zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      RefreshResponse refresh =
+          zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
       if (refresh.getFailedShards() > 0) {
         logger.warn("Unable to refresh indices: {}", indexPattern);
       }
@@ -62,7 +60,9 @@ public class ElasticsearchZeebeStore implements ZeebeStore {
       }
       return exists;
     } catch (IOException io) {
-      logger.debug("Error occurred while checking existence of data in Zeebe: {}. Demo data won't be created.", io.getMessage());
+      logger.debug(
+          "Error occurred while checking existence of data in Zeebe: {}. Demo data won't be created.",
+          io.getMessage());
       return false;
     }
   }

@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.store.opensearch.client.async;
 
+import java.util.concurrent.CompletableFuture;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
@@ -13,18 +14,23 @@ import org.opensearch.client.opensearch.snapshot.DeleteSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotResponse;
 import org.slf4j.Logger;
 
-import java.util.concurrent.CompletableFuture;
-
 public class OpenSearchAsyncSnapshotOperations extends OpenSearchAsyncOperation {
-  public OpenSearchAsyncSnapshotOperations(Logger logger, OpenSearchAsyncClient openSearchAsyncClient) {
+  public OpenSearchAsyncSnapshotOperations(
+      Logger logger, OpenSearchAsyncClient openSearchAsyncClient) {
     super(logger, openSearchAsyncClient);
   }
 
-  public CompletableFuture<DeleteSnapshotResponse> delete(DeleteSnapshotRequest.Builder requestBuilder) {
-    return safe(() -> openSearchAsyncClient.snapshot().delete(requestBuilder.build()), e -> "Failed to send snapshot delete request!");
+  public CompletableFuture<DeleteSnapshotResponse> delete(
+      DeleteSnapshotRequest.Builder requestBuilder) {
+    return safe(
+        () -> openSearchAsyncClient.snapshot().delete(requestBuilder.build()),
+        e -> "Failed to send snapshot delete request!");
   }
 
-  public CompletableFuture<CreateSnapshotResponse> create(CreateSnapshotRequest.Builder requestBuilder) {
-    return safe(() -> openSearchAsyncClient.snapshot().create(requestBuilder.build()), e -> "Failed to send snapshot create request!");
+  public CompletableFuture<CreateSnapshotResponse> create(
+      CreateSnapshotRequest.Builder requestBuilder) {
+    return safe(
+        () -> openSearchAsyncClient.snapshot().create(requestBuilder.build()),
+        e -> "Failed to send snapshot create request!");
   }
 }

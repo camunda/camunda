@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
+import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
+
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.ErrorType;
@@ -15,7 +17,6 @@ import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.util.TreePath;
 import io.camunda.operate.webapp.data.IncidentDataHolder;
-import io.camunda.operate.webapp.elasticsearch.reader.AbstractReader;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.OperationReader;
@@ -23,16 +24,13 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentErrorTypeDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentFlowNodeDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -40,20 +38,15 @@ public class OpensearchIncidentReader extends OpensearchAbstractReader implement
 
   private static final Logger logger = LoggerFactory.getLogger(OpensearchIncidentReader.class);
 
-  @Autowired
-  private OperationReader operationReader;
+  @Autowired private OperationReader operationReader;
 
-  @Autowired
-  private ProcessInstanceReader processInstanceReader;
+  @Autowired private ProcessInstanceReader processInstanceReader;
 
-  @Autowired
-  private ProcessCache processCache;
+  @Autowired private ProcessCache processCache;
 
-  @Autowired
-  private IncidentStore incidentStore;
+  @Autowired private IncidentStore incidentStore;
 
-  @Autowired
-  private FlowNodeStore flowNodeStore;
+  @Autowired private FlowNodeStore flowNodeStore;
 
   @Override
   public List<IncidentEntity> getAllIncidentsByProcessInstanceKey(Long processInstanceKey) {
@@ -62,6 +55,7 @@ public class OpensearchIncidentReader extends OpensearchAbstractReader implement
 
   /**
    * Returns map of incident ids per process instance id.
+   *
    * @param processInstanceKeys
    * @return
    */
@@ -77,37 +71,54 @@ public class OpensearchIncidentReader extends OpensearchAbstractReader implement
 
   @Override
   public IncidentResponseDto getIncidentsByProcessInstanceId(String processInstanceId) {
-    //get treePath for process instance
+    // get treePath for process instance
     final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
 
     List<Map<ErrorType, Long>> errorTypes = new ArrayList<>();
-    List<IncidentEntity> incidents = incidentStore.getIncidentsWithErrorTypesFor(treePath, errorTypes);
+    List<IncidentEntity> incidents =
+        incidentStore.getIncidentsWithErrorTypesFor(treePath, errorTypes);
 
     final IncidentResponseDto incidentResponse = new IncidentResponseDto();
-    incidentResponse.setErrorTypes(errorTypes.stream().map(m -> {
-      var entry = m.entrySet().iterator().next();
-      return IncidentErrorTypeDto.createFrom(entry.getKey()).setCount(entry.getValue().intValue());
-    }).collect(Collectors.toList()));
+    incidentResponse.setErrorTypes(
+        errorTypes.stream()
+            .map(
+                m -> {
+                  var entry = m.entrySet().iterator().next();
+                  return IncidentErrorTypeDto.createFrom(entry.getKey())
+                      .setCount(entry.getValue().intValue());
+                })
+            .collect(Collectors.toList()));
 
     final Map<Long, String> processNames = new HashMap<>();
-    incidents.stream().filter(inc -> processNames.get(inc.getProcessDefinitionKey()) == null).forEach(
-        inc -> processNames.put(inc.getProcessDefinitionKey(),
-            processCache.getProcessNameOrBpmnProcessId(inc.getProcessDefinitionKey(),
-                FALLBACK_PROCESS_DEFINITION_NAME)));
+    incidents.stream()
+        .filter(inc -> processNames.get(inc.getProcessDefinitionKey()) == null)
+        .forEach(
+            inc ->
+                processNames.put(
+                    inc.getProcessDefinitionKey(),
+                    processCache.getProcessNameOrBpmnProcessId(
+                        inc.getProcessDefinitionKey(), FALLBACK_PROCESS_DEFINITION_NAME)));
 
-    final Map<Long, List<OperationEntity>> operations = operationReader.getOperationsPerIncidentKey(processInstanceId);
+    final Map<Long, List<OperationEntity>> operations =
+        operationReader.getOperationsPerIncidentKey(processInstanceId);
 
-    final Map<String, IncidentDataHolder> incData = collectFlowNodeDataForPropagatedIncidents(incidents,
-        processInstanceId, treePath);
+    final Map<String, IncidentDataHolder> incData =
+        collectFlowNodeDataForPropagatedIncidents(incidents, processInstanceId, treePath);
 
-    //collect flow node statistics
-    incidentResponse.setFlowNodes(incData.values().stream()
-        .collect(Collectors.groupingBy(IncidentDataHolder::getFinalFlowNodeId, Collectors.counting())).entrySet()
-        .stream().map(entry -> new IncidentFlowNodeDto(entry.getKey(), entry.getValue().intValue()))
-        .collect(Collectors.toList()));
+    // collect flow node statistics
+    incidentResponse.setFlowNodes(
+        incData.values().stream()
+            .collect(
+                Collectors.groupingBy(
+                    IncidentDataHolder::getFinalFlowNodeId, Collectors.counting()))
+            .entrySet()
+            .stream()
+            .map(entry -> new IncidentFlowNodeDto(entry.getKey(), entry.getValue().intValue()))
+            .collect(Collectors.toList()));
 
-    final List<IncidentDto> incidentsDtos = IncidentDto.sortDefault(
-        IncidentDto.createFrom(incidents, operations, processNames, incData));
+    final List<IncidentDto> incidentsDtos =
+        IncidentDto.sortDefault(
+            IncidentDto.createFrom(incidents, operations, processNames, incData));
     incidentResponse.setIncidents(incidentsDtos);
     incidentResponse.setCount(incidents.size());
     return incidentResponse;
@@ -115,6 +126,7 @@ public class OpensearchIncidentReader extends OpensearchAbstractReader implement
 
   /**
    * Returns map incidentId -> IncidentDataHolder.
+   *
    * @param incidents
    * @param processInstanceId
    * @param currentTreePath
@@ -122,15 +134,15 @@ public class OpensearchIncidentReader extends OpensearchAbstractReader implement
    */
   @Override
   public Map<String, IncidentDataHolder> collectFlowNodeDataForPropagatedIncidents(
-          final List<IncidentEntity> incidents, String processInstanceId, String currentTreePath) {
+      final List<IncidentEntity> incidents, String processInstanceId, String currentTreePath) {
 
     final Set<String> flowNodeInstanceIdsSet = new HashSet<>();
     final Map<String, IncidentDataHolder> incDatas = new HashMap<>();
-    for (IncidentEntity inc: incidents) {
+    for (IncidentEntity inc : incidents) {
       IncidentDataHolder incData = new IncidentDataHolder().setIncidentId(inc.getId());
       if (!String.valueOf(inc.getProcessInstanceKey()).equals(processInstanceId)) {
-        final String callActivityInstanceId = TreePath
-            .extractFlowNodeInstanceId(inc.getTreePath(), currentTreePath);
+        final String callActivityInstanceId =
+            TreePath.extractFlowNodeInstanceId(inc.getTreePath(), currentTreePath);
         incData.setFinalFlowNodeInstanceId(callActivityInstanceId);
         flowNodeInstanceIdsSet.add(callActivityInstanceId);
       } else {
@@ -141,16 +153,17 @@ public class OpensearchIncidentReader extends OpensearchAbstractReader implement
     }
 
     if (flowNodeInstanceIdsSet.size() > 0) {
-      //select flowNodeIds by flowNodeInstanceIds
-      final Map<String, String> flowNodeIdsMap = flowNodeStore.getFlowNodeIdsForFlowNodeInstances(flowNodeInstanceIdsSet);
+      // select flowNodeIds by flowNodeInstanceIds
+      final Map<String, String> flowNodeIdsMap =
+          flowNodeStore.getFlowNodeIdsForFlowNodeInstances(flowNodeInstanceIdsSet);
 
-      //set flow node id, where not yet set
+      // set flow node id, where not yet set
       incDatas.values().stream()
           .filter(iData -> iData.getFinalFlowNodeId() == null)
-          .forEach(iData -> iData
-              .setFinalFlowNodeId(flowNodeIdsMap.get(iData.getFinalFlowNodeInstanceId())));
+          .forEach(
+              iData ->
+                  iData.setFinalFlowNodeId(flowNodeIdsMap.get(iData.getFinalFlowNodeInstanceId())));
     }
     return incDatas;
   }
-
 }

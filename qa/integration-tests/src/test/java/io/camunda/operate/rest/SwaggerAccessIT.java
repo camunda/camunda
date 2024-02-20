@@ -13,30 +13,27 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-@SpringBootTest(
-    classes = {TestApplicationWithNoBeans.class}
-)
-@ActiveProfiles({ "dev", "test"})
+@SpringBootTest(classes = {TestApplicationWithNoBeans.class})
+@ActiveProfiles({"dev", "test"})
 public class SwaggerAccessIT extends OperateAbstractIT {
 
   @Test
   public void shouldReturnSwaggerUI() throws Exception {
     // when
     MockHttpServletRequestBuilder request = get("/swagger-ui/index.html");
-    MvcResult mvcResult = mockMvc.perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentTypeCompatibleWith("text/html"))
-        .andReturn();
+    MvcResult mvcResult =
+        mockMvc
+            .perform(request)
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith("text/html"))
+            .andReturn();
     // then
-    assertThat(mvcResult.getResponse().getContentAsString()).contains("Swagger UI","swagger-ui");
+    assertThat(mvcResult.getResponse().getContentAsString()).contains("Swagger UI", "swagger-ui");
   }
-
 }
-

@@ -6,22 +6,22 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.apps.retry_after_failure.RetryAfterFailureTestConfig;
 import org.junit.After;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-/**
- * Tests that after one failure of specific batch import, it will be successfully retried.
- */
+/** Tests that after one failure of specific batch import, it will be successfully retried. */
 @SpringBootTest(
-  classes = {RetryAfterFailureTestConfig.class, TestApplication.class},
-  properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+    classes = {RetryAfterFailureTestConfig.class, TestApplication.class},
+    properties = {
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       "spring.main.allow-bean-definition-overriding=true",
-      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
+    })
 public class ZeebeImportRetryAfterFailureZeebeIT extends ZeebeImportZeebeIT {
 
   @Autowired
@@ -32,5 +32,4 @@ public class ZeebeImportRetryAfterFailureZeebeIT extends ZeebeImportZeebeIT {
     elasticsearchBulkProcessor.cancelAttempts();
     super.after();
   }
-
 }

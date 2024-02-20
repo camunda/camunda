@@ -8,6 +8,8 @@ package io.camunda.operate.webapp.security;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.util.Optional;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,18 +20,15 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-import java.util.UUID;
-
 @Configuration
 @ConditionalOnExpression(
     "${camunda.operate.persistent.sessions.enabled:false}"
-        + " or " +
-    "${camunda.operate.persistentSessionsEnabled:false}"
-)
+        + " or "
+        + "${camunda.operate.persistentSessionsEnabled:false}")
 @Component
 @EnableSpringHttpSession
-public class SessionService implements org.springframework.session.SessionRepository<OperateSession> {
+public class SessionService
+    implements org.springframework.session.SessionRepository<OperateSession> {
   private static final Logger logger = LoggerFactory.getLogger(SessionService.class);
   public static final int DELETE_EXPIRED_SESSIONS_DELAY = 1_000 * 60 * 30; // min
 
@@ -37,8 +36,7 @@ public class SessionService implements org.springframework.session.SessionReposi
   @Qualifier("sessionThreadPoolScheduler")
   private ThreadPoolTaskScheduler sessionThreadScheduler;
 
-  @Autowired
-  SessionRepository sessionRepository;
+  @Autowired SessionRepository sessionRepository;
 
   @PostConstruct
   private void setUp() {
@@ -52,7 +50,8 @@ public class SessionService implements org.springframework.session.SessionReposi
   }
 
   private void startExpiredSessionCheck() {
-    sessionThreadScheduler.scheduleAtFixedRate(this::removedExpiredSessions, DELETE_EXPIRED_SESSIONS_DELAY);
+    sessionThreadScheduler.scheduleAtFixedRate(
+        this::removedExpiredSessions, DELETE_EXPIRED_SESSIONS_DELAY);
   }
 
   private void removedExpiredSessions() {
@@ -67,10 +66,13 @@ public class SessionService implements org.springframework.session.SessionReposi
   @Override
   public OperateSession createSession() {
     // Frontend e2e tests are relying on this pattern
-    final String sessionId = UUID.randomUUID().toString().replace("-","");
+    final String sessionId = UUID.randomUUID().toString().replace("-", "");
 
     OperateSession session = new OperateSession(sessionId);
-    logger.debug("Create session {} with maxInactiveInterval {} ", session, session.getMaxInactiveInterval());
+    logger.debug(
+        "Create session {} with maxInactiveInterval {} ",
+        session,
+        session.getMaxInactiveInterval());
     return session;
   }
 
@@ -92,7 +94,7 @@ public class SessionService implements org.springframework.session.SessionReposi
   public OperateSession findById(final String id) {
     logger.debug("Retrieve session {} from Elasticsearch", id);
     final Optional<OperateSession> maybeSession = sessionRepository.findById(id);
-    if (maybeSession.isEmpty() ) {
+    if (maybeSession.isEmpty()) {
       // need to delete entry in Elasticsearch in case of failing restore session
       deleteById(id);
       return null;
@@ -115,5 +117,4 @@ public class SessionService implements org.springframework.session.SessionReposi
   private void executeAsyncElasticsearchRequest(Runnable requestRunnable) {
     sessionThreadScheduler.execute(requestRunnable);
   }
-
 }

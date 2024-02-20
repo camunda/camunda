@@ -19,10 +19,6 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
-
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,10 +27,15 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchDecisionDefinitionDao extends OpensearchKeyFilteringDao<DecisionDefinition, DecisionDefinition> implements DecisionDefinitionDao {
+public class OpensearchDecisionDefinitionDao
+    extends OpensearchKeyFilteringDao<DecisionDefinition, DecisionDefinition>
+    implements DecisionDefinitionDao {
 
   private final DecisionIndex decisionIndex;
 
@@ -42,9 +43,13 @@ public class OpensearchDecisionDefinitionDao extends OpensearchKeyFilteringDao<D
 
   private final DecisionRequirementsDao decisionRequirementsDao;
 
-  public OpensearchDecisionDefinitionDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                                         RichOpenSearchClient richOpenSearchClient, DecisionIndex decisionIndex,
-                                         DecisionRequirementsIndex decisionRequirementsIndex, DecisionRequirementsDao decisionRequirementsDao) {
+  public OpensearchDecisionDefinitionDao(
+      OpensearchQueryDSLWrapper queryDSLWrapper,
+      OpensearchRequestDSLWrapper requestDSLWrapper,
+      RichOpenSearchClient richOpenSearchClient,
+      DecisionIndex decisionIndex,
+      DecisionRequirementsIndex decisionRequirementsIndex,
+      DecisionRequirementsDao decisionRequirementsDao) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionIndex = decisionIndex;
     this.decisionRequirementsIndex = decisionRequirementsIndex;
@@ -94,7 +99,8 @@ public class OpensearchDecisionDefinitionDao extends OpensearchKeyFilteringDao<D
   @Override
   public DecisionDefinition byKey(Long key) {
     var decisionDefinition = super.byKey(key);
-    DecisionRequirements decisionRequirements = decisionRequirementsDao.byKey(decisionDefinition.getDecisionRequirementsKey());
+    DecisionRequirements decisionRequirements =
+        decisionRequirementsDao.byKey(decisionDefinition.getDecisionRequirementsKey());
     decisionDefinition.setDecisionRequirementsName(decisionRequirements.getName());
     decisionDefinition.setDecisionRequirementsVersion(decisionRequirements.getVersion());
     return decisionDefinition;
@@ -105,17 +111,25 @@ public class OpensearchDecisionDefinitionDao extends OpensearchKeyFilteringDao<D
     DecisionDefinition filter = query.getFilter();
 
     if (filter != null) {
-      var queryTerms = Stream.of(
-        queryDSLWrapper.term(DecisionDefinition.ID, filter.getId()),
-        queryDSLWrapper.term(DecisionDefinition.KEY, filter.getKey()),
-        queryDSLWrapper.term(DecisionDefinition.DECISION_ID, filter.getDecisionId()),
-        queryDSLWrapper.term(DecisionDefinition.TENANT_ID, filter.getTenantId()),
-        queryDSLWrapper.term(DecisionDefinition.NAME, filter.getName()),
-        queryDSLWrapper.term(DecisionDefinition.VERSION, filter.getVersion()),
-        queryDSLWrapper.term(DecisionDefinition.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
-        queryDSLWrapper.term(DecisionDefinition.DECISION_REQUIREMENTS_KEY, filter.getDecisionRequirementsKey()),
-        buildFilteringBy(filter.getDecisionRequirementsName(), filter.getDecisionRequirementsVersion())
-      ).filter(Objects::nonNull).collect(Collectors.toList());
+      var queryTerms =
+          Stream.of(
+                  queryDSLWrapper.term(DecisionDefinition.ID, filter.getId()),
+                  queryDSLWrapper.term(DecisionDefinition.KEY, filter.getKey()),
+                  queryDSLWrapper.term(DecisionDefinition.DECISION_ID, filter.getDecisionId()),
+                  queryDSLWrapper.term(DecisionDefinition.TENANT_ID, filter.getTenantId()),
+                  queryDSLWrapper.term(DecisionDefinition.NAME, filter.getName()),
+                  queryDSLWrapper.term(DecisionDefinition.VERSION, filter.getVersion()),
+                  queryDSLWrapper.term(
+                      DecisionDefinition.DECISION_REQUIREMENTS_ID,
+                      filter.getDecisionRequirementsId()),
+                  queryDSLWrapper.term(
+                      DecisionDefinition.DECISION_REQUIREMENTS_KEY,
+                      filter.getDecisionRequirementsKey()),
+                  buildFilteringBy(
+                      filter.getDecisionRequirementsName(),
+                      filter.getDecisionRequirementsVersion()))
+              .filter(Objects::nonNull)
+              .collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
         request.query(queryDSLWrapper.and(queryTerms));
@@ -132,41 +146,58 @@ public class OpensearchDecisionDefinitionDao extends OpensearchKeyFilteringDao<D
   }
 
   /**
-   * populateDecisionRequirementsNameAndVersion - adds decisionRequirementsName and decisionRequirementsVersion fields to the decision
-   * definitions
+   * populateDecisionRequirementsNameAndVersion - adds decisionRequirementsName and
+   * decisionRequirementsVersion fields to the decision definitions
    */
-  private void populateDecisionRequirementsNameAndVersion(List<DecisionDefinition> decisionDefinitions) {
-    Set<Long> decisionRequirementsKeys = decisionDefinitions.stream().map(DecisionDefinition::getDecisionRequirementsKey)
-        .collect(Collectors.toSet());
-    List<DecisionRequirements> decisionRequirements = decisionRequirementsDao.byKeys(decisionRequirementsKeys);
+  private void populateDecisionRequirementsNameAndVersion(
+      List<DecisionDefinition> decisionDefinitions) {
+    Set<Long> decisionRequirementsKeys =
+        decisionDefinitions.stream()
+            .map(DecisionDefinition::getDecisionRequirementsKey)
+            .collect(Collectors.toSet());
+    List<DecisionRequirements> decisionRequirements =
+        decisionRequirementsDao.byKeys(decisionRequirementsKeys);
 
     Map<Long, DecisionRequirements> decisionReqMap = new HashMap<>();
-    decisionRequirements.forEach(decisionReq -> decisionReqMap.put(decisionReq.getKey(), decisionReq));
-    decisionDefinitions.forEach(decisionDef -> {
-      DecisionRequirements decisionReq = (decisionDef.getDecisionRequirementsKey() == null) ?
-          null :
-          decisionReqMap.get(decisionDef.getDecisionRequirementsKey());
-      if (decisionReq != null) {
-        decisionDef.setDecisionRequirementsName(decisionReq.getName());
-        decisionDef.setDecisionRequirementsVersion(decisionReq.getVersion());
-      }
-    });
+    decisionRequirements.forEach(
+        decisionReq -> decisionReqMap.put(decisionReq.getKey(), decisionReq));
+    decisionDefinitions.forEach(
+        decisionDef -> {
+          DecisionRequirements decisionReq =
+              (decisionDef.getDecisionRequirementsKey() == null)
+                  ? null
+                  : decisionReqMap.get(decisionDef.getDecisionRequirementsKey());
+          if (decisionReq != null) {
+            decisionDef.setDecisionRequirementsName(decisionReq.getName());
+            decisionDef.setDecisionRequirementsVersion(decisionReq.getVersion());
+          }
+        });
   }
 
-  private org.opensearch.client.opensearch._types.query_dsl.Query buildFilteringBy(String decisionRequirementsName,
-      Integer decisionRequirementsVersion) {
+  private org.opensearch.client.opensearch._types.query_dsl.Query buildFilteringBy(
+      String decisionRequirementsName, Integer decisionRequirementsVersion) {
     try {
       List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
-      queryTerms.add(queryDSLWrapper.term(DecisionRequirementsIndex.NAME, decisionRequirementsName));
-      queryTerms.add(queryDSLWrapper.term(DecisionRequirementsIndex.VERSION, decisionRequirementsVersion));
+      queryTerms.add(
+          queryDSLWrapper.term(DecisionRequirementsIndex.NAME, decisionRequirementsName));
+      queryTerms.add(
+          queryDSLWrapper.term(DecisionRequirementsIndex.VERSION, decisionRequirementsVersion));
       var query = queryDSLWrapper.and(queryTerms);
       if (query == null) {
         return null;
       }
-      var request = requestDSLWrapper.searchRequestBuilder(decisionRequirementsIndex.getAlias())
-          .query(queryDSLWrapper.withTenantCheck(query)).source(queryDSLWrapper.sourceInclude(DecisionRequirementsIndex.KEY));
-      var decisionRequirements = richOpenSearchClient.doc().scrollValues(request, DecisionRequirements.class);
-      final List<Long> nonNullKeys = decisionRequirements.stream().map(DecisionRequirements::getKey).filter(Objects::nonNull).toList();
+      var request =
+          requestDSLWrapper
+              .searchRequestBuilder(decisionRequirementsIndex.getAlias())
+              .query(queryDSLWrapper.withTenantCheck(query))
+              .source(queryDSLWrapper.sourceInclude(DecisionRequirementsIndex.KEY));
+      var decisionRequirements =
+          richOpenSearchClient.doc().scrollValues(request, DecisionRequirements.class);
+      final List<Long> nonNullKeys =
+          decisionRequirements.stream()
+              .map(DecisionRequirements::getKey)
+              .filter(Objects::nonNull)
+              .toList();
       if (nonNullKeys.isEmpty()) {
         return queryDSLWrapper.matchNone();
       }

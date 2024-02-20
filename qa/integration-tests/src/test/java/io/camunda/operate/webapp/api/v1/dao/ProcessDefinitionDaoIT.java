@@ -6,6 +6,12 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_PROCESS_ID;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
@@ -14,47 +20,57 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import javax.xml.parsers.ParserConfigurationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_PROCESS_ID;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
-  @Autowired
-  private ProcessDefinitionDao dao;
+  @Autowired private ProcessDefinitionDao dao;
 
-  @Autowired
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    String resourceXml = testResourceManager.readResourceFileContentsAsString("demoProcess_v_1.bpmn");
-    testSearchRepository.createOrUpdateDocumentFromObject(processIndex.getFullQualifiedName(),
-        new ProcessEntity().setKey(2251799813685249L).setTenantId(DEFAULT_TENANT_ID).setName("Demo process").setVersion(1)
-        .setBpmnProcessId("demoProcess").setBpmnXml(resourceXml));
+    String resourceXml =
+        testResourceManager.readResourceFileContentsAsString("demoProcess_v_1.bpmn");
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        processIndex.getFullQualifiedName(),
+        new ProcessEntity()
+            .setKey(2251799813685249L)
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setName("Demo process")
+            .setVersion(1)
+            .setBpmnProcessId("demoProcess")
+            .setBpmnXml(resourceXml));
 
     resourceXml = testResourceManager.readResourceFileContentsAsString("errorProcess.bpmn");
-    testSearchRepository.createOrUpdateDocumentFromObject(processIndex.getFullQualifiedName(),
-        new ProcessEntity().setKey(2251799813685251L).setTenantId(DEFAULT_TENANT_ID).setName("Error process").setVersion(1)
-        .setBpmnProcessId("errorProcess").setBpmnXml(resourceXml));
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        processIndex.getFullQualifiedName(),
+        new ProcessEntity()
+            .setKey(2251799813685251L)
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setName("Error process")
+            .setVersion(1)
+            .setBpmnProcessId("errorProcess")
+            .setBpmnXml(resourceXml));
 
     resourceXml = testResourceManager.readResourceFileContentsAsString("complexProcess_v_3.bpmn");
-    testSearchRepository.createOrUpdateDocumentFromObject(processIndex.getFullQualifiedName(),
-        new ProcessEntity().setKey(2251799813685253L).setTenantId(DEFAULT_TENANT_ID).setName("Complex process").setVersion(1)
-        .setBpmnProcessId("complexProcess").setBpmnXml(resourceXml));
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        processIndex.getFullQualifiedName(),
+        new ProcessEntity()
+            .setKey(2251799813685253L)
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setName("Complex process")
+            .setVersion(1)
+            .setBpmnProcessId("complexProcess")
+            .setBpmnXml(resourceXml));
 
     searchContainerManager.refreshIndices("*operate-process*");
   }
@@ -64,7 +80,8 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
     Results<ProcessDefinition> processDefinitionResults = dao.search(new Query<>());
 
     assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
-    assertThat(processDefinitionResults.getItems()).extracting(BPMN_PROCESS_ID)
+    assertThat(processDefinitionResults.getItems())
+        .extracting(BPMN_PROCESS_ID)
         .containsExactlyInAnyOrder("demoProcess", "errorProcess", "complexProcess");
   }
 
@@ -89,9 +106,11 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
     // Verify the returned string is xml
     try {
-      final InputStream xmlInputStream = new ByteArrayInputStream(
-          processDefinitionAsXml.getBytes(StandardCharsets.UTF_8));
-      new XMLUtil().getSAXParserFactory().newSAXParser()
+      final InputStream xmlInputStream =
+          new ByteArrayInputStream(processDefinitionAsXml.getBytes(StandardCharsets.UTF_8));
+      new XMLUtil()
+          .getSAXParserFactory()
+          .newSAXParser()
           .parse(xmlInputStream, new DefaultHandler());
     } catch (SAXException | IOException | ParserConfigurationException e) {
       fail(String.format("String '%s' should be of type xml", processDefinitionAsXml), e);
@@ -105,54 +124,71 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldFilterProcessDefinitions() {
-    Results<ProcessDefinition> processDefinitionResults = dao.search(new Query<ProcessDefinition>()
-        .setFilter(new ProcessDefinition().setBpmnProcessId("demoProcess")));
+    Results<ProcessDefinition> processDefinitionResults =
+        dao.search(
+            new Query<ProcessDefinition>()
+                .setFilter(new ProcessDefinition().setBpmnProcessId("demoProcess")));
 
-    assertThat(processDefinitionResults.getItems().get(0).getBpmnProcessId()).isEqualTo("demoProcess");
+    assertThat(processDefinitionResults.getItems().get(0).getBpmnProcessId())
+        .isEqualTo("demoProcess");
   }
 
   @Test
   public void shouldSortProcessDefinitionsDesc() {
-    Results<ProcessDefinition> processDefinitionResults = dao.search(new Query<ProcessDefinition>()
-        .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.DESC)));
+    Results<ProcessDefinition> processDefinitionResults =
+        dao.search(
+            new Query<ProcessDefinition>()
+                .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.DESC)));
 
     assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
-    assertThat(processDefinitionResults.getItems()).extracting(BPMN_PROCESS_ID)
+    assertThat(processDefinitionResults.getItems())
+        .extracting(BPMN_PROCESS_ID)
         .containsExactly("errorProcess", "demoProcess", "complexProcess");
   }
 
   @Test
   public void shouldSortProcessDefinitionsAsc() {
-    Results<ProcessDefinition> processDefinitionResults = dao.search(new Query<ProcessDefinition>()
-        .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.ASC)));
+    Results<ProcessDefinition> processDefinitionResults =
+        dao.search(
+            new Query<ProcessDefinition>()
+                .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.ASC)));
 
     assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
-    assertThat(processDefinitionResults.getItems()).extracting(BPMN_PROCESS_ID)
+    assertThat(processDefinitionResults.getItems())
+        .extracting(BPMN_PROCESS_ID)
         .containsExactly("complexProcess", "demoProcess", "errorProcess");
   }
 
   @Test
   public void shouldPageProcessDefinitions() {
-    Results<ProcessDefinition> processDefinitionResults = dao.search(new Query<ProcessDefinition>()
-        .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.DESC))
-        .setSize(2));
+    Results<ProcessDefinition> processDefinitionResults =
+        dao.search(
+            new Query<ProcessDefinition>()
+                .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.DESC))
+                .setSize(2));
 
     assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
     assertThat(processDefinitionResults.getItems()).hasSize(2);
 
-    assertThat(processDefinitionResults.getItems()).extracting(BPMN_PROCESS_ID)
+    assertThat(processDefinitionResults.getItems())
+        .extracting(BPMN_PROCESS_ID)
         .containsExactly("errorProcess", "demoProcess");
 
     Object[] searchAfter = processDefinitionResults.getSortValues();
-    assertThat(processDefinitionResults.getItems().get(1).getBpmnProcessId()).isEqualTo(searchAfter[0].toString());
+    assertThat(processDefinitionResults.getItems().get(1).getBpmnProcessId())
+        .isEqualTo(searchAfter[0].toString());
 
-    processDefinitionResults = dao.search(new Query<ProcessDefinition>()
-        .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.DESC))
-        .setSize(2).setSearchAfter(searchAfter));
+    processDefinitionResults =
+        dao.search(
+            new Query<ProcessDefinition>()
+                .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.DESC))
+                .setSize(2)
+                .setSearchAfter(searchAfter));
 
     assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
     assertThat(processDefinitionResults.getItems()).hasSize(1);
 
-    assertThat(processDefinitionResults.getItems().get(0).getBpmnProcessId()).isEqualTo("complexProcess");
+    assertThat(processDefinitionResults.getItems().get(0).getBpmnProcessId())
+        .isEqualTo("complexProcess");
   }
 }

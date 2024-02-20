@@ -16,8 +16,14 @@ public interface ArchiverRepository {
 
   void setIndexLifeCycle(final String destinationIndexName);
 
-  CompletableFuture<Void> deleteDocuments(final String sourceIndexName, final String idFieldName, final List<Object> processInstanceKeys);
+  CompletableFuture<Void> deleteDocuments(
+      final String sourceIndexName,
+      final String idFieldName,
+      final List<Object> processInstanceKeys);
 
-  CompletableFuture<Void> reindexDocuments(final String sourceIndexName, final String destinationIndexName,
-                                           final String idFieldName, final List<Object> processInstanceKeys);
+  CompletableFuture<Void> reindexDocuments(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final String idFieldName,
+      final List<Object> processInstanceKeys);
 }

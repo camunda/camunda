@@ -40,8 +40,7 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
 
   public static final String DECISION_INSTANCE_URL = "/api/decision-instances";
 
-  @Autowired
-  private DecisionInstanceReader decisionInstanceReader;
+  @Autowired private DecisionInstanceReader decisionInstanceReader;
 
   @Autowired(required = false)
   protected PermissionsService permissionsService;
@@ -59,17 +58,19 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Get decision instance by id")
   @GetMapping("/{decisionInstanceId}")
   public DecisionInstanceDto queryDecisionInstanceById(@PathVariable String decisionInstanceId) {
-    DecisionInstanceDto decisionInstanceDto = decisionInstanceReader.getDecisionInstance(decisionInstanceId);
+    DecisionInstanceDto decisionInstanceDto =
+        decisionInstanceReader.getDecisionInstance(decisionInstanceId);
     checkIdentityReadPermission(decisionInstanceDto);
     return decisionInstanceDto;
   }
 
   @Operation(summary = "Get DRD data for decision instance")
   @GetMapping("/{decisionInstanceId}/drd-data")
-  public Map<String, List<DRDDataEntryDto>> queryDecisionInstanceDRDData(@PathVariable String decisionInstanceId) {
+  public Map<String, List<DRDDataEntryDto>> queryDecisionInstanceDRDData(
+      @PathVariable String decisionInstanceId) {
     checkIdentityReadPermission(decisionInstanceId);
-    final Map<String, List<DRDDataEntryDto>> result = decisionInstanceReader
-        .getDecisionInstanceDRDData(decisionInstanceId);
+    final Map<String, List<DRDDataEntryDto>> result =
+        decisionInstanceReader.getDecisionInstanceDRDData(decisionInstanceId);
     if (result.isEmpty()) {
       throw new NotFoundException("Decision instance nor found: " + decisionInstanceId);
     }
@@ -83,8 +84,12 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
   }
 
   private void checkIdentityReadPermission(DecisionInstanceDto decisionInstance) {
-    if (permissionsService != null && !permissionsService.hasPermissionForDecision(decisionInstance.getDecisionId(), IdentityPermission.READ)) {
-      throw new NotAuthorizedException(String.format("No read permission for decision instance %s", decisionInstance.getDecisionId()));
+    if (permissionsService != null
+        && !permissionsService.hasPermissionForDecision(
+            decisionInstance.getDecisionId(), IdentityPermission.READ)) {
+      throw new NotAuthorizedException(
+          String.format(
+              "No read permission for decision instance %s", decisionInstance.getDecisionId()));
     }
   }
 }

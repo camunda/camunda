@@ -6,10 +6,10 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
+import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.List;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 
 @Schema(description = "Sorting")
 public class SortingDto {
@@ -18,6 +18,7 @@ public class SortingDto {
   public static final String SORT_ORDER_DESC_VALUE = "desc";
 
   public static final List<String> VALID_SORT_ORDER_VALUES;
+
   static {
     VALID_SORT_ORDER_VALUES = new ArrayList<>();
     VALID_SORT_ORDER_VALUES.add(SORT_ORDER_ASC_VALUE);
@@ -52,15 +53,12 @@ public class SortingDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     SortingDto that = (SortingDto) o;
 
-    if (sortBy != null ? !sortBy.equals(that.sortBy) : that.sortBy != null)
-      return false;
+    if (sortBy != null ? !sortBy.equals(that.sortBy) : that.sortBy != null) return false;
     return sortOrder != null ? sortOrder.equals(that.sortOrder) : that.sortOrder == null;
   }
 

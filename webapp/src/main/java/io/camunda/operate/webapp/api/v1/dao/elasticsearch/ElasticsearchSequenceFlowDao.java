@@ -13,9 +13,9 @@ import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.SequenceFlowDao;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
-import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
+import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import java.util.ArrayList;
@@ -33,36 +33,34 @@ import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
 @Component("ElasticsearchSequenceFlowDaoV1")
-public class ElasticsearchSequenceFlowDao extends ElasticsearchDao<SequenceFlow> implements SequenceFlowDao {
+public class ElasticsearchSequenceFlowDao extends ElasticsearchDao<SequenceFlow>
+    implements SequenceFlowDao {
 
-  @Autowired
-  private SequenceFlowTemplate sequenceFlowIndex;
+  @Autowired private SequenceFlowTemplate sequenceFlowIndex;
 
   @Override
-  protected void buildFiltering(final Query<SequenceFlow> query, final SearchSourceBuilder searchSourceBuilder) {
+  protected void buildFiltering(
+      final Query<SequenceFlow> query, final SearchSourceBuilder searchSourceBuilder) {
     final SequenceFlow filter = query.getFilter();
     List<QueryBuilder> queryBuilders = new ArrayList<>();
     if (filter != null) {
       queryBuilders.add(buildTermQuery(SequenceFlow.ID, filter.getId()));
       queryBuilders.add(buildTermQuery(SequenceFlow.ACTIVITY_ID, filter.getActivityId()));
       queryBuilders.add(buildTermQuery(SequenceFlow.TENANT_ID, filter.getTenantId()));
-      queryBuilders.add(buildTermQuery(SequenceFlow.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
+      queryBuilders.add(
+          buildTermQuery(SequenceFlow.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
     }
-    searchSourceBuilder.query(
-        joinWithAnd(queryBuilders.toArray(new QueryBuilder[]{})));
+    searchSourceBuilder.query(joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {})));
   }
 
   @Override
   public Results<SequenceFlow> search(final Query<SequenceFlow> query) throws APIException {
     logger.debug("search {}", query);
-    final SearchSourceBuilder searchSourceBuilder = buildQueryOn(
-        query,
-        SequenceFlow.ID,
-        new SearchSourceBuilder());
+    final SearchSourceBuilder searchSourceBuilder =
+        buildQueryOn(query, SequenceFlow.ID, new SearchSourceBuilder());
     try {
-      final SearchRequest searchRequest = new SearchRequest().indices(
-              sequenceFlowIndex.getAlias())
-          .source(searchSourceBuilder);
+      final SearchRequest searchRequest =
+          new SearchRequest().indices(sequenceFlowIndex.getAlias()).source(searchSourceBuilder);
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
@@ -83,7 +81,7 @@ public class ElasticsearchSequenceFlowDao extends ElasticsearchDao<SequenceFlow>
   }
 
   protected SequenceFlow searchHitToSequenceFlow(SearchHit searchHit) {
-    final Map<String,Object> searchHitAsMap = searchHit.getSourceAsMap();
+    final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
     return new SequenceFlow()
         .setId((String) searchHitAsMap.get(SequenceFlowTemplate.ID))
         .setActivityId((String) searchHitAsMap.get(SequenceFlowTemplate.ACTIVITY_ID))

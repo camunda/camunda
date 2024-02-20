@@ -13,13 +13,12 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import java.util.List;
+import java.util.Objects;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
-
-import java.util.List;
-import java.util.Objects;
 
 /**
  * @param <T> - API model class
@@ -31,8 +30,10 @@ public abstract class OpensearchSearchableDao<T, R> {
   protected final OpensearchRequestDSLWrapper requestDSLWrapper;
   protected final RichOpenSearchClient richOpenSearchClient;
 
-  public OpensearchSearchableDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                          RichOpenSearchClient richOpenSearchClient) {
+  public OpensearchSearchableDao(
+      OpensearchQueryDSLWrapper queryDSLWrapper,
+      OpensearchRequestDSLWrapper requestDSLWrapper,
+      RichOpenSearchClient richOpenSearchClient) {
     this.queryDSLWrapper = queryDSLWrapper;
     this.requestDSLWrapper = requestDSLWrapper;
     this.richOpenSearchClient = richOpenSearchClient;
@@ -46,7 +47,8 @@ public abstract class OpensearchSearchableDao<T, R> {
     buildPaging(query, request);
 
     try {
-      HitsMetadata<R> results = richOpenSearchClient.doc().search(request, getInternalDocumentModelClass()).hits();
+      HitsMetadata<R> results =
+          richOpenSearchClient.doc().search(request, getInternalDocumentModelClass()).hits();
 
       return formatHitsIntoResults(results);
     } catch (Exception e) {
@@ -55,7 +57,8 @@ public abstract class OpensearchSearchableDao<T, R> {
   }
 
   protected SearchRequest.Builder buildSearchRequest(Query<T> query) {
-    return requestDSLWrapper.searchRequestBuilder(getIndexName())
+    return requestDSLWrapper
+        .searchRequestBuilder(getIndexName())
         .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.matchAll()));
   }
 
@@ -68,15 +71,16 @@ public abstract class OpensearchSearchableDao<T, R> {
   protected void buildSorting(Query<T> query, String uniqueSortKey, SearchRequest.Builder request) {
     List<Query.Sort> sorts = query.getSort();
     if (sorts != null) {
-      sorts.forEach(sort -> {
-        Query.Sort.Order order = sort.getOrder();
-        if (order.equals(Query.Sort.Order.DESC)) {
-          request.sort(queryDSLWrapper.sortOptions(sort.getField(), SortOrder.Desc));
-        } else {
-          // if not specified always assume ASC order
-          request.sort(queryDSLWrapper.sortOptions(sort.getField(), SortOrder.Asc));
-        }
-      });
+      sorts.forEach(
+          sort -> {
+            Query.Sort.Order order = sort.getOrder();
+            if (order.equals(Query.Sort.Order.DESC)) {
+              request.sort(queryDSLWrapper.sortOptions(sort.getField(), SortOrder.Desc));
+            } else {
+              // if not specified always assume ASC order
+              request.sort(queryDSLWrapper.sortOptions(sort.getField(), SortOrder.Asc));
+            }
+          });
     }
     request.sort(queryDSLWrapper.sortOptions(uniqueSortKey, SortOrder.Asc));
   }
@@ -95,10 +99,11 @@ public abstract class OpensearchSearchableDao<T, R> {
     List<Hit<R>> hits = results.hits();
 
     if (!hits.isEmpty()) {
-      List<T> items = hits.stream()
-        .map(hit -> convertInternalToApiResult(hit.source()))
-        .filter(Objects::nonNull)
-        .toList();
+      List<T> items =
+          hits.stream()
+              .map(hit -> convertInternalToApiResult(hit.source()))
+              .filter(Objects::nonNull)
+              .toList();
 
       List<String> sortValues = hits.get(hits.size() - 1).sort();
 
@@ -107,8 +112,7 @@ public abstract class OpensearchSearchableDao<T, R> {
           .setItems(items)
           .setSortValues(sortValues.toArray());
     } else {
-      return new Results<T>()
-          .setTotal(results.total().value());
+      return new Results<T>().setTotal(results.total().value());
     }
   }
 

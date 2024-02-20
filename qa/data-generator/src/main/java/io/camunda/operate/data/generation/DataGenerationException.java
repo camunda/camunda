@@ -8,8 +8,7 @@ package io.camunda.operate.data.generation;
 
 public class DataGenerationException extends RuntimeException {
 
-  public DataGenerationException() {
-  }
+  public DataGenerationException() {}
 
   public DataGenerationException(String message) {
     super(message);

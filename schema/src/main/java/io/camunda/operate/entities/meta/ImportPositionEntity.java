@@ -7,7 +7,6 @@
 package io.camunda.operate.entities.meta;
 
 import io.camunda.operate.entities.OperateEntity;
-
 import java.util.Objects;
 
 public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
@@ -51,11 +50,11 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
     return this;
   }
 
-  public long getSequence(){
+  public long getSequence() {
     return sequence;
   }
 
-  public ImportPositionEntity setSequence(final long sequence){
+  public ImportPositionEntity setSequence(final long sequence) {
     this.sequence = sequence;
     return this;
   }
@@ -82,7 +81,11 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
     return String.format("%s-%s", partitionId, aliasName);
   }
 
-  public static ImportPositionEntity createFrom(final long sequence, ImportPositionEntity importPositionEntity, long newPosition, String indexName) {
+  public static ImportPositionEntity createFrom(
+      final long sequence,
+      ImportPositionEntity importPositionEntity,
+      long newPosition,
+      String indexName) {
     return new ImportPositionEntity()
         .setSequence(sequence)
         .setAliasName(importPositionEntity.getAliasName())
@@ -93,25 +96,47 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     ImportPositionEntity that = (ImportPositionEntity) o;
-    return partitionId == that.partitionId && position == that.position && sequence == that.sequence && Objects.equals(
-        aliasName, that.aliasName) && Objects.equals(postImporterPosition, that.postImporterPosition) && Objects.equals(
-        indexName, that.indexName);
+    return partitionId == that.partitionId
+        && position == that.position
+        && sequence == that.sequence
+        && Objects.equals(aliasName, that.aliasName)
+        && Objects.equals(postImporterPosition, that.postImporterPosition)
+        && Objects.equals(indexName, that.indexName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), aliasName, partitionId, position, sequence, postImporterPosition, indexName);
+    return Objects.hash(
+        super.hashCode(),
+        aliasName,
+        partitionId,
+        position,
+        sequence,
+        postImporterPosition,
+        indexName);
   }
 
   @Override
   public String toString() {
-    return "ImportPositionEntity{" + "aliasName='" + aliasName + '\'' + ", partitionId=" + partitionId + ", position=" + position + ", sequence=" + sequence + ", postImporterSequence=" + postImporterPosition + ", indexName='" + indexName + '\'' + '}';
+    return "ImportPositionEntity{"
+        + "aliasName='"
+        + aliasName
+        + '\''
+        + ", partitionId="
+        + partitionId
+        + ", position="
+        + position
+        + ", sequence="
+        + sequence
+        + ", postImporterSequence="
+        + postImporterPosition
+        + ", indexName='"
+        + indexName
+        + '\''
+        + '}';
   }
 }

@@ -6,38 +6,6 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.JsonPath;
-import io.camunda.operate.JacksonConfig;
-import io.camunda.operate.cache.ProcessCache;
-import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.data.OperateDateTimeFormatter;
-import io.camunda.operate.entities.ErrorType;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.zeebeimport.util.TestApplicationWithNoBeans;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.web.client.RestTemplate;
-
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_ALERTS;
 import static io.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_BPMN_PROCESS_ID;
@@ -67,31 +35,61 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
+import io.camunda.operate.JacksonConfig;
+import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.entities.ErrorType;
+import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.IncidentState;
+import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.zeebeimport.util.TestApplicationWithNoBeans;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.web.client.RestTemplate;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {TestApplicationWithNoBeans.class, IncidentNotifier.class, JacksonConfig.class,
-        OperateDateTimeFormatter.class, DatabaseInfo.class, OperateProperties.class},
-    properties = {
-        "camunda.operate.alert.webhook=" + IncidentNotifierIT.ALERT_WEBHOOKURL_URL
-    }
-)
+    classes = {
+      TestApplicationWithNoBeans.class,
+      IncidentNotifier.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class,
+      OperateProperties.class
+    },
+    properties = {"camunda.operate.alert.webhook=" + IncidentNotifierIT.ALERT_WEBHOOKURL_URL})
 public class IncidentNotifierIT {
 
   protected static final String ALERT_WEBHOOKURL_URL = "http://WEBHOOKURL/path";
 
-  @MockBean
-  private M2mTokenManager m2mTokenManager;
+  @MockBean private M2mTokenManager m2mTokenManager;
 
-  @MockBean
-  private ProcessCache processCache;
+  @MockBean private ProcessCache processCache;
 
   @MockBean
   @Qualifier("incidentNotificationRestTemplate")
   private RestTemplate restTemplate;
 
-  @Autowired
-  @InjectMocks
-  private IncidentNotifier incidentNotifier;
+  @Autowired @InjectMocks private IncidentNotifier incidentNotifier;
 
   private final String m2mToken = "mockM2mToken";
   private final String incident1Id = "incident1";
@@ -126,11 +124,12 @@ public class IncidentNotifierIT {
     given(restTemplate.postForEntity(anyString(), any(HttpEntity.class), any(Class.class)))
         .willReturn(new ResponseEntity<>(HttpStatus.NO_CONTENT));
 
-    //when
-    List<IncidentEntity> incidents = asList(createIncident(incident1Id), createIncident(incident2Id));
+    // when
+    List<IncidentEntity> incidents =
+        asList(createIncident(incident1Id), createIncident(incident2Id));
     incidentNotifier.notifyOnIncidents(incidents);
 
-    //then
+    // then
     ArgumentCaptor<HttpEntity<String>> requestCaptor = ArgumentCaptor.forClass(HttpEntity.class);
     verify(restTemplate, times(1))
         .postForEntity(eq(ALERT_WEBHOOKURL_URL), requestCaptor.capture(), eq(String.class));
@@ -139,17 +138,14 @@ public class IncidentNotifierIT {
     assertThat(request.getHeaders().get("Authorization").get(0)).isEqualTo("Bearer " + m2mToken);
     final String body = request.getBody();
 
-    //assert body
+    // assert body
     final DocumentContext jsonContext = JsonPath.parse(body);
     final String alerts = "$." + FIELD_NAME_ALERTS;
     assertThat(jsonContext.read(alerts, Object.class)).isNotNull();
-    assertThat(jsonContext.read(alerts + ".length()", Integer.class))
-        .isEqualTo(2);
-    assertThat(jsonContext.read(alerts + "[0].id", String.class))
-        .isEqualTo(incident1Id);
+    assertThat(jsonContext.read(alerts + ".length()", Integer.class)).isEqualTo(2);
+    assertThat(jsonContext.read(alerts + "[0].id", String.class)).isEqualTo(incident1Id);
     assertIncidentFields(jsonContext.read(alerts + "[0]", HashMap.class));
-    assertThat(jsonContext.read(alerts + "[1].id", String.class))
-        .isEqualTo(incident2Id);
+    assertThat(jsonContext.read(alerts + "[1].id", String.class)).isEqualTo(incident2Id);
     assertIncidentFields(jsonContext.read(alerts + "[1]", HashMap.class));
   }
 
@@ -157,19 +153,19 @@ public class IncidentNotifierIT {
   public void testTokenIsNotValid() {
     given(m2mTokenManager.getToken()).willReturn(m2mToken);
     given(m2mTokenManager.getToken(anyBoolean())).willReturn(m2mToken);
-    //the first call will return UNAUTHORIZED, the second - OK
+    // the first call will return UNAUTHORIZED, the second - OK
     when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), any(Class.class)))
-        .thenReturn(new ResponseEntity<>(HttpStatus.UNAUTHORIZED),
-            new ResponseEntity<>(HttpStatus.OK));
+        .thenReturn(
+            new ResponseEntity<>(HttpStatus.UNAUTHORIZED), new ResponseEntity<>(HttpStatus.OK));
 
-    //when
+    // when
     List<IncidentEntity> incidents = asList(createIncident(incident1Id));
     incidentNotifier.notifyOnIncidents(incidents);
 
-    //then
-    //new token was requested
+    // then
+    // new token was requested
     verify(m2mTokenManager, times(1)).getToken(eq(true));
-    //incident data was sent
+    // incident data was sent
     ArgumentCaptor<HttpEntity<String>> requestCaptor = ArgumentCaptor.forClass(HttpEntity.class);
     verify(restTemplate, times(2))
         .postForEntity(eq(ALERT_WEBHOOKURL_URL), requestCaptor.capture(), eq(String.class));
@@ -179,65 +175,65 @@ public class IncidentNotifierIT {
     final DocumentContext jsonContext = JsonPath.parse(body);
     final String alerts = "$." + FIELD_NAME_ALERTS;
     assertThat(jsonContext.read(alerts, Object.class)).isNotNull();
-    assertThat(jsonContext.read(alerts + ".length()", Integer.class))
-        .isEqualTo(1);
-    assertThat(jsonContext.read(alerts + "[0].id", String.class))
-        .isEqualTo(incident1Id);
+    assertThat(jsonContext.read(alerts + ".length()", Integer.class)).isEqualTo(1);
+    assertThat(jsonContext.read(alerts + "[0].id", String.class)).isEqualTo(incident1Id);
     assertIncidentFields(jsonContext.read(alerts + "[0]", HashMap.class));
   }
 
   @Test
   public void testNotificationFailed() {
     given(m2mTokenManager.getToken()).willReturn(m2mToken);
-    //webhook returns status 500
+    // webhook returns status 500
     when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), any(Class.class)))
         .thenReturn(new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR));
 
-    //when
+    // when
     List<IncidentEntity> incidents = asList(createIncident(incident1Id));
     incidentNotifier.notifyOnIncidents(incidents);
 
-    //silently fails without exception
+    // silently fails without exception
   }
 
   @Test
   public void testNotificationFailedFromSecondAttempt() {
     given(m2mTokenManager.getToken()).willReturn(m2mToken);
     given(m2mTokenManager.getToken(anyBoolean())).willReturn(m2mToken);
-    //the first call will return UNAUTHORIZED, the second - 500
+    // the first call will return UNAUTHORIZED, the second - 500
     when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), any(Class.class)))
-        .thenReturn(new ResponseEntity<>(HttpStatus.UNAUTHORIZED),
+        .thenReturn(
+            new ResponseEntity<>(HttpStatus.UNAUTHORIZED),
             new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR));
 
-    //when
+    // when
     List<IncidentEntity> incidents = asList(createIncident(incident1Id));
     incidentNotifier.notifyOnIncidents(incidents);
 
-    //then
-    //new token was requested
+    // then
+    // new token was requested
     verify(m2mTokenManager, times(1)).getToken(eq(true));
-    //silently fails without exception
+    // silently fails without exception
   }
 
   @Test
   public void testNotificationFailedWithException() {
     given(m2mTokenManager.getToken()).willReturn(m2mToken);
-    //notification will throw exception
+    // notification will throw exception
     when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), any(Class.class)))
         .thenThrow(new RuntimeException("Something went wrong"));
 
-    //when
+    // when
     List<IncidentEntity> incidents = asList(createIncident(incident1Id));
     incidentNotifier.notifyOnIncidents(incidents);
 
-    //then
-    //silently fails without exception
+    // then
+    // silently fails without exception
   }
 
   private void assertIncidentFields(final HashMap incidentFields) {
     assertThat(incidentFields.get(FIELD_NAME_MESSAGE)).isEqualTo(MESSAGE);
     assertThat(incidentFields.get(FIELD_NAME_JOB_KEY)).isEqualTo(jobKey.intValue());
-    assertThat(incidentFields.get(FIELD_NAME_PROCESS_KEY)).isEqualTo(processDefinitionKey.intValue());
+    assertThat(incidentFields.get(FIELD_NAME_PROCESS_KEY))
+        .isEqualTo(processDefinitionKey.intValue());
     assertThat(incidentFields.get(FIELD_NAME_BPMN_PROCESS_ID)).isEqualTo(bpmnProcessId);
     assertThat(incidentFields.get(FIELD_NAME_PROCESS_NAME)).isEqualTo(processName);
     assertThat(incidentFields.get(FIELD_NAME_PROCESS_VERSION)).isEqualTo(processVersion);
@@ -266,5 +262,4 @@ public class IncidentNotifierIT {
         .setJobKey(jobKey)
         .setState(incidentState);
   }
-
 }

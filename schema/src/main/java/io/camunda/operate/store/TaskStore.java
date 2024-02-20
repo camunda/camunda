@@ -6,12 +6,10 @@
  */
 package io.camunda.operate.store;
 
-import org.elasticsearch.client.tasks.GetTaskResponse;
-
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 public interface TaskStore {
-  List<String> getRunningReindexTasksIdsFor(final String fromIndex,final String toIndex) throws IOException;
+  List<String> getRunningReindexTasksIdsFor(final String fromIndex, final String toIndex)
+      throws IOException;
 }

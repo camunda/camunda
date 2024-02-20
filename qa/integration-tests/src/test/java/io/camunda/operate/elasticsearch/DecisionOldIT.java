@@ -6,6 +6,9 @@
  */
 package io.camunda.operate.elasticsearch;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.util.OperateAbstractIT;
@@ -14,30 +17,23 @@ import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
-/**
- * Tests Elasticsearch queries for decision.
- */
+/** Tests Elasticsearch queries for decision. */
 public class DecisionOldIT extends OperateAbstractIT {
 
-  private static final String QUERY_DECISION_GROUPED_URL = DecisionRestService.DECISION_URL + "/grouped";
+  private static final String QUERY_DECISION_GROUPED_URL =
+      DecisionRestService.DECISION_URL + "/grouped";
 
-  @MockBean
-  private PermissionsService permissionsService;
+  @MockBean private PermissionsService permissionsService;
 
-  @Rule
-  public SearchTestRule elasticsearchTestRule = new SearchTestRule();
+  @Rule public SearchTestRule elasticsearchTestRule = new SearchTestRule();
 
   @Test
   public void testDecisionsGroupedWithPermisssionWhenNotAllowed() throws Exception {
@@ -49,19 +45,22 @@ public class DecisionOldIT extends OperateAbstractIT {
     String decisionId2 = "decisionId2";
     String decisionId3 = "decisionId3";
 
-    final DecisionDefinitionEntity decision1 = new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
-    final DecisionDefinitionEntity decision2 = new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
-    final DecisionDefinitionEntity decision3 = new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
+    final DecisionDefinitionEntity decision1 =
+        new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
+    final DecisionDefinitionEntity decision2 =
+        new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
+    final DecisionDefinitionEntity decision3 =
+        new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
     elasticsearchTestRule.persistNew(decision1, decision2, decision3);
 
     // when
-    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
-        PermissionsService.ResourcesAllowed.withIds(Set.of()));
+    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
+        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
     MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
 
     // then
-    List<DecisionGroupDto> response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    List<DecisionGroupDto> response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).isEmpty();
   }
@@ -76,19 +75,22 @@ public class DecisionOldIT extends OperateAbstractIT {
     String decisionId2 = "decisionId2";
     String decisionId3 = "decisionId3";
 
-    final DecisionDefinitionEntity decision1 = new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
-    final DecisionDefinitionEntity decision2 = new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
-    final DecisionDefinitionEntity decision3 = new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
+    final DecisionDefinitionEntity decision1 =
+        new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
+    final DecisionDefinitionEntity decision2 =
+        new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
+    final DecisionDefinitionEntity decision3 =
+        new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
     elasticsearchTestRule.persistNew(decision1, decision2, decision3);
 
     // when
-    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
-        PermissionsService.ResourcesAllowed.all());
+    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
+        .thenReturn(PermissionsService.ResourcesAllowed.all());
     MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
 
     // then
-    List<DecisionGroupDto> response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    List<DecisionGroupDto> response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(3);
     assertThat(response.stream().map(DecisionGroupDto::getDecisionId).collect(Collectors.toList()))
@@ -105,19 +107,22 @@ public class DecisionOldIT extends OperateAbstractIT {
     String decisionId2 = "decisionId2";
     String decisionId3 = "decisionId3";
 
-    final DecisionDefinitionEntity decision1 = new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
-    final DecisionDefinitionEntity decision2 = new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
-    final DecisionDefinitionEntity decision3 = new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
+    final DecisionDefinitionEntity decision1 =
+        new DecisionDefinitionEntity().setId(id1).setDecisionId(decisionId1);
+    final DecisionDefinitionEntity decision2 =
+        new DecisionDefinitionEntity().setId(id2).setDecisionId(decisionId2);
+    final DecisionDefinitionEntity decision3 =
+        new DecisionDefinitionEntity().setId(id3).setDecisionId(decisionId3);
     elasticsearchTestRule.persistNew(decision1, decision2, decision3);
 
     // when
-    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ)).thenReturn(
-        PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId2)));
+    when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
+        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId2)));
     MvcResult mvcResult = getRequest(QUERY_DECISION_GROUPED_URL);
 
     // then
-    List<DecisionGroupDto> response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    List<DecisionGroupDto> response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     assertThat(response).hasSize(1);
     assertThat(response.stream().map(DecisionGroupDto::getDecisionId).collect(Collectors.toList()))

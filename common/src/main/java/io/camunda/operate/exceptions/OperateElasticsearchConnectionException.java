@@ -12,8 +12,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.BAD_GATEWAY)
 public class OperateElasticsearchConnectionException extends OperateRuntimeException {
 
-  public OperateElasticsearchConnectionException() {
-  }
+  public OperateElasticsearchConnectionException() {}
 
   public OperateElasticsearchConnectionException(String message) {
     super(message);

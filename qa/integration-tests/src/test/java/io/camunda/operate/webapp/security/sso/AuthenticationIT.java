@@ -8,13 +8,13 @@ package io.camunda.operate.webapp.security.sso;
 
 import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.operate.property.Auth0Properties.DEFAULT_ORGANIZATIONS_KEY;
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.CollectionUtil.asMap;
-import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
+import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
@@ -27,27 +27,27 @@ import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.management.IndicesCheck;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
+import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
+import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.Permission;
+import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo.SalesPlan;
+import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import io.camunda.operate.management.IndicesCheck;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.webapp.rest.AuthenticationRestService;
-import io.camunda.operate.webapp.security.OperateURIs;
-import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -74,77 +74,66 @@ import org.springframework.web.client.RestTemplate;
 
 @SpringBootTest(
     classes = {
-        TestApplicationWithNoBeans.class,
-        OAuth2WebConfigurer.class,
-        Jwt2AuthenticationTokenConverter.class,
-        CCSaaSJwtAuthenticationTokenValidator.class,
-        SSOWebSecurityConfig.class,
-        Auth0Service.class,
-        C8ConsoleService.class,
-        SSOController.class,
-        SSOUserService.class,
-        AuthenticationRestService.class,
-        RolePermissionService.class,
-        OperateURIs.class,
-        OperateProperties.class,
-        OperateProfileService.class
+      TestApplicationWithNoBeans.class,
+      OAuth2WebConfigurer.class,
+      Jwt2AuthenticationTokenConverter.class,
+      CCSaaSJwtAuthenticationTokenValidator.class,
+      SSOWebSecurityConfig.class,
+      Auth0Service.class,
+      C8ConsoleService.class,
+      SSOController.class,
+      SSOUserService.class,
+      AuthenticationRestService.class,
+      RolePermissionService.class,
+      OperateURIs.class,
+      OperateProperties.class,
+      OperateProfileService.class
     },
     properties = {
-        "server.servlet.context-path=" + AuthenticationIT.CONTEXT_PATH,
-        "camunda.operate.auth0.clientId=1",
-        "camunda.operate.auth0.clientSecret=2",
-        "camunda.operate.cloud.organizationId=3",
-        "camunda.operate.cloud.clusterId=test-clusterId",
-        "camunda.operate.auth0.domain=domain",
-        "camunda.operate.auth0.claimName=claimName",
-        "camunda.operate.cloud.permissionaudience=audience",
-        "camunda.operate.cloud.permissionurl=https://permissionurl",
-        "camunda.operate.cloud.consoleUrl=https://consoleUrl"
+      "server.servlet.context-path=" + AuthenticationIT.CONTEXT_PATH,
+      "camunda.operate.auth0.clientId=1",
+      "camunda.operate.auth0.clientSecret=2",
+      "camunda.operate.cloud.organizationId=3",
+      "camunda.operate.cloud.clusterId=test-clusterId",
+      "camunda.operate.auth0.domain=domain",
+      "camunda.operate.auth0.claimName=claimName",
+      "camunda.operate.cloud.permissionaudience=audience",
+      "camunda.operate.cloud.permissionurl=https://permissionurl",
+      "camunda.operate.cloud.consoleUrl=https://consoleUrl"
     },
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(SSO_AUTH_PROFILE)
 public class AuthenticationIT implements AuthenticationTestable {
 
   public static final SalesPlan OPERATE_TEST_SALESPLAN = new SalesPlan("test");
 
-  public final static String CONTEXT_PATH = "/operate-test";
-  @ClassRule
-  public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
-  @Rule
-  public final SpringMethodRule springMethodRule = new SpringMethodRule();
+  public static final String CONTEXT_PATH = "/operate-test";
+  @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
+  @Rule public final SpringMethodRule springMethodRule = new SpringMethodRule();
 
-  @LocalServerPort
-  private int randomServerPort;
+  @LocalServerPort private int randomServerPort;
 
-  @Autowired
-  private TestRestTemplate testRestTemplate;
+  @Autowired private TestRestTemplate testRestTemplate;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
-  @MockBean
-  private AuthenticationController authenticationController;
+  @MockBean private AuthenticationController authenticationController;
 
-  @SpyBean
-  private Auth0Service auth0Service;
+  @SpyBean private Auth0Service auth0Service;
 
-  @Autowired
-  private BeanFactory beanFactory;
+  @Autowired private BeanFactory beanFactory;
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private ApplicationContext applicationContext;
+  @Autowired private ApplicationContext applicationContext;
 
   @MockBean
   @Qualifier("auth0_restTemplate")
   private RestTemplate restTemplate;
 
-  @MockBean
-  private IndicesCheck probes;
-  private final BiFunction<String, String, Tokens> orgExtractor = AuthenticationIT::tokensWithOrgAsMapFrom;
+  @MockBean private IndicesCheck probes;
+  private final BiFunction<String, String, Tokens> orgExtractor =
+      AuthenticationIT::tokensWithOrgAsMapFrom;
 
   @Before
   public void setUp() {
@@ -155,8 +144,9 @@ public class AuthenticationIT implements AuthenticationTestable {
         .willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.withAudience(isNotNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.withScope(isNotNull())).willReturn(mockedAuthorizedUrl);
-    given(mockedAuthorizedUrl.build()).willReturn(
-        "https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://domain/userinfo");
+    given(mockedAuthorizedUrl.build())
+        .willReturn(
+            "https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://domain/userinfo");
   }
 
   @Test
@@ -169,27 +159,32 @@ public class AuthenticationIT implements AuthenticationTestable {
 
     // Step 2 Get Login provider url
     response = get(LOGIN_RESOURCE, cookies);
-    assertThat(redirectLocationIn(response)).contains(
-        operateProperties.getAuth0().getDomain(),
-        SSO_CALLBACK_URI,
-        operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getDomain()
-    );
+    assertThat(redirectLocationIn(response))
+        .contains(
+            operateProperties.getAuth0().getDomain(),
+            SSO_CALLBACK_URI,
+            operateProperties.getAuth0().getClientId(),
+            operateProperties.getAuth0().getDomain());
     // Step 3 Call back uri with valid userinfos
     // mock building tokens
     given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(orgExtractor.apply(operateProperties.getAuth0().getClaimName(),
-            operateProperties.getCloud().getOrganizationId()));
-    doThrow(new Auth0ServiceException(new Exception("Invalid response code from the auth0-sandbox: HTTP 502.")))
-        .when(auth0Service).authenticate(any(), any());
+        .willReturn(
+            orgExtractor.apply(
+                operateProperties.getAuth0().getClaimName(),
+                operateProperties.getCloud().getOrganizationId()));
+    doThrow(
+            new Auth0ServiceException(
+                new Exception("Invalid response code from the auth0-sandbox: HTTP 502.")))
+        .when(auth0Service)
+        .authenticate(any(), any());
     response = get(SSO_CALLBACK_URI, cookies);
 
-    assertThat(redirectLocationIn(response)).contains(
-        operateProperties.getAuth0().getDomain(),
-        "logout",
-        operateProperties.getAuth0().getClientId(),
-        urlFor(ROOT)
-    );
+    assertThat(redirectLocationIn(response))
+        .contains(
+            operateProperties.getAuth0().getDomain(),
+            "logout",
+            operateProperties.getAuth0().getClientId(),
+            urlFor(ROOT));
   }
 
   @Test
@@ -203,17 +198,19 @@ public class AuthenticationIT implements AuthenticationTestable {
 
     // Step 2 Get Login provider url
     response = get(LOGIN_RESOURCE, cookies);
-    assertThat(redirectLocationIn(response)).contains(
-        operateProperties.getAuth0().getDomain(),
-        SSO_CALLBACK_URI,
-        operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getDomain()
-    );
+    assertThat(redirectLocationIn(response))
+        .contains(
+            operateProperties.getAuth0().getDomain(),
+            SSO_CALLBACK_URI,
+            operateProperties.getAuth0().getClientId(),
+            operateProperties.getAuth0().getDomain());
     // Step 3 Call back uri with valid userinfos
     // mock building tokens
     given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(orgExtractor.apply(operateProperties.getAuth0().getClaimName(),
-            operateProperties.getCloud().getOrganizationId()));
+        .willReturn(
+            orgExtractor.apply(
+                operateProperties.getAuth0().getClaimName(),
+                operateProperties.getCloud().getOrganizationId()));
 
     response = get(SSO_CALLBACK_URI, cookies);
     assertThatRequestIsRedirectedTo(response, urlFor(ROOT));
@@ -282,8 +279,9 @@ public class AuthenticationIT implements AuthenticationTestable {
 
     get(SSO_CALLBACK_URI, cookies);
 
-    final TokenAuthentication authentication = new TokenAuthentication(operateProperties.getAuth0(),
-        operateProperties.getCloud().getOrganizationId());
+    final TokenAuthentication authentication =
+        new TokenAuthentication(
+            operateProperties.getAuth0(), operateProperties.getCloud().getOrganizationId());
     assertThat(authentication.getPermissions().contains(Permission.WRITE)).isEqualTo(false);
 
     // successfully redirect to root even without write permission
@@ -303,12 +301,12 @@ public class AuthenticationIT implements AuthenticationTestable {
     // Step 2 Get Login provider url
     mockNoReadPermission();
     response = get(LOGIN_RESOURCE, cookies);
-    assertThat(redirectLocationIn(response)).contains(
-        operateProperties.getAuth0().getDomain(),
-        SSO_CALLBACK_URI,
-        operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getDomain()
-    );
+    assertThat(redirectLocationIn(response))
+        .contains(
+            operateProperties.getAuth0().getDomain(),
+            SSO_CALLBACK_URI,
+            operateProperties.getAuth0().getClientId(),
+            operateProperties.getAuth0().getDomain());
     // Step 3 Call back uri with invalid userdata
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(
@@ -333,14 +331,15 @@ public class AuthenticationIT implements AuthenticationTestable {
     // Step 2 Get Login provider url
     mockPermissionAllowed();
     response = get(LOGIN_RESOURCE, cookies);
-    assertThat(redirectLocationIn(response)).contains(
-        operateProperties.getAuth0().getDomain(),
-        SSO_CALLBACK_URI,
-        operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getDomain()
-    );
+    assertThat(redirectLocationIn(response))
+        .contains(
+            operateProperties.getAuth0().getDomain(),
+            SSO_CALLBACK_URI,
+            operateProperties.getAuth0().getClientId(),
+            operateProperties.getAuth0().getDomain());
     // Step 3 Call back uri, but there is an IdentityVerificationException.
-    doThrow(IdentityVerificationException.class).when(authenticationController)
+    doThrow(IdentityVerificationException.class)
+        .when(authenticationController)
         .handle(any(), any());
 
     response = get(SSO_CALLBACK_URI, cookies);
@@ -355,20 +354,22 @@ public class AuthenticationIT implements AuthenticationTestable {
     HttpEntity<?> cookies = httpEntityWithCookie(response);
     response = get(LOGIN_RESOURCE, cookies);
     given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(orgExtractor.apply(operateProperties.getAuth0().getClaimName(),
-            operateProperties.getCloud().getOrganizationId()));
+        .willReturn(
+            orgExtractor.apply(
+                operateProperties.getAuth0().getClaimName(),
+                operateProperties.getCloud().getOrganizationId()));
     response = get(SSO_CALLBACK_URI, cookies);
     response = get(ROOT, cookies);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     // Step 2 logout
     response = get(LOGOUT_RESOURCE, cookies);
-    assertThat(redirectLocationIn(response)).contains(
-        operateProperties.getAuth0().getDomain(),
-        "logout",
-        operateProperties.getAuth0().getClientId(),
-        urlFor(ROOT)
-    );
+    assertThat(redirectLocationIn(response))
+        .contains(
+            operateProperties.getAuth0().getDomain(),
+            "logout",
+            operateProperties.getAuth0().getClientId(),
+            urlFor(ROOT));
     // Redirected to Login
     response = get(ROOT);
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -388,16 +389,18 @@ public class AuthenticationIT implements AuthenticationTestable {
     mockClusterMetadata();
     response = get(LOGIN_RESOURCE, httpEntity);
 
-    assertThat(redirectLocationIn(response)).contains(
-        operateProperties.getAuth0().getDomain(),
-        SSO_CALLBACK_URI,
-        operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getDomain()
-    );
+    assertThat(redirectLocationIn(response))
+        .contains(
+            operateProperties.getAuth0().getDomain(),
+            SSO_CALLBACK_URI,
+            operateProperties.getAuth0().getClientId(),
+            operateProperties.getAuth0().getDomain());
     // Step 3 Call back uri
-    given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(orgExtractor
-        .apply(operateProperties.getAuth0().getClaimName(),
-            operateProperties.getCloud().getOrganizationId()));
+    given(authenticationController.handle(isNotNull(), isNotNull()))
+        .willReturn(
+            orgExtractor.apply(
+                operateProperties.getAuth0().getClaimName(),
+                operateProperties.getCloud().getOrganizationId()));
 
     response = get(SSO_CALLBACK_URI, httpEntity);
     httpEntity = httpEntityWithCookie(response);
@@ -405,16 +408,17 @@ public class AuthenticationIT implements AuthenticationTestable {
     // Test no ClusterMetadata
     mockEmptyClusterMetadata();
     response = get(userInfoUrl, httpEntity);
-    assertThat(response.getBody()).contains("\"c8Links\":{}" );
+    assertThat(response.getBody()).contains("\"c8Links\":{}");
 
     mockClusterMetadata();
     response = get(userInfoUrl, httpEntity);
-    final String c8Links = "{\"console\":\"https://console.audience/org/3/cluster/test-clusterId\","
-        + "\"operate\":\"http://operate-url\","
-        + "\"optimize\":\"http://optimize-url\","
-        + "\"modeler\":\"https://modeler.audience/org/3\","
-        + "\"tasklist\":\"http://tasklist-url\","
-        + "\"zeebe\":\"grpc://zeebe-url\"}";
+    final String c8Links =
+        "{\"console\":\"https://console.audience/org/3/cluster/test-clusterId\","
+            + "\"operate\":\"http://operate-url\","
+            + "\"optimize\":\"http://optimize-url\","
+            + "\"modeler\":\"https://modeler.audience/org/3\","
+            + "\"tasklist\":\"http://tasklist-url\","
+            + "\"zeebe\":\"grpc://zeebe-url\"}";
     assertThat(response.getBody()).contains("\"displayName\":\"operate-testuser\"");
     assertThat(response.getBody()).contains("\"username\":\"operate-testuser\"");
     assertThat(response.getBody()).contains("\"salesPlanType\":\"test\"");
@@ -426,14 +430,17 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testCanParseResponseWithConnectorsUrl() throws Exception {
 
     // given
-    String jsonResponse = "[{\"uuid\":null,\"name\":null,\"urls\":{\"connectors\":\"http://connectors-url\"}}]";
+    String jsonResponse =
+        "[{\"uuid\":null,\"name\":null,\"urls\":{\"connectors\":\"http://connectors-url\"}}]";
 
     // when
-    ClusterMetadata[] clusterMetadatas = objectMapper.readValue(jsonResponse, ClusterMetadata[].class);
+    ClusterMetadata[] clusterMetadatas =
+        objectMapper.readValue(jsonResponse, ClusterMetadata[].class);
 
     // then
     assertThat(clusterMetadatas.length).isEqualTo(1);
-    assertThat(clusterMetadatas[0].getUrls().get(ClusterMetadata.AppName.CONNECTORS)).isEqualTo("http://connectors-url");
+    assertThat(clusterMetadatas[0].getUrls().get(ClusterMetadata.AppName.CONNECTORS))
+        .isEqualTo("http://connectors-url");
   }
 
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
@@ -458,21 +465,30 @@ public class AuthenticationIT implements AuthenticationTestable {
   }
 
   private String urlFor(String path) {
-    return String.format("http://localhost:%d%s%s",randomServerPort, CONTEXT_PATH, path);
+    return String.format("http://localhost:%d%s%s", randomServerPort, CONTEXT_PATH, path);
   }
 
   private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
     String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
     long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
     Map<String, Object> orgMap = Map.of("id", organization);
-    String accountData = toEncodedToken(asMap(
-        claim, List.of(orgMap),
-        "exp", expiresInSeconds,
-        "name", "operate-testuser",
-            DEFAULT_ORGANIZATIONS_KEY, List.of(Map.of("id","3", "roles",List.of("user","analyst")))
-    ));
-    return new Tokens("accessToken", emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
-        "refreshToken", "type", 5L);
+    String accountData =
+        toEncodedToken(
+            asMap(
+                claim,
+                List.of(orgMap),
+                "exp",
+                expiresInSeconds,
+                "name",
+                "operate-testuser",
+                DEFAULT_ORGANIZATIONS_KEY,
+                List.of(Map.of("id", "3", "roles", List.of("user", "analyst")))));
+    return new Tokens(
+        "accessToken",
+        emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
+        "refreshToken",
+        "type",
+        5L);
   }
 
   private static String toEncodedToken(Map map) {
@@ -502,7 +518,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 
     when(restTemplate.exchange(
-        eq("https://permissionurl/3"), eq(HttpMethod.GET), (HttpEntity) any(), (Class) any()))
+            eq("https://permissionurl/3"), eq(HttpMethod.GET), (HttpEntity) any(), (Class) any()))
         .thenReturn(clusterInfoResponseEntity);
   }
 
@@ -516,10 +532,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 
     when(restTemplate.exchange(
-        eq("https://permissionurl/3"),
-        eq(HttpMethod.GET),
-        (HttpEntity) any(),
-        (Class) any()))
+            eq("https://permissionurl/3"), eq(HttpMethod.GET), (HttpEntity) any(), (Class) any()))
         .thenReturn(clusterInfoResponseEntity);
   }
 
@@ -533,32 +546,36 @@ public class AuthenticationIT implements AuthenticationTestable {
         new ResponseEntity<>(clusterInfo, HttpStatus.OK);
 
     when(restTemplate.exchange(
-        eq("https://permissionurl/3"),
-        eq(HttpMethod.GET),
-        (HttpEntity) any(),
-        (Class) any()))
+            eq("https://permissionurl/3"), eq(HttpMethod.GET), (HttpEntity) any(), (Class) any()))
         .thenReturn(clusterInfoResponseEntity);
   }
 
-  private void mockClusterMetadata(){
-    ClusterMetadata clusterMetadata = new ClusterMetadata()
-        .setName("test-cluster")
-        .setUuid("test-clusterId")
-        .setUrls(Map.of(
-            ClusterMetadata.AppName.OPERATE,"http://operate-url",
-            ClusterMetadata.AppName.TASKLIST,"http://tasklist-url",
-            ClusterMetadata.AppName.OPTIMIZE,"http://optimize-url",
-            ClusterMetadata.AppName.ZEEBE,"grpc://zeebe-url"
-            ));
-    ClusterMetadata[] clusterMetadatas = new ClusterMetadata[]{clusterMetadata};
+  private void mockClusterMetadata() {
+    ClusterMetadata clusterMetadata =
+        new ClusterMetadata()
+            .setName("test-cluster")
+            .setUuid("test-clusterId")
+            .setUrls(
+                Map.of(
+                    ClusterMetadata.AppName.OPERATE, "http://operate-url",
+                    ClusterMetadata.AppName.TASKLIST, "http://tasklist-url",
+                    ClusterMetadata.AppName.OPTIMIZE, "http://optimize-url",
+                    ClusterMetadata.AppName.ZEEBE, "grpc://zeebe-url"));
+    ClusterMetadata[] clusterMetadatas = new ClusterMetadata[] {clusterMetadata};
     when(restTemplate.exchange(
-        eq("https://consoleUrl/external/organizations/3/clusters"), eq(HttpMethod.GET), (HttpEntity) any(), eq(ClusterMetadata[].class)))
+            eq("https://consoleUrl/external/organizations/3/clusters"),
+            eq(HttpMethod.GET),
+            (HttpEntity) any(),
+            eq(ClusterMetadata[].class)))
         .thenReturn(new ResponseEntity<>(clusterMetadatas, HttpStatus.OK));
   }
 
-  private void mockEmptyClusterMetadata(){
+  private void mockEmptyClusterMetadata() {
     when(restTemplate.exchange(
-        eq("https://consoleUrl/external/organizations/3/clusters"), eq(HttpMethod.GET), (HttpEntity) any(), eq(ClusterMetadata[].class)))
+            eq("https://consoleUrl/external/organizations/3/clusters"),
+            eq(HttpMethod.GET),
+            (HttpEntity) any(),
+            eq(ClusterMetadata[].class)))
         .thenReturn(new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
   }
 }

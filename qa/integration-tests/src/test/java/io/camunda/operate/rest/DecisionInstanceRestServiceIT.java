@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.rest;
 
+import static org.mockito.Mockito.when;
+
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -23,27 +25,22 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.mockito.Mockito.when;
-
 @SpringBootTest(
     classes = {
-        TestApplicationWithNoBeans.class,
-        DecisionInstanceRestService.class,
-        OperateProperties.class,
-        OperateProfileService.class,
-        JacksonConfig.class,
-        OperateDateTimeFormatter.class,
-        DatabaseInfo.class,
-        OperateProperties.class
-    }
-)
+      TestApplicationWithNoBeans.class,
+      DecisionInstanceRestService.class,
+      OperateProperties.class,
+      OperateProfileService.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class,
+      OperateProperties.class
+    })
 public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
 
-  @MockBean
-  private DecisionInstanceReader decisionInstanceReader;
+  @MockBean private DecisionInstanceReader decisionInstanceReader;
 
-  @MockBean
-  private PermissionsService permissionsService;
+  @MockBean private PermissionsService permissionsService;
 
   @Test
   public void testDecisionInstanceFailsWhenNoPermissions() throws Exception {
@@ -51,9 +48,12 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
     String decisionInstanceId = "instanceId";
     String bpmnDecisionId = "decisionId";
     // when
-    when(decisionInstanceReader.getDecisionInstance(decisionInstanceId)).thenReturn(new DecisionInstanceDto().setDecisionId(bpmnDecisionId));
-    when(permissionsService.hasPermissionForDecision(bpmnDecisionId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getDecisionInstanceByIdUrl(decisionInstanceId));
+    when(decisionInstanceReader.getDecisionInstance(decisionInstanceId))
+        .thenReturn(new DecisionInstanceDto().setDecisionId(bpmnDecisionId));
+    when(permissionsService.hasPermissionForDecision(bpmnDecisionId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        getRequestShouldFailWithNoAuthorization(getDecisionInstanceByIdUrl(decisionInstanceId));
     // then
     assertErrorMessageContains(mvcResult, "No read permission for decision instance");
   }
@@ -64,9 +64,12 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
     String decisionInstanceId = "instanceId";
     String bpmnDecisionId = "decisionId";
     // when
-    when(decisionInstanceReader.getDecisionInstance(decisionInstanceId)).thenReturn(new DecisionInstanceDto().setDecisionId(bpmnDecisionId));
-    when(permissionsService.hasPermissionForDecision(bpmnDecisionId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getDecisionInstanceDrdByIdUrl(decisionInstanceId));
+    when(decisionInstanceReader.getDecisionInstance(decisionInstanceId))
+        .thenReturn(new DecisionInstanceDto().setDecisionId(bpmnDecisionId));
+    when(permissionsService.hasPermissionForDecision(bpmnDecisionId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        getRequestShouldFailWithNoAuthorization(getDecisionInstanceDrdByIdUrl(decisionInstanceId));
     // then
     assertErrorMessageContains(mvcResult, "No read permission for decision instance");
   }

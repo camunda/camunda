@@ -12,7 +12,6 @@ import io.micrometer.core.instrument.Timer;
 import java.util.Queue;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,23 +30,30 @@ public class Metrics {
   // Timers:
   public static final String TIMER_NAME_QUERY = OPERATE_NAMESPACE + "query";
   public static final String TIMER_NAME_IMPORT_QUERY = OPERATE_NAMESPACE + "import.query";
-  public static final String TIMER_NAME_IMPORT_INDEX_QUERY = OPERATE_NAMESPACE + "import.index.query";
-  public static final String TIMER_NAME_IMPORT_PROCESS_BATCH = OPERATE_NAMESPACE + "import.process.batch";
+  public static final String TIMER_NAME_IMPORT_INDEX_QUERY =
+      OPERATE_NAMESPACE + "import.index.query";
+  public static final String TIMER_NAME_IMPORT_PROCESS_BATCH =
+      OPERATE_NAMESPACE + "import.process.batch";
   public static final String TIMER_NAME_IMPORT_TIME = OPERATE_NAMESPACE + "import.time";
-  public static final String TIMER_NAME_IMPORT_JOB_SCHEDULED_TIME = OPERATE_NAMESPACE + "import.job.scheduled";
-  public static final String TIMER_NAME_IMPORT_PROCESSING_DURATION = OPERATE_NAMESPACE + "import.processing.duration";
-  public static final String TIMER_NAME_IMPORT_POSITION_UPDATE = OPERATE_NAMESPACE + "import.position.update";
+  public static final String TIMER_NAME_IMPORT_JOB_SCHEDULED_TIME =
+      OPERATE_NAMESPACE + "import.job.scheduled";
+  public static final String TIMER_NAME_IMPORT_PROCESSING_DURATION =
+      OPERATE_NAMESPACE + "import.processing.duration";
+  public static final String TIMER_NAME_IMPORT_POSITION_UPDATE =
+      OPERATE_NAMESPACE + "import.position.update";
   public static final String TIMER_NAME_ARCHIVER_QUERY = OPERATE_NAMESPACE + "archiver.query";
-  public static final String TIMER_NAME_ARCHIVER_REINDEX_QUERY = OPERATE_NAMESPACE + "archiver.reindex.query";
-  public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY = OPERATE_NAMESPACE + "archiver.delete.query";
-
+  public static final String TIMER_NAME_ARCHIVER_REINDEX_QUERY =
+      OPERATE_NAMESPACE + "archiver.reindex.query";
+  public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY =
+      OPERATE_NAMESPACE + "archiver.delete.query";
 
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
-  public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI = "events.processed.finished.process.instances";
+  public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI =
+      "events.processed.finished.process.instances";
   public static final String COUNTER_NAME_COMMANDS = "commands";
   public static final String COUNTER_NAME_ARCHIVED = "archived.process.instances";
-  //Gauges:
+  // Gauges:
   public static final String GAUGE_IMPORT_QUEUE_SIZE = "import.queue.size";
   public static final String GAUGE_BPMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.bpmn.count";
   public static final String GAUGE_DMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.dmn.count";
@@ -56,39 +62,39 @@ public class Metrics {
   // -----
   //  Keys:
   public static final String TAG_KEY_NAME = "name",
-                             TAG_KEY_TYPE = "type",
-                             TAG_KEY_PARTITION = "partition",
-                             TAG_KEY_STATUS = "status",
-                             TAG_KEY_ORGANIZATIONID = "organizationId";
+      TAG_KEY_TYPE = "type",
+      TAG_KEY_PARTITION = "partition",
+      TAG_KEY_STATUS = "status",
+      TAG_KEY_ORGANIZATIONID = "organizationId";
   //  Values:
   public static final String TAG_VALUE_PROCESSINSTANCES = "processInstances",
-                             TAG_VALUE_CORESTATISTICS = "corestatistics",
-                             TAG_VALUE_SUCCEEDED = "succeeded",
-                             TAG_VALUE_FAILED = "failed";
-  @Autowired
-  private MeterRegistry registry;
+      TAG_VALUE_CORESTATISTICS = "corestatistics",
+      TAG_VALUE_SUCCEEDED = "succeeded",
+      TAG_VALUE_FAILED = "failed";
+  @Autowired private MeterRegistry registry;
 
   /**
-   * Record counts for given name and tags. Tags are further attributes that gives the possibility to categorize the counter.
-   * They will be given as varargs key value pairs. For example: "type":"incident".
-   * Original documentation for tags: <a href="https://micrometer.io/docs/concepts#_tag_naming">Tags naming</a>
-   * 
+   * Record counts for given name and tags. Tags are further attributes that gives the possibility
+   * to categorize the counter. They will be given as varargs key value pairs. For example:
+   * "type":"incident". Original documentation for tags: <a
+   * href="https://micrometer.io/docs/concepts#_tag_naming">Tags naming</a>
+   *
    * @param name - Name of counter
-   * @param count - Number to count 
+   * @param count - Number to count
    * @param tags - key value pairs of tags as Strings - The size of tags varargs must be even.
    */
-  public void recordCounts(String name, long count, String ... tags) {
+  public void recordCounts(String name, long count, String... tags) {
     registry.counter(OPERATE_NAMESPACE + name, tags).increment(count);
   }
 
-  public <T> void registerGauge(String name, T stateObject, ToDoubleFunction<T> valueFunction,
-      String... tags) {
+  public <T> void registerGauge(
+      String name, T stateObject, ToDoubleFunction<T> valueFunction, String... tags) {
     Gauge.builder(OPERATE_NAMESPACE + name, stateObject, valueFunction)
         .tags(tags)
         .register(registry);
   }
 
-  public void registerGaugeSupplier(String name, Supplier<Number> gaugeSupplier, String ... tags){
+  public void registerGaugeSupplier(String name, Supplier<Number> gaugeSupplier, String... tags) {
     Gauge.builder(name, gaugeSupplier).tags(tags).register(registry);
   }
 
@@ -99,5 +105,4 @@ public class Metrics {
   public Timer getTimer(String name, String... tags) {
     return registry.timer(name, tags);
   }
-
 }

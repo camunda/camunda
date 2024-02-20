@@ -33,7 +33,7 @@ public class OAuthClientProperties {
   }
 
   public String getScope() {
-    if (scope == null || scope.isEmpty()){
+    if (scope == null || scope.isEmpty()) {
       return clusterId;
     }
     return scope;
@@ -42,5 +42,4 @@ public class OAuthClientProperties {
   public void setScope(final String scope) {
     this.scope = scope;
   }
-
 }

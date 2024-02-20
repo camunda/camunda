@@ -17,9 +17,11 @@ import org.springframework.stereotype.Component;
 @Component("schemaManager")
 @Conditional(ElasticsearchCondition.class)
 @Profile("test")
-public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager implements TestSchemaManager {
+public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager
+    implements TestSchemaManager {
 
-  private static final Logger logger = LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
 
   @Override
   public void deleteSchema() {

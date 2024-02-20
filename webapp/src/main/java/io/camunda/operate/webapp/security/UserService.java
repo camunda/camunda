@@ -7,19 +7,16 @@
 package io.camunda.operate.webapp.security;
 
 import io.camunda.operate.webapp.rest.dto.UserDto;
-import io.camunda.operate.webapp.rest.exception.UserNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 public interface UserService<T extends Authentication> {
-    Logger logger = LoggerFactory.getLogger(UserService.class);
+  Logger logger = LoggerFactory.getLogger(UserService.class);
+
   UserDto getCurrentUser();
 
   UserDto createUserDtoFrom(final T authentication);
 
   String getUserToken();
-
 }

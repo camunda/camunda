@@ -6,8 +6,8 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.schema.templates.VariableTemplate.FULL_VALUE;
 import static io.camunda.operate.schema.templates.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
+import static io.camunda.operate.schema.templates.VariableTemplate.FULL_VALUE;
 import static io.camunda.operate.schema.templates.VariableTemplate.NAME;
 import static io.camunda.operate.schema.templates.VariableTemplate.SCOPE_KEY;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
@@ -47,26 +47,24 @@ import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
-public class VariableReader extends AbstractReader implements io.camunda.operate.webapp.reader.VariableReader {
+public class VariableReader extends AbstractReader
+    implements io.camunda.operate.webapp.reader.VariableReader {
 
   private static final Logger logger = LoggerFactory.getLogger(VariableReader.class);
 
-  @Autowired
-  private VariableTemplate variableTemplate;
+  @Autowired private VariableTemplate variableTemplate;
 
-  @Autowired
-  private OperationReader operationReader;
+  @Autowired private OperationReader operationReader;
 
-  @Autowired
-  private OperateProperties operateProperties;
+  @Autowired private OperateProperties operateProperties;
 
   @Override
-  public List<VariableDto> getVariables(final String processInstanceId,
-                                        VariableRequestDto request) {
+  public List<VariableDto> getVariables(
+      final String processInstanceId, VariableRequestDto request) {
     List<VariableDto> response = queryVariables(processInstanceId, request);
 
-    //query one additional instance
-    if (request.getSearchAfterOrEqual() != null || request.getSearchBeforeOrEqual() != null)  {
+    // query one additional instance
+    if (request.getSearchAfterOrEqual() != null || request.getSearchBeforeOrEqual() != null) {
       adjustResponse(response, processInstanceId, request);
     }
 
@@ -115,24 +113,26 @@ public class VariableReader extends AbstractReader implements io.camunda.operate
       variableName = (String) request.getSearchBeforeOrEqual(objectMapper)[0];
     }
 
-    VariableRequestDto newRequest = request.createCopy()
-        .setSearchAfter(null)
-        .setSearchAfterOrEqual(null)
-        .setSearchBefore(null)
-        .setSearchBeforeOrEqual(null);
+    VariableRequestDto newRequest =
+        request
+            .createCopy()
+            .setSearchAfter(null)
+            .setSearchAfterOrEqual(null)
+            .setSearchBefore(null)
+            .setSearchBeforeOrEqual(null);
 
     final List<VariableDto> entities = queryVariables(processInstanceId, newRequest, variableName);
     if (entities.size() > 0) {
       final VariableDto entity = entities.get(0);
       entity.setIsFirst(false); // this was not the original query
       if (request.getSearchAfterOrEqual() != null) {
-        //insert at the beginning of the list and remove the last element
+        // insert at the beginning of the list and remove the last element
         if (request.getPageSize() != null && response.size() == request.getPageSize()) {
           response.remove(response.size() - 1);
         }
         response.add(0, entity);
       } else if (request.getSearchBeforeOrEqual() != null) {
-        //insert at the end of the list and remove the first element
+        // insert at the end of the list and remove the first element
         if (request.getPageSize() != null && response.size() == request.getPageSize()) {
           response.remove(0);
         }
@@ -163,35 +163,40 @@ public class VariableReader extends AbstractReader implements io.camunda.operate
     final ConstantScoreQueryBuilder query =
         constantScoreQuery(joinWithAnd(processInstanceKeyQuery, scopeKeyQuery, varNameQ));
 
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-        .fetchSource(null, FULL_VALUE);
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder().query(query).fetchSource(null, FULL_VALUE);
 
     applySorting(searchSourceBuilder, request);
 
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
-            .source(searchSourceBuilder);
+        ElasticsearchUtil.createSearchRequest(variableTemplate, ALL).source(searchSourceBuilder);
     try {
       SearchResponse response = tenantAwareClient.search(searchRequest);
 
-      List<VariableEntity> variableEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(),
-          (sh) -> {
-            VariableEntity entity = ElasticsearchUtil.fromSearchHit(sh.getSourceAsString(), objectMapper, VariableEntity.class);
-            entity.setSortValues(sh.getSortValues());
-            return entity;
-          });
+      List<VariableEntity> variableEntities =
+          ElasticsearchUtil.mapSearchHits(
+              response.getHits().getHits(),
+              (sh) -> {
+                VariableEntity entity =
+                    ElasticsearchUtil.fromSearchHit(
+                        sh.getSourceAsString(), objectMapper, VariableEntity.class);
+                entity.setSortValues(sh.getSortValues());
+                return entity;
+              });
 
       final Map<String, List<OperationEntity>> operations =
-          operationReader.getUpdateOperationsPerVariableName(Long.valueOf(processInstanceId), scopeKey);
+          operationReader.getUpdateOperationsPerVariableName(
+              Long.valueOf(processInstanceId), scopeKey);
       final List<VariableDto> variables =
           VariableDto.createFrom(
               variableEntities,
               operations,
-              operateProperties.getImporter().getVariableSizeThreshold(), objectMapper);
+              operateProperties.getImporter().getVariableSizeThreshold(),
+              objectMapper);
 
       if (variables.size() > 0) {
         if (request.getSearchBefore() != null || request.getSearchBeforeOrEqual() != null) {
-          //in this case we were querying for size+1 results
+          // in this case we were querying for size+1 results
           if (variables.size() <= request.getPageSize()) {
             // last task will be the first in the whole list
             variables.get(variables.size() - 1).setIsFirst(true);
@@ -212,25 +217,24 @@ public class VariableReader extends AbstractReader implements io.camunda.operate
     }
   }
 
-  private void applySorting(final SearchSourceBuilder searchSourceBuilder,
-      final VariableRequestDto request) {
+  private void applySorting(
+      final SearchSourceBuilder searchSourceBuilder, final VariableRequestDto request) {
     final boolean directSorting =
-        request.getSearchAfter() != null || request.getSearchAfterOrEqual() != null
+        request.getSearchAfter() != null
+            || request.getSearchAfterOrEqual() != null
             || (request.getSearchBefore() == null && request.getSearchBeforeOrEqual() == null);
 
-    if (directSorting) { //this sorting is also the default one for 1st page
-      searchSourceBuilder
-          .sort(NAME, SortOrder.ASC);
+    if (directSorting) { // this sorting is also the default one for 1st page
+      searchSourceBuilder.sort(NAME, SortOrder.ASC);
       if (request.getSearchAfter() != null) {
         searchSourceBuilder.searchAfter(request.getSearchAfter(objectMapper));
       } else if (request.getSearchAfterOrEqual() != null) {
         searchSourceBuilder.searchAfter(request.getSearchAfterOrEqual(objectMapper));
       }
       searchSourceBuilder.size(request.getPageSize());
-    } else { //searchBefore != null
-      //reverse sorting
-      searchSourceBuilder
-          .sort(NAME, SortOrder.DESC);
+    } else { // searchBefore != null
+      // reverse sorting
+      searchSourceBuilder.sort(NAME, SortOrder.DESC);
       if (request.getSearchBefore() != null) {
         searchSourceBuilder.searchAfter(request.getSearchBefore(objectMapper));
       } else if (request.getSearchBeforeOrEqual() != null) {
@@ -243,20 +247,29 @@ public class VariableReader extends AbstractReader implements io.camunda.operate
   @Override
   public VariableDto getVariable(final String id) {
     final IdsQueryBuilder idsQ = idsQuery().addIds(id);
-    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
-        .source(new SearchSourceBuilder()
-            .query(idsQ));
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
+            .source(new SearchSourceBuilder().query(idsQ));
     try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);;
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
+      ;
       if (response.getHits().getTotalHits().value != 1) {
         throw new NotFoundException(String.format("Variable with id %s not found.", id));
       }
-      final VariableEntity variableEntity = fromSearchHit(
-          response.getHits().getHits()[0].getSourceAsString(), objectMapper, VariableEntity.class);
-      return VariableDto.createFrom(variableEntity, null, true,
-          operateProperties.getImporter().getVariableSizeThreshold(), objectMapper);
+      final VariableEntity variableEntity =
+          fromSearchHit(
+              response.getHits().getHits()[0].getSourceAsString(),
+              objectMapper,
+              VariableEntity.class);
+      return VariableDto.createFrom(
+          variableEntity,
+          null,
+          true,
+          operateProperties.getImporter().getVariableSizeThreshold(),
+          objectMapper);
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining variable: %s", e.getMessage());
+      final String message =
+          String.format("Exception occurred, while obtaining variable: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
@@ -264,7 +277,7 @@ public class VariableReader extends AbstractReader implements io.camunda.operate
 
   @Override
   public VariableDto getVariableByName(
-          final String processInstanceId, final String scopeId, final String variableName) {
+      final String processInstanceId, final String scopeId, final String variableName) {
 
     final TermQueryBuilder processInstanceIdQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
     final TermQueryBuilder scopeIdQ = termQuery(SCOPE_KEY, scopeId);
@@ -278,13 +291,20 @@ public class VariableReader extends AbstractReader implements io.camunda.operate
                         constantScoreQuery(joinWithAnd(processInstanceIdQ, scopeIdQ, varNameQ))));
 
     try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);;
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
+      ;
       if (response.getHits().getTotalHits().value > 0) {
-        final VariableEntity variableEntity = ElasticsearchUtil
-            .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(),
-                objectMapper, VariableEntity.class);
-        return VariableDto.createFrom(variableEntity, null, true,
-            operateProperties.getImporter().getVariableSizeThreshold(), objectMapper);
+        final VariableEntity variableEntity =
+            ElasticsearchUtil.fromSearchHit(
+                response.getHits().getHits()[0].getSourceAsString(),
+                objectMapper,
+                VariableEntity.class);
+        return VariableDto.createFrom(
+            variableEntity,
+            null,
+            true,
+            operateProperties.getImporter().getVariableSizeThreshold(),
+            objectMapper);
       } else {
         return null;
       }
@@ -297,5 +317,4 @@ public class VariableReader extends AbstractReader implements io.camunda.operate
       throw new OperateRuntimeException(message, e);
     }
   }
-
 }

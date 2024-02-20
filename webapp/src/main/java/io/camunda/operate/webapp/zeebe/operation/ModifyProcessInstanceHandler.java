@@ -6,6 +6,4 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-public interface ModifyProcessInstanceHandler extends OperationHandler {
-
-}
+public interface ModifyProcessInstanceHandler extends OperationHandler {}

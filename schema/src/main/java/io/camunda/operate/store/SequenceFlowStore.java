@@ -7,7 +7,6 @@
 package io.camunda.operate.store;
 
 import io.camunda.operate.entities.SequenceFlowEntity;
-
 import java.util.List;
 
 public interface SequenceFlowStore {

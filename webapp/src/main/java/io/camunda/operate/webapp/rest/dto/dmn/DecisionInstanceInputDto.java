@@ -10,8 +10,8 @@ import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
 import java.util.Objects;
 
-public class DecisionInstanceInputDto implements
-    CreatableFromEntity<DecisionInstanceInputDto, DecisionInstanceInputEntity> {
+public class DecisionInstanceInputDto
+    implements CreatableFromEntity<DecisionInstanceInputDto, DecisionInstanceInputEntity> {
 
   private String id;
   private String name;
@@ -60,9 +60,9 @@ public class DecisionInstanceInputDto implements
       return false;
     }
     final DecisionInstanceInputDto that = (DecisionInstanceInputDto) o;
-    return Objects.equals(id, that.id) &&
-        Objects.equals(name, that.name) &&
-        Objects.equals(value, that.value);
+    return Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value);
   }
 
   @Override

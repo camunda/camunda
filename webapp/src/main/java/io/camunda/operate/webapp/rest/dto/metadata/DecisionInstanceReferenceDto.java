@@ -40,8 +40,8 @@ public class DecisionInstanceReferenceDto {
       return false;
     }
     final DecisionInstanceReferenceDto that = (DecisionInstanceReferenceDto) o;
-    return Objects.equals(instanceId, that.instanceId) &&
-        Objects.equals(decisionName, that.decisionName);
+    return Objects.equals(instanceId, that.instanceId)
+        && Objects.equals(decisionName, that.decisionName);
   }
 
   @Override

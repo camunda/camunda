@@ -6,6 +6,12 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -20,33 +26,24 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.core.SearchRequest;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class OpensearchSequenceFlowDaoTest {
 
-  @Mock
-  private OpensearchQueryDSLWrapper mockQueryWrapper;
+  @Mock private OpensearchQueryDSLWrapper mockQueryWrapper;
 
-  @Mock
-  private OpensearchRequestDSLWrapper mockRequestWrapper;
+  @Mock private OpensearchRequestDSLWrapper mockRequestWrapper;
 
-  @Mock
-  private SequenceFlowTemplate mockSequenceFlowIndex;
+  @Mock private SequenceFlowTemplate mockSequenceFlowIndex;
 
-  @Mock
-  private RichOpenSearchClient mockOpensearchClient;
+  @Mock private RichOpenSearchClient mockOpensearchClient;
 
   private OpensearchSequenceFlowDao underTest;
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchSequenceFlowDao(mockQueryWrapper, mockRequestWrapper,
-        mockOpensearchClient, mockSequenceFlowIndex);
+    underTest =
+        new OpensearchSequenceFlowDao(
+            mockQueryWrapper, mockRequestWrapper, mockOpensearchClient, mockSequenceFlowIndex);
   }
 
   @Test
@@ -79,8 +76,12 @@ public class OpensearchSequenceFlowDaoTest {
   @Test
   public void testBuildFilteringWithValidFields() {
     SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    SequenceFlow filter = new SequenceFlow().setId("id").setActivityId("activity_id").setTenantId("tenant")
-        .setProcessInstanceKey(1L);
+    SequenceFlow filter =
+        new SequenceFlow()
+            .setId("id")
+            .setActivityId("activity_id")
+            .setTenantId("tenant")
+            .setProcessInstanceKey(1L);
 
     Query<SequenceFlow> inputQuery = new Query<SequenceFlow>().setFilter(filter);
 
@@ -90,6 +91,7 @@ public class OpensearchSequenceFlowDaoTest {
     verify(mockQueryWrapper, times(1)).term(SequenceFlow.ID, filter.getId());
     verify(mockQueryWrapper, times(1)).term(SequenceFlow.ACTIVITY_ID, filter.getActivityId());
     verify(mockQueryWrapper, times(1)).term(SequenceFlow.TENANT_ID, filter.getTenantId());
-    verify(mockQueryWrapper, times(1)).term(SequenceFlow.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey());
+    verify(mockQueryWrapper, times(1))
+        .term(SequenceFlow.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey());
   }
 }

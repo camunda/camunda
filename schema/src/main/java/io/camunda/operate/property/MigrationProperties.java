@@ -19,14 +19,15 @@ public class MigrationProperties {
   private static final int DEFAULT_REINDEX_BATCH_SIZE = 5_000;
   private static final int DEFAULT_SCRIPT_PARAMS_COUNT = 1_000;
   private static final int DEFAULT_THREADS_COUNT = 5;
-  private static final int DEFAULT_SCROLL_KEEP_ALIVE = 20 * 60 * 1000; // 20 minutes TimeValue.timeValueMinutes(20);
+  private static final int DEFAULT_SCROLL_KEEP_ALIVE =
+      20 * 60 * 1000; // 20 minutes TimeValue.timeValueMinutes(20);
 
   private boolean migrationEnabled = true;
   private boolean deleteSrcSchema = true;
 
-  @Deprecated   //not used
+  @Deprecated // not used
   private String sourceVersion;
-  @Deprecated   //nor used
+  @Deprecated // nor used
   private String destinationVersion;
 
   private int threadsCount = DEFAULT_THREADS_COUNT;
@@ -68,7 +69,7 @@ public class MigrationProperties {
     return this;
   }
 
-  public MigrationProperties setDeleteSrcSchema(boolean deleteSrcSchema){
+  public MigrationProperties setDeleteSrcSchema(boolean deleteSrcSchema) {
     this.deleteSrcSchema = deleteSrcSchema;
     return this;
   }
@@ -83,7 +84,9 @@ public class MigrationProperties {
 
   public MigrationProperties setReindexBatchSize(int reindexBatchSize) {
     if (reindexBatchSize < 1 || reindexBatchSize > 10_000) {
-      throw new OperateRuntimeException(String.format("Reindex batch size must be between 1 and 10000. Given was %d", reindexBatchSize));
+      throw new OperateRuntimeException(
+          String.format(
+              "Reindex batch size must be between 1 and 10000. Given was %d", reindexBatchSize));
     }
     this.reindexBatchSize = reindexBatchSize;
     return this;
@@ -103,8 +106,9 @@ public class MigrationProperties {
   }
 
   public MigrationProperties setSlices(int slices) {
-    if (slices < 0 ) {
-      throw new OperateRuntimeException(String.format("Slices must be positive. Given was %d", slices));
+    if (slices < 0) {
+      throw new OperateRuntimeException(
+          String.format("Slices must be positive. Given was %d", slices));
     }
     this.slices = slices;
     return this;

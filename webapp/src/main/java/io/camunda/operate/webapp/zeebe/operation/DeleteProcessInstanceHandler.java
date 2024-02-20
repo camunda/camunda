@@ -13,26 +13,22 @@ import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
-import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-
+import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-/**
- * Operation handler to delete process instances.
- */
+
+/** Operation handler to delete process instances. */
 @Component
-public class DeleteProcessInstanceHandler extends AbstractOperationHandler implements OperationHandler{
+public class DeleteProcessInstanceHandler extends AbstractOperationHandler
+    implements OperationHandler {
 
-  @Autowired
-  private ProcessInstanceReader processInstanceReader;
+  @Autowired private ProcessInstanceReader processInstanceReader;
 
-  @Autowired
-  private ProcessInstanceWriter processInstanceWriter;
+  @Autowired private ProcessInstanceWriter processInstanceWriter;
 
-  @Autowired
-  private OperationsManager operationsManager;
+  @Autowired private OperationsManager operationsManager;
 
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {

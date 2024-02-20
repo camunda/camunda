@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -49,7 +48,9 @@ public class DecisionInstanceInput {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DecisionInstanceInput that = (DecisionInstanceInput) o;
-    return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(value, that.value);
+    return Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value);
   }
 
   @Override
@@ -59,10 +60,16 @@ public class DecisionInstanceInput {
 
   @Override
   public String toString() {
-    return "DecisionInstanceInput{" +
-        "id='" + id + '\'' +
-        ", name='" + name + '\'' +
-        ", value='" + value + '\'' +
-        '}';
+    return "DecisionInstanceInput{"
+        + "id='"
+        + id
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", value='"
+        + value
+        + '\''
+        + '}';
   }
 }

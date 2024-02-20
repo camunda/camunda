@@ -9,8 +9,7 @@ package io.camunda.operate.webapp.api.v1.dao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
-public interface FlowNodeInstanceDao extends
-    SearchableDao<FlowNodeInstance> {
+public interface FlowNodeInstanceDao extends SearchableDao<FlowNodeInstance> {
 
   FlowNodeInstance byKey(Long key) throws APIException;
 }

@@ -6,25 +6,23 @@
  */
 package io.camunda.operate.data;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import jakarta.annotation.PreDestroy;
-
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
-import io.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import io.camunda.zeebe.client.ZeebeClient;
-
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 public abstract class AbstractDataGenerator implements DataGenerator {
 
@@ -32,14 +30,11 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   private boolean shutdown = false;
 
-  @Autowired
-  protected ZeebeClient client;
+  @Autowired protected ZeebeClient client;
 
-  @Autowired
-  private ZeebeStore zeebeStore;
+  @Autowired private ZeebeStore zeebeStore;
 
-  @Autowired
-  protected OperateProperties operateProperties;
+  @Autowired protected OperateProperties operateProperties;
 
   protected boolean manuallyCalled = false;
 
@@ -49,7 +44,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   public void shutdown() {
     logger.info("Shutdown DataGenerator");
     shutdown = true;
-    if(scheduler!=null && !scheduler.isShutdown()) {
+    if (scheduler != null && !scheduler.isShutdown()) {
       scheduler.shutdown();
       try {
         if (!scheduler.awaitTermination(200, TimeUnit.MILLISECONDS)) {
@@ -63,17 +58,21 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   @Override
   public void createZeebeDataAsync(boolean manuallyCalled) {
-    scheduler.execute(() -> {
-      Boolean zeebeDataCreated = null;
-      while (zeebeDataCreated == null && !shutdown) {
-        try {
-          zeebeDataCreated = createZeebeData(manuallyCalled);
-        } catch (Exception ex) {
-          logger.error(String.format("Error occurred when creating demo data: %s. Retrying...", ex.getMessage()), ex);
-          sleepFor(2000);
-        }
-      }
-    });
+    scheduler.execute(
+        () -> {
+          Boolean zeebeDataCreated = null;
+          while (zeebeDataCreated == null && !shutdown) {
+            try {
+              zeebeDataCreated = createZeebeData(manuallyCalled);
+            } catch (Exception ex) {
+              logger.error(
+                  String.format(
+                      "Error occurred when creating demo data: %s. Retrying...", ex.getMessage()),
+                  ex);
+              sleepFor(2000);
+            }
+          }
+        });
   }
 
   public boolean createZeebeData(boolean manuallyCalled) {
@@ -87,10 +86,12 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   }
 
   public boolean shouldCreateData(boolean manuallyCalled) {
-    if (!manuallyCalled) {    //when called manually, always create the data
-      boolean exists = zeebeStore.zeebeIndicesExists(operateProperties.getZeebeElasticsearch().getPrefix() + "*");
+    if (!manuallyCalled) { // when called manually, always create the data
+      boolean exists =
+          zeebeStore.zeebeIndicesExists(
+              operateProperties.getZeebeElasticsearch().getPrefix() + "*");
       if (exists) {
-        //data already exists
+        // data already exists
         logger.debug("Data already exists in Zeebe.");
         return false;
       }
@@ -99,38 +100,43 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   }
 
   protected JobWorker progressSimpleTask(String taskType) {
-    return client.newWorker()
+    return client
+        .newWorker()
         .jobType(taskType)
-        .handler((jobClient, job) ->
-        {
-          final int scenarioCount = ThreadLocalRandom.current().nextInt(3);
-          switch (scenarioCount) {
-          case 0:
-            //timeout
-            break;
-          case 1:
-            //successfully complete task
-            jobClient.newCompleteCommand(job.getKey()).send().join();
-            break;
-          case 2:
-            //fail task -> create incident
-            jobClient.newFailCommand(job.getKey()).retries(0).send().join();
-            break;
-          }
-        })
+        .handler(
+            (jobClient, job) -> {
+              final int scenarioCount = ThreadLocalRandom.current().nextInt(3);
+              switch (scenarioCount) {
+                case 0:
+                  // timeout
+                  break;
+                case 1:
+                  // successfully complete task
+                  jobClient.newCompleteCommand(job.getKey()).send().join();
+                  break;
+                case 2:
+                  // fail task -> create incident
+                  jobClient.newFailCommand(job.getKey()).retries(0).send().join();
+                  break;
+              }
+            })
         .name("operate")
         .timeout(Duration.ofSeconds(UserTestDataGenerator.JOB_WORKER_TIMEOUT))
         .open();
   }
 
   protected JobWorker progressSimpleTask(String taskType, int retriesLeft) {
-    return client.newWorker()
-      .jobType(taskType)
-      .handler((jobClient, job) -> jobClient.newFailCommand(job.getKey()).retries(retriesLeft).send().join())
-      .name("operate")
-      .timeout(Duration.ofSeconds(UserTestDataGenerator.JOB_WORKER_TIMEOUT))
-      .open();
+    return client
+        .newWorker()
+        .jobType(taskType)
+        .handler(
+            (jobClient, job) ->
+                jobClient.newFailCommand(job.getKey()).retries(retriesLeft).send().join())
+        .name("operate")
+        .timeout(Duration.ofSeconds(UserTestDataGenerator.JOB_WORKER_TIMEOUT))
+        .open();
   }
+
   protected String getTenant(String tenantId) {
     if (operateProperties.getMultiTenancy().isEnabled()) {
       return tenantId;

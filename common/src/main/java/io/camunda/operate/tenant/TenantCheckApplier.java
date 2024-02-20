@@ -9,5 +9,4 @@ package io.camunda.operate.tenant;
 public interface TenantCheckApplier<T> {
 
   T apply(final T searchRequest);
-
 }

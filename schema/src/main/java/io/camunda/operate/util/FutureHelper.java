@@ -7,12 +7,12 @@
 package io.camunda.operate.util;
 
 import io.micrometer.core.instrument.Timer;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 public class FutureHelper {
-  public static <R> CompletableFuture<R> withTimer(Timer timer, Supplier<CompletableFuture<R>> supplier){
+  public static <R> CompletableFuture<R> withTimer(
+      Timer timer, Supplier<CompletableFuture<R>> supplier) {
     final var t = Timer.start();
     return supplier.get().whenComplete((response, e) -> t.stop(timer));
   }

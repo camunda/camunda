@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.property;
 
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -13,11 +14,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-/**
- * This class contains all project configuration parameters.
- */
+/** This class contains all project configuration parameters. */
 @Component
 @Configuration
 @ConfigurationProperties(OperateProperties.PREFIX)
@@ -37,25 +34,20 @@ public class OperateProperties {
   private boolean rfc3339ApiDateFormat = false;
 
   private boolean persistentSessionsEnabled = false;
-  /**
-   * Indicates, whether CSRF prevention is enabled.
-   */
-  @Deprecated
-  private boolean csrfPreventionEnabled = true;
 
-  /**
-   * Standard user data
-   */
+  /** Indicates, whether CSRF prevention is enabled. */
+  @Deprecated private boolean csrfPreventionEnabled = true;
+
+  /** Standard user data */
   private String userId = "demo";
+
   private String displayName = "demo";
 
   private String password = "demo";
 
   private List<String> roles = List.of("OWNER");
 
-  /**
-   * Maximum size of batch operation.
-   */
+  /** Maximum size of batch operation. */
   private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
 
   private boolean enterprise = false;
@@ -77,41 +69,31 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private ZeebeOpensearchProperties zeebeOpensearch = new ZeebeOpensearchProperties();
 
-  @NestedConfigurationProperty
-  private ZeebeProperties zeebe = new ZeebeProperties();
+  @NestedConfigurationProperty private ZeebeProperties zeebe = new ZeebeProperties();
 
   @NestedConfigurationProperty
   private OperationExecutorProperties operationExecutor = new OperationExecutorProperties();
 
-  @NestedConfigurationProperty
-  private ImportProperties importer = new ImportProperties();
+  @NestedConfigurationProperty private ImportProperties importer = new ImportProperties();
 
-  @NestedConfigurationProperty
-  private ArchiverProperties archiver = new ArchiverProperties();
+  @NestedConfigurationProperty private ArchiverProperties archiver = new ArchiverProperties();
 
   @NestedConfigurationProperty
   private ClusterNodeProperties clusterNode = new ClusterNodeProperties();
 
-  @NestedConfigurationProperty
-  private LdapProperties ldap = new LdapProperties();
+  @NestedConfigurationProperty private LdapProperties ldap = new LdapProperties();
 
-  @NestedConfigurationProperty
-  private Auth0Properties auth0 = new Auth0Properties();
+  @NestedConfigurationProperty private Auth0Properties auth0 = new Auth0Properties();
 
-  @NestedConfigurationProperty
-  private IdentityProperties identity = new IdentityProperties();
+  @NestedConfigurationProperty private IdentityProperties identity = new IdentityProperties();
 
-  @NestedConfigurationProperty
-  private AlertingProperties alert = new AlertingProperties();
+  @NestedConfigurationProperty private AlertingProperties alert = new AlertingProperties();
 
-  @NestedConfigurationProperty
-  private CloudProperties cloud = new CloudProperties();
+  @NestedConfigurationProperty private CloudProperties cloud = new CloudProperties();
 
-  @NestedConfigurationProperty
-  private OAuthClientProperties client = new OAuthClientProperties();
+  @NestedConfigurationProperty private OAuthClientProperties client = new OAuthClientProperties();
 
-  @NestedConfigurationProperty
-  private BackupProperties backup = new BackupProperties();
+  @NestedConfigurationProperty private BackupProperties backup = new BackupProperties();
 
   @NestedConfigurationProperty
   private WebSecurityProperties webSecurity = new WebSecurityProperties();
@@ -188,6 +170,7 @@ public class OperateProperties {
   public void setZeebeOpensearch(ZeebeOpensearchProperties zeebeOpensearch) {
     this.zeebeOpensearch = zeebeOpensearch;
   }
+
   public ZeebeProperties getZeebe() {
     return zeebe;
   }
@@ -196,9 +179,13 @@ public class OperateProperties {
     this.zeebe = zeebe;
   }
 
-  public LdapProperties getLdap(){ return ldap; }
+  public LdapProperties getLdap() {
+    return ldap;
+  }
 
-  public void setLdap(LdapProperties ldap) {this.ldap = ldap; }
+  public void setLdap(LdapProperties ldap) {
+    this.ldap = ldap;
+  }
 
   public String getUserId() {
     return userId;
@@ -223,6 +210,7 @@ public class OperateProperties {
   public void setPassword(String password) {
     this.password = password;
   }
+
   public OperationExecutorProperties getOperationExecutor() {
     return operationExecutor;
   }
@@ -272,11 +260,11 @@ public class OperateProperties {
     return this;
   }
 
-  public WebSecurityProperties getWebSecurity(){
+  public WebSecurityProperties getWebSecurity() {
     return webSecurity;
   }
 
-  public OperateProperties setWebSecurity(final WebSecurityProperties webSecurity){
+  public OperateProperties setWebSecurity(final WebSecurityProperties webSecurity) {
     this.webSecurity = webSecurity;
     return this;
   }

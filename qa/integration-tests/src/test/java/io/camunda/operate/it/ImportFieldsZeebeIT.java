@@ -9,13 +9,12 @@ package io.camunda.operate.it;
 import static io.camunda.operate.util.ElasticsearchUtil.requestOptionsFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.ArrayList;
-import java.util.Map;
-
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.PayloadUtil;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
+import java.util.ArrayList;
+import java.util.Map;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,11 +26,9 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
 
   private static final Logger logger = LoggerFactory.getLogger(ImportFieldsZeebeIT.class);
 
-  @Autowired
-  private PayloadUtil payloadUtil;
+  @Autowired private PayloadUtil payloadUtil;
 
-  @Autowired
-  private UpdateVariableHandler updateVariableHandler;
+  @Autowired private UpdateVariableHandler updateVariableHandler;
 
   @Before
   public void before() {
@@ -41,7 +38,8 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   // OPE-900
-  // See also: https://discuss.elastic.co/t/error-document-contains-at-least-one-immense-term-in-field/66486
+  // See also:
+  // https://discuss.elastic.co/t/error-document-contains-at-least-one-immense-term-in-field/66486
   public void testVariableValueSizeCanBeHigherThan32KB() throws Exception {
     // having
     //  big json string
@@ -51,22 +49,28 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     tester
-      .deployProcess("single-task.bpmn")
-      .and()
-      .startProcessInstance("process", bigJSONVariablePayload)
-      .waitUntil().processInstanceIsStarted()
-      .and()
-      .waitUntil().variableExists("small")
-      .and().variableExists("large");
+        .deployProcess("single-task.bpmn")
+        .and()
+        .startProcessInstance("process", bigJSONVariablePayload)
+        .waitUntil()
+        .processInstanceIsStarted()
+        .and()
+        .waitUntil()
+        .variableExists("small")
+        .and()
+        .variableExists("large");
 
     // then
-    assertThat(tester.hasVariable("small","\""+variables.get("small").toString()+"\"")).isTrue();
-    assertThat(tester.hasVariable("large","\""+variables.get("large").toString()+"\"")).isTrue();
+    assertThat(tester.hasVariable("small", "\"" + variables.get("small").toString() + "\""))
+        .isTrue();
+    assertThat(tester.hasVariable("large", "\"" + variables.get("large").toString() + "\""))
+        .isTrue();
   }
 
   @Test
   // OPE-900
-  // See also: https://discuss.elastic.co/t/error-document-contains-at-least-one-immense-term-in-field/66486
+  // See also:
+  // https://discuss.elastic.co/t/error-document-contains-at-least-one-immense-term-in-field/66486
   public void testUpdateVariableValueSizeCanBeHigherThan32KB() throws Exception {
     // having
     //  big json string
@@ -75,20 +79,24 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     tester
-      .deployProcess("single-task.bpmn")
-      .and()
-      .startProcessInstance("process", "{\"" + varName + "\": \"smallValue\"}")
-      .waitUntil().processInstanceIsStarted()
-      .and()
-      .waitUntil().variableExists(varName)
-      .updateVariableOperation(varName, bigJSONVariablePayload)
-      .waitUntil().operationIsCompleted();
+        .deployProcess("single-task.bpmn")
+        .and()
+        .startProcessInstance("process", "{\"" + varName + "\": \"smallValue\"}")
+        .waitUntil()
+        .processInstanceIsStarted()
+        .and()
+        .waitUntil()
+        .variableExists(varName)
+        .updateVariableOperation(varName, bigJSONVariablePayload)
+        .waitUntil()
+        .operationIsCompleted();
 
     // then
     assertThat(tester.hasVariable(varName, bigJSONVariablePayload)).isTrue();
   }
 
-  @Test public void testThrottleBatchSize() throws Exception {
+  @Test
+  public void testThrottleBatchSize() throws Exception {
 
     // having
     ElasticsearchUtil.setRequestOptions(requestOptionsFor(1024 * 32 * 10));
@@ -110,7 +118,10 @@ public class ImportFieldsZeebeIT extends OperateZeebeAbstractIT {
     var processInstanceKeys = new ArrayList<Long>();
     for (int i = 0; i < 5; i++) {
       processInstanceKeys.add(
-          tester.startProcessInstance("process", vars.toString()).waitUntil().processInstanceIsStarted()
+          tester
+              .startProcessInstance("process", vars.toString())
+              .waitUntil()
+              .processInstanceIsStarted()
               .getProcessInstanceKey());
     }
 

@@ -6,8 +6,8 @@
  */
 package io.camunda.operate.webapp.rest.dto.metadata;
 
-import java.util.Objects;
 import io.camunda.operate.entities.FlowNodeType;
+import java.util.Objects;
 
 public class FlowNodeMetadataRequestDto {
 
@@ -15,11 +15,10 @@ public class FlowNodeMetadataRequestDto {
   private String flowNodeInstanceId;
   private FlowNodeType flowNodeType;
 
-  public FlowNodeMetadataRequestDto() {
-  }
+  public FlowNodeMetadataRequestDto() {}
 
-  public FlowNodeMetadataRequestDto(final String flowNodeId, final String flowNodeInstanceId,
-      final FlowNodeType flowNodeType) {
+  public FlowNodeMetadataRequestDto(
+      final String flowNodeId, final String flowNodeInstanceId, final FlowNodeType flowNodeType) {
     this.flowNodeId = flowNodeId;
     this.flowNodeInstanceId = flowNodeInstanceId;
     this.flowNodeType = flowNodeType;
@@ -47,8 +46,7 @@ public class FlowNodeMetadataRequestDto {
     return flowNodeType;
   }
 
-  public FlowNodeMetadataRequestDto setFlowNodeType(
-      final FlowNodeType flowNodeType) {
+  public FlowNodeMetadataRequestDto setFlowNodeType(final FlowNodeType flowNodeType) {
     this.flowNodeType = flowNodeType;
     return this;
   }
@@ -62,9 +60,9 @@ public class FlowNodeMetadataRequestDto {
       return false;
     }
     final FlowNodeMetadataRequestDto that = (FlowNodeMetadataRequestDto) o;
-    return Objects.equals(flowNodeId, that.flowNodeId) &&
-        Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId) &&
-        flowNodeType == that.flowNodeType;
+    return Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
+        && flowNodeType == that.flowNodeType;
   }
 
   @Override
@@ -74,10 +72,15 @@ public class FlowNodeMetadataRequestDto {
 
   @Override
   public String toString() {
-    return "FlowNodeMetadataRequestDto{" +
-        "flowNodeId='" + flowNodeId + '\'' +
-        ", flowNodeInstanceId='" + flowNodeInstanceId + '\'' +
-        ", flowNodeType=" + flowNodeType +
-        '}';
+    return "FlowNodeMetadataRequestDto{"
+        + "flowNodeId='"
+        + flowNodeId
+        + '\''
+        + ", flowNodeInstanceId='"
+        + flowNodeInstanceId
+        + '\''
+        + ", flowNodeType="
+        + flowNodeType
+        + '}';
   }
 }

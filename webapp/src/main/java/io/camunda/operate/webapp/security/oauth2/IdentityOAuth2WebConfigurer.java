@@ -6,9 +6,13 @@
  */
 package io.camunda.operate.webapp.security.oauth2;
 
+import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.BaseWebConfigurer.sendJSONErrorMessage;
+
 import io.camunda.identity.sdk.IdentityConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +21,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-
-import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
-import static io.camunda.operate.webapp.security.BaseWebConfigurer.sendJSONErrorMessage;
 
 @Component
 @Profile(IDENTITY_AUTH_PROFILE)
@@ -38,22 +37,23 @@ public class IdentityOAuth2WebConfigurer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityOAuth2WebConfigurer.class);
 
-  @Autowired
-  private Environment env;
+  @Autowired private Environment env;
 
-  @Autowired
-  private IdentityConfiguration identityConfiguration;
+  @Autowired private IdentityConfiguration identityConfiguration;
 
-  @Autowired
-  private IdentityJwt2AuthenticationTokenConverter jwtConverter;
+  @Autowired private IdentityJwt2AuthenticationTokenConverter jwtConverter;
 
   public void configure(HttpSecurity http) throws Exception {
     if (isJWTEnabled()) {
       http.oauth2ResourceServer(
           serverCustomizer ->
-              serverCustomizer.authenticationEntryPoint(this::authenticationFailure)
-                  .jwt(jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)
-                      .jwkSetUri(getJwkSetUriProperty())));
+              serverCustomizer
+                  .authenticationEntryPoint(this::authenticationFailure)
+                  .jwt(
+                      jwtCustomizer ->
+                          jwtCustomizer
+                              .jwtAuthenticationConverter(jwtConverter)
+                              .jwkSetUri(getJwkSetUriProperty())));
       LOGGER.info("Enabled OAuth2 JWT access to Operate API");
     }
   }
@@ -61,15 +61,17 @@ public class IdentityOAuth2WebConfigurer {
   private String getJwkSetUriProperty() {
     String backendUri;
 
-    // If the SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI is present, then it has already been correctly
+    // If the SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI is present, then it has already
+    // been correctly
     // calculated and should be used as-is.
     if (env.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI)) {
       backendUri = env.getProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI);
-      LOGGER.info("Using value in SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI for issuer authentication");
-    }
-    else {
+      LOGGER.info(
+          "Using value in SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI for issuer authentication");
+    } else {
       backendUri = identityConfiguration.getIssuerBackendUrl() + JWKS_PATH;
-      LOGGER.warn("SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI is not present, building issuer authentication uri from issuer backend url.");
+      LOGGER.warn(
+          "SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI is not present, building issuer authentication uri from issuer backend url.");
     }
 
     LOGGER.info("Using {} for issuer authentication", backendUri);
@@ -77,8 +79,11 @@ public class IdentityOAuth2WebConfigurer {
     return backendUri;
   }
 
-  private void authenticationFailure(final HttpServletRequest request,
-      final HttpServletResponse response, final AuthenticationException e) throws IOException {
+  private void authenticationFailure(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException e)
+      throws IOException {
     sendJSONErrorMessage(response, e.getMessage());
   }
 
@@ -86,5 +91,4 @@ public class IdentityOAuth2WebConfigurer {
     return env.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI)
         || env.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI);
   }
-
 }

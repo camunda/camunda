@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.zeebeimport.v8_4.processors;
 
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -15,32 +17,27 @@ import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import java.util.HashSet;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-
 @Component
 public class DecisionZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(
-      DecisionZeebeRecordProcessor.class);
+  private static final Logger logger = LoggerFactory.getLogger(DecisionZeebeRecordProcessor.class);
 
-  private final static Set<String> STATES = new HashSet<>();
+  private static final Set<String> STATES = new HashSet<>();
+
   static {
     STATES.add(ProcessIntent.CREATED.name());
   }
 
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private ObjectMapper objectMapper;
 
-  @Autowired
-  private DecisionIndex decisionIndex;
+  @Autowired private DecisionIndex decisionIndex;
 
   public void processDecisionRecord(Record record, BatchRequest batchRequest)
       throws PersistenceException {
@@ -54,9 +51,12 @@ public class DecisionZeebeRecordProcessor {
   private void persistDecision(final DecisionRecordValue decision, final BatchRequest batchRequest)
       throws PersistenceException {
     final DecisionDefinitionEntity decisionEntity = createEntity(decision);
-    logger.debug("Decision: key {}, decisionId {}", decisionEntity.getKey(),
-        decisionEntity.getDecisionId());
-    batchRequest.addWithId(decisionIndex.getFullQualifiedName(), ConversionUtils.toStringOrNull(decisionEntity.getKey()), decisionEntity);
+    logger.debug(
+        "Decision: key {}, decisionId {}", decisionEntity.getKey(), decisionEntity.getDecisionId());
+    batchRequest.addWithId(
+        decisionIndex.getFullQualifiedName(),
+        ConversionUtils.toStringOrNull(decisionEntity.getKey()),
+        decisionEntity);
   }
 
   private DecisionDefinitionEntity createEntity(DecisionRecordValue decision) {
@@ -70,5 +70,4 @@ public class DecisionZeebeRecordProcessor {
         .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
         .setTenantId(tenantOrDefault(decision.getTenantId()));
   }
-
 }

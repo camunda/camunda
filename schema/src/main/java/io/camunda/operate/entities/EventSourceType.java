@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public enum EventSourceType {
-
   JOB,
   PROCESS_INSTANCE,
   INCIDENT,
@@ -27,9 +26,9 @@ public enum EventSourceType {
     try {
       return EventSourceType.valueOf(valueType);
     } catch (IllegalArgumentException ex) {
-      logger.error("Value type not found for value [{}]. UNKNOWN type will be assigned.", valueType);
+      logger.error(
+          "Value type not found for value [{}]. UNKNOWN type will be assigned.", valueType);
       return UNKNOWN;
     }
   }
-
 }

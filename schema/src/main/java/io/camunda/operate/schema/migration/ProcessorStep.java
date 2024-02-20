@@ -10,16 +10,35 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * A step implemented as elasticsearch ingest processor.<br>
- *
- * For comparing the steps it will be considered: indexName, version, order and content ,not dates and applied marker.
+ * For comparing the steps it will be considered: indexName, version, order and content ,not dates
+ * and applied marker.
  */
 @JsonTypeName("processorStep")
 public class ProcessorStep extends AbstractStep {
 
   @Override
   public String toString() {
-    return "ProcessorStep{" + "content='" + getContent() + '\'' + ", description='" + getDescription() + '\'' + ", createdDate="
-        + getCreatedDate() + ", appliedDate=" + getAppliedDate() + ", indexName='" + getIndexName() + '\'' + ", isApplied="
-        + isApplied() + ", version='" + getVersion() + '\'' + ", order=" + getOrder() + '}';
+    return "ProcessorStep{"
+        + "content='"
+        + getContent()
+        + '\''
+        + ", description='"
+        + getDescription()
+        + '\''
+        + ", createdDate="
+        + getCreatedDate()
+        + ", appliedDate="
+        + getAppliedDate()
+        + ", indexName='"
+        + getIndexName()
+        + '\''
+        + ", isApplied="
+        + isApplied()
+        + ", version='"
+        + getVersion()
+        + '\''
+        + ", order="
+        + getOrder()
+        + '}';
   }
 }

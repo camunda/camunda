@@ -8,22 +8,22 @@ package io.camunda.operate.webapp.security.identity;
 
 import io.camunda.identity.sdk.exception.IdentityException;
 import io.camunda.operate.util.RetryOperation;
-import org.springframework.stereotype.Component;
-
 import java.util.concurrent.TimeUnit;
+import org.springframework.stereotype.Component;
 
 @Component
 public class IdentityRetryService {
 
-  public <T> T requestWithRetry(final RetryOperation.RetryConsumer<T> retryConsumer, final String operationName)
-          throws Exception {
+  public <T> T requestWithRetry(
+      final RetryOperation.RetryConsumer<T> retryConsumer, final String operationName)
+      throws Exception {
     return RetryOperation.<T>newBuilder()
-            .noOfRetry(10)
-            .delayInterval(500, TimeUnit.MILLISECONDS)
-            .retryOn(IdentityException.class)
-            .retryConsumer(retryConsumer)
-            .message(operationName)
-            .build()
-            .retry();
+        .noOfRetry(10)
+        .delayInterval(500, TimeUnit.MILLISECONDS)
+        .retryOn(IdentityException.class)
+        .retryConsumer(retryConsumer)
+        .message(operationName)
+        .build()
+        .retry();
   }
 }

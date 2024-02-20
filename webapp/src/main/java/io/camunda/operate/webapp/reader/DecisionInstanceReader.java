@@ -10,15 +10,13 @@ import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
-
 import java.util.List;
 import java.util.Map;
 
 public interface DecisionInstanceReader {
-    DecisionInstanceDto getDecisionInstance(String decisionInstanceId);
+  DecisionInstanceDto getDecisionInstance(String decisionInstanceId);
 
-    DecisionInstanceListResponseDto queryDecisionInstances(
-            DecisionInstanceListRequestDto request);
+  DecisionInstanceListResponseDto queryDecisionInstances(DecisionInstanceListRequestDto request);
 
-    Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(String decisionInstanceId);
+  Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(String decisionInstanceId);
 }

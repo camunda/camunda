@@ -6,18 +6,17 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
+import static io.camunda.operate.util.LambdaExceptionUtil.rethrowFunction;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
-
-import static io.camunda.operate.util.LambdaExceptionUtil.rethrowFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SortValuesWrapper implements Serializable {
 
@@ -26,8 +25,7 @@ public class SortValuesWrapper implements Serializable {
   public String value;
   public Class valueType;
 
-  public SortValuesWrapper() {
-  }
+  public SortValuesWrapper() {}
 
   public SortValuesWrapper(String value, Class valueType) {
     this.value = value;
@@ -57,8 +55,12 @@ public class SortValuesWrapper implements Serializable {
       return null;
     }
     try {
-      return Arrays.stream(sortValues).map(
-              rethrowFunction(value -> new SortValuesWrapper(objectMapper.writeValueAsString(value), value.getClass())))
+      return Arrays.stream(sortValues)
+          .map(
+              rethrowFunction(
+                  value ->
+                      new SortValuesWrapper(
+                          objectMapper.writeValueAsString(value), value.getClass())))
           .toArray(SortValuesWrapper[]::new);
     } catch (JsonProcessingException e) {
       logger.warn("Unable to serialize sortValues. Error: " + e.getMessage(), e);
@@ -66,13 +68,16 @@ public class SortValuesWrapper implements Serializable {
     }
   }
 
-  public static Object[] convertSortValues(SortValuesWrapper[] sortValuesWrappers, ObjectMapper objectMapper) {
+  public static Object[] convertSortValues(
+      SortValuesWrapper[] sortValuesWrappers, ObjectMapper objectMapper) {
     if (sortValuesWrappers == null) {
       return null;
     }
     try {
       return Arrays.stream(sortValuesWrappers)
-          .map(rethrowFunction(value -> objectMapper.readValue(value.value.getBytes(), value.valueType)))
+          .map(
+              rethrowFunction(
+                  value -> objectMapper.readValue(value.value.getBytes(), value.valueType)))
           .toArray(Object[]::new);
     } catch (IOException e) {
       logger.warn("Unable to deserialize sortValues. Error: " + e.getMessage(), e);
@@ -82,10 +87,8 @@ public class SortValuesWrapper implements Serializable {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     SortValuesWrapper that = (SortValuesWrapper) o;
     return Objects.equals(value, that.value) && Objects.equals(valueType, that.valueType);
   }

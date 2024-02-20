@@ -8,10 +8,9 @@ package io.camunda.operate.util;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
-import org.opensearch.client.opensearch._types.OpenSearchException;
-
 import java.io.IOException;
 import java.util.function.Supplier;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 
 public interface ExceptionHelper {
   static <R> R withPersistenceException(Supplier<R> supplier) throws PersistenceException {
@@ -22,7 +21,8 @@ public interface ExceptionHelper {
     }
   }
 
-  static <R> R withPersistenceException(Supplier<R> supplier, String errorMessage) throws PersistenceException {
+  static <R> R withPersistenceException(Supplier<R> supplier, String errorMessage)
+      throws PersistenceException {
     try {
       return supplier.get();
     } catch (Exception e) {

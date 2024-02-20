@@ -6,6 +6,13 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -15,6 +22,11 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -27,48 +39,36 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class ElasticsearchProcessStoreTest {
 
-  @Mock
-  private ProcessIndex processIndex;
+  @Mock private ProcessIndex processIndex;
 
-  @Mock
-  private ListViewTemplate listViewTemplate;
+  @Mock private ListViewTemplate listViewTemplate;
 
   private List<ProcessInstanceDependant> processInstanceDependantTemplates = new LinkedList<>();
 
-  @Mock
-  private ObjectMapper objectMapper;
+  @Mock private ObjectMapper objectMapper;
 
-  @Mock
-  private RestHighLevelClient esClient;
+  @Mock private RestHighLevelClient esClient;
 
-  @Mock
-  private TenantAwareElasticsearchClient tenantAwareClient;
+  @Mock private TenantAwareElasticsearchClient tenantAwareClient;
 
-  @Mock
-  private OperateProperties operateProperties;
+  @Mock private OperateProperties operateProperties;
 
   private ElasticsearchProcessStore underTest;
 
   @BeforeEach
   public void setup() {
-    underTest = new ElasticsearchProcessStore(processIndex, listViewTemplate, processInstanceDependantTemplates,
-        objectMapper, operateProperties, esClient, tenantAwareClient);
+    underTest =
+        new ElasticsearchProcessStore(
+            processIndex,
+            listViewTemplate,
+            processInstanceDependantTemplates,
+            objectMapper,
+            operateProperties,
+            esClient,
+            tenantAwareClient);
   }
 
   @Test
@@ -171,7 +171,9 @@ public class ElasticsearchProcessStoreTest {
     when(processIndex.getAlias()).thenReturn("processIndexAlias");
     when(tenantAwareClient.search(any())).thenThrow(new IOException());
 
-    assertThrows(OperateRuntimeException.class, () -> underTest.getProcessesGrouped(DEFAULT_TENANT_ID, Set.of("demoProcess")));
+    assertThrows(
+        OperateRuntimeException.class,
+        () -> underTest.getProcessesGrouped(DEFAULT_TENANT_ID, Set.of("demoProcess")));
   }
 
   @Test
@@ -179,8 +181,11 @@ public class ElasticsearchProcessStoreTest {
     when(processIndex.getAlias()).thenReturn("processIndexAlias");
     when(tenantAwareClient.search(any())).thenThrow(new IOException());
 
-    assertThrows(OperateRuntimeException.class, () -> underTest.getProcessesIdsToProcessesWithFields(
-        Set.of("demoProcess", "demoProcess-1"), 10, "name", "bpmnProcessId", "key"));
+    assertThrows(
+        OperateRuntimeException.class,
+        () ->
+            underTest.getProcessesIdsToProcessesWithFields(
+                Set.of("demoProcess", "demoProcess-1"), 10, "name", "bpmnProcessId", "key"));
   }
 
   @Test
@@ -222,7 +227,8 @@ public class ElasticsearchProcessStoreTest {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
     when(tenantAwareClient.search(any())).thenThrow(new IOException());
 
-    assertThrows(OperateRuntimeException.class, () -> underTest.getProcessInstanceListViewByKey(123L));
+    assertThrows(
+        OperateRuntimeException.class, () -> underTest.getProcessInstanceListViewByKey(123L));
   }
 
   @Test
@@ -230,7 +236,8 @@ public class ElasticsearchProcessStoreTest {
     when(listViewTemplate.getFullQualifiedName()).thenReturn("listViewIndexPath");
     when(tenantAwareClient.search(any())).thenThrow(new IOException());
 
-    assertThrows(OperateRuntimeException.class, () -> underTest.getCoreStatistics(Set.of("demoProcess")));
+    assertThrows(
+        OperateRuntimeException.class, () -> underTest.getCoreStatistics(Set.of("demoProcess")));
   }
 
   @Test
@@ -247,7 +254,9 @@ public class ElasticsearchProcessStoreTest {
     when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
     when(tenantAwareClient.search(any())).thenReturn(mockResponse);
 
-    assertThrows(NotFoundException.class, () -> underTest.getProcessInstanceTreePathById("PI_2251799813685251"));
+    assertThrows(
+        NotFoundException.class,
+        () -> underTest.getProcessInstanceTreePathById("PI_2251799813685251"));
   }
 
   @Test
@@ -255,7 +264,9 @@ public class ElasticsearchProcessStoreTest {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
     when(tenantAwareClient.search(any())).thenThrow(new IOException());
 
-    assertThrows(OperateRuntimeException.class, () -> underTest.getProcessInstanceTreePathById("PI_2251799813685251"));
+    assertThrows(
+        OperateRuntimeException.class,
+        () -> underTest.getProcessInstanceTreePathById("PI_2251799813685251"));
   }
 
   @Test
@@ -263,21 +274,29 @@ public class ElasticsearchProcessStoreTest {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
     when(tenantAwareClient.search(any())).thenThrow(new IOException());
 
-    assertThrows(OperateRuntimeException.class, () -> underTest.deleteProcessInstanceFromTreePath("2251799813685251"));
+    assertThrows(
+        OperateRuntimeException.class,
+        () -> underTest.deleteProcessInstanceFromTreePath("2251799813685251"));
   }
 
   @Test
   public void testGetProcessInstancesByProcessAndStatesWithNullStates() {
-    Exception exception = assertThrows(OperateRuntimeException.class, () -> underTest.getProcessInstancesByProcessAndStates(
-        123L, null, 10, null));
-    assertThat(exception.getMessage()).isEqualTo("Parameter 'states' is needed to search by states.");
+    Exception exception =
+        assertThrows(
+            OperateRuntimeException.class,
+            () -> underTest.getProcessInstancesByProcessAndStates(123L, null, 10, null));
+    assertThat(exception.getMessage())
+        .isEqualTo("Parameter 'states' is needed to search by states.");
   }
 
   @Test
   public void testGetProcessInstancesByProcessAndStatesWithEmptyStates() {
-    Exception exception = assertThrows(OperateRuntimeException.class, () -> underTest.getProcessInstancesByProcessAndStates(123L,
-        Set.of(), 10, null));
-    assertThat(exception.getMessage()).isEqualTo("Parameter 'states' is needed to search by states.");
+    Exception exception =
+        assertThrows(
+            OperateRuntimeException.class,
+            () -> underTest.getProcessInstancesByProcessAndStates(123L, Set.of(), 10, null));
+    assertThat(exception.getMessage())
+        .isEqualTo("Parameter 'states' is needed to search by states.");
   }
 
   @Test
@@ -285,23 +304,34 @@ public class ElasticsearchProcessStoreTest {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
     when(tenantAwareClient.search(any())).thenThrow(new IOException());
 
-    Exception exception = assertThrows(OperateRuntimeException.class, () -> underTest.getProcessInstancesByProcessAndStates(123L,
-        Set.of(ProcessInstanceState.COMPLETED), 10, null));
-    assertThat(exception.getMessage()).contains("Failed to search process instances by processDefinitionKey");
+    Exception exception =
+        assertThrows(
+            OperateRuntimeException.class,
+            () ->
+                underTest.getProcessInstancesByProcessAndStates(
+                    123L, Set.of(ProcessInstanceState.COMPLETED), 10, null));
+    assertThat(exception.getMessage())
+        .contains("Failed to search process instances by processDefinitionKey");
   }
 
   @Test
   public void testGetProcessInstancesByParentKeysWithNullKeys() {
-    Exception exception = assertThrows(OperateRuntimeException.class, () -> underTest.getProcessInstancesByParentKeys(
-        null, 10, null));
-    assertThat(exception.getMessage()).isEqualTo("Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
+    Exception exception =
+        assertThrows(
+            OperateRuntimeException.class,
+            () -> underTest.getProcessInstancesByParentKeys(null, 10, null));
+    assertThat(exception.getMessage())
+        .isEqualTo("Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
   }
 
   @Test
   public void testGetProcessInstancesByParentKeysWithEmptyKeys() {
-    Exception exception = assertThrows(OperateRuntimeException.class, () -> underTest.getProcessInstancesByParentKeys(
-        Set.of(), 10, null));
-    assertThat(exception.getMessage()).isEqualTo("Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
+    Exception exception =
+        assertThrows(
+            OperateRuntimeException.class,
+            () -> underTest.getProcessInstancesByParentKeys(Set.of(), 10, null));
+    assertThat(exception.getMessage())
+        .isEqualTo("Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
   }
 
   @Test
@@ -309,9 +339,12 @@ public class ElasticsearchProcessStoreTest {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
     when(tenantAwareClient.search(any(), any())).thenThrow(new IOException());
 
-    Exception exception = assertThrows(OperateRuntimeException.class, () -> underTest.getProcessInstancesByParentKeys(
-        Set.of(123L), 10, null));
-    assertThat(exception.getMessage()).contains("Failed to search process instances by parentProcessInstanceKeys");
+    Exception exception =
+        assertThrows(
+            OperateRuntimeException.class,
+            () -> underTest.getProcessInstancesByParentKeys(Set.of(123L), 10, null));
+    assertThat(exception.getMessage())
+        .contains("Failed to search process instances by parentProcessInstanceKeys");
   }
 
   @Test
@@ -331,8 +364,9 @@ public class ElasticsearchProcessStoreTest {
     when(listViewTemplate.getAlias()).thenReturn("listViewIndexAlias");
     when(esClient.deleteByQuery(any(), eq(RequestOptions.DEFAULT))).thenThrow(new IOException());
 
-    assertThrows(OperateRuntimeException.class, () -> underTest.deleteProcessInstancesAndDependants(
-        Set.of(123L)));
+    assertThrows(
+        OperateRuntimeException.class,
+        () -> underTest.deleteProcessInstancesAndDependants(Set.of(123L)));
   }
 
   @Test
@@ -353,22 +387,24 @@ public class ElasticsearchProcessStoreTest {
     when(processIndex.getAlias()).thenReturn("processIndexAlias");
     when(esClient.deleteByQuery(any(), eq(RequestOptions.DEFAULT))).thenThrow(new IOException());
 
-    assertThrows(OperateRuntimeException.class, () -> underTest.deleteProcessDefinitionsByKeys(
-        123L, 234L));
+    assertThrows(
+        OperateRuntimeException.class, () -> underTest.deleteProcessDefinitionsByKeys(123L, 234L));
   }
 
   @Test
   public void testRefreshIndicesWithNullIndex() {
     String[] indices = null;
-    Exception exception = assertThrows(OperateRuntimeException.class, () -> underTest.refreshIndices(
-        indices));
-    assertThat(exception.getMessage()).isEqualTo("Refresh indices needs at least one index to refresh.");
+    Exception exception =
+        assertThrows(OperateRuntimeException.class, () -> underTest.refreshIndices(indices));
+    assertThat(exception.getMessage())
+        .isEqualTo("Refresh indices needs at least one index to refresh.");
   }
 
   @Test
   public void testRefreshIndicesWithEmptyIndexArray() {
-    Exception exception = assertThrows(OperateRuntimeException.class, () -> underTest.refreshIndices(
-        new String[0]));
-    assertThat(exception.getMessage()).isEqualTo("Refresh indices needs at least one index to refresh.");
+    Exception exception =
+        assertThrows(OperateRuntimeException.class, () -> underTest.refreshIndices(new String[0]));
+    assertThat(exception.getMessage())
+        .isEqualTo("Refresh indices needs at least one index to refresh.");
   }
 }

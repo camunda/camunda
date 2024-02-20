@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.backup;
 
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
-
 import java.util.List;
 
 public interface BackupRepository {
@@ -21,5 +20,6 @@ public interface BackupRepository {
 
   List<GetBackupStateResponseDto> getBackups(String repositoryName);
 
-  void executeSnapshotting(BackupService.SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
+  void executeSnapshotting(
+      BackupService.SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
 }

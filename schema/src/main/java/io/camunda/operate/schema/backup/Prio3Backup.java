@@ -6,5 +6,4 @@
  */
 package io.camunda.operate.schema.backup;
 
-public interface Prio3Backup {
-}
+public interface Prio3Backup {}

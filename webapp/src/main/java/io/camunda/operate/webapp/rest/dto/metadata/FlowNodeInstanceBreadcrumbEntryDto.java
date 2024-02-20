@@ -6,19 +6,18 @@
  */
 package io.camunda.operate.webapp.rest.dto.metadata;
 
-import java.util.Objects;
 import io.camunda.operate.entities.FlowNodeType;
+import java.util.Objects;
 
 public class FlowNodeInstanceBreadcrumbEntryDto {
 
   private String flowNodeId;
   private FlowNodeType flowNodeType;
 
-  public FlowNodeInstanceBreadcrumbEntryDto() {
-  }
+  public FlowNodeInstanceBreadcrumbEntryDto() {}
 
-  public FlowNodeInstanceBreadcrumbEntryDto(final String flowNodeId,
-      final FlowNodeType flowNodeType) {
+  public FlowNodeInstanceBreadcrumbEntryDto(
+      final String flowNodeId, final FlowNodeType flowNodeType) {
     this.flowNodeId = flowNodeId;
     this.flowNodeType = flowNodeType;
   }
@@ -36,8 +35,7 @@ public class FlowNodeInstanceBreadcrumbEntryDto {
     return flowNodeType;
   }
 
-  public FlowNodeInstanceBreadcrumbEntryDto setFlowNodeType(
-      final FlowNodeType flowNodeType) {
+  public FlowNodeInstanceBreadcrumbEntryDto setFlowNodeType(final FlowNodeType flowNodeType) {
     this.flowNodeType = flowNodeType;
     return this;
   }
@@ -51,8 +49,7 @@ public class FlowNodeInstanceBreadcrumbEntryDto {
       return false;
     }
     final FlowNodeInstanceBreadcrumbEntryDto that = (FlowNodeInstanceBreadcrumbEntryDto) o;
-    return Objects.equals(flowNodeId, that.flowNodeId) &&
-        flowNodeType == that.flowNodeType;
+    return Objects.equals(flowNodeId, that.flowNodeId) && flowNodeType == that.flowNodeType;
   }
 
   @Override
@@ -62,12 +59,12 @@ public class FlowNodeInstanceBreadcrumbEntryDto {
 
   @Override
   public String toString() {
-    return "FlowNodeInstanceBreadcrumbEntryDto{" +
-        "flowNodeId='" + flowNodeId + '\'' +
-        ", flowNodeType=" + flowNodeType +
-        '}';
+    return "FlowNodeInstanceBreadcrumbEntryDto{"
+        + "flowNodeId='"
+        + flowNodeId
+        + '\''
+        + ", flowNodeType="
+        + flowNodeType
+        + '}';
   }
 }
-
-
-

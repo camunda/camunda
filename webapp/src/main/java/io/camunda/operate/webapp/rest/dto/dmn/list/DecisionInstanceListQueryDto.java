@@ -106,25 +106,53 @@ public class DecisionInstanceListQueryDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     DecisionInstanceListQueryDto that = (DecisionInstanceListQueryDto) o;
-    return evaluated == that.evaluated && failed == that.failed && Objects.equals(decisionDefinitionIds,
-        that.decisionDefinitionIds) && Objects.equals(ids, that.ids) && Objects.equals(processInstanceId,
-        that.processInstanceId) && Objects.equals(evaluationDateAfter, that.evaluationDateAfter) && Objects.equals(
-        evaluationDateBefore, that.evaluationDateBefore) && Objects.equals(tenantId, that.tenantId);
+    return evaluated == that.evaluated
+        && failed == that.failed
+        && Objects.equals(decisionDefinitionIds, that.decisionDefinitionIds)
+        && Objects.equals(ids, that.ids)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(evaluationDateAfter, that.evaluationDateAfter)
+        && Objects.equals(evaluationDateBefore, that.evaluationDateBefore)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(decisionDefinitionIds, evaluated, failed, ids, processInstanceId, evaluationDateAfter,
-        evaluationDateBefore, tenantId);
+    return Objects.hash(
+        decisionDefinitionIds,
+        evaluated,
+        failed,
+        ids,
+        processInstanceId,
+        evaluationDateAfter,
+        evaluationDateBefore,
+        tenantId);
   }
 
   @Override
   public String toString() {
-    return "DecisionInstanceListQueryDto{" + "decisionDefinitionIds=" + decisionDefinitionIds + ", evaluated=" + evaluated + ", failed=" + failed + ", ids=" + ids + ", processInstanceId='" + processInstanceId + '\'' + ", evaluationDateAfter=" + evaluationDateAfter + ", evaluationDateBefore=" + evaluationDateBefore + ", tenantId='" + tenantId + '\'' + '}';
+    return "DecisionInstanceListQueryDto{"
+        + "decisionDefinitionIds="
+        + decisionDefinitionIds
+        + ", evaluated="
+        + evaluated
+        + ", failed="
+        + failed
+        + ", ids="
+        + ids
+        + ", processInstanceId='"
+        + processInstanceId
+        + '\''
+        + ", evaluationDateAfter="
+        + evaluationDateAfter
+        + ", evaluationDateBefore="
+        + evaluationDateBefore
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

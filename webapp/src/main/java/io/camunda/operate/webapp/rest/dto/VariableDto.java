@@ -14,7 +14,6 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,8 +30,8 @@ public class VariableDto {
   private boolean isFirst = false;
 
   /**
-   * Sort values, define the position of process instance in the list and may be used to search
-   * for previous or following page.
+   * Sort values, define the position of process instance in the list and may be used to search for
+   * previous or following page.
    */
   private SortValuesWrapper[] sortValues;
 
@@ -95,8 +94,12 @@ public class VariableDto {
     return this;
   }
 
-  public static VariableDto createFrom(VariableEntity variableEntity, List<OperationEntity> operations,
-      boolean fullValue, int variableSizeThreshold, ObjectMapper objectMapper) {
+  public static VariableDto createFrom(
+      VariableEntity variableEntity,
+      List<OperationEntity> operations,
+      boolean fullValue,
+      int variableSizeThreshold,
+      ObjectMapper objectMapper) {
     if (variableEntity == null) {
       return null;
     }
@@ -117,14 +120,17 @@ public class VariableDto {
     }
 
     if (CollectionUtil.isNotEmpty(operations)) {
-      List <OperationEntity> activeOperations = CollectionUtil.filter(operations,(o ->
-          o.getState().equals(OperationState.SCHEDULED)
-              || o.getState().equals(OperationState.LOCKED)
-              || o.getState().equals(OperationState.SENT)));
+      List<OperationEntity> activeOperations =
+          CollectionUtil.filter(
+              operations,
+              (o ->
+                  o.getState().equals(OperationState.SCHEDULED)
+                      || o.getState().equals(OperationState.LOCKED)
+                      || o.getState().equals(OperationState.SENT)));
       if (!activeOperations.isEmpty()) {
         variable.setHasActiveOperation(true);
-        final String newValue = activeOperations.get(activeOperations.size() - 1)
-            .getVariableValue();
+        final String newValue =
+            activeOperations.get(activeOperations.size() - 1).getVariableValue();
         if (fullValue) {
           variable.setValue(newValue);
         } else if (newValue.length() > variableSizeThreshold) {
@@ -137,25 +143,32 @@ public class VariableDto {
       }
     }
 
-    //convert to String[]
+    // convert to String[]
     if (variableEntity.getSortValues() != null) {
-      variable.setSortValues(SortValuesWrapper.createFrom(variableEntity.getSortValues(), objectMapper));
+      variable.setSortValues(
+          SortValuesWrapper.createFrom(variableEntity.getSortValues(), objectMapper));
     }
     return variable;
   }
 
-  public static List<VariableDto> createFrom(List<VariableEntity> variableEntities,
-      Map<String, List<OperationEntity>> operations, int variableSizeThreshold, ObjectMapper objectMapper) {
+  public static List<VariableDto> createFrom(
+      List<VariableEntity> variableEntities,
+      Map<String, List<OperationEntity>> operations,
+      int variableSizeThreshold,
+      ObjectMapper objectMapper) {
     if (variableEntities == null) {
       return new ArrayList<>();
     }
-    return variableEntities.stream().filter(item -> item != null)
-        .map(item -> createFrom(
-            item,
-            operations.get(item.getName()),
-            false,
-            variableSizeThreshold, objectMapper))
+    return variableEntities.stream()
+        .filter(item -> item != null)
+        .map(
+            item ->
+                createFrom(
+                    item,
+                    operations.get(item.getName()),
+                    false,
+                    variableSizeThreshold,
+                    objectMapper))
         .collect(Collectors.toList());
   }
-
 }

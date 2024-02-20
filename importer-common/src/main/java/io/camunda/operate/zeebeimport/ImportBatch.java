@@ -6,21 +6,21 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.camunda.operate.entities.HitEntity;
+import io.camunda.operate.zeebe.ImportValueType;
+import io.camunda.operate.zeebe.ZeebeESConstants;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
-
-import io.camunda.operate.entities.HitEntity;
-import io.camunda.operate.zeebe.ImportValueType;
-import io.camunda.operate.zeebe.ZeebeESConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * One batch for importing Zeebe data. Contains list of records as well as partition id and value type of the records.
+ * One batch for importing Zeebe data. Contains list of records as well as partition id and value
+ * type of the records.
  */
 public class ImportBatch {
 
@@ -38,7 +38,11 @@ public class ImportBatch {
 
   private OffsetDateTime scheduledTime;
 
-  public ImportBatch(int partitionId, ImportValueType importValueType, List<HitEntity> hits, String lastRecordIndexName) {
+  public ImportBatch(
+      int partitionId,
+      ImportValueType importValueType,
+      List<HitEntity> hits,
+      String lastRecordIndexName) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
     this.hits = hits;
@@ -97,16 +101,21 @@ public class ImportBatch {
     return getLastProcessed(ZeebeESConstants.SEQUENCE_FIELD_NAME, objectMapper, 0L);
   }
 
-  private long getLastProcessed(final String fieldName, final ObjectMapper objectMapper, final Long defaultValue) {
+  private long getLastProcessed(
+      final String fieldName, final ObjectMapper objectMapper, final Long defaultValue) {
     try {
       if (hits != null && hits.size() != 0) {
-        final ObjectNode node = objectMapper.readValue(hits.get(hits.size() - 1).getSourceAsString(), ObjectNode.class);
+        final ObjectNode node =
+            objectMapper.readValue(hits.get(hits.size() - 1).getSourceAsString(), ObjectNode.class);
         if (node.has(fieldName)) {
           return node.get(fieldName).longValue();
         }
       }
     } catch (IOException e) {
-      logger.warn(String.format("Unable to parse Zeebe object for getting field %s : %s", fieldName, e.getMessage()), e);
+      logger.warn(
+          String.format(
+              "Unable to parse Zeebe object for getting field %s : %s", fieldName, e.getMessage()),
+          e);
     }
     return defaultValue;
   }
@@ -126,23 +135,16 @@ public class ImportBatch {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     ImportBatch that = (ImportBatch) o;
 
-    if (partitionId != that.partitionId)
-      return false;
-    if (finishedWiCount != that.finishedWiCount)
-      return false;
-    if (importValueType != that.importValueType)
-      return false;
-    if (!Objects.equals(hits, that.hits))
-      return false;
+    if (partitionId != that.partitionId) return false;
+    if (finishedWiCount != that.finishedWiCount) return false;
+    if (importValueType != that.importValueType) return false;
+    if (!Objects.equals(hits, that.hits)) return false;
     return Objects.equals(lastRecordIndexName, that.lastRecordIndexName);
-
   }
 
   @Override

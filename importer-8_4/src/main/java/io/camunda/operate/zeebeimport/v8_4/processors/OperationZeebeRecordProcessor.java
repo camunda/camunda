@@ -11,11 +11,10 @@ import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.util.HashSet;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class OperationZeebeRecordProcessor {
@@ -26,10 +25,10 @@ public class OperationZeebeRecordProcessor {
     VARIABLE_DOCUMENT_STATES.add(VariableDocumentIntent.UPDATED.name());
   }
 
-  @Autowired
-  private OperationsManager operationsManager;
+  @Autowired private OperationsManager operationsManager;
 
-  public void processVariableDocumentRecords(Record record, BatchRequest batchRequest) throws PersistenceException {
+  public void processVariableDocumentRecords(Record record, BatchRequest batchRequest)
+      throws PersistenceException {
     if (!VARIABLE_DOCUMENT_STATES.contains(record.getIntent().name())) {
       return;
     }

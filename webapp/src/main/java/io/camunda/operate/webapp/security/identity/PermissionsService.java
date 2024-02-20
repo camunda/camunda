@@ -10,14 +10,13 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.sso.TokenAuthentication;
 import jakarta.annotation.PostConstruct;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 public class PermissionsService {
 
@@ -51,22 +50,28 @@ public class PermissionsService {
   /**
    * getProcessDefinitionPermission
    *
-   * @param bpmnProcessId              bpmnProcessId
-   * @param includeWildcardPermissions true to include the wildcard permission, false to not include them
+   * @param bpmnProcessId bpmnProcessId
+   * @param includeWildcardPermissions true to include the wildcard permission, false to not include
+   *     them
    * @return Identity permissions for the given bpmnProcessId
    */
-  public Set<String> getProcessDefinitionPermission(String bpmnProcessId, boolean includeWildcardPermissions) {
+  public Set<String> getProcessDefinitionPermission(
+      String bpmnProcessId, boolean includeWildcardPermissions) {
 
     Set<String> permissions = new HashSet<>();
 
     getIdentityAuthorizations().stream()
-        .filter(x -> Objects.equals(x.getResourceKey(), bpmnProcessId) && Objects.equals(x.getResourceType(), RESOURCE_TYPE_PROCESS_DEFINITION))
+        .filter(
+            x ->
+                Objects.equals(x.getResourceKey(), bpmnProcessId)
+                    && Objects.equals(x.getResourceType(), RESOURCE_TYPE_PROCESS_DEFINITION))
         .findFirst()
-        .ifPresent(x -> {
-          if (x.getPermissions() != null) {
-            permissions.addAll(x.getPermissions());
-          }
-        });
+        .ifPresent(
+            x -> {
+              if (x.getPermissions() != null) {
+                permissions.addAll(x.getPermissions());
+              }
+            });
 
     if (includeWildcardPermissions) {
       permissions.addAll(getProcessDefinitionPermission(RESOURCE_KEY_ALL, false));
@@ -88,22 +93,28 @@ public class PermissionsService {
   /**
    * getDecisionDefinitionPermission
    *
-   * @param decisionId                 decisionId
-   * @param includeWildcardPermissions true to include the wildcard permission, false to not include them
+   * @param decisionId decisionId
+   * @param includeWildcardPermissions true to include the wildcard permission, false to not include
+   *     them
    * @return Identity permissions for the given decisionId
    */
-  public Set<String> getDecisionDefinitionPermission(String decisionId, boolean includeWildcardPermissions) {
+  public Set<String> getDecisionDefinitionPermission(
+      String decisionId, boolean includeWildcardPermissions) {
 
     Set<String> permissions = new HashSet<>();
 
     getIdentityAuthorizations().stream()
-        .filter(x -> Objects.equals(x.getResourceKey(), decisionId) && Objects.equals(x.getResourceType(), RESOURCE_TYPE_DECISION_DEFINITION))
+        .filter(
+            x ->
+                Objects.equals(x.getResourceKey(), decisionId)
+                    && Objects.equals(x.getResourceType(), RESOURCE_TYPE_DECISION_DEFINITION))
         .findFirst()
-        .ifPresent(x -> {
-          if (x.getPermissions() != null) {
-            permissions.addAll(x.getPermissions());
-          }
-        });
+        .ifPresent(
+            x -> {
+              if (x.getPermissions() != null) {
+                permissions.addAll(x.getPermissions());
+              }
+            });
 
     if (includeWildcardPermissions) {
       permissions.addAll(getDecisionDefinitionPermission(RESOURCE_KEY_ALL, false));
@@ -125,7 +136,8 @@ public class PermissionsService {
     if (permission == null) {
       throw new IllegalStateException("Identity permission can't be null");
     }
-    return getProcessDefinitionPermission(bpmnProcessId).stream().anyMatch(x -> x.equalsIgnoreCase(permission.toString()));
+    return getProcessDefinitionPermission(bpmnProcessId).stream()
+        .anyMatch(x -> x.equalsIgnoreCase(permission.toString()));
   }
 
   /**
@@ -141,12 +153,11 @@ public class PermissionsService {
     if (permission == null) {
       throw new IllegalStateException("Identity permission can't be null");
     }
-    return getDecisionDefinitionPermission(decisionId).stream().anyMatch(x -> x.equalsIgnoreCase(permission.toString()));
+    return getDecisionDefinitionPermission(decisionId).stream()
+        .anyMatch(x -> x.equalsIgnoreCase(permission.toString()));
   }
 
-  /**
-   * getIdentityAuthorizations
-   */
+  /** getIdentityAuthorizations */
   private List<IdentityAuthorization> getIdentityAuthorizations() {
     List<IdentityAuthorization> list = null;
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -157,18 +168,21 @@ public class PermissionsService {
       list = ((TokenAuthentication) authentication).getAuthorizations();
       logger.debug("Following authorizations found for TokenAuthentication: " + list);
     } else {
-      logger.error("Unable to read resource based permissions. Unknown token type: " + authentication.getClass()
-          .getSimpleName(), new OperateRuntimeException());
+      logger.error(
+          "Unable to read resource based permissions. Unknown token type: "
+              + authentication.getClass().getSimpleName(),
+          new OperateRuntimeException());
     }
     return (list == null) ? new ArrayList<>() : list;
   }
 
   private boolean permissionsEnabled() {
-    return operateProperties.getIdentity().isResourcePermissionsEnabled() && ! isJwtToken();
+    return operateProperties.getIdentity().isResourcePermissionsEnabled() && !isJwtToken();
   }
 
   /**
    * Resource based permissions are not yet supported for JwtAuthenticationToken.
+   *
    * @return
    */
   private boolean isJwtToken() {
@@ -178,7 +192,8 @@ public class PermissionsService {
   /**
    * getProcessesWithPermission
    *
-   * @return processes for which the user has the given permission; the result matches either all processes, or a list of bpmnProcessId
+   * @return processes for which the user has the given permission; the result matches either all
+   *     processes, or a list of bpmnProcessId
    */
   public ResourcesAllowed getProcessesWithPermission(IdentityPermission permission) {
     if (permission == null) {
@@ -186,11 +201,14 @@ public class PermissionsService {
     }
 
     if (permissionsEnabled()) {
-      List<IdentityAuthorization> processAuthorizations = getIdentityAuthorizations().stream()
-          .filter(x -> Objects.equals(x.getResourceType(), RESOURCE_TYPE_PROCESS_DEFINITION)).collect(Collectors.toList());
+      List<IdentityAuthorization> processAuthorizations =
+          getIdentityAuthorizations().stream()
+              .filter(x -> Objects.equals(x.getResourceType(), RESOURCE_TYPE_PROCESS_DEFINITION))
+              .collect(Collectors.toList());
       Set<String> ids = new HashSet<>();
       for (IdentityAuthorization authorization : processAuthorizations) {
-        if (authorization.getPermissions() != null && authorization.getPermissions().contains(permission.name())) {
+        if (authorization.getPermissions() != null
+            && authorization.getPermissions().contains(permission.name())) {
           if (RESOURCE_KEY_ALL.equals(authorization.getResourceKey())) {
             return ResourcesAllowed.all();
           }
@@ -205,7 +223,8 @@ public class PermissionsService {
   /**
    * getDecisionsWithPermission
    *
-   * @return decisions for which the user has the given permission; the result matches either all decisions, or a list of decisionId
+   * @return decisions for which the user has the given permission; the result matches either all
+   *     decisions, or a list of decisionId
    */
   public ResourcesAllowed getDecisionsWithPermission(IdentityPermission permission) {
     if (permission == null) {
@@ -213,11 +232,14 @@ public class PermissionsService {
     }
 
     if (permissionsEnabled()) {
-      List<IdentityAuthorization> decisionAuthorizations = getIdentityAuthorizations().stream()
-          .filter(x -> Objects.equals(x.getResourceType(), RESOURCE_TYPE_DECISION_DEFINITION)).collect(Collectors.toList());
+      List<IdentityAuthorization> decisionAuthorizations =
+          getIdentityAuthorizations().stream()
+              .filter(x -> Objects.equals(x.getResourceType(), RESOURCE_TYPE_DECISION_DEFINITION))
+              .collect(Collectors.toList());
       Set<String> ids = new HashSet<>();
       for (IdentityAuthorization authorization : decisionAuthorizations) {
-        if (authorization.getPermissions() != null && authorization.getPermissions().contains(permission.name())) {
+        if (authorization.getPermissions() != null
+            && authorization.getPermissions().contains(permission.name())) {
           if (RESOURCE_KEY_ALL.equals(authorization.getResourceKey())) {
             return ResourcesAllowed.all();
           }
@@ -229,9 +251,7 @@ public class PermissionsService {
     return ResourcesAllowed.all();
   }
 
-  /**
-   * ResourcesAllowed
-   */
+  /** ResourcesAllowed */
   public static class ResourcesAllowed {
     private boolean all;
     private Set<String> ids;

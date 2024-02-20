@@ -7,14 +7,13 @@
 package io.camunda.operate.store.elasticsearch.dao;
 
 import io.camunda.operate.util.ElasticsearchUtil;
+import java.util.Objects;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-
-import java.util.Objects;
 
 public class Query {
 
@@ -103,10 +102,14 @@ public class Query {
 
   @Override
   public String toString() {
-    return "Query{" +
-        "queryBuilder=" + queryBuilder +
-        ", aggregationBuilder=" + aggregationBuilder +
-        ", groupName='" + groupName + '\'' +
-        '}';
+    return "Query{"
+        + "queryBuilder="
+        + queryBuilder
+        + ", aggregationBuilder="
+        + aggregationBuilder
+        + ", groupName='"
+        + groupName
+        + '\''
+        + '}';
   }
 }

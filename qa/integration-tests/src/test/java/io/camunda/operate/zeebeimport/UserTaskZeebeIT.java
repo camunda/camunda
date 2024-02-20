@@ -6,33 +6,31 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.operate.entities.*;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.reader.UserTaskReader;
+import java.util.Objects;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Objects;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
 
-  @Autowired
-  private UserTaskReader userTaskReader;
+  @Autowired private UserTaskReader userTaskReader;
 
-  @Autowired
-  private EventTemplate eventTemplate;
+  @Autowired private EventTemplate eventTemplate;
 
   @Test
   public void shouldCreateProcessWithZeebeUserTasks() {
-    tester.deployProcess("three-zeebe-user-tasks.bpmn")
-        .waitUntil().processIsDeployed();
+    tester.deployProcess("three-zeebe-user-tasks.bpmn").waitUntil().processIsDeployed();
     assertThat(tester.getProcessDefinitionKey()).isNotNull();
 
-    tester.startProcessInstance("Three-Zeebe-User-Tasks")
-        .waitUntil().processInstanceIsStarted()
+    tester
+        .startProcessInstance("Three-Zeebe-User-Tasks")
+        .waitUntil()
+        .processInstanceIsStarted()
         .and()
         .userTasksAreCreated(3);
     assertThat(tester.getProcessInstanceKey()).isNotNull();
@@ -43,11 +41,12 @@ public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void shouldImportZeebeUserTask() {
-    tester.deployProcess("user-task-annual-leave.bpmn")
-        .waitUntil().processIsDeployed();
+    tester.deployProcess("user-task-annual-leave.bpmn").waitUntil().processIsDeployed();
     assertThat(tester.getProcessDefinitionKey()).isNotNull();
-    tester.startProcessInstance("processAnnualLeave")
-        .waitUntil().processInstanceIsStarted()
+    tester
+        .startProcessInstance("processAnnualLeave")
+        .waitUntil()
+        .processInstanceIsStarted()
         .and()
         .userTasksAreCreated(1);
     assertThat(tester.getProcessInstanceKey()).isNotNull();
@@ -67,11 +66,12 @@ public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void shouldCreateFlowNodeForZeebeUserTask() {
-    tester.deployProcess("user-task-annual-leave.bpmn")
-        .waitUntil().processIsDeployed();
+    tester.deployProcess("user-task-annual-leave.bpmn").waitUntil().processIsDeployed();
     assertThat(tester.getProcessDefinitionKey()).isNotNull();
-    tester.startProcessInstance("processAnnualLeave")
-        .waitUntil().processInstanceIsStarted()
+    tester
+        .startProcessInstance("processAnnualLeave")
+        .waitUntil()
+        .processInstanceIsStarted()
         .and()
         .userTasksAreCreated(1)
         .and()
@@ -82,7 +82,11 @@ public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
     assertThat(userTasks).hasSize(1);
 
     var flowNodeInstanceEntities = tester.getAllFlowNodeInstances();
-    FlowNodeInstanceEntity flowNodeUserTask = flowNodeInstanceEntities.stream().filter(x -> Objects.equals(x.getFlowNodeId(), userTasks.get(0).getElementId())).findFirst().orElse(null);
+    FlowNodeInstanceEntity flowNodeUserTask =
+        flowNodeInstanceEntities.stream()
+            .filter(x -> Objects.equals(x.getFlowNodeId(), userTasks.get(0).getElementId()))
+            .findFirst()
+            .orElse(null);
 
     assertThat(flowNodeUserTask).isNotNull();
     assertThat(flowNodeUserTask.getState()).isEqualTo(FlowNodeState.ACTIVE);
@@ -91,11 +95,12 @@ public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void shouldImportEventForTerminatedZeebeUserTask() {
-    tester.deployProcess("user-task-annual-leave-timer.bpmn")
-        .waitUntil().processIsDeployed();
+    tester.deployProcess("user-task-annual-leave-timer.bpmn").waitUntil().processIsDeployed();
     assertThat(tester.getProcessDefinitionKey()).isNotNull();
-    tester.startProcessInstance("processAnnualLeaveTimer")
-        .waitUntil().processInstanceIsStarted()
+    tester
+        .startProcessInstance("processAnnualLeaveTimer")
+        .waitUntil()
+        .processInstanceIsStarted()
         .and()
         .eventIsImportedForFlowNode("taskRequestLeaveTimer", EventType.ELEMENT_TERMINATED);
     assertThat(tester.getProcessInstanceKey()).isNotNull();
@@ -104,7 +109,10 @@ public class UserTaskZeebeIT extends OperateZeebeAbstractIT {
     assertThat(userTasks).hasSize(1);
 
     var events = searchAllDocuments(eventTemplate.getAlias(), EventEntity.class);
-    var userTaskEvents = events.stream().filter(x -> Objects.equals(x.getFlowNodeId(), userTasks.get(0).getElementId())).toList();
+    var userTaskEvents =
+        events.stream()
+            .filter(x -> Objects.equals(x.getFlowNodeId(), userTasks.get(0).getElementId()))
+            .toList();
     assertThat(userTaskEvents).hasSize(1);
     assertThat(userTaskEvents.get(0).getFlowNodeId()).isEqualTo(userTasks.get(0).getElementId());
     assertThat(userTaskEvents.get(0).getEventType()).isEqualTo(EventType.ELEMENT_TERMINATED);

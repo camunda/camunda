@@ -6,9 +6,15 @@
  */
 package io.camunda.operate.qa.util;
 
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.testcontainers.images.PullPolicy.alwaysPull;
+
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.RetryOperation;
-
+import io.zeebe.containers.ZeebeContainer;
+import io.zeebe.containers.ZeebePort;
+import jakarta.annotation.PreDestroy;
+import jakarta.ws.rs.NotFoundException;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -22,12 +28,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import jakarta.annotation.PreDestroy;
-
-import io.zeebe.containers.ZeebeContainer;
-import io.zeebe.containers.ZeebePort;
-import jakarta.ws.rs.NotFoundException;
 import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -49,9 +49,6 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static org.testcontainers.images.PullPolicy.alwaysPull;
-
 @Component
 public class TestContainerUtil {
 
@@ -60,8 +57,10 @@ public class TestContainerUtil {
   private static final String DOCKER_OPERATE_IMAGE_NAME = "camunda/operate";
   private static final Integer OPERATE_HTTP_PORT = 8080;
   public static final String PROPERTIES_PREFIX = "camunda.operate.";
-  private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME = "docker.elastic.co/elasticsearch/elasticsearch";
-  public static final String ELS_DOCKER_TESTCONTAINER_URL = "http://host.testcontainers.internal:9200"; //FIXME "http://elasticsearch:9200"
+  private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
+      "docker.elastic.co/elasticsearch/elasticsearch";
+  public static final String ELS_DOCKER_TESTCONTAINER_URL =
+      "http://host.testcontainers.internal:9200"; // FIXME "http://elasticsearch:9200"
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
   public static final int ELS_PORT = 9200;
   public static final String ELS_HOST = "localhost";
@@ -277,14 +276,19 @@ public class TestContainerUtil {
 
   public void startElasticsearch(TestContext testContext) {
     logger.info("************ Starting Elasticsearch ************");
-    elsContainer = new ElasticsearchContainer(String.format("%s:%s", DOCKER_ELASTICSEARCH_IMAGE_NAME, ElasticsearchClient.class.getPackage().getImplementationVersion()))
-        .withNetwork(getNetwork())
-        .withEnv("xpack.security.enabled","false")
-        .withEnv("path.repo", "~/")
-        .withNetworkAliases(ELS_NETWORK_ALIAS)
-        .withExposedPorts(ELS_PORT);
-    elsContainer
-        .setWaitStrategy(new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
+    elsContainer =
+        new ElasticsearchContainer(
+                String.format(
+                    "%s:%s",
+                    DOCKER_ELASTICSEARCH_IMAGE_NAME,
+                    ElasticsearchClient.class.getPackage().getImplementationVersion()))
+            .withNetwork(getNetwork())
+            .withEnv("xpack.security.enabled", "false")
+            .withEnv("path.repo", "~/")
+            .withNetworkAliases(ELS_NETWORK_ALIAS)
+            .withExposedPorts(ELS_PORT);
+    elsContainer.setWaitStrategy(
+        new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
     elsContainer.start();
 
     testContext.setNetwork(getNetwork());
@@ -293,23 +297,31 @@ public class TestContainerUtil {
     testContext.setInternalElsHost(ELS_NETWORK_ALIAS);
     testContext.setInternalElsPort(ELS_PORT);
 
-    logger.info("************ Elasticsearch started on {}:{} ************", testContext.getExternalElsHost(), testContext.getExternalElsPort());
+    logger.info(
+        "************ Elasticsearch started on {}:{} ************",
+        testContext.getExternalElsHost(),
+        testContext.getExternalElsPort());
   }
 
   public boolean checkElasctisearchHealth(TestContext testContext) {
     try {
-      RestHighLevelClient esClient = new RestHighLevelClient(
-          RestClient.builder(new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort())));
+      RestHighLevelClient esClient =
+          new RestHighLevelClient(
+              RestClient.builder(
+                  new HttpHost(
+                      testContext.getExternalElsHost(), testContext.getExternalElsPort())));
       return RetryOperation.<Boolean>newBuilder()
           .noOfRetry(5)
           .retryOn(IOException.class, ElasticsearchException.class)
           .delayInterval(3, TimeUnit.SECONDS)
-          .retryConsumer(() -> {
-            final ClusterHealthResponse clusterHealthResponse = esClient.cluster()
-                .health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-            return clusterHealthResponse.getStatus().equals(ClusterHealthStatus.GREEN);
-          })
-          .build().retry();
+          .retryConsumer(
+              () -> {
+                final ClusterHealthResponse clusterHealthResponse =
+                    esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
+                return clusterHealthResponse.getStatus().equals(ClusterHealthStatus.GREEN);
+              })
+          .build()
+          .retry();
     } catch (Exception e) {
       throw new OperateRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
     }
@@ -327,17 +339,21 @@ public class TestContainerUtil {
     return operateContainer;
   }
 
-  public GenericContainer createOperateContainer(String dockerImageName, String version, TestContext testContext) {
-    operateContainer = new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
-        .withExposedPorts(8080)
-        .withNetwork(testContext.getNetwork())
-        .withCopyFileToContainer(MountableFile.forHostPath(createConfigurationFile(testContext), 0775),
-            "/usr/local/operate/config/application.properties")
-        .waitingFor(new HttpWaitStrategy()
-            .forPort(8080)
-            .forPath("/actuator/health")
-            .withReadTimeout(Duration.ofSeconds(120)))
-        .withStartupTimeout(Duration.ofSeconds(120));
+  public GenericContainer createOperateContainer(
+      String dockerImageName, String version, TestContext testContext) {
+    operateContainer =
+        new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
+            .withExposedPorts(8080)
+            .withNetwork(testContext.getNetwork())
+            .withCopyFileToContainer(
+                MountableFile.forHostPath(createConfigurationFile(testContext), 0775),
+                "/usr/local/operate/config/application.properties")
+            .waitingFor(
+                new HttpWaitStrategy()
+                    .forPort(8080)
+                    .forPath("/actuator/health")
+                    .withReadTimeout(Duration.ofSeconds(120)))
+            .withStartupTimeout(Duration.ofSeconds(120));
     applyConfiguration(operateContainer, testContext);
     return operateContainer;
   }
@@ -353,16 +369,19 @@ public class TestContainerUtil {
     testContext.setExternalOperatePort(operateContainer.getMappedPort(OPERATE_HTTP_PORT));
   }
 
-  //for newer versions
-  private void applyConfiguration(final GenericContainer<?> operateContainer,
-      TestContext testContext) {
+  // for newer versions
+  private void applyConfiguration(
+      final GenericContainer<?> operateContainer, TestContext testContext) {
     String elsHost = testContext.getInternalElsHost();
     Integer elsPort = testContext.getInternalElsPort();
     operateContainer
-        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
+        .withEnv(
+            "CAMUNDA_OPERATE_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HOST", elsHost)
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_PORT", String.valueOf(elsPort))
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
+        .withEnv(
+            "CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL",
+            String.format("http://%s:%s", elsHost, elsPort))
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_HOST", elsHost)
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort))
         .withEnv("SPRING_PROFILES_ACTIVE", "dev");
@@ -372,16 +391,19 @@ public class TestContainerUtil {
       operateContainer.withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebeContactPoint);
     }
     if (testContext.getZeebeIndexPrefix() != null) {
-      operateContainer.withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
+      operateContainer.withEnv(
+          "CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
     }
-
   }
 
   protected Path createConfigurationFile(TestContext testContext) {
     try {
-      Properties properties = getOperateElsProperties(testContext.getInternalElsHost(),
-          testContext.getInternalElsPort(), testContext.getInternalZeebeContactPoint(),
-          testContext.getZeebeIndexPrefix());
+      Properties properties =
+          getOperateElsProperties(
+              testContext.getInternalElsHost(),
+              testContext.getInternalElsPort(),
+              testContext.getInternalZeebeContactPoint(),
+              testContext.getZeebeIndexPrefix());
       final Path tempFile = Files.createTempFile(getClass().getPackage().getName(), ".tmp");
       properties.store(new FileWriter(tempFile.toFile()), null);
       return tempFile;
@@ -390,9 +412,9 @@ public class TestContainerUtil {
     }
   }
 
-  //for older versions
-  protected Properties getOperateElsProperties(String elsHost, Integer elsPort, String zeebeContactPoint,
-      String zeebeIndexPrefix) {
+  // for older versions
+  protected Properties getOperateElsProperties(
+      String elsHost, Integer elsPort, String zeebeContactPoint, String zeebeIndexPrefix) {
     Properties properties = new Properties();
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.host", elsHost);
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.port", String.valueOf(elsPort));
@@ -411,21 +433,29 @@ public class TestContainerUtil {
         RestClient.builder(new HttpHost(ELS_HOST, ELS_PORT, ELS_SCHEME)));
   }
 
-  public ZeebeContainer startZeebe(final String dataFolderPath, final String version,
-      final String prefix, final Integer partitionCount) {
-    TestContext testContext = new TestContext()
-        .setZeebeDataFolder(new File(dataFolderPath))
-        .setZeebeIndexPrefix(prefix)
-        .setPartitionCount(partitionCount);
+  public ZeebeContainer startZeebe(
+      final String dataFolderPath,
+      final String version,
+      final String prefix,
+      final Integer partitionCount) {
+    TestContext testContext =
+        new TestContext()
+            .setZeebeDataFolder(new File(dataFolderPath))
+            .setZeebeIndexPrefix(prefix)
+            .setPartitionCount(partitionCount);
     return startZeebe(version, testContext);
   }
 
-  public ZeebeContainer startZeebe(final String version, final String prefix,
-      final Integer partitionCount, boolean multitenancyEnabled) {
-    TestContext testContext = new TestContext()
-        .setZeebeIndexPrefix(prefix)
-        .setPartitionCount(partitionCount)
-        .setMultitenancyEnabled(multitenancyEnabled);
+  public ZeebeContainer startZeebe(
+      final String version,
+      final String prefix,
+      final Integer partitionCount,
+      boolean multitenancyEnabled) {
+    TestContext testContext =
+        new TestContext()
+            .setZeebeIndexPrefix(prefix)
+            .setPartitionCount(partitionCount)
+            .setMultitenancyEnabled(multitenancyEnabled);
     return startZeebe(version, testContext);
   }
 
@@ -439,54 +469,76 @@ public class TestContainerUtil {
         broker.withNetwork(testContext.getNetwork());
       }
       if (testContext.getZeebeDataFolder() != null) {
-        broker.withFileSystemBind(testContext.getZeebeDataFolder().getPath(), "/usr/local/zeebe/data");
+        broker.withFileSystemBind(
+            testContext.getZeebeDataFolder().getPath(), "/usr/local/zeebe/data");
       }
       if (version.equals("SNAPSHOT")) {
         broker.withImagePullPolicy(alwaysPull());
       }
-      broker.withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
+      broker
+          .withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
           .withEnv("ZEEBE_LOG_LEVEL", "ERROR")
           .withEnv("ATOMIX_LOG_LEVEL", "ERROR")
           .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
           .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", ELS_DOCKER_TESTCONTAINER_URL)
           .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
           .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
-          .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", "io.camunda.zeebe.exporter.ElasticsearchExporter")
-          .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_DEPLOYMENTDISTRIBUTION", "false")
-          .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_MESSAGESTARTSUBSCRIPTION", "false")
+          .withEnv(
+              "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+              "io.camunda.zeebe.exporter.ElasticsearchExporter")
+          .withEnv(
+              "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_DEPLOYMENTDISTRIBUTION", "false")
+          .withEnv(
+              "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_MESSAGESTARTSUBSCRIPTION", "false")
           .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_TIMER", "false")
-          .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PROCESSINSTANCECREATION", "false")
-          .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PROCESSINSTANCEMODIFICATION", "false")
+          .withEnv(
+              "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PROCESSINSTANCECREATION", "false")
+          .withEnv(
+              "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PROCESSINSTANCEMODIFICATION",
+              "false")
           .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_ESCALATION", "false")
           .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PROCESSEVENT", "false")
           .withEnv("ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK", "0.99")
           .withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.98")
           .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m");
       if (testContext.getZeebeIndexPrefix() != null) {
-        broker.withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", testContext.getZeebeIndexPrefix());
+        broker.withEnv(
+            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX",
+            testContext.getZeebeIndexPrefix());
       }
       if (testContext.getPartitionCount() != null) {
-        broker.withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", String.valueOf(testContext.getPartitionCount()));
+        broker.withEnv(
+            "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT",
+            String.valueOf(testContext.getPartitionCount()));
       }
       if (testContext.isMultitenancyEnabled() != null) {
-        broker.withEnv("ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED",
+        broker.withEnv(
+            "ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED",
             String.valueOf(testContext.isMultitenancyEnabled()));
         if (testContext.isMultitenancyEnabled()) {
-          broker.withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE", "identity")
+          broker
+              .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE", "identity")
               .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE", "keycloak")
-              .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL",
-                  IdentityTester.testContext.getInternalKeycloakBaseUrl() + "/auth/realms/camunda-platform")
-              .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE", "zeebe-api")
-              .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL",
+              .withEnv(
+                  "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL",
+                  IdentityTester.testContext.getInternalKeycloakBaseUrl()
+                      + "/auth/realms/camunda-platform")
+              .withEnv(
+                  "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE", "zeebe-api")
+              .withEnv(
+                  "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL",
                   IdentityTester.testContext.getInternalIdentityBaseUrl());
         }
       }
       broker.start();
 
-      logger.info("\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
+      logger.info(
+          "\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
 
-      testContext.setInternalZeebeContactPoint(broker.getInternalAddress(ZeebePort.GATEWAY.getPort()));
-      testContext.setExternalZeebeContactPoint(broker.getExternalAddress(ZeebePort.GATEWAY.getPort()));
+      testContext.setInternalZeebeContactPoint(
+          broker.getInternalAddress(ZeebePort.GATEWAY.getPort()));
+      testContext.setExternalZeebeContactPoint(
+          broker.getExternalAddress(ZeebePort.GATEWAY.getPort()));
     } else {
       throw new IllegalStateException("Broker is already started. Call stopZeebe first.");
     }
@@ -515,13 +567,17 @@ public class TestContainerUtil {
           boolean found = false;
           int attempts = 0;
           while (!found && attempts < 10) {
-            //check for snapshot existence
-            final List<Path> files = Files.walk(Paths.get(tmpFolder.toURI()))
-                .filter(p -> p.getFileName().endsWith("snapshots")).collect(Collectors.toList());
+            // check for snapshot existence
+            final List<Path> files =
+                Files.walk(Paths.get(tmpFolder.toURI()))
+                    .filter(p -> p.getFileName().endsWith("snapshots"))
+                    .collect(Collectors.toList());
             if (files.size() == 1 && Files.isDirectory(files.get(0))) {
               if (Files.walk(files.get(0)).count() > 1) {
                 found = true;
-                logger.debug("Zeebe snapshot was found in " + Files.walk(files.get(0)).findFirst().toString());
+                logger.debug(
+                    "Zeebe snapshot was found in "
+                        + Files.walk(files.get(0)).findFirst().toString());
               }
             }
             if (!found) {
@@ -540,13 +596,13 @@ public class TestContainerUtil {
           broker.shutdownGracefully(Duration.ofSeconds(3));
         } catch (Exception ex) {
           logger.error("broker.shutdownGracefully failed", ex);
-          //ignore
+          // ignore
         }
         try {
           broker.stop();
         } catch (Exception ex) {
           logger.error("broker.stop failed", ex);
-          //ignore
+          // ignore
         }
         broker = null;
       }
@@ -561,7 +617,6 @@ public class TestContainerUtil {
     testContext.setExternalOperateHost(null);
     testContext.setExternalOperatePort(null);
   }
-
 
   public Network getNetwork() {
     if (network == null) {
@@ -582,11 +637,10 @@ public class TestContainerUtil {
     }
   }
 
-  private void closeNetwork(){
+  private void closeNetwork() {
     if (network != null) {
       network.close();
       network = null;
     }
   }
-
 }

@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.rest.dto.operation;
 import io.camunda.operate.entities.OperationType;
 
 public enum OperationTypeDto {
-
   RESOLVE_INCIDENT,
   CANCEL_PROCESS_INSTANCE,
   DELETE_PROCESS_INSTANCE,
@@ -32,5 +31,4 @@ public enum OperationTypeDto {
     }
     return typeDto;
   }
-
 }

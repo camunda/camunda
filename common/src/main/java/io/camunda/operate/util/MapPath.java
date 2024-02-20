@@ -13,9 +13,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * MapPath enables retrieving values from a Map<String, Object> recursive tree-like data structure by path
+ * MapPath enables retrieving values from a Map<String, Object> recursive tree-like data structure
+ * by path
  */
-
 public class MapPath {
   private final Map<String, Object> map;
 
@@ -36,12 +36,13 @@ public class MapPath {
     Supplier<List<String>> pathTail = () -> path.subList(1, path.size());
     Supplier<Object> headItem = () -> map.get(pathHead.get());
 
-    return switch(path.size()) {
+    return switch (path.size()) {
       case 0 -> Optional.empty();
       case 1 -> Optional.ofNullable(headItem.get()).map(Convertable::from);
-      default -> Convertable.from(headItem.get())
-        .<Map<String, Object>>to()
-        .flatMap(map -> MapPath.from(map).getByPath(pathTail.get()));
+      default ->
+          Convertable.from(headItem.get())
+              .<Map<String, Object>>to()
+              .flatMap(map -> MapPath.from(map).getByPath(pathTail.get()));
     };
   }
 }

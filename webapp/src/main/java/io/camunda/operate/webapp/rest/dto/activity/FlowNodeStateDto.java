@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.rest.dto.activity;
 import io.camunda.operate.entities.FlowNodeState;
 
 public enum FlowNodeStateDto {
-
   ACTIVE,
   INCIDENT,
   COMPLETED,
@@ -27,5 +26,4 @@ public enum FlowNodeStateDto {
     }
     return stateDto;
   }
-
 }

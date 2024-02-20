@@ -7,9 +7,8 @@
 package io.camunda.operate.util;
 
 import io.camunda.operate.zeebeimport.CountImportListener;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import io.camunda.operate.zeebeimport.ImportBatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -33,5 +32,4 @@ public class TestImportListener extends CountImportListener {
     importedCount = new AtomicInteger(0);
     scheduledCount = new AtomicInteger(0);
   }
-
 }

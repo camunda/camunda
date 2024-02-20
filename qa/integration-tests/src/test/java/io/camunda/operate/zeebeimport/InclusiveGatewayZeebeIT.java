@@ -6,50 +6,53 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.util.CollectionUtil.map;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import org.junit.Test;
-
 import java.util.List;
-
-import static io.camunda.operate.util.CollectionUtil.map;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Test;
 
 public class InclusiveGatewayZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
-  public void shouldImportIntermediateThrowEvent(){
+  public void shouldImportIntermediateThrowEvent() {
 
     String bpmnProcessId = "inclusiveGateway";
-    BpmnModelInstance instance = Bpmn.createExecutableProcess(bpmnProcessId)
-        .startEvent()
-        .inclusiveGateway("gateway")
-        .defaultFlow()
-        .sequenceFlowId("flow1")
-        .conditionExpression("= list contains(flows,\"1\")")
-        .endEvent()
-        .moveToLastGateway()
-        .conditionExpression("= list contains(flows,\"2\")")
-        .endEvent()
-        .done();
+    BpmnModelInstance instance =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .startEvent()
+            .inclusiveGateway("gateway")
+            .defaultFlow()
+            .sequenceFlowId("flow1")
+            .conditionExpression("= list contains(flows,\"1\")")
+            .endEvent()
+            .moveToLastGateway()
+            .conditionExpression("= list contains(flows,\"2\")")
+            .endEvent()
+            .done();
 
     // given
     tester
         .deployProcess(instance, "inclusiveGateway.bpmn")
-        .waitUntil().processIsDeployed()
+        .waitUntil()
+        .processIsDeployed()
         .then()
         .startProcessInstance(bpmnProcessId, "{\"flows\": [1,2]}")
         .waitUntil()
         .processInstanceIsFinished();
 
     // when
-    List<FlowNodeInstanceEntity> flowNodes = tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
+    List<FlowNodeInstanceEntity> flowNodes =
+        tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
     // then
-    assertThat(map(flowNodes,FlowNodeInstanceEntity::getType)).isEqualTo(
-        List.of(FlowNodeType.START_EVENT, FlowNodeType.INCLUSIVE_GATEWAY, FlowNodeType.END_EVENT));
+    assertThat(map(flowNodes, FlowNodeInstanceEntity::getType))
+        .isEqualTo(
+            List.of(
+                FlowNodeType.START_EVENT, FlowNodeType.INCLUSIVE_GATEWAY, FlowNodeType.END_EVENT));
   }
-
 }

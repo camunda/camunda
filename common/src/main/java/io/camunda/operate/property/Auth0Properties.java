@@ -8,9 +8,8 @@ package io.camunda.operate.property;
 
 public class Auth0Properties {
   public static final String DEFAULT_ORGANIZATIONS_KEY = "https://camunda.com/orgs";
-  /**
-   * Defines the domain which the user always sees
-   */
+
+  /** Defines the domain which the user always sees */
   private String domain;
 
   /**
@@ -25,14 +24,10 @@ public class Auth0Properties {
    */
   private String clientSecret;
 
-  /**
-   * The claim we want to check It's like a permission name
-   */
+  /** The claim we want to check It's like a permission name */
   private String claimName;
 
-  /**
-   * Key for claim to retrieve the user name
-   */
+  /** Key for claim to retrieve the user name */
   private String nameKey = "name";
 
   private String m2mClientId;

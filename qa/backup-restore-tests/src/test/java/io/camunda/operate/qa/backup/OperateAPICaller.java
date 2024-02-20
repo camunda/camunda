@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.qa.backup;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
+
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
@@ -20,46 +22,56 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import java.net.URI;
 import java.util.Map;
+import java.util.function.BiFunction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import java.util.function.BiFunction;
-
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
-
 @Component
 public class OperateAPICaller {
 
-  private final static String USERNAME = "demo";
-  private final static String PASSWORD = "demo";
+  private static final String USERNAME = "demo";
+  private static final String PASSWORD = "demo";
 
-  @Autowired
-  private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
+  @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
 
   private StatefulRestTemplate restTemplate;
 
   public StatefulRestTemplate createRestTemplate(TestContext testContext) {
-    restTemplate = statefulRestTemplateFactory.apply(testContext.getExternalOperateHost(), testContext.getExternalOperatePort());
+    restTemplate =
+        statefulRestTemplateFactory.apply(
+            testContext.getExternalOperateHost(), testContext.getExternalOperatePort());
     restTemplate.loginWhenNeeded(USERNAME, PASSWORD);
     return restTemplate;
   }
 
   public ProcessGroupDto[] getGroupedProcesses() {
-    return restTemplate.getForObject(restTemplate.getURL("/api/processes/grouped"),
-        ProcessGroupDto[].class);
+    return restTemplate.getForObject(
+        restTemplate.getURL("/api/processes/grouped"), ProcessGroupDto[].class);
   }
 
   public ListViewResponseDto getProcessInstances() {
     ListViewRequestDto processInstanceQueryDto = createGetAllProcessInstancesRequest();
-    return restTemplate.postForObject(restTemplate.getURL("/api/process-instances"), processInstanceQueryDto,
+    return restTemplate.postForObject(
+        restTemplate.getURL("/api/process-instances"),
+        processInstanceQueryDto,
         ListViewResponseDto.class);
   }
+
   public ListViewResponseDto getIncidentProcessInstances() {
-    ListViewRequestDto processInstanceQueryDto = createGetAllProcessInstancesRequest( q -> q.setIncidents(true)
-        .setActive(false).setRunning(true).setCompleted(false).setCanceled(false).setFinished(false));
-    return restTemplate.postForObject(restTemplate.getURL("/api/process-instances"), processInstanceQueryDto,
+    ListViewRequestDto processInstanceQueryDto =
+        createGetAllProcessInstancesRequest(
+            q ->
+                q.setIncidents(true)
+                    .setActive(false)
+                    .setRunning(true)
+                    .setCompleted(false)
+                    .setCanceled(false)
+                    .setFinished(false));
+    return restTemplate.postForObject(
+        restTemplate.getURL("/api/process-instances"),
+        processInstanceQueryDto,
         ListViewResponseDto.class);
   }
 
@@ -71,20 +83,23 @@ public class OperateAPICaller {
 
   public TakeBackupResponseDto backup(Long backupId) {
     TakeBackupRequestDto takeBackupRequest = new TakeBackupRequestDto().setBackupId(backupId);
-    return restTemplate.postForObject(restTemplate.getURL("/actuator/backups"), takeBackupRequest,
-        TakeBackupResponseDto.class);
+    return restTemplate.postForObject(
+        restTemplate.getURL("/actuator/backups"), takeBackupRequest, TakeBackupResponseDto.class);
   }
 
   public GetBackupStateResponseDto getBackupState(Long backupId) {
-    return restTemplate.getForObject(restTemplate.getURL("/actuator/backups/" + backupId),
-        GetBackupStateResponseDto.class);
+    return restTemplate.getForObject(
+        restTemplate.getURL("/actuator/backups/" + backupId), GetBackupStateResponseDto.class);
   }
 
   boolean createOperation(Long processInstanceKey, OperationType operationType) {
-    Map<String, Object> operationRequest = CollectionUtil.asMap("operationType", operationType.name());
-    final URI url = restTemplate.getURL("/api/process-instances/" + processInstanceKey + "/operation");
-    ResponseEntity<Map> operationResponse = restTemplate.postForEntity(url, operationRequest, Map.class);
-    return operationResponse.getStatusCode().equals(HttpStatus.OK) && operationResponse.getBody().get(
-        BatchOperationTemplate.ID) != null;
+    Map<String, Object> operationRequest =
+        CollectionUtil.asMap("operationType", operationType.name());
+    final URI url =
+        restTemplate.getURL("/api/process-instances/" + processInstanceKey + "/operation");
+    ResponseEntity<Map> operationResponse =
+        restTemplate.postForEntity(url, operationRequest, Map.class);
+    return operationResponse.getStatusCode().equals(HttpStatus.OK)
+        && operationResponse.getBody().get(BatchOperationTemplate.ID) != null;
   }
 }

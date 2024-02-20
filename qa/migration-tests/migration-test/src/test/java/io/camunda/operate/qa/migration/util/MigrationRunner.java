@@ -6,15 +6,13 @@
  */
 package io.camunda.operate.qa.migration.util;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import jakarta.annotation.PostConstruct;
-
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.migration.TestFixture;
 import io.camunda.operate.schema.migration.SchemaMigration;
+import jakarta.annotation.PostConstruct;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,22 +20,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * This bean performs the main test logic, before assertions can be applied.
- * * Finds in application context list of test fixtures
- * * Select those that are configured to be included in upgrade path (test.properties file)
- * * Apply test fixtures one by one
- * * Migrate data till "version.current"
+ * This bean performs the main test logic, before assertions can be applied. * Finds in application
+ * context list of test fixtures * Select those that are configured to be included in upgrade path
+ * (test.properties file) * Apply test fixtures one by one * Migrate data till "version.current"
  */
 @Component
 public class MigrationRunner {
 
   private static final Logger logger = LoggerFactory.getLogger(MigrationRunner.class);
 
-  @Autowired
-  private TestContext testContext;
+  @Autowired private TestContext testContext;
 
-  @Autowired
-  private List<TestFixture> testFixtures;
+  @Autowired private List<TestFixture> testFixtures;
 
   private Map<String, TestFixture> testFixtureMap;
 
@@ -53,14 +47,14 @@ public class MigrationRunner {
 
   private void initTestFixtureMap() {
     testFixtureMap = new HashMap<>();
-    for (TestFixture testFixture: testFixtures) {
+    for (TestFixture testFixture : testFixtures) {
       testFixtureMap.put(testFixture.getVersion(), testFixture);
     }
   }
 
   private void selectAndRunTestFixtures() {
     logger.info("Upgrade path under test: {}", upgradePath);
-    for (String version: upgradePath) {
+    for (String version : upgradePath) {
       final TestFixture testFixture = testFixtureMap.get(version);
       if (testFixture == null) {
         throw new RuntimeException("No test fixture found for version " + version);
@@ -83,5 +77,4 @@ public class MigrationRunner {
       throw new RuntimeException(e);
     }
   }
-
 }

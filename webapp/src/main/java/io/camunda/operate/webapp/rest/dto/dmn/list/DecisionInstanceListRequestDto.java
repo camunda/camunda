@@ -23,6 +23,7 @@ public class DecisionInstanceListRequestDto extends PaginatedQuery<DecisionInsta
   public static final String SORT_BY_TENANT_ID = "tenant";
 
   public static final Set<String> VALID_SORT_BY_VALUES;
+
   static {
     VALID_SORT_BY_VALUES = new HashSet<>();
     VALID_SORT_BY_VALUES.add(SORT_BY_ID);
@@ -33,11 +34,9 @@ public class DecisionInstanceListRequestDto extends PaginatedQuery<DecisionInsta
     VALID_SORT_BY_VALUES.add(SORT_BY_TENANT_ID);
   }
 
-  public DecisionInstanceListRequestDto() {
-  }
+  public DecisionInstanceListRequestDto() {}
 
-  public DecisionInstanceListRequestDto(
-      final DecisionInstanceListQueryDto query) {
+  public DecisionInstanceListRequestDto(final DecisionInstanceListQueryDto query) {
     this.query = query;
   }
 
@@ -47,8 +46,7 @@ public class DecisionInstanceListRequestDto extends PaginatedQuery<DecisionInsta
     return query;
   }
 
-  public DecisionInstanceListRequestDto setQuery(
-      final DecisionInstanceListQueryDto query) {
+  public DecisionInstanceListRequestDto setQuery(final DecisionInstanceListQueryDto query) {
     this.query = query;
     return this;
   }
@@ -59,7 +57,8 @@ public class DecisionInstanceListRequestDto extends PaginatedQuery<DecisionInsta
   }
 
   @Override
-  public DecisionInstanceListRequestDto setSearchAfterOrEqual(final SortValuesWrapper[] searchAfterOrEqual) {
+  public DecisionInstanceListRequestDto setSearchAfterOrEqual(
+      final SortValuesWrapper[] searchAfterOrEqual) {
     if (searchAfterOrEqual != null) {
       throw new InvalidRequestException("SearchAfterOrEqual is not supported.");
     }
@@ -67,7 +66,8 @@ public class DecisionInstanceListRequestDto extends PaginatedQuery<DecisionInsta
   }
 
   @Override
-  public DecisionInstanceListRequestDto setSearchBeforeOrEqual(final SortValuesWrapper[] searchBeforeOrEqual) {
+  public DecisionInstanceListRequestDto setSearchBeforeOrEqual(
+      final SortValuesWrapper[] searchBeforeOrEqual) {
     if (searchBeforeOrEqual != null) {
       throw new InvalidRequestException("SearchBeforeOrEqual is not supported.");
     }

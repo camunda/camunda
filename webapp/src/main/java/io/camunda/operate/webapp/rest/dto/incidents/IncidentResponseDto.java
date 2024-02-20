@@ -53,15 +53,12 @@ public class IncidentResponseDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     IncidentResponseDto that = (IncidentResponseDto) o;
 
-    if (count != that.count)
-      return false;
+    if (count != that.count) return false;
     if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
       return false;
     if (errorTypes != null ? !errorTypes.equals(that.errorTypes) : that.errorTypes != null)

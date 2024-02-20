@@ -26,27 +26,28 @@ public class UsageMetricsService {
    *
    * <p>Sample Usage:
    * <HOST>:<PORT>/actuator/usage-metrics/process-instances?startTime=2012-12-19T06:01:17.171Z&endTime=2012-12-29T06:01:17.171Z
-   *
    */
   @GetMapping(
       value = "/process-instances",
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public UsageMetricDTO retrieveProcessInstanceCount(UsageMetricQueryDTO query) {
-    Long total = metricsStore.retrieveProcessInstanceCount(query.getStartTime(), query.getEndTime());
+    Long total =
+        metricsStore.retrieveProcessInstanceCount(query.getStartTime(), query.getEndTime());
     return new UsageMetricDTO().setTotal(total);
   }
+
   /**
    * Retrieve total of decision instances given a period of time
    *
    * <p>Sample Usage:
    * <HOST>:<PORT>/actuator/usage-metrics/decision-instances?startTime=2012-12-19T06:01:17.171Z&endTime=2012-12-29T06:01:17.171Z
-   *
    */
   @GetMapping(
       value = "/decision-instances",
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public UsageMetricDTO retrieveDecisionInstancesCount(UsageMetricQueryDTO query) {
-    Long total = metricsStore.retrieveDecisionInstanceCount(query.getStartTime(), query.getEndTime());
+    Long total =
+        metricsStore.retrieveDecisionInstanceCount(query.getStartTime(), query.getEndTime());
     return new UsageMetricDTO().setTotal(total);
   }
 }

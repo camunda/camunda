@@ -60,7 +60,9 @@ public class LdapProperties {
     this.managerPassword = managerPassword;
   }
 
-  public String getUserSearchFilter() { return userSearchFilter; }
+  public String getUserSearchFilter() {
+    return userSearchFilter;
+  }
 
   public void setUserSearchFilter(String userSearchFilter) {
     this.userSearchFilter = userSearchFilter;
@@ -82,9 +84,13 @@ public class LdapProperties {
     this.userDnPatterns = userDnPatterns;
   }
 
-  public String getDomain() { return domain; }
+  public String getDomain() {
+    return domain;
+  }
 
-  public void setDomain(String domain) { this.domain = domain; }
+  public void setDomain(String domain) {
+    this.domain = domain;
+  }
 
   public String getFirstnameAttrName() {
     return firstnameAttrName;

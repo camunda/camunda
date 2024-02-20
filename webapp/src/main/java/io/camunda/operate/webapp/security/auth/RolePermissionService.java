@@ -6,17 +6,17 @@
  */
 package io.camunda.operate.webapp.security.auth;
 
+import static io.camunda.operate.webapp.security.Permission.READ;
+import static io.camunda.operate.webapp.security.Permission.WRITE;
+
 import io.camunda.operate.webapp.security.Permission;
+import jakarta.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
-
-import static io.camunda.operate.webapp.security.Permission.READ;
-import static io.camunda.operate.webapp.security.Permission.WRITE;
 
 @Component
 public class RolePermissionService {
@@ -24,7 +24,7 @@ public class RolePermissionService {
   private final Map<Role, List<Permission>> roles2permissions = new EnumMap<>(Role.class);
 
   @PostConstruct
-  public void init(){
+  public void init() {
     roles2permissions.put(Role.USER, List.of(READ));
     roles2permissions.put(Role.OPERATOR, List.of(READ, WRITE));
     roles2permissions.put(Role.OWNER, List.of(READ, WRITE));

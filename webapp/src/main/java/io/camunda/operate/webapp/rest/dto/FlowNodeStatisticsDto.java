@@ -15,8 +15,7 @@ public class FlowNodeStatisticsDto {
   private Long incidents = 0L;
   private Long completed = 0L;
 
-  public FlowNodeStatisticsDto() {
-  }
+  public FlowNodeStatisticsDto() {}
 
   public FlowNodeStatisticsDto(String activityId) {
     this.activityId = activityId;
@@ -85,19 +84,15 @@ public class FlowNodeStatisticsDto {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
     FlowNodeStatisticsDto that = (FlowNodeStatisticsDto) o;
 
     if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
       return false;
-    if (active != null ? !active.equals(that.active) : that.active != null)
-      return false;
-    if (canceled != null ? !canceled.equals(that.canceled) : that.canceled != null)
-      return false;
+    if (active != null ? !active.equals(that.active) : that.active != null) return false;
+    if (canceled != null ? !canceled.equals(that.canceled) : that.canceled != null) return false;
     if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
       return false;
     return completed != null ? completed.equals(that.completed) : that.completed == null;
@@ -113,8 +108,20 @@ public class FlowNodeStatisticsDto {
     return result;
   }
 
-  @Override public String toString() {
-    return "FlowNodeStatisticsDto{" + "activityId='" + activityId + '\'' + ", active=" + active + ", canceled="
-        + canceled + ", incidents=" + incidents + ", completed=" + completed + '}';
+  @Override
+  public String toString() {
+    return "FlowNodeStatisticsDto{"
+        + "activityId='"
+        + activityId
+        + '\''
+        + ", active="
+        + active
+        + ", canceled="
+        + canceled
+        + ", incidents="
+        + incidents
+        + ", completed="
+        + completed
+        + '}';
   }
 }

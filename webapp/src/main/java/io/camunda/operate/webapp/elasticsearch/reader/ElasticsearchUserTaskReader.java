@@ -6,12 +6,17 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
+import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
+import static org.elasticsearch.index.query.QueryBuilders.*;
+
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.UserTaskEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.UserTaskTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.reader.UserTaskReader;
+import java.io.IOException;
+import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -21,12 +26,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.List;
-
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
-import static org.elasticsearch.index.query.QueryBuilders.*;
-
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchUserTaskReader extends AbstractReader implements UserTaskReader {
@@ -35,20 +34,24 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
 
   private final UserTaskTemplate userTaskTemplate;
 
-  public ElasticsearchUserTaskReader(UserTaskTemplate userTaskTemplate){
+  public ElasticsearchUserTaskReader(UserTaskTemplate userTaskTemplate) {
     this.userTaskTemplate = userTaskTemplate;
   }
+
   @Override
   public List<UserTaskEntity> getUserTasks() {
     logger.debug("retrieve all user tasks");
     try {
       final QueryBuilder query = matchAllQuery();
-      SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
-          .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
+      SearchRequest searchRequest =
+          ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
+              .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
       SearchResponse response = tenantAwareClient.search(searchRequest);
-      return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, UserTaskEntity.class);
+      return ElasticsearchUtil.mapSearchHits(
+          response.getHits().getHits(), objectMapper, UserTaskEntity.class);
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
+      final String message =
+          String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }

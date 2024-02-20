@@ -21,5 +21,4 @@ public class NotFoundException extends InternalAPIException {
   public NotFoundException(String message, Throwable cause) {
     super(message, cause);
   }
-
 }

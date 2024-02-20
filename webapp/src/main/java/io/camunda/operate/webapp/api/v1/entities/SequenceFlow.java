@@ -8,7 +8,6 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
-
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -24,8 +23,7 @@ public class SequenceFlow {
   private Long processInstanceKey;
   private String tenantId;
 
-  public SequenceFlow() {
-  }
+  public SequenceFlow() {}
 
   public String getId() {
     return id;
@@ -65,13 +63,13 @@ public class SequenceFlow {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     SequenceFlow that = (SequenceFlow) o;
-    return Objects.equals(id, that.id) && Objects.equals(activityId, that.activityId) && Objects.equals(
-        processInstanceKey, that.processInstanceKey) && Objects.equals(tenantId, that.tenantId);
+    return Objects.equals(id, that.id)
+        && Objects.equals(activityId, that.activityId)
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
@@ -81,7 +79,18 @@ public class SequenceFlow {
 
   @Override
   public String toString() {
-    return "SequenceFlow{" + "id='" + id + '\'' + ", activityId='" + activityId + '\'' + ", processInstanceKey="
-        + processInstanceKey + ", tenantId='" + tenantId + '\'' + '}';
+    return "SequenceFlow{"
+        + "id='"
+        + id
+        + '\''
+        + ", activityId='"
+        + activityId
+        + '\''
+        + ", processInstanceKey="
+        + processInstanceKey
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

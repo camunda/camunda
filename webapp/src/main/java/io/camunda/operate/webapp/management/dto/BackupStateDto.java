@@ -7,11 +7,9 @@
 package io.camunda.operate.webapp.management.dto;
 
 public enum BackupStateDto {
-
   IN_PROGRESS,
   INCOMPLETE,
   COMPLETED,
   FAILED,
   INCOMPATIBLE
-
 }

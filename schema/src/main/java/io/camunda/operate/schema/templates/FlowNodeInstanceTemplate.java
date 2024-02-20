@@ -10,8 +10,8 @@ import io.camunda.operate.schema.backup.Prio3Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant,
-    Prio3Backup {
+public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor
+    implements ProcessInstanceDependant, Prio3Backup {
 
   public static final String INDEX_NAME = "flownode-instance";
 
@@ -29,7 +29,7 @@ public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor impleme
   public static final String TYPE = "type";
   public static final String TREE_PATH = "treePath";
   public static final String LEVEL = "level";
-  public static final String INCIDENT = "incident";     //true/false
+  public static final String INCIDENT = "incident"; // true/false
 
   @Override
   public String getIndexName() {

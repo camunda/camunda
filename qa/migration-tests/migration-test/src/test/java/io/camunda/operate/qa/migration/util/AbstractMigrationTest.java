@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.qa.migration.util;
 
+import static org.junit.Assume.assumeTrue;
+
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.schema.indices.*;
@@ -23,81 +25,65 @@ import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.junit.Assume.assumeTrue;
-
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = TestConfig.class)
 @TestPropertySource(locations = "/test.properties")
-@TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@TestExecutionListeners(
+    listeners = DependencyInjectionTestExecutionListener.class,
+    mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public abstract class AbstractMigrationTest {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractMigrationTest.class);
 
-  @Autowired
-  protected EntityReader entityReader;
+  @Autowired protected EntityReader entityReader;
 
-  @Autowired
-  protected ProcessIndex processTemplate;
+  @Autowired protected ProcessIndex processTemplate;
 
-  @Autowired
-  protected DecisionIndex decisionTemplate;
+  @Autowired protected DecisionIndex decisionTemplate;
 
-  @Autowired
-  protected DecisionRequirementsIndex decisionRequirementsIndex;
+  @Autowired protected DecisionRequirementsIndex decisionRequirementsIndex;
 
-  @Autowired
-  protected ListViewTemplate listViewTemplate;
+  @Autowired protected ListViewTemplate listViewTemplate;
 
-  @Autowired
-  protected DecisionInstanceTemplate decisionInstanceTemplate;
+  @Autowired protected DecisionInstanceTemplate decisionInstanceTemplate;
 
-  @Autowired
-  protected EventTemplate eventTemplate;
+  @Autowired protected EventTemplate eventTemplate;
 
-  @Autowired
-  protected SequenceFlowTemplate sequenceFlowTemplate;
+  @Autowired protected SequenceFlowTemplate sequenceFlowTemplate;
 
-  @Autowired
-  protected FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired protected FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
-  @Autowired
-  protected VariableTemplate variableTemplate;
+  @Autowired protected VariableTemplate variableTemplate;
 
-  @Autowired
-  protected IncidentTemplate incidentTemplate;
+  @Autowired protected IncidentTemplate incidentTemplate;
 
-  @Autowired
-  protected ImportPositionIndex importPositionIndex;
+  @Autowired protected ImportPositionIndex importPositionIndex;
 
-  @Autowired
-  protected OperationTemplate operationTemplate;
+  @Autowired protected OperationTemplate operationTemplate;
 
-  @Autowired
-  protected PostImporterQueueTemplate postImporterQueueTemplate;
+  @Autowired protected PostImporterQueueTemplate postImporterQueueTemplate;
 
-  @Autowired
-  protected UserIndex userIndex;
+  @Autowired protected UserIndex userIndex;
 
-  @Autowired
-  protected MetricIndex metricIndex;
+  @Autowired protected MetricIndex metricIndex;
 
-  @Autowired
-  protected RestHighLevelClient esClient;
+  @Autowired protected RestHighLevelClient esClient;
 
-  @Autowired
-  protected TestContext testContext;
+  @Autowired protected TestContext testContext;
 
   protected void assumeThatProcessIsUnderTest(String bpmnProcessId) {
     assumeTrue(testContext.getProcessesToAssert().contains(bpmnProcessId));
   }
 
   @Configuration
-  @ComponentScan(basePackages = {
-      "io.camunda.operate.property",
-      "io.camunda.operate.schema.indices","io.camunda.operate.schema.templates",
-      "io.camunda.operate.qa.migration",
-      "io.camunda.operate.util.rest"},
+  @ComponentScan(
+      basePackages = {
+        "io.camunda.operate.property",
+        "io.camunda.operate.schema.indices",
+        "io.camunda.operate.schema.templates",
+        "io.camunda.operate.qa.migration",
+        "io.camunda.operate.util.rest"
+      },
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-  public static class SpringConfig {
-  }
+  public static class SpringConfig {}
 }

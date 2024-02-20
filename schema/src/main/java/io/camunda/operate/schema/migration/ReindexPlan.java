@@ -14,5 +14,4 @@ public interface ReindexPlan extends Plan {
   ReindexPlan setDstIndex(String dstIndex);
 
   ReindexPlan setSteps(List<Step> steps);
-
 }

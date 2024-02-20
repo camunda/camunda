@@ -6,6 +6,14 @@
  */
 package io.camunda.operate.qa.performance;
 
+import static junit.framework.TestCase.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assume.assumeTrue;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.util.rest.StatefulRestTemplate;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,7 +25,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import io.camunda.operate.util.rest.StatefulRestTemplate;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,29 +38,24 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContextManager;
 import org.springframework.web.client.HttpClientErrorException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import static junit.framework.TestCase.fail;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 /**
- * The tests reads QUERIES_PATH folder and parse all files contained there, reading queries to be tested ({@see io.camunda.operate.qa.performance.TestQuery}).
+ * The tests reads QUERIES_PATH folder and parse all files contained there, reading queries to be
+ * tested ({@see io.camunda.operate.qa.performance.TestQuery}).
  */
 @RunWith(Parameterized.class)
-@ContextConfiguration(classes = { TestConfig.class })
+@ContextConfiguration(classes = {TestConfig.class})
 public class QueryPerformanceTest {
 
-  //  private static final Logger logger = LoggerFactory.getLogger(ImportPerformanceStaticDataTest.class);
+  //  private static final Logger logger =
+  // LoggerFactory.getLogger(ImportPerformanceStaticDataTest.class);
 
   private static final String QUERIES_PATH = "/queries";
 
   // Manually config for spring to use Parameterised
   private TestContextManager testContextManager;
 
-  @Autowired
-  private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
+  @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
   private StatefulRestTemplate restTemplate;
 
   @Value("${camunda.operate.qa.queries.operate.username}")
@@ -71,11 +73,9 @@ public class QueryPerformanceTest {
   @Value("${camunda.operate.qa.queries.operate.port:8080}")
   private Integer operatePort;
 
-  @Autowired
-  private ParametersResolver parametersResolver;
+  @Autowired private ParametersResolver parametersResolver;
 
-  @Parameterized.Parameter
-  public TestQuery testQuery;
+  @Parameterized.Parameter public TestQuery testQuery;
 
   @Before
   public void init() {
@@ -94,14 +94,19 @@ public class QueryPerformanceTest {
     final ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     Collection<TestQuery> result = new ArrayList<>();
-    try (Stream<Path> paths = Files.walk(Paths.get(QueryPerformanceTest.class.getResource(QUERIES_PATH).toURI()))) {
-      paths.filter(Files::isRegularFile).forEach(path -> {
-        try (InputStream is = Files.newInputStream(path)) {
-          result.addAll(objectMapper.readValue(is, new TypeReference<List<TestQuery>>(){}));
-        } catch (Exception ex) {
-          throw new RuntimeException("Error occurred when reading queries from files", ex);
-        }
-      });
+    try (Stream<Path> paths =
+        Files.walk(Paths.get(QueryPerformanceTest.class.getResource(QUERIES_PATH).toURI()))) {
+      paths
+          .filter(Files::isRegularFile)
+          .forEach(
+              path -> {
+                try (InputStream is = Files.newInputStream(path)) {
+                  result.addAll(
+                      objectMapper.readValue(is, new TypeReference<List<TestQuery>>() {}));
+                } catch (Exception ex) {
+                  throw new RuntimeException("Error occurred when reading queries from files", ex);
+                }
+              });
     } catch (Exception ex) {
       throw new RuntimeException("Error occurred when reading queries from files", ex);
     }
@@ -109,23 +114,30 @@ public class QueryPerformanceTest {
   }
 
   @Test
-  public void testQuery () {
+  public void testQuery() {
     assumeTrue(testQuery.getIgnore(), testQuery.getIgnore() == null);
 
-//    logger.info("Running query {}", testQuery.getTitle());
+    //    logger.info("Running query {}", testQuery.getTitle());
     parametersResolver.replacePlaceholdersInQuery(testQuery);
 
     Instant start = Instant.now();
     try {
       RequestEntity<String> requestEntity =
-          RequestEntity.method(testQuery.getMethod(), restTemplate.getURL(testQuery.getUrl(), testQuery.getPathParams()))
+          RequestEntity.method(
+                  testQuery.getMethod(),
+                  restTemplate.getURL(testQuery.getUrl(), testQuery.getPathParams()))
               .contentType(MediaType.APPLICATION_JSON)
               .body(testQuery.getBody());
       start = Instant.now();
       ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
-      assertThat(response.getStatusCode()).as(testQuery.getTitle() + " (status)").isEqualTo(HttpStatus.OK);
+      assertThat(response.getStatusCode())
+          .as(testQuery.getTitle() + " (status)")
+          .isEqualTo(HttpStatus.OK);
     } catch (HttpClientErrorException ex) {
-      fail(String.format("Query %s failed with the error: %s", testQuery.getTitle(), ex.getResponseBodyAsString()));
+      fail(
+          String.format(
+              "Query %s failed with the error: %s",
+              testQuery.getTitle(), ex.getResponseBodyAsString()));
     }
     Instant finish = Instant.now();
     long timeElapsed = Duration.between(start, finish).toMillis();
@@ -133,5 +145,4 @@ public class QueryPerformanceTest {
 
     assertThat(timeElapsed).as(testQuery.getTitle() + " (duration)").isLessThan(timeout);
   }
-
 }

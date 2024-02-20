@@ -6,6 +6,10 @@
  */
 package io.camunda.operate.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
@@ -40,6 +44,8 @@ import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.zeebe.operation.ModifyProcessInstanceRequestValidator;
 import jakarta.validation.ConstraintViolationException;
+import java.util.List;
+import java.util.Map;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,112 +53,104 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
-
 @SpringBootTest(
     classes = {
-        TestApplicationWithNoBeans.class,
-        ProcessInstanceRestService.class,
-        OperateProperties.class,
-        OperateProfileService.class,
-        ModifyProcessInstanceRequestValidator.class,
-        JacksonConfig.class,
-        OperateDateTimeFormatter.class,
-        DatabaseInfo.class,
-        OperateProperties.class
-    }
-)
+      TestApplicationWithNoBeans.class,
+      ProcessInstanceRestService.class,
+      OperateProperties.class,
+      OperateProfileService.class,
+      ModifyProcessInstanceRequestValidator.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class,
+      OperateProperties.class
+    })
 public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
 
-  @MockBean
-  private ListViewReader listViewReader;
+  @MockBean private ListViewReader listViewReader;
 
-  @MockBean
-  private FlowNodeStatisticsReader flowNodeStatisticsReader;
+  @MockBean private FlowNodeStatisticsReader flowNodeStatisticsReader;
 
-  @MockBean
-  private ProcessInstanceReader processInstanceReader;
+  @MockBean private ProcessInstanceReader processInstanceReader;
 
-  @MockBean
-  private IncidentReader incidentReader;
+  @MockBean private IncidentReader incidentReader;
 
-  @MockBean
-  private VariableReader variableReader;
+  @MockBean private VariableReader variableReader;
 
-  @MockBean
-  private SequenceFlowStore sequenceFlowStore;
+  @MockBean private SequenceFlowStore sequenceFlowStore;
 
-  @MockBean
-  private FlowNodeInstanceReader flowNodeInstanceReader;
+  @MockBean private FlowNodeInstanceReader flowNodeInstanceReader;
 
-  @MockBean
-  private BatchOperationWriter batchOperationWriter;
+  @MockBean private BatchOperationWriter batchOperationWriter;
 
-  @MockBean
-  private OperationReader operationReader;
+  @MockBean private OperationReader operationReader;
 
-  @MockBean
-  private PermissionsService permissionsService;
+  @MockBean private PermissionsService permissionsService;
 
   @Before
-  public void before()
-  {
+  public void before() {
     super.before();
     when(permissionsService.hasPermissionForProcess(any(), any())).thenReturn(true);
   }
 
   @Test
   public void testQueryWithWrongSortBy() throws Exception {
-    //when
-    String jsonRequest = "{ \"sorting\": {\"sortBy\": \"processId\",\"sortOrder\": \"asc\"}}";     //not allowed for sorting
-    final MvcResult mvcResult = postRequestThatShouldFail(query(0, 100),jsonRequest);
-    //then
+    // when
+    String jsonRequest =
+        "{ \"sorting\": {\"sortBy\": \"processId\",\"sortOrder\": \"asc\"}}"; // not allowed for
+    // sorting
+    final MvcResult mvcResult = postRequestThatShouldFail(query(0, 100), jsonRequest);
+    // then
     assertErrorMessageContains(mvcResult, "SortBy");
   }
 
   @Test
   public void testQueryWithWrongSortOrder() throws Exception {
-    //when
-    String jsonRequest = "{ \"sorting\": {\"sortBy\": \"id\",\"sortOrder\": \"unknown\"}}";     //wrong sort order
-    final MvcResult mvcResult = postRequestThatShouldFail(query(0, 100),jsonRequest);
-    //then
+    // when
+    String jsonRequest =
+        "{ \"sorting\": {\"sortBy\": \"id\",\"sortOrder\": \"unknown\"}}"; // wrong sort order
+    final MvcResult mvcResult = postRequestThatShouldFail(query(0, 100), jsonRequest);
+    // then
     assertErrorMessageContains(mvcResult, "SortOrder");
   }
 
   private String query(int firstResult, int maxResults) {
-    return String.format("%s?firstResult=%d&maxResults=%d", ProcessInstanceRestService.PROCESS_INSTANCE_URL, firstResult, maxResults);
+    return String.format(
+        "%s?firstResult=%d&maxResults=%d",
+        ProcessInstanceRestService.PROCESS_INSTANCE_URL, firstResult, maxResults);
   }
 
   @Test
   public void testOperationForUpdateVariableFailsNoValue() throws Exception {
-    CreateOperationRequestDto operationRequestDto = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
+    CreateOperationRequestDto operationRequestDto =
+        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     operationRequestDto.setVariableScopeId("a");
     operationRequestDto.setVariableName("a");
     MvcResult mvcResult = postRequestThatShouldFail(getOperationUrl(), operationRequestDto);
-    assertErrorMessageContains(mvcResult, "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+    assertErrorMessageContains(
+        mvcResult, "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
   }
 
   @Test
   public void testOperationForUpdateVariableFailsNoName() throws Exception {
-    CreateOperationRequestDto operationRequestDto = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
+    CreateOperationRequestDto operationRequestDto =
+        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     operationRequestDto.setVariableScopeId("a");
     operationRequestDto.setVariableValue("a");
     MvcResult mvcResult = postRequestThatShouldFail(getOperationUrl(), operationRequestDto);
-    assertErrorMessageContains(mvcResult, "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+    assertErrorMessageContains(
+        mvcResult, "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
   }
 
   @Test
   public void testOperationForUpdateVariableFailsNoScopeId() throws Exception {
-    CreateOperationRequestDto operationRequestDto = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
+    CreateOperationRequestDto operationRequestDto =
+        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     operationRequestDto.setVariableName("a");
     operationRequestDto.setVariableValue("a");
     MvcResult mvcResult = postRequestThatShouldFail(getOperationUrl(), operationRequestDto);
-    assertErrorMessageContains(mvcResult, "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+    assertErrorMessageContains(
+        mvcResult, "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
   }
 
   @Test
@@ -164,21 +162,26 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
 
   @Test
   public void testBatchOperationForUpdateVariableFailsNoQuery() throws Exception {
-    CreateBatchOperationRequestDto operationRequestDto = new CreateBatchOperationRequestDto(null, OperationType.UPDATE_VARIABLE);
+    CreateBatchOperationRequestDto operationRequestDto =
+        new CreateBatchOperationRequestDto(null, OperationType.UPDATE_VARIABLE);
     MvcResult mvcResult = postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
     assertErrorMessageContains(mvcResult, "List view query must be defined.");
   }
 
   @Test
   public void testBatchOperationForUpdateVariableFailsWrongEndpoint() throws Exception {
-    CreateBatchOperationRequestDto operationRequestDto = new CreateBatchOperationRequestDto(new ListViewQueryDto(), OperationType.UPDATE_VARIABLE);
+    CreateBatchOperationRequestDto operationRequestDto =
+        new CreateBatchOperationRequestDto(new ListViewQueryDto(), OperationType.UPDATE_VARIABLE);
     MvcResult mvcResult = postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
-    assertErrorMessageContains(mvcResult, "For variable update use \"Create operation for one process instance\" endpoint.");
+    assertErrorMessageContains(
+        mvcResult,
+        "For variable update use \"Create operation for one process instance\" endpoint.");
   }
 
   @Test
   public void testBatchOperationFailsNoOperationType() throws Exception {
-    CreateBatchOperationRequestDto operationRequestDto = new CreateBatchOperationRequestDto(new ListViewQueryDto(), null);
+    CreateBatchOperationRequestDto operationRequestDto =
+        new CreateBatchOperationRequestDto(new ListViewQueryDto(), null);
     MvcResult mvcResult = postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
     assertErrorMessageContains(mvcResult, "Operation type must be defined.");
   }
@@ -219,12 +222,14 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
   }
 
   private void getRequestShouldFailValidationForUrl(String url) throws Exception {
-    MvcResult mvcResult = getRequestShouldFailWithException(url, ConstraintViolationException.class);
+    MvcResult mvcResult =
+        getRequestShouldFailWithException(url, ConstraintViolationException.class);
     assertErrorMessageContains(mvcResult, "Specified ID is not valid");
   }
 
   private void postRequestShouldFailValidationForUrl(String url) throws Exception {
-    MvcResult mvcResult = postRequestShouldFailWithException(url, ConstraintViolationException.class);
+    MvcResult mvcResult =
+        postRequestShouldFailWithException(url, ConstraintViolationException.class);
     assertErrorMessageContains(mvcResult, "Specified ID is not valid");
   }
 
@@ -235,110 +240,169 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     // when
     ListViewProcessInstanceDto expectedDto = new ListViewProcessInstanceDto().setId("one id");
     when(processInstanceReader.getProcessInstanceWithOperationsByKey(123L)).thenReturn(expectedDto);
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(validId))).thenReturn(new ProcessInstanceForListViewEntity());
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(validId)))
+        .thenReturn(new ProcessInstanceForListViewEntity());
     MvcResult mvcResult = getRequest(getInstanceByIdUrl(validId));
     // then
-    ListViewProcessInstanceDto actualResult = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    ListViewProcessInstanceDto actualResult =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     Assert.assertEquals(expectedDto, actualResult);
   }
 
   @Test
   public void testModifyFailsForNotExistingProcessInstance() throws Exception {
     when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(null);
-    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify", new ModifyProcessInstanceRequestDto());
-    assertErrorMessageContains( mvcResult,"Process instance with key 123 does not exist");
+    final MvcResult mvcResult =
+        postRequestThatShouldFail(
+            getInstanceByIdUrl("123") + "/modify", new ModifyProcessInstanceRequestDto());
+    assertErrorMessageContains(mvcResult, "Process instance with key 123 does not exist");
   }
 
   @Test
   public void testModifyFailsForNotExistingModifications() throws Exception {
-    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
-    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
-        new ModifyProcessInstanceRequestDto().setProcessInstanceKey("123").setModifications(null));
-    assertErrorMessageContains( mvcResult,"No modifications given for process instance with key 123");
+    when(processInstanceReader.getProcessInstanceByKey(123L))
+        .thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult =
+        postRequestThatShouldFail(
+            getInstanceByIdUrl("123") + "/modify",
+            new ModifyProcessInstanceRequestDto()
+                .setProcessInstanceKey("123")
+                .setModifications(null));
+    assertErrorMessageContains(
+        mvcResult, "No modifications given for process instance with key 123");
   }
 
   @Test
   public void testModifyFailsForMissingAddParameters() throws Exception {
-    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
-    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
-        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
-            .setModification(Modification.Type.ADD_TOKEN))));
-    assertErrorMessageContains( mvcResult,"No toFlowNodeId given for process instance with key 123");
+    when(processInstanceReader.getProcessInstanceByKey(123L))
+        .thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult =
+        postRequestThatShouldFail(
+            getInstanceByIdUrl("123") + "/modify",
+            new ModifyProcessInstanceRequestDto()
+                .setModifications(
+                    List.of(new Modification().setModification(Modification.Type.ADD_TOKEN))));
+    assertErrorMessageContains(
+        mvcResult, "No toFlowNodeId given for process instance with key 123");
   }
 
   @Test
   public void testModifyFailsForMissingCancelParameters() throws Exception {
-    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
-    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
-        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
-            .setModification(Modification.Type.CANCEL_TOKEN))));
-    assertErrorMessageContains( mvcResult,"Neither fromFlowNodeId nor fromFlowNodeInstanceKey is given for process instance with key 123");
+    when(processInstanceReader.getProcessInstanceByKey(123L))
+        .thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult =
+        postRequestThatShouldFail(
+            getInstanceByIdUrl("123") + "/modify",
+            new ModifyProcessInstanceRequestDto()
+                .setModifications(
+                    List.of(new Modification().setModification(Modification.Type.CANCEL_TOKEN))));
+    assertErrorMessageContains(
+        mvcResult,
+        "Neither fromFlowNodeId nor fromFlowNodeInstanceKey is given for process instance with key 123");
   }
 
   @Test
   public void testModifyFailsForWrongFlowNodeInstanceCancelParameter() throws Exception {
-    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
-    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
-        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
-            .setFromFlowNodeInstanceKey("no long")
-            .setModification(Modification.Type.CANCEL_TOKEN))));
-    assertErrorMessageContains( mvcResult,"fromFlowNodeInstanceKey should be a Long.");
+    when(processInstanceReader.getProcessInstanceByKey(123L))
+        .thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult =
+        postRequestThatShouldFail(
+            getInstanceByIdUrl("123") + "/modify",
+            new ModifyProcessInstanceRequestDto()
+                .setModifications(
+                    List.of(
+                        new Modification()
+                            .setFromFlowNodeInstanceKey("no long")
+                            .setModification(Modification.Type.CANCEL_TOKEN))));
+    assertErrorMessageContains(mvcResult, "fromFlowNodeInstanceKey should be a Long.");
   }
 
   @Test
   public void testModifyFailsForTooManyCancelParameters() throws Exception {
-    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
-    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
-        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
-                .setFromFlowNodeId("toFlowNodeId")
-                .setFromFlowNodeInstanceKey("1234")
-            .setModification(Modification.Type.CANCEL_TOKEN))));
-    assertErrorMessageContains( mvcResult,"Either fromFlowNodeId or fromFlowNodeInstanceKey for process instance with key 123 should be given, not both.");
+    when(processInstanceReader.getProcessInstanceByKey(123L))
+        .thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult =
+        postRequestThatShouldFail(
+            getInstanceByIdUrl("123") + "/modify",
+            new ModifyProcessInstanceRequestDto()
+                .setModifications(
+                    List.of(
+                        new Modification()
+                            .setFromFlowNodeId("toFlowNodeId")
+                            .setFromFlowNodeInstanceKey("1234")
+                            .setModification(Modification.Type.CANCEL_TOKEN))));
+    assertErrorMessageContains(
+        mvcResult,
+        "Either fromFlowNodeId or fromFlowNodeInstanceKey for process instance with key 123 should be given, not both.");
   }
 
   @Test
   public void testModifyFailsForMissingMoveParameters() throws Exception {
-    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
-    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
-        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
-            .setModification(Modification.Type.MOVE_TOKEN))));
-    assertErrorMessageContains( mvcResult,"No toFlowNodeId given for process instance with key 123");
+    when(processInstanceReader.getProcessInstanceByKey(123L))
+        .thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult =
+        postRequestThatShouldFail(
+            getInstanceByIdUrl("123") + "/modify",
+            new ModifyProcessInstanceRequestDto()
+                .setModifications(
+                    List.of(new Modification().setModification(Modification.Type.MOVE_TOKEN))));
+    assertErrorMessageContains(
+        mvcResult, "No toFlowNodeId given for process instance with key 123");
   }
 
   @Test
   public void testModifyFailsForTooManyMoveParameters() throws Exception {
-    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
-    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
-        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
-            .setToFlowNodeId("toFlowNodeId")
-            .setFromFlowNodeInstanceKey("123")
-            .setFromFlowNodeId("fromFlowNodeId")
-            .setModification(Modification.Type.MOVE_TOKEN))));
-    assertErrorMessageContains( mvcResult,"Either fromFlowNodeId or fromFlowNodeInstanceKey for process instance with key 123 should be given, not both.");
+    when(processInstanceReader.getProcessInstanceByKey(123L))
+        .thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult =
+        postRequestThatShouldFail(
+            getInstanceByIdUrl("123") + "/modify",
+            new ModifyProcessInstanceRequestDto()
+                .setModifications(
+                    List.of(
+                        new Modification()
+                            .setToFlowNodeId("toFlowNodeId")
+                            .setFromFlowNodeInstanceKey("123")
+                            .setFromFlowNodeId("fromFlowNodeId")
+                            .setModification(Modification.Type.MOVE_TOKEN))));
+    assertErrorMessageContains(
+        mvcResult,
+        "Either fromFlowNodeId or fromFlowNodeInstanceKey for process instance with key 123 should be given, not both.");
   }
 
   @Test
   public void testModifyFailsForUnknownModification() throws Exception {
-    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
-    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
-        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification())));
-    assertErrorMessageContains( mvcResult,"Unknown Modification.Type given for process instance with key 123.");
+    when(processInstanceReader.getProcessInstanceByKey(123L))
+        .thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult =
+        postRequestThatShouldFail(
+            getInstanceByIdUrl("123") + "/modify",
+            new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification())));
+    assertErrorMessageContains(
+        mvcResult, "Unknown Modification.Type given for process instance with key 123.");
   }
 
   @Test
   public void testModifyFailsForMissingAddOrEditVariableParameters() throws Exception {
-    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
+    when(processInstanceReader.getProcessInstanceByKey(123L))
+        .thenReturn(new ProcessInstanceForListViewEntity());
     // ADD_VARIABLE
-    MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
-        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
-            .setModification(Modification.Type.ADD_VARIABLE))));
-    assertErrorMessageContains( mvcResult,"No variables given for process instance with key 123");
+    MvcResult mvcResult =
+        postRequestThatShouldFail(
+            getInstanceByIdUrl("123") + "/modify",
+            new ModifyProcessInstanceRequestDto()
+                .setModifications(
+                    List.of(new Modification().setModification(Modification.Type.ADD_VARIABLE))));
+    assertErrorMessageContains(mvcResult, "No variables given for process instance with key 123");
 
     // EDIT_VARIABLE
-    mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
-        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
-            .setModification(Modification.Type.EDIT_VARIABLE))));
-    assertErrorMessageContains( mvcResult,"No variables given for process instance with key 123");
+    mvcResult =
+        postRequestThatShouldFail(
+            getInstanceByIdUrl("123") + "/modify",
+            new ModifyProcessInstanceRequestDto()
+                .setModifications(
+                    List.of(new Modification().setModification(Modification.Type.EDIT_VARIABLE))));
+    assertErrorMessageContains(mvcResult, "No variables given for process instance with key 123");
   }
 
   @Test
@@ -347,9 +411,12 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getInstanceByIdUrl(processInstanceId));
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        getRequestShouldFailWithNoAuthorization(getInstanceByIdUrl(processInstanceId));
     // then
     assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
@@ -360,9 +427,12 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getIncidentsByIdUrl(processInstanceId));
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        getRequestShouldFailWithNoAuthorization(getIncidentsByIdUrl(processInstanceId));
     // then
     assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
@@ -373,9 +443,12 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getSequenceFlowsByIdUrl(processInstanceId));
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        getRequestShouldFailWithNoAuthorization(getSequenceFlowsByIdUrl(processInstanceId));
     // then
     assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
@@ -386,9 +459,13 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getVariablesByIdUrl(processInstanceId), new VariableRequestDto());
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        postRequestShouldFailWithNoAuthorization(
+            getVariablesByIdUrl(processInstanceId), new VariableRequestDto());
     // then
     assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
@@ -399,9 +476,12 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getFlowNodeStatesByIdUrl(processInstanceId));
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        getRequestShouldFailWithNoAuthorization(getFlowNodeStatesByIdUrl(processInstanceId));
     // then
     assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
@@ -412,9 +492,12 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getFlowNodeStatisticsByIdUrl(processInstanceId));
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        getRequestShouldFailWithNoAuthorization(getFlowNodeStatisticsByIdUrl(processInstanceId));
     // then
     assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
@@ -425,9 +508,13 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getFlowNodeMetadataByIdUrl(processInstanceId), new FlowNodeMetadataRequestDto());
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        postRequestShouldFailWithNoAuthorization(
+            getFlowNodeMetadataByIdUrl(processInstanceId), new FlowNodeMetadataRequestDto());
     // then
     assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
@@ -437,14 +524,19 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     // given
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
-    CreateOperationRequestDto request = new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_INSTANCE);
+    CreateOperationRequestDto request =
+        new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_INSTANCE);
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
-        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE_PROCESS_INSTANCE)).thenReturn(false);
-    MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getOperationUrl(processInstanceId), request);
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(
+            bpmnProcessId, IdentityPermission.DELETE_PROCESS_INSTANCE))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        postRequestShouldFailWithNoAuthorization(getOperationUrl(processInstanceId), request);
     // then
-    assertErrorMessageContains(mvcResult, "No DELETE_PROCESS_INSTANCE permission for process instance");
+    assertErrorMessageContains(
+        mvcResult, "No DELETE_PROCESS_INSTANCE permission for process instance");
   }
 
   @Test
@@ -452,16 +544,20 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     // given
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
-    CreateOperationRequestDto request = new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_INSTANCE);
+    CreateOperationRequestDto request =
+        new CreateOperationRequestDto().setOperationType(OperationType.DELETE_PROCESS_INSTANCE);
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
-        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE_PROCESS_INSTANCE)).thenReturn(true);
-    when(batchOperationWriter.scheduleSingleOperation(Long.parseLong(processInstanceId), request)).thenReturn(new BatchOperationEntity());
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(
+            bpmnProcessId, IdentityPermission.DELETE_PROCESS_INSTANCE))
+        .thenReturn(true);
+    when(batchOperationWriter.scheduleSingleOperation(Long.parseLong(processInstanceId), request))
+        .thenReturn(new BatchOperationEntity());
     MvcResult mvcResult = postRequest(getOperationUrl(processInstanceId), request);
     // then
-    final BatchOperationEntity response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    final BatchOperationEntity response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(response).isNotNull();
   }
 
@@ -470,14 +566,19 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     // given
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
-    CreateOperationRequestDto request = new CreateOperationRequestDto().setOperationType(OperationType.CANCEL_PROCESS_INSTANCE);
+    CreateOperationRequestDto request =
+        new CreateOperationRequestDto().setOperationType(OperationType.CANCEL_PROCESS_INSTANCE);
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
-        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE)).thenReturn(false);
-    MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getOperationUrl(processInstanceId), request);
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(
+            bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        postRequestShouldFailWithNoAuthorization(getOperationUrl(processInstanceId), request);
     // then
-    assertErrorMessageContains(mvcResult, "No UPDATE_PROCESS_INSTANCE permission for process instance");
+    assertErrorMessageContains(
+        mvcResult, "No UPDATE_PROCESS_INSTANCE permission for process instance");
   }
 
   @Test
@@ -485,16 +586,20 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     // given
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
-    CreateOperationRequestDto request = new CreateOperationRequestDto().setOperationType(OperationType.CANCEL_PROCESS_INSTANCE);
+    CreateOperationRequestDto request =
+        new CreateOperationRequestDto().setOperationType(OperationType.CANCEL_PROCESS_INSTANCE);
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
-        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE)).thenReturn(true);
-    when(batchOperationWriter.scheduleSingleOperation(Long.parseLong(processInstanceId), request)).thenReturn(new BatchOperationEntity());
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(
+            bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE))
+        .thenReturn(true);
+    when(batchOperationWriter.scheduleSingleOperation(Long.parseLong(processInstanceId), request))
+        .thenReturn(new BatchOperationEntity());
     MvcResult mvcResult = postRequest(getOperationUrl(processInstanceId), request);
     // then
-    final BatchOperationEntity response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    final BatchOperationEntity response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(response).isNotNull();
   }
 
@@ -503,17 +608,23 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     // given
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
-    ModifyProcessInstanceRequestDto.Modification modification = new Modification()
-        .setModification(Modification.Type.ADD_VARIABLE)
-        .setVariables(Map.of("var",11));
-    ModifyProcessInstanceRequestDto request = new ModifyProcessInstanceRequestDto().setModifications(List.of(modification));
+    ModifyProcessInstanceRequestDto.Modification modification =
+        new Modification()
+            .setModification(Modification.Type.ADD_VARIABLE)
+            .setVariables(Map.of("var", 11));
+    ModifyProcessInstanceRequestDto request =
+        new ModifyProcessInstanceRequestDto().setModifications(List.of(modification));
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
-        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE)).thenReturn(false);
-    MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getModificationUrl(processInstanceId), request);
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(
+            bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        postRequestShouldFailWithNoAuthorization(getModificationUrl(processInstanceId), request);
     // then
-    assertErrorMessageContains(mvcResult, "No UPDATE_PROCESS_INSTANCE permission for process instance");
+    assertErrorMessageContains(
+        mvcResult, "No UPDATE_PROCESS_INSTANCE permission for process instance");
   }
 
   @Test
@@ -521,19 +632,24 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     // given
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
-    ModifyProcessInstanceRequestDto.Modification modification = new Modification()
-        .setModification(Modification.Type.ADD_VARIABLE)
-        .setVariables(Map.of("var",11));
-    ModifyProcessInstanceRequestDto request = new ModifyProcessInstanceRequestDto().setModifications(List.of(modification));
+    ModifyProcessInstanceRequestDto.Modification modification =
+        new Modification()
+            .setModification(Modification.Type.ADD_VARIABLE)
+            .setVariables(Map.of("var", 11));
+    ModifyProcessInstanceRequestDto request =
+        new ModifyProcessInstanceRequestDto().setModifications(List.of(modification));
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
-        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE)).thenReturn(true);
-    when(batchOperationWriter.scheduleModifyProcessInstance(any())).thenReturn(new BatchOperationEntity());
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(
+            bpmnProcessId, IdentityPermission.UPDATE_PROCESS_INSTANCE))
+        .thenReturn(true);
+    when(batchOperationWriter.scheduleModifyProcessInstance(any()))
+        .thenReturn(new BatchOperationEntity());
     MvcResult mvcResult = postRequest(getModificationUrl(processInstanceId), request);
     // then
-    final BatchOperationEntity response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    final BatchOperationEntity response =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(response).isNotNull();
   }
 
@@ -544,10 +660,12 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
-        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
-    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getVariableUrl(processInstanceId, variableId));
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(false);
+    MvcResult mvcResult =
+        getRequestShouldFailWithNoAuthorization(getVariableUrl(processInstanceId, variableId));
     // then
     assertErrorMessageContains(mvcResult, "No READ permission for process instance");
   }
@@ -559,14 +677,14 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
     String processInstanceId = "123";
     String bpmnProcessId = "processId";
     // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(
-        new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(true);
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+        .thenReturn(true);
     when(variableReader.getVariable(variableId)).thenReturn(new VariableDto());
     MvcResult mvcResult = getRequest(getVariableUrl(processInstanceId, variableId));
     // then
-    final VariableDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
+    final VariableDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(response).isNotNull();
   }
 
@@ -603,7 +721,11 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
   }
 
   public String getVariableUrl(String processInstanceId, String variableId) {
-    return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + processInstanceId + "/variables/" + variableId;
+    return ProcessInstanceRestService.PROCESS_INSTANCE_URL
+        + "/"
+        + processInstanceId
+        + "/variables/"
+        + variableId;
   }
 
   public String getFlowNodeStatesByIdUrl(String id) {
@@ -617,5 +739,4 @@ public class ProcessInstanceRestServiceIT extends OperateAbstractIT {
   public String getFlowNodeMetadataByIdUrl(String id) {
     return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + id + "/flow-node-metadata";
   }
-
 }

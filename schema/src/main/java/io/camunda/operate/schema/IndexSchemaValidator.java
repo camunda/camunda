@@ -6,20 +6,19 @@
  */
 package io.camunda.operate.schema;
 
+import static io.camunda.operate.util.CollectionUtil.map;
+
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.migration.SemanticVersion;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import static io.camunda.operate.util.CollectionUtil.map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class IndexSchemaValidator {
@@ -28,11 +27,9 @@ public class IndexSchemaValidator {
 
   private static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+.*)_.*");
 
-  @Autowired
-  Set<IndexDescriptor> indexDescriptors;
+  @Autowired Set<IndexDescriptor> indexDescriptors;
 
-  @Autowired
-  SchemaManager schemaManager;
+  @Autowired SchemaManager schemaManager;
 
   private Set<String> getAllIndexNamesForIndex(String index) {
     final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
@@ -84,29 +81,32 @@ public class IndexSchemaValidator {
   }
 
   public void validate() {
-    if (!hasAnyOperateIndices())
-      return;
+    if (!hasAnyOperateIndices()) return;
     Set<String> errors = new HashSet<>();
-    indexDescriptors.forEach(indexDescriptor -> {
-      Set<String> oldVersions = olderVersionsForIndex(indexDescriptor);
-      Set<String> newerVersions = newerVersionsForIndex(indexDescriptor);
-      if (oldVersions.size() > 1) {
-        errors
-            .add(String.format("More than one older version for %s (%s) found: %s", indexDescriptor.getIndexName(), indexDescriptor.getVersion(), oldVersions));
-      }
-      if (!newerVersions.isEmpty()) {
-        errors
-            .add(String.format("Newer version(s) for %s (%s) already exists: %s", indexDescriptor.getIndexName(), indexDescriptor.getVersion(), newerVersions));
-      }
-    });
+    indexDescriptors.forEach(
+        indexDescriptor -> {
+          Set<String> oldVersions = olderVersionsForIndex(indexDescriptor);
+          Set<String> newerVersions = newerVersionsForIndex(indexDescriptor);
+          if (oldVersions.size() > 1) {
+            errors.add(
+                String.format(
+                    "More than one older version for %s (%s) found: %s",
+                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), oldVersions));
+          }
+          if (!newerVersions.isEmpty()) {
+            errors.add(
+                String.format(
+                    "Newer version(s) for %s (%s) already exists: %s",
+                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), newerVersions));
+          }
+        });
     if (!errors.isEmpty()) {
       throw new OperateRuntimeException("Error(s) in index schema: " + String.join(";", errors));
     }
   }
 
   public boolean hasAnyOperateIndices() {
-    final Set<String> indices = schemaManager
-        .getIndexNames(schemaManager.getIndexPrefix() + "*");
+    final Set<String> indices = schemaManager.getIndexNames(schemaManager.getIndexPrefix() + "*");
     return !indices.isEmpty();
   }
 
@@ -115,7 +115,8 @@ public class IndexSchemaValidator {
       final Set<String> indices = schemaManager.getIndexNames(schemaManager.getIndexPrefix() + "*");
       List<String> allIndexNames = map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
 
-      final Set<String> aliases = schemaManager.getAliasesNames(schemaManager.getIndexPrefix() + "*");
+      final Set<String> aliases =
+          schemaManager.getAliasesNames(schemaManager.getIndexPrefix() + "*");
       final List<String> allAliasesNames = map(indexDescriptors, IndexDescriptor::getAlias);
 
       return indices.containsAll(allIndexNames) && aliases.containsAll(allAliasesNames);

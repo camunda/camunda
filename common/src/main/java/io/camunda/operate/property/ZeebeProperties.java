@@ -48,7 +48,4 @@ public class ZeebeProperties {
     this.gatewayAddress = gatewayAddress;
     return this;
   }
-
-
-
 }

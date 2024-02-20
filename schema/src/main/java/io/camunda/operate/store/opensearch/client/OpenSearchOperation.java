@@ -8,12 +8,11 @@ package io.camunda.operate.store.opensearch.client;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ExceptionSupplier;
+import java.lang.reflect.Field;
+import java.util.function.Function;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.util.ObjectBuilderBase;
 import org.slf4j.Logger;
-
-import java.lang.reflect.Field;
-import java.util.function.Function;
 
 public class OpenSearchOperation {
   public static final int QUERY_MAX_SIZE = 10000;

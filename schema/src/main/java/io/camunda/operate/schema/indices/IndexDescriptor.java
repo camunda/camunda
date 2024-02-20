@@ -17,10 +17,11 @@ public interface IndexDescriptor extends Versionable {
 
   String getFullQualifiedName();
 
-  default String getDerivedIndexNamePattern() { return getFullQualifiedName() + "*"; }
+  default String getDerivedIndexNamePattern() {
+    return getFullQualifiedName() + "*";
+  }
 
   default String getAlias() {
     return getFullQualifiedName() + "alias";
   }
-
 }

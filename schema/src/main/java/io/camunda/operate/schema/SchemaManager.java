@@ -6,7 +6,6 @@
  */
 package io.camunda.operate.schema;
 
-
 import java.util.Map;
 import java.util.Set;
 

@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public enum FlowNodeType {
-
   UNSPECIFIED,
   PROCESS,
   SUB_PROCESS,
@@ -47,9 +46,10 @@ public enum FlowNodeType {
     try {
       return FlowNodeType.valueOf(bpmnElementType);
     } catch (IllegalArgumentException ex) {
-      logger.error("Flow node type not found for value [{}]. UNKNOWN type will be assigned.", bpmnElementType);
+      logger.error(
+          "Flow node type not found for value [{}]. UNKNOWN type will be assigned.",
+          bpmnElementType);
       return UNKNOWN;
     }
   }
-
 }

@@ -9,8 +9,8 @@ package io.camunda.operate.util;
 import java.util.Optional;
 
 /*
-* Convertable is an Object wrapper which allows for safe type casting
-*/
+ * Convertable is an Object wrapper which allows for safe type casting
+ */
 
 public class Convertable {
   Object value;
@@ -30,5 +30,4 @@ public class Convertable {
       return Optional.empty();
     }
   }
-
 }

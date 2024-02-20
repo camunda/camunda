@@ -8,9 +8,8 @@ package io.camunda.operate.util;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeContainer;
-import org.junit.runner.Description;
-
 import java.time.Instant;
+import org.junit.runner.Description;
 
 public interface OperateZeebeRuleProvider {
   void starting(Description description);

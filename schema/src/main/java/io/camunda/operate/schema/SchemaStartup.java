@@ -11,14 +11,13 @@ import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.migration.Migrator;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-
-import jakarta.annotation.PostConstruct;
 
 @Component("schemaStartup")
 @DependsOn("databaseInfo")
@@ -42,7 +41,10 @@ public class SchemaStartup {
     LOGGER.info("SchemaStartup started.");
     LOGGER.info("SchemaStartup: validate schema.");
     schemaValidator.validate();
-    boolean createSchema = DatabaseInfo.isOpensearch()? operateProperties.getOpensearch().isCreateSchema(): operateProperties.getElasticsearch().isCreateSchema();
+    boolean createSchema =
+        DatabaseInfo.isOpensearch()
+            ? operateProperties.getOpensearch().isCreateSchema()
+            : operateProperties.getElasticsearch().isCreateSchema();
     if (createSchema && !schemaValidator.schemaExists()) {
       LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
       schemaManager.createSchema();
