@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.agrona.CloseHelper;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -79,7 +80,6 @@ final class DiskSpaceRecoveryIT {
         .correlationKey(String.valueOf(1))
         .variables(Map.of("key", "abc".repeat(4096)))
         .timeToLive(Duration.ZERO)
-        .requestTimeout(Duration.ofSeconds(30))
         .send()
         .join();
   }
