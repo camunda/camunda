@@ -225,6 +225,21 @@ declare module '@carbon/react' {
     onClick?: () => void;
   }>;
 
+  type FlexGridProps<C extends React.ElementType> =
+    PolymorphicComponentPropWithRef<
+      C,
+      {
+        className?: string;
+        condensed?: boolean;
+        fullWidth?: boolean;
+        narrow?: boolean;
+      }
+    >;
+
+  export const FlexGrid: <C extends React.ElementType = 'div'>(
+    props: FlexGridProps<C>,
+  ) => React.ReactElement | null;
+
   export const useTheme: () => {theme: ThemeType};
 
   export const usePrefix: () => string;

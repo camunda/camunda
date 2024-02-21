@@ -62,12 +62,20 @@ const api = {
       },
     });
   },
-  getProcesses: (params: {query?: string; tenantId?: Task['tenantId']}) => {
+  getProcesses: (params: {
+    query?: string;
+    tenantId?: Task['tenantId'];
+    isStartedByForm?: boolean;
+  }) => {
     const url = getFullURL('/v1/internal/processes');
 
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== '') {
-        url.searchParams.set(key, value);
+      if (value !== undefined) {
+        if (typeof value === 'string' && value !== '') {
+          url.searchParams.set(key, value);
+        } else if (typeof value === 'boolean') {
+          url.searchParams.set(key, value ? 'true' : 'false');
+        }
       }
     });
 

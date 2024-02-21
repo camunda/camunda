@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Search, Stack, Link} from '@carbon/react';
+import {Search, Stack, Link, Column, Row, FlexGrid} from '@carbon/react';
 import {ProcessTile} from './ProcessTile';
 import {
   Container,
@@ -18,7 +18,12 @@ import {
   Dropdown,
 } from './styled';
 import debounce from 'lodash/debounce';
-import {useLocation, useNavigate, Navigate, useMatch} from 'react-router-dom';
+import {
+  useLocation,
+  useNavigate,
+  useMatch,
+  useSearchParams,
+} from 'react-router-dom';
 import {useEffect, useRef, useState} from 'react';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import EmptyMessageImage from './empty-message-image.svg';
@@ -38,9 +43,68 @@ import {CurrentUser} from 'modules/types';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {pages} from 'modules/routing';
 
-function getParam(param: 'search' | 'tenantId', params: URLSearchParams) {
-  return params.get(param) ?? undefined;
-}
+type UseProcessesFilterParams = Omit<
+  Parameters<typeof useProcesses>[0],
+  'query' | 'tenantId'
+>;
+
+type FilterOption = {
+  id: string;
+  text: string;
+  searchParamValue: 'yes' | 'no' | undefined;
+  params: UseProcessesFilterParams;
+};
+
+const START_FORM_FILTER_OPTIONS: FilterOption[] = [
+  {
+    id: 'ignore',
+    text: 'All Processes',
+    searchParamValue: undefined,
+    params: {
+      isStartedByForm: undefined,
+    },
+  },
+  {
+    id: 'yes',
+    text: 'Requires form input to start',
+    searchParamValue: 'yes',
+    params: {
+      isStartedByForm: true,
+    },
+  },
+  {
+    id: 'no',
+    text: 'Does not require form input to start',
+    searchParamValue: 'no',
+    params: {
+      isStartedByForm: false,
+    },
+  },
+];
+
+const FilterDropdown: React.FC<{
+  items: FilterOption[];
+  selected?: FilterOption;
+  onChange?: (option: FilterOption) => void;
+}> = ({items, selected, onChange}) => {
+  return (
+    <Dropdown
+      id="process-filters"
+      data-testid="process-filters"
+      hideLabel
+      selectedItem={selected}
+      titleText="Filter processes"
+      label="Filter processes"
+      items={items}
+      itemToString={(item) => (item ? item.text : '')}
+      onChange={(data) => {
+        if (data.selectedItem && onChange) {
+          onChange(data.selectedItem);
+        }
+      }}
+    />
+  );
+};
 
 const Processes: React.FC = observer(() => {
   const {instance} = newProcessInstance;
@@ -50,38 +114,44 @@ const Processes: React.FC = observer(() => {
   const defaultTenant = currentUser?.tenants[0];
   const location = useLocation();
   const navigate = useNavigate();
-  const searchParams = new URLSearchParams(location.search);
-  const selectedTenantId = hasMultipleTenants
-    ? getParam('tenantId', searchParams) ?? defaultTenant?.id
-    : defaultTenant?.id;
-  const {data, error, isInitialLoading} = useProcesses({
-    query: getParam('search', searchParams),
-    tenantId: selectedTenantId,
-  });
-  function navigateSearchParams(params: {
-    name: 'search' | 'tenantId';
-    value: string;
-    currentQueryString: string;
-  }) {
-    const {name, value, currentQueryString} = params;
-    const searchParams = new URLSearchParams(currentQueryString);
-
+  const [searchParams, setSearchParams] = useSearchParams();
+  const updateSearchParams = (
+    current: URLSearchParams,
+    params: {
+      name: 'search' | 'tenantId' | 'hasStartForm';
+      value: string;
+    },
+  ) => {
+    const {name, value} = params;
     if (value) {
-      searchParams.set(name, value);
+      current.set(name, value);
     } else {
-      searchParams.delete(name);
+      current.delete(name);
     }
-
-    navigate({
-      search: searchParams.toString(),
-    });
-  }
-  const debouncedNavigate = useRef(debounce(navigateSearchParams, 500)).current;
+    setSearchParams(current);
+  };
+  const selectedTenantId = hasMultipleTenants
+    ? searchParams.get('tenantId') ?? defaultTenant?.id
+    : defaultTenant?.id;
+  const startFormFilterSearchParam =
+    searchParams.get('hasStartForm') ?? undefined;
+  const startFormFilter =
+    (startFormFilterSearchParam
+      ? START_FORM_FILTER_OPTIONS.find(
+          (opt) => opt.searchParamValue === startFormFilterSearchParam,
+        )
+      : undefined) ?? START_FORM_FILTER_OPTIONS[0];
+  const {data, error, isInitialLoading} = useProcesses({
+    query: searchParams.get('search') ?? undefined,
+    tenantId: selectedTenantId,
+    ...(startFormFilter?.params ?? {}),
+  });
+  const debouncedNavigate = useRef(debounce(updateSearchParams, 500)).current;
   const initialTenantId = useRef(
     defaultTenant?.id ?? getStateLocally('tenantId'),
   ).current;
   const [searchValue, setSearchValue] = useState(
-    getParam('search', searchParams) ?? '',
+    searchParams.get('search') ?? '',
   );
   const isFiltered = data?.query !== undefined && data.query !== '';
   const processes = data?.processes ?? [];
@@ -128,22 +198,22 @@ const Processes: React.FC = observer(() => {
     }
   }, [match, data, isInitialLoading, navigate, location]);
 
-  if (
-    getParam('tenantId', searchParams) === undefined &&
-    initialTenantId !== null
-  ) {
-    const newSearchParams = new URLSearchParams(location.search);
+  useEffect(() => {
+    if (searchParams.get('tenantId') === null && initialTenantId !== null) {
+      searchParams.set('tenantId', initialTenantId);
+      setSearchParams(searchParams, {replace: true});
+    }
+  }, [initialTenantId, searchParams, setSearchParams]);
 
-    newSearchParams.set('tenantId', initialTenantId);
+  const [previousSearchParams, setPreviousSearchParams] =
+    useState(searchParams);
 
-    return (
-      <Navigate
-        to={{
-          search: newSearchParams.toString(),
-        }}
-        replace
-      />
-    );
+  if (searchParams !== previousSearchParams) {
+    setPreviousSearchParams(searchParams);
+    const newValue = searchParams.get('search') ?? '';
+    if (newValue !== searchValue) {
+      setSearchValue(newValue);
+    }
   }
 
   const processSearchProps: React.ComponentProps<typeof Search> = {
@@ -154,10 +224,9 @@ const Processes: React.FC = observer(() => {
     value: searchValue,
     onChange: (event) => {
       setSearchValue(event.target.value);
-      debouncedNavigate({
+      debouncedNavigate(searchParams, {
         name: 'search',
         value: event.target.value,
-        currentQueryString: location.search,
       });
     },
     disabled: isInitialLoading,
@@ -184,7 +253,7 @@ const Processes: React.FC = observer(() => {
               initialSelectedItem={
                 currentUser?.tenants.find(({id}) =>
                   [
-                    getParam('tenantId', searchParams),
+                    searchParams.get('tenantId') ?? undefined,
                     getStateLocally('tenantId'),
                   ]
                     .filter((tenantId) => tenantId !== undefined)
@@ -198,19 +267,46 @@ const Processes: React.FC = observer(() => {
                   return;
                 }
 
-                navigateSearchParams({
+                updateSearchParams(searchParams, {
                   name: 'tenantId',
                   value: id,
-                  currentQueryString: location.search,
                 });
                 storeStateLocally('tenantId', id);
               }}
             />
             <Search {...processSearchProps} />
+            <FilterDropdown
+              items={START_FORM_FILTER_OPTIONS}
+              selected={startFormFilter}
+              onChange={(value) =>
+                updateSearchParams(searchParams, {
+                  name: 'hasStartForm',
+                  value: value.searchParamValue ?? '',
+                })
+              }
+            />
           </MultiTenancyContainer>
         ) : (
           <SearchContainer>
-            <Search {...processSearchProps} />
+            <FlexGrid>
+              <Row narrow>
+                <Column>
+                  <Search {...processSearchProps} />
+                </Column>
+                <Column>
+                  <FilterDropdown
+                    items={START_FORM_FILTER_OPTIONS}
+                    selected={startFormFilter}
+                    onChange={(value) =>
+                      updateSearchParams(searchParams, {
+                        name: 'hasStartForm',
+                        value: value.searchParamValue ?? '',
+                      })
+                    }
+                  />
+                </Column>
+              </Row>
+            </FlexGrid>
           </SearchContainer>
         )}
         {!isInitialLoading && processes.length === 0 ? (

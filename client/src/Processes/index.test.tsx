@@ -232,6 +232,25 @@ describe('Processes', () => {
     ).toBeDisabled();
   });
 
+  it('should show the filter dropdown', async () => {
+    window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    nodeMockServer.use(
+      http.get('/v1/internal/processes', () => {
+        return HttpResponse.json([]);
+      }),
+    );
+
+    render(<Component />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('process-skeleton'),
+    );
+
+    expect(screen.getByTitle('All Processes')).toBeVisible();
+  });
+
   it('should render a tenant dropdown', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     window.clientConfig = {

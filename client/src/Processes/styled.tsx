@@ -65,12 +65,12 @@ const SearchContainer = styled.div`
   padding-right: var(--cds-spacing-13);
 
   @media (min-width: 1000px) {
-    width: 50%;
+    width: 70%;
     padding-right: 0;
   }
 
   @media (min-width: 2000px) {
-    width: 30%;
+    width: 50%;
     padding-right: 0;
   }
 `;
@@ -79,17 +79,17 @@ const MultiTenancyContainer = styled.div`
   width: 100%;
   padding-right: var(--cds-spacing-13);
   display: grid;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
   grid-template-columns: 1fr;
   align-items: end;
 
   @media (min-width: ${breakpoints.lg.width}) {
-    --column-gap: var(--cds-spacing-13);
-    --content-width: calc(100% - var(--column-gap));
-    grid-template-columns: calc(var(--content-width) * 0.25) calc(
-        var(--content-width) * 0.75
-      );
+    --column-gap: var(--cds-spacing-10);
+    --content-width: calc(100% - var(--cds-spacing-13) - var(--column-gap));
     grid-template-rows: 1fr;
+    grid-template-columns:
+      calc(var(--content-width) * 0.25) calc(var(--content-width) * 0.5)
+      calc(var(--content-width) * 0.25);
     gap: var(--column-gap);
   }
 `;
