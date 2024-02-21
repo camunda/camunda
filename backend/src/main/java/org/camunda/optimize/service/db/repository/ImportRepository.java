@@ -7,6 +7,7 @@ package org.camunda.optimize.service.db.repository;
 
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 
 import java.util.List;
@@ -22,4 +23,6 @@ public interface ImportRepository {
     String typeIndexComesFrom,
     D dataSourceDto
   );
+
+  void importPositionBasedIndices(String importItemName, List<PositionBasedImportIndexDto> importIndexDtos);
 }

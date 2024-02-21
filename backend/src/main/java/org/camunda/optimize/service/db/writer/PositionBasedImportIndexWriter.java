@@ -5,11 +5,23 @@
  */
 package org.camunda.optimize.service.db.writer;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
+import org.camunda.optimize.service.db.repository.ImportRepository;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-public interface PositionBasedImportIndexWriter {
+@AllArgsConstructor
+@Component
+@Slf4j
+public class PositionBasedImportIndexWriter {
+  private final ImportRepository importRepository;
 
-  void importIndexes(List<PositionBasedImportIndexDto> importIndexDtos);
+  public void importIndexes(List<PositionBasedImportIndexDto> importIndexDtos) {
+    String importItemName = "position based import index information";
+    log.debug("Writing [{}] {} to database.", importIndexDtos.size(), importItemName);
+    importRepository.importPositionBasedIndices(importItemName, importIndexDtos);
+  }
 }
