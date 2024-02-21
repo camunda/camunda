@@ -76,7 +76,7 @@ const JSONEditorModal = lazy(async () => {
     import('./JSONEditorModal'),
   ]);
 
-  await loadMonaco();
+  loadMonaco();
 
   return {default: JSONEditorModal};
 });

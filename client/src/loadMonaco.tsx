@@ -22,7 +22,6 @@ function loadMonaco() {
   loader.config({
     monaco,
   });
-  return loader.init();
 }
 
 export {loadMonaco};
