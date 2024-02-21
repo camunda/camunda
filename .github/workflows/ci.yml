@@ -315,11 +315,9 @@ jobs:
     - name: Verify integration
       uses: ./.github/actions/run-maven
       env:
-        # TODO this is a workaround since OS can't run parallel tests and will be replaced with a follow-up ticket
-        LIMITS_CPU: ${{ (matrix.database == 'opensearch' && '1') || '8' }}
+        LIMITS_CPU: 8
       with:
-        # TODO this is a workaround since OS can't run parallel tests and will be replaced with a follow-up ticket
-        threads: ${{ (matrix.database == 'opensearch' && '1') || '8' }}
+        threads: 8
         parameters: >
           verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
           -Dit.test.includedGroups=${{ matrix.includedGroups }}
