@@ -46,7 +46,7 @@
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
-    <version.commons-compress>1.23.0</version.commons-compress>
+    <version.commons-compress>1.26.0</version.commons-compress>
     <version.zstd-jni>1.5.5-11</version.zstd-jni>
     <version.commons-text>1.10.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
@@ -1034,6 +1034,13 @@
       </dependency>
 
       <!-- Dependencies present for convergence only -->
+      <!-- between commons-compress and testcontainers-keycloak -->
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>2.15.1</version>
+      </dependency>
+
       <!-- between log4j2 and commons-compress (from testcontainers) -->
       <dependency>
         <groupId>org.osgi</groupId>
