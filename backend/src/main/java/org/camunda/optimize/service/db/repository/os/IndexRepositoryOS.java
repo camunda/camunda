@@ -50,6 +50,11 @@ public class IndexRepositoryOS implements IndexRepository, ConfigurationReloadab
       .forEach(indexMappingCreator -> createMissingIndex(indexMappingCreator, readOnlyAliases));
   }
 
+  @Override
+  public boolean indexExists(final IndexMappingCreatorBuilder indexMappingCreatorBuilder, final String key) {
+    return indexExists(indexMappingCreatorBuilder.getOpensearch().apply(key).getIndexName());
+  }
+
   private void createMissingIndex(
     IndexMappingCreator<IndexSettings.Builder> indexMappingCreator,
     final Set<String> readOnlyAliases

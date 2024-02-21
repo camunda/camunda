@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanc
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import org.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.json.JsonData;
@@ -59,6 +60,7 @@ import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInst
 @Conditional(OpenSearchCondition.class)
 class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   private final ConfigurationService configurationService;
+  private final OptimizeIndexNameService indexNameService;
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
@@ -74,7 +76,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       format("%s with %s: %s", importItemName, ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
       createUpdateStateScript(state),
       term(ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
-      getProcessInstanceIndexAliasName(definitionKey)
+      aliasForProcessDefinitionKey(definitionKey)
     );
   }
 
@@ -88,7 +90,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       format("%s with %s: %s", importItemName, ProcessInstanceDto.Fields.processDefinitionKey, definitionKey),
       createUpdateStateScript(state),
       matchAll(),
-      getProcessInstanceIndexAliasName(definitionKey)
+      aliasForProcessDefinitionKey(definitionKey)
     );
   }
 
@@ -98,14 +100,14 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       importItemName,
       processInstanceDtos,
       dto -> UpdateOperation.<ProcessInstanceDto>of(
-        operation -> operation.index(getProcessInstanceIndexAliasName(dto.getProcessDefinitionKey()))
+        operation -> operation
+          .index(aliasForProcessDefinitionKey(dto.getProcessDefinitionKey()))
           .id(dto.getProcessInstanceId())
           .script(createUpdateStateScript(dto.getState()))
           .upsert(dto)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
       )._toBulkOperation(),
-      configurationService.getSkipDataAfterNestedDocLimitReached(),
-      importItemName
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 
@@ -115,7 +117,9 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       .map(
         id -> BulkOperation.of(
           op -> op.delete(
-            d -> d.index(index).id(id)
+            d -> d
+              .index(indexNameService.getOptimizeIndexAliasForIndex(index))
+              .id(id)
           )
         )
       )
@@ -156,14 +160,14 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       importItemName,
       processInstanceDtos,
       dto -> UpdateOperation.<ProcessInstanceDto>of(
-        operation -> operation.index(index)
+        operation -> operation
+          .index(indexNameService.getOptimizeIndexAliasForIndex(index))
           .id(dto.getProcessInstanceId())
           .script(scriptBuilder.apply(dto))
           .upsert(dto)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
       )._toBulkOperation(),
-      configurationService.getSkipDataAfterNestedDocLimitReached(),
-      importItemName
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 
@@ -173,7 +177,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       deletedItemIdentifier,
       lt(END_DATE, dateTimeFormatter.format(endDate)),
       false,
-      index
+      indexNameService.getOptimizeIndexAliasForIndex(index)
     );
   }
 
@@ -190,7 +194,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
         lt(END_DATE, dateTimeFormatter.format(endDate)),
         nested(VARIABLES, exists(VARIABLES + "." + VARIABLE_ID), ChildScoreMode.None)
       ),
-      index
+      indexNameService.getOptimizeIndexAliasForIndex(index)
     );
   }
 
@@ -208,7 +212,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
         stringTerms(FLOW_NODE_INSTANCES + "." + FLOW_NODE_INSTANCE_ID, eventIdsToDelete),
         ChildScoreMode.None
       ),
-      index
+      indexNameService.getOptimizeIndexAliasForIndex(index)
     );
   }
 
@@ -223,5 +227,9 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       "suspendedState", json(SUSPENDED_STATE),
       "newState", json(newState)
     );
+  }
+
+  private String aliasForProcessDefinitionKey(String processDefinitionKey) {
+    return indexNameService.getOptimizeIndexAliasForIndex(getProcessInstanceIndexAliasName(processDefinitionKey));
   }
 }

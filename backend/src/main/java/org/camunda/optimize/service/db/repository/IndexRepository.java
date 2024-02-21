@@ -15,4 +15,6 @@ public interface IndexRepository {
     final Set<String> readOnlyAliases,
     final Set<String> keys
   );
+
+  boolean indexExists(IndexMappingCreatorBuilder indexMappingCreatorBuilder, String key);
 }

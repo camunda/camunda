@@ -5,13 +5,13 @@
  */
 package org.camunda.optimize.service.db.repository.os;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.repository.ProcessRepository;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
@@ -37,7 +37,7 @@ import static org.camunda.optimize.service.db.schema.index.ProcessOverviewIndex.
 @Conditional(OpenSearchCondition.class)
 public class ProcessRepositoryOS implements ProcessRepository {
   private final OptimizeOpenSearchClient osClient;
-  private final ObjectMapper objectMapper;
+  private final OptimizeIndexNameService indexNameService;
 
   @Override
   public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(final Set<String> processDefinitionKeys) {
@@ -47,7 +47,7 @@ public class ProcessRepositoryOS implements ProcessRepository {
     }
 
     final SearchRequest.Builder requestBuilder = new SearchRequest.Builder()
-      .index(PROCESS_OVERVIEW_INDEX_NAME)
+      .index(indexNameService.getOptimizeIndexAliasForIndex(PROCESS_OVERVIEW_INDEX_NAME))
       .query(ids(processDefinitionKeys))
       .size(LIST_FETCH_LIMIT);
 
@@ -61,7 +61,7 @@ public class ProcessRepositoryOS implements ProcessRepository {
     log.debug("Fetching all available process overviews.");
 
     final SearchRequest.Builder requestBuilder = new SearchRequest.Builder()
-      .index(PROCESS_OVERVIEW_INDEX_NAME)
+      .index(indexNameService.getOptimizeIndexAliasForIndex(PROCESS_OVERVIEW_INDEX_NAME))
       .query(term(DIGEST + "." + ENABLED, true))
       .size(LIST_FETCH_LIMIT);
 
@@ -75,7 +75,7 @@ public class ProcessRepositoryOS implements ProcessRepository {
     log.debug("Fetching pending process overviews");
 
     final SearchRequest.Builder requestBuilder = new SearchRequest.Builder()
-      .index(PROCESS_OVERVIEW_INDEX_NAME)
+      .index(indexNameService.getOptimizeIndexAliasForIndex(PROCESS_OVERVIEW_INDEX_NAME))
       .query(prefix(ProcessOverviewDto.Fields.processDefinitionKey, "pendingauthcheck"))
       .size(LIST_FETCH_LIMIT);
 

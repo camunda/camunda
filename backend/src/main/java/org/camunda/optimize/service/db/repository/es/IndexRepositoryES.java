@@ -50,6 +50,11 @@ public class IndexRepositoryES implements IndexRepository, ConfigurationReloadab
     indices.clear();
   }
 
+  @Override
+  public boolean indexExists(final IndexMappingCreatorBuilder indexMappingCreatorBuilder, final String key) {
+    return indexExists(indexMappingCreatorBuilder.getElasticsearch().apply(key).getIndexName());
+  }
+
   private String getIndexName(IndexMappingCreator<XContentBuilder> indexMappingCreator) {
     return indexNameService.getOptimizeIndexNameWithVersion(indexMappingCreator);
   }

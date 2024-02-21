@@ -406,6 +406,19 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
+  public <T> void doImportBulkRequestWithList(final String importItemName,
+                                              final List<T> entityCollection,
+                                              final Function<T, BulkOperation> addDtoToRequestConsumer,
+                                              final Boolean retryRequestIfNestedDocLimitReached) {
+    if (entityCollection.isEmpty()) {
+      log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
+    } else {
+      final BulkRequest.Builder bulkReqBuilder = new BulkRequest.Builder();
+      List<BulkOperation> operations = entityCollection.stream().map(addDtoToRequestConsumer).toList();
+      doBulkRequest(bulkReqBuilder, operations, importItemName, retryRequestIfNestedDocLimitReached);
+    }
+  }
+
   public void doBulkRequest(final BulkRequest.Builder bulkReqBuilder,
                             final List<BulkOperation> operations,
                             final String itemName,

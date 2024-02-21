@@ -12,9 +12,9 @@ import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.repository.ImportRepository;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.DatabaseHelper;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
@@ -35,13 +35,15 @@ import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedI
 @Conditional(OpenSearchCondition.class)
 public class ImportRepositoryOS implements ImportRepository {
   private final OptimizeOpenSearchClient osClient;
+  private final OptimizeIndexNameService indexNameService;
+
 
   @Override
   public List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(List<String> indexTypes) {
     log.debug("Fetching timestamp based import indices of types '{}'", indexTypes);
 
     final SearchRequest.Builder requestBuilder = new SearchRequest.Builder()
-      .index(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
+      .index(indexNameService.getOptimizeIndexAliasForIndex(TIMESTAMP_BASED_IMPORT_INDEX_NAME))
       .query(stringTerms(DB_TYPE_INDEX_REFERS_TO, indexTypes))
       .size(LIST_FETCH_LIMIT);
 
@@ -57,12 +59,8 @@ public class ImportRepositoryOS implements ImportRepository {
     final D dataSourceDto
   ) {
     log.debug("Fetching {} import index of type '{}'", indexType, typeIndexComesFrom);
-    new GetRequest.Builder()
-      .index(indexName)
-      .id(DatabaseHelper.constructKey(typeIndexComesFrom, dataSourceDto));
-
     final GetResponse<T> response = osClient.get(
-      indexName,
+      indexNameService.getOptimizeIndexAliasForIndex(indexName),
       DatabaseHelper.constructKey(typeIndexComesFrom, dataSourceDto),
       importDTOClass,
       format("Could not fetch %s import index", indexType)
