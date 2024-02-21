@@ -42,7 +42,7 @@ public class ZeebeProcessInstanceImportService
     BpmnElementType.UNSPECIFIED, BpmnElementType.SEQUENCE_FLOW
   );
 
-  private static final Set<ProcessInstanceIntent> INTENTS_TO_IMPORT = Set.of(
+  public static final Set<ProcessInstanceIntent> INTENTS_TO_IMPORT = Set.of(
     ProcessInstanceIntent.ELEMENT_COMPLETED,
     ProcessInstanceIntent.ELEMENT_TERMINATED,
     ProcessInstanceIntent.ELEMENT_ACTIVATING

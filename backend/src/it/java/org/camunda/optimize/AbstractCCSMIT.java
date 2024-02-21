@@ -25,6 +25,8 @@ import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
 import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessInstanceImportService;
+import org.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskImportService;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.ZeebeExtension;
 import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
@@ -98,11 +100,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     final TermsQueryContainer termsQueryContainer = new TermsQueryContainer();
     termsQueryContainer.addTermQuery(
       ZeebeProcessInstanceRecordDto.Fields.intent,
-      List.of(
-        ProcessInstanceIntent.ELEMENT_ACTIVATING.name(),
-        ProcessInstanceIntent.ELEMENT_COMPLETED.name(),
-        ProcessInstanceIntent.ELEMENT_TERMINATED.name()
-      )
+      ZeebeProcessInstanceImportService.INTENTS_TO_IMPORT.stream().map(ProcessInstanceIntent::name).toList()
     );
     return termsQueryContainer;
   }
@@ -130,7 +128,8 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     waitUntilMinimumDataExportedCount(
       expectedDefinitionsCount,
       DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
-      query);
+      query
+    );
   }
 
   protected void waitUntilRecordMatchingQueryExported(final String indexName, final TermsQueryContainer boolQuery) {
@@ -144,8 +143,10 @@ public abstract class AbstractCCSMIT extends AbstractIT {
 
   protected void waitUntilInstanceRecordWithElementIdExported(final String instanceElementId) {
     final TermsQueryContainer query = new TermsQueryContainer();
-    query.addTermQuery(ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
-                       instanceElementId);
+    query.addTermQuery(
+      ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
+      instanceElementId
+    );
     waitUntilRecordMatchingQueryExported(
       DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       query
@@ -156,10 +157,11 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     TermsQueryContainer query = new TermsQueryContainer();
     query.addTermQuery(
       ZeebeUserTaskRecordDto.Fields.value + "." + ZeebeUserTaskDataDto.Fields.elementId,
-      instanceElementId);
+      instanceElementId
+    );
     waitUntilRecordMatchingQueryExported(
       DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME,
-        query
+      query
     );
   }
 
@@ -180,12 +182,14 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected void waitUntilDefinitionWithIdExported(final String processDefinitionId) {
     TermsQueryContainer query = new TermsQueryContainer();
     query.addTermQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name());
-    query.addTermQuery(ZeebeProcessDefinitionRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
-                       processDefinitionId
+    query.addTermQuery(
+      ZeebeProcessDefinitionRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
+      processDefinitionId
     );
     waitUntilRecordMatchingQueryExported(
       DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
-      query);
+      query
+    );
   }
 
   protected String getFlowNodeInstanceIdFromProcessInstanceForActivity(final ProcessInstanceDto processInstanceDto,
@@ -305,11 +309,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     final TermsQueryContainer query = new TermsQueryContainer();
     query.addTermQuery(
       ZeebeUserTaskRecordDto.Fields.intent,
-      List.of(
-        UserTaskIntent.CREATING.name(),
-        UserTaskIntent.COMPLETED.name(),
-        UserTaskIntent.CANCELED.name()
-      )
+      ZeebeUserTaskImportService.INTENTS_TO_IMPORT.stream().map(UserTaskIntent::name).toList()
     );
     return query;
   }

@@ -108,6 +108,15 @@ public class ZeebeBpmnModels {
       .done();
   }
 
+  public static BpmnModelInstance createSimpleNativeUserTaskProcessWithAssignee(final String processName, final String dueDate, final String assignee) {
+    return Bpmn.createExecutableProcess()
+      .name(processName)
+      .startEvent(START_EVENT).name(START_EVENT)
+      .userTask(USER_TASK).zeebeUserTask().id(USER_TASK).name(USER_TASK).zeebeDueDate(dueDate).zeebeAssignee(assignee)
+      .endEvent(END_EVENT).name(null)
+      .done();
+  }
+
   public static BpmnModelInstance createSimpleNativeUserTaskProcess(final String processName, final String dueDate) {
     return Bpmn.createExecutableProcess()
       .name(processName)

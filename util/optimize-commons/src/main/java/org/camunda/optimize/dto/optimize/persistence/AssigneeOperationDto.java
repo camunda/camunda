@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
@@ -20,6 +21,7 @@ import java.time.OffsetDateTime;
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @FieldNameConstants
+@Accessors(chain = true)
 public class AssigneeOperationDto implements OptimizeDto, Serializable {
 
   @EqualsAndHashCode.Include

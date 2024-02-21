@@ -9,10 +9,13 @@ import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
+import net.minidev.json.annotate.JsonIgnore;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 @EqualsAndHashCode
 @Data
@@ -37,8 +40,11 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
 
   private List<String> changedAttributes;
 
+  @JsonIgnore
   public OffsetDateTime getDateForDueDate() {
-    return OffsetDateTime.parse(dueDate);
+    return Objects.equals(dueDate, "")
+      ? null
+      : Optional.ofNullable(dueDate).map(OffsetDateTime::parse).orElse(null);
   }
 
 }

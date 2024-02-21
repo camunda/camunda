@@ -374,7 +374,9 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.countRecordsByQuery(queryContainer, index);
   }
 
-  public <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex, final TermsQueryContainer queryForProcessableEvents, final Class<T> zeebeRecordClass) {
+  public <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex,
+                                                       final TermsQueryContainer queryForProcessableEvents,
+                                                       final Class<T> zeebeRecordClass) {
     return databaseTestService.getZeebeExportedProcessableEvents(exportIndex, queryForProcessableEvents, zeebeRecordClass);
   }
 
