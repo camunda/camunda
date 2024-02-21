@@ -108,6 +108,15 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   @Override
   public <V> V bean(final Class<V> type) {
+    if (springContext == null) {
+      return beans.values().stream()
+          .map(Bean::value)
+          .filter(type::isInstance)
+          .map(type::cast)
+          .findFirst()
+          .orElse(null);
+    }
+
     return springContext.getBean(type);
   }
 
