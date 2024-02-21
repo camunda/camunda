@@ -8,8 +8,6 @@
 import {ReactNode} from 'react';
 import {Stack} from '@carbon/react';
 
-import {Icon} from 'components';
-
 import './EmptyState.scss';
 
 interface EmptyStateProps {
@@ -22,7 +20,7 @@ interface EmptyStateProps {
 export default function EmptyState({icon, title, description, actions}: EmptyStateProps) {
   return (
     <div className="EmptyState">
-      <Icon type={icon} className="icon" />
+      <div className="icon">{icon}</div>
       <Stack gap={6} className="content">
         <Stack gap={2}>
           <div className="title">{title}</div>

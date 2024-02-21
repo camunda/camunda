@@ -115,9 +115,13 @@ export default function EntityList({
         <Stack gap={4} orientation="horizontal">
           <div className="entityIcon">{row.icon}</div>
           <Stack gap={2} orientation="vertical">
-            <Link className="cds--link" to={row.link}>
-              {row.name}
-            </Link>
+            {row.link ? (
+              <Link title={row.name} className="cds--link" to={row.link}>
+                {row.name}
+              </Link>
+            ) : (
+              <span className="rowName">{row.name}</span>
+            )}
             <span>{row.type}</span>
           </Stack>
         </Stack>
@@ -157,7 +161,9 @@ export default function EntityList({
           return rowIds.filter((rowId, idx) =>
             headers.some((header) => {
               const cell = cellsById[getCellId(rowId, header.key)];
-              if (cell?.info?.header === 'name') {
+              // We allow passing a header without a key
+              // so we should also check the index (0 is the first header)
+              if (cell?.info?.header === 'name' || cell?.info?.header === '0') {
                 const row = rows[idx];
                 return (
                   containsSearchWord(row?.name, searchWord) ||

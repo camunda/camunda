@@ -9,9 +9,14 @@
   .icon {
     margin-right: spacing.$spacing-06;
     align-self: start;
-    margin-top: -5px;
     width: 80px;
     height: 80px;
+    color: #ff8201;
+
+    .Icon {
+      width: 100%;
+      height: 100%;
+    }
 
     svg {
       width: inherit;
@@ -22,6 +27,8 @@
   }
 
   .content {
+    margin-top: 5px;
+
     .title {
       font-weight: 500;
       font-size: 1.125rem;

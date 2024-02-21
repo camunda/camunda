@@ -36,6 +36,7 @@ import {
   KpiCreationModal,
   CarbonEntityList,
   EmptyState,
+  Icon,
 } from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict, getEntityIcon} from 'services';
 import {showError, addNotification} from 'notifications';
@@ -211,7 +212,7 @@ export class Collection extends Component {
                       <EmptyState
                         title={t('home.emptyState.title')}
                         description={t('home.emptyState.description')}
-                        icon="dashboard-optimize-accent"
+                        icon={<Icon type="dashboard-optimize" />}
                         actions={
                           <>
                             <Button

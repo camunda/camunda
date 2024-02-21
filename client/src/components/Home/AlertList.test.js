@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {EntityList, AlertModal} from 'components';
+import {CarbonEntityList, AlertModal} from 'components';
 import {loadReports, loadAlerts, addAlert} from 'services';
 
 import AlertListWithErrorHandling from './AlertList';
@@ -152,7 +152,7 @@ it('should format durations with value and unit', async () => {
 
   const node = shallow(<AlertList {...props} />);
 
-  expect(node.find(EntityList).prop('data')[0].meta[1]).toContain('12s');
+  expect(node.find(CarbonEntityList).prop('rows')[0].meta[1]).toContain('12s');
 });
 
 it('should set the loading', () => {
@@ -160,7 +160,7 @@ it('should set the loading', () => {
 
   node.setState({alerts: null}); // simulate missing response from alert query
 
-  expect(node.find(EntityList).prop('isLoading')).toBe(true);
+  expect(node.find(CarbonEntityList).prop('isLoading')).toBe(true);
 });
 
 it('should load data', () => {
@@ -172,20 +172,20 @@ it('should load data', () => {
 it('should show information about alerts', async () => {
   const node = shallow(<AlertList {...props} />);
 
-  expect(node.find(EntityList).prop('data')[0].name).toBe('Some Alert');
-  expect(node.find(EntityList).prop('data')[0].meta[0]).toBe('Report 2');
+  expect(node.find(CarbonEntityList).prop('rows')[0].name).toBe('Some Alert');
+  expect(node.find(CarbonEntityList).prop('rows')[0].meta[0]).toBe('Report 2');
 });
 
 it('should show create Alert button', () => {
   const node = shallow(<AlertList {...props} />);
 
-  expect(node.find(EntityList).prop('action')()).toMatchSnapshot();
+  expect(node.find(CarbonEntityList).prop('action')).toMatchSnapshot();
 });
 
 it('should Alert to Deleter', async () => {
   const node = shallow(<AlertList {...props} />);
 
-  node.find(EntityList).prop('data')[0].actions[2].action();
+  node.find(CarbonEntityList).prop('rows')[0].actions[2].action();
 
   expect(node.state('deleting')).toEqual({
     id: 'alertID',
@@ -201,7 +201,7 @@ it('should Alert to Deleter', async () => {
 it('should open a modal when editing an alert', async () => {
   const node = shallow(<AlertList {...props} />);
 
-  node.find(EntityList).prop('data')[0].actions[0].action();
+  node.find(CarbonEntityList).prop('rows')[0].actions[0].action();
 
   expect(node.find(AlertModal)).toExist();
   expect(node.find(AlertModal).prop('initialAlert')).toEqual({
@@ -218,7 +218,7 @@ it('should open a modal when editing an alert', async () => {
 it('should invoke addAlert when copying an alert', async () => {
   const node = shallow(<AlertList {...props} />);
 
-  node.find(EntityList).prop('data')[0].actions[1].action();
+  node.find(CarbonEntityList).prop('rows')[0].actions[1].action();
 
   node.find(CopyAlertModal).prop('onConfirm')('testName');
 
@@ -248,5 +248,5 @@ it('should show warning if alert is inactive due to missing webhoook', () => {
   ]);
   const node = shallow(<AlertList {...props} />);
 
-  expect(node.find('EntityList').prop('data')[0].warning).toBe('Alert inactive');
+  expect(node.find(CarbonEntityList).prop('rows')[0].warning).toBe('Alert inactive');
 });

@@ -973,6 +973,7 @@
     "create": "Alarm erstellen",
     "notCreated": "Es wurden noch keine Alarme erstellt",
     "contactManager": "Bitte wenden Sie sich an den Manager der Sammlung, um neue Alarme zu erstellen",
+    "emptyStateDecription": "Verwenden Sie die Schaltfläche unten, um einen neuen Alarm zu erstellen und Benachrichtigungen über wichtige Ereignisse zu erhalten",
     "inactiveStatus": "Alarm inaktiv",
     "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu",
     "updated": "\"{name}\" aktualisiert.",

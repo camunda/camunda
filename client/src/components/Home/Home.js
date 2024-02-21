@@ -23,6 +23,7 @@ import {
   EmptyState,
   KpiCreationModal,
   CarbonEntityList,
+  Icon,
 } from 'components';
 import {
   formatters,
@@ -119,7 +120,7 @@ export function Home({mightFail, user}) {
               <EmptyState
                 title={t('home.emptyState.title')}
                 description={t('home.emptyState.description')}
-                icon="dashboard-optimize-accent"
+                icon={<Icon type="dashboard-optimize" />}
                 actions={
                   <>
                     <Button size="md" onClick={() => setCreating('dashboard')}>

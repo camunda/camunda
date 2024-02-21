@@ -16,7 +16,7 @@ it('should render properly', () => {
 
   expect(node.find('.title')).toHaveText('some title');
   expect(node.find('.description')).toHaveText('here is a description');
-  expect(node.find('Icon').prop('type')).toBe('report');
+  expect(node.find('.icon')).toHaveText('report');
 });
 
 it('should render actions', () => {

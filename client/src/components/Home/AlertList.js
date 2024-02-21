@@ -7,9 +7,10 @@
 
 import {Component} from 'react';
 import {Button} from '@carbon/react';
+import {CopyFile, Edit, Notification, TrashCan} from '@carbon/icons-react';
 
 import {t} from 'translation';
-import {EntityList, Deleter, BulkDeleter, AlertModal} from 'components';
+import {Deleter, BulkDeleter, AlertModal, CarbonEntityList, EmptyState} from 'components';
 import {showError} from 'notifications';
 import {
   loadAlerts,
@@ -128,41 +129,49 @@ export default withErrorHandling(
 
       return (
         <div className="AlertList">
-          <EntityList
-            name={t('alert.label-plural')}
-            action={(bulkActive) =>
+          <CarbonEntityList
+            action={
               !readOnly && (
-                <Button
-                  className="createAlert"
-                  size="md"
-                  kind={bulkActive ? 'tertiary' : 'primary'}
-                  onClick={this.openAddAlertModal}
-                >
+                <Button className="createAlert" kind="primary" onClick={this.openAddAlertModal}>
                   {t('alert.createNew')}
                 </Button>
               )
             }
-            empty={
-              <>
-                {t('alert.notCreated')}
-                {readOnly && (
-                  <>
-                    <br />
-                    {t('alert.contactManager')}
-                  </>
-                )}
-              </>
+            emptyStateComponent={
+              <EmptyState
+                title={t('alert.notCreated')}
+                description={
+                  !readOnly ? t('alert.emptyStateDecription') : t('alert.contactManager')
+                }
+                icon={<Notification />}
+                actions={
+                  !readOnly && (
+                    <Button
+                      className="createAlert"
+                      size="md"
+                      kind="primary"
+                      onClick={this.openAddAlertModal}
+                    >
+                      {t('alert.createNew')}
+                    </Button>
+                  )
+                }
+              />
             }
             isLoading={isLoading}
-            columns={[
+            headers={[
               t('common.name'),
               t('report.label'),
               t('common.condition'),
               t('alert.recipient'),
             ]}
-            bulkActions={!readOnly && [<BulkDeleter type="delete" deleteEntities={removeAlerts} />]}
+            bulkActions={
+              !readOnly && [
+                <BulkDeleter type="delete" deleteEntities={removeAlerts} useCarbonAction />,
+              ]
+            }
             onChange={this.loadAlerts}
-            data={
+            rows={
               !isLoading &&
               this.state.alerts.map((alert) => {
                 const {id, name, webhook, emails, reportId, threshold, thresholdOperator} = alert;
@@ -171,7 +180,7 @@ export default withErrorHandling(
                 return {
                   id,
                   entityType: 'alert',
-                  icon: 'alert',
+                  icon: <Notification />,
                   type: t('alert.label'),
                   name,
                   meta: [
@@ -182,17 +191,17 @@ export default withErrorHandling(
                   warning: inactive && t('alert.inactiveStatus'),
                   actions: !readOnly && [
                     {
-                      icon: 'edit',
+                      icon: <Edit />,
                       text: t('common.edit'),
                       action: () => this.openEditAlertModal(alert),
                     },
                     {
-                      icon: 'copy-document',
+                      icon: <CopyFile />,
                       text: t('common.copy'),
                       action: () => this.openCopyAlertModal(alert),
                     },
                     {
-                      icon: 'delete',
+                      icon: <TrashCan />,
                       text: t('common.delete'),
                       action: () => this.setState({deleting: alert}),
                     },

@@ -973,6 +973,7 @@
     "create": "Create alert",
     "notCreated": "There are no alerts created yet",
     "contactManager": "Please contact the collection manager to create new alerts",
+    "emptyStateDecription": "Use the button below to create new alert and receive notifications on important events",
     "inactiveStatus": "Alert inactive",
     "activateInfo": "To active add email or target system",
     "updated": "\"{name}\" updated.",
