@@ -80,7 +80,7 @@ describe('<StartProcessFromForm />', () => {
     );
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable \*/i}),
+      screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     vi.runOnlyPendingTimers();
@@ -135,7 +135,7 @@ describe('<StartProcessFromForm />', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole('textbox', {name: /my variable \*/i}),
+        screen.getByRole('textbox', {name: /my variable/i}),
       ).toHaveAccessibleDescription('Field is required.'),
     );
   });
@@ -163,7 +163,7 @@ describe('<StartProcessFromForm />', () => {
     );
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable \*/i}),
+      screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     await user.type(

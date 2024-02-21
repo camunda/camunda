@@ -68,7 +68,7 @@ describe('<FormModal />', () => {
     await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable \*/i}),
+      screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     await user.type(
@@ -229,7 +229,7 @@ describe('<FormModal />', () => {
     await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable \*/i}),
+      screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     await user.type(
@@ -283,7 +283,7 @@ describe('<FormModal />', () => {
     await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable \*/i}),
+      screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     await user.type(
@@ -319,7 +319,7 @@ describe('<FormModal />', () => {
     );
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable \*/i}),
+      screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     await user.type(
@@ -372,7 +372,7 @@ describe('<FormModal />', () => {
     await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable \*/i}),
+      screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     await user.type(
