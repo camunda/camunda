@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {EntityList, Deleter} from 'components';
+import {Deleter, CarbonEntityList} from 'components';
 import {getOptimizeProfile} from 'config';
 
 import {editUser, removeUser} from './service';
@@ -63,15 +63,15 @@ it('should match snapshot', async () => {
 it('should hide add button and edit menu when in readOnly mode', () => {
   const node = shallow(<UserList {...props} readOnly />);
 
-  expect(node.find(EntityList).prop('action')()).toBe(false);
+  expect(node.find(CarbonEntityList).prop('action')).toBe(false);
 
-  expect(node.find(EntityList).prop('data')[0].actions).toBe(false);
+  expect(node.find(CarbonEntityList).prop('rows')[0].actions).toBe(false);
 });
 
 it('should pass Entity to Deleter', () => {
   const node = shallow(<UserList {...props} />);
 
-  node.find(EntityList).prop('data')[0].actions[1].action();
+  node.find(CarbonEntityList).prop('rows')[0].actions[1].action();
 
   expect(node.find(Deleter).prop('entity').id).toBe('kermit');
 });
@@ -88,7 +88,7 @@ it('should delete collection', () => {
 it('should show an edit modal when clicking the edit button', () => {
   const node = shallow(<UserList {...props} />);
 
-  node.find(EntityList).prop('data')[0].actions[0].action();
+  node.find(CarbonEntityList).prop('rows')[0].actions[0].action();
 
   expect(node.find(EditUserModal)).toExist();
 });
@@ -107,7 +107,7 @@ it('should pass optimize environment to addUserModal', async () => {
   getOptimizeProfile.mockReturnValueOnce('ccsm');
   const node = await shallow(<UserList {...props} />);
 
-  node.find(EntityList).prop('action')().props.onClick({});
+  node.find(CarbonEntityList).prop('action').props.onClick({});
 
   expect(node.find(AddUserModal).prop('optimizeProfile')).toBe('ccsm');
 });
@@ -116,22 +116,22 @@ it('should hide members column in ccsm and cloud', async () => {
   getOptimizeProfile.mockReturnValueOnce('ccsm');
   let node = shallow(<UserList {...props} />);
 
-  expect(node.find(EntityList).prop('columns')).toEqual(['Name', 'Role']);
-  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(1);
+  expect(node.find(CarbonEntityList).prop('headers')).toEqual(['Name', 'Role']);
+  expect(node.find(CarbonEntityList).prop('rows')[0].meta.length).toBe(1);
 
   getOptimizeProfile.mockReturnValueOnce('platform');
   node = shallow(<UserList {...props} />);
 
   await flushPromises();
 
-  expect(node.find(EntityList).prop('columns')).toEqual(['Name', 'Members', 'Role']);
-  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(2);
+  expect(node.find(CarbonEntityList).prop('headers')).toEqual(['Name', 'Members', 'Role']);
+  expect(node.find(CarbonEntityList).prop('rows')[0].meta.length).toBe(2);
 
   getOptimizeProfile.mockReturnValueOnce('cloud');
   node = shallow(<UserList {...props} />);
 
   await flushPromises();
 
-  expect(node.find(EntityList).prop('columns')).toEqual(['Name', 'Role']);
-  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(1);
+  expect(node.find(CarbonEntityList).prop('headers')).toEqual(['Name', 'Role']);
+  expect(node.find(CarbonEntityList).prop('rows')[0].meta.length).toBe(1);
 });

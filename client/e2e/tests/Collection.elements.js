@@ -25,15 +25,15 @@ export const entitiesTab = tabButton.withText('Dashboards');
 export const userTab = tabButton.withText('Users');
 export const alertTab = tabButton.withText('Alerts');
 export const sourcesTab = tabButton.withText('Data sources');
-export const activeTab = Selector('.Collection .cds--tab-content:not([hidden]');
-export const addButton = activeTab.find('.cds--btn--primary');
+export const activeTab = Selector('.Collection .cds--tab-content:not([hidden])');
+export const addButton = activeTab.find('.cds--toolbar-content .cds--btn--primary');
 export const typeaheadInput = Selector('.Typeahead input');
 export const checkbox = (text) => Selector('.Checklist tr').withText(text);
 export const managerName = Selector('.ListItem').withText('Manager').find('.name .entity');
 export const userItem = (text) => Selector('.ListItem').withText('User').withText(text);
-export const groupItem = Selector('.ListItem').withText('User group');
 export const processItem = Selector('.ListItem').withText('Process');
 export const decisionItem = Selector('.ListItem').withText('Decision');
+export const userName = (entity) => entity.find('td:nth-child(2) .cds--stack-vertical').child(0);
 export const roleOption = (text) =>
   Selector('.Modal.is-visible .LabeledInput .label.after').withText(text);
 export const carbonRoleOption = (text) =>
@@ -42,7 +42,9 @@ export const userList = Selector('.UserList');
 export const addUserModal = Selector('.AddUserModal');
 export const logoutButton = Selector('header button').withText('Logout');
 export const usernameDropdown = Selector('header button').withAttribute('aria-label', 'Open User');
-export const searchField = Selector('.cds--search-input');
+export const sourceModalSearchField = Selector('.SourcesModal .cds--search-input');
 export const selectAllCheckbox = Selector('.Table thead .cds--table-column-checkbox label');
 export const itemCheckbox = (idx) =>
   Selector('.Table tbody tr').nth(idx).find('.cds--table-column-checkbox label');
+export const bulkRemove = activeTab.find('.cds--action-list button').withText('Remove');
+export const oldAddButton = activeTab.find('.cds--btn--primary');

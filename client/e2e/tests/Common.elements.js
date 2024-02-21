@@ -33,6 +33,12 @@ export const edit = Selector('.CarbonListItemSingleAction').withText('Edit');
 export const copy = Selector('.CarbonListItemSingleAction').withText('Copy');
 export const del = Selector('.CarbonListItemSingleAction').withText('Delete');
 export const contextMenu = (entity) => entity.find('button.cds--overflow-menu');
+export const listItemTrigger = (entity, trigger) =>
+  entity
+    .find('td .cds--tooltip-content')
+    .withText(trigger)
+    .parent('.cds--popover-container')
+    .find('button.CarbonListItemAction');
 export const selectAllCheckbox = Selector('thead .cds--checkbox--inline');
 export const bulkMenu = Selector('.bulkMenu');
 export const bulkDelete = Selector('.cds--action-list button').withText('Delete');
@@ -40,6 +46,8 @@ export const listItem = (type, viewerMode = false) =>
   Selector(`.CarbonEntityList tbody tr td:nth-child(${viewerMode ? 1 : 2}) span`)
     .withText(new RegExp(type, 'i'))
     .parent('tr');
+export const listItemWithText = (text) =>
+  Selector('.CarbonEntityList tbody tr td:nth-child(2)').withText(text).parent('tr');
 export const listItemLink = (type, viewerMode = false) =>
   listItem(type, viewerMode).find(`td:nth-child(${viewerMode ? 1 : 2}) a`);
 export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');

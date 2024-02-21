@@ -184,3 +184,11 @@ it('should show bulk operation options if bulkAction is specified', () => {
   const dataTable = node.find(DataTable).dive();
   expect(dataTable.find(TableBatchActions).find('.option')).toExist();
 });
+
+it('disable rows without actions', () => {
+  const node = shallow(<EntityList {...props} headers={['Name']} />);
+
+  const rows = node.find(DataTable).prop('rows');
+  expect(rows[0].disabled).toBe(false);
+  expect(rows[1].disabled).toBe(true);
+});

@@ -135,6 +135,8 @@ export default function EntityList({
 
       return acc;
     }, {}),
+    // Prevent selecting rows without actions
+    disabled: !row.actions?.length,
   });
 
   const visibleHeaders = headers.filter((header) => !isObjectHeader(header) || !header.hidden);

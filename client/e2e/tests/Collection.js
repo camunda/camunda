@@ -90,9 +90,9 @@ test('user permissions', async (t) => {
 
   await t.click(e.sourcesTab);
 
-  await t.click(e.addButton);
+  await t.click(e.oldAddButton);
   const definitionName = 'Invoice Receipt with alternative correlation variable';
-  await t.typeText(e.searchField, definitionName, {replace: true});
+  await t.typeText(e.sourceModalSearchField, definitionName, {replace: true});
   await t.click(e.selectAllCheckbox);
   await t.click(Common.modalConfirmButton);
 
@@ -103,6 +103,7 @@ test('user permissions', async (t) => {
   await t.click(e.collectionBreadcrumb);
 
   await t.click(e.userTab);
+  const managerName = await e.userName(await Common.listItem('user')).textContent;
 
   await t.click(e.addButton);
   await t.click(Common.usersTypeahead);
@@ -110,10 +111,10 @@ test('user permissions', async (t) => {
   await t.click(Common.carbonOption('sales'));
   await t.click(Common.modalConfirmButton);
 
-  await t.expect(e.groupItem.visible).ok();
-  await t.expect(e.groupItem.textContent).contains('User group');
-  await t.expect(e.groupItem.textContent).contains('Sales');
-  await t.expect(e.groupItem.textContent).contains('Viewer');
+  await t.expect(Common.listItem('user group').visible).ok();
+  await t.expect(Common.listItem('user group').textContent).contains('User group');
+  await t.expect(Common.listItem('user group').textContent).contains('Sales');
+  await t.expect(Common.listItem('user group').textContent).contains('Viewer');
 
   await t.click(e.addButton);
   await t.typeText(Common.usersTypeahead, 'mary', {replace: true});
@@ -130,12 +131,11 @@ test('user permissions', async (t) => {
     .maximizeWindow();
 
   // change permissions
-  const managerName = await e.managerName.textContent;
-  await t.hover(e.userItem(managerName));
-  await t.expect(Common.oldContextMenu(e.userItem(managerName)).exists).notOk();
-
-  await t.hover(e.groupItem);
-  await t.expect(Common.oldContextMenu(e.groupItem).visible).ok();
+  await t.hover(Common.listItemWithText(managerName));
+  await t
+    .expect(Common.listItemTrigger(Common.listItemWithText(managerName), 'Edit').exists)
+    .notOk();
+  await t.expect(Common.listItemTrigger(Common.listItem('user group'), 'Edit').visible).ok();
 
   const {username} = getUser(t, 'user2');
 
@@ -145,12 +145,9 @@ test('user permissions', async (t) => {
   await t.click(e.carbonRoleOption('Manager'));
   await t.click(Common.modalConfirmButton);
 
-  await t.hover(e.userItem(managerName));
-  await t.expect(Common.oldContextMenu(e.userItem(managerName)).visible).ok();
+  await t.expect(Common.listItemTrigger(Common.listItemWithText(managerName), 'Edit').visible).ok();
 
-  await t.click(Common.oldContextMenu(e.userItem(managerName)));
-  await t.click(Common.oldEdit(e.userItem(managerName)));
-
+  await t.click(Common.listItemTrigger(Common.listItemWithText(managerName), 'Edit'));
   await t.click(e.carbonRoleOption('Viewer'));
   await t.click(Common.modalConfirmButton);
 
@@ -170,11 +167,11 @@ test('user permissions', async (t) => {
 
   await t.click(Common.listItemLink('collection'));
   await t.click(e.userTab);
-  await t.click(Common.oldSelectAllCheckbox.filterVisible());
-  await t.click(Common.bulkMenu.filterVisible());
-  await t.click(e.remove(Common.bulkMenu.filterVisible()));
+  await t.expect(Common.listItem('user').count).eql(5);
+  await t.click(Common.selectAllCheckbox.filterVisible());
+  await t.click(e.bulkRemove.filterVisible());
   await t.click(Common.modalConfirmButton);
-  await t.expect(Common.oldListItem.filterVisible().count).eql(1);
+  await t.expect(Common.listItem('user').count).eql(1);
 
   // delete collection
   await t.click(e.collectionContextMenu);
@@ -190,9 +187,9 @@ test('add, edit and delete sources', async (t) => {
   await t.click(e.sourcesTab);
 
   // add source by definition
-  await t.click(e.addButton);
+  await t.click(e.oldAddButton);
   const definitionName = 'Hiring Demo 5 Tenants';
-  await t.typeText(e.searchField, definitionName, {replace: true});
+  await t.typeText(e.sourceModalSearchField, definitionName, {replace: true});
   await t.click(e.selectAllCheckbox);
   await t.click(Common.modalConfirmButton);
   await t.expect(e.processItem.visible).ok();
@@ -201,7 +198,7 @@ test('add, edit and delete sources', async (t) => {
   await t.expect(e.processItem.textContent).contains('engineering');
 
   // add source by tenant
-  await t.click(e.addButton);
+  await t.click(e.oldAddButton);
   const tenantName = 'engineering';
   await t.typeText(Common.comboBox, tenantName, {replace: true});
   await t.click(Common.carbonOption(tenantName));
