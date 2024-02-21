@@ -6,6 +6,10 @@
 package org.camunda.optimize.service.importing.zeebe.db;
 
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
+import org.camunda.optimize.service.importing.page.PositionBasedImportPage;
 
-public interface ZeebeProcessInstanceFetcher extends AbstractZeebeRecordFetcher<ZeebeProcessInstanceRecordDto>  {
+import java.util.List;
+
+public interface ZeebeProcessInstanceFetcher extends ZeebeFetcher {
+  List<ZeebeProcessInstanceRecordDto> getZeebeRecordsForPrefixAndPartitionFrom(PositionBasedImportPage positionBasedImportPage);
 }

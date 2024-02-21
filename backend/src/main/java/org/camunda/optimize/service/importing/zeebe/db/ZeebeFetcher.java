@@ -5,24 +5,13 @@
  */
 package org.camunda.optimize.service.importing.zeebe.db;
 
-import org.camunda.optimize.service.importing.page.PositionBasedImportPage;
-
 import java.util.Deque;
-import java.util.List;
 
-public interface AbstractZeebeRecordFetcher<T> {
-
-  List<T> getZeebeRecordsForPrefixAndPartitionFrom(PositionBasedImportPage positionBasedImportPage);
-
+public interface ZeebeFetcher {
   int getPartitionId();
-
   int getDynamicBatchSize();
-
   int getConsecutiveSuccessfulFetches();
-
   int getConsecutiveEmptyPages();
-
   Deque<Integer> getBatchSizeDeque();
 
 }
-

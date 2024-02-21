@@ -3,84 +3,82 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.importing.zeebe.fetcher.es;
+package org.camunda.optimize.service.importing.zeebe.fetcher.os;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.page.PositionBasedImportPage;
 import org.camunda.optimize.service.importing.zeebe.fetcher.AbstractZeebeRecordFetcher;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
+import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import org.opensearch.client.opensearch._types.FieldSort;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.SortOptions;
+import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.CountRequest;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.springframework.context.annotation.Conditional;
+import org.opensearch.client.opensearch.core.search.Hit;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_NOT_FOUND_EXCEPTION_TYPE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Slf4j
-@Conditional(ElasticSearchCondition.class)
-public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecordFetcher<T> {
+@Conditional(OpenSearchCondition.class)
+public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecordFetcher<T> {
 
-  private final OptimizeElasticsearchClient esClient;
-  private final ObjectMapper objectMapper;
+  private final OptimizeOpenSearchClient osClient;
 
-  protected AbstractZeebeRecordFetcherES(final int partitionId,
-                                         final OptimizeElasticsearchClient esClient,
+  protected AbstractZeebeRecordFetcherOS(final int partitionId,
+                                         final OptimizeOpenSearchClient osClient,
                                          final ObjectMapper objectMapper,
                                          final ConfigurationService configurationService) {
     super(partitionId, configurationService);
-    this.esClient = esClient;
-    this.objectMapper = objectMapper;
+    this.osClient = osClient;
   }
+
+  protected abstract String getBaseIndexName();
+
+  protected abstract Class<T> getRecordDtoClass();
 
   @Override
   protected List<T> fetchZeebeRecordsForPrefixAndPartitionFrom(final PositionBasedImportPage positionBasedImportPage)
     throws Exception {
-
-    SearchSourceBuilder searchSourceBuilder =
-      new SearchSourceBuilder()
-        .query(getRecordQuery(positionBasedImportPage))
-        .size(getDynamicBatchSize())
-        .sort(getSortField(positionBasedImportPage), SortOrder.ASC);
-    final SearchRequest searchRequest = new SearchRequest(getIndexAlias())
-      .source(searchSourceBuilder)
+      SearchRequest.Builder builder = new SearchRequest.Builder()
+      .index(getIndexAlias())
       .routing(String.valueOf(partitionId))
-      .requestCache(false);
+      .requestCache(Boolean.FALSE)
+      .query(getRecordQuery(positionBasedImportPage))
+      .size(getDynamicBatchSize())
+      .sort(buildSortOptions(positionBasedImportPage));
 
-    SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
-    if (searchResponse.getFailedShards() > 0
-      || (searchResponse.getTotalShards() > (searchResponse.getFailedShards() + searchResponse.getSuccessfulShards()))) {
-      throw new OptimizeRuntimeException("Not all shards could be searched successfully");
-    }
-    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), getRecordDtoClass(), objectMapper);
+    SearchResponse<T> searchResponse = osClient.getOpenSearchClient()
+        .search(builder.build(), getRecordDtoClass());
+      if (!searchResponse.shards().failures().isEmpty()
+        || (searchResponse.shards().total().intValue() >
+        (searchResponse.shards().failures().size() + searchResponse.shards().successful().intValue())
+      )) {
+        throw new OptimizeRuntimeException("Not all shards could be searched successfully");
+      }
+    return searchResponse.hits().hits().stream().map(Hit::source).toList();
   }
 
   @Override
   protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
-    if (e instanceof ElasticsearchStatusException) {
-      return Arrays.stream(e.getSuppressed())
-        .map(Throwable::getMessage)
-        .anyMatch(msg -> msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE));
+    if (e instanceof OpenSearchException) {
+      return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE);
     }
     return false;
   }
 
-  private BoolQueryBuilder getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {
+  private Query getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {
     // We use the position query if no record with sequences have been imported yet, or if we know that there is data to be
     // imported that Optimize is not catching in its sequence query. This can happen in the event that the next page of
     // records no longer exist and the next record to import will have a sequence greater than the max range of the sequence query
@@ -96,14 +94,16 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
     if (getConsecutiveEmptyPages() < getZeebeImportConfig().getMaxEmptyPagesToImport()) {
       return false;
     }
-    final CountRequest countRequest = new CountRequest(getIndexAlias())
-      .query(buildPositionQuery(positionBasedImportPage))
-      .routing(String.valueOf(partitionId));
+    CountRequest.Builder builder = new CountRequest.Builder()
+      .index(getIndexAlias())
+      .routing(String.valueOf(partitionId))
+      .query(buildPositionQuery(positionBasedImportPage));
+
     try {
       log.info("Using the position query to see if there are new records in the {} index on partition {}",
                getBaseIndexName(), partitionId
       );
-      final long numberOfRecordsFound = esClient.countWithoutPrefix(countRequest);
+      final long numberOfRecordsFound = osClient.getOpenSearchClient().count(builder.build()).count();
       if (numberOfRecordsFound > 0) {
         log.info(
           "Found {} records in index {} on partition {} that can't be imported by the current sequence query. Will revert to " +
@@ -129,19 +129,24 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
     return false;
   }
 
-  private BoolQueryBuilder buildPositionQuery(final PositionBasedImportPage positionBasedImportPage) {
+  private Query buildPositionQuery(final PositionBasedImportPage positionBasedImportPage) {
     log.trace("using position query for records of {} on partition {}", getBaseIndexName(), getPartitionId());
-    return boolQuery()
-      .must(termQuery(ZeebeRecordDto.Fields.partitionId, partitionId))
-      .must(rangeQuery(ZeebeRecordDto.Fields.position).gt(positionBasedImportPage.getPosition()));
+    return QueryDSL.and(
+      QueryDSL.term(ZeebeRecordDto.Fields.partitionId, partitionId),
+      QueryDSL.gt(ZeebeRecordDto.Fields.position, positionBasedImportPage.getPosition())
+    );
   }
 
-  private BoolQueryBuilder buildSequenceQuery(final PositionBasedImportPage positionBasedImportPage) {
+  private Query buildSequenceQuery(final PositionBasedImportPage positionBasedImportPage) {
     log.trace("using sequence query for records of {} on partition {}", getBaseIndexName(), getPartitionId());
-    return boolQuery()
-      .must(rangeQuery(ZeebeRecordDto.Fields.sequence)
-              .gt(positionBasedImportPage.getSequence())
-              .lte(positionBasedImportPage.getSequence() + getDynamicBatchSize()));
+    return QueryDSL.gtLte(ZeebeRecordDto.Fields.sequence,
+                          positionBasedImportPage.getSequence(),
+                          positionBasedImportPage.getSequence() + getDynamicBatchSize());
   }
 
+  private SortOptions buildSortOptions(final PositionBasedImportPage positionBasedImportPage) {
+    return new SortOptions.Builder()
+      .field(new FieldSort.Builder().field(getSortField(positionBasedImportPage)).order(SortOrder.Asc).build())
+      .build();
+  }
 }

@@ -3,15 +3,15 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.importing.zeebe.fetcher.es;
+package org.camunda.optimize.service.importing.zeebe.fetcher.os;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.importing.zeebe.db.ZeebeProcessInstanceFetcher;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
@@ -22,15 +22,15 @@ import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_IN
 @Component
 @Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@Conditional(ElasticSearchCondition.class)
-public class ZeebeProcessInstanceFetcherES
-  extends AbstractZeebeRecordFetcherES<ZeebeProcessInstanceRecordDto> implements ZeebeProcessInstanceFetcher {
+@Conditional(OpenSearchCondition.class)
+public class ZeebeProcessInstanceFetcherOS
+  extends AbstractZeebeRecordFetcherOS<ZeebeProcessInstanceRecordDto> implements ZeebeProcessInstanceFetcher {
 
-  public ZeebeProcessInstanceFetcherES(final int partitionId,
-                                       final OptimizeElasticsearchClient esClient,
+  public ZeebeProcessInstanceFetcherOS(final int partitionId,
+                                       final OptimizeOpenSearchClient osClient,
                                        final ObjectMapper objectMapper,
                                        final ConfigurationService configurationService) {
-    super(partitionId, esClient, objectMapper, configurationService);
+    super(partitionId, osClient, objectMapper, configurationService);
   }
 
   @Override
