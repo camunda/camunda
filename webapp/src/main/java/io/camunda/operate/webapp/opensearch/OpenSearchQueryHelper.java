@@ -228,7 +228,7 @@ public class OpenSearchQueryHelper {
       if (dateBefore != null) {
         rangeQueryBuilder.lt(json(dateTimeFormatter.format(dateBefore)));
       }
-      rangeQueryBuilder.format(operateProperties.getElasticsearch().getElsDateFormat());
+      rangeQueryBuilder.format(operateProperties.getOpensearch().getOsDateFormat());
 
       return rangeQueryBuilder.build()._toQuery();
     }

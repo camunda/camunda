@@ -12,7 +12,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
-import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.SslProperties;
@@ -60,7 +59,6 @@ import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -77,8 +75,14 @@ public class OpensearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
 
-  @Autowired private OperateProperties operateProperties;
-  @Autowired private ObjectMapper objectMapper;
+  private final OperateProperties operateProperties;
+  private final ObjectMapper objectMapper;
+
+  public OpensearchConnector(
+      final OperateProperties operateProperties, final ObjectMapper objectMapper) {
+    this.operateProperties = operateProperties;
+    this.objectMapper = objectMapper;
+  }
 
   @Bean
   public OpenSearchClient openSearchClient() {
@@ -94,7 +98,6 @@ public class OpensearchConnector {
 
   @Bean
   public OpenSearchAsyncClient openSearchAsyncClient() {
-    final HttpHost host = getHttpHost(operateProperties.getOpensearch());
     final OpenSearchAsyncClient openSearchClient =
         createAsyncOsClient(operateProperties.getOpensearch());
     final CompletableFuture<HealthResponse> healthResponse;
@@ -382,7 +385,7 @@ public class OpensearchConnector {
   }
 
   public boolean checkHealth(OpenSearchClient osClient) {
-    final ElasticsearchProperties osConfig = operateProperties.getElasticsearch();
+    final OpensearchProperties osConfig = operateProperties.getOpensearch();
     final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(osConfig);
     return Failsafe.with(retryPolicy)
         .get(
@@ -394,7 +397,7 @@ public class OpensearchConnector {
   }
 
   public boolean checkHealth(OpenSearchAsyncClient osAsyncClient) {
-    final ElasticsearchProperties osConfig = operateProperties.getElasticsearch();
+    final OpensearchProperties osConfig = operateProperties.getOpensearch();
     final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(osConfig);
     return Failsafe.with(retryPolicy)
         .get(
@@ -413,7 +416,7 @@ public class OpensearchConnector {
             });
   }
 
-  private RetryPolicy<Boolean> getConnectionRetryPolicy(final ElasticsearchProperties osConfig) {
+  private RetryPolicy<Boolean> getConnectionRetryPolicy(final OpensearchProperties osConfig) {
     final String logMessage = String.format("connect to OpenSearch at %s", osConfig.getUrl());
     return new RetryPolicy<Boolean>()
         .handle(IOException.class, ElasticsearchException.class)
