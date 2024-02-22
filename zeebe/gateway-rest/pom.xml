@@ -22,7 +22,7 @@
   <properties>
     <zbctl.force>false</zbctl.force>
     <zbctl.rootDir>${maven.multiModuleProjectDirectory}</zbctl.rootDir>
-    <openapi.dir>${maven.multiModuleProjectDirectory}/gateway-protocol/src/main/proto</openapi.dir>
+    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto</openapi.dir>
   </properties>
 
   <dependencies>
