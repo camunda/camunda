@@ -25,7 +25,6 @@ import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ZeebeJobWorkerElementBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,7 +35,7 @@ public class ZeebeJobWorkerElementValidationTest {
   @ParameterizedTest
   @MethodSource("jobWorkerElementBuilderProvider")
   @DisplayName("element with static job type and retries")
-  void validStaticJobTypeAndRetries(final JobWorkerElementBuilder elementBuilder) {
+  void validStaticJobTypeAndRetries(final BpmnElementBuilder elementBuilder) {
 
     final BpmnModelInstance process =
         processWithJobWorkerElement(
@@ -48,7 +47,7 @@ public class ZeebeJobWorkerElementValidationTest {
   @ParameterizedTest
   @MethodSource("jobWorkerElementBuilderProvider")
   @DisplayName("element with job type and retries expression")
-  void validJobTypeAndRetriesExpression(final JobWorkerElementBuilder elementBuilder) {
+  void validJobTypeAndRetriesExpression(final BpmnElementBuilder elementBuilder) {
 
     final BpmnModelInstance process =
         processWithJobWorkerElement(
@@ -64,7 +63,7 @@ public class ZeebeJobWorkerElementValidationTest {
   @ParameterizedTest
   @MethodSource("jobWorkerElementBuilderProvider")
   @DisplayName("element with custom header")
-  void validCustomHeader(final JobWorkerElementBuilder elementBuilder) {
+  void validCustomHeader(final BpmnElementBuilder elementBuilder) {
 
     final BpmnModelInstance process =
         processWithJobWorkerElement(
@@ -77,10 +76,10 @@ public class ZeebeJobWorkerElementValidationTest {
   @ParameterizedTest
   @MethodSource("jobWorkerElementBuilderProvider")
   @DisplayName("element without job type or publish message")
-  void missingJobTypeOrPublishMessage(final JobWorkerElementBuilder elementBuilder) {
+  void missingJobTypeOrPublishMessage(final BpmnElementBuilder elementBuilder) {
     String message =
         "Must have either one 'zeebe:publishMessage' or one 'zeebe:taskDefinition' extension element";
-    if ("serviceTask".equals(elementBuilder.elementType)) {
+    if ("serviceTask".equals(elementBuilder.getElementType())) {
       message = "Must have exactly one 'zeebe:taskDefinition' extension element";
     }
     final BpmnModelInstance process = processWithJobWorkerElement(elementBuilder, element -> {});
@@ -91,7 +90,7 @@ public class ZeebeJobWorkerElementValidationTest {
   @ParameterizedTest
   @MethodSource("jobWorkerElementBuilderProvider")
   @DisplayName("element with empty job type")
-  void emptyJobType(final JobWorkerElementBuilder elementBuilder) {
+  void emptyJobType(final BpmnElementBuilder elementBuilder) {
 
     final BpmnModelInstance process =
         processWithJobWorkerElement(elementBuilder, element -> element.zeebeJobType(""));
@@ -102,59 +101,30 @@ public class ZeebeJobWorkerElementValidationTest {
   }
 
   private BpmnModelInstance processWithJobWorkerElement(
-      final JobWorkerElementBuilder elementBuilder,
+      final BpmnElementBuilder elementBuilder,
       final Consumer<ZeebeJobWorkerElementBuilder<?>> elementModifier) {
 
     final StartEventBuilder processBuilder = Bpmn.createExecutableProcess("process").startEvent();
     final AbstractFlowNodeBuilder<?, ?> jobWorkerElementBuilder =
-        elementBuilder.build(processBuilder, elementModifier);
-    return jobWorkerElementBuilder.id("task").done();
+        elementBuilder.build(processBuilder).id("task");
+
+    elementModifier.accept((ZeebeJobWorkerElementBuilder<?>) jobWorkerElementBuilder);
+
+    return jobWorkerElementBuilder.done();
   }
 
-  private static Stream<JobWorkerElementBuilder> jobWorkerElementBuilderProvider() {
+  private static Stream<BpmnElementBuilder> jobWorkerElementBuilderProvider() {
     return Stream.of(
-        JobWorkerElementBuilder.of("serviceTask", AbstractFlowNodeBuilder::serviceTask),
-        JobWorkerElementBuilder.of("sendTask", AbstractFlowNodeBuilder::sendTask),
-        JobWorkerElementBuilder.of(
+        BpmnElementBuilder.of("serviceTask", AbstractFlowNodeBuilder::serviceTask),
+        BpmnElementBuilder.of("sendTask", AbstractFlowNodeBuilder::sendTask),
+        BpmnElementBuilder.of(
             "message end event",
             process ->
                 process.endEvent("message", AbstractThrowEventBuilder::messageEventDefinition)),
-        JobWorkerElementBuilder.of(
+        BpmnElementBuilder.of(
             "intermediate message throw event",
             process ->
                 process.intermediateThrowEvent(
                     "message", AbstractThrowEventBuilder::messageEventDefinition)));
-  }
-
-  private static final class JobWorkerElementBuilder {
-
-    private final String elementType;
-    private final Function<AbstractFlowNodeBuilder<?, ?>, AbstractFlowNodeBuilder<?, ?>> builder;
-
-    private <T extends AbstractFlowNodeBuilder<?, ?> & ZeebeJobWorkerElementBuilder<T>>
-        JobWorkerElementBuilder(
-            final String elementType, final Function<AbstractFlowNodeBuilder<?, ?>, T> builder) {
-      this.elementType = elementType;
-      this.builder = builder::apply;
-    }
-
-    public AbstractFlowNodeBuilder<?, ?> build(
-        final AbstractFlowNodeBuilder<?, ?> processBuilder,
-        final Consumer<ZeebeJobWorkerElementBuilder<?>> builderConsumer) {
-      final AbstractFlowNodeBuilder<?, ?> elementBuilder = builder.apply(processBuilder);
-      builderConsumer.accept((ZeebeJobWorkerElementBuilder<?>) elementBuilder);
-      return elementBuilder;
-    }
-
-    private static <T extends AbstractFlowNodeBuilder<?, ?> & ZeebeJobWorkerElementBuilder<T>>
-        JobWorkerElementBuilder of(
-            final String elementType, final Function<AbstractFlowNodeBuilder<?, ?>, T> builder) {
-      return new JobWorkerElementBuilder(elementType, builder);
-    }
-
-    @Override
-    public String toString() {
-      return elementType;
-    }
   }
 }
