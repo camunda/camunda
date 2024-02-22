@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
@@ -35,6 +36,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
@@ -130,6 +132,33 @@ public class ImportRepositoryES implements ImportRepository {
       log.error("Was not able to write position based import index of type [{}] to Elasticsearch. Reason: {}",
                 optimizeDto.getEsTypeIndexRefersTo(), e
       );
+    }
+  }
+
+  @Override
+  public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id) {
+    GetRequest getRequest = new GetRequest(IMPORT_INDEX_INDEX_NAME).id(id);
+
+    GetResponse getResponse = null;
+    try {
+      getResponse = esClient.get(getRequest);
+    } catch (Exception ignored) {
+      // do nothing
+    }
+
+    if (getResponse != null && getResponse.isExists()) {
+      try {
+        AllEntitiesBasedImportIndexDto storedIndex =
+          objectMapper.readValue(getResponse.getSourceAsString(), AllEntitiesBasedImportIndexDto.class);
+        return Optional.of(storedIndex);
+      } catch (IOException e) {
+        log.error("Was not able to retrieve import index of [{}]. Reason: {}", id, e);
+        return Optional.empty();
+      }
+    } else {
+      log.debug("Was not able to retrieve import index for type '{}' from Elasticsearch. " +
+                  "Desired index does not exist.", id);
+      return Optional.empty();
     }
   }
 }

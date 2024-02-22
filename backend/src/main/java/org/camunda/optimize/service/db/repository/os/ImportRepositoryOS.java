@@ -8,6 +8,7 @@ package org.camunda.optimize.service.db.repository.os;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.lang.String.format;
+import static org.camunda.optimize.service.db.DatabaseConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
@@ -110,5 +112,25 @@ public class ImportRepositoryOS implements ImportRepository {
           .build()
       )
       .build();
+  }
+
+  @Override
+  public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(final String id) {
+    final GetResponse<AllEntitiesBasedImportIndexDto> response = osClient.get(
+      indexNameService.getOptimizeIndexAliasForIndex(IMPORT_INDEX_INDEX_NAME),
+      id,
+      AllEntitiesBasedImportIndexDto.class,
+      format("Was not able to retrieve import index of [%s].", id)
+    );
+
+    if(response.found()) {
+      return Optional.ofNullable(response.source());
+    } else {
+      log.debug(
+        "Was not able to retrieve import index for type '{}' from Opensearch. Desired index does not exist.",
+        id
+      );
+      return Optional.empty();
+    }
   }
 }

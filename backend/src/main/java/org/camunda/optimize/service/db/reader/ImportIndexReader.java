@@ -5,12 +5,23 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.service.db.repository.ImportRepository;
+import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-public interface ImportIndexReader {
+@AllArgsConstructor
+@Component
+@Slf4j
+public class ImportIndexReader {
+   private final ImportRepository importRepository;
 
-   Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id);
+   public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id) {
+      log.debug("Fetching import index of type [{}]", id);
+      return importRepository.getImportIndex(id);
+   }
 
 }
