@@ -11,4 +11,7 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
 /** The key which is used to store a value. */
-public interface DbKey extends BufferReader, BufferWriter {}
+public interface DbKey extends BufferReader, BufferWriter {
+
+// new line for comments to check whether git move works
+}
