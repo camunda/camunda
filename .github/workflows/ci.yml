@@ -1,0 +1,32 @@
+# This GitHub Actions workflow that is triggered on push to `master` and `stable/**` branch or on any pull request creation
+# and invokes `ci-build-reusable` and `ci-test-reusable` workflows.
+---
+name: CI
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'master'
+      - 'stable/**'
+  pull_request:
+
+# This will limit the workflow to 1 concurrent run per ref (branch / PR).
+# If a new commits occurs, the current run will be canceled to save costs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-build:
+    name: run-build
+    uses: ./.github/workflows/ci-build-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `master` or `stable/**`
+
+  run-tests:
+    name: run-tests
+    uses: ./.github/workflows/ci-test-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
