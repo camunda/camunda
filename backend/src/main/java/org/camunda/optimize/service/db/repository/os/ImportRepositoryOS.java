@@ -9,14 +9,18 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.repository.ImportRepository;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.DatabaseHelper;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +29,7 @@ import java.util.Optional;
 
 import static java.lang.String.format;
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
 import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.DB_TYPE_INDEX_REFERS_TO;
@@ -35,8 +40,8 @@ import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedI
 @Conditional(OpenSearchCondition.class)
 public class ImportRepositoryOS implements ImportRepository {
   private final OptimizeOpenSearchClient osClient;
+  private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
-
 
   @Override
   public List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(List<String> indexTypes) {
@@ -77,5 +82,33 @@ public class ImportRepositoryOS implements ImportRepository {
       );
       return Optional.empty();
     }
+  }
+
+  @Override
+  public void importPositionBasedIndices(final String importItemName, final List<PositionBasedImportIndexDto> importIndexDtos) {
+    osClient.doImportBulkRequestWithList(
+      importItemName,
+      importIndexDtos,
+      this::addPositionBasedImportIndexRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
+    );
+  }
+
+  private BulkOperation addPositionBasedImportIndexRequest(PositionBasedImportIndexDto optimizeDto) {
+    log.debug(
+      "Writing position based import index of type [{}] with position [{}] to opensearch",
+      optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getPositionOfLastEntity()
+    );
+    // leaving the prefix "es" although it is valid for ES and OS,
+    // since changing this would require data migration and the cost/benefit of the change is not worth the effort
+    return new BulkOperation.Builder()
+      .index(
+        new IndexOperation.Builder<PositionBasedImportIndexDto>()
+          .index(indexNameService.getOptimizeIndexAliasForIndex(POSITION_BASED_IMPORT_INDEX_NAME))
+          .id(DatabaseHelper.constructKey(optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getDataSource()))
+          .document(optimizeDto)
+          .build()
+      )
+      .build();
   }
 }

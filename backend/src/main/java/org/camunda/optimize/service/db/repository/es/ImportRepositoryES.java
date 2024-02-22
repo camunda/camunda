@@ -5,23 +5,29 @@
  */
 package org.camunda.optimize.service.db.repository.es;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.db.repository.ImportRepository;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DatabaseHelper;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +36,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.DB_TYPE_INDEX_REFERS_TO;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -41,6 +48,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 public class ImportRepositoryES implements ImportRepository {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+  private final ConfigurationService configurationService;
 
   @Override
   public List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(List<String> indexTypes) {
@@ -96,6 +104,32 @@ public class ImportRepositoryES implements ImportRepository {
         dataSourceDto
       );
       return Optional.empty();
+    }
+  }
+
+  @Override
+  public void importPositionBasedIndices(String importItemName, List<PositionBasedImportIndexDto> importIndexDtos) {
+    esClient.doImportBulkRequestWithList(
+      importItemName,
+      importIndexDtos,
+      this::addPositionBasedImportIndexRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
+    );
+  }
+
+  private void addPositionBasedImportIndexRequest(BulkRequest bulkRequest, PositionBasedImportIndexDto optimizeDto) {
+    log.debug(
+      "Writing position based import index of type [{}] with position [{}] to elasticsearch",
+      optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getPositionOfLastEntity()
+    );
+    try {
+      bulkRequest.add(new IndexRequest(POSITION_BASED_IMPORT_INDEX_NAME)
+                        .id(DatabaseHelper.constructKey(optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getDataSource()))
+                        .source(objectMapper.writeValueAsString(optimizeDto), XContentType.JSON));
+    } catch (JsonProcessingException e) {
+      log.error("Was not able to write position based import index of type [{}] to Elasticsearch. Reason: {}",
+                optimizeDto.getEsTypeIndexRefersTo(), e
+      );
     }
   }
 }
