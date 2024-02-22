@@ -143,11 +143,8 @@
     }
   }
 
-  &.noData,
-  &.error {
-    .cds--data-table-container {
-      position: relative;
-    }
+  &.noData .cds--data-table-container {
+    position: relative;
   }
 
   &.noHighlight tbody {
@@ -163,7 +160,7 @@
   }
 
   .noData,
-  .error {
+  .errorContainer {
     position: absolute;
     left: 50%;
     top: 50%;

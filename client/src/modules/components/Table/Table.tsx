@@ -97,7 +97,7 @@ interface TableProps {
   disablePagination?: boolean;
   noHighlight?: boolean;
   noData?: JSX.Element;
-  error?: ReactNode;
+  errorInPage?: ReactNode;
   onScroll?: UIEventHandler<HTMLElement>;
   fetchData?: ({pageIndex, pageSize}: {pageIndex: number; pageSize: number}) => void;
   defaultPageSize?: number;
@@ -122,7 +122,7 @@ export default function Table<T extends object>({
   disablePagination,
   noHighlight,
   noData = <NoDataNotice />,
-  error,
+  errorInPage,
   onScroll,
   fetchData = () => {},
   defaultPageSize = 20,
@@ -204,11 +204,7 @@ export default function Table<T extends object>({
   const isEmpty = !loading && (totalRows === 0 || head.length === 0);
   const isSortable = headerGroups.some(({headers}) => headers.some((header) => header.canSort));
   const showPagination =
-    !disablePagination &&
-    !isEmpty &&
-    !loading &&
-    !error &&
-    (totalRows > defaultPageSize || totalEntries);
+    !disablePagination && !isEmpty && !loading && (totalRows > defaultPageSize || totalEntries);
 
   if (isReactElement(toolbar) && toolbar.type !== TableToolbar) {
     throw new Error('Table `toolbar` should be a `TableToolbar` component');
@@ -223,7 +219,6 @@ export default function Table<T extends object>({
         noHighlight,
         loading,
         noData: isEmpty,
-        error,
       })}
     >
       <DataTable
@@ -260,18 +255,20 @@ export default function Table<T extends object>({
                     </TableRow>
                   ))}
                 </TableHead>
-                <TableBody {...getTableBodyProps()} onScroll={onScroll}>
-                  {page.map((row) => {
-                    prepareRow(row);
-                    return (
-                      <TableRow {...row.getRowProps((row.original as any).__props)}>
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.column.id} cell={cell} />
-                        ))}
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
+                {!errorInPage && (
+                  <TableBody {...getTableBodyProps()} onScroll={onScroll}>
+                    {page.map((row) => {
+                      prepareRow(row);
+                      return (
+                        <TableRow {...row.getRowProps((row.original as any).__props)}>
+                          {row.cells.map((cell) => (
+                            <TableCell key={cell.column.id} cell={cell} />
+                          ))}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                )}
               </CarbonTable>
             )}
             {loading && (
@@ -288,7 +285,7 @@ export default function Table<T extends object>({
               />
             )}
             {!loading && isEmpty && <div className="noData">{noData}</div>}
-            {error && <div className="error">{error}</div>}
+            {errorInPage && <div className="errorContainer">{errorInPage}</div>}
             {showPagination && (
               <Pagination
                 aria-disabled={loading}
