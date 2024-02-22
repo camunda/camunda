@@ -35,19 +35,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 public class DecisionInstanceDaoRfc3339SerializationIT extends OperateSearchAbstractIT {
   private static final Long FAKE_PROCESS_DEFINITION_KEY = 2251799813685253L;
   private static final Long FAKE_PROCESS_INSTANCE_KEY = 2251799813685255L;
+  private final String firstDecisionEvaluationDate = "2024-02-15T22:40:10.834+0000";
+  private final String firstDecisionRfc3339EvaluationDate = "2024-02-15T22:40:10.834+00:00";
+  private final String secondDecisionEvaluationDate = "2024-02-15T22:41:10.834+0000";
+  private final String secondDecisionRfc3339EvaluationDate = "2024-02-15T22:41:10.834+00:00";
+  private final String thirdDecisionEvaluationDate = "2024-01-15T22:40:10.834+0000";
+  private final String thirdDecisionRfc3339EvaluationDate = "2024-01-15T22:40:10.834+00:00";
   @Autowired private DecisionInstanceDao dao;
   @Autowired private DecisionInstanceTemplate decisionInstanceIndex;
   @Autowired private OperateDateTimeFormatter dateTimeFormatter;
-  private String firstDecisionEvaluationDate = "2024-02-15T22:40:10.834+0000";
-  private String firstDecisionRfc3339EvaluationDate = "2024-02-15T22:40:10.834+00:00";
-  private String secondDecisionEvaluationDate = "2024-02-15T22:41:10.834+0000";
-  private String secondDecisionRfc3339EvaluationDate = "2024-02-15T22:41:10.834+00:00";
-  private String thirdDecisionEvaluationDate = "2024-01-15T22:40:10.834+0000";
-  private String thirdDecisionRfc3339EvaluationDate = "2024-01-15T22:40:10.834+00:00";
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    String indexName = decisionInstanceIndex.getFullQualifiedName();
+    final String indexName = decisionInstanceIndex.getFullQualifiedName();
     testSearchRepository.createOrUpdateDocumentFromObject(
         indexName,
         new DecisionInstanceEntity()
@@ -104,7 +104,7 @@ public class DecisionInstanceDaoRfc3339SerializationIT extends OperateSearchAbst
 
   @Test
   public void shouldFilterByEvaluationDate() {
-    Results<DecisionInstance> decisionInstanceResults =
+    final Results<DecisionInstance> decisionInstanceResults =
         dao.search(
             new Query<DecisionInstance>()
                 .setFilter(
@@ -118,7 +118,7 @@ public class DecisionInstanceDaoRfc3339SerializationIT extends OperateSearchAbst
 
   @Test
   public void shouldFilterByEvaluationDateWithDateMath() {
-    Results<DecisionInstance> decisionInstanceResults =
+    final Results<DecisionInstance> decisionInstanceResults =
         dao.search(
             new Query<DecisionInstance>()
                 .setFilter(
@@ -142,5 +142,13 @@ public class DecisionInstanceDaoRfc3339SerializationIT extends OperateSearchAbst
             .orElse(null);
     assertThat(checkDecision.getEvaluationDate()).isEqualTo(secondDecisionRfc3339EvaluationDate);
     assertThat(checkDecision.getId()).isEqualTo("2251799813685262-2");
+  }
+
+  @Test
+  public void shouldFormatDateWhenSearchById() {
+    final DecisionInstance decisionInstance = dao.byId("2251799813685262-1");
+
+    assertThat(decisionInstance.getEvaluationDate()).isEqualTo(firstDecisionRfc3339EvaluationDate);
+    assertThat(decisionInstance.getId()).isEqualTo("2251799813685262-1");
   }
 }

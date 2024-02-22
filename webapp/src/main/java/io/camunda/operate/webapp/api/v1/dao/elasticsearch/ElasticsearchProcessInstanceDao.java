@@ -47,12 +47,12 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
 
   @Autowired private ProcessInstanceWriter processInstanceWriter;
 
-  private List<ProcessInstance> mapSearchHits(SearchHit[] searchHitArray) {
-    List<ProcessInstance> processInstances =
+  private List<ProcessInstance> mapSearchHits(final SearchHit[] searchHitArray) {
+    final List<ProcessInstance> processInstances =
         ElasticsearchUtil.mapSearchHits(searchHitArray, objectMapper, ProcessInstance.class);
 
     if (processInstances != null) {
-      for (ProcessInstance pi : processInstances) {
+      for (final ProcessInstance pi : processInstances) {
         pi.setStartDate(dateTimeFormatter.convertGeneralToApiDateTime(pi.getStartDate()));
         pi.setEndDate(dateTimeFormatter.convertGeneralToApiDateTime(pi.getEndDate()));
       }
@@ -74,7 +74,7 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        List<ProcessInstance> processInstances = mapSearchHits(searchHitArray);
+        final List<ProcessInstance> processInstances = mapSearchHits(searchHitArray);
         return new Results<ProcessInstance>()
             .setTotal(searchHits.getTotalHits().value)
             .setItems(processInstances)
@@ -82,7 +82,7 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
       } else {
         return new Results<ProcessInstance>().setTotal(searchHits.getTotalHits().value);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading process instances", e);
     }
   }
@@ -90,11 +90,11 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
   @Override
   public ProcessInstance byKey(final Long key) throws APIException {
     logger.debug("byKey {}", key);
-    List<ProcessInstance> processInstances;
+    final List<ProcessInstance> processInstances;
     try {
       processInstances =
           searchFor(new SearchSourceBuilder().query(termQuery(ListViewTemplate.KEY, key)));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading process instance for key %s", key), e);
     }
@@ -120,19 +120,20 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
           .setDeleted(1)
           .setMessage(
               String.format("Process instance and dependant data deleted for key '%s'", key));
-    } catch (IllegalArgumentException iae) {
+    } catch (final IllegalArgumentException iae) {
       throw new ClientException(iae.getMessage(), iae);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in deleting process instance and dependant data for key '%s'", key),
           e);
     }
   }
 
+  @Override
   protected void buildFiltering(
       final Query<ProcessInstance> query, final SearchSourceBuilder searchSourceBuilder) {
     final ProcessInstance filter = query.getFilter();
-    List<QueryBuilder> queryBuilders = new ArrayList<>();
+    final List<QueryBuilder> queryBuilders = new ArrayList<>();
     queryBuilders.add(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
     if (filter != null) {
       queryBuilders.add(buildTermQuery(ProcessInstance.KEY, filter.getKey()));
@@ -157,11 +158,21 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
       throws IOException {
     final SearchRequest searchRequest =
         new SearchRequest(processInstanceIndex.getAlias()).source(searchSource);
-    return tenantAwareClient.search(
-        searchRequest,
-        () -> {
-          return ElasticsearchUtil.scroll(
-              searchRequest, ProcessInstance.class, objectMapper, elasticsearch);
-        });
+    final List<ProcessInstance> processInstances =
+        tenantAwareClient.search(
+            searchRequest,
+            () -> {
+              return ElasticsearchUtil.scroll(
+                  searchRequest, ProcessInstance.class, objectMapper, elasticsearch);
+            });
+
+    if (processInstances != null) {
+      for (final ProcessInstance pi : processInstances) {
+        pi.setStartDate(dateTimeFormatter.convertGeneralToApiDateTime(pi.getStartDate()));
+        pi.setEndDate(dateTimeFormatter.convertGeneralToApiDateTime(pi.getEndDate()));
+      }
+    }
+
+    return processInstances;
   }
 }

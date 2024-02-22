@@ -87,7 +87,7 @@ public class IncidentDaoDefaultDateSerializationIT extends OperateSearchAbstract
 
   @Test
   public void shouldFilterByCreationDate() {
-    Results<Incident> flowNodeInstanceResults =
+    final Results<Incident> flowNodeInstanceResults =
         dao.search(
             new Query<Incident>()
                 .setFilter(new Incident().setCreationTime(firstIncidentCreationTime)));
@@ -100,7 +100,7 @@ public class IncidentDaoDefaultDateSerializationIT extends OperateSearchAbstract
 
   @Test
   public void shouldFilterByCreationDateWithDateMath() {
-    Results<Incident> incidentResults =
+    final Results<Incident> incidentResults =
         dao.search(
             new Query<Incident>()
                 .setFilter(new Incident().setCreationTime(firstIncidentCreationTime + "||/d")));
@@ -124,5 +124,13 @@ public class IncidentDaoDefaultDateSerializationIT extends OperateSearchAbstract
     assertThat(checkIncident)
         .extracting("creationTime", "message")
         .containsExactly(secondIncidentCreationTime, "Another error");
+  }
+
+  @Test
+  public void shouldFormatDatesWhenSearchByKey() {
+    final Incident incident = dao.byKey(7147483647L);
+
+    assertThat(incident.getCreationTime()).isEqualTo(firstIncidentCreationTime);
+    assertThat(incident.getKey()).isEqualTo(7147483647L);
   }
 }

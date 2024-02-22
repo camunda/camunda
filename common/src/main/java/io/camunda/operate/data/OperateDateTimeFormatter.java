@@ -17,16 +17,17 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class OperateDateTimeFormatter {
-
   public static final String RFC3339_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSxxx";
   public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
   private final DateTimeFormatter apiDateTimeFormatter;
   private final DateTimeFormatter generalDateTimeFormatter;
   private final String apiDateTimeFormatString;
   private final String generalDateTimeFormatString;
+  private final boolean storageAndApiFormatsAreSame;
 
-  public OperateDateTimeFormatter(OperateProperties operateProperties, DatabaseInfo databaseInfo) {
+  public OperateDateTimeFormatter(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     if (databaseInfo.isOpensearchDb()) {
       generalDateTimeFormatString = operateProperties.getOpensearch().getDateFormat();
     } else {
@@ -43,8 +44,10 @@ public class OperateDateTimeFormatter {
       apiDateTimeFormatString = generalDateTimeFormatString;
     }
 
-    this.apiDateTimeFormatter = DateTimeFormatter.ofPattern(apiDateTimeFormatString);
-    this.generalDateTimeFormatter = DateTimeFormatter.ofPattern(generalDateTimeFormatString);
+    storageAndApiFormatsAreSame = apiDateTimeFormatString.equals(generalDateTimeFormatString);
+
+    apiDateTimeFormatter = DateTimeFormatter.ofPattern(apiDateTimeFormatString);
+    generalDateTimeFormatter = DateTimeFormatter.ofPattern(generalDateTimeFormatString);
   }
 
   public String getGeneralDateTimeFormatString() {
@@ -55,14 +58,14 @@ public class OperateDateTimeFormatter {
     return generalDateTimeFormatter;
   }
 
-  public String formatGeneralDateTime(OffsetDateTime dateTime) {
+  public String formatGeneralDateTime(final OffsetDateTime dateTime) {
     if (dateTime != null) {
       return dateTime.format(generalDateTimeFormatter);
     }
     return null;
   }
 
-  public OffsetDateTime parseGeneralDateTime(String dateTimeAsString) {
+  public OffsetDateTime parseGeneralDateTime(final String dateTimeAsString) {
     if (StringUtils.isNotEmpty(dateTimeAsString)) {
       return OffsetDateTime.parse(dateTimeAsString, generalDateTimeFormatter);
     }
@@ -77,25 +80,26 @@ public class OperateDateTimeFormatter {
     return apiDateTimeFormatter;
   }
 
-  public String formatApiDateTime(OffsetDateTime dateTime) {
+  public String formatApiDateTime(final OffsetDateTime dateTime) {
     if (dateTime != null) {
       return dateTime.format(apiDateTimeFormatter);
     }
     return null;
   }
 
-  public OffsetDateTime parseApiDateTime(String dateTimeAsString) {
+  public OffsetDateTime parseApiDateTime(final String dateTimeAsString) {
     if (StringUtils.isNotEmpty(dateTimeAsString)) {
       return OffsetDateTime.parse(dateTimeAsString, apiDateTimeFormatter);
     }
     return null;
   }
 
-  public String convertGeneralToApiDateTime(String dateTimeAsString) {
-    if (StringUtils.isNotEmpty(dateTimeAsString)) {
-      OffsetDateTime dateTime = parseGeneralDateTime(dateTimeAsString);
+  public String convertGeneralToApiDateTime(final String dateTimeAsString) {
+    if (!storageAndApiFormatsAreSame && StringUtils.isNotEmpty(dateTimeAsString)) {
+      final OffsetDateTime dateTime = parseGeneralDateTime(dateTimeAsString);
       return formatApiDateTime(dateTime);
+    } else {
+      return dateTimeAsString;
     }
-    return null;
   }
 }

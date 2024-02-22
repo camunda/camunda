@@ -116,7 +116,7 @@ public class ProcessInstanceDaoRfc3339DateSerializationIT extends OperateSearchA
 
   @Test
   public void shouldFilterByStartDate() {
-    Results<ProcessInstance> processInstanceResults =
+    final Results<ProcessInstance> processInstanceResults =
         dao.search(
             new Query<ProcessInstance>()
                 .setFilter(new ProcessInstance().setStartDate(firstInstanceRfc3339StartDate)));
@@ -131,7 +131,7 @@ public class ProcessInstanceDaoRfc3339DateSerializationIT extends OperateSearchA
 
   @Test
   public void shouldFilterByStartDateWithDateMath() {
-    Results<ProcessInstance> processInstanceResults =
+    final Results<ProcessInstance> processInstanceResults =
         dao.search(
             new Query<ProcessInstance>()
                 .setFilter(
@@ -158,5 +158,14 @@ public class ProcessInstanceDaoRfc3339DateSerializationIT extends OperateSearchA
     assertThat(checkInstance.getBpmnProcessId()).isEqualTo("demoProcess-2");
     assertThat(checkInstance.getStartDate()).isEqualTo(secondInstanceRfc3339StartDate);
     assertThat(checkInstance.getEndDate()).isNull();
+  }
+
+  @Test
+  public void shouldFormatDatesWhenSearchByKey() {
+    final ProcessInstance processInstance = dao.byKey(2251799813685251L);
+
+    assertThat(processInstance.getStartDate()).isEqualTo(firstInstanceRfc3339StartDate);
+    assertThat(processInstance.getEndDate()).isEqualTo(rfc3339endDate);
+    assertThat(processInstance.getKey()).isEqualTo(2251799813685251L);
   }
 }

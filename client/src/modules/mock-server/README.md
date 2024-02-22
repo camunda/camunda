@@ -29,7 +29,7 @@ const handlers = [
       ctx.json({
         ...body,
         newField: mockField,
-      })
+      }),
     );
   }),
 ];
@@ -48,8 +48,8 @@ import {mockedResponse} from 'modules/mocks';
 // the endpoints can be mocked before each test or inside each test
 mockServer.use(
   rest.get('/url/path/i/want/to/mock', (_, res, ctx) =>
-    res.once(ctx.json(mockedResponse))
-  )
+    res.once(ctx.json(mockedResponse)),
+  ),
 );
 ```
 

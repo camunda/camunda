@@ -40,12 +40,12 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Override
-  public DecisionInstance byId(String id) throws APIException {
-    List<DecisionInstance> decisionInstances;
+  public DecisionInstance byId(final String id) throws APIException {
+    final List<DecisionInstance> decisionInstances;
     try {
       decisionInstances =
           searchFor(new SearchSourceBuilder().query(termQuery(DecisionInstanceTemplate.ID, id)));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading decision instance for id %s", id), e);
     }
@@ -61,12 +61,12 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
     return decisionInstances.get(0);
   }
 
-  private List<DecisionInstance> mapSearchHits(SearchHit[] searchHitArray) {
-    List<DecisionInstance> decisionInstances =
+  private List<DecisionInstance> mapSearchHits(final SearchHit[] searchHitArray) {
+    final List<DecisionInstance> decisionInstances =
         ElasticsearchUtil.mapSearchHits(searchHitArray, objectMapper, DecisionInstance.class);
 
     if (decisionInstances != null) {
-      for (DecisionInstance di : decisionInstances) {
+      for (final DecisionInstance di : decisionInstances) {
         di.setEvaluationDate(dateTimeFormatter.convertGeneralToApiDateTime(di.getEvaluationDate()));
       }
     }
@@ -75,7 +75,7 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
   }
 
   @Override
-  public Results<DecisionInstance> search(Query<DecisionInstance> query) throws APIException {
+  public Results<DecisionInstance> search(final Query<DecisionInstance> query) throws APIException {
 
     final SearchSourceBuilder searchSourceBuilder =
         buildQueryOn(query, DecisionInstance.ID, new SearchSourceBuilder())
@@ -91,7 +91,7 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
-        List<DecisionInstance> decisionInstances = mapSearchHits(searchHitArray);
+        final List<DecisionInstance> decisionInstances = mapSearchHits(searchHitArray);
         return new Results<DecisionInstance>()
             .setTotal(searchHits.getTotalHits().value)
             .setItems(decisionInstances)
@@ -99,17 +99,17 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
       } else {
         return new Results<DecisionInstance>().setTotal(searchHits.getTotalHits().value);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading decision instance", e);
     }
   }
 
   @Override
   protected void buildFiltering(
-      Query<DecisionInstance> query, SearchSourceBuilder searchSourceBuilder) {
+      final Query<DecisionInstance> query, final SearchSourceBuilder searchSourceBuilder) {
     final DecisionInstance filter = query.getFilter();
     if (filter != null) {
-      List<QueryBuilder> queryBuilders = new ArrayList<>();
+      final List<QueryBuilder> queryBuilders = new ArrayList<>();
       queryBuilders.add(buildTermQuery(DecisionInstance.ID, filter.getId()));
       queryBuilders.add(buildTermQuery(DecisionInstance.KEY, filter.getKey()));
       queryBuilders.add(
@@ -146,11 +146,20 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
       throws IOException {
     final SearchRequest searchRequest =
         new SearchRequest(decisionInstanceTemplate.getAlias()).source(searchSource);
-    return tenantAwareClient.search(
-        searchRequest,
-        () -> {
-          return ElasticsearchUtil.scroll(
-              searchRequest, DecisionInstance.class, objectMapper, elasticsearch);
-        });
+    final List<DecisionInstance> decisionInstances =
+        tenantAwareClient.search(
+            searchRequest,
+            () -> {
+              return ElasticsearchUtil.scroll(
+                  searchRequest, DecisionInstance.class, objectMapper, elasticsearch);
+            });
+
+    if (decisionInstances != null) {
+      for (final DecisionInstance di : decisionInstances) {
+        di.setEvaluationDate(dateTimeFormatter.convertGeneralToApiDateTime(di.getEvaluationDate()));
+      }
+    }
+
+    return decisionInstances;
   }
 }

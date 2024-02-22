@@ -42,7 +42,7 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
 
   @Test
   public void shouldReturnProcessInstancesOnSearch() {
-    Results<ProcessInstance> processInstanceResults = dao.search(new Query<>());
+    final Results<ProcessInstance> processInstanceResults = dao.search(new Query<>());
 
     assertThat(processInstanceResults.getTotal()).isEqualTo(3);
     assertThat(processInstanceResults.getItems())
@@ -53,12 +53,12 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
   @Test
   public void searchShouldReturnParentKeyWhenExists() {
     // Find the child process
-    Results<ProcessInstance> processInstanceResults =
+    final Results<ProcessInstance> processInstanceResults =
         dao.search(
             new Query<ProcessInstance>()
                 .setFilter(new ProcessInstance().setBpmnProcessId("CalledProcess")));
     assertThat(processInstanceResults.getItems().size()).isEqualTo(1);
-    ProcessInstance instance = processInstanceResults.getItems().get(0);
+    final ProcessInstance instance = processInstanceResults.getItems().get(0);
 
     assertThat(instance.getParentKey()).isEqualTo(callActivityProcessInstanceKey);
     assertThat(instance.getParentFlowNodeInstanceKey()).isNotNull();
@@ -71,13 +71,13 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
         singleTaskProcessInstanceKey, "task", "task", null);
 
     // Delete the process instance
-    ChangeStatus changeStatus = dao.delete(singleTaskProcessInstanceKey);
+    final ChangeStatus changeStatus = dao.delete(singleTaskProcessInstanceKey);
     assertThat(changeStatus.getDeleted()).isEqualTo(1);
 
     // Ensure the indices are updated and then check that the deleted instance no longer appears in
     // search queries
     operateTester.refreshSearchIndices();
-    Results<ProcessInstance> results =
+    final Results<ProcessInstance> results =
         dao.search(
             new Query<ProcessInstance>()
                 .setFilter(new ProcessInstance().setBpmnProcessId("process")));
@@ -94,7 +94,7 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
 
   @Test
   public void shouldReturnProcessInstanceByKey() {
-    ProcessInstance result = dao.byKey(singleTaskProcessInstanceKey);
+    final ProcessInstance result = dao.byKey(singleTaskProcessInstanceKey);
     assertThat(result.getKey()).isEqualTo(singleTaskProcessInstanceKey);
     assertThat(result.getBpmnProcessId()).isEqualTo("process");
   }
@@ -106,7 +106,7 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
 
   @Test
   public void shouldSortInstancesAsc() {
-    Results<ProcessInstance> results =
+    final Results<ProcessInstance> results =
         dao.search(
             new Query<ProcessInstance>()
                 .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.ASC)));
@@ -119,7 +119,7 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
 
   @Test
   public void shouldSortInstancesDesc() {
-    Results<ProcessInstance> results =
+    final Results<ProcessInstance> results =
         dao.search(
             new Query<ProcessInstance>()
                 .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.DESC)));
@@ -166,7 +166,7 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
             new Query<ProcessInstance>()
                 .setFilter(new ProcessInstance().setBpmnProcessId("CalledProcess")));
     assertThat(results.getItems().size()).isEqualTo(1);
-    ProcessInstance childInstance = results.getItems().get(0);
+    final ProcessInstance childInstance = results.getItems().get(0);
 
     // Should return the same process when searching by the parent flow node instance key
     results =
@@ -189,7 +189,7 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
             new Query<ProcessInstance>()
                 .setFilter(new ProcessInstance().setBpmnProcessId("CalledProcess")));
     assertThat(results.getItems().size()).isEqualTo(1);
-    String filterDateTime = results.getItems().get(0).getEndDate();
+    final String filterDateTime = results.getItems().get(0).getEndDate();
 
     // Parent and child process instances should have the same start time
     results =
@@ -205,13 +205,14 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
 
   @Test
   public void shouldFilterByDateWithDateMath() {
+
     // Get the start date of the child process
     Results<ProcessInstance> results =
         dao.search(
             new Query<ProcessInstance>()
                 .setFilter(new ProcessInstance().setBpmnProcessId("CalledProcess")));
     assertThat(results.getItems().size()).isEqualTo(1);
-    String filterDateTime = results.getItems().get(0).getEndDate() + "||/d";
+    final String filterDateTime = results.getItems().get(0).getEndDate() + "||/d";
 
     // Parent and child process instances should have the same start time
     results =

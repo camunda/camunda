@@ -51,7 +51,7 @@ public class FlowNodeInstanceDaoDefaultDateSerializationIT extends OperateSearch
   @Override
   public void runAdditionalBeforeAllSetup() throws Exception {
 
-    String indexName = flowNodeInstanceIndex.getFullQualifiedName();
+    final String indexName = flowNodeInstanceIndex.getFullQualifiedName();
     testSearchRepository.createOrUpdateDocumentFromObject(
         indexName,
         new FlowNodeInstanceEntity()
@@ -111,7 +111,7 @@ public class FlowNodeInstanceDaoDefaultDateSerializationIT extends OperateSearch
 
   @Test
   public void shouldFilterByStartDate() {
-    Results<FlowNodeInstance> flowNodeInstanceResults =
+    final Results<FlowNodeInstance> flowNodeInstanceResults =
         dao.search(
             new Query<FlowNodeInstance>()
                 .setFilter(new FlowNodeInstance().setStartDate(firstNodeStartDate)));
@@ -125,7 +125,7 @@ public class FlowNodeInstanceDaoDefaultDateSerializationIT extends OperateSearch
 
   @Test
   public void shouldFilterByStartDateWithDateMath() {
-    Results<FlowNodeInstance> flowNodeInstanceResults =
+    final Results<FlowNodeInstance> flowNodeInstanceResults =
         dao.search(
             new Query<FlowNodeInstance>()
                 .setFilter(new FlowNodeInstance().setStartDate(firstNodeStartDate + "||/d")));
@@ -153,7 +153,7 @@ public class FlowNodeInstanceDaoDefaultDateSerializationIT extends OperateSearch
 
   @Test
   public void shouldFilterByEndDate() {
-    Results<FlowNodeInstance> flowNodeInstanceResults =
+    final Results<FlowNodeInstance> flowNodeInstanceResults =
         dao.search(
             new Query<FlowNodeInstance>().setFilter(new FlowNodeInstance().setEndDate(endDate)));
 
@@ -166,7 +166,7 @@ public class FlowNodeInstanceDaoDefaultDateSerializationIT extends OperateSearch
 
   @Test
   public void shouldFilterByEndDateWithDateMath() {
-    Results<FlowNodeInstance> flowNodeInstanceResults =
+    final Results<FlowNodeInstance> flowNodeInstanceResults =
         dao.search(
             new Query<FlowNodeInstance>()
                 .setFilter(new FlowNodeInstance().setEndDate(endDate + "||/d")));
@@ -176,5 +176,14 @@ public class FlowNodeInstanceDaoDefaultDateSerializationIT extends OperateSearch
     assertThat(flowNodeInstanceResults.getItems().get(0).getStartDate())
         .isEqualTo(firstNodeStartDate);
     assertThat(flowNodeInstanceResults.getItems().get(0).getEndDate()).isEqualTo(endDate);
+  }
+
+  @Test
+  public void shouldFormatDatesWhenSearchByKey() {
+    final FlowNodeInstance flowNodeInstance = dao.byKey(2251799813685256L);
+
+    assertThat(flowNodeInstance.getStartDate()).isEqualTo(firstNodeStartDate);
+    assertThat(flowNodeInstance.getEndDate()).isEqualTo(endDate);
+    assertThat(flowNodeInstance.getKey()).isEqualTo(2251799813685256L);
   }
 }

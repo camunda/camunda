@@ -38,25 +38,35 @@ public class OpensearchDecisionInstanceDao
   private final OperateDateTimeFormatter dateTimeFormatter;
 
   public OpensearchDecisionInstanceDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      DecisionInstanceTemplate decisionInstanceTemplate,
-      OperateDateTimeFormatter dateTimeFormatter) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final DecisionInstanceTemplate decisionInstanceTemplate,
+      final OperateDateTimeFormatter dateTimeFormatter) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionInstanceTemplate = decisionInstanceTemplate;
     this.dateTimeFormatter = dateTimeFormatter;
   }
 
   @Override
-  public DecisionInstance byId(String id) throws APIException {
+  protected DecisionInstance convertInternalToApiResult(final DecisionInstance internalResult) {
+    if (internalResult != null && StringUtils.isNotEmpty(internalResult.getEvaluationDate())) {
+      internalResult.setEvaluationDate(
+          dateTimeFormatter.convertGeneralToApiDateTime(internalResult.getEvaluationDate()));
+    }
+
+    return internalResult;
+  }
+
+  @Override
+  public DecisionInstance byId(final String id) throws APIException {
     if (id == null) {
       throw new ServerException("ID provided cannot be null");
     }
 
-    List<DecisionInstance> decisionInstances;
+    final List<DecisionInstance> decisionInstances;
     try {
-      var request =
+      final var request =
           requestDSLWrapper
               .searchRequestBuilder(getIndexName())
               .query(
@@ -64,7 +74,7 @@ public class OpensearchDecisionInstanceDao
                       queryDSLWrapper.term(DecisionInstanceTemplate.ID, id)));
       decisionInstances =
           richOpenSearchClient.doc().searchValues(request, getInternalDocumentModelClass());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading decision instance for id %s", id), e);
     }
@@ -76,11 +86,11 @@ public class OpensearchDecisionInstanceDao
       throw new ServerException(
           String.format("Found more than one decision instance for id %s", id));
     }
-    return decisionInstances.get(0);
+    return convertInternalToApiResult(decisionInstances.get(0));
   }
 
   @Override
-  protected SearchRequest.Builder buildSearchRequest(Query<DecisionInstance> query) {
+  protected SearchRequest.Builder buildSearchRequest(final Query<DecisionInstance> query) {
     return super.buildSearchRequest(query)
         .source(
             queryDSLWrapper.sourceExclude(
@@ -104,10 +114,11 @@ public class OpensearchDecisionInstanceDao
   }
 
   @Override
-  protected void buildFiltering(Query<DecisionInstance> query, SearchRequest.Builder request) {
+  protected void buildFiltering(
+      final Query<DecisionInstance> query, final SearchRequest.Builder request) {
     final DecisionInstance filter = query.getFilter();
     if (filter != null) {
-      var queryTerms =
+      final var queryTerms =
           Stream.of(
                   queryDSLWrapper.term(DecisionInstance.ID, filter.getId()),
                   queryDSLWrapper.term(DecisionInstance.KEY, filter.getKey()),
@@ -141,15 +152,5 @@ public class OpensearchDecisionInstanceDao
         request.query(queryDSLWrapper.and(queryTerms));
       }
     }
-  }
-
-  @Override
-  protected DecisionInstance convertInternalToApiResult(DecisionInstance internalResult) {
-    if (internalResult != null && StringUtils.isNotEmpty(internalResult.getEvaluationDate())) {
-      internalResult.setEvaluationDate(
-          dateTimeFormatter.convertGeneralToApiDateTime(internalResult.getEvaluationDate()));
-    }
-
-    return internalResult;
   }
 }
