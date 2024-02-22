@@ -51,11 +51,10 @@ If the change impacts another team, an issue has been created for this team, exp
 - [ ] [Tasklist](https://github.com/camunda/tasklist/issues)
 - [ ] [Optimize](https://github.com/camunda/camunda-optimize/issues)
 - [ ] Zeebe Play
-      
+
 ## Definition of Reviewed
 
 <!-- As a reviewer please check the items that apply before approving this PR -->
-
 - [ ] All acceptance criteria described in the issue are met
 - [ ] Unit/integration tests are written, that verify all acceptance criteria of the issue
 - [ ] E2E tests are written, if the acceptance criteria can't be covered in unit/integration tests

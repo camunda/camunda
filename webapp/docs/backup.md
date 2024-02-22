@@ -9,7 +9,7 @@ indices that store imported data.
 
 Currently order of index snapshotting look like this:
 
-| Order | Priority | Index/indices                                                                                                            |
+| Order | Priority |                                                      Index/indices                                                       |
 |-------|----------|--------------------------------------------------------------------------------------------------------------------------|
 | 1     | Prio 1   | import-position index                                                                                                    |
 | 2     | Prio 2   | Main list-view index                                                                                                     |

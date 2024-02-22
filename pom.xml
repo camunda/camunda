@@ -435,6 +435,18 @@
                 <style>GOOGLE</style>
               </googleJavaFormat>
             </java>
+      <!-- While other files are generally placed in a special directory, markdown files are not.
+      To make sure all markdown files are formatted, we need to rely on the **/*.md pattern.
+      This pattern will match all *.md files in all subdirectories (also in all submodules).-->
+            <markdown>
+              <includes>
+                <include>**/*.md</include>
+              </includes>
+              <excludes>
+                <exclude>**/target/**/*.md</exclude>
+              </excludes>
+              <flexmark></flexmark>
+            </markdown>
           </configuration>
           <dependencies>
             <dependency>

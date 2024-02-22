@@ -1,4 +1,5 @@
 ---
+
 name: Feature request
 about: Suggest an idea for this project
 title: ''
@@ -6,6 +7,7 @@ labels: kind/feature-request
 assignees: ''
 
 ---
+
 ### Describe the user problem that you are trying to solve
 
 <!-- A clear and concise description of what the problem is, what are you trying to achieve and why is it difficult at the moment?-->
@@ -23,9 +25,11 @@ assignees: ''
 <!-- Add any other context, feature requests from customers, forum / slack mentions. -->
 
 ---------------------------------------------------------------------------------------------
+
 <!-- As the creator of the issue, you don't have to fill anything below this line, but the assignee will take care of this as part of Backlog grooming. -->
 
 ## Definition of Ready - Checklist
 
 - [ ] The issue is not duplicated - the is no other issue about the same user problem in Operate/Tasklist/PDP repository
 - [ ] The issue has a meaningful title, description and clear user problem
+

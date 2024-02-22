@@ -1,5 +1,7 @@
 # v8.3.0
+
 ## 🚀 New Features
+
 * **test-data**: add tenants to test data ([#5496](https://github.com/camunda/operate/issues/5496))
 * **backend**: add aws opensearch connection support ([#5493](https://github.com/camunda/operate/issues/5493))
 * **backend**: Add handler for process definition deletion ([#5274](https://github.com/camunda/operate/issues/5274))
@@ -36,6 +38,7 @@
 * filter by current tenants when using internal api ([#5243](https://github.com/camunda/operate/issues/5243))
 
 ## 💊 Bugfixes
+
 * **test-data**: ignore exception when sending commands to Zeebe ([#5533](https://github.com/camunda/operate/issues/5533))
 * **backend**: Fix OpenSearch IT ([#5518](https://github.com/camunda/operate/issues/5518))
 * display tenant name instead of id in the process and decisions lists ([#5501](https://github.com/camunda/operate/issues/5501))
@@ -65,6 +68,7 @@
 * **auth**: even in `sso-auth` profile we need to create Identity ([#5337](https://github.com/camunda/operate/issues/5337))
 
 ## 🧹 Chore
+
 * fix failing e2e tests ([#5538](https://github.com/camunda/operate/issues/5538))
 * **pom**: update Zeebe and Identity till 8.3.0 ([#5536](https://github.com/camunda/operate/issues/5536))
 * **qa**: fix tests ([#5524](https://github.com/camunda/operate/issues/5524))
@@ -129,12 +133,18 @@
 * Update Browserlist DB
 * update snapshots for visual regression tests ([#5320](https://github.com/camunda/operate/issues/5320))
 * update CHANGELOG.md
+
 # v8.3.0-alpha6
+
 ## 🧹 Chore
+
 * update Zeebe and Identity to 8.3.0-alpha6 ([#5312](https://github.com/camunda/operate/issues/5312))
 * update CHANGELOG.md
+
 # v8.3.0-alpha5
+
 ## 🚀 New Features
+
 * enable decision definition deletion in UI ([#5229](https://github.com/camunda/operate/issues/5229))
 * **backend**: add `tenantId` to `GET /api/processes/grouped` ([#5222](https://github.com/camunda/operate/issues/5222))
 * get tenants for given M2M token from identity ([#5242](https://github.com/camunda/operate/issues/5242))
@@ -162,12 +172,14 @@
 * **backend**: extract interfaces from web module to decrease Elasticsearch coupling ([#4872](https://github.com/camunda/operate/issues/4872))
 
 ## 💊 Bugfixes
+
 * **preview-env**: Run the cleanup job in preview-env-deploy workflow only on 'pull_request' events ([#5289](https://github.com/camunda/operate/issues/5289))
 * **backend-sec**: use decisionDefinitionId as Long ([#5247](https://github.com/camunda/operate/issues/5247))
 * **backend**: Timeout when taking the backup ([#5181](https://github.com/camunda/operate/issues/5181))
 * **backend**: Duplicate endpoints in Swagger public API ([#5185](https://github.com/camunda/operate/issues/5185))
 
 ## 🧹 Chore
+
 * update Zeebe and Identity to 8.3.0-alpha5 ([#5302](https://github.com/camunda/operate/issues/5302))
 * **deps**: update all non-major dependencies (master) ([#5141](https://github.com/camunda/operate/issues/5141))
 * **deps**: update dependency @camunda/camunda-composite-components to v0.1.3 (master) ([#5062](https://github.com/camunda/operate/issues/5062))
@@ -252,8 +264,11 @@
 * pass correct reference of node to fix scrolling up ([#5021](https://github.com/camunda/operate/issues/5021))
 * increase release build memory resources
 * update CHANGELOG.md
+
 # v8.3.0-alpha4
+
 ## 🚀 New Features
+
 * **backend**: Update schema to support DELETE_DECISION_DEFINITION ([#5035](https://github.com/camunda/operate/issues/5035))
 * **backend**: resource based permissions for SaaS ([#4965](https://github.com/camunda/operate/issues/4965))
 * try active tab polling ([#4940](https://github.com/camunda/operate/issues/4940))
@@ -267,6 +282,7 @@
 * **backend**: Endpoint to get decision instance by id ([#4849](https://github.com/camunda/operate/issues/4849))
 
 ## 💊 Bugfixes
+
 * **docker**: run as non-root by default ([#5020](https://github.com/camunda/operate/issues/5020))
 * use carbon link for external href links ([#5028](https://github.com/camunda/operate/issues/5028))
 * **security**: Replace default-src csp header with more specific ones ([#5033](https://github.com/camunda/operate/issues/5033))
@@ -282,6 +298,7 @@
 * **backend**: fix the exception in post importer ([#4879](https://github.com/camunda/operate/issues/4879))
 
 ## 🧹 Chore
+
 * update Zeebe and Identity to 8.3.0-alpha4 ([#5063](https://github.com/camunda/operate/issues/5063))
 * carbonize modification info banner ([#5030](https://github.com/camunda/operate/issues/5030))
 * change batch action toolbar cancel button name ([#5037](https://github.com/camunda/operate/issues/5037))
@@ -344,8 +361,11 @@
 * setup playwright e2e tests and adjust login page tests ([#4781](https://github.com/camunda/operate/issues/4781))
 * convert forbidden pages to carbon ([#4829](https://github.com/camunda/operate/issues/4829))
 * update CHANGELOG.md
+
 # v8.3.0-alpha3
+
 ## 🚀 New Features
+
 * **backend**: Endpoint to get decision requirements by key ([#4794](https://github.com/camunda/operate/issues/4794))
 * **backend**: Introduce NumberThrottable for adapting batch size  ([#4551](https://github.com/camunda/operate/issues/4551))
 * **backend**: Endpoint to search and filter decision definitions ([#4708](https://github.com/camunda/operate/issues/4708))
@@ -355,6 +375,7 @@
 * **backend**: Remove usage of ELS classes ([#4647](https://github.com/camunda/operate/issues/4647))
 
 ## 💊 Bugfixes
+
 * **backend**: close ElasticsearchClient properly ([#4840](https://github.com/camunda/operate/issues/4840))
 * **deps**: update dependency mixpanel-browser to v2.47.0 ([#4286](https://github.com/camunda/operate/issues/4286))
 * **migration-test**: add store package for scanning ([#4793](https://github.com/camunda/operate/issues/4793))
@@ -368,6 +389,7 @@
 * **backend**: fix NPEs ([#4719](https://github.com/camunda/operate/issues/4719))
 
 ## 🧹 Chore
+
 * update Zeebe and Identity to 8.3.0-alpha3 ([#4847](https://github.com/camunda/operate/issues/4847))
 * fix dmn arrow color
 * convert processes notifications to carbon ([#4828](https://github.com/camunda/operate/issues/4828))
@@ -442,12 +464,16 @@
 * add decision viewer to decision instances view ([#4645](https://github.com/camunda/operate/issues/4645))
 * **test**: remove Zeebe volume from test docker-compose
 * update CHANGELOG.md
+
 # v8.3.0-alpha2
+
 ## 🚀 New Features
+
 * **backend**: add check for already running reindex task ([#4618](https://github.com/camunda/operate/issues/4618))
 * **backend**: When shards gt 1 the IncidentPostImportAction fails ([#4464](https://github.com/camunda/operate/issues/4464))
 
 ## 💊 Bugfixes
+
 * **post-importer**: refactor incident processing ([#4567](https://github.com/camunda/operate/issues/4567))
 * **backend**: register started process instances for usage-metrics ([#4661](https://github.com/camunda/operate/issues/4661))
 * **backend**: Fix vulnerabilities reported by Snyk ([#4602](https://github.com/camunda/operate/issues/4602))
@@ -456,6 +482,7 @@
 * **backend**: refactor sort values ([#4465](https://github.com/camunda/operate/issues/4465))
 
 ## 🧹 Chore
+
 * **pom**: update Zeebe and Identity to 8.2.0-alpha2 ([#4669](https://github.com/camunda/operate/issues/4669))
 * **docker**: fix docker notice text ([#4657](https://github.com/camunda/operate/issues/4657))
 * add carbonised skeleton to instance history ([#4641](https://github.com/camunda/operate/issues/4641))
@@ -532,8 +559,11 @@
 * use carbon modal for definition deletion ([#4456](https://github.com/camunda/operate/issues/4456))
 * use carbon for delete operation button ([#4454](https://github.com/camunda/operate/issues/4454))
 * update CHANGELOG.md
+
 # v8.3.0-alpha1
+
 ## 🚀 New Features
+
 * **backend**: Divide large bulk requests into smaller ones. ([#4450](https://github.com/camunda/operate/issues/4450))
 * **backend**: REST API - Return 403 in Get single variable endpoint ([#4323](https://github.com/camunda/operate/issues/4323))
 * enable search feature for process names, flow nodes and decisions ([#4406](https://github.com/camunda/operate/issues/4406))
@@ -544,6 +574,7 @@
 * **feature-flagged**: replace process name dropdown by combobox ([#4325](https://github.com/camunda/operate/issues/4325))
 
 ## 💊 Bugfixes
+
 * pom.xml to reduce vulnerabilities ([#4333](https://github.com/camunda/operate/issues/4333))
 * **backend**: use empty list as default for null value in map ([#4455](https://github.com/camunda/operate/issues/4455))
 * **backend**: Use Public API ErrorController in BackupController ([#4453](https://github.com/camunda/operate/issues/4453))
@@ -559,6 +590,7 @@
 * **backend**: Failures ignored reading records from Zeebe aliases ([#4361](https://github.com/camunda/operate/issues/4361))
 
 ## 🧹 Chore
+
 * **backend**: Update Zeebe and Identity to 8.3.0-alpha1 ([#4476](https://github.com/camunda/operate/issues/4476))
 * **els/repo**: remove not needed refresh when getting session ([#4478](https://github.com/camunda/operate/issues/4478))
 * lazy load carbon pages ([#4466](https://github.com/camunda/operate/issues/4466))
@@ -603,8 +635,11 @@
 * Update Browserlist DB
 * Update Browserlist DB
 * update CHANGELOG.md
+
 # v8.2.0
+
 ## 🚀 New Features
+
 * support signal start event ([#4339](https://github.com/camunda/operate/issues/4339))
 * add validation for invalid time range ([#4298](https://github.com/camunda/operate/issues/4298))
 * **backend**: Add Index Lifecycle Management (ILM) policy for deletion of archived indices ([#4274](https://github.com/camunda/operate/issues/4274))
@@ -624,6 +659,7 @@
 * hide operation buttons according to resource based permissions ([#4191](https://github.com/camunda/operate/issues/4191))
 
 ## 💊 Bugfixes
+
 * define directory as safe ([#4327](https://github.com/camunda/operate/issues/4327))
 * check for process name validity before setting field value ([#4307](https://github.com/camunda/operate/issues/4307))
 * **backend**: Persistent sessions with Identity permissions ([#4311](https://github.com/camunda/operate/issues/4311))
@@ -638,6 +674,7 @@
 * update slack link ([#4245](https://github.com/camunda/operate/issues/4245))
 
 ## 🧹 Chore
+
 * **backend**: update Zeebe and Identity to 8.2.0 ([#4343](https://github.com/camunda/operate/issues/4343))
 * use correct link for permissions ([#4338](https://github.com/camunda/operate/issues/4338))
 * add ComboBox component ([#4324](https://github.com/camunda/operate/issues/4324))
@@ -678,8 +715,11 @@
 * Update Browserlist DB
 * refactor restriction checks ([#4208](https://github.com/camunda/operate/issues/4208))
 * update CHANGELOG.md
+
 # v8.2.0-alpha5
+
 ## 🚀 New Features
+
 * **backend**: REST API - Return permissions for process instance ([#4223](https://github.com/camunda/operate/issues/4223))
 * **backend**: use zeebe sequence field for import position ([#3930](https://github.com/camunda/operate/issues/3930))
 * **backend**: REST API - Return permissions for decision definitions ([#4201](https://github.com/camunda/operate/issues/4201))
@@ -718,6 +758,7 @@
 * **feature-flagged**: add delete decision definition button ([#4067](https://github.com/camunda/operate/issues/4067))
 
 ## 💊 Bugfixes
+
 * **backend**: ClusterMetadata cannot be created ([#4211](https://github.com/camunda/operate/issues/4211))
 * fix skeleton row logic for variables panel ([#4188](https://github.com/camunda/operate/issues/4188))
 * **deps**: update dependency sass to v1.58.3 ([#4156](https://github.com/camunda/operate/issues/4156))
@@ -737,6 +778,7 @@
 * hide date picker when date range popover is hidden ([#4055](https://github.com/camunda/operate/issues/4055))
 
 ## 🧹 Chore
+
 * **backend**: update Zeebe and Identity to 8.2.0-alpha5 ([#4230](https://github.com/camunda/operate/issues/4230))
 * OCI and OpenShift labels as part of Docker image metadata ([#4081](https://github.com/camunda/operate/issues/4081))
 * Update Browserlist DB
@@ -765,8 +807,11 @@
 * **deps**: update definitelytyped ([#4090](https://github.com/camunda/operate/issues/4090))
 * **deps**: update dependency monaco-editor to v0.35.0 ([#4091](https://github.com/camunda/operate/issues/4091))
 * update CHANGELOG.md
+
 # v8.2.0-alpha4
+
 ## 🚀 New Features
+
 * **backend**: Add web security headers ([#4028](https://github.com/camunda/operate/issues/4028))
 * move single token modification ([#4008](https://github.com/camunda/operate/issues/4008))
 * **backend**: Add processDefinitionKey to flow node public API ([#4022](https://github.com/camunda/operate/issues/4022))
@@ -788,6 +833,7 @@
 * allow cancel and move operations on elements inside multi instance subprocesses ([#3885](https://github.com/camunda/operate/issues/3885))
 
 ## 💊 Bugfixes
+
 * correctly position modification dropdown ([#4045](https://github.com/camunda/operate/issues/4045))
 * fix add variable issue when new placeholder is selected from diagram ([#4023](https://github.com/camunda/operate/issues/4023))
 * **backend**: improve Identity token handling ([#4064](https://github.com/camunda/operate/issues/4064))
@@ -809,6 +855,7 @@
 * **backend**: fix bean dependencies ([#3898](https://github.com/camunda/operate/issues/3898))
 
 ## 🧹 Chore
+
 * **backend**: update Zeebe and Identity to 8.2.0-alpha4 ([#4082](https://github.com/camunda/operate/issues/4082))
 * support has pending move modification ([#4012](https://github.com/camunda/operate/issues/4012))
 * remove IS_DATE_RANGE_FILTERS_ENABLED feature flag ([#4059](https://github.com/camunda/operate/issues/4059))
@@ -844,8 +891,11 @@
 * Update Browserlist DB
 * upgrade dependencies ([#3890](https://github.com/camunda/operate/issues/3890))
 * update CHANGELOG.md
+
 # v8.2.0-alpha3
+
 ## 🚀 New Features
+
 * **backend**: return 502 in case of Elastic connection error ([#3880](https://github.com/camunda/operate/issues/3880))
 * **backend**: Add BPMN and DMN model count as metric (prometheus) ([#3863](https://github.com/camunda/operate/issues/3863))
 * add dark mode support for date range filters ([#3872](https://github.com/camunda/operate/issues/3872))
@@ -857,6 +907,7 @@
 * **test-data**: test data for data storage ([#3846](https://github.com/camunda/operate/issues/3846))
 
 ## 💊 Bugfixes
+
 * **chore**: fix build release docker images ([#3896](https://github.com/camunda/operate/issues/3896))
 * **backend**: rename `backup` endpoint to `backups` ([#3881](https://github.com/camunda/operate/issues/3881))
 * **incident/imp**: stop control when no incidents found ([#3865](https://github.com/camunda/operate/issues/3865))
@@ -866,6 +917,7 @@
 * display correct variable panel state when switching between tabs ([#3841](https://github.com/camunda/operate/issues/3841))
 
 ## 🧹 Chore
+
 * **backend**: expose `backups` actuator endpoint
 * **ci**: fix release script
 * **backend**: update Zeebe and Identity to 8.2.0-alpha3 ([#3891](https://github.com/camunda/operate/issues/3891))
@@ -884,8 +936,11 @@
 * refactor date range popover ([#3842](https://github.com/camunda/operate/issues/3842))
 * remove pre-commit tests ([#3844](https://github.com/camunda/operate/issues/3844))
 * **qa**: test clean up
+
 # v8.2.0-alpha2
+
 ## 🚀 New Features
+
 * add modeler link to dashboard in SaaS ([#3814](https://github.com/camunda/operate/issues/3814))
 * add new empty states to dashboard ([#3759](https://github.com/camunda/operate/issues/3759))
 * enable new app header ([#3791](https://github.com/camunda/operate/issues/3791))
@@ -909,6 +964,7 @@
 * **backend**: support inclusive gateway ([#3632](https://github.com/camunda/operate/issues/3632))
 
 ## 💊 Bugfixes
+
 * **archiver**: avoid retries in too short intervals ([#3756](https://github.com/camunda/operate/issues/3756))
 * **backend**: distinguish JwtToken and UserToken authentication ([#3819](https://github.com/camunda/operate/issues/3819))
 * **backend**: count only root process instance for metrics ([#3808](https://github.com/camunda/operate/issues/3808))
@@ -929,6 +985,7 @@
 * **deps**: update dependency bpmn-js to v10.2.1 ([#3432](https://github.com/camunda/operate/issues/3432))
 
 ## 🧹 Chore
+
 * **qa**: fix couple of flaky tests ([#3823](https://github.com/camunda/operate/issues/3823))
 * **project**: update Zeebe and Identity versions to 8.2.0-alpha2 ([#3815](https://github.com/camunda/operate/issues/3815))
 * **deps**: bump unboundid-ldapsdk from 6.0.6 to 6.0.7 ([#3785](https://github.com/camunda/operate/issues/3785))
@@ -999,8 +1056,11 @@
 * type fetchProcessInstanceDetailStatistics API and refactor tests ([#3578](https://github.com/camunda/operate/issues/3578))
 * **qa**: fix tests ([#3585](https://github.com/camunda/operate/issues/3585))
 * **qa**: unignore and fix ImportMidnightIT test ([#3519](https://github.com/camunda/operate/issues/3519))
+
 # v8.2.0-alpha1
+
 ## 💊 Bugfixes
+
 * **backend**: fix incident import for migrated flow node instances ([#3503](https://github.com/camunda/operate/issues/3503))
 * **dmn**: disable ELS indexing of DMN input and output values ([#3541](https://github.com/camunda/operate/issues/3541))
 * Fix Identity authentication for non-empty context path (#3515) ([#3521](https://github.com/camunda/operate/issues/3521))
@@ -1014,6 +1074,7 @@
 * **preview-env**: Add missing env
 
 ## 🧹 Chore
+
 * **backend**: update Zeebe and Identity to 8.2.0-alpha1 ([#3581](https://github.com/camunda/operate/issues/3581))
 * type fetchProcessesInstancesStatistics API and refactor tests #3576 ([#3577](https://github.com/camunda/operate/issues/3577))
 * type fetchProcessesCoreStatistics API and refactor tests ([#3576](https://github.com/camunda/operate/issues/3576))
@@ -1046,8 +1107,11 @@
 * Update Browserlist DB
 * fix flaky variable panel tests ([#3464](https://github.com/camunda/operate/issues/3464))
 * **preview-env**: Split the deploy-preview actions into create and destroy actions ([#3472](https://github.com/camunda/operate/issues/3472))
+
 # v8.1.0
+
 ## 🚀 New Features
+
 * **backend**: Get Backup State endpoint ([#3417](https://github.com/camunda/operate/issues/3417))
 * Support terminate end event ([#3429](https://github.com/camunda/operate/issues/3429))
 * **backend**: provide tasklistUrl in ClientConfig ([#3399](https://github.com/camunda/operate/issues/3399))
@@ -1079,6 +1143,7 @@
 * **feature-flagged**: stop polling during modification ([#3234](https://github.com/camunda/operate/issues/3234))
 
 ## 💊 Bugfixes
+
 * fix removing new add variable modifications after scopes changed ([#3460](https://github.com/camunda/operate/issues/3460))
 * **backend**: clean up after backup implemented ([#3412](https://github.com/camunda/operate/issues/3412))
 * check for invalid element id ([#3454](https://github.com/camunda/operate/issues/3454))
@@ -1122,6 +1187,7 @@
 * fix quotation for cat command in the changelog workflow ([#3307](https://github.com/camunda/operate/issues/3307))
 
 ## 🧹 Chore
+
 * Revert wrong CHANGELOG
 * Use action to avoid errors with unescaped characters ([#3465](https://github.com/camunda/operate/issues/3465))
 * update CHANGELOG.md
@@ -1169,6 +1235,7 @@
 * **deps**: update all non-major dependencies ([#3267](https://github.com/camunda/operate/issues/3267))
 * update CHANGELOG.md
 * update CHANGELOG.md
+
 # v8.1.0-alpha5
 
 ## 🚀 New Features
@@ -1594,3 +1661,4 @@
 - **backend**: update Zeebe and Identity to v. 8.0.0 ([#2577](https://github.com/camunda-cloud/operate/issues/2577))
 - update license ([#2564](https://github.com/camunda-cloud/operate/issues/2564))
 - **project**: remove IAM integration ([#2511](https://github.com/camunda-cloud/operate/issues/2511))
+

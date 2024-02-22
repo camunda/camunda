@@ -1,16 +1,16 @@
 <!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
-
 - [Opensearch implementation](#opensearch-implementation)
-    * [Structure](#structure)
-    * [Setup](#setup)
-        + [Start OpenSearch and Zeebe with OpensearchExporter](#start-opensearch-and-zeebe-with-opensearchexporter)
-        + [Start Operate with Opensearch implementation](#start-operate-with-opensearch-implementation)
-        + [Start Operate with Elasticsearch implementation](#start-operate-with-elasticsearch-implementation)
-    * [Status of implementation](#status-of-implementation)
-        + [DONE](#done)
-        + [TODO](#todo)
+  * [Structure](#structure)
+  * [Setup](#setup)
+    + [Start OpenSearch and Zeebe with OpensearchExporter](#start-opensearch-and-zeebe-with-opensearchexporter)
+    + [Start Operate with Opensearch implementation](#start-operate-with-opensearch-implementation)
+    + [Start Operate with Elasticsearch implementation](#start-operate-with-elasticsearch-implementation)
+  * [Status of implementation](#status-of-implementation)
+    + [DONE](#done)
+    + [TODO](#todo)
 
 <!-- TOC end -->
+
 # Opensearch implementation
 
 Operate uses Elasticsearch to import Zeebe data ([Zeebe Elasticsearch](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/common/src/main/java/io/camunda/operate/property/ZeebeElasticsearchProperties.java#L9-L9)) and stores and searches its own
@@ -54,6 +54,7 @@ You need a [Zeebe cli client](https://docs.camunda.io/docs/apis-tools/cli-client
 `docker-compose up opensearch zeebe-opensearch`
 
 2. Check if Opensearch is reachable at http://localhost:9200:
+
 ```json
 {
   "name" : "opensearch",
@@ -73,9 +74,11 @@ You need a [Zeebe cli client](https://docs.camunda.io/docs/apis-tools/cli-client
   "tagline" : "The OpenSearch Project: https://opensearch.org/"
 }
 ```
+
 3. Check if Zeebe is reachable
 
 `zbctl --insecure status`:
+
 ```
 Cluster size: 1
 Partitions count: 4
@@ -89,11 +92,13 @@ Brokers:
     Partition 3 : Leader, Healthy
     Partition 4 : Leader, Healthy
 ```
+
 4. Check if Zeebe can export to Opensearch:
 
 `zbctl --insecure deploy ./data-generator/src/main/resources/develop/calledProcess.bpmn`
 
 should result in something like this:
+
 ```json
 {
   "key": "2251799813685250",
@@ -109,6 +114,7 @@ should result in something like this:
 ```
 
 You should see in Zeebe logs something like this and no error logs
+
 ```
 2023-08-17 08:52:28.069 [Broker-0] [zb-fs-workers-1] [Exporter-1] INFO
 2023-08-17T08:52:28.069802209Z       io.camunda.zeebe.broker.exporter.opensearch - Exporter opened
@@ -133,6 +139,7 @@ In order to [switch](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500
 `CAMUNDA_OPERATE_DATABASE=opensearch`. If you don't set this `elasticsearch` will be used as database.
 
 For IDE (IntelliJ) you can use this as run configuration:
+
 ```
 camunda.operate.database=opensearch
 camunda.operate.operationExecutor.executorEnabled=false;
@@ -143,6 +150,7 @@ spring.profiles.active=auth,dev,dev-data
 This starts Operate with test-data generation and underlying opensearch database on http://localhost:8080.
 
 You should see at least:
+
 ```
 2023-08-17T11:17:03.728+02:00  INFO 12788 --- [           main] i.c.o.WebappModuleConfiguration          : Starting module: webapp
 2023-08-17T11:17:03.766+02:00  INFO 12788 --- [           main] i.c.o.z.ZeebeConnector                   : Use plaintext connection to zeebe
@@ -165,6 +173,7 @@ You should see at least:
 Operate can connect to Opensearch and create its indices.
 
 But you will see something like this:
+
 ```
 023-08-17T14:54:00.876+02:00 ERROR 24821 --- [ecords_reader_3] i.c.o.z.o.OpensearchRecordsReader        : null
 
@@ -213,106 +222,111 @@ Implementation of interfaces for Opensearch (packages sorted by most important f
 5.  [Public API](https://github.com/camunda/operate/tree/7ad44931a7d23f5e500dd708d238ce3046e3c71b/webapp/src/main/java/io/camunda/operate/webapp/api) even needs abstraction layer.
 
 ### Known issues
+
 1. search_after doesn't support null dates in Opensearch java client. [Ticket #5788](https://github.com/camunda/operate/issues/5788)
+
     <details>
     Test to reproduce: [io.camunda.operate.elasticsearch.ListViewQueryIT.testVariousQueries](qa/integration-tests/src/test/java/io/camunda/operate/elasticsearch/ListViewQueryIT.java)
 
-    Sample search request:
+   Sample search request:
 
-    ```
-    POST /931e93e4-8-operate-list-view-8.3.0_alias/_search?typed_keys=true HTTP/1.1
+   ```
+   POST /931e93e4-8-operate-list-view-8.3.0_alias/_search?typed_keys=true HTTP/1.1
 
-    {"query":{"constant_score":{"filter":{"bool":{"must":[{"term":{"joinRelation":{"value":"processInstance"}}},{"bool":{"must":[]}}]}}}},"size":5,"sort":[{"endDate":{"missing":"_last","order":"desc"}},{"key":{"order":"asc"}}]}
+   {"query":{"constant_score":{"filter":{"bool":{"must":[{"term":{"joinRelation":{"value":"processInstance"}}},{"bool":{"must":[]}}]}}}},"size":5,"sort":[{"endDate":{"missing":"_last","order":"desc"}},{"key":{"order":"asc"}}]}
 
-    HTTP/1.1 200 OK
+   HTTP/1.1 200 OK
 
-    {"took":29,"timed_out":false,"_shards":{"total":3,"successful":3,"skipped":0,"failed":0},"hits":{"total":{"value":8,"relation":"eq"},"max_score":null,"hits":[{"_index":"931e93e4-8-operate-list-view-8.3.0_2023-10-19","_id":"7577590237308386457","_score":null,"_source":{"id":"7577590237308386457","key":7577590237308386457,"partitionId":1,"processDefinitionKey":2,"processName":"1feff1db-91e3-49da-b466-bce9f08c073c","processVersion":2,"bpmnProcessId":"testProcess2","startDate":"2023-10-06T21:46:15.719+0000","endDate":"2023-10-19T16:57:15.719+0000","state":"CANCELED","batchOperationIds":["c","d"],"parentProcessInstanceKey":null,"parentFlowNodeInstanceKey":null,"treePath":"PI_7577590237308386457","incident":false,"tenantId":"tenant1","joinRelation":{"name":"processInstance","parent":null},"processInstanceKey":7577590237308386457},"sort":[1697734635719,7577590237308386457]},{"_index":"931e93e4-8-operate-list-view-8.3.0_2023-10-16","_id":"6890839993334131972","_score":null,"_source":{"id":"6890839993334131972","key":6890839993334131972,"partitionId":1,"processDefinitionKey":27,"processName":"testProcess27","processVersion":6,"bpmnProcessId":"testProcess27","startDate":"2023-10-10T18:30:15.719+0000","endDate":"2023-10-16T12:14:15.719+0000","state":"COMPLETED","batchOperationIds":["b","batchOperationId"],"parentProcessInstanceKey":111,"parentFlowNodeInstanceKey":null,"treePath":"PI_333/FI_someFlowNode/FNI_958398/PI_111/FI_anotherFlowNode/FNI_45345/PI_9898","incident":false,"tenantId":"tenant2","joinRelation":{"name":"processInstance","parent":null},"processInstanceKey":6890839993334131972},"sort":[1697458455719,6890839993334131972]},{"_index":"931e93e4-8-operate-list-view-8.3.0_","_id":"922210950990305179","_score":null,"_source":{"id":"922210950990305179","key":922210950990305179,"partitionId":1,"processDefinitionKey":0,"processName":"92d00c34-a3d1-462e-9f09-53b5c1d17f54","processVersion":0,"bpmnProcessId":"testProcess0","startDate":"2023-10-11T18:25:15.719+0000","endDate":null,"state":"ACTIVE","batchOperationIds":null,"parentProcessInstanceKey":222,"parentFlowNodeInstanceKey":null,"treePath":"PI_922210950990305179","incident":false,"tenantId":"tenant1","joinRelation":{"name":"processInstance","parent":null},"processInstanceKey":922210950990305179},"sort":[-9223372036854775808,922210950990305179]},{"_index":"931e93e4-8-operate-list-view-8.3.0_","_id":"1198516954471130150","_score":null,"_source":{"id":"1198516954471130150","key":1198516954471130150,"partitionId":1,"processDefinitionKey":27,"processName":"testProcess27","processVersion":6,"bpmnProcessId":"testProcess27","startDate":"2023-10-15T10:56:15.716+0000","endDate":null,"state":"ACTIVE","batchOperationIds":["a","batchOperationId"],"parentProcessInstanceKey":111,"parentFlowNodeInstanceKey":null,"treePath":"PI_333/FI_someFlowNode/FNI_958398/PI_111/FI_anotherFlowNode/FNI_45345/PI_9898","incident":false,"tenantId":"tenant1","joinRelation":{"name":"processInstance","parent":null},"processInstanceKey":1198516954471130150},"sort":[-9223372036854775808,1198516954471130150]},{"_index":"931e93e4-8-operate-list-view-8.3.0_","_id":"1923765591826569123","_score":null,"_source":{"id":"1923765591826569123","key":1923765591826569123,"partitionId":1,"processDefinitionKey":23,"processName":"upper_lower_process_name","processVersion":1,"bpmnProcessId":"testProcess23","startDate":"2023-10-09T11:40:09.601+0000","endDate":null,"state":"ACTIVE","batchOperationIds":null,"parentProcessInstanceKey":null,"parentFlowNodeInstanceKey":null,"treePath":"PI_1923765591826569123","incident":false,"tenantId":"<default>","joinRelation":{"name":"processInstance","parent":null},"processInstanceKey":1923765591826569123},"sort":[-9223372036854775808,1923765591826569123]}]}}
-    ```
+   {"took":29,"timed_out":false,"_shards":{"total":3,"successful":3,"skipped":0,"failed":0},"hits":{"total":{"value":8,"relation":"eq"},"max_score":null,"hits":[{"_index":"931e93e4-8-operate-list-view-8.3.0_2023-10-19","_id":"7577590237308386457","_score":null,"_source":{"id":"7577590237308386457","key":7577590237308386457,"partitionId":1,"processDefinitionKey":2,"processName":"1feff1db-91e3-49da-b466-bce9f08c073c","processVersion":2,"bpmnProcessId":"testProcess2","startDate":"2023-10-06T21:46:15.719+0000","endDate":"2023-10-19T16:57:15.719+0000","state":"CANCELED","batchOperationIds":["c","d"],"parentProcessInstanceKey":null,"parentFlowNodeInstanceKey":null,"treePath":"PI_7577590237308386457","incident":false,"tenantId":"tenant1","joinRelation":{"name":"processInstance","parent":null},"processInstanceKey":7577590237308386457},"sort":[1697734635719,7577590237308386457]},{"_index":"931e93e4-8-operate-list-view-8.3.0_2023-10-16","_id":"6890839993334131972","_score":null,"_source":{"id":"6890839993334131972","key":6890839993334131972,"partitionId":1,"processDefinitionKey":27,"processName":"testProcess27","processVersion":6,"bpmnProcessId":"testProcess27","startDate":"2023-10-10T18:30:15.719+0000","endDate":"2023-10-16T12:14:15.719+0000","state":"COMPLETED","batchOperationIds":["b","batchOperationId"],"parentProcessInstanceKey":111,"parentFlowNodeInstanceKey":null,"treePath":"PI_333/FI_someFlowNode/FNI_958398/PI_111/FI_anotherFlowNode/FNI_45345/PI_9898","incident":false,"tenantId":"tenant2","joinRelation":{"name":"processInstance","parent":null},"processInstanceKey":6890839993334131972},"sort":[1697458455719,6890839993334131972]},{"_index":"931e93e4-8-operate-list-view-8.3.0_","_id":"922210950990305179","_score":null,"_source":{"id":"922210950990305179","key":922210950990305179,"partitionId":1,"processDefinitionKey":0,"processName":"92d00c34-a3d1-462e-9f09-53b5c1d17f54","processVersion":0,"bpmnProcessId":"testProcess0","startDate":"2023-10-11T18:25:15.719+0000","endDate":null,"state":"ACTIVE","batchOperationIds":null,"parentProcessInstanceKey":222,"parentFlowNodeInstanceKey":null,"treePath":"PI_922210950990305179","incident":false,"tenantId":"tenant1","joinRelation":{"name":"processInstance","parent":null},"processInstanceKey":922210950990305179},"sort":[-9223372036854775808,922210950990305179]},{"_index":"931e93e4-8-operate-list-view-8.3.0_","_id":"1198516954471130150","_score":null,"_source":{"id":"1198516954471130150","key":1198516954471130150,"partitionId":1,"processDefinitionKey":27,"processName":"testProcess27","processVersion":6,"bpmnProcessId":"testProcess27","startDate":"2023-10-15T10:56:15.716+0000","endDate":null,"state":"ACTIVE","batchOperationIds":["a","batchOperationId"],"parentProcessInstanceKey":111,"parentFlowNodeInstanceKey":null,"treePath":"PI_333/FI_someFlowNode/FNI_958398/PI_111/FI_anotherFlowNode/FNI_45345/PI_9898","incident":false,"tenantId":"tenant1","joinRelation":{"name":"processInstance","parent":null},"processInstanceKey":1198516954471130150},"sort":[-9223372036854775808,1198516954471130150]},{"_index":"931e93e4-8-operate-list-view-8.3.0_","_id":"1923765591826569123","_score":null,"_source":{"id":"1923765591826569123","key":1923765591826569123,"partitionId":1,"processDefinitionKey":23,"processName":"upper_lower_process_name","processVersion":1,"bpmnProcessId":"testProcess23","startDate":"2023-10-09T11:40:09.601+0000","endDate":null,"state":"ACTIVE","batchOperationIds":null,"parentProcessInstanceKey":null,"parentFlowNodeInstanceKey":null,"treePath":"PI_1923765591826569123","incident":false,"tenantId":"<default>","joinRelation":{"name":"processInstance","parent":null},"processInstanceKey":1923765591826569123},"sort":[-9223372036854775808,1923765591826569123]}]}}
+   ```
 
-    Now if we try to send a next page request using sort values from response above (`"sort":[-9223372036854775808,1923765591826569123]`) using java client it issues the following request which fails on server with 400 error:
+   Now if we try to send a next page request using sort values from response above (`"sort":[-9223372036854775808,1923765591826569123]`) using java client it issues the following request which fails on server with 400 error:
 
-    ```
-    POST /931e93e4-8-operate-list-view-8.3.0_alias/_search?typed_keys=true HTTP/1.1
-    {"query":{"constant_score":{"filter":{"bool":{"must":[{"term":{"joinRelation":{"value":"processInstance"}}},{"bool":{"must":[]}}]}}}},"search_after":["-9223372036854775808","1923765591826569123"],"size":3,"sort":[{"endDate":{"missing":"_last","order":"desc"}},{"key":{"order":"asc"}}]}
+   ```
+   POST /931e93e4-8-operate-list-view-8.3.0_alias/_search?typed_keys=true HTTP/1.1
+   {"query":{"constant_score":{"filter":{"bool":{"must":[{"term":{"joinRelation":{"value":"processInstance"}}},{"bool":{"must":[]}}]}}}},"search_after":["-9223372036854775808","1923765591826569123"],"size":3,"sort":[{"endDate":{"missing":"_last","order":"desc"}},{"key":{"order":"asc"}}]}
 
-    HTTP/1.1 400 Bad Request
+   HTTP/1.1 400 Bad Request
 
-    {
-        "error": {
-            "root_cause": [
-                {
-                    "type": "parse_exception",
-                    "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]"
-                },
-                {
-                    "type": "parse_exception",
-                    "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]"
-                },
-                {
-                    "type": "parse_exception",
-                    "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]"
-                }
-            ],
-            "type": "search_phase_execution_exception",
-            "reason": "all shards failed",
-            "phase": "query",
-            "grouped": true,
-            "failed_shards": [
-                {
-                    "shard": 0,
-                    "index": "b3b35af8-2-operate-list-view-8.3.0_",
-                    "node": "y32ZaLodRDCzLj9xRQ-q6Q",
-                    "reason": {
-                        "type": "parse_exception",
-                        "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]",
-                        "caused_by": {
-                            "type": "illegal_argument_exception",
-                            "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]",
-                            "caused_by": {
-                                "type": "date_time_parse_exception",
-                                "reason": "Failed to parse with all enclosed parsers"
-                            }
-                        }
-                    }
-                },
-                {
-                    "shard": 0,
-                    "index": "b3b35af8-2-operate-list-view-8.3.0_2023-10-21",
-                    "node": "y32ZaLodRDCzLj9xRQ-q6Q",
-                    "reason": {
-                        "type": "parse_exception",
-                        "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]",
-                        "caused_by": {
-                            "type": "illegal_argument_exception",
-                            "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]",
-                            "caused_by": {
-                                "type": "date_time_parse_exception",
-                                "reason": "Failed to parse with all enclosed parsers"
-                            }
-                        }
-                    }
-                },
-                {
-                    "shard": 0,
-                    "index": "b3b35af8-2-operate-list-view-8.3.0_2023-10-18",
-                    "node": "y32ZaLodRDCzLj9xRQ-q6Q",
-                    "reason": {
-                        "type": "parse_exception",
-                        "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]",
-                        "caused_by": {
-                            "type": "illegal_argument_exception",
-                            "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]",
-                            "caused_by": {
-                                "type": "date_time_parse_exception",
-                                "reason": "Failed to parse with all enclosed parsers"
-                            }
-                        }
-                    }
-                }
-            ]
-        },
-        "status": 400
-    }
-    ```
+   {
+       "error": {
+           "root_cause": [
+               {
+                   "type": "parse_exception",
+                   "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]"
+               },
+               {
+                   "type": "parse_exception",
+                   "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]"
+               },
+               {
+                   "type": "parse_exception",
+                   "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]"
+               }
+           ],
+           "type": "search_phase_execution_exception",
+           "reason": "all shards failed",
+           "phase": "query",
+           "grouped": true,
+           "failed_shards": [
+               {
+                   "shard": 0,
+                   "index": "b3b35af8-2-operate-list-view-8.3.0_",
+                   "node": "y32ZaLodRDCzLj9xRQ-q6Q",
+                   "reason": {
+                       "type": "parse_exception",
+                       "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]",
+                       "caused_by": {
+                           "type": "illegal_argument_exception",
+                           "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]",
+                           "caused_by": {
+                               "type": "date_time_parse_exception",
+                               "reason": "Failed to parse with all enclosed parsers"
+                           }
+                       }
+                   }
+               },
+               {
+                   "shard": 0,
+                   "index": "b3b35af8-2-operate-list-view-8.3.0_2023-10-21",
+                   "node": "y32ZaLodRDCzLj9xRQ-q6Q",
+                   "reason": {
+                       "type": "parse_exception",
+                       "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]",
+                       "caused_by": {
+                           "type": "illegal_argument_exception",
+                           "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]",
+                           "caused_by": {
+                               "type": "date_time_parse_exception",
+                               "reason": "Failed to parse with all enclosed parsers"
+                           }
+                       }
+                   }
+               },
+               {
+                   "shard": 0,
+                   "index": "b3b35af8-2-operate-list-view-8.3.0_2023-10-18",
+                   "node": "y32ZaLodRDCzLj9xRQ-q6Q",
+                   "reason": {
+                       "type": "parse_exception",
+                       "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]: [failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]]",
+                       "caused_by": {
+                           "type": "illegal_argument_exception",
+                           "reason": "failed to parse date field [-9223372036854775808] with format [date_time || epoch_millis]",
+                           "caused_by": {
+                               "type": "date_time_parse_exception",
+                               "reason": "Failed to parse with all enclosed parsers"
+                           }
+                       }
+                   }
+               }
+           ]
+       },
+       "status": 400
+   }
+   ```
+
     </details>
+
 2. Opensearch Java client doesn't support parent aggregations. [Ticket #5787](https://github.com/camunda/operate/issues/5787)
+

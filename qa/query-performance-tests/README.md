@@ -17,4 +17,5 @@ To ignore the query put `ignore` instruction in query json:
     ...
    }
 ]
-```  
+```
+
