@@ -42,6 +42,11 @@ public class ProcessInstanceReferenceDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(instanceId, processDefinitionId, processDefinitionName);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -53,10 +58,5 @@ public class ProcessInstanceReferenceDto {
     return Objects.equals(instanceId, that.instanceId)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(processDefinitionName, that.processDefinitionName);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(instanceId, processDefinitionId, processDefinitionName);
   }
 }

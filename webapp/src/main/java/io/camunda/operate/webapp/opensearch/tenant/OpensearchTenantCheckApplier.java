@@ -27,13 +27,13 @@ public class OpensearchTenantCheckApplier implements TenantCheckApplier<Query>, 
 
   @Autowired private TenantService tenantService;
 
+  public static OpensearchTenantCheckApplier get() {
+    return instance;
+  }
+
   @Override
   public void afterPropertiesSet() throws Exception {
     instance = this;
-  }
-
-  public static OpensearchTenantCheckApplier get() {
-    return instance;
   }
 
   @Override

@@ -81,10 +81,140 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     super(partitionId);
   }
 
-  protected boolean processIncidents(AdditionalData data, PendingIncidentsBatch batch)
+  /**
+   * Returns map incident key -> intent (CRAETED|RESOLVED)
+   *
+   * @param data
+   * @param lastProcessedPosition
+   * @return
+   */
+  @Override
+  protected PendingIncidentsBatch getPendingIncidents(
+      final AdditionalData data, final Long lastProcessedPosition) {
+    final PendingIncidentsBatch pendingIncidentsBatch = new PendingIncidentsBatch();
+    final Map<Long, IncidentState> incidents2Process;
+
+    record Result(Long key, Long position, String intent) {}
+    // query post importer queue
+    Query partitionQuery = term(PARTITION_ID, partitionId);
+    // first partition will also process older data with partitionId = 0
+    if (partitionId == 1) {
+      partitionQuery = stringTerms(PARTITION_ID, List.of("0", String.valueOf(partitionId)));
+    }
+    final var postImporterQueueRequest =
+        searchRequestBuilder(postImporterQueueTemplate)
+            .query(
+                and(
+                    gt(POSITION, lastProcessedPosition == null ? 0 : lastProcessedPosition),
+                    term(ACTION_TYPE, PostImporterActionType.INCIDENT.name()),
+                    partitionQuery))
+            .source(sourceInclude(KEY, POSITION, INTENT))
+            .sort(sortOptions(POSITION, SortOrder.Asc))
+            .size(operateProperties.getZeebeOpensearch().getBatchSize());
+
+    final var response = richOpenSearchClient.doc().search(postImporterQueueRequest, Result.class);
+    incidents2Process =
+        response.hits().hits().stream()
+            .map(Hit::source)
+            .collect(
+                toMap(
+                    r -> r.key(),
+                    r -> IncidentState.createFrom(r.intent()),
+                    // when both CREATED adn RESOLVED are present, we overwrite CREATED with
+                    // RESOLVED as we can at once resolve the incident
+                    (existing, replacement) -> replacement));
+
+    pendingIncidentsBatch.setNewIncidentStates(incidents2Process);
+    if (!incidents2Process.isEmpty()) {
+      pendingIncidentsBatch.setLastProcessedPosition(
+          response.hits().hits().get(response.hits().hits().size() - 1).source().position());
+    }
+    if (incidents2Process.size() == 0) {
+      return pendingIncidentsBatch;
+    }
+
+    // collect additional data
+    // find incident indices for the case when some of them already archived
+    final var incidentSearchRequest =
+        searchRequestBuilder(incidentTemplate)
+            .query(ids(incidents2Process.keySet().stream().map(String::valueOf).toList()))
+            .sort(sortOptions(KEY, SortOrder.Asc))
+            .size(operateProperties.getZeebeOpensearch().getBatchSize());
+
+    final var incidentsResponse =
+        richOpenSearchClient.doc().search(incidentSearchRequest, IncidentEntity.class);
+    final var incidents =
+        incidentsResponse.hits().hits().stream()
+            .map(
+                hit -> {
+                  final var incident = hit.source();
+                  data.getIncidentIndices().put(hit.id(), hit.index());
+                  return incident;
+                })
+            .toList();
+    if (incidents2Process.size() > incidents.size()) {
+      final Set<Long> absentIncidents = new HashSet<>(incidents2Process.keySet());
+      absentIncidents.removeAll(
+          incidents.stream().map(i -> i.getKey()).collect(Collectors.toSet()));
+      if (operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
+        logger.warn(
+            "Not all incidents are yet imported for post processing: "
+                + absentIncidents
+                + ". This post processor records will be ignored.");
+      } else {
+        throw new OperateRuntimeException(
+            "Not all incidents are yet imported for post processing: " + absentIncidents);
+      }
+    }
+    pendingIncidentsBatch.setIncidents(
+        new ArrayList<>(incidents)); // Batch incidents must be a mutable list
+    return pendingIncidentsBatch;
+  }
+
+  @Override
+  protected void searchForInstances(final List<IncidentEntity> incidents, final AdditionalData data)
+      throws IOException {
+
+    try {
+      queryData(incidents, data);
+      checkDataAndCollectParentTreePaths(incidents, data, false);
+    } catch (final OperateRuntimeException ex) {
+      // if it failed once we want to give it a chance and to import more data
+      // next failure will fail in case ignoring of missing data is not configured
+      sleepFor(5000L);
+      queryData(incidents, data);
+      checkDataAndCollectParentTreePaths(
+          incidents, data, operateProperties.getImporter().isPostImporterIgnoreMissingData());
+    }
+
+    // find flow node instances in list view
+    final var listviewRequest =
+        searchRequestBuilder(listViewTemplate)
+            .query(
+                and(
+                    ids(
+                        incidents.stream()
+                            .map(i -> String.valueOf(i.getFlowNodeInstanceKey()))
+                            .toList()),
+                    term(JOIN_RELATION, ACTIVITIES_JOIN_RELATION)))
+            .source(sc -> sc.fetch(false));
+    richOpenSearchClient
+        .doc()
+        .scrollWith(
+            listviewRequest,
+            Void.class,
+            hits ->
+                hits.forEach(
+                    hit ->
+                        CollectionUtil.addToMap(
+                            data.getFlowNodeInstanceInListViewIndices(), hit.id(), hit.index())));
+  }
+
+  @Override
+  protected boolean processIncidents(final AdditionalData data, final PendingIncidentsBatch batch)
       throws PersistenceException {
 
-    OpensearchPostImporterRequests updateRequests = new OpensearchPostImporterRequests();
+    final OpensearchPostImporterRequests updateRequests = new OpensearchPostImporterRequests();
 
     final List<String> treePathTerms =
         data.getIncidentTreePaths().values().stream()
@@ -93,16 +223,16 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
             .collect(Collectors.toList());
     getTreePathsWithIncidents(treePathTerms, data);
 
-    for (IncidentEntity incident : batch.getIncidents()) {
+    for (final IncidentEntity incident : batch.getIncidents()) {
       if (instanceExists(
           incident.getProcessInstanceKey(), data.getProcessInstanceTreePaths().keySet())) {
 
         // extract all process instance ids and flow node instance ids from tree path
         final String incidentTreePath = data.getIncidentTreePaths().get(incident.getId());
 
-        List<String> piIds = new TreePath(incidentTreePath).extractProcessInstanceIds();
+        final List<String> piIds = new TreePath(incidentTreePath).extractProcessInstanceIds();
 
-        IncidentState newState = batch.getNewIncidentStates().get(incident.getKey());
+        final IncidentState newState = batch.getNewIncidentStates().get(incident.getKey());
         updateProcessInstancesState(incident.getId(), newState, piIds, data, updateRequests);
 
         incident.setState(newState);
@@ -128,7 +258,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
                   "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s. Ignoring.",
                   incident.getId(), incident.getProcessInstanceKey()));
           final String incidentTreePath = data.getIncidentTreePaths().get(incident.getId());
-          IncidentState newState = batch.getNewIncidentStates().get(incident.getKey());
+          final IncidentState newState = batch.getNewIncidentStates().get(incident.getKey());
           incident.setState(newState);
           updateIncidents(
               incident,
@@ -145,97 +275,8 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     return false;
   }
 
-  /**
-   * Returns map incident key -> intent (CRAETED|RESOLVED)
-   *
-   * @param data
-   * @param lastProcessedPosition
-   * @return
-   */
-  protected PendingIncidentsBatch getPendingIncidents(
-      final AdditionalData data, final Long lastProcessedPosition) {
-    PendingIncidentsBatch pendingIncidentsBatch = new PendingIncidentsBatch();
-    Map<Long, IncidentState> incidents2Process;
-
-    record Result(Long key, Long position, String intent) {}
-    // query post importer queue
-    Query partitionQuery = term(PARTITION_ID, partitionId);
-    // first partition will also process older data with partitionId = 0
-    if (partitionId == 1) {
-      partitionQuery = stringTerms(PARTITION_ID, List.of("0", String.valueOf(partitionId)));
-    }
-    var postImporterQueueRequest =
-        searchRequestBuilder(postImporterQueueTemplate)
-            .query(
-                and(
-                    gt(POSITION, lastProcessedPosition == null ? 0 : lastProcessedPosition),
-                    term(ACTION_TYPE, PostImporterActionType.INCIDENT.name()),
-                    partitionQuery))
-            .source(sourceInclude(KEY, POSITION, INTENT))
-            .sort(sortOptions(POSITION, SortOrder.Asc))
-            .size(operateProperties.getZeebeOpensearch().getBatchSize());
-
-    var response = richOpenSearchClient.doc().search(postImporterQueueRequest, Result.class);
-    incidents2Process =
-        response.hits().hits().stream()
-            .map(Hit::source)
-            .collect(
-                toMap(
-                    r -> r.key(),
-                    r -> IncidentState.createFrom(r.intent()),
-                    // when both CREATED adn RESOLVED are present, we overwrite CREATED with
-                    // RESOLVED as we can at once resolve the incident
-                    (existing, replacement) -> replacement));
-
-    pendingIncidentsBatch.setNewIncidentStates(incidents2Process);
-    if (!incidents2Process.isEmpty()) {
-      pendingIncidentsBatch.setLastProcessedPosition(
-          response.hits().hits().get(response.hits().hits().size() - 1).source().position());
-    }
-    if (incidents2Process.size() == 0) {
-      return pendingIncidentsBatch;
-    }
-
-    // collect additional data
-    // find incident indices for the case when some of them already archived
-    var incidentSearchRequest =
-        searchRequestBuilder(incidentTemplate)
-            .query(ids(incidents2Process.keySet().stream().map(String::valueOf).toList()))
-            .sort(sortOptions(KEY, SortOrder.Asc))
-            .size(operateProperties.getZeebeOpensearch().getBatchSize());
-
-    var incidentsResponse =
-        richOpenSearchClient.doc().search(incidentSearchRequest, IncidentEntity.class);
-    var incidents =
-        incidentsResponse.hits().hits().stream()
-            .map(
-                hit -> {
-                  var incident = hit.source();
-                  data.getIncidentIndices().put(hit.id(), hit.index());
-                  return incident;
-                })
-            .toList();
-    if (incidents2Process.size() > incidents.size()) {
-      Set<Long> absentIncidents = new HashSet<>(incidents2Process.keySet());
-      absentIncidents.removeAll(
-          incidents.stream().map(i -> i.getKey()).collect(Collectors.toSet()));
-      if (operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
-        logger.warn(
-            "Not all incidents are yet imported for post processing: "
-                + absentIncidents
-                + ". This post processor records will be ignored.");
-      } else {
-        throw new OperateRuntimeException(
-            "Not all incidents are yet imported for post processing: " + absentIncidents);
-      }
-    }
-    pendingIncidentsBatch.setIncidents(
-        new ArrayList<>(incidents)); // Batch incidents must be a mutable list
-    return pendingIncidentsBatch;
-  }
-
   private List<String> getTreePathTerms(final String treePath) {
-    var analyzeRequest =
+    final var analyzeRequest =
         AnalyzeRequest.of(
             ar ->
                 ar.field(ListViewTemplate.TREE_PATH)
@@ -246,7 +287,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
       return analyzeResponse.tokens().stream()
           .map(AnalyzeToken::token)
           .collect(Collectors.toList());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(
           "Exception occurred when requesting term vectors for tree_path");
     }
@@ -255,7 +296,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
   private void getTreePathsWithIncidents(
       final List<String> treePathTerms, final AdditionalData data) {
     record Result(String treePath) {}
-    var searchRequest =
+    final var searchRequest =
         searchRequestBuilder(incidentTemplate)
             .query(and(stringTerms(TREE_PATH, treePathTerms), term(STATE, ACTIVE.name())))
             .source(sourceInclude(TREE_PATH));
@@ -288,10 +329,10 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
       data.getProcessInstanceIndices().putAll(getIndexNamesForIds(listViewTemplate, piIds));
     }
 
-    Map<String, Object> updateFields = new HashMap<>();
+    final Map<String, Object> updateFields = new HashMap<>();
     if (newState.equals(ACTIVE)) {
       updateFields.put(ListViewTemplate.INCIDENT, true);
-      for (String piId : piIds) {
+      for (final String piId : piIds) {
         // add incident id
         data.addPiIdsWithIncidentIds(piId, incidentId);
         // if there were no incidents and now one
@@ -302,7 +343,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     } else {
       updateFields.put(ListViewTemplate.INCIDENT, false);
       // exclude instances with other incidents
-      for (String piId : piIds) {
+      for (final String piId : piIds) {
         // remove incident id
         data.deleteIncidentIdByPiId(piId, incidentId);
         if (data.getPiIdsWithIncidentIds().get(piId) == null
@@ -314,10 +355,11 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
   }
 
   private Map<String, String> getIndexNamesForIds(
-      AbstractTemplateDescriptor template, Collection<java.lang.String> ids) {
-    Map<String, String> indexNames = new HashMap<>();
+      final AbstractTemplateDescriptor template, final Collection<java.lang.String> ids) {
+    final Map<String, String> indexNames = new HashMap<>();
 
-    var request = searchRequestBuilder(template).query(ids(ids)).source(sc -> sc.fetch(false));
+    final var request =
+        searchRequestBuilder(template).query(ids(ids)).source(sc -> sc.fetch(false));
 
     richOpenSearchClient
         .doc()
@@ -331,11 +373,11 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
   }
 
   private void updateProcessInstance(
-      Map<String, String> processInstanceIndices,
-      OpensearchPostImporterRequests requests,
-      Map<String, Object> updateFields,
-      String piId) {
-    String index = processInstanceIndices.get(piId);
+      final Map<String, String> processInstanceIndices,
+      final OpensearchPostImporterRequests requests,
+      final Map<String, Object> updateFields,
+      final String piId) {
+    final String index = processInstanceIndices.get(piId);
     createUpdateRequestFor(index, piId, updateFields, null, piId, requests.getListViewRequests());
   }
 
@@ -355,11 +397,11 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
           .putAll(getIndexNamesAsList(listViewTemplate, fniIds));
     }
 
-    Map<String, Object> updateFields = new HashMap<>();
+    final Map<String, Object> updateFields = new HashMap<>();
     if (incident.getState().equals(ACTIVE)) {
       updateFields.put(ListViewTemplate.INCIDENT, true);
 
-      for (String fniId : fniIds) {
+      for (final String fniId : fniIds) {
 
         // add incident id
         data.addFniIdsWithIncidentIds(fniId, incident.getId());
@@ -377,7 +419,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     } else {
       updateFields.put(ListViewTemplate.INCIDENT, false);
       // exclude instances with other incidents
-      for (String fniId : fniIds) {
+      for (final String fniId : fniIds) {
 
         // remove incident id
         data.deleteIncidentIdByFniId(fniId, incident.getId());
@@ -396,9 +438,10 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
   }
 
   private Map<String, List<String>> getIndexNamesAsList(
-      AbstractTemplateDescriptor template, Collection<String> ids) {
-    Map<String, List<String>> indexNames = new ConcurrentHashMap<>();
-    var request = searchRequestBuilder(template).query(ids(ids)).source(sc -> sc.fetch(false));
+      final AbstractTemplateDescriptor template, final Collection<String> ids) {
+    final Map<String, List<String>> indexNames = new ConcurrentHashMap<>();
+    final var request =
+        searchRequestBuilder(template).query(ids(ids)).source(sc -> sc.fetch(false));
     richOpenSearchClient
         .doc()
         .scrollWith(
@@ -423,12 +466,12 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
   }
 
   private void updateFlowNodeInstance(
-      IncidentEntity incident,
-      Map<String, List<String>> flowNodeInstanceIndices,
-      Map<String, List<String>> flowNodeInstanceInListViewIndices,
-      OpensearchPostImporterRequests requests,
-      Map<String, Object> updateFields,
-      String fniId) {
+      final IncidentEntity incident,
+      final Map<String, List<String>> flowNodeInstanceIndices,
+      final Map<String, List<String>> flowNodeInstanceInListViewIndices,
+      final OpensearchPostImporterRequests requests,
+      final Map<String, Object> updateFields,
+      final String fniId) {
     if (flowNodeInstanceIndices.get(fniId) == null) {
       throw new OperateRuntimeException(
           String.format("Flow node instance was not yet imported %s", fniId));
@@ -469,7 +512,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
       final String index,
       final String incidentTreePath,
       final OpensearchPostImporterRequests requests) {
-    Map<String, Object> updateFields = new HashMap<>();
+    final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(STATE, newState);
     if (newState.equals(ACTIVE)) {
       updateFields.put(TREE_PATH, incidentTreePath);
@@ -490,48 +533,11 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     return idSet.contains(key);
   }
 
-  protected void searchForInstances(final List<IncidentEntity> incidents, final AdditionalData data)
+  private void queryData(final List<IncidentEntity> incidents, final AdditionalData data)
       throws IOException {
-
-    try {
-      queryData(incidents, data);
-      checkDataAndCollectParentTreePaths(incidents, data, false);
-    } catch (OperateRuntimeException ex) {
-      // if it failed once we want to give it a chance and to import more data
-      // next failure will fail in case ignoring of missing data is not configured
-      sleepFor(5000L);
-      queryData(incidents, data);
-      checkDataAndCollectParentTreePaths(
-          incidents, data, operateProperties.getImporter().isPostImporterIgnoreMissingData());
-    }
-
-    // find flow node instances in list view
-    var listviewRequest =
-        searchRequestBuilder(listViewTemplate)
-            .query(
-                and(
-                    ids(
-                        incidents.stream()
-                            .map(i -> String.valueOf(i.getFlowNodeInstanceKey()))
-                            .toList()),
-                    term(JOIN_RELATION, ACTIVITIES_JOIN_RELATION)))
-            .source(sc -> sc.fetch(false));
-    richOpenSearchClient
-        .doc()
-        .scrollWith(
-            listviewRequest,
-            Void.class,
-            hits ->
-                hits.forEach(
-                    hit ->
-                        CollectionUtil.addToMap(
-                            data.getFlowNodeInstanceInListViewIndices(), hit.id(), hit.index())));
-  }
-
-  private void queryData(List<IncidentEntity> incidents, AdditionalData data) throws IOException {
     // find process instances (if they exist) that correspond to given incidents
     record Result(String treePath) {}
-    var request =
+    final var request =
         searchRequestBuilder(listViewTemplate)
             .query(
                 ids(
@@ -561,11 +567,13 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
   }
 
   private void checkDataAndCollectParentTreePaths(
-      List<IncidentEntity> incidents, AdditionalData data, boolean ignoreMissingData)
+      final List<IncidentEntity> incidents,
+      final AdditionalData data,
+      final boolean ignoreMissingData)
       throws IOException {
     int countMissingInstance = 0;
-    for (Iterator<IncidentEntity> iterator = incidents.iterator(); iterator.hasNext(); ) {
-      IncidentEntity i = iterator.next();
+    for (final Iterator<IncidentEntity> iterator = incidents.iterator(); iterator.hasNext(); ) {
+      final IncidentEntity i = iterator.next();
       String piTreePath = data.getProcessInstanceTreePaths().get(i.getProcessInstanceKey());
       if (piTreePath == null || piTreePath.isEmpty()) {
         // check whether DELETE_PROCESS_INSTANCE operation exists
@@ -612,8 +620,8 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     }
   }
 
-  private boolean processInstanceWasDeleted(long processInstanceKey) throws IOException {
-    var request =
+  private boolean processInstanceWasDeleted(final long processInstanceKey) throws IOException {
+    final var request =
         searchRequestBuilder(operationTemplate)
             .query(
                 and(
@@ -625,12 +633,12 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
   }
 
   private void createUpdateRequestFor(
-      String index,
-      String id,
-      @Nullable Map<String, Object> doc,
-      @Nullable Script script,
-      String routing,
-      Map<String, UpdateOperation> requestMap) {
+      final String index,
+      final String id,
+      @Nullable final Map<String, Object> doc,
+      @Nullable final Script script,
+      final String routing,
+      final Map<String, UpdateOperation> requestMap) {
     if ((doc == null) == (script == null)) {
       throw new OperateRuntimeException(
           "One and only one of 'doc' or 'script' must be provided for the update request");

@@ -40,13 +40,13 @@ public class BatchOperationRequestDto {
     return searchBefore;
   }
 
-  public Object[] getSearchBefore(ObjectMapper objectMapper) {
-    return SortValuesWrapper.convertSortValues(searchBefore, objectMapper);
-  }
-
   public BatchOperationRequestDto setSearchBefore(SortValuesWrapper[] searchBefore) {
     this.searchBefore = searchBefore;
     return this;
+  }
+
+  public Object[] getSearchBefore(ObjectMapper objectMapper) {
+    return SortValuesWrapper.convertSortValues(searchBefore, objectMapper);
   }
 
   @Schema(
@@ -57,13 +57,13 @@ public class BatchOperationRequestDto {
     return searchAfter;
   }
 
-  public Object[] getSearchAfter(ObjectMapper objectMapper) {
-    return SortValuesWrapper.convertSortValues(searchAfter, objectMapper);
-  }
-
   public BatchOperationRequestDto setSearchAfter(SortValuesWrapper[] searchAfter) {
     this.searchAfter = searchAfter;
     return this;
+  }
+
+  public Object[] getSearchAfter(ObjectMapper objectMapper) {
+    return SortValuesWrapper.convertSortValues(searchAfter, objectMapper);
   }
 
   public Integer getPageSize() {
@@ -73,6 +73,14 @@ public class BatchOperationRequestDto {
   public BatchOperationRequestDto setPageSize(Integer pageSize) {
     this.pageSize = pageSize;
     return this;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Arrays.hashCode(searchBefore);
+    result = 31 * result + Arrays.hashCode(searchAfter);
+    result = 31 * result + (pageSize != null ? pageSize.hashCode() : 0);
+    return result;
   }
 
   @Override
@@ -87,13 +95,5 @@ public class BatchOperationRequestDto {
     // Probably incorrect - comparing Object[] arrays with Arrays.equals
     if (!Arrays.equals(searchAfter, that.searchAfter)) return false;
     return pageSize != null ? pageSize.equals(that.pageSize) : that.pageSize == null;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Arrays.hashCode(searchBefore);
-    result = 31 * result + Arrays.hashCode(searchAfter);
-    result = 31 * result + (pageSize != null ? pageSize.hashCode() : 0);
-    return result;
   }
 }

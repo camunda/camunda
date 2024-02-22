@@ -53,14 +53,6 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
     })
 public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
 
-  @Autowired private ProcessInstanceReader processInstanceReader;
-
-  @Autowired private OperateProperties operateProperties;
-
-  @SpyBean private RecordsReaderHolder recordsReaderHolder;
-
-  @Autowired private TestSearchRepository testSearchRepository;
-
   @Rule
   public SearchTestRule searchTestRule =
       new SearchTestRule() {
@@ -69,6 +61,11 @@ public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
           // do nothing
         }
       };
+
+  @Autowired private ProcessInstanceReader processInstanceReader;
+  @Autowired private OperateProperties operateProperties;
+  @SpyBean private RecordsReaderHolder recordsReaderHolder;
+  @Autowired private TestSearchRepository testSearchRepository;
 
   @Override
   public void before() {
@@ -168,11 +165,11 @@ public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
               boolean calledOnce = false;
 
               @Override
-              public ImportBatch readNextBatchByPositionAndPartition(
-                  long positionFrom, Long positionTo) throws NoSuchIndexException {
+              public ImportBatch readNextBatchBySequence(
+                  final Long sequence, final Long lastSequence) throws NoSuchIndexException {
                 if (calledOnce) {
-                  return processInstanceRecordsReader.readNextBatchByPositionAndPartition(
-                      positionFrom, positionTo);
+                  return processInstanceRecordsReader.readNextBatchBySequence(
+                      sequence, lastSequence);
                 } else {
                   calledOnce = true;
                   return new ImportBatch(1, PROCESS_INSTANCE, new ArrayList<>(), null);
@@ -180,11 +177,11 @@ public class ImportMidnightZeebeIT extends OperateZeebeAbstractIT {
               }
 
               @Override
-              public ImportBatch readNextBatchBySequence(
-                  final Long sequence, final Long lastSequence) throws NoSuchIndexException {
+              public ImportBatch readNextBatchByPositionAndPartition(
+                  long positionFrom, Long positionTo) throws NoSuchIndexException {
                 if (calledOnce) {
-                  return processInstanceRecordsReader.readNextBatchBySequence(
-                      sequence, lastSequence);
+                  return processInstanceRecordsReader.readNextBatchByPositionAndPartition(
+                      positionFrom, positionTo);
                 } else {
                   calledOnce = true;
                   return new ImportBatch(1, PROCESS_INSTANCE, new ArrayList<>(), null);

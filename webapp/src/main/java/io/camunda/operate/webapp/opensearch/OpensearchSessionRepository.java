@@ -45,13 +45,6 @@ public class OpensearchSessionRepository implements SessionRepository {
 
   @Autowired private OperateWebSessionIndex operateWebSessionIndex;
 
-  private record SessionEntity(
-      String id,
-      Long creationTime,
-      Long lastAccessedTime,
-      Long maxInactiveIntervalInSeconds,
-      Map<String, String> attributes) {}
-
   @PostConstruct
   private void setUp() {
     setupConverter();
@@ -152,4 +145,11 @@ public class OpensearchSessionRepository implements SessionRepository {
   public void deleteById(String id) {
     richOpenSearchClient.doc().deleteWithRetries(operateWebSessionIndex.getFullQualifiedName(), id);
   }
+
+  private record SessionEntity(
+      String id,
+      Long creationTime,
+      Long lastAccessedTime,
+      Long maxInactiveIntervalInSeconds,
+      Map<String, String> attributes) {}
 }

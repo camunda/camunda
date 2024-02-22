@@ -27,11 +27,9 @@ import org.springframework.stereotype.Component;
 @Profile("!" + IDENTITY_AUTH_PROFILE)
 public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationTokenValidator {
 
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-
   public static final String AUDIENCE = "aud";
   public static final String SCOPE = "scope";
-
+  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
   @Autowired private OperateProperties operateProperties;
 
   @Override

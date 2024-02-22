@@ -184,76 +184,6 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     }
   }
 
-  private int addOperations(
-      CreateBatchOperationRequestDto batchOperationRequest, BatchOperationEntity batchOperation)
-      throws IOException {
-    final int batchSize = operateProperties.getElasticsearch().getBatchSize();
-    ConstantScoreQueryBuilder query =
-        queryHelper.createProcessInstancesQuery(batchOperationRequest.getQuery());
-    if (permissionsService != null) {
-      IdentityPermission permission =
-          batchOperationRequest.getOperationType().equals(OperationType.DELETE_PROCESS_INSTANCE)
-              ? IdentityPermission.DELETE_PROCESS_INSTANCE
-              : IdentityPermission.UPDATE_PROCESS_INSTANCE;
-      var allowed = permissionsService.getProcessesWithPermission(permission);
-      var permissionQuery =
-          allowed.isAll()
-              ? QueryBuilders.matchAllQuery()
-              : QueryBuilders.termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
-      query = constantScoreQuery(joinWithAnd(query, permissionQuery));
-    }
-    QueryType queryType = QueryType.ONLY_RUNTIME;
-    if (batchOperationRequest.getOperationType().equals(OperationType.DELETE_PROCESS_INSTANCE)) {
-      queryType = QueryType.ALL;
-    }
-    String[] includeFields =
-        new String[] {
-          OperationTemplate.PROCESS_INSTANCE_KEY,
-          OperationTemplate.PROCESS_DEFINITION_KEY,
-          OperationTemplate.BPMN_PROCESS_ID
-        };
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
-            .source(
-                new SearchSourceBuilder()
-                    .query(query)
-                    .size(batchSize)
-                    .fetchSource(includeFields, null));
-
-    AtomicInteger operationsCount = new AtomicInteger();
-    tenantAwareClient.search(
-        searchRequest,
-        () -> {
-          ElasticsearchUtil.scrollWith(
-              searchRequest,
-              esClient,
-              searchHits -> {
-                try {
-                  final List<ProcessInstanceSource> processInstanceSources = new ArrayList<>();
-                  for (SearchHit hit : searchHits.getHits()) {
-                    processInstanceSources.add(
-                        ProcessInstanceSource.fromSourceMap(hit.getSourceAsMap()));
-                  }
-                  operationsCount.addAndGet(
-                      persistOperations(
-                          processInstanceSources,
-                          batchOperation.getId(),
-                          batchOperationRequest,
-                          null));
-                } catch (PersistenceException e) {
-                  throw new RuntimeException(e);
-                }
-              },
-              null,
-              searchHits -> {
-                validateTotalHits(searchHits);
-                batchOperation.setInstancesCount((int) searchHits.getTotalHits().value);
-              });
-          return null;
-        });
-    return operationsCount.get();
-  }
-
   /**
    * Schedule operation for single process instance.
    *
@@ -516,6 +446,76 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     }
   }
 
+  private int addOperations(
+      CreateBatchOperationRequestDto batchOperationRequest, BatchOperationEntity batchOperation)
+      throws IOException {
+    final int batchSize = operateProperties.getElasticsearch().getBatchSize();
+    ConstantScoreQueryBuilder query =
+        queryHelper.createProcessInstancesQuery(batchOperationRequest.getQuery());
+    if (permissionsService != null) {
+      IdentityPermission permission =
+          batchOperationRequest.getOperationType().equals(OperationType.DELETE_PROCESS_INSTANCE)
+              ? IdentityPermission.DELETE_PROCESS_INSTANCE
+              : IdentityPermission.UPDATE_PROCESS_INSTANCE;
+      var allowed = permissionsService.getProcessesWithPermission(permission);
+      var permissionQuery =
+          allowed.isAll()
+              ? QueryBuilders.matchAllQuery()
+              : QueryBuilders.termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
+      query = constantScoreQuery(joinWithAnd(query, permissionQuery));
+    }
+    QueryType queryType = QueryType.ONLY_RUNTIME;
+    if (batchOperationRequest.getOperationType().equals(OperationType.DELETE_PROCESS_INSTANCE)) {
+      queryType = QueryType.ALL;
+    }
+    String[] includeFields =
+        new String[] {
+          OperationTemplate.PROCESS_INSTANCE_KEY,
+          OperationTemplate.PROCESS_DEFINITION_KEY,
+          OperationTemplate.BPMN_PROCESS_ID
+        };
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
+            .source(
+                new SearchSourceBuilder()
+                    .query(query)
+                    .size(batchSize)
+                    .fetchSource(includeFields, null));
+
+    AtomicInteger operationsCount = new AtomicInteger();
+    tenantAwareClient.search(
+        searchRequest,
+        () -> {
+          ElasticsearchUtil.scrollWith(
+              searchRequest,
+              esClient,
+              searchHits -> {
+                try {
+                  final List<ProcessInstanceSource> processInstanceSources = new ArrayList<>();
+                  for (SearchHit hit : searchHits.getHits()) {
+                    processInstanceSources.add(
+                        ProcessInstanceSource.fromSourceMap(hit.getSourceAsMap()));
+                  }
+                  operationsCount.addAndGet(
+                      persistOperations(
+                          processInstanceSources,
+                          batchOperation.getId(),
+                          batchOperationRequest,
+                          null));
+                } catch (PersistenceException e) {
+                  throw new RuntimeException(e);
+                }
+              },
+              null,
+              searchHits -> {
+                validateTotalHits(searchHits);
+                batchOperation.setInstancesCount((int) searchHits.getTotalHits().value);
+              });
+          return null;
+        });
+    return operationsCount.get();
+  }
+
   private BatchOperationEntity createBatchOperationEntity(
       OperationType operationType, String name) {
     BatchOperationEntity batchOperationEntity = new BatchOperationEntity();
@@ -667,6 +667,17 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     private Long processDefinitionKey;
     private String bpmnProcessId;
 
+    public static ProcessInstanceSource fromSourceMap(Map<String, Object> sourceMap) {
+      ProcessInstanceSource processInstanceSource = new ProcessInstanceSource();
+      processInstanceSource.processInstanceKey =
+          (Long) sourceMap.get(OperationTemplate.PROCESS_INSTANCE_KEY);
+      processInstanceSource.processDefinitionKey =
+          (Long) sourceMap.get(OperationTemplate.PROCESS_DEFINITION_KEY);
+      processInstanceSource.bpmnProcessId =
+          (String) sourceMap.get(OperationTemplate.BPMN_PROCESS_ID);
+      return processInstanceSource;
+    }
+
     public Long getProcessInstanceKey() {
       return processInstanceKey;
     }
@@ -694,15 +705,9 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       return this;
     }
 
-    public static ProcessInstanceSource fromSourceMap(Map<String, Object> sourceMap) {
-      ProcessInstanceSource processInstanceSource = new ProcessInstanceSource();
-      processInstanceSource.processInstanceKey =
-          (Long) sourceMap.get(OperationTemplate.PROCESS_INSTANCE_KEY);
-      processInstanceSource.processDefinitionKey =
-          (Long) sourceMap.get(OperationTemplate.PROCESS_DEFINITION_KEY);
-      processInstanceSource.bpmnProcessId =
-          (String) sourceMap.get(OperationTemplate.BPMN_PROCESS_ID);
-      return processInstanceSource;
+    @Override
+    public int hashCode() {
+      return Objects.hash(processInstanceKey, processDefinitionKey, bpmnProcessId);
     }
 
     @Override
@@ -713,11 +718,6 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       return Objects.equals(processInstanceKey, that.processInstanceKey)
           && Objects.equals(processDefinitionKey, that.processDefinitionKey)
           && Objects.equals(bpmnProcessId, that.bpmnProcessId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(processInstanceKey, processDefinitionKey, bpmnProcessId);
     }
   }
 }

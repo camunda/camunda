@@ -38,9 +38,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class BigVariableDataGenerator {
 
-  private static final Logger logger = LoggerFactory.getLogger(BigProcessDataGenerator.class);
   public static final String PROCESS_BPMN_PROCESS_ID = "bigVariableProcess";
   protected static final String ACTIVITY_ID = "task";
+  private static final Logger logger = LoggerFactory.getLogger(BigProcessDataGenerator.class);
   private ZeebeClient zeebeClient;
 
   @Autowired private RestHighLevelClient esClient;

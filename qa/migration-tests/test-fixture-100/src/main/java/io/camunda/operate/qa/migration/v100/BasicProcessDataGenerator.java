@@ -48,12 +48,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class BasicProcessDataGenerator {
 
-  private static final Logger logger = LoggerFactory.getLogger(BasicProcessDataGenerator.class);
   public static final String PROCESS_BPMN_PROCESS_ID = "basicProcess";
   public static final int PROCESS_INSTANCE_COUNT = 51;
   public static final int INCIDENT_COUNT = 32;
   public static final int COUNT_OF_CANCEL_OPERATION = 9;
   public static final int COUNT_OF_RESOLVE_OPERATION = 8;
+  private static final Logger logger = LoggerFactory.getLogger(BasicProcessDataGenerator.class);
   private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 

@@ -62,6 +62,11 @@ public class SequenceFlow {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(id, activityId, processInstanceKey, tenantId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -70,11 +75,6 @@ public class SequenceFlow {
         && Objects.equals(activityId, that.activityId)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, activityId, processInstanceKey, tenantId);
   }
 
   @Override

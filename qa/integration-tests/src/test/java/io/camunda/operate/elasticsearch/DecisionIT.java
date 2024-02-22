@@ -49,10 +49,8 @@ public class DecisionIT extends OperateAbstractIT {
       DecisionRestService.DECISION_URL + "/grouped";
   private static final String QUERY_DECISION_XML_URL_PATTERN =
       DecisionRestService.DECISION_URL + "/%s/xml";
-
-  @MockBean private PermissionsService permissionsService;
-
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
+  @MockBean private PermissionsService permissionsService;
 
   @Test
   public void testDecisionsGroupedWithPermisssionWhenNotAllowed() throws Exception {

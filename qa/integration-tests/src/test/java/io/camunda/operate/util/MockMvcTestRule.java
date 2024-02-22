@@ -50,6 +50,7 @@ public class MockMvcTestRule extends ExternalResource {
           MediaType.APPLICATION_JSON.getType(), MediaType.APPLICATION_JSON.getSubtype()
           // ,Charset.forName("utf8")
           );
+  @Autowired private WebApplicationContext webApplicationContext;
 
   @Autowired
   void setConverters(HttpMessageConverter<?>[] converters) {
@@ -63,8 +64,6 @@ public class MockMvcTestRule extends ExternalResource {
     assertNotNull(
         "the JSON message converter must not be null", this.mappingJackson2HttpMessageConverter);
   }
-
-  @Autowired private WebApplicationContext webApplicationContext;
 
   @Override
   public void before() {

@@ -26,10 +26,9 @@ import org.slf4j.LoggerFactory;
 
 public abstract class ZeebeTestUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(ZeebeTestUtil.class);
-
   public static final Logger ALL_EVENTS_LOGGER =
       LoggerFactory.getLogger("io.camunda.operate.ALL_EVENTS");
+  private static final Logger logger = LoggerFactory.getLogger(ZeebeTestUtil.class);
 
   /**
    * Deploys the process synchronously.

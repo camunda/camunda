@@ -82,13 +82,13 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   /** The queue of executed tasks for execution. */
   private final BlockingQueue<Callable<Boolean>> importJobs;
 
+  private final ReentrantLock schedulingImportJobLock;
   private NumberThrottleable batchSizeThrottle;
 
   /** The job that we are currently busy with. */
   private Callable<Boolean> active;
 
   private ImportJob pendingImportJob;
-  private final ReentrantLock schedulingImportJobLock;
   private boolean ongoingRescheduling;
 
   private long maxPossibleSequence;
@@ -119,21 +119,21 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   private List<ImportListener> importListeners;
 
   public ElasticsearchRecordsReader(
-      int partitionId, ImportValueType importValueType, int queueSize) {
+      final int partitionId, final ImportValueType importValueType, final int queueSize) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
-    this.importJobs = new LinkedBlockingQueue<>(queueSize);
-    this.schedulingImportJobLock = new ReentrantLock();
+    importJobs = new LinkedBlockingQueue<>(queueSize);
+    schedulingImportJobLock = new ReentrantLock();
   }
 
   @PostConstruct
   private void postConstruct() {
-    this.batchSizeThrottle =
+    batchSizeThrottle =
         new NumberThrottleable.DivideNumberThrottle(
             operateProperties.getZeebeElasticsearch().getBatchSize());
     // 1st sequence of next partition - 1
-    this.maxPossibleSequence = sequence(partitionId + 1, 0) - 1;
-    this.countEmptyRuns = 0;
+    maxPossibleSequence = sequence(partitionId + 1, 0) - 1;
+    countEmptyRuns = 0;
   }
 
   @Override
@@ -146,7 +146,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   @Override
-  public void readAndScheduleNextBatch(boolean autoContinue) {
+  public void readAndScheduleNextBatch(final boolean autoContinue) {
     final int readerBackoff = operateProperties.getImporter().getReaderBackoff();
     final boolean useOnlyPosition = operateProperties.getImporter().isUseOnlyPosition();
     try {
@@ -157,7 +157,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
           String.valueOf(partitionId),
           TAG_KEY_TYPE,
           importValueType.name());
-      ImportBatch importBatch;
+      final ImportBatch importBatch;
       final ImportPositionEntity latestPosition =
           importPositionHolder.getLatestScheduledPosition(
               importValueType.getAliasTemplate(), partitionId);
@@ -188,12 +188,12 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (autoContinue) {
         rescheduleReader(nextRunDelay);
       }
-    } catch (NoSuchIndexException ex) {
+    } catch (final NoSuchIndexException ex) {
       // if no index found, we back off current reader
       if (autoContinue) {
         rescheduleReader(readerBackoff);
       }
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       logger.error(ex.getMessage(), ex);
       if (autoContinue) {
         rescheduleReader(null);
@@ -201,16 +201,12 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     }
   }
 
-  private ImportBatch readNextBatchBySequence(final Long sequence) throws NoSuchIndexException {
-    return readNextBatchBySequence(sequence, null);
-  }
-
   @Override
   public ImportBatch readNextBatchBySequence(final Long sequence, final Long lastSequence)
       throws NoSuchIndexException {
     final String aliasName =
         importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
-    int batchSize = batchSizeThrottle.get();
+    final int batchSize = batchSizeThrottle.get();
     if (batchSize != batchSizeThrottle.getOriginal()) {
       logger.warn(
           "Use new batch size {} (original {})", batchSize, batchSizeThrottle.getOriginal());
@@ -246,7 +242,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       }
     }
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .sort(ImportPositionIndex.SEQUENCE, SortOrder.ASC)
             .query(
@@ -268,7 +264,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         countEmptyRuns = 0;
       }
       return createImportBatch(hits);
-    } catch (ElasticsearchStatusException ex) {
+    } catch (final ElasticsearchStatusException ex) {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
@@ -278,7 +274,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
                 aliasName, ex.getMessage());
         throw new OperateRuntimeException(message, ex);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
         logger.info(
             "{}. Will decrease batch size for {}-{}",
@@ -297,10 +293,66 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     }
   }
 
-  private HitEntity[] read(SearchRequest searchRequest, boolean scrollNeeded) throws IOException {
+  @Override
+  public ImportBatch readNextBatchByPositionAndPartition(
+      final long positionFrom, final Long positionTo) throws NoSuchIndexException {
+    final String aliasName =
+        importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
+    try {
+      final SearchRequest searchRequest = createSearchQuery(aliasName, positionFrom, positionTo);
+      final SearchResponse searchResponse =
+          withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
+      checkForFailedShards(searchResponse);
+
+      return createImportBatch(searchResponse);
+    } catch (final ElasticsearchStatusException ex) {
+      if (ex.getMessage().contains("no such index")) {
+        throw new NoSuchIndexException();
+      } else {
+        final String message =
+            String.format(
+                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
+                aliasName, ex.getMessage());
+        throw new OperateRuntimeException(message, ex);
+      }
+    } catch (final Exception e) {
+      if (e.getMessage().contains("entity content is too long")) {
+        batchSizeThrottle.throttle();
+        return readNextBatchByPositionAndPartition(positionFrom, positionTo);
+      } else {
+        final String message =
+            String.format(
+                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
+                aliasName, e.getMessage());
+        throw new OperateRuntimeException(message, e);
+      }
+    }
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public ImportValueType getImportValueType() {
+    return importValueType;
+  }
+
+  @Override
+  public BlockingQueue<Callable<Boolean>> getImportJobs() {
+    return importJobs;
+  }
+
+  private ImportBatch readNextBatchBySequence(final Long sequence) throws NoSuchIndexException {
+    return readNextBatchBySequence(sequence, null);
+  }
+
+  private HitEntity[] read(final SearchRequest searchRequest, final boolean scrollNeeded)
+      throws IOException {
     String scrollId = null;
     try {
-      List<HitEntity> searchHits = new ArrayList<>();
+      final List<HitEntity> searchHits = new ArrayList<>();
 
       if (scrollNeeded) {
         searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
@@ -314,7 +366,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (scrollNeeded) {
         scrollId = response.getScrollId();
         do {
-          SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+          final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
           scrollRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
 
           response = zeebeEsClient.scroll(scrollRequest, requestOptions);
@@ -335,13 +387,13 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     }
   }
 
-  private HitEntity searchHitToOperateHit(SearchHit searchHit) {
+  private HitEntity searchHitToOperateHit(final SearchHit searchHit) {
     return new HitEntity()
         .setIndex(searchHit.getIndex())
         .setSourceAsString(searchHit.getSourceAsString());
   }
 
-  private void rescheduleReader(Integer readerDelay) {
+  private void rescheduleReader(final Integer readerDelay) {
     if (readerDelay != null) {
       readersExecutor.schedule(
           this, Date.from(OffsetDateTime.now().plus(readerDelay, ChronoUnit.MILLIS).toInstant()));
@@ -380,57 +432,21 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     job.recordLatestScheduledPosition();
   }
 
-  private void notifyImportListenersAsScheduled(ImportBatch importBatch) {
+  private void notifyImportListenersAsScheduled(final ImportBatch importBatch) {
     if (importListeners != null) {
       importListeners.forEach(listener -> listener.scheduled(importBatch));
     }
   }
 
-  @Override
-  public ImportBatch readNextBatchByPositionAndPartition(long positionFrom, Long positionTo)
-      throws NoSuchIndexException {
-    String aliasName =
-        importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
-    try {
-      final SearchRequest searchRequest = createSearchQuery(aliasName, positionFrom, positionTo);
-      final SearchResponse searchResponse =
-          withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
-      checkForFailedShards(searchResponse);
-
-      return createImportBatch(searchResponse);
-    } catch (ElasticsearchStatusException ex) {
-      if (ex.getMessage().contains("no such index")) {
-        throw new NoSuchIndexException();
-      } else {
-        final String message =
-            String.format(
-                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-                aliasName, ex.getMessage());
-        throw new OperateRuntimeException(message, ex);
-      }
-    } catch (Exception e) {
-      if (e.getMessage().contains("entity content is too long")) {
-        batchSizeThrottle.throttle();
-        return readNextBatchByPositionAndPartition(positionFrom, positionTo);
-      } else {
-        final String message =
-            String.format(
-                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-                aliasName, e.getMessage());
-        throw new OperateRuntimeException(message, e);
-      }
-    }
-  }
-
-  private void checkForFailedShards(SearchResponse searchResponse) {
+  private void checkForFailedShards(final SearchResponse searchResponse) {
     if (searchResponse.getFailedShards() > 0) {
       throw new OperateRuntimeException(
           "Some ES shards failed. Ignoring search response and retrying, to prevent data loss.");
     }
   }
 
-  private ImportBatch createImportBatch(SearchResponse searchResponse) {
-    SearchHit[] hits = searchResponse.getHits().getHits();
+  private ImportBatch createImportBatch(final SearchResponse searchResponse) {
+    final SearchHit[] hits = searchResponse.getHits().getHits();
     final List<HitEntity> newHits =
         Arrays.stream(hits)
             .map(
@@ -444,7 +460,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     return new ImportBatch(partitionId, importValueType, newHits, indexName);
   }
 
-  private ImportBatch createImportBatch(HitEntity[] hits) {
+  private ImportBatch createImportBatch(final HitEntity[] hits) {
     String indexName = null;
     if (hits.length > 0) {
       indexName = hits[hits.length - 1].getIndex();
@@ -452,7 +468,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     return new ImportBatch(partitionId, importValueType, Arrays.asList(hits), indexName);
   }
 
-  private SearchRequest createSearchQuery(String aliasName, long positionFrom, Long positionTo) {
+  private SearchRequest createSearchQuery(
+      final String aliasName, final long positionFrom, final Long positionTo) {
     RangeQueryBuilder positionQ = rangeQuery(ImportPositionIndex.POSITION).gt(positionFrom);
     if (positionTo != null) {
       positionQ = positionQ.lte(positionTo);
@@ -473,7 +490,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
           partitionId,
           positionFrom,
           positionTo);
-      int size = (int) (positionTo - positionFrom);
+      final int size = (int) (positionTo - positionFrom);
       searchSourceBuilder =
           searchSourceBuilder.size(
               size <= 0 || size > QUERY_MAX_SIZE
@@ -486,7 +503,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         .requestCache(false);
   }
 
-  private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
+  private SearchResponse withTimer(final Callable<SearchResponse> callable) throws Exception {
     return metrics
         .getTimer(
             Metrics.TIMER_NAME_IMPORT_QUERY,
@@ -497,7 +514,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         .recordCallable(callable);
   }
 
-  private HitEntity[] withTimerSearchHits(Callable<HitEntity[]> callable) throws Exception {
+  private HitEntity[] withTimerSearchHits(final Callable<HitEntity[]> callable) throws Exception {
     return metrics
         .getTimer(
             Metrics.TIMER_NAME_IMPORT_QUERY,
@@ -559,7 +576,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     }
   }
 
-  private void execute(Callable<Boolean> job) {
+  private void execute(final Callable<Boolean> job) {
     importExecutor.submit(job);
     // TODO what to do with failing jobs
     logger.debug("Submitted the same job");
@@ -620,25 +637,10 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     try {
       schedulingImportJobLock.lock();
       return action.call();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException(e);
     } finally {
       schedulingImportJobLock.unlock();
     }
-  }
-
-  @Override
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  @Override
-  public ImportValueType getImportValueType() {
-    return importValueType;
-  }
-
-  @Override
-  public BlockingQueue<Callable<Boolean>> getImportJobs() {
-    return importJobs;
   }
 }

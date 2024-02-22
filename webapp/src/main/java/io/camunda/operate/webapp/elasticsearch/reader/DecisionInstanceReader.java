@@ -78,14 +78,12 @@ public class DecisionInstanceReader extends AbstractReader
 
   private static final Logger logger = LoggerFactory.getLogger(DecisionInstanceReader.class);
 
-  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
-
-  @Autowired private DateTimeFormatter dateTimeFormatter;
-
-  @Autowired private OperateProperties operateProperties;
-
   @Autowired(required = false)
   protected PermissionsService permissionsService;
+
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
+  @Autowired private DateTimeFormatter dateTimeFormatter;
+  @Autowired private OperateProperties operateProperties;
 
   @Override
   public DecisionInstanceDto getDecisionInstance(String decisionInstanceId) {
@@ -130,6 +128,46 @@ public class DecisionInstanceReader extends AbstractReader
     result.setDecisionInstances(DecisionInstanceForListDto.createFrom(entities, objectMapper));
 
     return result;
+  }
+
+  @Override
+  public Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(String decisionInstanceId) {
+    // we need to find all decision instances with he same key, which we extract from
+    // decisionInstanceId
+    final Long decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
+    final SearchRequest request =
+        ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
+            .source(
+                new SearchSourceBuilder()
+                    .query(termQuery(KEY, decisionInstanceKey))
+                    .fetchSource(new String[] {DECISION_ID, STATE}, null)
+                    .sort(EVALUATION_DATE, SortOrder.ASC));
+    try {
+      final List<DRDDataEntryDto> entries =
+          tenantAwareClient.search(
+              request,
+              () -> {
+                return ElasticsearchUtil.scroll(
+                    request,
+                    DRDDataEntryDto.class,
+                    objectMapper,
+                    esClient,
+                    sh -> {
+                      final Map<String, Object> map = sh.getSourceAsMap();
+                      return new DRDDataEntryDto(
+                          sh.getId(),
+                          (String) map.get(DECISION_ID),
+                          DecisionInstanceState.valueOf((String) map.get(STATE)));
+                    },
+                    null,
+                    null);
+              });
+      return entries.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId));
+    } catch (IOException e) {
+      throw new OperateRuntimeException(
+          "Exception occurred while quiering DRD data for decision instance id: "
+              + decisionInstanceId);
+    }
   }
 
   private List<DecisionInstanceEntity> queryDecisionInstancesEntities(
@@ -319,46 +357,6 @@ public class DecisionInstanceReader extends AbstractReader
       return termQuery(STATE, EVALUATED);
     } else {
       return createMatchNoneQuery();
-    }
-  }
-
-  @Override
-  public Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(String decisionInstanceId) {
-    // we need to find all decision instances with he same key, which we extract from
-    // decisionInstanceId
-    final Long decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(termQuery(KEY, decisionInstanceKey))
-                    .fetchSource(new String[] {DECISION_ID, STATE}, null)
-                    .sort(EVALUATION_DATE, SortOrder.ASC));
-    try {
-      final List<DRDDataEntryDto> entries =
-          tenantAwareClient.search(
-              request,
-              () -> {
-                return ElasticsearchUtil.scroll(
-                    request,
-                    DRDDataEntryDto.class,
-                    objectMapper,
-                    esClient,
-                    sh -> {
-                      final Map<String, Object> map = sh.getSourceAsMap();
-                      return new DRDDataEntryDto(
-                          sh.getId(),
-                          (String) map.get(DECISION_ID),
-                          DecisionInstanceState.valueOf((String) map.get(STATE)));
-                    },
-                    null,
-                    null);
-              });
-      return entries.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId));
-    } catch (IOException e) {
-      throw new OperateRuntimeException(
-          "Exception occurred while quiering DRD data for decision instance id: "
-              + decisionInstanceId);
     }
   }
 }

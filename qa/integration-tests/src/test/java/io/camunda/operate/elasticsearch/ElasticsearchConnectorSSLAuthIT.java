@@ -60,6 +60,13 @@ public class ElasticsearchConnectorSSLAuthIT {
 
   @Autowired RestHighLevelClient zeebeEsClient;
 
+  @Ignore("Can be tested manually")
+  @Test
+  public void canConnect() {
+    assertThat(esClient).isNotNull();
+    assertThat(zeebeEsClient).isNotNull();
+  }
+
   static class ElasticsearchStarter
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -88,12 +95,5 @@ public class ElasticsearchConnectorSSLAuthIT {
               "camunda.operate.zeebeElasticsearch.prefix=zeebe-record")
           .applyTo(applicationContext.getEnvironment());
     }
-  }
-
-  @Ignore("Can be tested manually")
-  @Test
-  public void canConnect() {
-    assertThat(esClient).isNotNull();
-    assertThat(zeebeEsClient).isNotNull();
   }
 }

@@ -68,6 +68,61 @@ public class ElasticsearchStepsRepository extends BaseStepsRepository implements
     this.migrationRepositoryIndex = migrationRepositoryIndex;
   }
 
+  private Step readStepFromFile(final InputStream is) throws IOException {
+    return objectMapper.readValue(is, Step.class);
+  }
+
+  protected String idFromStep(final Step step) {
+    return step.getVersion() + "-" + step.getOrder();
+  }
+
+  @Override
+  public void save(final Step step) throws MigrationException, IOException {
+    final boolean createdOrUpdated =
+        retryElasticsearchClient.createOrUpdateDocument(
+            getName(), idFromStep(step), objectMapper.writeValueAsString(step));
+    if (createdOrUpdated) {
+      logger.info("Step {}  saved.", step);
+    } else {
+      throw new MigrationException(
+          String.format("Error in save step %s:  document wasn't created/updated.", step));
+    }
+  }
+
+  /** Returns all stored steps in repository index */
+  @Override
+  public List<Step> findAll() {
+    logger.debug(
+        "Find all steps from Elasticsearch at {}", operateProperties.getElasticsearch().getUrl());
+    return findBy(Optional.empty());
+  }
+
+  /** Returns all steps for an index that are not applied yet. */
+  @Override
+  public List<Step> findNotAppliedFor(final String indexName) {
+    logger.debug(
+        "Find 'not applied steps' for index {} from Elasticsearch at {} ",
+        indexName,
+        operateProperties.getElasticsearch().getUrl());
+
+    return findBy(
+        Optional.ofNullable(
+            joinWithAnd(
+                termQuery(Step.INDEX_NAME + ".keyword", indexName),
+                termQuery(Step.APPLIED, false))));
+  }
+
+  /** Returns the of repository. It is used as index name for elasticsearch */
+  @Override
+  public String getName() {
+    return migrationRepositoryIndex.getFullQualifiedName();
+  }
+
+  @Override
+  public void refreshIndex() {
+    retryElasticsearchClient.refresh(getName());
+  }
+
   @Override
   public List<Step> readStepsFromClasspath() throws IOException {
     List<Step> steps = new ArrayList<>();
@@ -92,38 +147,6 @@ public class ElasticsearchStepsRepository extends BaseStepsRepository implements
     return steps;
   }
 
-  private Step readStepFromFile(final InputStream is) throws IOException {
-    return objectMapper.readValue(is, Step.class);
-  }
-
-  /** Returns the of repository. It is used as index name for elasticsearch */
-  @Override
-  public String getName() {
-    return migrationRepositoryIndex.getFullQualifiedName();
-  }
-
-  @Override
-  public void refreshIndex() {
-    retryElasticsearchClient.refresh(getName());
-  }
-
-  protected String idFromStep(final Step step) {
-    return step.getVersion() + "-" + step.getOrder();
-  }
-
-  @Override
-  public void save(final Step step) throws MigrationException, IOException {
-    final boolean createdOrUpdated =
-        retryElasticsearchClient.createOrUpdateDocument(
-            getName(), idFromStep(step), objectMapper.writeValueAsString(step));
-    if (createdOrUpdated) {
-      logger.info("Step {}  saved.", step);
-    } else {
-      throw new MigrationException(
-          String.format("Error in save step %s:  document wasn't created/updated.", step));
-    }
-  }
-
   protected List<Step> findBy(final Optional<QueryBuilder> query) {
     final SearchSourceBuilder searchSpec =
         new SearchSourceBuilder().sort(Step.VERSION + ".keyword", SortOrder.ASC);
@@ -133,28 +156,5 @@ public class ElasticsearchStepsRepository extends BaseStepsRepository implements
             .source(searchSpec)
             .indicesOptions(IndicesOptions.lenientExpandOpen());
     return retryElasticsearchClient.searchWithScroll(request, Step.class, objectMapper);
-  }
-
-  /** Returns all stored steps in repository index */
-  @Override
-  public List<Step> findAll() {
-    logger.debug(
-        "Find all steps from Elasticsearch at {}", operateProperties.getElasticsearch().getUrl());
-    return findBy(Optional.empty());
-  }
-
-  /** Returns all steps for an index that are not applied yet. */
-  @Override
-  public List<Step> findNotAppliedFor(final String indexName) {
-    logger.debug(
-        "Find 'not applied steps' for index {} from Elasticsearch at {} ",
-        indexName,
-        operateProperties.getElasticsearch().getUrl());
-
-    return findBy(
-        Optional.ofNullable(
-            joinWithAnd(
-                termQuery(Step.INDEX_NAME + ".keyword", indexName),
-                termQuery(Step.APPLIED, false))));
   }
 }

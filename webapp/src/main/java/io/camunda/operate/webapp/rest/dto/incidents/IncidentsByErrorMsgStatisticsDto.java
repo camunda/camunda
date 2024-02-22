@@ -58,6 +58,14 @@ public class IncidentsByErrorMsgStatisticsDto {
   }
 
   @Override
+  public int hashCode() {
+    int result = errorMessage != null ? errorMessage.hashCode() : 0;
+    result = 31 * result + (int) (instancesWithErrorCount ^ (instancesWithErrorCount >>> 32));
+    result = 31 * result + (processes != null ? processes.hashCode() : 0);
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -68,14 +76,6 @@ public class IncidentsByErrorMsgStatisticsDto {
     if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
       return false;
     return processes != null ? processes.equals(that.processes) : that.processes == null;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = errorMessage != null ? errorMessage.hashCode() : 0;
-    result = 31 * result + (int) (instancesWithErrorCount ^ (instancesWithErrorCount >>> 32));
-    result = 31 * result + (processes != null ? processes.hashCode() : 0);
-    return result;
   }
 
   public static class IncidentsByErrorMsgStatisticsDtoComparator

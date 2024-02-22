@@ -47,15 +47,12 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
 
   private static final Logger logger =
       LoggerFactory.getLogger(OpensearchReindexWithQueryAndScriptPlan.class);
+  private final MigrationProperties migrationProperties;
+  private final RichOpenSearchClient richOpenSearchClient;
   private List<Step> steps = List.of();
   private String srcIndex;
   private String dstIndex;
-
   private String listViewIndexName;
-
-  private final MigrationProperties migrationProperties;
-
-  private final RichOpenSearchClient richOpenSearchClient;
 
   @Autowired
   public OpensearchReindexWithQueryAndScriptPlan(
@@ -74,6 +71,18 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
   @Override
   public ReindexWithQueryAndScriptPlan setDstIndex(String dstIndex) {
     this.dstIndex = dstIndex;
+    return this;
+  }
+
+  @Override
+  public ReindexWithQueryAndScriptPlan setSteps(List<Step> steps) {
+    this.steps = steps;
+    return this;
+  }
+
+  @Override
+  public ReindexWithQueryAndScriptPlan setListViewIndexName(String listViewIndexName) {
+    this.listViewIndexName = listViewIndexName;
     return this;
   }
 
@@ -114,18 +123,6 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
   @Override
   public List<Step> getSteps() {
     return steps;
-  }
-
-  @Override
-  public ReindexWithQueryAndScriptPlan setSteps(List<Step> steps) {
-    this.steps = steps;
-    return this;
-  }
-
-  @Override
-  public ReindexWithQueryAndScriptPlan setListViewIndexName(String listViewIndexName) {
-    this.listViewIndexName = listViewIndexName;
-    return this;
   }
 
   @Override
@@ -175,6 +172,19 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
     }
   }
 
+  @Override
+  public void validateMigrationResults(final SchemaManager schemaManager)
+      throws MigrationException {
+    long srcCount = schemaManager.getNumberOfDocumentsFor(srcIndex + "_*");
+    long dstCount = schemaManager.getNumberOfDocumentsFor(dstIndex + "_*");
+    if (srcCount != dstCount) {
+      throw new MigrationException(
+          String.format(
+              "Exception occurred when migrating %s. Number of documents in source indices: %s, number of documents in destination indices: %s",
+              srcIndex, srcCount, dstCount));
+    }
+  }
+
   private void reindexPart(Set<Long> processInstanceKeys) {
     Map<String, Tuple<String, String>> bpmnProcessIdsMap = getBpmnProcessIds(processInstanceKeys);
     logger.debug(
@@ -197,19 +207,6 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
       reindexRequest.slices((long) migrationProperties.getSlices());
     }
     richOpenSearchClient.index().reindexWithRetries(reindexRequest.build(), false);
-  }
-
-  @Override
-  public void validateMigrationResults(final SchemaManager schemaManager)
-      throws MigrationException {
-    long srcCount = schemaManager.getNumberOfDocumentsFor(srcIndex + "_*");
-    long dstCount = schemaManager.getNumberOfDocumentsFor(dstIndex + "_*");
-    if (srcCount != dstCount) {
-      throw new MigrationException(
-          String.format(
-              "Exception occurred when migrating %s. Number of documents in source indices: %s, number of documents in destination indices: %s",
-              srcIndex, srcCount, dstCount));
-    }
   }
 
   @Override

@@ -44,12 +44,12 @@ public class DeleteProcessInstanceHandler extends AbstractOperationHandler
     completeOperation(operation);
   }
 
-  private void completeOperation(final OperationEntity operation) throws PersistenceException {
-    operationsManager.completeOperation(operation);
-  }
-
   @Override
   public Set<OperationType> getTypes() {
     return Set.of(DELETE_PROCESS_INSTANCE);
+  }
+
+  private void completeOperation(final OperationEntity operation) throws PersistenceException {
+    operationsManager.completeOperation(operation);
   }
 }

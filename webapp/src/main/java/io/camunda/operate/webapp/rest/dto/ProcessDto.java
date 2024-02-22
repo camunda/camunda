@@ -67,6 +67,15 @@ public class ProcessDto implements CreatableFromEntity<ProcessDto, ProcessEntity
   }
 
   @Override
+  public int hashCode() {
+    int result = id != null ? id.hashCode() : 0;
+    result = 31 * result + (name != null ? name.hashCode() : 0);
+    result = 31 * result + version;
+    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -79,14 +88,5 @@ public class ProcessDto implements CreatableFromEntity<ProcessDto, ProcessEntity
     return bpmnProcessId != null
         ? bpmnProcessId.equals(that.bpmnProcessId)
         : that.bpmnProcessId == null;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    result = 31 * result + version;
-    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
-    return result;
   }
 }

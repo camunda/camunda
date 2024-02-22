@@ -67,6 +67,15 @@ public class DecisionDto implements CreatableFromEntity<DecisionDto, DecisionDef
   }
 
   @Override
+  public int hashCode() {
+    int result = id != null ? id.hashCode() : 0;
+    result = 31 * result + (name != null ? name.hashCode() : 0);
+    result = 31 * result + version;
+    result = 31 * result + (decisionId != null ? decisionId.hashCode() : 0);
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -77,14 +86,5 @@ public class DecisionDto implements CreatableFromEntity<DecisionDto, DecisionDef
     if (id != null ? !id.equals(that.id) : that.id != null) return false;
     if (name != null ? !name.equals(that.name) : that.name != null) return false;
     return decisionId != null ? decisionId.equals(that.decisionId) : that.decisionId == null;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    result = 31 * result + version;
-    result = 31 * result + (decisionId != null ? decisionId.hashCode() : 0);
-    return result;
   }
 }

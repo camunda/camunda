@@ -48,11 +48,6 @@ class IdentityServiceTest {
 
   private IdentityService instance;
 
-  @BeforeEach
-  public void setup() {
-    instance = new IdentityService(mockRetryService, operateProperties, identity);
-  }
-
   private static Stream<Arguments> getRedirectUriWhenOperateIdentityRootUrlNotProvidedTestData() {
     return Stream.of(
         of("http", 80, "/some-path", "http://localhost/some-path/identity-callback"),
@@ -65,10 +60,24 @@ class IdentityServiceTest {
             "https://localhost:9999/identity-callback?uuid=899f3de9-b907-4b7f-9fb7-6925bb5b0a0e"));
   }
 
+  private static Stream<Arguments> getRedirectUriWhenOperateIdentityRootUrlProvidedTestData() {
+    return Stream.of(
+        of("https://localhost", "", "https://localhost/identity-callback"),
+        of(
+            "http://localhost:8123",
+            "/test-path",
+            "http://localhost:8123/test-path/identity-callback"));
+  }
+
+  @BeforeEach
+  public void setup() {
+    instance = new IdentityService(mockRetryService, operateProperties, identity);
+  }
+
   @ParameterizedTest
   @MethodSource("getRedirectUriWhenOperateIdentityRootUrlNotProvidedTestData")
   void getRedirectUriWhenOperateIdentityRootUrlNotProvided(
-      String scheme, int port, String path, String expected) {
+      final String scheme, final int port, final String path, final String expected) {
     // given
     final var req = mock(HttpServletRequest.class);
     when(req.getScheme()).thenReturn(scheme);
@@ -83,19 +92,10 @@ class IdentityServiceTest {
     assertThat(result).isEqualTo(expected);
   }
 
-  private static Stream<Arguments> getRedirectUriWhenOperateIdentityRootUrlProvidedTestData() {
-    return Stream.of(
-        of("https://localhost", "", "https://localhost/identity-callback"),
-        of(
-            "http://localhost:8123",
-            "/test-path",
-            "http://localhost:8123/test-path/identity-callback"));
-  }
-
   @ParameterizedTest
   @MethodSource("getRedirectUriWhenOperateIdentityRootUrlProvidedTestData")
   void getRedirectUriWhenOperateIdentityRootUrlProvided(
-      String identityRedirectRootUrl, String path, String expected) {
+      final String identityRedirectRootUrl, final String path, final String expected) {
     // given
     final var identityProperties = new IdentityProperties();
     identityProperties.setRedirectRootUrl(identityRedirectRootUrl);
@@ -116,13 +116,13 @@ class IdentityServiceTest {
 
   @Test
   public void testGetRedirectUrlWithRedirectRootUrlSet() throws URISyntaxException {
-    String expectedRedirectUrl = "http://localhost:9876";
+    final String expectedRedirectUrl = "http://localhost:9876";
 
-    var mockAuthentication = Mockito.mock(Authentication.class);
-    var mockAuthorizeBuilder = Mockito.mock(AuthorizeUriBuilder.class);
-    var mockRequest = mock(HttpServletRequest.class);
+    final var mockAuthentication = Mockito.mock(Authentication.class);
+    final var mockAuthorizeBuilder = Mockito.mock(AuthorizeUriBuilder.class);
+    final var mockRequest = mock(HttpServletRequest.class);
 
-    var identityProperties = new IdentityProperties();
+    final var identityProperties = new IdentityProperties();
     identityProperties.setRedirectRootUrl("http://localhost");
 
     when(mockRequest.getContextPath()).thenReturn("/test-path");
@@ -131,7 +131,7 @@ class IdentityServiceTest {
     when(mockAuthentication.authorizeUriBuilder(any())).thenReturn(mockAuthorizeBuilder);
     when(mockAuthorizeBuilder.build()).thenReturn(new URI(expectedRedirectUrl));
 
-    String redirectUrl = instance.getRedirectUrl(mockRequest);
+    final String redirectUrl = instance.getRedirectUrl(mockRequest);
 
     // Verify that the redirect url is based on the root url specified in identity properties
     assertThat(redirectUrl).isEqualTo(expectedRedirectUrl);
@@ -143,9 +143,9 @@ class IdentityServiceTest {
 
   @Test
   public void testGetRedirectUrlWithRedirectRootUrlNotSet() {
-    var mockAuthentication = Mockito.mock(Authentication.class);
-    var mockAuthorizeBuilder = Mockito.mock(AuthorizeUriBuilder.class);
-    var mockRequest = mock(HttpServletRequest.class);
+    final var mockAuthentication = Mockito.mock(Authentication.class);
+    final var mockAuthorizeBuilder = Mockito.mock(AuthorizeUriBuilder.class);
+    final var mockRequest = mock(HttpServletRequest.class);
 
     when(mockRequest.getScheme()).thenReturn("http");
     when(mockRequest.getServerName()).thenReturn("localhost");
@@ -156,7 +156,7 @@ class IdentityServiceTest {
     when(identity.authentication()).thenReturn(mockAuthentication);
 
     // Capture the dynamically-built redirect string passed to the builder
-    StringBuilder dynamicRedirectUrl = new StringBuilder();
+    final StringBuilder dynamicRedirectUrl = new StringBuilder();
     when(mockAuthentication.authorizeUriBuilder(any()))
         .thenAnswer(
             (Answer<AuthorizeUriBuilder>)
@@ -167,7 +167,7 @@ class IdentityServiceTest {
     when(mockAuthorizeBuilder.build())
         .thenAnswer((Answer<URI>) invocationOnMock -> new URI(dynamicRedirectUrl.toString()));
 
-    String redirectUrl = instance.getRedirectUrl(mockRequest);
+    final String redirectUrl = instance.getRedirectUrl(mockRequest);
 
     // Validate that the redirect URI was built based off the request
     assertThat(redirectUrl).isEqualTo("http://localhost:8132/test-path/identity-callback");
@@ -179,10 +179,10 @@ class IdentityServiceTest {
 
   @Test
   public void testLogout() {
-    var mockIdentityAuthentication = Mockito.mock(IdentityAuthentication.class);
-    var mockTokens = Mockito.mock(Tokens.class);
-    var refreshToken = "refreshToken";
-    var mockAuthentication = Mockito.mock(Authentication.class);
+    final var mockIdentityAuthentication = Mockito.mock(IdentityAuthentication.class);
+    final var mockTokens = Mockito.mock(Tokens.class);
+    final var refreshToken = "refreshToken";
+    final var mockAuthentication = Mockito.mock(Authentication.class);
 
     SecurityContextHolder.getContext().setAuthentication(mockIdentityAuthentication);
     when(mockIdentityAuthentication.getTokens()).thenReturn(mockTokens);

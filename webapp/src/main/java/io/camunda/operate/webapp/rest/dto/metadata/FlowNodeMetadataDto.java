@@ -109,6 +109,19 @@ public class FlowNodeMetadataDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        flowNodeInstanceId,
+        flowNodeId,
+        flowNodeType,
+        instanceCount,
+        breadcrumb,
+        instanceMetadata,
+        incidentCount,
+        incident);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -125,19 +138,6 @@ public class FlowNodeMetadataDto {
         && Objects.equals(instanceMetadata, that.instanceMetadata)
         && Objects.equals(incidentCount, that.incidentCount)
         && Objects.equals(incident, that.incident);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        flowNodeInstanceId,
-        flowNodeId,
-        flowNodeType,
-        instanceCount,
-        breadcrumb,
-        instanceMetadata,
-        incidentCount,
-        incident);
   }
 
   @Override

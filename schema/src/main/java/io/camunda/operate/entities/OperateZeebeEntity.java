@@ -12,9 +12,17 @@ public abstract class OperateZeebeEntity<T extends OperateZeebeEntity<T>> extend
 
   private int partitionId;
 
+  public long getKey() {
+    return key;
+  }
+
   public T setKey(long key) {
     this.key = key;
     return (T) this;
+  }
+
+  public int getPartitionId() {
+    return partitionId;
   }
 
   public T setPartitionId(int partitionId) {
@@ -22,12 +30,12 @@ public abstract class OperateZeebeEntity<T extends OperateZeebeEntity<T>> extend
     return (T) this;
   }
 
-  public long getKey() {
-    return key;
-  }
-
-  public int getPartitionId() {
-    return partitionId;
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + (int) (key ^ (key >>> 32));
+    result = 31 * result + partitionId;
+    return result;
   }
 
   @Override
@@ -40,13 +48,5 @@ public abstract class OperateZeebeEntity<T extends OperateZeebeEntity<T>> extend
 
     if (key != that.key) return false;
     return partitionId == that.partitionId;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (int) (key ^ (key >>> 32));
-    result = 31 * result + partitionId;
-    return result;
   }
 }

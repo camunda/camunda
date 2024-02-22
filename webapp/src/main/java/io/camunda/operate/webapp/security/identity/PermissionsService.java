@@ -270,16 +270,16 @@ public class PermissionsService {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(all, ids);
+    }
+
+    @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       ResourcesAllowed that = (ResourcesAllowed) o;
       return all == that.all && Objects.equals(ids, that.ids);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(all, ids);
     }
 
     /**

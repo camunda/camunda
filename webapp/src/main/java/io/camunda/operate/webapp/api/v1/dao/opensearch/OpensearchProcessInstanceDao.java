@@ -69,11 +69,6 @@ public class OpensearchProcessInstanceDao
   }
 
   @Override
-  protected String getKeyFieldName() {
-    return ProcessInstance.KEY;
-  }
-
-  @Override
   protected Class<ProcessInstance> getInternalDocumentModelClass() {
     return ProcessInstance.class;
   }
@@ -81,57 +76,6 @@ public class OpensearchProcessInstanceDao
   @Override
   protected String getIndexName() {
     return processInstanceIndex.getAlias();
-  }
-
-  @Override
-  protected String getByKeyServerReadErrorMessage(Long key) {
-    return String.format("Error in reading process instance for key %s", key);
-  }
-
-  @Override
-  protected String getByKeyNoResultsErrorMessage(Long key) {
-    return String.format("No process instances found for key %s", key);
-  }
-
-  @Override
-  protected String getByKeyTooManyResultsErrorMessage(Long key) {
-    return String.format("Found more than one process instances for key %s", key);
-  }
-
-  @Override
-  @PreAuthorize("hasPermission('write')")
-  public ChangeStatus delete(Long key) throws APIException {
-    // Check for not exists
-    byKey(key);
-    try {
-      processInstanceWriter.deleteInstanceById(key);
-      return new ChangeStatus()
-          .setDeleted(1)
-          .setMessage(
-              String.format("Process instance and dependant data deleted for key '%s'", key));
-    } catch (IllegalArgumentException iae) {
-      throw new ClientException(iae.getMessage(), iae);
-    } catch (Exception e) {
-      throw new ServerException(
-          String.format("Error in deleting process instance and dependant data for key '%s'", key),
-          e);
-    }
-  }
-
-  @Override
-  protected List<ProcessInstance> searchByKey(Long key) {
-    List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
-    queryTerms.add(
-        queryDSLWrapper.term(
-            ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
-    queryTerms.add(queryDSLWrapper.term(getKeyFieldName(), key));
-
-    SearchRequest.Builder request =
-        requestDSLWrapper
-            .searchRequestBuilder(getIndexName())
-            .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.and(queryTerms)));
-
-    return richOpenSearchClient.doc().searchValues(request, getInternalDocumentModelClass());
   }
 
   @Override
@@ -189,5 +133,61 @@ public class OpensearchProcessInstanceDao
       }
     }
     return internalResult;
+  }
+
+  @Override
+  @PreAuthorize("hasPermission('write')")
+  public ChangeStatus delete(Long key) throws APIException {
+    // Check for not exists
+    byKey(key);
+    try {
+      processInstanceWriter.deleteInstanceById(key);
+      return new ChangeStatus()
+          .setDeleted(1)
+          .setMessage(
+              String.format("Process instance and dependant data deleted for key '%s'", key));
+    } catch (IllegalArgumentException iae) {
+      throw new ClientException(iae.getMessage(), iae);
+    } catch (Exception e) {
+      throw new ServerException(
+          String.format("Error in deleting process instance and dependant data for key '%s'", key),
+          e);
+    }
+  }
+
+  @Override
+  protected List<ProcessInstance> searchByKey(Long key) {
+    List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
+    queryTerms.add(
+        queryDSLWrapper.term(
+            ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
+    queryTerms.add(queryDSLWrapper.term(getKeyFieldName(), key));
+
+    SearchRequest.Builder request =
+        requestDSLWrapper
+            .searchRequestBuilder(getIndexName())
+            .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.and(queryTerms)));
+
+    return richOpenSearchClient.doc().searchValues(request, getInternalDocumentModelClass());
+  }
+
+  @Override
+  protected String getKeyFieldName() {
+    return ProcessInstance.KEY;
+  }
+
+  @Override
+  protected String getByKeyServerReadErrorMessage(Long key) {
+    return String.format("Error in reading process instance for key %s", key);
+  }
+
+  @Override
+  protected String getByKeyNoResultsErrorMessage(Long key) {
+    return String.format("No process instances found for key %s", key);
+  }
+
+  @Override
+  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+    return String.format("Found more than one process instances for key %s", key);
   }
 }

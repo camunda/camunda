@@ -64,28 +64,19 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
 
   public static final String PROCESS_INSTANCE_URL = "/api/process-instances";
 
-  @Autowired private BatchOperationWriter batchOperationWriter;
-
-  @Autowired private ProcessInstanceReader processInstanceReader;
-
-  @Autowired private ListViewReader listViewReader;
-
-  @Autowired private FlowNodeStatisticsReader flowNodeStatisticsReader;
-
-  @Autowired private IncidentReader incidentReader;
-
-  @Autowired private VariableReader variableReader;
-
-  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
-
-  @Autowired private SequenceFlowStore sequenceFlowStore;
-
-  @Autowired private OperationReader operationReader;
-
-  @Autowired private ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
-
   @Autowired(required = false)
   protected PermissionsService permissionsService;
+
+  @Autowired private BatchOperationWriter batchOperationWriter;
+  @Autowired private ProcessInstanceReader processInstanceReader;
+  @Autowired private ListViewReader listViewReader;
+  @Autowired private FlowNodeStatisticsReader flowNodeStatisticsReader;
+  @Autowired private IncidentReader incidentReader;
+  @Autowired private VariableReader variableReader;
+  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
+  @Autowired private SequenceFlowStore sequenceFlowStore;
+  @Autowired private OperationReader operationReader;
+  @Autowired private ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
 
   @Operation(summary = "Query process instances by different parameters")
   @PostMapping

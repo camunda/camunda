@@ -32,24 +32,6 @@ public class SortValuesWrapper implements Serializable {
     this.valueType = valueType;
   }
 
-  public Object getValue() {
-    return value;
-  }
-
-  public SortValuesWrapper setValue(String value) {
-    this.value = value;
-    return this;
-  }
-
-  public Class getValueType() {
-    return valueType;
-  }
-
-  public SortValuesWrapper setValueType(Class valueType) {
-    this.valueType = valueType;
-    return this;
-  }
-
   public static SortValuesWrapper[] createFrom(Object[] sortValues, ObjectMapper objectMapper) {
     if (sortValues == null) {
       return null;
@@ -85,16 +67,34 @@ public class SortValuesWrapper implements Serializable {
     }
   }
 
+  public Object getValue() {
+    return value;
+  }
+
+  public SortValuesWrapper setValue(String value) {
+    this.value = value;
+    return this;
+  }
+
+  public Class getValueType() {
+    return valueType;
+  }
+
+  public SortValuesWrapper setValueType(Class valueType) {
+    this.valueType = valueType;
+    return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value, valueType);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     SortValuesWrapper that = (SortValuesWrapper) o;
     return Objects.equals(value, that.value) && Objects.equals(valueType, that.valueType);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(value, valueType);
   }
 }

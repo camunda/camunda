@@ -43,11 +43,6 @@ public class DecisionDefinitionController extends ErrorController
     implements SearchController<DecisionDefinition> {
 
   public static final String URI = "/v1/decision-definitions";
-
-  @Autowired private DecisionDefinitionDao decisionDefinitionDao;
-
-  private final QueryValidator<DecisionDefinition> queryValidator = new QueryValidator<>();
-
   private static final QueryValidator.CustomQueryValidator<DecisionDefinition> searchSortValidator =
       query -> {
         List<Query.Sort> sorts = query.getSort();
@@ -62,40 +57,8 @@ public class DecisionDefinitionController extends ErrorController
           }
         }
       };
-
-  @Operation(
-      summary = "Get decision definition by key",
-      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
-      responses = {
-        @ApiResponse(description = "Success", responseCode = "200"),
-        @ApiResponse(
-            description = ServerException.TYPE,
-            responseCode = "500",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class))),
-        @ApiResponse(
-            description = ClientException.TYPE,
-            responseCode = "400",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class))),
-        @ApiResponse(
-            description = ResourceNotFoundException.TYPE,
-            responseCode = "404",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class)))
-      })
-  @Override
-  public DecisionDefinition byKey(
-      @Parameter(description = "Key of decision definition", required = true) @PathVariable
-          final Long key) {
-    return decisionDefinitionDao.byKey(key);
-  }
+  private final QueryValidator<DecisionDefinition> queryValidator = new QueryValidator<>();
+  @Autowired private DecisionDefinitionDao decisionDefinitionDao;
 
   @Operation(
       summary = "Search decision definitions",
@@ -173,5 +136,39 @@ public class DecisionDefinitionController extends ErrorController
   public Results<DecisionDefinition> search(@RequestBody final Query<DecisionDefinition> query) {
     queryValidator.validate(query, DecisionDefinition.class, searchSortValidator);
     return decisionDefinitionDao.search(query);
+  }
+
+  @Operation(
+      summary = "Get decision definition by key",
+      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
+      responses = {
+        @ApiResponse(description = "Success", responseCode = "200"),
+        @ApiResponse(
+            description = ServerException.TYPE,
+            responseCode = "500",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ClientException.TYPE,
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ResourceNotFoundException.TYPE,
+            responseCode = "404",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
+      })
+  @Override
+  public DecisionDefinition byKey(
+      @Parameter(description = "Key of decision definition", required = true) @PathVariable
+          final Long key) {
+    return decisionDefinitionDao.byKey(key);
   }
 }

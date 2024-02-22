@@ -112,6 +112,19 @@ public class IncidentByProcessStatisticsDto implements Comparable<IncidentByProc
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        processId,
+        version,
+        name,
+        bpmnProcessId,
+        tenantId,
+        errorMessage,
+        instancesWithActiveIncidentsCount,
+        activeInstancesCount);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -124,19 +137,6 @@ public class IncidentByProcessStatisticsDto implements Comparable<IncidentByProc
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(errorMessage, that.errorMessage);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        processId,
-        version,
-        name,
-        bpmnProcessId,
-        tenantId,
-        errorMessage,
-        instancesWithActiveIncidentsCount,
-        activeInstancesCount);
   }
 
   @Override

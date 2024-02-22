@@ -74,6 +74,11 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
             "Operation [%s]: Deleted %s decision requirements", operation.getId(), deleted));
   }
 
+  @Override
+  public Set<OperationType> getTypes() {
+    return Set.of(OperationType.DELETE_DECISION_DEFINITION);
+  }
+
   private void completeOperation(final OperationEntity operation) throws PersistenceException {
     operationsManager.completeOperation(operation);
   }
@@ -81,10 +86,5 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
   private void updateInstancesInBatchOperation(final OperationEntity operation, long increment)
       throws PersistenceException {
     operationsManager.updateInstancesInBatchOperation(operation.getBatchOperationId(), increment);
-  }
-
-  @Override
-  public Set<OperationType> getTypes() {
-    return Set.of(OperationType.DELETE_DECISION_DEFINITION);
   }
 }

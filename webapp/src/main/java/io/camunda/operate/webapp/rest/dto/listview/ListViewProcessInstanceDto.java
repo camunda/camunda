@@ -56,6 +56,103 @@ public class ListViewProcessInstanceDto {
 
   private Set<String> permissions;
 
+  public static ListViewProcessInstanceDto createFrom(
+      ProcessInstanceForListViewEntity processInstanceEntity,
+      List<OperationEntity> operations,
+      ObjectMapper objectMapper) {
+    return createFrom(processInstanceEntity, operations, null, null, objectMapper);
+  }
+
+  public static ListViewProcessInstanceDto createFrom(
+      ProcessInstanceForListViewEntity processInstanceEntity,
+      List<OperationEntity> operations,
+      List<ProcessInstanceReferenceDto> callHierarchy,
+      ObjectMapper objectMapper) {
+    return createFrom(processInstanceEntity, operations, callHierarchy, null, objectMapper);
+  }
+
+  public static ListViewProcessInstanceDto createFrom(
+      ProcessInstanceForListViewEntity processInstanceEntity,
+      List<OperationEntity> operations,
+      List<ProcessInstanceReferenceDto> callHierarchy,
+      PermissionsService permissionsService,
+      ObjectMapper objectMapper) {
+    if (processInstanceEntity == null) {
+      return null;
+    }
+    ListViewProcessInstanceDto processInstance = new ListViewProcessInstanceDto();
+    processInstance
+        .setId(processInstanceEntity.getId())
+        .setStartDate(processInstanceEntity.getStartDate())
+        .setEndDate(processInstanceEntity.getEndDate());
+    if (processInstanceEntity.getState() == ProcessInstanceState.ACTIVE
+        && processInstanceEntity.isIncident()) {
+      processInstance.setState(ProcessInstanceStateDto.INCIDENT);
+    } else {
+      processInstance.setState(ProcessInstanceStateDto.getState(processInstanceEntity.getState()));
+    }
+
+    processInstance
+        .setProcessId(
+            ConversionUtils.toStringOrNull(processInstanceEntity.getProcessDefinitionKey()))
+        .setBpmnProcessId(processInstanceEntity.getBpmnProcessId())
+        .setProcessName(processInstanceEntity.getProcessName())
+        .setProcessVersion(processInstanceEntity.getProcessVersion())
+        .setOperations(DtoCreator.create(operations, OperationDto.class))
+        .setTenantId(processInstanceEntity.getTenantId());
+    if (operations != null) {
+      processInstance.setHasActiveOperation(
+          operations.stream()
+              .anyMatch(
+                  o ->
+                      o.getState().equals(OperationState.SCHEDULED)
+                          || o.getState().equals(OperationState.LOCKED)
+                          || o.getState().equals(OperationState.SENT)));
+    }
+    if (processInstanceEntity.getParentProcessInstanceKey() != null) {
+      processInstance.setParentInstanceId(
+          String.valueOf(processInstanceEntity.getParentProcessInstanceKey()));
+    }
+    // convert to String[]
+    if (processInstanceEntity.getSortValues() != null) {
+      processInstance.setSortValues(
+          SortValuesWrapper.createFrom(processInstanceEntity.getSortValues(), objectMapper));
+    }
+
+    if (processInstanceEntity.getTreePath() != null) {
+      final String rootInstanceId =
+          new TreePath(processInstanceEntity.getTreePath()).extractRootInstanceId();
+      if (!processInstanceEntity.getId().equals(rootInstanceId)) {
+        processInstance.setRootInstanceId(rootInstanceId);
+      }
+    }
+    processInstance.setCallHierarchy(callHierarchy);
+    processInstance.setPermissions(
+        permissionsService == null
+            ? new HashSet<>()
+            : permissionsService.getProcessDefinitionPermission(
+                processInstanceEntity.getBpmnProcessId()));
+    return processInstance;
+  }
+
+  public static List<ListViewProcessInstanceDto> createFrom(
+      List<ProcessInstanceForListViewEntity> processInstanceEntities,
+      Map<Long, List<OperationEntity>> operationsPerProcessInstance,
+      ObjectMapper objectMapper) {
+    if (processInstanceEntities == null) {
+      return new ArrayList<>();
+    }
+    return processInstanceEntities.stream()
+        .filter(item -> item != null)
+        .map(
+            item ->
+                createFrom(
+                    item,
+                    operationsPerProcessInstance.get(item.getProcessInstanceKey()),
+                    objectMapper))
+        .collect(Collectors.toList());
+  }
+
   public String getId() {
     return id;
   }
@@ -200,101 +297,27 @@ public class ListViewProcessInstanceDto {
     this.permissions = permissions;
   }
 
-  public static ListViewProcessInstanceDto createFrom(
-      ProcessInstanceForListViewEntity processInstanceEntity,
-      List<OperationEntity> operations,
-      ObjectMapper objectMapper) {
-    return createFrom(processInstanceEntity, operations, null, null, objectMapper);
-  }
-
-  public static ListViewProcessInstanceDto createFrom(
-      ProcessInstanceForListViewEntity processInstanceEntity,
-      List<OperationEntity> operations,
-      List<ProcessInstanceReferenceDto> callHierarchy,
-      ObjectMapper objectMapper) {
-    return createFrom(processInstanceEntity, operations, callHierarchy, null, objectMapper);
-  }
-
-  public static ListViewProcessInstanceDto createFrom(
-      ProcessInstanceForListViewEntity processInstanceEntity,
-      List<OperationEntity> operations,
-      List<ProcessInstanceReferenceDto> callHierarchy,
-      PermissionsService permissionsService,
-      ObjectMapper objectMapper) {
-    if (processInstanceEntity == null) {
-      return null;
-    }
-    ListViewProcessInstanceDto processInstance = new ListViewProcessInstanceDto();
-    processInstance
-        .setId(processInstanceEntity.getId())
-        .setStartDate(processInstanceEntity.getStartDate())
-        .setEndDate(processInstanceEntity.getEndDate());
-    if (processInstanceEntity.getState() == ProcessInstanceState.ACTIVE
-        && processInstanceEntity.isIncident()) {
-      processInstance.setState(ProcessInstanceStateDto.INCIDENT);
-    } else {
-      processInstance.setState(ProcessInstanceStateDto.getState(processInstanceEntity.getState()));
-    }
-
-    processInstance
-        .setProcessId(
-            ConversionUtils.toStringOrNull(processInstanceEntity.getProcessDefinitionKey()))
-        .setBpmnProcessId(processInstanceEntity.getBpmnProcessId())
-        .setProcessName(processInstanceEntity.getProcessName())
-        .setProcessVersion(processInstanceEntity.getProcessVersion())
-        .setOperations(DtoCreator.create(operations, OperationDto.class))
-        .setTenantId(processInstanceEntity.getTenantId());
-    if (operations != null) {
-      processInstance.setHasActiveOperation(
-          operations.stream()
-              .anyMatch(
-                  o ->
-                      o.getState().equals(OperationState.SCHEDULED)
-                          || o.getState().equals(OperationState.LOCKED)
-                          || o.getState().equals(OperationState.SENT)));
-    }
-    if (processInstanceEntity.getParentProcessInstanceKey() != null) {
-      processInstance.setParentInstanceId(
-          String.valueOf(processInstanceEntity.getParentProcessInstanceKey()));
-    }
-    // convert to String[]
-    if (processInstanceEntity.getSortValues() != null) {
-      processInstance.setSortValues(
-          SortValuesWrapper.createFrom(processInstanceEntity.getSortValues(), objectMapper));
-    }
-
-    if (processInstanceEntity.getTreePath() != null) {
-      final String rootInstanceId =
-          new TreePath(processInstanceEntity.getTreePath()).extractRootInstanceId();
-      if (!processInstanceEntity.getId().equals(rootInstanceId)) {
-        processInstance.setRootInstanceId(rootInstanceId);
-      }
-    }
-    processInstance.setCallHierarchy(callHierarchy);
-    processInstance.setPermissions(
-        permissionsService == null
-            ? new HashSet<>()
-            : permissionsService.getProcessDefinitionPermission(
-                processInstanceEntity.getBpmnProcessId()));
-    return processInstance;
-  }
-
-  public static List<ListViewProcessInstanceDto> createFrom(
-      List<ProcessInstanceForListViewEntity> processInstanceEntities,
-      Map<Long, List<OperationEntity>> operationsPerProcessInstance,
-      ObjectMapper objectMapper) {
-    if (processInstanceEntities == null) {
-      return new ArrayList<>();
-    }
-    return processInstanceEntities.stream()
-        .filter(item -> item != null)
-        .map(
-            item ->
-                createFrom(
-                    item,
-                    operationsPerProcessInstance.get(item.getProcessInstanceKey()),
-                    objectMapper))
-        .collect(Collectors.toList());
+  @Override
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            id,
+            processId,
+            processName,
+            processVersion,
+            startDate,
+            endDate,
+            state,
+            bpmnProcessId,
+            hasActiveOperation,
+            operations,
+            parentInstanceId,
+            rootInstanceId,
+            callHierarchy,
+            tenantId,
+            permissions);
+    result = 31 * result + Arrays.hashCode(sortValues);
+    return result;
   }
 
   @Override
@@ -318,29 +341,6 @@ public class ListViewProcessInstanceDto {
         && Objects.equals(tenantId, that.tenantId)
         && Arrays.equals(sortValues, that.sortValues)
         && Objects.equals(permissions, that.permissions);
-  }
-
-  @Override
-  public int hashCode() {
-    int result =
-        Objects.hash(
-            id,
-            processId,
-            processName,
-            processVersion,
-            startDate,
-            endDate,
-            state,
-            bpmnProcessId,
-            hasActiveOperation,
-            operations,
-            parentInstanceId,
-            rootInstanceId,
-            callHierarchy,
-            tenantId,
-            permissions);
-    result = 31 * result + Arrays.hashCode(sortValues);
-    return result;
   }
 
   @Override

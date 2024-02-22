@@ -70,30 +70,30 @@ public class EventZeebeRecordProcessor {
   @Autowired private EventTemplate eventTemplate;
 
   public void processIncidentRecords(
-      Map<Long, List<Record<IncidentRecordValue>>> records, BatchRequest batchRequest)
+      final Map<Long, List<Record<IncidentRecordValue>>> records, final BatchRequest batchRequest)
       throws PersistenceException {
-    for (List<Record<IncidentRecordValue>> incidentRecords : records.values()) {
+    for (final List<Record<IncidentRecordValue>> incidentRecords : records.values()) {
       processLastRecord(
           incidentRecords,
           INCIDENT_EVENTS,
           rethrowConsumer(
               record -> {
-                IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
+                final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
                 processIncident(record, recordValue, batchRequest);
               }));
     }
   }
 
   public void processJobRecords(
-      Map<Long, List<Record<JobRecordValue>>> records, BatchRequest batchRequest)
+      final Map<Long, List<Record<JobRecordValue>>> records, final BatchRequest batchRequest)
       throws PersistenceException {
-    for (List<Record<JobRecordValue>> jobRecords : records.values()) {
+    for (final List<Record<JobRecordValue>> jobRecords : records.values()) {
       processLastRecord(
           jobRecords,
           JOB_EVENTS,
           rethrowConsumer(
               record -> {
-                JobRecordValue recordValue = (JobRecordValue) record.getValue();
+                final JobRecordValue recordValue = (JobRecordValue) record.getValue();
                 processJob(record, recordValue, batchRequest);
               }));
     }
@@ -103,13 +103,13 @@ public class EventZeebeRecordProcessor {
       final Map<Long, List<Record<ProcessMessageSubscriptionRecordValue>>> records,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    for (List<Record<ProcessMessageSubscriptionRecordValue>> pmsRecords : records.values()) {
+    for (final List<Record<ProcessMessageSubscriptionRecordValue>> pmsRecords : records.values()) {
       processLastRecord(
           pmsRecords,
           PROCESS_MESSAGE_SUBSCRIPTION_STATES,
           rethrowConsumer(
               record -> {
-                ProcessMessageSubscriptionRecordValue recordValue =
+                final ProcessMessageSubscriptionRecordValue recordValue =
                     (ProcessMessageSubscriptionRecordValue) record.getValue();
                 processMessage(record, recordValue, batchRequest);
               }));
@@ -117,15 +117,16 @@ public class EventZeebeRecordProcessor {
   }
 
   public void processProcessInstanceRecords(
-      Map<Long, List<Record<ProcessInstanceRecordValue>>> records, BatchRequest batchRequest)
+      final Map<Long, List<Record<ProcessInstanceRecordValue>>> records,
+      final BatchRequest batchRequest)
       throws PersistenceException {
-    for (List<Record<ProcessInstanceRecordValue>> piRecords : records.values()) {
+    for (final List<Record<ProcessInstanceRecordValue>> piRecords : records.values()) {
       processLastRecord(
           piRecords,
           PROCESS_INSTANCE_STATES,
           rethrowConsumer(
               record -> {
-                ProcessInstanceRecordValue recordValue =
+                final ProcessInstanceRecordValue recordValue =
                     (ProcessInstanceRecordValue) record.getValue();
                 processProcessInstance(record, recordValue, batchRequest);
               }));
@@ -148,10 +149,12 @@ public class EventZeebeRecordProcessor {
   }
 
   private void processProcessInstance(
-      Record record, ProcessInstanceRecordValue recordValue, BatchRequest batchRequest)
+      final Record record,
+      final ProcessInstanceRecordValue recordValue,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     if (!isProcessEvent(recordValue)) { // we do not need to store process level events
-      EventEntity eventEntity =
+      final EventEntity eventEntity =
           new EventEntity()
               .setId(
                   String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), record.getKey()));
@@ -181,7 +184,7 @@ public class EventZeebeRecordProcessor {
       final ProcessMessageSubscriptionRecordValue recordValue,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    EventEntity eventEntity =
+    final EventEntity eventEntity =
         new EventEntity()
             .setId(
                 String.format(
@@ -206,7 +209,7 @@ public class EventZeebeRecordProcessor {
       eventEntity.setFlowNodeInstanceKey(activityInstanceKey);
     }
 
-    EventMetadataEntity eventMetadata = new EventMetadataEntity();
+    final EventMetadataEntity eventMetadata = new EventMetadataEntity();
     eventMetadata.setMessageName(recordValue.getMessageName());
     eventMetadata.setCorrelationKey(recordValue.getCorrelationKey());
 
@@ -215,9 +218,10 @@ public class EventZeebeRecordProcessor {
     persistEvent(eventEntity, record.getPosition(), batchRequest);
   }
 
-  private void processJob(Record record, JobRecordValue recordValue, BatchRequest batchRequest)
+  private void processJob(
+      final Record record, final JobRecordValue recordValue, final BatchRequest batchRequest)
       throws PersistenceException {
-    EventEntity eventEntity =
+    final EventEntity eventEntity =
         new EventEntity()
             .setId(
                 String.format(
@@ -247,7 +251,7 @@ public class EventZeebeRecordProcessor {
       eventEntity.setFlowNodeInstanceKey(activityInstanceKey);
     }
 
-    EventMetadataEntity eventMetadata = new EventMetadataEntity();
+    final EventMetadataEntity eventMetadata = new EventMetadataEntity();
     eventMetadata.setJobType(recordValue.getType());
     eventMetadata.setJobRetries(recordValue.getRetries());
     eventMetadata.setJobWorker(recordValue.getWorker());
@@ -257,7 +261,7 @@ public class EventZeebeRecordProcessor {
       eventMetadata.setJobKey(record.getKey());
     }
 
-    long jobDeadline = recordValue.getDeadline();
+    final long jobDeadline = recordValue.getDeadline();
     if (jobDeadline >= 0) {
       eventMetadata.setJobDeadline(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(jobDeadline)));
     }
@@ -268,9 +272,9 @@ public class EventZeebeRecordProcessor {
   }
 
   private void processIncident(
-      Record record, IncidentRecordValue recordValue, BatchRequest batchRequest)
+      final Record record, final IncidentRecordValue recordValue, final BatchRequest batchRequest)
       throws PersistenceException {
-    EventEntity eventEntity =
+    final EventEntity eventEntity =
         new EventEntity()
             .setId(
                 String.format(
@@ -290,7 +294,7 @@ public class EventZeebeRecordProcessor {
       eventEntity.setFlowNodeInstanceKey(recordValue.getElementInstanceKey());
     }
 
-    EventMetadataEntity eventMetadata = new EventMetadataEntity();
+    final EventMetadataEntity eventMetadata = new EventMetadataEntity();
     eventMetadata.setIncidentErrorMessage(
         StringUtils.trimWhitespace(recordValue.getErrorMessage()));
     eventMetadata.setIncidentErrorType(
@@ -301,11 +305,12 @@ public class EventZeebeRecordProcessor {
     persistEvent(eventEntity, record.getPosition(), batchRequest);
   }
 
-  private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
+  private boolean isProcessEvent(final ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
 
-  private boolean isOfType(ProcessInstanceRecordValue recordValue, BpmnElementType type) {
+  private boolean isOfType(
+      final ProcessInstanceRecordValue recordValue, final BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;
@@ -313,7 +318,7 @@ public class EventZeebeRecordProcessor {
     return bpmnElementType.equals(type);
   }
 
-  private void loadEventGeneralData(Record record, EventEntity eventEntity) {
+  private void loadEventGeneralData(final Record record, final EventEntity eventEntity) {
     eventEntity.setKey(record.getKey());
     eventEntity.setPartitionId(record.getPartitionId());
     eventEntity.setEventSourceType(
@@ -323,7 +328,8 @@ public class EventZeebeRecordProcessor {
     eventEntity.setEventType(EventType.fromZeebeIntent(record.getIntent().name()));
   }
 
-  private void persistEvent(EventEntity entity, long position, BatchRequest batchRequest)
+  private void persistEvent(
+      final EventEntity entity, final long position, final BatchRequest batchRequest)
       throws PersistenceException {
     logger.debug(
         "Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}",
@@ -331,7 +337,7 @@ public class EventZeebeRecordProcessor {
         entity.getEventSourceType(),
         entity.getEventType(),
         entity.getProcessInstanceKey());
-    Map<String, Object> jsonMap = new HashMap<>();
+    final Map<String, Object> jsonMap = new HashMap<>();
     jsonMap.put(EventTemplate.KEY, entity.getKey());
     jsonMap.put(EventTemplate.EVENT_SOURCE_TYPE, entity.getEventSourceType());
     jsonMap.put(EventTemplate.EVENT_TYPE, entity.getEventType());
@@ -340,7 +346,7 @@ public class EventZeebeRecordProcessor {
     jsonMap.put(EventTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
     jsonMap.put(EventTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
     if (entity.getMetadata() != null) {
-      Map<String, Object> metadataMap = new HashMap<>();
+      final Map<String, Object> metadataMap = new HashMap<>();
       if (entity.getMetadata().getIncidentErrorMessage() != null) {
         metadataMap.put(
             EventTemplate.INCIDENT_ERROR_MSG, entity.getMetadata().getIncidentErrorMessage());

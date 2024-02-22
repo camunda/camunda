@@ -52,8 +52,8 @@ public class ZeebeImporter {
         .forEach(recordsReader -> recordsReaderThreadPoolExecutor.submit(recordsReader));
   }
 
-  public void performOneRoundOfImportFor(Collection<RecordsReader> readers) {
-    for (RecordsReader recordsReader : readers) {
+  public void performOneRoundOfImportFor(final Collection<RecordsReader> readers) {
+    for (final RecordsReader recordsReader : readers) {
       importOneBatch(recordsReader, false);
     }
   }
@@ -62,7 +62,7 @@ public class ZeebeImporter {
     performOneRoundOfImportFor(recordsReaderHolder.getAllRecordsReaders());
   }
 
-  public void importOneBatch(RecordsReader recordsReader, boolean autoContinue) {
+  public void importOneBatch(final RecordsReader recordsReader, final boolean autoContinue) {
     recordsReader.readAndScheduleNextBatch(autoContinue);
   }
 }

@@ -70,6 +70,17 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        processInstanceKey,
+        processDefinitionKey,
+        bpmnProcessId,
+        activityId,
+        tenantId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -80,16 +91,5 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(activityId, that.activityId)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        processInstanceKey,
-        processDefinitionKey,
-        bpmnProcessId,
-        activityId,
-        tenantId);
   }
 }

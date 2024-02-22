@@ -82,6 +82,11 @@ public class Query {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(queryBuilder, aggregationBuilder, groupName);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -93,11 +98,6 @@ public class Query {
     return Objects.equals(queryBuilder, query.queryBuilder)
         && Objects.equals(aggregationBuilder, query.aggregationBuilder)
         && Objects.equals(groupName, query.groupName);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(queryBuilder, aggregationBuilder, groupName);
   }
 
   @Override

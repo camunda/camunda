@@ -49,16 +49,6 @@ public class OpensearchDecisionInstanceDao
   }
 
   @Override
-  protected DecisionInstance convertInternalToApiResult(DecisionInstance internalResult) {
-    if (internalResult != null && StringUtils.isNotEmpty(internalResult.getEvaluationDate())) {
-      internalResult.setEvaluationDate(
-          dateTimeFormatter.convertGeneralToApiDateTime(internalResult.getEvaluationDate()));
-    }
-
-    return internalResult;
-  }
-
-  @Override
   public DecisionInstance byId(String id) throws APIException {
     if (id == null) {
       throw new ServerException("ID provided cannot be null");
@@ -151,5 +141,15 @@ public class OpensearchDecisionInstanceDao
         request.query(queryDSLWrapper.and(queryTerms));
       }
     }
+  }
+
+  @Override
+  protected DecisionInstance convertInternalToApiResult(DecisionInstance internalResult) {
+    if (internalResult != null && StringUtils.isNotEmpty(internalResult.getEvaluationDate())) {
+      internalResult.setEvaluationDate(
+          dateTimeFormatter.convertGeneralToApiDateTime(internalResult.getEvaluationDate()));
+    }
+
+    return internalResult;
   }
 }

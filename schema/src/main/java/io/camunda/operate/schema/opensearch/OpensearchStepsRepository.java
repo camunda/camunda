@@ -59,42 +59,8 @@ public class OpensearchStepsRepository extends BaseStepsRepository implements St
     this.migrationRepositoryIndex = migrationRepositoryIndex;
   }
 
-  @Override
-  public List<Step> readStepsFromClasspath() throws IOException {
-    List<Step> steps = new ArrayList<>();
-    PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-    try {
-      Resource[] resources =
-          resolver.getResources(
-              OpensearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
-
-      for (Resource resource : resources) {
-        logger.info("Read step {} ", resource.getFilename());
-        steps.add(readStepFromFile(resource.getInputStream()));
-      }
-      steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
-      return steps;
-    } catch (FileNotFoundException ex) {
-      // ignore
-      logger.warn(
-          String.format("Directory with migration steps was not found: %s", ex.getMessage()));
-    }
-    return steps;
-  }
-
   private Step readStepFromFile(final InputStream is) throws IOException {
     return objectMapper.readValue(is, Step.class);
-  }
-
-  /** Returns the of repository. It is used as index name for elasticsearch */
-  @Override
-  public String getName() {
-    return migrationRepositoryIndex.getFullQualifiedName();
-  }
-
-  @Override
-  public void refreshIndex() {
-    richOpenSearchClient.index().refresh(getName());
   }
 
   protected String idFromStep(final Step step) {
@@ -137,5 +103,39 @@ public class OpensearchStepsRepository extends BaseStepsRepository implements St
                 .query(
                     and(term(Step.INDEX_NAME + ".keyword", indexName), term(Step.APPLIED, false))),
             Step.class);
+  }
+
+  /** Returns the of repository. It is used as index name for elasticsearch */
+  @Override
+  public String getName() {
+    return migrationRepositoryIndex.getFullQualifiedName();
+  }
+
+  @Override
+  public void refreshIndex() {
+    richOpenSearchClient.index().refresh(getName());
+  }
+
+  @Override
+  public List<Step> readStepsFromClasspath() throws IOException {
+    List<Step> steps = new ArrayList<>();
+    PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+    try {
+      Resource[] resources =
+          resolver.getResources(
+              OpensearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
+
+      for (Resource resource : resources) {
+        logger.info("Read step {} ", resource.getFilename());
+        steps.add(readStepFromFile(resource.getInputStream()));
+      }
+      steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
+      return steps;
+    } catch (FileNotFoundException ex) {
+      // ignore
+      logger.warn(
+          String.format("Directory with migration steps was not found: %s", ex.getMessage()));
+    }
+    return steps;
   }
 }

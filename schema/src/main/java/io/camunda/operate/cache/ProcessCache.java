@@ -25,13 +25,10 @@ import org.springframework.util.StringUtils;
 public class ProcessCache {
 
   private static final Logger logger = LoggerFactory.getLogger(ProcessCache.class);
-
-  private final Map<Long, ProcessEntity> cache = new ConcurrentHashMap<>();
-
   private static final int CACHE_MAX_SIZE = 100;
   private static final int MAX_ATTEMPTS = 5;
   private static final long WAIT_TIME = 200;
-
+  private final Map<Long, ProcessEntity> cache = new ConcurrentHashMap<>();
   @Autowired private ProcessStore processStore;
 
   public String getProcessNameOrDefaultValue(Long processDefinitionKey, String defaultValue) {

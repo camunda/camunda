@@ -24,6 +24,13 @@ public class CreateBatchOperationRequestDto {
   /** Migration plan, only needed for process instance migration operation */
   private MigrationPlanDto migrationPlan;
 
+  public CreateBatchOperationRequestDto() {}
+
+  public CreateBatchOperationRequestDto(ListViewQueryDto query, OperationType operationType) {
+    this.query = query;
+    this.operationType = operationType;
+  }
+
   public String getName() {
     return name;
   }
@@ -60,11 +67,9 @@ public class CreateBatchOperationRequestDto {
     return this;
   }
 
-  public CreateBatchOperationRequestDto() {}
-
-  public CreateBatchOperationRequestDto(ListViewQueryDto query, OperationType operationType) {
-    this.query = query;
-    this.operationType = operationType;
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, query, operationType, migrationPlan);
   }
 
   @Override
@@ -76,11 +81,6 @@ public class CreateBatchOperationRequestDto {
         && Objects.equals(query, that.query)
         && operationType == that.operationType
         && Objects.equals(migrationPlan, that.migrationPlan);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name, query, operationType, migrationPlan);
   }
 
   @Override

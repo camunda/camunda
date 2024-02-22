@@ -38,13 +38,8 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchMetricsStore implements MetricsStore {
-  private record AggregationResult(
-      boolean error, List<RichOpenSearchClient.AggregationValue> values, Long totalDocs) {}
-
   private static final Logger logger = LoggerFactory.getLogger(OpensearchMetricsStore.class);
-
   @Autowired private MetricIndex metricIndex;
-
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   private AggregationResult searchWithAggregation(
@@ -161,4 +156,7 @@ public class OpensearchMetricsStore implements MetricsStore {
         .setTenantId(tenantId)
         .setEventTime(timestamp);
   }
+
+  private record AggregationResult(
+      boolean error, List<RichOpenSearchClient.AggregationValue> values, Long totalDocs) {}
 }

@@ -43,9 +43,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 public class IncidentStatisticsIT extends OperateAbstractIT {
 
-  private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
-  private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";
-
   public static final String LOAN_BPMN_PROCESS_ID = "loanProcess";
   public static final String LOAN_PROCESS_NAME = "Loan process";
   public static final String DEMO_BPMN_PROCESS_ID = "demoProcess";
@@ -54,13 +51,11 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   public static final String ORDER_PROCESS_NAME = "Order process";
   public static final String NO_INSTANCES_PROCESS_ID = "noInstancesProcess";
   public static final String NO_INSTANCES_PROCESS_NAME = "No Instances Process";
-
   public static final String ERRMSG_OTHER = "Other error message";
-
-  @MockBean private PermissionsService permissionsService;
-
+  private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
+  private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
-
+  @MockBean private PermissionsService permissionsService;
   private Random random = new Random();
 
   private String tenantId1 = "tenant1";

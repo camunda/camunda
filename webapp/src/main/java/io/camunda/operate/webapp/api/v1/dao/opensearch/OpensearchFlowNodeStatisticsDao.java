@@ -31,13 +31,12 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchFlowNodeStatisticsDao implements FlowNodeStatisticsDao {
+  private static final int TERMS_AGG_SIZE = 10000;
   private final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   private final RichOpenSearchClient richOpenSearchClient;
   private final OpensearchQueryDSLWrapper queryDSLWrapper;
   private final OpensearchRequestDSLWrapper requestDSLWrapper;
   private final OpensearchAggregationDSLWrapper aggregationDSLWrapper;
-
-  private static final int TERMS_AGG_SIZE = 10000;
 
   public OpensearchFlowNodeStatisticsDao(
       OpensearchQueryDSLWrapper queryDSLWrapper,

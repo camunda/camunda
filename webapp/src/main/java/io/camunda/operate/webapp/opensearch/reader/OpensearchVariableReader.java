@@ -64,6 +64,36 @@ public class OpensearchVariableReader implements VariableReader {
     return response;
   }
 
+  @Override
+  public VariableDto getVariable(String id) {
+    var searchRequest = searchRequestBuilder(variableTemplate).query(withTenantCheck(ids(id)));
+    var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
+    if (hits.total().value() != 1) {
+      throw new NotFoundException(String.format("Variable with id %s not found.", id));
+    }
+    return toVariableDto(hits.hits().get(0).source());
+  }
+
+  @Override
+  public VariableDto getVariableByName(
+      String processInstanceId, String scopeId, String variableName) {
+    var searchRequest =
+        searchRequestBuilder(variableTemplate)
+            .query(
+                constantScore(
+                    withTenantCheck(
+                        and(
+                            term(ProcessInstanceDependant.PROCESS_INSTANCE_KEY, processInstanceId),
+                            term(VariableTemplate.SCOPE_KEY, scopeId),
+                            term(VariableTemplate.NAME, variableName)))));
+    var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
+    if (hits.total().value() > 0) {
+      return toVariableDto(hits.hits().get(0).source());
+    } else {
+      return null;
+    }
+  }
+
   private void adjustResponse(
       final List<VariableDto> response,
       final String processInstanceId,
@@ -203,36 +233,6 @@ public class OpensearchVariableReader implements VariableReader {
             toSafeListOfStrings(request.getSearchBeforeOrEqual(objectMapper)));
       }
       searchRequest.size(request.getPageSize() + 1);
-    }
-  }
-
-  @Override
-  public VariableDto getVariable(String id) {
-    var searchRequest = searchRequestBuilder(variableTemplate).query(withTenantCheck(ids(id)));
-    var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
-    if (hits.total().value() != 1) {
-      throw new NotFoundException(String.format("Variable with id %s not found.", id));
-    }
-    return toVariableDto(hits.hits().get(0).source());
-  }
-
-  @Override
-  public VariableDto getVariableByName(
-      String processInstanceId, String scopeId, String variableName) {
-    var searchRequest =
-        searchRequestBuilder(variableTemplate)
-            .query(
-                constantScore(
-                    withTenantCheck(
-                        and(
-                            term(ProcessInstanceDependant.PROCESS_INSTANCE_KEY, processInstanceId),
-                            term(VariableTemplate.SCOPE_KEY, scopeId),
-                            term(VariableTemplate.NAME, variableName)))));
-    var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
-    if (hits.total().value() > 0) {
-      return toVariableDto(hits.hits().get(0).source());
-    } else {
-      return null;
     }
   }
 

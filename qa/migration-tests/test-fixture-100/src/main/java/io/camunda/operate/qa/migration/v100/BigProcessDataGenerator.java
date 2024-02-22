@@ -37,8 +37,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class BigProcessDataGenerator {
 
-  private static final Logger logger = LoggerFactory.getLogger(BigProcessDataGenerator.class);
   public static final String PROCESS_BPMN_PROCESS_ID = "sequential-noop";
+  private static final Logger logger = LoggerFactory.getLogger(BigProcessDataGenerator.class);
   private ZeebeClient zeebeClient;
 
   @Autowired private RestHighLevelClient esClient;

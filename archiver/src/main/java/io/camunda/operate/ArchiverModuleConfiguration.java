@@ -29,17 +29,16 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 public class ArchiverModuleConfiguration {
 
   private static final Logger logger = LoggerFactory.getLogger(ArchiverModuleConfiguration.class);
+  @Autowired private OperateProperties operateProperties;
 
   @PostConstruct
   public void logModule() {
     logger.info("Starting module: archiver");
   }
 
-  @Autowired private OperateProperties operateProperties;
-
   @Bean("archiverThreadPoolExecutor")
   public ThreadPoolTaskScheduler getTaskScheduler() {
-    ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+    final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
     scheduler.setPoolSize(operateProperties.getArchiver().getThreadsCount());
     scheduler.setThreadNamePrefix("archiver_");
     scheduler.initialize();

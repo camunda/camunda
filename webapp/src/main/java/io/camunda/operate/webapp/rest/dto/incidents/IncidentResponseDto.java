@@ -52,6 +52,15 @@ public class IncidentResponseDto {
   }
 
   @Override
+  public int hashCode() {
+    int result = (int) (count ^ (count >>> 32));
+    result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
+    result = 31 * result + (errorTypes != null ? errorTypes.hashCode() : 0);
+    result = 31 * result + (flowNodes != null ? flowNodes.hashCode() : 0);
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -64,14 +73,5 @@ public class IncidentResponseDto {
     if (errorTypes != null ? !errorTypes.equals(that.errorTypes) : that.errorTypes != null)
       return false;
     return flowNodes != null ? flowNodes.equals(that.flowNodes) : that.flowNodes == null;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = (int) (count ^ (count >>> 32));
-    result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
-    result = 31 * result + (errorTypes != null ? errorTypes.hashCode() : 0);
-    result = 31 * result + (flowNodes != null ? flowNodes.hashCode() : 0);
-    return result;
   }
 }

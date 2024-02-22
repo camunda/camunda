@@ -102,14 +102,6 @@ public class TenantService {
       this.ids = ids;
     }
 
-    public TenantAccessType getTenantAccessType() {
-      return tenantAccessType;
-    }
-
-    public List<String> getTenantIds() {
-      return ids;
-    }
-
     public static AuthenticatedTenants allTenants() {
       return new AuthenticatedTenants(TenantAccessType.TENANT_ACCESS_ALL, null);
     }
@@ -120,6 +112,14 @@ public class TenantService {
 
     public static AuthenticatedTenants assignedTenants(List<String> tenants) {
       return new AuthenticatedTenants(TenantAccessType.TENANT_ACCESS_ASSIGNED, tenants);
+    }
+
+    public TenantAccessType getTenantAccessType() {
+      return tenantAccessType;
+    }
+
+    public List<String> getTenantIds() {
+      return ids;
     }
   }
 

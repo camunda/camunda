@@ -43,21 +43,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRuleProvider {
 
+  public static final String YYYY_MM_DD = "uuuu-MM-dd";
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
-
   private static final Logger logger =
       LoggerFactory.getLogger(ElasticsearchOperateZeebeRuleProvider.class);
-  public static final String YYYY_MM_DD = "uuuu-MM-dd";
-
   @Autowired public OperateProperties operateProperties;
 
   @Autowired
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
-  @Autowired private TestContainerUtil testContainerUtil;
-
   protected ZeebeContainer zeebeContainer;
+  @Autowired private TestContainerUtil testContainerUtil;
   private ZeebeClient client;
 
   private String prefix;
@@ -149,24 +146,6 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
     testZeebeIsReady();
   }
 
-  private void testZeebeIsReady() {
-    // get topology to check that cluster is available and ready for work
-    Topology topology = null;
-    while (topology == null) {
-      try {
-        topology = client.newTopologyRequest().send().join();
-      } catch (ClientException ex) {
-        ex.printStackTrace();
-        // retry
-      } catch (Exception e) {
-        logger.error("Topology cannot be retrieved.");
-        e.printStackTrace();
-        break;
-        // exit
-      }
-    }
-  }
-
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stopZeebe() {
     testContainerUtil.stopZeebe(null);
@@ -191,5 +170,23 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   @Override
   public boolean isMultitTenancyEnabled() {
     return operateProperties.getMultiTenancy().isEnabled();
+  }
+
+  private void testZeebeIsReady() {
+    // get topology to check that cluster is available and ready for work
+    Topology topology = null;
+    while (topology == null) {
+      try {
+        topology = client.newTopologyRequest().send().join();
+      } catch (ClientException ex) {
+        ex.printStackTrace();
+        // retry
+      } catch (Exception e) {
+        logger.error("Topology cannot be retrieved.");
+        e.printStackTrace();
+        break;
+        // exit
+      }
+    }
   }
 }

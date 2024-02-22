@@ -75,50 +75,24 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Qualifier("zeebeOpensearchClient")
   protected OpenSearchClient zeebeOsClient;
 
-  @Autowired private ListViewTemplate listViewTemplate;
-
-  @Autowired private VariableTemplate variableTemplate;
-
-  @Autowired private ProcessIndex processIndex;
-
-  @Autowired private OperationTemplate operationTemplate;
-
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
-
-  @Autowired private IncidentTemplate incidentTemplate;
-
-  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
-
-  @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
-
-  @Autowired private DecisionIndex decisionIndex;
-
   @Autowired protected OperateProperties operateProperties;
-
-  @Autowired private SchemaManager schemaManager;
-
   @Autowired protected ZeebeImporter zeebeImporter;
-
   @Autowired protected ZeebePostImporter zeebePostImporter;
-
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
-
-  @Autowired private TestImportListener testImportListener;
-
-  Map<Class<? extends OperateEntity>, String> entityToAliasMap;
-
   protected boolean failed = false;
-
+  Map<Class<? extends OperateEntity>, String> entityToAliasMap;
+  @Autowired private ListViewTemplate listViewTemplate;
+  @Autowired private VariableTemplate variableTemplate;
+  @Autowired private ProcessIndex processIndex;
+  @Autowired private OperationTemplate operationTemplate;
+  @Autowired private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private IncidentTemplate incidentTemplate;
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
+  @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
+  @Autowired private DecisionIndex decisionIndex;
+  @Autowired private SchemaManager schemaManager;
+  @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
-
-  public void setIndexPrefix(String indexPrefix) {
-    this.indexPrefix = indexPrefix;
-  }
-
-  @Override
-  public boolean indexExists(String index) {
-    return richOpenSearchClient.index().indexExists(index);
-  }
 
   @Override
   public void failed(Throwable e, Description description) {
@@ -337,19 +311,6 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     return areCreated;
   }
 
-  private boolean areIndicesCreated(String indexPrefix, int minCountOfIndices) throws IOException {
-    var indexRequestBuilder =
-        getIndexRequestBuilder(indexPrefix + "*")
-            .ignoreUnavailable(true)
-            .allowNoIndices(false)
-            .expandWildcards(ExpandWildcard.Open);
-
-    GetIndexResponse response = richOpenSearchClient.index().get(indexRequestBuilder);
-
-    var result = response.result();
-    return result.size() >= minCountOfIndices;
-  }
-
   public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
     return recordsReaderHolder.getAllRecordsReaders().stream()
         .filter(rr -> rr.getImportValueType().equals(importValueType))
@@ -419,5 +380,27 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       logger.error("Failed to retrieve open contexts from opensearch! Returning 0.", e);
       return 0;
     }
+  }
+
+  public void setIndexPrefix(String indexPrefix) {
+    this.indexPrefix = indexPrefix;
+  }
+
+  @Override
+  public boolean indexExists(String index) {
+    return richOpenSearchClient.index().indexExists(index);
+  }
+
+  private boolean areIndicesCreated(String indexPrefix, int minCountOfIndices) throws IOException {
+    var indexRequestBuilder =
+        getIndexRequestBuilder(indexPrefix + "*")
+            .ignoreUnavailable(true)
+            .allowNoIndices(false)
+            .expandWildcards(ExpandWildcard.Open);
+
+    GetIndexResponse response = richOpenSearchClient.index().get(indexRequestBuilder);
+
+    var result = response.result();
+    return result.size() >= minCountOfIndices;
   }
 }

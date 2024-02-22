@@ -42,10 +42,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 public class OperationExecutorIT extends OperateAbstractIT {
 
-  private Random random = new Random();
-
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
-
+  private Random random = new Random();
   @Autowired private OperateProperties operateProperties;
 
   @Autowired private OperationExecutor operationExecutor;

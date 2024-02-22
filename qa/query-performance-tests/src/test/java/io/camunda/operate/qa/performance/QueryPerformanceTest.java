@@ -51,10 +51,9 @@ public class QueryPerformanceTest {
   // LoggerFactory.getLogger(ImportPerformanceStaticDataTest.class);
 
   private static final String QUERIES_PATH = "/queries";
-
+  @Parameterized.Parameter public TestQuery testQuery;
   // Manually config for spring to use Parameterised
   private TestContextManager testContextManager;
-
   @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
   private StatefulRestTemplate restTemplate;
 
@@ -74,20 +73,6 @@ public class QueryPerformanceTest {
   private Integer operatePort;
 
   @Autowired private ParametersResolver parametersResolver;
-
-  @Parameterized.Parameter public TestQuery testQuery;
-
-  @Before
-  public void init() {
-    this.testContextManager = new TestContextManager(getClass());
-    try {
-      this.testContextManager.prepareTestInstance(this);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to initialize context manager", e);
-    }
-    restTemplate = statefulRestTemplateFactory.apply(operateHost, operatePort);
-    restTemplate.loginWhenNeeded(username, password);
-  }
 
   @Parameterized.Parameters(name = "{0}")
   public static Collection<TestQuery> readQueries() {
@@ -111,6 +96,18 @@ public class QueryPerformanceTest {
       throw new RuntimeException("Error occurred when reading queries from files", ex);
     }
     return result;
+  }
+
+  @Before
+  public void init() {
+    this.testContextManager = new TestContextManager(getClass());
+    try {
+      this.testContextManager.prepareTestInstance(this);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to initialize context manager", e);
+    }
+    restTemplate = statefulRestTemplateFactory.apply(operateHost, operatePort);
+    restTemplate.loginWhenNeeded(username, password);
   }
 
   @Test

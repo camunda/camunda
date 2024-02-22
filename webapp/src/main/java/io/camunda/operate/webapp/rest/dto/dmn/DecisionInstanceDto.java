@@ -197,6 +197,25 @@ public class DecisionInstanceDto
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        id,
+        state,
+        decisionType,
+        decisionDefinitionId,
+        decisionId,
+        tenantId,
+        decisionName,
+        decisionVersion,
+        evaluationDate,
+        errorMessage,
+        processInstanceId,
+        result,
+        evaluatedInputs,
+        evaluatedOutputs);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -215,24 +234,5 @@ public class DecisionInstanceDto
         && Objects.equals(result, that.result)
         && Objects.equals(evaluatedInputs, that.evaluatedInputs)
         && Objects.equals(evaluatedOutputs, that.evaluatedOutputs);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        id,
-        state,
-        decisionType,
-        decisionDefinitionId,
-        decisionId,
-        tenantId,
-        decisionName,
-        decisionVersion,
-        evaluationDate,
-        errorMessage,
-        processInstanceId,
-        result,
-        evaluatedInputs,
-        evaluatedOutputs);
   }
 }

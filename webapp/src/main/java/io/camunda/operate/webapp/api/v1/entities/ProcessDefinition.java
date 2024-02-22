@@ -73,6 +73,11 @@ public class ProcessDefinition {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(key, name, version, bpmnProcessId, tenantId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -82,11 +87,6 @@ public class ProcessDefinition {
         && Objects.equals(version, that.version)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(key, name, version, bpmnProcessId, tenantId);
   }
 
   @Override

@@ -30,7 +30,7 @@ public class AdditionalData {
   }
 
   public AdditionalData setFlowNodeInstanceIndices(
-      Map<String, List<String>> flowNodeInstanceIndices) {
+      final Map<String, List<String>> flowNodeInstanceIndices) {
     this.flowNodeInstanceIndices = flowNodeInstanceIndices;
     return this;
   }
@@ -40,7 +40,7 @@ public class AdditionalData {
   }
 
   public AdditionalData setFlowNodeInstanceInListViewIndices(
-      Map<String, List<String>> flowNodeInstanceInListViewIndices) {
+      final Map<String, List<String>> flowNodeInstanceInListViewIndices) {
     this.flowNodeInstanceInListViewIndices = flowNodeInstanceInListViewIndices;
     return this;
   }
@@ -49,7 +49,8 @@ public class AdditionalData {
     return processInstanceTreePaths;
   }
 
-  public AdditionalData setProcessInstanceTreePaths(Map<Long, String> processInstanceTreePaths) {
+  public AdditionalData setProcessInstanceTreePaths(
+      final Map<Long, String> processInstanceTreePaths) {
     this.processInstanceTreePaths = processInstanceTreePaths;
     return this;
   }
@@ -58,7 +59,8 @@ public class AdditionalData {
     return processInstanceIndices;
   }
 
-  public AdditionalData setProcessInstanceIndices(Map<String, String> processInstanceIndices) {
+  public AdditionalData setProcessInstanceIndices(
+      final Map<String, String> processInstanceIndices) {
     this.processInstanceIndices = processInstanceIndices;
     return this;
   }
@@ -67,7 +69,7 @@ public class AdditionalData {
     return incidentIndices;
   }
 
-  public AdditionalData setIncidentIndices(Map<String, String> incidentIndices) {
+  public AdditionalData setIncidentIndices(final Map<String, String> incidentIndices) {
     this.incidentIndices = incidentIndices;
     return this;
   }
@@ -76,51 +78,53 @@ public class AdditionalData {
     return piIdsWithIncidentIds;
   }
 
-  public void addPiIdsWithIncidentIds(String piId, String incidentId) {
+  public AdditionalData setPiIdsWithIncidentIds(
+      final Map<String, Set<String>> piIdsWithIncidentIds) {
+    this.piIdsWithIncidentIds = piIdsWithIncidentIds;
+    return this;
+  }
+
+  public void addPiIdsWithIncidentIds(final String piId, final String incidentId) {
     if (piIdsWithIncidentIds.get(piId) == null) {
       piIdsWithIncidentIds.put(piId, new HashSet<>());
     }
     piIdsWithIncidentIds.get(piId).add(incidentId);
   }
 
-  public void deleteIncidentIdByPiId(String piId, String incidentId) {
+  public void deleteIncidentIdByPiId(final String piId, final String incidentId) {
     if (piIdsWithIncidentIds.get(piId) != null) {
       piIdsWithIncidentIds.get(piId).remove(incidentId);
     }
-  }
-
-  public AdditionalData setPiIdsWithIncidentIds(Map<String, Set<String>> piIdsWithIncidentIds) {
-    this.piIdsWithIncidentIds = piIdsWithIncidentIds;
-    return this;
   }
 
   public Map<String, Set<String>> getFniIdsWithIncidentIds() {
     return fniIdsWithIncidentIds;
   }
 
-  public void addFniIdsWithIncidentIds(String fniId, String incidentId) {
+  public AdditionalData setFniIdsWithIncidentIds(
+      final Map<String, Set<String>> fniIdsWithIncidentIds) {
+    this.fniIdsWithIncidentIds = fniIdsWithIncidentIds;
+    return this;
+  }
+
+  public void addFniIdsWithIncidentIds(final String fniId, final String incidentId) {
     if (fniIdsWithIncidentIds.get(fniId) == null) {
       fniIdsWithIncidentIds.put(fniId, new HashSet<>());
     }
     fniIdsWithIncidentIds.get(fniId).add(incidentId);
   }
 
-  public void deleteIncidentIdByFniId(String fniId, String incidentId) {
+  public void deleteIncidentIdByFniId(final String fniId, final String incidentId) {
     if (fniIdsWithIncidentIds.get(fniId) != null) {
       fniIdsWithIncidentIds.get(fniId).remove(incidentId);
     }
-  }
-
-  public AdditionalData setFniIdsWithIncidentIds(Map<String, Set<String>> fniIdsWithIncidentIds) {
-    this.fniIdsWithIncidentIds = fniIdsWithIncidentIds;
-    return this;
   }
 
   public Map<String, String> getIncidentTreePaths() {
     return incidentTreePaths;
   }
 
-  public AdditionalData setIncidentTreePaths(Map<String, String> incidentTreePaths) {
+  public AdditionalData setIncidentTreePaths(final Map<String, String> incidentTreePaths) {
     this.incidentTreePaths = incidentTreePaths;
     return this;
   }

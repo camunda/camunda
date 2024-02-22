@@ -47,6 +47,11 @@ public class UsageMetricQueryDTO {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(startTime, endTime, pageSize);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -58,10 +63,5 @@ public class UsageMetricQueryDTO {
     return pageSize == that.pageSize
         && Objects.equals(startTime, that.startTime)
         && Objects.equals(endTime, that.endTime);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(startTime, endTime, pageSize);
   }
 }

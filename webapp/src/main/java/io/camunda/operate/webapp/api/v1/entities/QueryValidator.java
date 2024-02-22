@@ -18,11 +18,6 @@ import java.util.stream.Collectors;
 public class QueryValidator<T> {
 
   public static final int MAX_QUERY_SIZE = 1000;
-
-  public interface CustomQueryValidator<T> {
-    void validate(Query<T> query) throws ValidationException;
-  }
-
   private List<String> fields;
 
   public void validate(final Query<T> query, Class<T> queriedClass) throws ValidationException {
@@ -89,5 +84,9 @@ public class QueryValidator<T> {
     return givenFields.stream()
         .filter(field -> !availableFields.contains(field))
         .collect(Collectors.toList());
+  }
+
+  public interface CustomQueryValidator<T> {
+    void validate(Query<T> query) throws ValidationException;
   }
 }

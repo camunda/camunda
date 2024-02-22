@@ -40,6 +40,7 @@ public class ZeebeConnectorSecureIT {
 
   private static final String CERTIFICATE_FILE = "zeebe-test-chain.cert.pem";
   private static final String PRIVATE_KEY_FILE = "zeebe-test-server.key.pem";
+  @Autowired ZeebeConnector zeebeConnector;
   private final MountableFile certsDir = MountableFile.forClasspathResource("certs");
 
   @Rule
@@ -65,8 +66,6 @@ public class ZeebeConnectorSecureIT {
               new LogMessageWaitStrategy()
                   .withRegEx(".*Broker is ready!.*")
                   .withStartupTimeout(Duration.ofSeconds(101)));
-
-  @Autowired ZeebeConnector zeebeConnector;
 
   @Test
   public void shouldConnectWithTLS() {

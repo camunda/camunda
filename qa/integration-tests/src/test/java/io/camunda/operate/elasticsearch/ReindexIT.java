@@ -34,17 +34,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class ReindexIT extends OperateAbstractIT {
 
-  @Autowired private TestSearchRepository searchRepository;
-  @Autowired private SchemaManager schemaManager;
-  @Autowired private MigrationProperties migrationProperties;
-
-  @Autowired private BeanFactory beanFactory;
-
-  private String indexPrefix;
-
   @ClassRule
   public static final LoggerContextRule loggerRule =
       new LoggerContextRule("log4j2-listAppender.xml");
+
+  @Autowired private TestSearchRepository searchRepository;
+  @Autowired private SchemaManager schemaManager;
+  @Autowired private MigrationProperties migrationProperties;
+  @Autowired private BeanFactory beanFactory;
+  private String indexPrefix;
 
   @Before
   public void setUp() {

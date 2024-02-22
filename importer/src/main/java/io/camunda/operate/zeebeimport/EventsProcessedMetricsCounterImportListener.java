@@ -21,7 +21,7 @@ public class EventsProcessedMetricsCounterImportListener implements ImportListen
   @Autowired private Metrics metrics;
 
   @Override
-  public void finished(ImportBatch importBatch) {
+  public void finished(final ImportBatch importBatch) {
     metrics.recordCounts(
         Metrics.COUNTER_NAME_EVENTS_PROCESSED,
         importBatch.getRecordsCount(),
@@ -48,7 +48,7 @@ public class EventsProcessedMetricsCounterImportListener implements ImportListen
   }
 
   @Override
-  public void failed(ImportBatch importBatch) {
+  public void failed(final ImportBatch importBatch) {
     metrics.recordCounts(
         Metrics.COUNTER_NAME_EVENTS_PROCESSED,
         importBatch.getRecordsCount(),

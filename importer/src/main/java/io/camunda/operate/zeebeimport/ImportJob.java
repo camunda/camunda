@@ -34,15 +34,10 @@ public class ImportJob implements Callable<Boolean> {
   public static final String ZEEBE_INDEX_DELIMITER = "_";
 
   private static final Logger logger = LoggerFactory.getLogger(ImportJob.class);
-
-  private ImportBatch importBatch;
-
   private final ImportPositionEntity previousPosition;
-
-  private ImportPositionEntity lastProcessedPosition;
-
   private final OffsetDateTime creationTime;
-
+  private ImportBatch importBatch;
+  private ImportPositionEntity lastProcessedPosition;
   @Autowired private ImportBatchProcessorFactory importBatchProcessorFactory;
 
   @Autowired private ImportPositionHolder importPositionHolder;
@@ -58,10 +53,10 @@ public class ImportJob implements Callable<Boolean> {
 
   @Autowired private OperateProperties operateProperties;
 
-  public ImportJob(ImportBatch importBatch, ImportPositionEntity previousPosition) {
+  public ImportJob(final ImportBatch importBatch, final ImportPositionEntity previousPosition) {
     this.importBatch = importBatch;
     this.previousPosition = previousPosition;
-    this.creationTime = OffsetDateTime.now();
+    creationTime = OffsetDateTime.now();
   }
 
   @Override
@@ -69,9 +64,9 @@ public class ImportJob implements Callable<Boolean> {
     processPossibleIndexChange();
 
     // separate importBatch in sub-batches per index
-    List<ImportBatch> subBatches = createSubBatchesPerIndexName();
+    final List<ImportBatch> subBatches = createSubBatchesPerIndexName();
 
-    for (ImportBatch subBatch : subBatches) {
+    for (final ImportBatch subBatch : subBatches) {
       final boolean success = processOneIndexBatch(subBatch);
       if (!success) {
         notifyImportListenersAsFailed(importBatch);
@@ -79,7 +74,7 @@ public class ImportJob implements Callable<Boolean> {
       } // else continue
     }
     importPositionHolder.recordLatestLoadedPosition(getLastProcessedPosition());
-    for (ImportBatch subBatch : subBatches) {
+    for (final ImportBatch subBatch : subBatches) {
       notifyImportListenersAsFinished(subBatch);
     }
     return true;
@@ -94,12 +89,12 @@ public class ImportJob implements Callable<Boolean> {
         || hits.stream().map(HitEntity::getIndex).collect(Collectors.toSet()).size() > 1) {
       refreshZeebeIndices();
       // reread batch
-      RecordsReader recordsReader =
+      final RecordsReader recordsReader =
           recordsReaderHolder.getRecordsReader(
               importBatch.getPartitionId(), importBatch.getImportValueType());
       if (recordsReader != null) {
         try {
-          ImportBatch newImportBatch;
+          final ImportBatch newImportBatch;
           if (useOnlyPosition == false && previousPosition.getSequence() > 0) {
             newImportBatch =
                 recordsReader.readNextBatchBySequence(
@@ -135,7 +130,7 @@ public class ImportJob implements Callable<Boolean> {
             }
           }
           importBatch = newImportBatch;
-        } catch (NoSuchIndexException ex) {
+        } catch (final NoSuchIndexException ex) {
           logger.warn("Indices are not found" + importBatch.toString());
         }
       } else {
@@ -147,29 +142,29 @@ public class ImportJob implements Callable<Boolean> {
     }
   }
 
-  private boolean processOneIndexBatch(ImportBatch subBatch) {
+  private boolean processOneIndexBatch(final ImportBatch subBatch) {
     try {
-      String version = extractZeebeVersionFromIndexName(subBatch.getLastRecordIndexName());
-      ImportBatchProcessor importBatchProcessor =
+      final String version = extractZeebeVersionFromIndexName(subBatch.getLastRecordIndexName());
+      final ImportBatchProcessor importBatchProcessor =
           importBatchProcessorFactory.getImportBatchProcessor(version);
       importBatchProcessor.performImport(subBatch);
       return true;
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       logger.error(ex.getMessage(), ex);
       return false;
     }
   }
 
   private List<ImportBatch> createSubBatchesPerIndexName() {
-    List<ImportBatch> subBatches = new ArrayList<>();
+    final List<ImportBatch> subBatches = new ArrayList<>();
     if (importBatch.getHits().size() <= 1) {
       subBatches.add(importBatch);
       return subBatches;
     } else {
       String previousIndexName = null;
       List<HitEntity> subBatchHits = new ArrayList<>();
-      for (HitEntity hit : importBatch.getHits()) {
-        String indexName = hit.getIndex();
+      for (final HitEntity hit : importBatch.getHits()) {
+        final String indexName = hit.getIndex();
         if (previousIndexName != null && !indexName.equals(previousIndexName)) {
           // start new sub-batch
           subBatches.add(
@@ -193,7 +188,7 @@ public class ImportJob implements Callable<Boolean> {
     }
   }
 
-  private String extractZeebeVersionFromIndexName(String indexName) {
+  private String extractZeebeVersionFromIndexName(final String indexName) {
     final String[] split = indexName.split(ZEEBE_INDEX_DELIMITER);
     final String zeebeVersion;
     if (split.length >= 3) {
@@ -220,8 +215,8 @@ public class ImportJob implements Callable<Boolean> {
 
   public ImportPositionEntity getLastProcessedPosition() {
     if (lastProcessedPosition == null) {
-      long lastRecordPosition = importBatch.getLastProcessedPosition(objectMapper);
-      long lastSequence = importBatch.getLastProcessedSequence(objectMapper);
+      final long lastRecordPosition = importBatch.getLastProcessedPosition(objectMapper);
+      final long lastSequence = importBatch.getLastProcessedSequence(objectMapper);
       if (lastRecordPosition != 0 || lastSequence != 0) {
         lastProcessedPosition =
             ImportPositionEntity.createFrom(
@@ -250,17 +245,17 @@ public class ImportJob implements Callable<Boolean> {
     }
   }
 
-  protected void notifyImportListenersAsFinished(ImportBatch importBatch) {
+  protected void notifyImportListenersAsFinished(final ImportBatch importBatch) {
     if (importListeners != null) {
-      for (ImportListener importListener : importListeners) {
+      for (final ImportListener importListener : importListeners) {
         importListener.finished(importBatch);
       }
     }
   }
 
-  protected void notifyImportListenersAsFailed(ImportBatch importBatch) {
+  protected void notifyImportListenersAsFailed(final ImportBatch importBatch) {
     if (importListeners != null) {
-      for (ImportListener importListener : importListeners) {
+      for (final ImportListener importListener : importListeners) {
         importListener.failed(importBatch);
       }
     }

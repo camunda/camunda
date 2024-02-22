@@ -81,51 +81,6 @@ public class OpensearchListViewReader implements ListViewReader {
     return result;
   }
 
-  private String getSortBy(final ListViewRequestDto request) {
-    if (request.getSorting() != null) {
-      String sortBy = request.getSorting().getSortBy();
-      if (sortBy.equals(ListViewRequestDto.SORT_BY_PARENT_INSTANCE_ID)) {
-        sortBy = ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
-      } else if (sortBy.equals(ListViewRequestDto.SORT_BY_TENANT_ID)) {
-        sortBy = ListViewTemplate.TENANT_ID;
-      }
-      if (sortBy.equals(ListViewTemplate.ID)) {
-        // we sort by id as numbers, not as strings
-        sortBy = ListViewTemplate.KEY;
-      }
-      return sortBy;
-    }
-    return null;
-  }
-
-  private void applySorting(SearchRequest.Builder searchRequest, ListViewRequestDto request) {
-    final String sortBy = getSortBy(request);
-    final boolean directSorting =
-        request.getSearchAfter() != null || request.getSearchBefore() == null;
-    if (request.getSorting() != null) {
-      final SortOrder directOrder =
-          "asc".equals(request.getSorting().getSortOrder()) ? SortOrder.Asc : SortOrder.Desc;
-      if (directSorting) {
-        searchRequest.sort(sortOptions(sortBy, directOrder, "_last"));
-      } else {
-        searchRequest.sort(sortOptions(sortBy, reverseOrder(directOrder), "_first"));
-      }
-    }
-
-    Object[] querySearchAfter;
-    if (directSorting) {
-      searchRequest.sort(sortOptions(ListViewTemplate.KEY, SortOrder.Asc));
-      querySearchAfter = request.getSearchAfter(objectMapper);
-    } else {
-      searchRequest.sort(sortOptions(ListViewTemplate.KEY, SortOrder.Desc));
-      querySearchAfter = request.getSearchBefore(objectMapper);
-    }
-    searchRequest.size(request.getPageSize());
-    if (querySearchAfter != null) {
-      searchRequest.searchAfter(CollectionUtil.toSafeListOfStrings(querySearchAfter));
-    }
-  }
-
   @Override
   public List<ProcessInstanceForListViewEntity> queryListView(
       ListViewRequestDto processInstanceRequest, ListViewResponseDto result) {
@@ -169,5 +124,50 @@ public class OpensearchListViewReader implements ListViewReader {
     }
 
     return processInstanceEntities;
+  }
+
+  private String getSortBy(final ListViewRequestDto request) {
+    if (request.getSorting() != null) {
+      String sortBy = request.getSorting().getSortBy();
+      if (sortBy.equals(ListViewRequestDto.SORT_BY_PARENT_INSTANCE_ID)) {
+        sortBy = ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
+      } else if (sortBy.equals(ListViewRequestDto.SORT_BY_TENANT_ID)) {
+        sortBy = ListViewTemplate.TENANT_ID;
+      }
+      if (sortBy.equals(ListViewTemplate.ID)) {
+        // we sort by id as numbers, not as strings
+        sortBy = ListViewTemplate.KEY;
+      }
+      return sortBy;
+    }
+    return null;
+  }
+
+  private void applySorting(SearchRequest.Builder searchRequest, ListViewRequestDto request) {
+    final String sortBy = getSortBy(request);
+    final boolean directSorting =
+        request.getSearchAfter() != null || request.getSearchBefore() == null;
+    if (request.getSorting() != null) {
+      final SortOrder directOrder =
+          "asc".equals(request.getSorting().getSortOrder()) ? SortOrder.Asc : SortOrder.Desc;
+      if (directSorting) {
+        searchRequest.sort(sortOptions(sortBy, directOrder, "_last"));
+      } else {
+        searchRequest.sort(sortOptions(sortBy, reverseOrder(directOrder), "_first"));
+      }
+    }
+
+    Object[] querySearchAfter;
+    if (directSorting) {
+      searchRequest.sort(sortOptions(ListViewTemplate.KEY, SortOrder.Asc));
+      querySearchAfter = request.getSearchAfter(objectMapper);
+    } else {
+      searchRequest.sort(sortOptions(ListViewTemplate.KEY, SortOrder.Desc));
+      querySearchAfter = request.getSearchBefore(objectMapper);
+    }
+    searchRequest.size(request.getPageSize());
+    if (querySearchAfter != null) {
+      searchRequest.searchAfter(CollectionUtil.toSafeListOfStrings(querySearchAfter));
+    }
   }
 }

@@ -184,83 +184,6 @@ public class OpensearchBatchOperationWriter
     }
   }
 
-  private int addOperations(
-      CreateBatchOperationRequestDto batchOperationRequest, BatchOperationEntity batchOperation)
-      throws IOException {
-    final int batchSize = operateProperties.getElasticsearch().getBatchSize();
-    Query query =
-        openSearchQueryHelper.createProcessInstancesQuery(batchOperationRequest.getQuery());
-    if (permissionsService != null) {
-      IdentityPermission permission =
-          batchOperationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE
-              ? IdentityPermission.DELETE_PROCESS_INSTANCE
-              : IdentityPermission.UPDATE_PROCESS_INSTANCE;
-      var allowed = permissionsService.getProcessesWithPermission(permission);
-      var permissionQuery =
-          allowed.isAll()
-              ? matchAll()
-              : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
-      query = constantScore(withTenantCheck(and(query, permissionQuery)));
-    }
-    final RequestDSL.QueryType queryType =
-        batchOperationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE
-            ? ALL
-            : ONLY_RUNTIME;
-    var searchRequestBuilder =
-        searchRequestBuilder(listViewTemplate, queryType)
-            .query(query)
-            .size(batchSize)
-            .source(
-                sourceInclude(
-                    OperationTemplate.PROCESS_INSTANCE_KEY,
-                    OperationTemplate.PROCESS_DEFINITION_KEY,
-                    OperationTemplate.BPMN_PROCESS_ID));
-
-    AtomicInteger operationsCount = new AtomicInteger();
-
-    final Consumer<List<Hit<ProcessInstanceSource>>> hitsConsumer =
-        hits ->
-            withOperateRuntimeException(
-                () -> {
-                  final List<ProcessInstanceSource> processInstanceSources =
-                      hits.stream().map(Hit::source).toList();
-                  return operationsCount.addAndGet(
-                      persistOperations(
-                          processInstanceSources,
-                          batchOperation.getId(),
-                          batchOperationRequest,
-                          null));
-                });
-
-    Consumer<HitsMetadata<ProcessInstanceSource>> hitsMetadataConsumer =
-        hitsMeta -> {
-          validateTotalHits(hitsMeta);
-          batchOperation.setInstancesCount((int) hitsMeta.total().value());
-        };
-
-    richOpenSearchClient
-        .doc()
-        .unsafeScrollWith(
-            searchRequestBuilder,
-            hitsConsumer,
-            hitsMetadataConsumer,
-            ProcessInstanceSource.class,
-            false);
-
-    return operationsCount.get();
-  }
-
-  private void validateTotalHits(HitsMetadata<?> hitsMeta) {
-    final long totalHits = hitsMeta.total().value();
-    final Long maxSize = operateProperties.getBatchOperationMaxSize();
-    if (maxSize != null && totalHits > operateProperties.getBatchOperationMaxSize()) {
-      throw new InvalidRequestException(
-          String.format(
-              "Too many process instances are selected for batch operation. Maximum possible amount: %s",
-              maxSize));
-    }
-  }
-
   /**
    * Schedule operation for single process instance.
    *
@@ -497,6 +420,83 @@ public class OpensearchBatchOperationWriter
     }
   }
 
+  private int addOperations(
+      CreateBatchOperationRequestDto batchOperationRequest, BatchOperationEntity batchOperation)
+      throws IOException {
+    final int batchSize = operateProperties.getElasticsearch().getBatchSize();
+    Query query =
+        openSearchQueryHelper.createProcessInstancesQuery(batchOperationRequest.getQuery());
+    if (permissionsService != null) {
+      IdentityPermission permission =
+          batchOperationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE
+              ? IdentityPermission.DELETE_PROCESS_INSTANCE
+              : IdentityPermission.UPDATE_PROCESS_INSTANCE;
+      var allowed = permissionsService.getProcessesWithPermission(permission);
+      var permissionQuery =
+          allowed.isAll()
+              ? matchAll()
+              : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
+      query = constantScore(withTenantCheck(and(query, permissionQuery)));
+    }
+    final RequestDSL.QueryType queryType =
+        batchOperationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE
+            ? ALL
+            : ONLY_RUNTIME;
+    var searchRequestBuilder =
+        searchRequestBuilder(listViewTemplate, queryType)
+            .query(query)
+            .size(batchSize)
+            .source(
+                sourceInclude(
+                    OperationTemplate.PROCESS_INSTANCE_KEY,
+                    OperationTemplate.PROCESS_DEFINITION_KEY,
+                    OperationTemplate.BPMN_PROCESS_ID));
+
+    AtomicInteger operationsCount = new AtomicInteger();
+
+    final Consumer<List<Hit<ProcessInstanceSource>>> hitsConsumer =
+        hits ->
+            withOperateRuntimeException(
+                () -> {
+                  final List<ProcessInstanceSource> processInstanceSources =
+                      hits.stream().map(Hit::source).toList();
+                  return operationsCount.addAndGet(
+                      persistOperations(
+                          processInstanceSources,
+                          batchOperation.getId(),
+                          batchOperationRequest,
+                          null));
+                });
+
+    Consumer<HitsMetadata<ProcessInstanceSource>> hitsMetadataConsumer =
+        hitsMeta -> {
+          validateTotalHits(hitsMeta);
+          batchOperation.setInstancesCount((int) hitsMeta.total().value());
+        };
+
+    richOpenSearchClient
+        .doc()
+        .unsafeScrollWith(
+            searchRequestBuilder,
+            hitsConsumer,
+            hitsMetadataConsumer,
+            ProcessInstanceSource.class,
+            false);
+
+    return operationsCount.get();
+  }
+
+  private void validateTotalHits(HitsMetadata<?> hitsMeta) {
+    final long totalHits = hitsMeta.total().value();
+    final Long maxSize = operateProperties.getBatchOperationMaxSize();
+    if (maxSize != null && totalHits > operateProperties.getBatchOperationMaxSize()) {
+      throw new InvalidRequestException(
+          String.format(
+              "Too many process instances are selected for batch operation. Maximum possible amount: %s",
+              maxSize));
+    }
+  }
+
   private BatchOperationEntity createBatchOperationEntity(
       OperationType operationType, String name) {
     BatchOperationEntity batchOperationEntity = new BatchOperationEntity();
@@ -637,6 +637,17 @@ public class OpensearchBatchOperationWriter
     private Long processDefinitionKey;
     private String bpmnProcessId;
 
+    public static ProcessInstanceSource fromSourceMap(Map<String, Object> sourceMap) {
+      ProcessInstanceSource processInstanceSource = new ProcessInstanceSource();
+      processInstanceSource.processInstanceKey =
+          (Long) sourceMap.get(OperationTemplate.PROCESS_INSTANCE_KEY);
+      processInstanceSource.processDefinitionKey =
+          (Long) sourceMap.get(OperationTemplate.PROCESS_DEFINITION_KEY);
+      processInstanceSource.bpmnProcessId =
+          (String) sourceMap.get(OperationTemplate.BPMN_PROCESS_ID);
+      return processInstanceSource;
+    }
+
     public Long getProcessInstanceKey() {
       return processInstanceKey;
     }
@@ -664,15 +675,9 @@ public class OpensearchBatchOperationWriter
       return this;
     }
 
-    public static ProcessInstanceSource fromSourceMap(Map<String, Object> sourceMap) {
-      ProcessInstanceSource processInstanceSource = new ProcessInstanceSource();
-      processInstanceSource.processInstanceKey =
-          (Long) sourceMap.get(OperationTemplate.PROCESS_INSTANCE_KEY);
-      processInstanceSource.processDefinitionKey =
-          (Long) sourceMap.get(OperationTemplate.PROCESS_DEFINITION_KEY);
-      processInstanceSource.bpmnProcessId =
-          (String) sourceMap.get(OperationTemplate.BPMN_PROCESS_ID);
-      return processInstanceSource;
+    @Override
+    public int hashCode() {
+      return Objects.hash(processInstanceKey, processDefinitionKey, bpmnProcessId);
     }
 
     @Override
@@ -683,11 +688,6 @@ public class OpensearchBatchOperationWriter
       return Objects.equals(processInstanceKey, that.processInstanceKey)
           && Objects.equals(processDefinitionKey, that.processDefinitionKey)
           && Objects.equals(bpmnProcessId, that.bpmnProcessId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(processInstanceKey, processDefinitionKey, bpmnProcessId);
     }
   }
 }

@@ -18,10 +18,9 @@ import org.springframework.stereotype.Component;
 @Component("databaseInfo")
 public class DatabaseInfo implements ApplicationContextAware {
 
+  static final DatabaseType DEFAULT_DATABASE = DatabaseType.Elasticsearch;
   private static final Logger logger = LoggerFactory.getLogger(DatabaseInfo.class);
   private static ApplicationContext applicationContext;
-
-  static final DatabaseType DEFAULT_DATABASE = DatabaseType.Elasticsearch;
 
   public static DatabaseType getCurrent() {
     if (applicationContext == null) {

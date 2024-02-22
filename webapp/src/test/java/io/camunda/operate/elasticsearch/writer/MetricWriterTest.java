@@ -25,8 +25,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class MetricWriterTest {
 
-  @InjectMocks private MetricsStore subject = new ElasticsearchMetricsStore();
   @Mock BatchRequest batchRequest;
+  @InjectMocks private MetricsStore subject = new ElasticsearchMetricsStore();
   @Mock private MetricIndex metricIndex;
 
   @Test

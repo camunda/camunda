@@ -22,12 +22,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class RichOpenSearchClient {
-  public record AggregationValue(String key, long count) {}
-
   private static final Logger LOGGER = LoggerFactory.getLogger(RichOpenSearchClient.class);
-
-  BeanFactory beanFactory;
-  OpenSearchClient openSearchClient;
   final Async async;
   final OpenSearchBatchOperations openSearchBatchOperations;
   final OpenSearchClusterOperations openSearchClusterOperations;
@@ -38,40 +33,8 @@ public class RichOpenSearchClient {
   final OpenSearchTaskOperations openSearchTaskOperations;
   final OpenSearchTemplateOperations openSearchTemplateOperations;
   final OpenSearchISMOperations openSearchISMOperations;
-
-  public class Async {
-    final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
-    final OpenSearchAsyncIndexOperations openSearchAsyncIndexOperations;
-    final OpenSearchAsyncSnapshotOperations openSearchAsyncSnapshotOperations;
-    final OpenSearchAsyncTaskOperations openSearchAsyncTaskOperations;
-
-    public Async(OpenSearchAsyncClient openSearchAsyncClient) {
-      this.openSearchAsyncDocumentOperations =
-          new OpenSearchAsyncDocumentOperations(LOGGER, openSearchAsyncClient);
-      this.openSearchAsyncIndexOperations =
-          new OpenSearchAsyncIndexOperations(LOGGER, openSearchAsyncClient);
-      this.openSearchAsyncSnapshotOperations =
-          new OpenSearchAsyncSnapshotOperations(LOGGER, openSearchAsyncClient);
-      this.openSearchAsyncTaskOperations =
-          new OpenSearchAsyncTaskOperations(LOGGER, openSearchAsyncClient);
-    }
-
-    public OpenSearchAsyncDocumentOperations doc() {
-      return openSearchAsyncDocumentOperations;
-    }
-
-    public OpenSearchAsyncIndexOperations index() {
-      return openSearchAsyncIndexOperations;
-    }
-
-    public OpenSearchAsyncSnapshotOperations snapshot() {
-      return openSearchAsyncSnapshotOperations;
-    }
-
-    public OpenSearchAsyncTaskOperations task() {
-      return openSearchAsyncTaskOperations;
-    }
-  }
+  BeanFactory beanFactory;
+  OpenSearchClient openSearchClient;
 
   public RichOpenSearchClient(
       BeanFactory beanFactory,
@@ -130,5 +93,41 @@ public class RichOpenSearchClient {
 
   public OpenSearchTemplateOperations template() {
     return openSearchTemplateOperations;
+  }
+
+  public record AggregationValue(String key, long count) {}
+
+  public class Async {
+    final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
+    final OpenSearchAsyncIndexOperations openSearchAsyncIndexOperations;
+    final OpenSearchAsyncSnapshotOperations openSearchAsyncSnapshotOperations;
+    final OpenSearchAsyncTaskOperations openSearchAsyncTaskOperations;
+
+    public Async(OpenSearchAsyncClient openSearchAsyncClient) {
+      this.openSearchAsyncDocumentOperations =
+          new OpenSearchAsyncDocumentOperations(LOGGER, openSearchAsyncClient);
+      this.openSearchAsyncIndexOperations =
+          new OpenSearchAsyncIndexOperations(LOGGER, openSearchAsyncClient);
+      this.openSearchAsyncSnapshotOperations =
+          new OpenSearchAsyncSnapshotOperations(LOGGER, openSearchAsyncClient);
+      this.openSearchAsyncTaskOperations =
+          new OpenSearchAsyncTaskOperations(LOGGER, openSearchAsyncClient);
+    }
+
+    public OpenSearchAsyncDocumentOperations doc() {
+      return openSearchAsyncDocumentOperations;
+    }
+
+    public OpenSearchAsyncIndexOperations index() {
+      return openSearchAsyncIndexOperations;
+    }
+
+    public OpenSearchAsyncSnapshotOperations snapshot() {
+      return openSearchAsyncSnapshotOperations;
+    }
+
+    public OpenSearchAsyncTaskOperations task() {
+      return openSearchAsyncTaskOperations;
+    }
   }
 }

@@ -27,6 +27,11 @@ public class HealthStateDto {
   }
 
   @Override
+  public int hashCode() {
+    return state != null ? state.hashCode() : 0;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -34,10 +39,5 @@ public class HealthStateDto {
     HealthStateDto that = (HealthStateDto) o;
 
     return state != null ? state.equals(that.state) : that.state == null;
-  }
-
-  @Override
-  public int hashCode() {
-    return state != null ? state.hashCode() : 0;
   }
 }

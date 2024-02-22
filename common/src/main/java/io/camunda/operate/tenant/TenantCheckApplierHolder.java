@@ -22,11 +22,6 @@ public class TenantCheckApplierHolder implements ApplicationContextAware {
   private static ApplicationContext applicationContext;
   private static TenantCheckApplier<Query> tenantCheckApplier;
 
-  @Override
-  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-    this.applicationContext = applicationContext;
-  }
-
   public static Optional<TenantCheckApplier<Query>> getOpenSearchTenantCheckApplier() {
     if (tenantCheckApplier == null) {
       synchronized (TenantCheckApplierHolder.class) {
@@ -44,5 +39,10 @@ public class TenantCheckApplierHolder implements ApplicationContextAware {
     } else {
       return Optional.of(tenantCheckApplier);
     }
+  }
+
+  @Override
+  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    this.applicationContext = applicationContext;
   }
 }

@@ -20,15 +20,12 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 public class IdentityTester {
 
   public static TestContext testContext;
-
+  public static JwtDecoder jwtDecoder;
+  public static TestContainerUtil testContainerUtil;
   protected static final String USER = KEYCLOAK_USERNAME;
   protected static final String USER_2 = KEYCLOAK_USERNAME_2;
   private static final String REALM = "camunda-platform";
   private static final String CONTEXT_PATH = "/auth";
-
-  public static JwtDecoder jwtDecoder;
-
-  public static TestContainerUtil testContainerUtil;
 
   public static void startIdentityBeforeTestClass(boolean multiTenancyEnabled) {
 

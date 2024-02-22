@@ -262,6 +262,32 @@ public class ListViewQueryDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        running,
+        active,
+        incidents,
+        finished,
+        completed,
+        canceled,
+        ids,
+        errorMessage,
+        activityId,
+        startDateAfter,
+        startDateBefore,
+        endDateAfter,
+        endDateBefore,
+        processIds,
+        bpmnProcessId,
+        processVersion,
+        excludeIds,
+        variable,
+        batchOperationId,
+        parentInstanceId,
+        tenantId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -287,31 +313,5 @@ public class ListViewQueryDto {
         && Objects.equals(batchOperationId, that.batchOperationId)
         && Objects.equals(parentInstanceId, that.parentInstanceId)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        running,
-        active,
-        incidents,
-        finished,
-        completed,
-        canceled,
-        ids,
-        errorMessage,
-        activityId,
-        startDateAfter,
-        startDateBefore,
-        endDateAfter,
-        endDateBefore,
-        processIds,
-        bpmnProcessId,
-        processVersion,
-        excludeIds,
-        variable,
-        batchOperationId,
-        parentInstanceId,
-        tenantId);
   }
 }

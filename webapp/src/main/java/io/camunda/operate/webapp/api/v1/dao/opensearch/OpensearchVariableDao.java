@@ -38,11 +38,6 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
   }
 
   @Override
-  protected String getIndexName() {
-    return variableIndex.getAlias();
-  }
-
-  @Override
   protected String getUniqueSortKey() {
     return Variable.KEY;
   }
@@ -53,23 +48,8 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
   }
 
   @Override
-  protected String getKeyFieldName() {
-    return Variable.KEY;
-  }
-
-  @Override
-  protected String getByKeyServerReadErrorMessage(Long key) {
-    return String.format("Error in reading variable for key %s", key);
-  }
-
-  @Override
-  protected String getByKeyNoResultsErrorMessage(Long key) {
-    return String.format("No variable found for key %s", key);
-  }
-
-  @Override
-  protected String getByKeyTooManyResultsErrorMessage(Long key) {
-    return String.format("Found more than one variables for key %s", key);
+  protected String getIndexName() {
+    return variableIndex.getAlias();
   }
 
   @Override
@@ -99,5 +79,25 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
   @Override
   protected Variable convertInternalToApiResult(Variable internalResult) {
     return internalResult;
+  }
+
+  @Override
+  protected String getKeyFieldName() {
+    return Variable.KEY;
+  }
+
+  @Override
+  protected String getByKeyServerReadErrorMessage(Long key) {
+    return String.format("Error in reading variable for key %s", key);
+  }
+
+  @Override
+  protected String getByKeyNoResultsErrorMessage(Long key) {
+    return String.format("No variable found for key %s", key);
+  }
+
+  @Override
+  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+    return String.format("Found more than one variables for key %s", key);
   }
 }

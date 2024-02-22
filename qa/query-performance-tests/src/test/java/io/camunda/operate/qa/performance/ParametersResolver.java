@@ -58,9 +58,9 @@ public class ParametersResolver {
   private static final String PROCESS_ID_PLACEHOLDER = "${processId}";
   private static final String START_DATE_AFTER_PLACEHOLDER = "${startDateAfter}";
   private static final String START_DATE_BEFORE_PLACEHOLDER = "${startDateBefore}";
-
+  private final ConstantScoreQueryBuilder isProcessInstanceQuery =
+      constantScoreQuery(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
   private RestHighLevelClient esClient;
-
   @Autowired private DateTimeFormatter df;
 
   @Value("${camunda.operate.qa.queries.elasticsearch.url:http://localhost:9200}")
@@ -70,22 +70,14 @@ public class ParametersResolver {
   private String prefix;
 
   @Autowired private ObjectMapper objectMapper;
-
   @Autowired private ProcessIndex processIndex;
-
   @Autowired private ListViewTemplate listViewTemplate;
-
   @Autowired private VariableTemplate variableTemplate;
-
   private List<String> processInstanceIds = new ArrayList<>();
   private String processInstanceIdWithLotsOfVariables;
   private List<String> processIds = new ArrayList<>();
   private String startDateBefore;
   private String startDateAfter;
-
-  private final ConstantScoreQueryBuilder isProcessInstanceQuery =
-      constantScoreQuery(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
-
   private Random random = new Random();
 
   @PostConstruct

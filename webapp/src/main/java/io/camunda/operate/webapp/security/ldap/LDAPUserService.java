@@ -63,6 +63,11 @@ public class LDAPUserService extends AbstractUserService<Authentication> {
     ldapDnToUser.remove(dn);
   }
 
+  @Override
+  public String getUserToken(final Authentication authentication) {
+    throw new UnsupportedOperationException("Get token is not supported for LDAP authentication");
+  }
+
   private class LdapUserAttributesMapper implements AttributesMapper<UserDto> {
 
     private LdapUserAttributesMapper() {}
@@ -82,10 +87,5 @@ public class LDAPUserService extends AbstractUserService<Authentication> {
       userDto.setPermissions(List.of(READ, WRITE));
       return userDto;
     }
-  }
-
-  @Override
-  public String getUserToken(final Authentication authentication) {
-    throw new UnsupportedOperationException("Get token is not supported for LDAP authentication");
   }
 }

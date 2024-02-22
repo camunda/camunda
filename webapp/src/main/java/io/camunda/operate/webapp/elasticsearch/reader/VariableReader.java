@@ -77,6 +77,80 @@ public class VariableReader extends AbstractReader
     return response;
   }
 
+  @Override
+  public VariableDto getVariable(final String id) {
+    final IdsQueryBuilder idsQ = idsQuery().addIds(id);
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
+            .source(new SearchSourceBuilder().query(idsQ));
+    try {
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
+      ;
+      if (response.getHits().getTotalHits().value != 1) {
+        throw new NotFoundException(String.format("Variable with id %s not found.", id));
+      }
+      final VariableEntity variableEntity =
+          fromSearchHit(
+              response.getHits().getHits()[0].getSourceAsString(),
+              objectMapper,
+              VariableEntity.class);
+      return VariableDto.createFrom(
+          variableEntity,
+          null,
+          true,
+          operateProperties.getImporter().getVariableSizeThreshold(),
+          objectMapper);
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining variable: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  @Override
+  public VariableDto getVariableByName(
+      final String processInstanceId, final String scopeId, final String variableName) {
+
+    final TermQueryBuilder processInstanceIdQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
+    final TermQueryBuilder scopeIdQ = termQuery(SCOPE_KEY, scopeId);
+    final TermQueryBuilder varNameQ = termQuery(NAME, variableName);
+
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        constantScoreQuery(joinWithAnd(processInstanceIdQ, scopeIdQ, varNameQ))));
+
+    try {
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
+      ;
+      if (response.getHits().getTotalHits().value > 0) {
+        final VariableEntity variableEntity =
+            ElasticsearchUtil.fromSearchHit(
+                response.getHits().getHits()[0].getSourceAsString(),
+                objectMapper,
+                VariableEntity.class);
+        return VariableDto.createFrom(
+            variableEntity,
+            null,
+            true,
+            operateProperties.getImporter().getVariableSizeThreshold(),
+            objectMapper);
+      } else {
+        return null;
+      }
+    } catch (IOException e) {
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining variable for processInstanceId: %s, "
+                  + "scopeId: %s, name: %s, error: %s",
+              processInstanceId, scopeId, variableName, e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
   private boolean checkVarIsFirst(
       final String processInstanceId, final VariableRequestDto query, final String id) {
     final VariableRequestDto newQuery =
@@ -241,80 +315,6 @@ public class VariableReader extends AbstractReader
         searchSourceBuilder.searchAfter(request.getSearchBeforeOrEqual(objectMapper));
       }
       searchSourceBuilder.size(request.getPageSize() + 1);
-    }
-  }
-
-  @Override
-  public VariableDto getVariable(final String id) {
-    final IdsQueryBuilder idsQ = idsQuery().addIds(id);
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
-            .source(new SearchSourceBuilder().query(idsQ));
-    try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);
-      ;
-      if (response.getHits().getTotalHits().value != 1) {
-        throw new NotFoundException(String.format("Variable with id %s not found.", id));
-      }
-      final VariableEntity variableEntity =
-          fromSearchHit(
-              response.getHits().getHits()[0].getSourceAsString(),
-              objectMapper,
-              VariableEntity.class);
-      return VariableDto.createFrom(
-          variableEntity,
-          null,
-          true,
-          operateProperties.getImporter().getVariableSizeThreshold(),
-          objectMapper);
-    } catch (IOException e) {
-      final String message =
-          String.format("Exception occurred, while obtaining variable: %s", e.getMessage());
-      logger.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public VariableDto getVariableByName(
-      final String processInstanceId, final String scopeId, final String variableName) {
-
-    final TermQueryBuilder processInstanceIdQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
-    final TermQueryBuilder scopeIdQ = termQuery(SCOPE_KEY, scopeId);
-    final TermQueryBuilder varNameQ = termQuery(NAME, variableName);
-
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
-            .source(
-                new SearchSourceBuilder()
-                    .query(
-                        constantScoreQuery(joinWithAnd(processInstanceIdQ, scopeIdQ, varNameQ))));
-
-    try {
-      final SearchResponse response = tenantAwareClient.search(searchRequest);
-      ;
-      if (response.getHits().getTotalHits().value > 0) {
-        final VariableEntity variableEntity =
-            ElasticsearchUtil.fromSearchHit(
-                response.getHits().getHits()[0].getSourceAsString(),
-                objectMapper,
-                VariableEntity.class);
-        return VariableDto.createFrom(
-            variableEntity,
-            null,
-            true,
-            operateProperties.getImporter().getVariableSizeThreshold(),
-            objectMapper);
-      } else {
-        return null;
-      }
-    } catch (IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining variable for processInstanceId: %s, "
-                  + "scopeId: %s, name: %s, error: %s",
-              processInstanceId, scopeId, variableName, e.getMessage());
-      throw new OperateRuntimeException(message, e);
     }
   }
 }

@@ -26,6 +26,14 @@ public abstract class IdentityOperateZeebeAbstractIT extends OperateZeebeAbstrac
   private static final String REALM = "camunda-platform";
   private static final String CONTEXT_PATH = "/auth";
 
+  protected static String getAuthServerUrl() {
+    return "http://"
+        + IdentityTester.testContext.getExternalKeycloakHost()
+        + ":"
+        + IdentityTester.testContext.getExternalKeycloakPort()
+        + CONTEXT_PATH;
+  }
+
   @Override
   protected void mockTenantResponse() {
     // do not mock anything here
@@ -95,13 +103,5 @@ public abstract class IdentityOperateZeebeAbstractIT extends OperateZeebeAbstrac
         .concat("/realms/")
         .concat(REALM)
         .concat("/protocol/openid-connect/token");
-  }
-
-  protected static String getAuthServerUrl() {
-    return "http://"
-        + IdentityTester.testContext.getExternalKeycloakHost()
-        + ":"
-        + IdentityTester.testContext.getExternalKeycloakPort()
-        + CONTEXT_PATH;
   }
 }

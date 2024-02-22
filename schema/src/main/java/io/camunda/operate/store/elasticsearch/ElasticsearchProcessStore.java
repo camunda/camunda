@@ -165,6 +165,18 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   @Override
+  public void refreshIndices(String... indices) {
+    if (indices == null || indices.length == 0) {
+      throw new OperateRuntimeException("Refresh indices needs at least one index to refresh.");
+    }
+    try {
+      esClient.indices().refresh(new RefreshRequest(indices), RequestOptions.DEFAULT);
+    } catch (IOException ex) {
+      throw new OperateRuntimeException("Failed to refresh indices " + Arrays.asList(indices), ex);
+    }
+  }
+
+  @Override
   public ProcessEntity getProcessByKey(Long processDefinitionKey) {
     final SearchRequest searchRequest =
         new SearchRequest(processIndex.getAlias())
@@ -293,18 +305,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
     }
   }
 
-  private QueryBuilder buildQuery(String tenantId, Set<String> allowedBPMNProcessIds) {
-    TermsQueryBuilder bpmnProcessIdQ =
-        allowedBPMNProcessIds != null ? termsQuery(BPMN_PROCESS_ID, allowedBPMNProcessIds) : null;
-    TermQueryBuilder tenantIdQ =
-        tenantId != null ? termQuery(ProcessIndex.TENANT_ID, tenantId) : null;
-    QueryBuilder q = joinWithAnd(bpmnProcessIdQ, tenantIdQ);
-    if (q == null) {
-      q = matchAllQuery();
-    }
-    return q;
-  }
-
   @Override
   public Map<Long, ProcessEntity> getProcessesIdsToProcessesWithFields(
       @Nullable Set<String> allowedBPMNIds, int maxSize, String... fields) {
@@ -336,6 +336,22 @@ public class ElasticsearchProcessStore implements ProcessStore {
           String.format("Exception occurred, while obtaining processes: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  @Override
+  public long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys) {
+    if (processDefinitionKeys == null || processDefinitionKeys.length == 0) {
+      return 0;
+    }
+    final DeleteByQueryRequest query =
+        new DeleteByQueryRequest(processIndex.getAlias())
+            .setQuery(QueryBuilders.termsQuery(ProcessIndex.KEY, processDefinitionKeys));
+    try {
+      BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
+      return response.getDeleted();
+    } catch (IOException ex) {
+      throw new OperateRuntimeException("Failed to delete process definitions by keys", ex);
     }
   }
 
@@ -655,32 +671,16 @@ public class ElasticsearchProcessStore implements ProcessStore {
     return count;
   }
 
-  @Override
-  public long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys) {
-    if (processDefinitionKeys == null || processDefinitionKeys.length == 0) {
-      return 0;
+  private QueryBuilder buildQuery(String tenantId, Set<String> allowedBPMNProcessIds) {
+    TermsQueryBuilder bpmnProcessIdQ =
+        allowedBPMNProcessIds != null ? termsQuery(BPMN_PROCESS_ID, allowedBPMNProcessIds) : null;
+    TermQueryBuilder tenantIdQ =
+        tenantId != null ? termQuery(ProcessIndex.TENANT_ID, tenantId) : null;
+    QueryBuilder q = joinWithAnd(bpmnProcessIdQ, tenantIdQ);
+    if (q == null) {
+      q = matchAllQuery();
     }
-    final DeleteByQueryRequest query =
-        new DeleteByQueryRequest(processIndex.getAlias())
-            .setQuery(QueryBuilders.termsQuery(ProcessIndex.KEY, processDefinitionKeys));
-    try {
-      BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
-      return response.getDeleted();
-    } catch (IOException ex) {
-      throw new OperateRuntimeException("Failed to delete process definitions by keys", ex);
-    }
-  }
-
-  @Override
-  public void refreshIndices(String... indices) {
-    if (indices == null || indices.length == 0) {
-      throw new OperateRuntimeException("Refresh indices needs at least one index to refresh.");
-    }
-    try {
-      esClient.indices().refresh(new RefreshRequest(indices), RequestOptions.DEFAULT);
-    } catch (IOException ex) {
-      throw new OperateRuntimeException("Failed to refresh indices " + Arrays.asList(indices), ex);
-    }
+    return q;
   }
 
   private ProcessEntity fromSearchHit(String processString) {

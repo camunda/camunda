@@ -67,6 +67,11 @@ public class OpensearchProperties {
     return getFromURIorDefault(URI::getPort, port);
   }
 
+  @Deprecated
+  public void setPort(int port) {
+    this.port = port;
+  }
+
   private <T> T getFromURIorDefault(Function<URI, T> valueFromURI, T defaultValue) {
     if (!stringIsEmpty(url)) {
       try {
@@ -76,11 +81,6 @@ public class OpensearchProperties {
       }
     }
     return defaultValue;
-  }
-
-  @Deprecated
-  public void setPort(int port) {
-    this.port = port;
   }
 
   public String getDateFormat() {

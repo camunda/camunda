@@ -19,11 +19,11 @@ public class ImportBatchProcessorFactory {
 
   @Autowired private List<ImportBatchProcessor> importBatchProcessors;
 
-  private Map<String, ImportBatchProcessor> processorsMap = new HashMap<>();
+  private final Map<String, ImportBatchProcessor> processorsMap = new HashMap<>();
 
   @PostConstruct
   private void buildTheMap() {
-    for (ImportBatchProcessor importBatchProcessor : importBatchProcessors) {
+    for (final ImportBatchProcessor importBatchProcessor : importBatchProcessors) {
       processorsMap.put(importBatchProcessor.getZeebeVersion(), importBatchProcessor);
     }
   }

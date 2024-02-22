@@ -52,12 +52,10 @@ import org.springframework.context.annotation.Import;
 public class DataMultiplicator implements CommandLineRunner {
 
   public static final int MAX_DOCUMENTS = 10_000;
+  private static final Logger logger = LoggerFactory.getLogger(DataMultiplicator.class);
   @Autowired private RestHighLevelClient esClient;
-
   @Autowired private OperateProperties operateProperties;
-
   @Autowired private List<TemplateDescriptor> indexDescriptors;
-
   private Map<Class<? extends TemplateDescriptor>, Class<? extends OperateEntity>>
       descriptorToEntity =
           Map.of(
@@ -65,10 +63,16 @@ public class DataMultiplicator implements CommandLineRunner {
               SequenceFlowTemplate.class, SequenceFlowEntity.class,
               VariableTemplate.class, VariableEntity.class,
               IncidentTemplate.class, IncidentEntity.class);
-
   @Autowired private ObjectMapper objectMapper;
 
-  private static final Logger logger = LoggerFactory.getLogger(DataMultiplicator.class);
+  public static void main(String[] args) {
+    System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
+    final SpringApplication springApplication = new SpringApplication(DataMultiplicator.class);
+    springApplication.setWebApplicationType(WebApplicationType.NONE);
+    springApplication.setAddCommandLineProperties(true);
+    final ConfigurableApplicationContext ctx = springApplication.run(args);
+    SpringApplication.exit(ctx);
+  }
 
   @Override
   public void run(String... args) throws Exception {
@@ -156,14 +160,5 @@ public class DataMultiplicator implements CommandLineRunner {
             count, max, percentDone, templateDescriptor.getFullQualifiedName());
       }
     }
-  }
-
-  public static void main(String[] args) {
-    System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
-    final SpringApplication springApplication = new SpringApplication(DataMultiplicator.class);
-    springApplication.setWebApplicationType(WebApplicationType.NONE);
-    springApplication.setAddCommandLineProperties(true);
-    final ConfigurableApplicationContext ctx = springApplication.run(args);
-    SpringApplication.exit(ctx);
   }
 }

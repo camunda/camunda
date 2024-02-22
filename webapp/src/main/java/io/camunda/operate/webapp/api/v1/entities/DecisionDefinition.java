@@ -127,6 +127,21 @@ public class DecisionDefinition {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        id,
+        key,
+        decisionId,
+        name,
+        version,
+        decisionRequirementsId,
+        decisionRequirementsKey,
+        decisionRequirementsName,
+        decisionRequirementsVersion,
+        tenantId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -141,21 +156,6 @@ public class DecisionDefinition {
         && Objects.equals(decisionRequirementsName, that.decisionRequirementsName)
         && Objects.equals(decisionRequirementsVersion, that.decisionRequirementsVersion)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        id,
-        key,
-        decisionId,
-        name,
-        version,
-        decisionRequirementsId,
-        decisionRequirementsKey,
-        decisionRequirementsName,
-        decisionRequirementsVersion,
-        tenantId);
   }
 
   @Override

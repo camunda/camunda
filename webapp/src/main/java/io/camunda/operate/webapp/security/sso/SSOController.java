@@ -39,14 +39,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class SSOController {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-
-  @Autowired private Auth0Service auth0Service;
-
-  private SecurityContextRepository securityContextRepository =
-      new HttpSessionSecurityContextRepository();
-
   private final SecurityContextHolderStrategy securityContextHolderStrategy =
       SecurityContextHolder.getContextHolderStrategy();
+  @Autowired private Auth0Service auth0Service;
+  private SecurityContextRepository securityContextRepository =
+      new HttpSessionSecurityContextRepository();
 
   @RequestMapping(
       value = LOGIN_RESOURCE,

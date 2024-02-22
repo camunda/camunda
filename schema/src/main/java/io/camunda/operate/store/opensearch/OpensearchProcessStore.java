@@ -93,6 +93,11 @@ public class OpensearchProcessStore implements ProcessStore {
   }
 
   @Override
+  public void refreshIndices(String... indices) {
+    richOpenSearchClient.index().refresh(indices);
+  }
+
+  @Override
   public ProcessEntity getProcessByKey(Long processDefinitionKey) {
     var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
@@ -114,16 +119,6 @@ public class OpensearchProcessStore implements ProcessStore {
         .doc()
         .searchUnique(searchRequestBuilder, ProcessEntity.class, processDefinitionKey.toString())
         .getBpmnXml();
-  }
-
-  private Query withTenantIdQuery(@Nullable String tenantId, @Nullable Query query) {
-    final Query tenantIdQ = tenantId != null ? term(ProcessIndex.TENANT_ID, tenantId) : null;
-
-    if (query != null || tenantId != null) {
-      return and(query, tenantIdQ);
-    } else {
-      return matchAll();
-    }
   }
 
   @Override
@@ -219,6 +214,15 @@ public class OpensearchProcessStore implements ProcessStore {
         .searchValues(searchRequestBuilder, ProcessEntity.class)
         .stream()
         .collect(Collectors.toMap(ProcessEntity::getKey, identity()));
+  }
+
+  @Override
+  public long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys) {
+    if (CollectionUtil.isEmpty(processDefinitionKeys)) return 0;
+    return richOpenSearchClient
+        .doc()
+        .deleteByQuery(
+            processIndex.getAlias(), longTerms(ProcessIndex.KEY, List.of(processDefinitionKeys)));
   }
 
   @Override
@@ -423,15 +427,6 @@ public class OpensearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys) {
-    if (CollectionUtil.isEmpty(processDefinitionKeys)) return 0;
-    return richOpenSearchClient
-        .doc()
-        .deleteByQuery(
-            processIndex.getAlias(), longTerms(ProcessIndex.KEY, List.of(processDefinitionKeys)));
-  }
-
-  @Override
   public long deleteProcessInstancesAndDependants(Set<Long> processInstanceKeys) {
     if (CollectionUtil.isEmpty(processInstanceKeys)) return 0;
 
@@ -458,8 +453,13 @@ public class OpensearchProcessStore implements ProcessStore {
     return count;
   }
 
-  @Override
-  public void refreshIndices(String... indices) {
-    richOpenSearchClient.index().refresh(indices);
+  private Query withTenantIdQuery(@Nullable String tenantId, @Nullable Query query) {
+    final Query tenantIdQ = tenantId != null ? term(ProcessIndex.TENANT_ID, tenantId) : null;
+
+    if (query != null || tenantId != null) {
+      return and(query, tenantIdQ);
+    } else {
+      return matchAll();
+    }
   }
 }

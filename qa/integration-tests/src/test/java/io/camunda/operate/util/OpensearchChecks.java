@@ -58,14 +58,10 @@ import org.springframework.context.annotation.Configuration;
     matchIfMissing = true)
 public class OpensearchChecks {
 
-  @Autowired private RichOpenSearchClient richOpenSearchClient;
-
-  @Autowired private ProcessReader processReader;
-
-  @Autowired private ProcessInstanceReader processInstanceReader;
-
   @Autowired UserTaskReader userTaskReader;
-
+  @Autowired private RichOpenSearchClient richOpenSearchClient;
+  @Autowired private ProcessReader processReader;
+  @Autowired private ProcessInstanceReader processInstanceReader;
   @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;

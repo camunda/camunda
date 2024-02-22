@@ -52,6 +52,11 @@ public class DecisionInstanceInputDto
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(id, name, value);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -63,10 +68,5 @@ public class DecisionInstanceInputDto
     return Objects.equals(id, that.id)
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, name, value);
   }
 }

@@ -45,7 +45,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   private static final String OPERATE_PASSWORD = "demo";
   private static final String TENANT_A = "tenantA";
 
-  private List<Long> processInstanceKeys = new ArrayList<>();
+  private final List<Long> processInstanceKeys = new ArrayList<>();
 
   @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
   private StatefulRestTemplate restTemplate;
@@ -173,8 +173,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       final int no = ThreadLocalRandom.current().nextInt(operationsCount);
       final Long processInstanceKey = processInstanceKeys.get(no);
       final OperationType type = getType(i);
-      Map<String, Object> request = getCreateBatchOperationRequestBody(processInstanceKey, type);
-      RequestEntity<Map<String, Object>> requestEntity =
+      final Map<String, Object> request =
+          getCreateBatchOperationRequestBody(processInstanceKey, type);
+      final RequestEntity<Map<String, Object>> requestEntity =
           RequestEntity.method(
                   HttpMethod.POST, restTemplate.getURL("/api/process-instances/batch-operation"))
               .contentType(MediaType.APPLICATION_JSON)
@@ -185,41 +186,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
             String.format("Unable to create operations. REST response: %s", response));
       }
     }
-  }
-
-  private Map<String, Object> getCreateBatchOperationRequestBody(
-      Long processInstanceKey, OperationType type) {
-    Map<String, Object> request = new HashMap<>();
-    Map<String, Object> listViewRequest = new HashMap<>();
-    listViewRequest.put("running", true);
-    listViewRequest.put("active", true);
-    listViewRequest.put("ids", new Long[] {processInstanceKey});
-    request.put("query", listViewRequest);
-    request.put("operationType", type.toString());
-    return request;
-  }
-
-  private OperationType getType(int i) {
-    return i % 2 == 0 ? OperationType.CANCEL_PROCESS_INSTANCE : OperationType.RESOLVE_INCIDENT;
-  }
-
-  private void sendMessages(String messageName, String payload, int count, String correlationKey) {
-    for (int i = 0; i < count; i++) {
-      client
-          .newPublishMessageCommand()
-          .messageName(messageName)
-          .correlationKey(correlationKey)
-          .variables(payload)
-          .timeToLive(Duration.ofSeconds(30))
-          .messageId(UUID.randomUUID().toString())
-          .send()
-          .join();
-    }
-  }
-
-  private void sendMessages(String messageName, String payload, int count) {
-    sendMessages(
-        messageName, payload, count, String.valueOf(ThreadLocalRandom.current().nextInt(7)));
   }
 
   @Override
@@ -255,144 +221,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
                       .newCompleteCommand(job.getKey())
                       .send()
                       .join(); // incident in gateway for v.1
-                  break;
-              }
-            })
-        .name("operate")
-        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
-        .open();
-  }
-
-  private JobWorker progressPlaceOrderTask() {
-    return client
-        .newWorker()
-        .jobType("placeOrder")
-        .handler(
-            (jobClient, job) -> {
-              final int shipping = ThreadLocalRandom.current().nextInt(5) - 1;
-              jobClient
-                  .newCompleteCommand(job.getKey())
-                  .variables("{\"shipping\":" + shipping + "}")
-                  .send()
-                  .join();
-            })
-        .name("operate")
-        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
-        .open();
-  }
-
-  private JobWorker progressTaskA() {
-    return client
-        .newWorker()
-        .jobType("taskA")
-        .handler(
-            (jobClient, job) -> {
-              final int scenarioCount = ThreadLocalRandom.current().nextInt(2);
-              switch (scenarioCount) {
-                case 0:
-                  // successfully complete task
-                  jobClient.newCompleteCommand(job.getKey()).send().join();
-                  break;
-                case 1:
-                  // leave the task A active
-                  break;
-              }
-            })
-        .name("operate")
-        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
-        .open();
-  }
-
-  private JobWorker progressBigProcessTaskA() {
-    return client
-        .newWorker()
-        .jobType("bigProcessTaskA")
-        .handler(
-            (jobClient, job) -> {
-              Map<String, Object> varMap = job.getVariablesAsMap();
-              // increment loop count
-              Integer i = (Integer) varMap.get("i");
-              varMap.put("i", i == null ? 1 : i + 1);
-              jobClient.newCompleteCommand(job.getKey()).variables(varMap).send().join();
-            })
-        .name("operate")
-        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
-        .open();
-  }
-
-  private JobWorker progressBigProcessTaskB() {
-    final int[] countBeforeIncident = {0};
-    return client
-        .newWorker()
-        .jobType("bigProcessTaskB")
-        .handler(
-            (jobClient, job) -> {
-              if (countBeforeIncident[0] <= 45) {
-                jobClient.newCompleteCommand(job.getKey()).send().join();
-                countBeforeIncident[0]++;
-              } else {
-                if (ThreadLocalRandom.current().nextBoolean()) {
-                  // fail task -> create incident
-                  jobClient.newFailCommand(job.getKey()).retries(0).send().join();
-                } else {
-                  jobClient.newCompleteCommand(job.getKey()).send().join();
-                }
-                countBeforeIncident[0] = 0;
-              }
-            })
-        .name("operate")
-        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
-        .open();
-  }
-
-  private JobWorker progressErrorTask() {
-    return client
-        .newWorker()
-        .jobType("errorTask")
-        .handler(
-            (jobClient, job) -> {
-              String errorCode =
-                  (String) job.getVariablesAsMap().getOrDefault("errorCode", "error");
-              jobClient
-                  .newThrowErrorCommand(job.getKey())
-                  .errorCode(errorCode)
-                  .errorMessage("Job worker throw error with error code: " + errorCode)
-                  .send()
-                  .join();
-            })
-        .name("operate")
-        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
-        .open();
-  }
-
-  private JobWorker progressRetryTask() {
-    return client
-        .newWorker()
-        .jobType("retryTask")
-        .handler(
-            (jobClient, job) -> {
-              final int scenarioCount = ThreadLocalRandom.current().nextInt(4);
-              switch (scenarioCount) {
-                case 0:
-                case 1:
-                  // retry
-                  jobClient
-                      .newCompleteCommand(job.getKey())
-                      .variables("{\"retry\": true}")
-                      .send()
-                      .join();
-                  break;
-                case 2:
-                  // incident
-                  jobClient.newFailCommand(job.getKey()).retries(0).send().join();
-                  break;
-                default:
-                  // complete task and process instance
-                  jobClient
-                      .newCompleteCommand(job.getKey())
-                      .variables("{\"retry\": false}")
-                      .send()
-                      .join();
                   break;
               }
             })
@@ -457,7 +285,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   }
 
   @Override
-  protected void startProcessInstances(int version) {
+  protected void startProcessInstances(final int version) {
     super.startProcessInstances(version);
     if (version == 1) {
       createBigProcess(40, 1000);
@@ -615,18 +443,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     }
   }
 
-  private void createBigProcess(int loopCardinality, int numberOfClients) {
-    ObjectMapper objectMapper = new ObjectMapper();
-    ObjectNode object = objectMapper.createObjectNode();
-    object.put("loopCardinality", loopCardinality);
-    ArrayNode arrayNode = object.putArray("clients");
-    for (int j = 0; j <= numberOfClients; j++) {
-      arrayNode.add(j);
-    }
-    String jsonString = object.toString();
-    ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "bigProcess", jsonString);
-  }
-
   @Override
   protected void deployVersion2() {
     super.deployVersion2();
@@ -669,7 +485,196 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         true, client, getTenant(TENANT_A), "develop/user-task-annual-leave.bpmn");
   }
 
-  public void setClient(ZeebeClient client) {
+  private Map<String, Object> getCreateBatchOperationRequestBody(
+      final Long processInstanceKey, final OperationType type) {
+    final Map<String, Object> request = new HashMap<>();
+    final Map<String, Object> listViewRequest = new HashMap<>();
+    listViewRequest.put("running", true);
+    listViewRequest.put("active", true);
+    listViewRequest.put("ids", new Long[] {processInstanceKey});
+    request.put("query", listViewRequest);
+    request.put("operationType", type.toString());
+    return request;
+  }
+
+  private OperationType getType(final int i) {
+    return i % 2 == 0 ? OperationType.CANCEL_PROCESS_INSTANCE : OperationType.RESOLVE_INCIDENT;
+  }
+
+  private void sendMessages(
+      final String messageName,
+      final String payload,
+      final int count,
+      final String correlationKey) {
+    for (int i = 0; i < count; i++) {
+      client
+          .newPublishMessageCommand()
+          .messageName(messageName)
+          .correlationKey(correlationKey)
+          .variables(payload)
+          .timeToLive(Duration.ofSeconds(30))
+          .messageId(UUID.randomUUID().toString())
+          .send()
+          .join();
+    }
+  }
+
+  private void sendMessages(final String messageName, final String payload, final int count) {
+    sendMessages(
+        messageName, payload, count, String.valueOf(ThreadLocalRandom.current().nextInt(7)));
+  }
+
+  private JobWorker progressPlaceOrderTask() {
+    return client
+        .newWorker()
+        .jobType("placeOrder")
+        .handler(
+            (jobClient, job) -> {
+              final int shipping = ThreadLocalRandom.current().nextInt(5) - 1;
+              jobClient
+                  .newCompleteCommand(job.getKey())
+                  .variables("{\"shipping\":" + shipping + "}")
+                  .send()
+                  .join();
+            })
+        .name("operate")
+        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
+  private JobWorker progressTaskA() {
+    return client
+        .newWorker()
+        .jobType("taskA")
+        .handler(
+            (jobClient, job) -> {
+              final int scenarioCount = ThreadLocalRandom.current().nextInt(2);
+              switch (scenarioCount) {
+                case 0:
+                  // successfully complete task
+                  jobClient.newCompleteCommand(job.getKey()).send().join();
+                  break;
+                case 1:
+                  // leave the task A active
+                  break;
+              }
+            })
+        .name("operate")
+        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
+  private JobWorker progressBigProcessTaskA() {
+    return client
+        .newWorker()
+        .jobType("bigProcessTaskA")
+        .handler(
+            (jobClient, job) -> {
+              final Map<String, Object> varMap = job.getVariablesAsMap();
+              // increment loop count
+              final Integer i = (Integer) varMap.get("i");
+              varMap.put("i", i == null ? 1 : i + 1);
+              jobClient.newCompleteCommand(job.getKey()).variables(varMap).send().join();
+            })
+        .name("operate")
+        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
+  private JobWorker progressBigProcessTaskB() {
+    final int[] countBeforeIncident = {0};
+    return client
+        .newWorker()
+        .jobType("bigProcessTaskB")
+        .handler(
+            (jobClient, job) -> {
+              if (countBeforeIncident[0] <= 45) {
+                jobClient.newCompleteCommand(job.getKey()).send().join();
+                countBeforeIncident[0]++;
+              } else {
+                if (ThreadLocalRandom.current().nextBoolean()) {
+                  // fail task -> create incident
+                  jobClient.newFailCommand(job.getKey()).retries(0).send().join();
+                } else {
+                  jobClient.newCompleteCommand(job.getKey()).send().join();
+                }
+                countBeforeIncident[0] = 0;
+              }
+            })
+        .name("operate")
+        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
+  private JobWorker progressErrorTask() {
+    return client
+        .newWorker()
+        .jobType("errorTask")
+        .handler(
+            (jobClient, job) -> {
+              final String errorCode =
+                  (String) job.getVariablesAsMap().getOrDefault("errorCode", "error");
+              jobClient
+                  .newThrowErrorCommand(job.getKey())
+                  .errorCode(errorCode)
+                  .errorMessage("Job worker throw error with error code: " + errorCode)
+                  .send()
+                  .join();
+            })
+        .name("operate")
+        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
+  private JobWorker progressRetryTask() {
+    return client
+        .newWorker()
+        .jobType("retryTask")
+        .handler(
+            (jobClient, job) -> {
+              final int scenarioCount = ThreadLocalRandom.current().nextInt(4);
+              switch (scenarioCount) {
+                case 0:
+                case 1:
+                  // retry
+                  jobClient
+                      .newCompleteCommand(job.getKey())
+                      .variables("{\"retry\": true}")
+                      .send()
+                      .join();
+                  break;
+                case 2:
+                  // incident
+                  jobClient.newFailCommand(job.getKey()).retries(0).send().join();
+                  break;
+                default:
+                  // complete task and process instance
+                  jobClient
+                      .newCompleteCommand(job.getKey())
+                      .variables("{\"retry\": false}")
+                      .send()
+                      .join();
+                  break;
+              }
+            })
+        .name("operate")
+        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
+  private void createBigProcess(final int loopCardinality, final int numberOfClients) {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final ObjectNode object = objectMapper.createObjectNode();
+    object.put("loopCardinality", loopCardinality);
+    final ArrayNode arrayNode = object.putArray("clients");
+    for (int j = 0; j <= numberOfClients; j++) {
+      arrayNode.add(j);
+    }
+    final String jsonString = object.toString();
+    ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "bigProcess", jsonString);
+  }
+
+  public void setClient(final ZeebeClient client) {
     this.client = client;
   }
 }

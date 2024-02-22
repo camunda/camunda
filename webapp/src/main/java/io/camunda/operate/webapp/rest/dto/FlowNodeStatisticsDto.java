@@ -83,6 +83,16 @@ public class FlowNodeStatisticsDto {
   }
 
   @Override
+  public int hashCode() {
+    int result = activityId != null ? activityId.hashCode() : 0;
+    result = 31 * result + (active != null ? active.hashCode() : 0);
+    result = 31 * result + (canceled != null ? canceled.hashCode() : 0);
+    result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
+    result = 31 * result + (completed != null ? completed.hashCode() : 0);
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -96,16 +106,6 @@ public class FlowNodeStatisticsDto {
     if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
       return false;
     return completed != null ? completed.equals(that.completed) : that.completed == null;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = activityId != null ? activityId.hashCode() : 0;
-    result = 31 * result + (active != null ? active.hashCode() : 0);
-    result = 31 * result + (canceled != null ? canceled.hashCode() : 0);
-    result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
-    result = 31 * result + (completed != null ? completed.hashCode() : 0);
-    return result;
   }
 
   @Override

@@ -49,10 +49,8 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
 
   private static final Long PROCESS_KEY_DEMO_PROCESS = 42L;
   private static final Long PROCESS_KEY_OTHER_PROCESS = 27L;
-
-  @MockBean private PermissionsService permissionsService;
-
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
+  @MockBean private PermissionsService permissionsService;
 
   @Test
   public void testOneProcessStatistics() throws Exception {

@@ -79,6 +79,11 @@ public class FlowNodeStatistics {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(activityId, active, canceled, incidents, completed);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -88,11 +93,6 @@ public class FlowNodeStatistics {
         && Objects.equals(canceled, that.canceled)
         && Objects.equals(incidents, that.incidents)
         && Objects.equals(completed, that.completed);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(activityId, active, canceled, incidents, completed);
   }
 
   @Override

@@ -95,6 +95,11 @@ public class Variable {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(key, processInstanceKey, scopeKey, name, value, truncated, tenantId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -106,11 +111,6 @@ public class Variable {
         && Objects.equals(value, variable.value)
         && Objects.equals(truncated, variable.truncated)
         && Objects.equals(tenantId, variable.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(key, processInstanceKey, scopeKey, name, value, truncated, tenantId);
   }
 
   @Override

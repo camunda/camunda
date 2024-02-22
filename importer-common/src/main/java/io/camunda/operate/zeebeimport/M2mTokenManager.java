@@ -44,7 +44,7 @@ public class M2mTokenManager {
   private String token;
 
   private Date tokenExpiresAt;
-  private Object cacheLock = new Object();
+  private final Object cacheLock = new Object();
 
   @Bean(name = "incidentNotificationRestTemplate")
   public RestTemplate getRestTemplate() {
@@ -55,7 +55,7 @@ public class M2mTokenManager {
     return getToken(false);
   }
 
-  public String getToken(boolean forceTokenUpdate) {
+  public String getToken(final boolean forceTokenUpdate) {
     if (token == null || tokenIsExpired() || forceTokenUpdate) {
       synchronized (cacheLock) {
         if (token == null || tokenIsExpired() || forceTokenUpdate) {
@@ -74,9 +74,9 @@ public class M2mTokenManager {
   }
 
   private String getNewToken() {
-    String tokenURL =
+    final String tokenURL =
         String.format("https://%s/oauth/token", operateProperties.getAuth0().getDomain());
-    Object request = createGetTokenRequest();
+    final Object request = createGetTokenRequest();
 
     final ResponseEntity<Map> response =
         getRestTemplate().postForEntity(tokenURL, request, Map.class);

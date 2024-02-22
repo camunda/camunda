@@ -20,13 +20,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class Metrics {
 
-  private static final Logger logger = LoggerFactory.getLogger(Metrics.class);
-
-  private Timer importBatchTimer;
-
   // Namespace (prefix) for operate metrics
   public static final String OPERATE_NAMESPACE = "operate.";
-
   // Timers:
   public static final String TIMER_NAME_QUERY = OPERATE_NAMESPACE + "query";
   public static final String TIMER_NAME_IMPORT_QUERY = OPERATE_NAMESPACE + "import.query";
@@ -46,7 +41,6 @@ public class Metrics {
       OPERATE_NAMESPACE + "archiver.reindex.query";
   public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY =
       OPERATE_NAMESPACE + "archiver.delete.query";
-
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
   public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI =
@@ -57,7 +51,6 @@ public class Metrics {
   public static final String GAUGE_IMPORT_QUEUE_SIZE = "import.queue.size";
   public static final String GAUGE_BPMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.bpmn.count";
   public static final String GAUGE_DMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.dmn.count";
-
   // Tags
   // -----
   //  Keys:
@@ -71,6 +64,8 @@ public class Metrics {
       TAG_VALUE_CORESTATISTICS = "corestatistics",
       TAG_VALUE_SUCCEEDED = "succeeded",
       TAG_VALUE_FAILED = "failed";
+  private static final Logger logger = LoggerFactory.getLogger(Metrics.class);
+  private Timer importBatchTimer;
   @Autowired private MeterRegistry registry;
 
   /**

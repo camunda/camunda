@@ -18,15 +18,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class OperateDateTimeFormatter {
 
+  public static final String RFC3339_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSxxx";
+  public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private final DateTimeFormatter apiDateTimeFormatter;
   private final DateTimeFormatter generalDateTimeFormatter;
-
   private final String apiDateTimeFormatString;
   private final String generalDateTimeFormatString;
-
-  public static final String RFC3339_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSxxx";
-  public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
   public OperateDateTimeFormatter(OperateProperties operateProperties, DatabaseInfo databaseInfo) {
     if (databaseInfo.isOpensearchDb()) {

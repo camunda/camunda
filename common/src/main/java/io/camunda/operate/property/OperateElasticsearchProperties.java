@@ -50,12 +50,12 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     this.numberOfReplicas = numberOfReplicas;
   }
 
-  public void setRefreshInterval(String refreshInterval) {
-    this.refreshInterval = refreshInterval;
-  }
-
   public String getRefreshInterval() {
     return refreshInterval;
+  }
+
+  public void setRefreshInterval(String refreshInterval) {
+    this.refreshInterval = refreshInterval;
   }
 
   public Map<String, Integer> getNumberOfShardsForIndices() {

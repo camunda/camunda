@@ -40,6 +40,13 @@ public class SequenceFlowDto implements CreatableFromEntity<SequenceFlowDto, Seq
   }
 
   @Override
+  public int hashCode() {
+    int result = processInstanceId != null ? processInstanceId.hashCode() : 0;
+    result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -50,12 +57,5 @@ public class SequenceFlowDto implements CreatableFromEntity<SequenceFlowDto, Seq
         ? !processInstanceId.equals(that.processInstanceId)
         : that.processInstanceId != null) return false;
     return activityId != null ? activityId.equals(that.activityId) : that.activityId == null;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = processInstanceId != null ? processInstanceId.hashCode() : 0;
-    result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
-    return result;
   }
 }

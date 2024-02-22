@@ -46,6 +46,11 @@ public class Results<T> {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(items, Arrays.hashCode(sortValues), total);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -57,11 +62,6 @@ public class Results<T> {
     return total == results.total
         && Objects.equals(items, results.items)
         && Arrays.equals(sortValues, results.sortValues);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(items, Arrays.hashCode(sortValues), total);
   }
 
   @Override

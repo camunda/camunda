@@ -48,8 +48,6 @@ import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
 
 public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
-  public record AggregatedResult<R>(List<R> values, Map<String, Aggregate> aggregates) {}
-
   public static final String SCROLL_KEEP_ALIVE_MS = "60000ms";
   // this scroll timeout value is used for reindex and delete q
   public static final String INTERNAL_SCROLL_KEEP_ALIVE_MS = "30000ms";
@@ -400,4 +398,6 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
               + openSearchClient.getClass().getName());
     }
   }
+
+  public record AggregatedResult<R>(List<R> values, Map<String, Aggregate> aggregates) {}
 }

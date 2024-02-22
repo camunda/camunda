@@ -26,13 +26,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class OperationsManager {
 
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
-
-  @Autowired private OperationTemplate operationTemplate;
-
-  @Autowired private OperationStore operationStore;
-
   @Autowired BeanFactory beanFactory;
+  @Autowired private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private OperationTemplate operationTemplate;
+  @Autowired private OperationStore operationStore;
 
   public void updateFinishedInBatchOperation(String batchOperationId) throws PersistenceException {
     this.updateFinishedInBatchOperation(batchOperationId, null);

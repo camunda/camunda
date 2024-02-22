@@ -31,15 +31,13 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 @IfProfileValue(name = "spring.profiles.active", value = "docker-test")
 public class StartupIT {
 
+  public static final String VERSION = "current-test";
   private static final Logger logger = LoggerFactory.getLogger(StartupIT.class);
-
-  public TestRestTemplate restTemplate = new TestRestTemplate();
-
   //  values for local test:
   //  private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
   //  public static final String VERSION = "8.1.0-alpha4";
   private static final String OPERATE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/operate";
-  public static final String VERSION = "current-test";
+  public TestRestTemplate restTemplate = new TestRestTemplate();
   private TestContainerUtil testContainerUtil = new TestContainerUtil();
   private GenericContainer operateContainer;
   private TestContext testContext;

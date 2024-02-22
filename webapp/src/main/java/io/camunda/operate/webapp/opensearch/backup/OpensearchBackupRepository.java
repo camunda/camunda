@@ -98,16 +98,6 @@ public class OpensearchBackupRepository implements BackupRepository {
             });
   }
 
-  private boolean isSnapshotMissingException(Throwable t) {
-    return t instanceof OpenSearchException
-        && t.getMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
-  }
-
-  private boolean isRepositoryMissingException(Exception e) {
-    return e instanceof OpenSearchException
-        && e.getMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
-  }
-
   @Override
   public void validateRepositoryExists(String repositoryName) {
     try {
@@ -164,6 +154,74 @@ public class OpensearchBackupRepository implements BackupRepository {
               backupId,
               response.snapshots().stream().map(SnapshotInfo::uuid).collect(joining(", ")));
       throw new InvalidRequestException(reason);
+    }
+  }
+
+  @Override
+  public GetBackupStateResponseDto getBackupState(String repositoryName, Long backupId) {
+    List<SnapshotInfo> snapshots = findSnapshots(repositoryName, backupId);
+    GetBackupStateResponseDto response = toGetBackupStateResponseDto(backupId, snapshots);
+    return response;
+  }
+
+  @Override
+  public List<GetBackupStateResponseDto> getBackups(String repositoryName) {
+    var requestBuilder =
+        getSnapshotRequestBuilder(repositoryName, Metadata.SNAPSHOT_NAME_PREFIX + "*");
+    // TODO check unsupported: it looks like sorting as well as size/offset are not working, need to
+    // sort additionally before return
+    //      .sort(GetSnapshotsRequest.SortBy.START_TIME)
+    //      .order(SortOrder.DESC);
+    GetSnapshotResponse response;
+    try {
+      response = richOpenSearchClient.snapshot().get(requestBuilder);
+      List<SnapshotInfo> snapshots =
+          response.snapshots().stream()
+              .sorted(Comparator.comparing(SnapshotInfo::startTimeInMillis).reversed())
+              .toList();
+
+      LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
+          snapshots.stream()
+              .collect(
+                  groupingBy(
+                      si -> {
+                        Metadata metadata =
+                            objectMapper.convertValue(si.metadata(), Metadata.class);
+                        Long backupId = metadata.getBackupId();
+                        // backward compatibility with v. 8.1
+                        if (backupId == null) {
+                          backupId = Metadata.extractBackupIdFromSnapshotName(si.snapshot());
+                        }
+                        return backupId;
+                      },
+                      LinkedHashMap::new,
+                      toList()));
+
+      List<GetBackupStateResponseDto> responses =
+          groupedSnapshotInfos.entrySet().stream()
+              .map(entry -> toGetBackupStateResponseDto(entry.getKey(), entry.getValue()))
+              .toList();
+
+      return responses;
+    } catch (IOException e) {
+      final String reason =
+          format(
+              "Encountered an error connecting to Opensearch while searching for snapshots. Repository name: [%s].",
+              repositoryName);
+      throw new OperateOpensearchConnectionException(reason, e);
+    } catch (Exception e) {
+      if (isRepositoryMissingException(e)) {
+        final String reason =
+            format("No repository with name [%s] could be found.", repositoryName);
+        throw new OperateRuntimeException(reason);
+      }
+      if (isSnapshotMissingException(e)) {
+        // no snapshots exist
+        return new ArrayList<>();
+      }
+      final String reason =
+          format("Exception occurred when searching for backups: %s", e.getMessage());
+      throw new OperateRuntimeException(reason, e);
     }
   }
 
@@ -235,6 +293,16 @@ public class OpensearchBackupRepository implements BackupRepository {
             });
   }
 
+  private boolean isSnapshotMissingException(Throwable t) {
+    return t instanceof OpenSearchException
+        && t.getMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
+  }
+
+  private boolean isRepositoryMissingException(Exception e) {
+    return e instanceof OpenSearchException
+        && e.getMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
+  }
+
   private Long backupId(BackupService.SnapshotRequest snapshotRequest) {
     return Metadata.extractBackupIdFromSnapshotName(snapshotRequest.snapshotName());
   }
@@ -286,13 +354,6 @@ public class OpensearchBackupRepository implements BackupRepository {
           format("Exception occurred when searching for backup with ID [%s].", backupId);
       throw new OperateRuntimeException(reason, e);
     }
-  }
-
-  @Override
-  public GetBackupStateResponseDto getBackupState(String repositoryName, Long backupId) {
-    List<SnapshotInfo> snapshots = findSnapshots(repositoryName, backupId);
-    GetBackupStateResponseDto response = toGetBackupStateResponseDto(backupId, snapshots);
-    return response;
   }
 
   private GetBackupStateResponseDto toGetBackupStateResponseDto(
@@ -360,66 +421,5 @@ public class OpensearchBackupRepository implements BackupRepository {
       }
     }
     return response;
-  }
-
-  @Override
-  public List<GetBackupStateResponseDto> getBackups(String repositoryName) {
-    var requestBuilder =
-        getSnapshotRequestBuilder(repositoryName, Metadata.SNAPSHOT_NAME_PREFIX + "*");
-    // TODO check unsupported: it looks like sorting as well as size/offset are not working, need to
-    // sort additionally before return
-    //      .sort(GetSnapshotsRequest.SortBy.START_TIME)
-    //      .order(SortOrder.DESC);
-    GetSnapshotResponse response;
-    try {
-      response = richOpenSearchClient.snapshot().get(requestBuilder);
-      List<SnapshotInfo> snapshots =
-          response.snapshots().stream()
-              .sorted(Comparator.comparing(SnapshotInfo::startTimeInMillis).reversed())
-              .toList();
-
-      LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
-          snapshots.stream()
-              .collect(
-                  groupingBy(
-                      si -> {
-                        Metadata metadata =
-                            objectMapper.convertValue(si.metadata(), Metadata.class);
-                        Long backupId = metadata.getBackupId();
-                        // backward compatibility with v. 8.1
-                        if (backupId == null) {
-                          backupId = Metadata.extractBackupIdFromSnapshotName(si.snapshot());
-                        }
-                        return backupId;
-                      },
-                      LinkedHashMap::new,
-                      toList()));
-
-      List<GetBackupStateResponseDto> responses =
-          groupedSnapshotInfos.entrySet().stream()
-              .map(entry -> toGetBackupStateResponseDto(entry.getKey(), entry.getValue()))
-              .toList();
-
-      return responses;
-    } catch (IOException e) {
-      final String reason =
-          format(
-              "Encountered an error connecting to Opensearch while searching for snapshots. Repository name: [%s].",
-              repositoryName);
-      throw new OperateOpensearchConnectionException(reason, e);
-    } catch (Exception e) {
-      if (isRepositoryMissingException(e)) {
-        final String reason =
-            format("No repository with name [%s] could be found.", repositoryName);
-        throw new OperateRuntimeException(reason);
-      }
-      if (isSnapshotMissingException(e)) {
-        // no snapshots exist
-        return new ArrayList<>();
-      }
-      final String reason =
-          format("Exception occurred when searching for backups: %s", e.getMessage());
-      throw new OperateRuntimeException(reason, e);
-    }
   }
 }

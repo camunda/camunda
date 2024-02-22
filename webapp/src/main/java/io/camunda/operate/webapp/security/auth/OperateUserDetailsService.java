@@ -37,12 +37,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class OperateUserDetailsService implements UserDetailsService {
 
   private static final Logger logger = LoggerFactory.getLogger(OperateUserDetailsService.class);
-
-  private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
   private static final String READ_ONLY_USER = "view";
-
   @Autowired private UserStore userStore;
-
+  private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
   @Autowired private OperateProperties operateProperties;
 
   @Bean

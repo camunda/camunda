@@ -43,6 +43,51 @@ public class FlowNodeInstanceMetadataDto {
 
   private String correlationKey;
 
+  public static FlowNodeInstanceMetadataDto createFrom(
+      FlowNodeInstanceEntity flowNodeInstance,
+      EventEntity eventEntity,
+      String calledProcessInstanceId,
+      String calledProcessDefinitionName,
+      String calledDecisionInstanceId,
+      String calledDecisionDefinitionName) {
+    FlowNodeInstanceMetadataDto metadataDto =
+        new FlowNodeInstanceMetadataDto()
+            // flow node instance data
+            .setFlowNodeInstanceId(flowNodeInstance.getId())
+            .setFlowNodeId(flowNodeInstance.getFlowNodeId())
+            .setFlowNodeType(flowNodeInstance.getType())
+            .setStartDate(flowNodeInstance.getStartDate())
+            .setEndDate(flowNodeInstance.getEndDate());
+    if (calledProcessInstanceId != null) {
+      metadataDto.setCalledProcessInstanceId(calledProcessInstanceId);
+    }
+    if (calledProcessDefinitionName != null) {
+      metadataDto.setCalledProcessDefinitionName(calledProcessDefinitionName);
+    }
+    if (calledDecisionInstanceId != null) {
+      metadataDto.setCalledDecisionInstanceId(calledDecisionInstanceId);
+    }
+    if (calledDecisionDefinitionName != null) {
+      metadataDto.setCalledDecisionDefinitionName(calledDecisionDefinitionName);
+    }
+
+    // last event data
+    metadataDto.setEventId(eventEntity.getId());
+    EventMetadataEntity eventMetadataEntity = eventEntity.getMetadata();
+    if (eventMetadataEntity != null) {
+      metadataDto
+          .setJobCustomHeaders(eventMetadataEntity.getJobCustomHeaders())
+          .setJobDeadline(eventMetadataEntity.getJobDeadline())
+          .setJobRetries(eventMetadataEntity.getJobRetries())
+          .setJobType(eventMetadataEntity.getJobType())
+          .setJobWorker(eventMetadataEntity.getJobWorker())
+          .setMessageName(eventMetadataEntity.getMessageName())
+          .setCorrelationKey(eventMetadataEntity.getCorrelationKey());
+    }
+
+    return metadataDto;
+  }
+
   public String getFlowNodeId() {
     return flowNodeId;
   }
@@ -201,49 +246,26 @@ public class FlowNodeInstanceMetadataDto {
     return this;
   }
 
-  public static FlowNodeInstanceMetadataDto createFrom(
-      FlowNodeInstanceEntity flowNodeInstance,
-      EventEntity eventEntity,
-      String calledProcessInstanceId,
-      String calledProcessDefinitionName,
-      String calledDecisionInstanceId,
-      String calledDecisionDefinitionName) {
-    FlowNodeInstanceMetadataDto metadataDto =
-        new FlowNodeInstanceMetadataDto()
-            // flow node instance data
-            .setFlowNodeInstanceId(flowNodeInstance.getId())
-            .setFlowNodeId(flowNodeInstance.getFlowNodeId())
-            .setFlowNodeType(flowNodeInstance.getType())
-            .setStartDate(flowNodeInstance.getStartDate())
-            .setEndDate(flowNodeInstance.getEndDate());
-    if (calledProcessInstanceId != null) {
-      metadataDto.setCalledProcessInstanceId(calledProcessInstanceId);
-    }
-    if (calledProcessDefinitionName != null) {
-      metadataDto.setCalledProcessDefinitionName(calledProcessDefinitionName);
-    }
-    if (calledDecisionInstanceId != null) {
-      metadataDto.setCalledDecisionInstanceId(calledDecisionInstanceId);
-    }
-    if (calledDecisionDefinitionName != null) {
-      metadataDto.setCalledDecisionDefinitionName(calledDecisionDefinitionName);
-    }
-
-    // last event data
-    metadataDto.setEventId(eventEntity.getId());
-    EventMetadataEntity eventMetadataEntity = eventEntity.getMetadata();
-    if (eventMetadataEntity != null) {
-      metadataDto
-          .setJobCustomHeaders(eventMetadataEntity.getJobCustomHeaders())
-          .setJobDeadline(eventMetadataEntity.getJobDeadline())
-          .setJobRetries(eventMetadataEntity.getJobRetries())
-          .setJobType(eventMetadataEntity.getJobType())
-          .setJobWorker(eventMetadataEntity.getJobWorker())
-          .setMessageName(eventMetadataEntity.getMessageName())
-          .setCorrelationKey(eventMetadataEntity.getCorrelationKey());
-    }
-
-    return metadataDto;
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        flowNodeId,
+        flowNodeInstanceId,
+        flowNodeType,
+        startDate,
+        endDate,
+        calledProcessInstanceId,
+        calledProcessDefinitionName,
+        calledDecisionInstanceId,
+        calledDecisionDefinitionName,
+        eventId,
+        jobType,
+        jobRetries,
+        jobWorker,
+        jobDeadline,
+        jobCustomHeaders,
+        messageName,
+        correlationKey);
   }
 
   @Override
@@ -272,28 +294,6 @@ public class FlowNodeInstanceMetadataDto {
         && Objects.equals(jobCustomHeaders, that.jobCustomHeaders)
         && Objects.equals(messageName, that.messageName)
         && Objects.equals(correlationKey, that.correlationKey);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        flowNodeId,
-        flowNodeInstanceId,
-        flowNodeType,
-        startDate,
-        endDate,
-        calledProcessInstanceId,
-        calledProcessDefinitionName,
-        calledDecisionInstanceId,
-        calledDecisionDefinitionName,
-        eventId,
-        jobType,
-        jobRetries,
-        jobWorker,
-        jobDeadline,
-        jobCustomHeaders,
-        messageName,
-        correlationKey);
   }
 
   @Override

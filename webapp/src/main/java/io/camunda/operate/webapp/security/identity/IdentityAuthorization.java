@@ -23,34 +23,6 @@ public class IdentityAuthorization implements Serializable {
   private String resourceType;
   private Set<String> permissions;
 
-  public IdentityAuthorization setResourceKey(String resourceKey) {
-    this.resourceKey = resourceKey;
-    return this;
-  }
-
-  public IdentityAuthorization setResourceType(String resourceType) {
-    this.resourceType = resourceType;
-    return this;
-  }
-
-  public IdentityAuthorization setPermissions(Set<String> permissions) {
-    // Copy the container so that it remains independent of any changes to the original
-    this.permissions = new HashSet<>(permissions);
-    return this;
-  }
-
-  public String getResourceKey() {
-    return resourceKey;
-  }
-
-  public String getResourceType() {
-    return resourceType;
-  }
-
-  public Set<String> getPermissions() {
-    return permissions;
-  }
-
   public static IdentityAuthorization createFrom(Authorization authorization) {
     return new IdentityAuthorization()
         .setResourceKey(authorization.getResourceKey())
@@ -68,6 +40,39 @@ public class IdentityAuthorization implements Serializable {
         .collect(Collectors.toList());
   }
 
+  public String getResourceKey() {
+    return resourceKey;
+  }
+
+  public IdentityAuthorization setResourceKey(String resourceKey) {
+    this.resourceKey = resourceKey;
+    return this;
+  }
+
+  public String getResourceType() {
+    return resourceType;
+  }
+
+  public IdentityAuthorization setResourceType(String resourceType) {
+    this.resourceType = resourceType;
+    return this;
+  }
+
+  public Set<String> getPermissions() {
+    return permissions;
+  }
+
+  public IdentityAuthorization setPermissions(Set<String> permissions) {
+    // Copy the container so that it remains independent of any changes to the original
+    this.permissions = new HashSet<>(permissions);
+    return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(resourceKey, resourceType, permissions);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
@@ -76,11 +81,6 @@ public class IdentityAuthorization implements Serializable {
     return Objects.equals(resourceKey, that.resourceKey)
         && Objects.equals(resourceType, that.resourceType)
         && Objects.equals(permissions, that.permissions);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(resourceKey, resourceType, permissions);
   }
 
   @Override

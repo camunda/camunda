@@ -32,6 +32,13 @@ public class ListViewResponseDto {
   }
 
   @Override
+  public int hashCode() {
+    int result = processInstances != null ? processInstances.hashCode() : 0;
+    result = 31 * result + (int) (totalCount ^ (totalCount >>> 32));
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -42,12 +49,5 @@ public class ListViewResponseDto {
     return processInstances != null
         ? processInstances.equals(that.processInstances)
         : that.processInstances == null;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = processInstances != null ? processInstances.hashCode() : 0;
-    result = 31 * result + (int) (totalCount ^ (totalCount >>> 32));
-    return result;
   }
 }

@@ -40,6 +40,14 @@ public class ProcessInstanceCoreStatisticsDto {
   }
 
   @Override
+  public int hashCode() {
+    int result = running != null ? running.hashCode() : 0;
+    result = 31 * result + (active != null ? active.hashCode() : 0);
+    result = 31 * result + (withIncidents != null ? withIncidents.hashCode() : 0);
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -52,13 +60,5 @@ public class ProcessInstanceCoreStatisticsDto {
     return withIncidents != null
         ? withIncidents.equals(that.withIncidents)
         : that.withIncidents == null;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = running != null ? running.hashCode() : 0;
-    result = 31 * result + (active != null ? active.hashCode() : 0);
-    result = 31 * result + (withIncidents != null ? withIncidents.hashCode() : 0);
-    return result;
   }
 }

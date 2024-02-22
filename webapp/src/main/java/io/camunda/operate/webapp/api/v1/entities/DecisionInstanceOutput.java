@@ -64,6 +64,11 @@ public class DecisionInstanceOutput {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(id, name, value, ruleId, ruleIndex);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -73,11 +78,6 @@ public class DecisionInstanceOutput {
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
         && Objects.equals(ruleId, that.ruleId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, name, value, ruleId, ruleIndex);
   }
 
   @Override

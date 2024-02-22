@@ -71,23 +71,23 @@ public class OperateSession implements Session {
     changed = true;
   }
 
+  public Instant getLastAccessedTime() {
+    return delegate.getLastAccessedTime();
+  }
+
   public void setLastAccessedTime(final Instant lastAccessedTime) {
     delegate.setLastAccessedTime(lastAccessedTime);
     changed = true;
   }
 
-  public Instant getLastAccessedTime() {
-    return delegate.getLastAccessedTime();
+  public Duration getMaxInactiveInterval() {
+    return delegate.getMaxInactiveInterval();
   }
 
   @Override
   public void setMaxInactiveInterval(final Duration interval) {
     delegate.setMaxInactiveInterval(interval);
     changed = true;
-  }
-
-  public Duration getMaxInactiveInterval() {
-    return delegate.getMaxInactiveInterval();
   }
 
   public boolean isExpired() {

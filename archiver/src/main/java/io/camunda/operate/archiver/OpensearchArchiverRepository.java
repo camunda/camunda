@@ -61,28 +61,28 @@ import org.springframework.stereotype.Component;
 public class OpensearchArchiverRepository implements ArchiverRepository {
 
   private static final Logger logger = LoggerFactory.getLogger(OpensearchArchiverRepository.class);
-
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
-
-  @Autowired private ListViewTemplate processInstanceTemplate;
-
-  @Autowired private OperateProperties operateProperties;
-
-  @Autowired private Metrics metrics;
-
   @Autowired protected RichOpenSearchClient richOpenSearchClient;
 
   @Autowired
   @Qualifier("archiverThreadPoolExecutor")
   protected ThreadPoolTaskScheduler archiverExecutor;
 
+  @Autowired private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private ListViewTemplate processInstanceTemplate;
+  @Autowired private OperateProperties operateProperties;
+  @Autowired private Metrics metrics;
+
   private <R> ArchiveBatch createArchiveBatch(
-      SearchResponse<R> searchResponse, String datesAggName, String instancesAggName) {
-    var buckets = searchResponse.aggregations().get(datesAggName).dateHistogram().buckets().keyed();
+      final SearchResponse<R> searchResponse,
+      final String datesAggName,
+      final String instancesAggName) {
+    final var buckets =
+        searchResponse.aggregations().get(datesAggName).dateHistogram().buckets().keyed();
     if (buckets.size() > 0) {
-      var entry = buckets.entrySet().iterator().next();
-      var hits = entry.getValue().aggregations().get(instancesAggName).topHits().hits().hits();
-      var ids = hits.stream().map(hit -> (Object) hit.id()).toList();
+      final var entry = buckets.entrySet().iterator().next();
+      final var hits =
+          entry.getValue().aggregations().get(instancesAggName).topHits().hits().hits();
+      final var ids = hits.stream().map(hit -> (Object) hit.id()).toList();
       return new ArchiveBatch(entry.getKey(), ids);
     } else {
       return null;
@@ -90,7 +90,8 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
   }
 
   private CompletableFuture<ArchiveBatch> search(
-      SearchRequest.Builder searchRequestBuilder, Function<Exception, String> errorMessage) {
+      final SearchRequest.Builder searchRequestBuilder,
+      final Function<Exception, String> errorMessage) {
     return withTimer(
             metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY),
             () ->
@@ -102,12 +103,12 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
   }
 
   private SearchRequest.Builder nextBatchSearchRequestBuilder(
-      String index, String idColumn, String endDateField, Query query) {
-    var format = operateProperties.getArchiver().getElsRolloverDateFormat();
-    var interval = operateProperties.getArchiver().getRolloverInterval();
-    var rollOverBatchSize = operateProperties.getArchiver().getRolloverBatchSize();
+      final String index, final String idColumn, final String endDateField, final Query query) {
+    final var format = operateProperties.getArchiver().getElsRolloverDateFormat();
+    final var interval = operateProperties.getArchiver().getRolloverInterval();
+    final var rollOverBatchSize = operateProperties.getArchiver().getRolloverBatchSize();
 
-    Aggregation agg =
+    final Aggregation agg =
         withSubaggregations(
             dateHistogramAggregation(END_DATE, interval, format, true),
             Map.of(
@@ -130,12 +131,12 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
 
   @Override
   public CompletableFuture<ArchiveBatch> getBatchOperationNextBatch() {
-    Query query =
+    final Query query =
         constantScore(
             lte(
                 BatchOperationTemplate.END_DATE,
                 operateProperties.getArchiver().getArchivingTimepoint()));
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         nextBatchSearchRequestBuilder(
             batchOperationTemplate.getFullQualifiedName(),
             BatchOperationTemplate.ID,
@@ -147,8 +148,9 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(List<Integer> partitionIds) {
-    Query query =
+  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(
+      final List<Integer> partitionIds) {
+    final Query query =
         constantScore(
             and(
                 lte(
@@ -159,7 +161,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
                     ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
                 intTerms(ListViewTemplate.PARTITION_ID, partitionIds)));
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         nextBatchSearchRequestBuilder(
             processInstanceTemplate.getFullQualifiedName(),
             ListViewTemplate.ID,
@@ -171,10 +173,6 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
         e -> "Failed to search in " + batchOperationTemplate.getFullQualifiedName());
   }
 
-  private long getAutoSlices() {
-    return operateProperties.getOpensearch().getNumberOfShards();
-  }
-
   @Override
   public void setIndexLifeCycle(final String destinationIndexName) {
     try {
@@ -183,7 +181,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
             .ism()
             .addPolicyToIndex(destinationIndexName, OPERATE_DELETE_ARCHIVED_INDICES);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.warn(
           "Could not set ILM policy {} for index {}: {}",
           OPERATE_DELETE_ARCHIVED_INDICES,
@@ -197,7 +195,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
       final String sourceIndexName,
       final String idFieldName,
       final List<Object> processInstanceKeys) {
-    var deleteByQueryRequestBuilder =
+    final var deleteByQueryRequestBuilder =
         deleteByQueryRequestBuilder(sourceIndexName)
             .query(
                 stringTerms(
@@ -261,8 +259,12 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
                             .totalImpactedByTask(response.task(), archiverExecutor)));
   }
 
+  private long getAutoSlices() {
+    return operateProperties.getOpensearch().getNumberOfShards();
+  }
+
   private void createIndexAs(final String sourceIndexName, final String destinationIndexName) {
-    var srcIndex =
+    final var srcIndex =
         richOpenSearchClient
             .index()
             .get(getIndexRequestBuilder(sourceIndexName))

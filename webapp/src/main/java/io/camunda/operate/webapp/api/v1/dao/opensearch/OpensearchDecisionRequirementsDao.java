@@ -45,11 +45,6 @@ public class OpensearchDecisionRequirementsDao
   }
 
   @Override
-  protected DecisionRequirements convertInternalToApiResult(DecisionRequirements internalResult) {
-    return internalResult;
-  }
-
-  @Override
   protected String getKeyFieldName() {
     return DecisionRequirements.KEY;
   }
@@ -148,5 +143,10 @@ public class OpensearchDecisionRequirementsDao
         request.query(queryDSLWrapper.and(queryTerms));
       }
     }
+  }
+
+  @Override
+  protected DecisionRequirements convertInternalToApiResult(DecisionRequirements internalResult) {
+    return internalResult;
   }
 }

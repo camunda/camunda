@@ -112,6 +112,10 @@ public class JWTDecoder implements DecodedJWT, Serializable {
     return this.payload.getClaims();
   }
 
+  public String getToken() {
+    return String.format("%s.%s.%s", this.parts[0], this.parts[1], this.parts[2]);
+  }
+
   public String getHeader() {
     return this.parts[0];
   }
@@ -122,10 +126,6 @@ public class JWTDecoder implements DecodedJWT, Serializable {
 
   public String getSignature() {
     return this.parts[2];
-  }
-
-  public String getToken() {
-    return String.format("%s.%s.%s", this.parts[0], this.parts[1], this.parts[2]);
   }
 
   abstract static class TokenUtils {

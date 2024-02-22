@@ -30,9 +30,10 @@ public class CustomSecurityExpressionRoot extends SecurityExpressionRoot
     return permissions != null && permissions.contains(Permission.fromString(permission));
   }
 
-  @Override
-  public void setFilterObject(Object filterObject) {
-    this.filterObject = filterObject;
+  public CustomSecurityExpressionRoot setUserService(
+      final UserService<? extends Authentication> userService) {
+    this.userService = userService;
+    return this;
   }
 
   @Override
@@ -41,13 +42,18 @@ public class CustomSecurityExpressionRoot extends SecurityExpressionRoot
   }
 
   @Override
-  public void setReturnObject(Object returnObject) {
-    this.returnObject = returnObject;
+  public void setFilterObject(Object filterObject) {
+    this.filterObject = filterObject;
   }
 
   @Override
   public Object getReturnObject() {
     return returnObject;
+  }
+
+  @Override
+  public void setReturnObject(Object returnObject) {
+    this.returnObject = returnObject;
   }
 
   @Override
@@ -57,11 +63,5 @@ public class CustomSecurityExpressionRoot extends SecurityExpressionRoot
 
   public void setThis(Object target) {
     this.target = target;
-  }
-
-  public CustomSecurityExpressionRoot setUserService(
-      final UserService<? extends Authentication> userService) {
-    this.userService = userService;
-    return this;
   }
 }

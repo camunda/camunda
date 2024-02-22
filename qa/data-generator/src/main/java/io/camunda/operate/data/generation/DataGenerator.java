@@ -44,10 +44,9 @@ import org.springframework.stereotype.Component;
 @Configuration
 public class DataGenerator {
 
-  private static final Logger logger = LoggerFactory.getLogger(DataGenerator.class);
   public static final String PARENT_PROCESS_ID = "parentProcess";
   public static final String CHILD_PROCESS_ID = "childProcess";
-
+  private static final Logger logger = LoggerFactory.getLogger(DataGenerator.class);
   @Autowired private DataGeneratorProperties dataGeneratorProperties;
 
   @Autowired private ZeebeClient zeebeClient;

@@ -47,10 +47,6 @@ public class OperationReaderIT extends OperateAbstractIT {
   private static final String QUERY_LIST_VIEW_URL = PROCESS_INSTANCE_URL;
 
   private static final Long PROCESS_KEY_DEMO_PROCESS = 42L;
-
-  private static String PROCESS_INSTANCE_ID_1;
-  private static String PROCESS_INSTANCE_ID_2;
-  private static String PROCESS_INSTANCE_ID_3;
   private static final String USER_1 = "user1";
   private static final String USER_2 = "user2";
   private static final String USER_3 = "user3";
@@ -61,7 +57,9 @@ public class OperationReaderIT extends OperateAbstractIT {
   private static final long INCIDENT_1 = 1;
   private static final long INCIDENT_2 = 2;
   private static final long INCIDENT_3 = 3;
-
+  private static String PROCESS_INSTANCE_ID_1;
+  private static String PROCESS_INSTANCE_ID_2;
+  private static String PROCESS_INSTANCE_ID_3;
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Before

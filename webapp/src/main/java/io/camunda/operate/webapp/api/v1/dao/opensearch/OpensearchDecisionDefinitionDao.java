@@ -57,8 +57,13 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
-  protected DecisionDefinition convertInternalToApiResult(DecisionDefinition internalResult) {
-    return internalResult;
+  public DecisionDefinition byKey(Long key) {
+    var decisionDefinition = super.byKey(key);
+    DecisionRequirements decisionRequirements =
+        decisionRequirementsDao.byKey(decisionDefinition.getDecisionRequirementsKey());
+    decisionDefinition.setDecisionRequirementsName(decisionRequirements.getName());
+    decisionDefinition.setDecisionRequirementsVersion(decisionRequirements.getVersion());
+    return decisionDefinition;
   }
 
   @Override
@@ -82,6 +87,14 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
+  public Results<DecisionDefinition> search(Query<DecisionDefinition> query) {
+    var results = super.search(query);
+    var decisionDefinitions = results.getItems();
+    populateDecisionRequirementsNameAndVersion(decisionDefinitions);
+    return results;
+  }
+
+  @Override
   protected String getUniqueSortKey() {
     return DecisionDefinition.KEY;
   }
@@ -94,16 +107,6 @@ public class OpensearchDecisionDefinitionDao
   @Override
   protected String getIndexName() {
     return decisionIndex.getAlias();
-  }
-
-  @Override
-  public DecisionDefinition byKey(Long key) {
-    var decisionDefinition = super.byKey(key);
-    DecisionRequirements decisionRequirements =
-        decisionRequirementsDao.byKey(decisionDefinition.getDecisionRequirementsKey());
-    decisionDefinition.setDecisionRequirementsName(decisionRequirements.getName());
-    decisionDefinition.setDecisionRequirementsVersion(decisionRequirements.getVersion());
-    return decisionDefinition;
   }
 
   @Override
@@ -138,11 +141,8 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
-  public Results<DecisionDefinition> search(Query<DecisionDefinition> query) {
-    var results = super.search(query);
-    var decisionDefinitions = results.getItems();
-    populateDecisionRequirementsNameAndVersion(decisionDefinitions);
-    return results;
+  protected DecisionDefinition convertInternalToApiResult(DecisionDefinition internalResult) {
+    return internalResult;
   }
 
   /**

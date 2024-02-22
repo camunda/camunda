@@ -138,6 +138,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     return retryElasticsearchClient.getIndexSettingsFor(indexName, fields);
   }
 
+  @Override
+  public String getIndexPrefix() {
+    return operateProperties.getElasticsearch().getIndexPrefix();
+  }
+
   private String settingsTemplateName() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     return String.format("%s_template", elsConfig.getIndexPrefix());
@@ -314,10 +319,5 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     } else {
       logger.debug("Template [{}] was NOT created", request.name());
     }
-  }
-
-  @Override
-  public String getIndexPrefix() {
-    return operateProperties.getElasticsearch().getIndexPrefix();
   }
 }

@@ -56,11 +56,6 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @FunctionalInterface
-  private interface MapUpdater {
-    void updateMapEntry(FlowNodeStatisticsDto statistics, Long value);
-  }
-
   @Override
   public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(ListViewQueryDto query) {
     SearchRequest.Builder searchRequest;
@@ -229,5 +224,10 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
     //          mapUpdater.updateMapEntry(statisticsMap.get(activityId), docCount);
     //        });
     //    }
+  }
+
+  @FunctionalInterface
+  private interface MapUpdater {
+    void updateMapEntry(FlowNodeStatisticsDto statistics, Long value);
   }
 }

@@ -48,19 +48,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class DataGenerator {
 
-  private static final Logger logger = LoggerFactory.getLogger(DataGenerator.class);
   public static final String PROCESS_BPMN_PROCESS_ID = "basicProcess";
   public static final int PROCESS_INSTANCE_COUNT = 51;
   public static final int INCIDENT_COUNT = 32;
   public static final int COUNT_OF_CANCEL_OPERATION = 9;
   public static final int COUNT_OF_RESOLVE_OPERATION = 8;
-  private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
-
   // data change
   public static final String NEW_BPMN_PROCESS_ID = "testProcess2";
   public static final int CANCELLED_PROCESS_INSTANCES = 3;
   public static final int NEW_PROCESS_INSTANCES_COUNT = 13;
+  private static final Logger logger = LoggerFactory.getLogger(DataGenerator.class);
+  private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
   /**
    * ZeebeClient must not be reused between different test fixtures, as this may be different

@@ -21,6 +21,11 @@ public class UsageMetricDTO {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(total);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -30,11 +35,6 @@ public class UsageMetricDTO {
     }
     final UsageMetricDTO that = (UsageMetricDTO) o;
     return total == that.total;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(total);
   }
 
   @Override

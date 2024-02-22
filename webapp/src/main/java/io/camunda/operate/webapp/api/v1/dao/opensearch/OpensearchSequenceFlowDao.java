@@ -38,11 +38,6 @@ public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceF
   }
 
   @Override
-  protected SequenceFlow convertInternalToApiResult(SequenceFlow internalResult) {
-    return internalResult;
-  }
-
-  @Override
   protected String getUniqueSortKey() {
     return SequenceFlow.ID;
   }
@@ -76,5 +71,10 @@ public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceF
         request.query(queryDSLWrapper.and(queryTerms));
       }
     }
+  }
+
+  @Override
+  protected SequenceFlow convertInternalToApiResult(SequenceFlow internalResult) {
+    return internalResult;
   }
 }

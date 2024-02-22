@@ -23,8 +23,8 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
   @Autowired private Metrics metrics;
 
   @Override
-  public void performImport(ImportBatch importBatch) throws PersistenceException {
-    BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
+  public void performImport(final ImportBatch importBatch) throws PersistenceException {
+    final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     try {
       withProcessingTimer(
           () -> {
@@ -40,7 +40,7 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
           },
           importBatch);
 
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new PersistenceException(e);
     }
   }
@@ -50,13 +50,13 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
     withTimer(callable, Metrics.TIMER_NAME_IMPORT_PROCESSING_DURATION, importBatch);
   }
 
-  private void withImportIndexQueryTimer(Callable<Void> callable, final ImportBatch importBatch)
-      throws Exception {
+  private void withImportIndexQueryTimer(
+      final Callable<Void> callable, final ImportBatch importBatch) throws Exception {
     withTimer(callable, Metrics.TIMER_NAME_IMPORT_INDEX_QUERY, importBatch);
   }
 
   private void withTimer(
-      final Callable<Void> callable, String timerName, final ImportBatch importBatch)
+      final Callable<Void> callable, final String timerName, final ImportBatch importBatch)
       throws Exception {
     metrics
         .getTimer(

@@ -52,6 +52,13 @@ public class SortingDto {
   }
 
   @Override
+  public int hashCode() {
+    int result = sortBy != null ? sortBy.hashCode() : 0;
+    result = 31 * result + (sortOrder != null ? sortOrder.hashCode() : 0);
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -60,12 +67,5 @@ public class SortingDto {
 
     if (sortBy != null ? !sortBy.equals(that.sortBy) : that.sortBy != null) return false;
     return sortOrder != null ? sortOrder.equals(that.sortOrder) : that.sortOrder == null;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = sortBy != null ? sortBy.hashCode() : 0;
-    result = 31 * result + (sortOrder != null ? sortOrder.hashCode() : 0);
-    return result;
   }
 }

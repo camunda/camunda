@@ -29,7 +29,8 @@ public abstract class InternalAPIErrorController {
 
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   @ExceptionHandler(OperateRuntimeException.class)
-  public ResponseEntity<Error> handleOperateRuntimeException(OperateRuntimeException exception) {
+  public ResponseEntity<Error> handleOperateRuntimeException(
+      final OperateRuntimeException exception) {
     LOGGER.warn(exception.getMessage(), exception);
     final Error error =
         new Error()
@@ -43,7 +44,7 @@ public abstract class InternalAPIErrorController {
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(io.camunda.operate.store.NotFoundException.class)
   public ResponseEntity<Error> handleRuntimeNotFoundException(
-      io.camunda.operate.store.NotFoundException exception) {
+      final io.camunda.operate.store.NotFoundException exception) {
     LOGGER.warn(exception.getMessage(), exception);
     final Error error =
         new Error()
@@ -56,7 +57,7 @@ public abstract class InternalAPIErrorController {
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(InternalAPIException.class)
-  public ResponseEntity<Error> handleInternalAPIException(InternalAPIException exception) {
+  public ResponseEntity<Error> handleInternalAPIException(final InternalAPIException exception) {
     LOGGER.warn(String.format("Instance: %s; %s", exception.getInstance(), exception.getMessage()));
     final Error error =
         new Error()
@@ -70,7 +71,7 @@ public abstract class InternalAPIErrorController {
 
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(NotFoundException.class)
-  public ResponseEntity<Error> handleInternalNotFoundException(NotFoundException exception) {
+  public ResponseEntity<Error> handleInternalNotFoundException(final NotFoundException exception) {
     LOGGER.warn(String.format("Instance: %s; %s", exception.getInstance(), exception.getMessage()));
     final Error error =
         new Error()
@@ -84,7 +85,8 @@ public abstract class InternalAPIErrorController {
 
   @ResponseStatus(HttpStatus.FORBIDDEN)
   @ExceptionHandler(NotAuthorizedException.class)
-  public ResponseEntity<Error> handleNotAuthorizedException(NotAuthorizedException exception) {
+  public ResponseEntity<Error> handleNotAuthorizedException(
+      final NotAuthorizedException exception) {
     LOGGER.warn(String.format("Instance: %s; %s", exception.getInstance(), exception.getMessage()));
     final Error error =
         new Error()

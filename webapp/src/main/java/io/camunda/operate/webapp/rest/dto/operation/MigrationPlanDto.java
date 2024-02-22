@@ -69,17 +69,17 @@ public class MigrationPlanDto implements RequestValidator {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(targetProcessDefinitionKey, mappingInstructions);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     MigrationPlanDto that = (MigrationPlanDto) o;
     return Objects.equals(targetProcessDefinitionKey, that.targetProcessDefinitionKey)
         && Objects.equals(mappingInstructions, that.mappingInstructions);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(targetProcessDefinitionKey, mappingInstructions);
   }
 
   /** MappingInstruction */
@@ -107,17 +107,17 @@ public class MigrationPlanDto implements RequestValidator {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(sourceElementId, targetElementId);
+    }
+
+    @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       MappingInstruction that = (MappingInstruction) o;
       return Objects.equals(sourceElementId, that.sourceElementId)
           && Objects.equals(targetElementId, that.targetElementId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(sourceElementId, targetElementId);
     }
   }
 }

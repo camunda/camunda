@@ -39,7 +39,7 @@ public class DecisionZeebeRecordProcessor {
 
   @Autowired private DecisionIndex decisionIndex;
 
-  public void processDecisionRecord(Record record, BatchRequest batchRequest)
+  public void processDecisionRecord(final Record record, final BatchRequest batchRequest)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
     if (STATES.contains(intentStr)) {
@@ -59,7 +59,7 @@ public class DecisionZeebeRecordProcessor {
         decisionEntity);
   }
 
-  private DecisionDefinitionEntity createEntity(DecisionRecordValue decision) {
+  private DecisionDefinitionEntity createEntity(final DecisionRecordValue decision) {
     return new DecisionDefinitionEntity()
         .setId(String.valueOf(decision.getDecisionKey()))
         .setKey(decision.getDecisionKey())

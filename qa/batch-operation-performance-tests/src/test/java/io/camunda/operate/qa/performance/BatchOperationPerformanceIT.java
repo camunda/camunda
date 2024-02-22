@@ -46,13 +46,10 @@ import org.springframework.test.context.junit4.SpringRunner;
     properties = {"spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 public class BatchOperationPerformanceIT {
 
-  private static final Logger logger = LoggerFactory.getLogger(BatchOperationPerformanceIT.class);
   public static final long ZEEBE_RESPONSE_TIME = 300L;
-
-  private static long TEST_TIMEOUT_SECONDS = 60 * 60; // 1 hour
-
   protected static final String USERNAME = "testuser";
-
+  private static final Logger logger = LoggerFactory.getLogger(BatchOperationPerformanceIT.class);
+  private static long TEST_TIMEOUT_SECONDS = 60 * 60; // 1 hour
   @Autowired private OperateProperties operateProperties;
   @Autowired private BatchOperationWriter batchOperationWriter;
   @Autowired private RestHighLevelClient esClient;

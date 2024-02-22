@@ -44,21 +44,11 @@ import org.springframework.core.env.ConfigurableEnvironment;
 @EnableAutoConfiguration
 public class Application {
 
-  private static final Logger logger = LoggerFactory.getLogger(Application.class);
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
   public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";
+  private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
-  public static class ApplicationErrorListener
-      implements ApplicationListener<ApplicationFailedEvent> {
-
-    @Override
-    public void onApplicationEvent(ApplicationFailedEvent event) {
-      event.getApplicationContext().close();
-      System.exit(-1);
-    }
-  }
-
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
 
     // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
@@ -77,8 +67,8 @@ public class Application {
   private static void setDefaultAuthProfile(final SpringApplication springApplication) {
     springApplication.addInitializers(
         configurableApplicationContext -> {
-          ConfigurableEnvironment env = configurableApplicationContext.getEnvironment();
-          Set<String> activeProfiles = Set.of(env.getActiveProfiles());
+          final ConfigurableEnvironment env = configurableApplicationContext.getEnvironment();
+          final Set<String> activeProfiles = Set.of(env.getActiveProfiles());
           if (OperateProfileService.AUTH_PROFILES.stream().noneMatch(activeProfiles::contains)) {
             env.addActiveProfile(OperateProfileService.DEFAULT_AUTH);
           }
@@ -129,5 +119,15 @@ public class Application {
   public DataGenerator stubDataGenerator() {
     logger.debug("Create Data generator stub");
     return DataGenerator.DO_NOTHING;
+  }
+
+  public static class ApplicationErrorListener
+      implements ApplicationListener<ApplicationFailedEvent> {
+
+    @Override
+    public void onApplicationEvent(final ApplicationFailedEvent event) {
+      event.getApplicationContext().close();
+      System.exit(-1);
+    }
   }
 }

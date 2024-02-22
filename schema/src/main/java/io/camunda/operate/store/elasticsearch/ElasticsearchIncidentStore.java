@@ -53,10 +53,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchIncidentStore implements IncidentStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
   public static QueryBuilder ACTIVE_INCIDENT_QUERY =
       termQuery(IncidentTemplate.STATE, IncidentState.ACTIVE);
-
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchIncidentStore.class);
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
@@ -92,6 +91,55 @@ public class ElasticsearchIncidentStore implements IncidentStore {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining incident: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  @Override
+  public List<IncidentEntity> getIncidentsWithErrorTypesFor(
+      String treePath, List<Map<ErrorType, Long>> errorTypes) {
+    final TermQueryBuilder processInstanceQuery = termQuery(IncidentTemplate.TREE_PATH, treePath);
+
+    final String errorTypesAggName = "errorTypesAgg";
+
+    final TermsAggregationBuilder errorTypesAgg =
+        terms(errorTypesAggName)
+            .field(IncidentTemplate.ERROR_TYPE)
+            .size(ErrorType.values().length)
+            .order(BucketOrder.key(true));
+
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        constantScoreQuery(
+                            joinWithAnd(processInstanceQuery, ACTIVE_INCIDENT_QUERY)))
+                    .aggregation(errorTypesAgg));
+
+    try {
+      return tenantAwareClient.search(
+          searchRequest,
+          () -> {
+            return ElasticsearchUtil.scroll(
+                searchRequest,
+                IncidentEntity.class,
+                objectMapper,
+                esClient,
+                null,
+                aggs ->
+                    ((Terms) aggs.get(errorTypesAggName))
+                        .getBuckets()
+                        .forEach(
+                            b -> {
+                              ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
+                              errorTypes.add(Map.of(errorType, b.getDocCount()));
+                            }));
+          });
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining incidents: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
@@ -170,55 +218,6 @@ public class ElasticsearchIncidentStore implements IncidentStore {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
-      logger.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public List<IncidentEntity> getIncidentsWithErrorTypesFor(
-      String treePath, List<Map<ErrorType, Long>> errorTypes) {
-    final TermQueryBuilder processInstanceQuery = termQuery(IncidentTemplate.TREE_PATH, treePath);
-
-    final String errorTypesAggName = "errorTypesAgg";
-
-    final TermsAggregationBuilder errorTypesAgg =
-        terms(errorTypesAggName)
-            .field(IncidentTemplate.ERROR_TYPE)
-            .size(ErrorType.values().length)
-            .order(BucketOrder.key(true));
-
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
-            .source(
-                new SearchSourceBuilder()
-                    .query(
-                        constantScoreQuery(
-                            joinWithAnd(processInstanceQuery, ACTIVE_INCIDENT_QUERY)))
-                    .aggregation(errorTypesAgg));
-
-    try {
-      return tenantAwareClient.search(
-          searchRequest,
-          () -> {
-            return ElasticsearchUtil.scroll(
-                searchRequest,
-                IncidentEntity.class,
-                objectMapper,
-                esClient,
-                null,
-                aggs ->
-                    ((Terms) aggs.get(errorTypesAggName))
-                        .getBuckets()
-                        .forEach(
-                            b -> {
-                              ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
-                              errorTypes.add(Map.of(errorType, b.getDocCount()));
-                            }));
-          });
-    } catch (IOException e) {
-      final String message =
-          String.format("Exception occurred, while obtaining incidents: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }

@@ -129,6 +129,200 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     return response;
   }
 
+  @Override
+  public FlowNodeMetadataDto getFlowNodeMetadata(
+      String processInstanceId, FlowNodeMetadataRequestDto request) {
+    if (request.getFlowNodeId() != null) {
+      return getMetadataByFlowNodeId(
+          processInstanceId, request.getFlowNodeId(), request.getFlowNodeType());
+    } else if (request.getFlowNodeInstanceId() != null) {
+      return getMetadataByFlowNodeInstanceId(request.getFlowNodeInstanceId());
+    }
+    return null;
+  }
+
+  @Override
+  public Map<String, FlowNodeStateDto> getFlowNodeStates(String processInstanceId) {
+    final String latestFlowNodeAggName = "latestFlowNode";
+    final String activeFlowNodesAggName = "activeFlowNodes";
+    final String activeFlowNodesBucketsAggName = "activeFlowNodesBuckets";
+    final String finishedFlowNodesAggName = "finishedFlowNodes";
+
+    final Query query =
+        constantScore(withTenantCheck(term(PROCESS_INSTANCE_KEY, processInstanceId)));
+
+    final Aggregation notCompletedFlowNodesAggs =
+        withSubaggregations(
+            stringTerms(STATE, List.of(ACTIVE.name(), TERMINATED.name())),
+            Map.of(
+                activeFlowNodesBucketsAggName,
+                withSubaggregations(
+                    termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE),
+                    Map.of(
+                        latestFlowNodeAggName,
+                        topHitsAggregation(
+                                List.of(STATE, TREE_PATH), 1, sortOptions(START_DATE, Desc))
+                            ._toAggregation()))));
+
+    final Aggregation finishedFlowNodesAggs =
+        withSubaggregations(
+            term(STATE, COMPLETED.name()),
+            Map.of(
+                FINISHED_FLOW_NODES_BUCKETS_AGG_NAME,
+                termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE)._toAggregation()));
+
+    final Aggregation incidentsAggs =
+        withSubaggregations(
+            term(INCIDENT, true),
+            Map.of(
+                AGG_INCIDENT_PATHS, termAggregation(TREE_PATH, TERMS_AGG_SIZE)._toAggregation()));
+
+    var searchRequestBuilder =
+        searchRequestBuilder(flowNodeInstanceTemplate)
+            .query(query)
+            .aggregations(
+                Map.of(
+                    activeFlowNodesAggName, notCompletedFlowNodesAggs,
+                    AGG_INCIDENTS, incidentsAggs,
+                    finishedFlowNodesAggName, finishedFlowNodesAggs))
+            .size(0);
+
+    Map<String, Aggregate> aggregates =
+        richOpenSearchClient.doc().searchAggregations(searchRequestBuilder);
+
+    Set<String> incidentPaths = getIncidentPaths(aggregates.get(AGG_INCIDENTS).filter());
+
+    Set<String> finishedFlowNodes =
+        collectFinishedFlowNodes(aggregates.get(finishedFlowNodesAggName).filter());
+
+    final StringTermsAggregate flowNodesAgg =
+        aggregates
+            .get(activeFlowNodesAggName)
+            .filter()
+            .aggregations()
+            .get(activeFlowNodesBucketsAggName)
+            .sterms();
+
+    final Map<String, FlowNodeStateDto> result = new HashMap<>();
+    if (flowNodesAgg != null) {
+      record FlowNodeResult(String state, String treePath) {}
+      for (StringTermsBucket bucket : flowNodesAgg.buckets().array()) {
+        var lastFlowNode =
+            bucket
+                .aggregations()
+                .get(latestFlowNodeAggName)
+                .topHits()
+                .hits()
+                .hits()
+                .get(0)
+                .source()
+                .to(FlowNodeResult.class);
+
+        var flowNodeState = FlowNodeStateDto.valueOf(lastFlowNode.state());
+        if (flowNodeState == FlowNodeStateDto.ACTIVE
+            && incidentPaths.contains(lastFlowNode.treePath())) {
+          flowNodeState = FlowNodeStateDto.INCIDENT;
+        }
+        result.put(bucket.key(), flowNodeState);
+      }
+    }
+
+    // add finished when needed
+    for (String finishedFlowNodeId : finishedFlowNodes) {
+      if (result.get(finishedFlowNodeId) == null) {
+        result.put(finishedFlowNodeId, FlowNodeStateDto.COMPLETED);
+      }
+    }
+
+    return result;
+  }
+
+  @Override
+  public List<Long> getFlowNodeInstanceKeysByIdAndStates(
+      Long processInstanceId, String flowNodeId, List<FlowNodeState> states) {
+    var searchRequestBuilder =
+        searchRequestBuilder(flowNodeInstanceTemplate.getAlias())
+            .query(
+                withTenantCheck(
+                    and(
+                        term(FLOW_NODE_ID, flowNodeId),
+                        term(PROCESS_INSTANCE_KEY, processInstanceId),
+                        stringTerms(STATE, states.stream().map(Enum::name).toList()))))
+            .source(sourceInclude(ID));
+
+    record Result(String id) {}
+
+    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, Result.class).stream()
+        .map(r -> Long.parseLong(r.id()))
+        .toList();
+  }
+
+  @Override
+  public Collection<FlowNodeStatisticsDto> getFlowNodeStatisticsForProcessInstance(
+      Long processInstanceId) {
+    var searchRequestBuilder =
+        searchRequestBuilder(flowNodeInstanceTemplate)
+            .query(
+                constantScore(
+                    withTenantCheck(
+                        term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceId))))
+            .aggregations(
+                FLOW_NODE_ID_AGG,
+                withSubaggregations(
+                    termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE),
+                    Map.of(
+                        COUNT_INCIDENT, term(INCIDENT, true)._toAggregation(),
+                        COUNT_CANCELED,
+                            and(
+                                    not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
+                                    term(STATE, TERMINATED.name()))
+                                ._toAggregation(),
+                        COUNT_COMPLETED,
+                            and(
+                                    not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
+                                    term(STATE, COMPLETED.name()))
+                                ._toAggregation(),
+                        COUNT_ACTIVE,
+                            and(
+                                    not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
+                                    term(STATE, ACTIVE.name()),
+                                    term(INCIDENT, false))
+                                ._toAggregation())))
+            .size(0);
+    return richOpenSearchClient
+        .doc()
+        .searchAggregations(searchRequestBuilder)
+        .get(FLOW_NODE_ID_AGG)
+        .sterms()
+        .buckets()
+        .array()
+        .stream()
+        .map(
+            entry ->
+                new FlowNodeStatisticsDto()
+                    .setActivityId(entry.key())
+                    .setCanceled(entry.aggregations().get(COUNT_CANCELED).filter().docCount())
+                    .setIncidents(entry.aggregations().get(COUNT_INCIDENT).filter().docCount())
+                    .setCompleted(entry.aggregations().get(COUNT_COMPLETED).filter().docCount())
+                    .setActive(entry.aggregations().get(COUNT_ACTIVE).filter().docCount()))
+        .toList();
+  }
+
+  @Override
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
+    var searchRequestBuilder =
+        searchRequestBuilder(flowNodeInstanceTemplate)
+            .query(
+                constantScore(
+                    withTenantCheck(
+                        term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey))))
+            .sort(sortOptions(FlowNodeInstanceTemplate.POSITION, Asc));
+
+    return richOpenSearchClient
+        .doc()
+        .scrollValues(searchRequestBuilder, FlowNodeInstanceEntity.class);
+  }
+
   private FlowNodeInstanceResponseDto getFlowNodeInstances(FlowNodeInstanceQueryDto request) {
     FlowNodeInstanceResponseDto response = queryFlowNodeInstances(request);
     // query one additional instance
@@ -360,18 +554,6 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   private boolean isRunningParent(Map<String, Aggregate> aggs) {
     Aggregate filterAggs = aggs.get(AGG_RUNNING_PARENT);
     return filterAggs != null && filterAggs.filter().docCount() > 0;
-  }
-
-  @Override
-  public FlowNodeMetadataDto getFlowNodeMetadata(
-      String processInstanceId, FlowNodeMetadataRequestDto request) {
-    if (request.getFlowNodeId() != null) {
-      return getMetadataByFlowNodeId(
-          processInstanceId, request.getFlowNodeId(), request.getFlowNodeType());
-    } else if (request.getFlowNodeInstanceId() != null) {
-      return getMetadataByFlowNodeInstanceId(request.getFlowNodeInstanceId());
-    }
-    return null;
   }
 
   private FlowNodeMetadataDto getMetadataByFlowNodeInstanceId(final String flowNodeInstanceId) {
@@ -801,102 +983,6 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
         );
   }
 
-  @Override
-  public Map<String, FlowNodeStateDto> getFlowNodeStates(String processInstanceId) {
-    final String latestFlowNodeAggName = "latestFlowNode";
-    final String activeFlowNodesAggName = "activeFlowNodes";
-    final String activeFlowNodesBucketsAggName = "activeFlowNodesBuckets";
-    final String finishedFlowNodesAggName = "finishedFlowNodes";
-
-    final Query query =
-        constantScore(withTenantCheck(term(PROCESS_INSTANCE_KEY, processInstanceId)));
-
-    final Aggregation notCompletedFlowNodesAggs =
-        withSubaggregations(
-            stringTerms(STATE, List.of(ACTIVE.name(), TERMINATED.name())),
-            Map.of(
-                activeFlowNodesBucketsAggName,
-                withSubaggregations(
-                    termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE),
-                    Map.of(
-                        latestFlowNodeAggName,
-                        topHitsAggregation(
-                                List.of(STATE, TREE_PATH), 1, sortOptions(START_DATE, Desc))
-                            ._toAggregation()))));
-
-    final Aggregation finishedFlowNodesAggs =
-        withSubaggregations(
-            term(STATE, COMPLETED.name()),
-            Map.of(
-                FINISHED_FLOW_NODES_BUCKETS_AGG_NAME,
-                termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE)._toAggregation()));
-
-    final Aggregation incidentsAggs =
-        withSubaggregations(
-            term(INCIDENT, true),
-            Map.of(
-                AGG_INCIDENT_PATHS, termAggregation(TREE_PATH, TERMS_AGG_SIZE)._toAggregation()));
-
-    var searchRequestBuilder =
-        searchRequestBuilder(flowNodeInstanceTemplate)
-            .query(query)
-            .aggregations(
-                Map.of(
-                    activeFlowNodesAggName, notCompletedFlowNodesAggs,
-                    AGG_INCIDENTS, incidentsAggs,
-                    finishedFlowNodesAggName, finishedFlowNodesAggs))
-            .size(0);
-
-    Map<String, Aggregate> aggregates =
-        richOpenSearchClient.doc().searchAggregations(searchRequestBuilder);
-
-    Set<String> incidentPaths = getIncidentPaths(aggregates.get(AGG_INCIDENTS).filter());
-
-    Set<String> finishedFlowNodes =
-        collectFinishedFlowNodes(aggregates.get(finishedFlowNodesAggName).filter());
-
-    final StringTermsAggregate flowNodesAgg =
-        aggregates
-            .get(activeFlowNodesAggName)
-            .filter()
-            .aggregations()
-            .get(activeFlowNodesBucketsAggName)
-            .sterms();
-
-    final Map<String, FlowNodeStateDto> result = new HashMap<>();
-    if (flowNodesAgg != null) {
-      record FlowNodeResult(String state, String treePath) {}
-      for (StringTermsBucket bucket : flowNodesAgg.buckets().array()) {
-        var lastFlowNode =
-            bucket
-                .aggregations()
-                .get(latestFlowNodeAggName)
-                .topHits()
-                .hits()
-                .hits()
-                .get(0)
-                .source()
-                .to(FlowNodeResult.class);
-
-        var flowNodeState = FlowNodeStateDto.valueOf(lastFlowNode.state());
-        if (flowNodeState == FlowNodeStateDto.ACTIVE
-            && incidentPaths.contains(lastFlowNode.treePath())) {
-          flowNodeState = FlowNodeStateDto.INCIDENT;
-        }
-        result.put(bucket.key(), flowNodeState);
-      }
-    }
-
-    // add finished when needed
-    for (String finishedFlowNodeId : finishedFlowNodes) {
-      if (result.get(finishedFlowNodeId) == null) {
-        result.put(finishedFlowNodeId, FlowNodeStateDto.COMPLETED);
-      }
-    }
-
-    return result;
-  }
-
   private Set<String> collectFinishedFlowNodes(final FilterAggregate filterAggs) {
     final Buckets<StringTermsBucket> buckets =
         filterAggs.aggregations().get(FINISHED_FLOW_NODES_BUCKETS_AGG_NAME).sterms().buckets();
@@ -917,91 +1003,5 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     }
 
     return new HashSet<>();
-  }
-
-  @Override
-  public List<Long> getFlowNodeInstanceKeysByIdAndStates(
-      Long processInstanceId, String flowNodeId, List<FlowNodeState> states) {
-    var searchRequestBuilder =
-        searchRequestBuilder(flowNodeInstanceTemplate.getAlias())
-            .query(
-                withTenantCheck(
-                    and(
-                        term(FLOW_NODE_ID, flowNodeId),
-                        term(PROCESS_INSTANCE_KEY, processInstanceId),
-                        stringTerms(STATE, states.stream().map(Enum::name).toList()))))
-            .source(sourceInclude(ID));
-
-    record Result(String id) {}
-
-    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, Result.class).stream()
-        .map(r -> Long.parseLong(r.id()))
-        .toList();
-  }
-
-  @Override
-  public Collection<FlowNodeStatisticsDto> getFlowNodeStatisticsForProcessInstance(
-      Long processInstanceId) {
-    var searchRequestBuilder =
-        searchRequestBuilder(flowNodeInstanceTemplate)
-            .query(
-                constantScore(
-                    withTenantCheck(
-                        term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceId))))
-            .aggregations(
-                FLOW_NODE_ID_AGG,
-                withSubaggregations(
-                    termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE),
-                    Map.of(
-                        COUNT_INCIDENT, term(INCIDENT, true)._toAggregation(),
-                        COUNT_CANCELED,
-                            and(
-                                    not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
-                                    term(STATE, TERMINATED.name()))
-                                ._toAggregation(),
-                        COUNT_COMPLETED,
-                            and(
-                                    not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
-                                    term(STATE, COMPLETED.name()))
-                                ._toAggregation(),
-                        COUNT_ACTIVE,
-                            and(
-                                    not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
-                                    term(STATE, ACTIVE.name()),
-                                    term(INCIDENT, false))
-                                ._toAggregation())))
-            .size(0);
-    return richOpenSearchClient
-        .doc()
-        .searchAggregations(searchRequestBuilder)
-        .get(FLOW_NODE_ID_AGG)
-        .sterms()
-        .buckets()
-        .array()
-        .stream()
-        .map(
-            entry ->
-                new FlowNodeStatisticsDto()
-                    .setActivityId(entry.key())
-                    .setCanceled(entry.aggregations().get(COUNT_CANCELED).filter().docCount())
-                    .setIncidents(entry.aggregations().get(COUNT_INCIDENT).filter().docCount())
-                    .setCompleted(entry.aggregations().get(COUNT_COMPLETED).filter().docCount())
-                    .setActive(entry.aggregations().get(COUNT_ACTIVE).filter().docCount()))
-        .toList();
-  }
-
-  @Override
-  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
-    var searchRequestBuilder =
-        searchRequestBuilder(flowNodeInstanceTemplate)
-            .query(
-                constantScore(
-                    withTenantCheck(
-                        term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey))))
-            .sort(sortOptions(FlowNodeInstanceTemplate.POSITION, Asc));
-
-    return richOpenSearchClient
-        .doc()
-        .scrollValues(searchRequestBuilder, FlowNodeInstanceEntity.class);
   }
 }

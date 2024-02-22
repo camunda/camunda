@@ -32,10 +32,6 @@ public enum ErrorType {
     this.title = title;
   }
 
-  public String getTitle() {
-    return title;
-  }
-
   public static ErrorType fromZeebeErrorType(String errorType) {
     if (errorType == null) {
       return UNSPECIFIED;
@@ -47,5 +43,9 @@ public enum ErrorType {
           "Error type not found for value [{}]. UNKNOWN type will be assigned.", errorType);
       return UNKNOWN;
     }
+  }
+
+  public String getTitle() {
+    return title;
   }
 }

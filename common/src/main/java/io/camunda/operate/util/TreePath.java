@@ -37,6 +37,14 @@ public class TreePath {
     this.treePath = new StringBuffer(treePath);
   }
 
+  public static String extractFlowNodeInstanceId(final String treePath, String currentTreePath) {
+    final Pattern fniPattern =
+        Pattern.compile(String.format("%s/FN_[^/]*/FNI_(\\d*)/.*", currentTreePath));
+    final Matcher matcher = fniPattern.matcher(treePath);
+    matcher.matches();
+    return matcher.group(1);
+  }
+
   public TreePath startTreePath(String processInstanceId) {
     treePath = new StringBuffer(String.format("%s_%s", PI, processInstanceId));
     return this;
@@ -68,14 +76,6 @@ public class TreePath {
     return appendFlowNode(callActivityId)
         .appendFlowNodeInstance(flowNodeInstanceId)
         .appendProcessInstance(processInstanceId);
-  }
-
-  public static String extractFlowNodeInstanceId(final String treePath, String currentTreePath) {
-    final Pattern fniPattern =
-        Pattern.compile(String.format("%s/FN_[^/]*/FNI_(\\d*)/.*", currentTreePath));
-    final Matcher matcher = fniPattern.matcher(treePath);
-    matcher.matches();
-    return matcher.group(1);
   }
 
   public String extractRootInstanceId() {

@@ -27,11 +27,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 public abstract class AbstractIncidentPostImportAction implements PostImportAction {
+  public static final long BACKOFF = 2000L;
   private static final Logger logger =
       LoggerFactory.getLogger(AbstractIncidentPostImportAction.class);
-
-  public static final long BACKOFF = 2000L;
-
   protected int partitionId;
 
   @Autowired
@@ -44,14 +42,14 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
 
   protected ImportPositionEntity lastProcessedPosition;
 
-  public AbstractIncidentPostImportAction(int partitionId) {
+  public AbstractIncidentPostImportAction(final int partitionId) {
     this.partitionId = partitionId;
   }
 
   @Override
   public boolean performOneRound() throws IOException {
-    List<IncidentEntity> pendingIncidents = processPendingIncidents();
-    boolean smthWasProcessed = pendingIncidents.size() > 0;
+    final List<IncidentEntity> pendingIncidents = processPendingIncidents();
+    final boolean smthWasProcessed = pendingIncidents.size() > 0;
     return smthWasProcessed;
   }
 
@@ -69,7 +67,7 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
         } else {
           postImportScheduler.schedule(this, Instant.now().plus(BACKOFF, MILLIS));
         }
-      } catch (Exception ex) {
+      } catch (final Exception ex) {
         logger.error(
             String.format(
                 "Exception occurred when performing post import for partition %d: %s. Will be retried...",
@@ -97,9 +95,9 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
               ImportValueType.INCIDENT.getAliasTemplate(), partitionId);
     }
 
-    AdditionalData data = new AdditionalData();
+    final AdditionalData data = new AdditionalData();
 
-    PendingIncidentsBatch batch =
+    final PendingIncidentsBatch batch =
         getPendingIncidents(data, lastProcessedPosition.getPostImporterPosition());
 
     if (batch.getIncidents().isEmpty()) {
@@ -114,7 +112,7 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
 
       searchForInstances(batch.getIncidents(), data);
 
-      boolean done = processIncidents(data, batch);
+      final boolean done = processIncidents(data, batch);
 
       if (batch.getIncidents().size() > 0 && done) {
         lastProcessedPosition.setPostImporterPosition(batch.getLastProcessedPosition());
@@ -125,7 +123,7 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
         logger.debug("Finished processing");
       }
 
-    } catch (IOException | PersistenceException e) {
+    } catch (final IOException | PersistenceException e) {
       final String message =
           String.format(
               "Exception occurred, while processing pending incidents: %s", e.getMessage());

@@ -77,13 +77,15 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public class OperateTester {
 
   protected static final Logger logger = LoggerFactory.getLogger(OperateTester.class);
-
-  @Autowired private BeanFactory beanFactory;
-
+  @Autowired protected OperationExecutor operationExecutor;
+  @Autowired protected io.camunda.operate.webapp.reader.VariableReader variableReader;
+  @Autowired protected IncidentReader incidentReader;
+  @Autowired protected ListViewReader listViewReader;
+  @Autowired protected FlowNodeInstanceReader flowNodeInstanceReader;
   private final ZeebeClient zeebeClient;
   private final MockMvcTestRule mockMvcTestRule;
   private final SearchTestRule searchTestRule;
-
+  @Autowired private BeanFactory beanFactory;
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private Long jobKey;
@@ -195,16 +197,6 @@ public class OperateTester {
   @Autowired
   @Qualifier("userTasksAreCreated")
   private Predicate<Object[]> userTasksAreCreated;
-
-  @Autowired protected OperationExecutor operationExecutor;
-
-  @Autowired protected io.camunda.operate.webapp.reader.VariableReader variableReader;
-
-  @Autowired protected IncidentReader incidentReader;
-
-  @Autowired protected ListViewReader listViewReader;
-
-  @Autowired protected FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 

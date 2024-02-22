@@ -12,28 +12,6 @@ import java.util.*;
 
 public class ClusterMetadata implements Serializable {
 
-  public enum AppName {
-    @JsonProperty("console")
-    CONSOLE,
-    @JsonProperty("operate")
-    OPERATE,
-    @JsonProperty("optimize")
-    OPTIMIZE,
-    @JsonProperty("modeler")
-    MODELER,
-    @JsonProperty("tasklist")
-    TASKLIST,
-    @JsonProperty("zeebe")
-    ZEEBE,
-    @JsonProperty("connectors")
-    CONNECTORS;
-
-    @Override
-    public String toString() {
-      return super.toString().toLowerCase();
-    }
-  }
-
   private String uuid;
   private String name;
   private Map<AppName, String> urls = new HashMap<>();
@@ -66,6 +44,11 @@ public class ClusterMetadata implements Serializable {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(uuid, name, urls);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -73,11 +56,6 @@ public class ClusterMetadata implements Serializable {
     return Objects.equals(uuid, that.uuid)
         && Objects.equals(name, that.name)
         && Objects.equals(urls, that.urls);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(uuid, name, urls);
   }
 
   @Override
@@ -93,5 +71,27 @@ public class ClusterMetadata implements Serializable {
         + urls
         + '\''
         + '}';
+  }
+
+  public enum AppName {
+    @JsonProperty("console")
+    CONSOLE,
+    @JsonProperty("operate")
+    OPERATE,
+    @JsonProperty("optimize")
+    OPTIMIZE,
+    @JsonProperty("modeler")
+    MODELER,
+    @JsonProperty("tasklist")
+    TASKLIST,
+    @JsonProperty("zeebe")
+    ZEEBE,
+    @JsonProperty("connectors")
+    CONNECTORS;
+
+    @Override
+    public String toString() {
+      return super.toString().toLowerCase();
+    }
   }
 }

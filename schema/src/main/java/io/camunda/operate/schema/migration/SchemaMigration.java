@@ -41,11 +41,6 @@ public class SchemaMigration implements CommandLineRunner {
   private static final Logger logger = LoggerFactory.getLogger(SchemaMigration.class);
   @Autowired private SchemaStartup schemaStartup;
 
-  @Override
-  public void run(String... args) {
-    logger.info("SchemaMigration finished.");
-  }
-
   public static void main(String[] args) {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j2
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
@@ -59,6 +54,11 @@ public class SchemaMigration implements CommandLineRunner {
     springApplication.addListeners(new ApplicationErrorListener());
     final ConfigurableApplicationContext ctx = springApplication.run(args);
     SpringApplication.exit(ctx);
+  }
+
+  @Override
+  public void run(String... args) {
+    logger.info("SchemaMigration finished.");
   }
 
   public static class ApplicationErrorListener

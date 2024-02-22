@@ -30,10 +30,8 @@ public class DecisionOldIT extends OperateAbstractIT {
 
   private static final String QUERY_DECISION_GROUPED_URL =
       DecisionRestService.DECISION_URL + "/grouped";
-
-  @MockBean private PermissionsService permissionsService;
-
   @Rule public SearchTestRule elasticsearchTestRule = new SearchTestRule();
+  @MockBean private PermissionsService permissionsService;
 
   @Test
   public void testDecisionsGroupedWithPermisssionWhenNotAllowed() throws Exception {

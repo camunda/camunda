@@ -36,8 +36,6 @@ import org.springframework.web.client.RestTemplate;
 @Component
 public class IncidentNotifier {
 
-  private static final Logger logger = LoggerFactory.getLogger(IncidentNotifier.class);
-
   protected static final String FIELD_NAME_ALERTS = "alerts";
   protected static final String FIELD_NAME_MESSAGE = "message";
   protected static final String MESSAGE = "Incident created";
@@ -54,7 +52,7 @@ public class IncidentNotifier {
   protected static final String FIELD_NAME_BPMN_PROCESS_ID = "bpmnProcessId";
   protected static final String FIELD_NAME_PROCESS_NAME = "processName";
   protected static final String FIELD_NAME_PROCESS_VERSION = "processVersion";
-
+  private static final Logger logger = LoggerFactory.getLogger(IncidentNotifier.class);
   @Autowired private OperateProperties operateProperties;
 
   @Autowired private ObjectMapper objectMapper;
@@ -67,7 +65,7 @@ public class IncidentNotifier {
 
   @Autowired private ProcessCache processCache;
 
-  public void notifyOnIncidents(List<IncidentEntity> incidents) {
+  public void notifyOnIncidents(final List<IncidentEntity> incidents) {
     try {
       HttpStatusCode status = notifyOnIncidents(incidents, m2mTokenManager.getToken());
 
@@ -85,22 +83,22 @@ public class IncidentNotifier {
       } else {
         logger.error("Failed to send incident notification. Response status: " + status);
       }
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       logger.error("Failed to create incident notification request: " + e.getMessage(), e);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error("Failed to notify on incidents: " + e.getMessage(), e);
     }
   }
 
-  private HttpStatusCode notifyOnIncidents(List<IncidentEntity> incidents, String m2mToken)
-      throws JsonProcessingException {
+  private HttpStatusCode notifyOnIncidents(
+      final List<IncidentEntity> incidents, final String m2mToken) throws JsonProcessingException {
     final String webhookURL = operateProperties.getAlert().getWebhook();
     final String payload = getIncidentsAsJSON(incidents);
-    HttpHeaders headers = new HttpHeaders();
+    final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);
     headers.setBearerAuth(m2mToken);
 
-    HttpEntity<String> request = new HttpEntity<>(payload, headers);
+    final HttpEntity<String> request = new HttpEntity<>(payload, headers);
     final ResponseEntity<String> response =
         restTemplate.postForEntity(webhookURL, request, String.class);
     return response.getStatusCode();
@@ -109,8 +107,8 @@ public class IncidentNotifier {
   private String getIncidentsAsJSON(final List<IncidentEntity> incidents)
       throws JsonProcessingException {
     final List<Map<String, Object>> incidentList = new ArrayList<>();
-    for (IncidentEntity inc : incidents) {
-      Map<String, Object> incidentFields = new HashMap<>();
+    for (final IncidentEntity inc : incidents) {
+      final Map<String, Object> incidentFields = new HashMap<>();
       incidentFields.put(FIELD_NAME_MESSAGE, MESSAGE);
       incidentFields.put(FIELD_NAME_ID, inc.getId());
       incidentFields.put(

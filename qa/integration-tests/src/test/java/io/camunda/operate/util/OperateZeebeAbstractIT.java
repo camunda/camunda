@@ -63,34 +63,21 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
   protected static final String POST_OPERATION_URL = PROCESS_INSTANCE_URL + "/%s/operation";
   private static final String POST_BATCH_OPERATION_URL = PROCESS_INSTANCE_URL + "/batch-operation";
+  @Rule public final OperateZeebeRule zeebeRule;
+
+  // test rule
+  @Autowired public BeanFactory beanFactory;
+  @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
   @MockBean
   protected ZeebeClient
       mockedZeebeClient; // we don't want to create ZeebeClient, we will rather use the one from
 
-  // test rule
-
   protected ZeebeClient zeebeClient;
-
-  @Autowired public BeanFactory beanFactory;
-
-  @Rule public final OperateZeebeRule zeebeRule;
-
-  private ZeebeContainer zeebeContainer;
-
-  @Rule public SearchTestRule searchTestRule = new SearchTestRule();
-
   @Autowired protected PartitionHolder partitionHolder;
-
   @Autowired protected ImportPositionHolder importPositionHolder;
-
   @Autowired protected ProcessCache processCache;
-
   @Autowired protected ObjectMapper objectMapper;
-
-  @Autowired private TestSearchRepository testSearchRepository;
-
-  private HttpClient httpClient = HttpClient.newHttpClient();
 
   /// Predicate checks
   @Autowired
@@ -198,14 +185,17 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected Predicate<Object[]> userTasksAreCreated;
 
   @Autowired protected OperateProperties operateProperties;
-
-  private String workerName;
-
   @Autowired protected OperationExecutor operationExecutor;
-
+  protected OperateTester tester;
+  private ZeebeContainer zeebeContainer;
+  @Autowired private TestSearchRepository testSearchRepository;
+  private HttpClient httpClient = HttpClient.newHttpClient();
+  private String workerName;
   @Autowired private MeterRegistry meterRegistry;
 
-  protected OperateTester tester;
+  public OperateZeebeAbstractIT() {
+    zeebeRule = new OperateZeebeRule();
+  }
 
   @Before
   public void before() {
@@ -231,10 +221,6 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     processCache.clearCache();
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
     importPositionHolder.clearCache();
-  }
-
-  public OperateZeebeAbstractIT() {
-    zeebeRule = new OperateZeebeRule();
   }
 
   public ZeebeClient getClient() {
@@ -527,27 +513,6 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     return Instant.ofEpochMilli(result.epochMilli);
   }
 
-  private static final class ZeebeClockActuatorPinRequest {
-    @JsonProperty long epochMilli;
-
-    ZeebeClockActuatorPinRequest(long epochMilli) {
-      this.epochMilli = epochMilli;
-    }
-  }
-
-  private static final class ZeebeClockActuatorOffsetRequest {
-    @JsonProperty long epochMilli;
-
-    public ZeebeClockActuatorOffsetRequest(long offsetMilli) {
-      this.epochMilli = offsetMilli;
-    }
-  }
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  private static final class ZeebeClockActuatorResponse {
-    @JsonProperty long epochMilli;
-  }
-
   protected List<Long> deployProcesses(String... processResources) {
     return Stream.of(processResources)
         .sequential()
@@ -582,5 +547,26 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     } catch (IOException ex) {
       throw new OperateRuntimeException("Search failed for index " + index, ex);
     }
+  }
+
+  private static final class ZeebeClockActuatorPinRequest {
+    @JsonProperty long epochMilli;
+
+    ZeebeClockActuatorPinRequest(long epochMilli) {
+      this.epochMilli = epochMilli;
+    }
+  }
+
+  private static final class ZeebeClockActuatorOffsetRequest {
+    @JsonProperty long epochMilli;
+
+    public ZeebeClockActuatorOffsetRequest(long offsetMilli) {
+      this.epochMilli = offsetMilli;
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private static final class ZeebeClockActuatorResponse {
+    @JsonProperty long epochMilli;
   }
 }

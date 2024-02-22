@@ -44,7 +44,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   public static final String ORGANIZATION_ID = "id";
   public static final String ROLES_KEY = "roles";
   private static Logger logger = LoggerFactory.getLogger(TokenAuthentication.class);
-
+  @JsonIgnore private final Integer lock = 0;
   private String claimName;
   private String organization;
   private String domain;
@@ -56,7 +56,6 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   private String salesPlanType;
   private List<Permission> permissions = new ArrayList<>();
   @JsonIgnore private List<IdentityAuthorization> authorizations;
-  @JsonIgnore private final Integer lock = 0;
   private Instant lastResourceBasedPermissionsUpdated = Instant.now();
 
   public TokenAuthentication() {
@@ -91,17 +90,48 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return super.isAuthenticated();
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final TokenAuthentication that = (TokenAuthentication) o;
+    return claimName.equals(that.claimName)
+        && organization.equals(that.organization)
+        && domain.equals(that.domain)
+        && clientId.equals(that.clientId)
+        && clientSecret.equals(that.clientSecret)
+        && idToken.equals(that.idToken)
+        && Objects.equals(refreshToken, that.refreshToken)
+        && Objects.equals(salesPlanType, that.salesPlanType);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        claimName,
+        organization,
+        domain,
+        clientId,
+        clientSecret,
+        idToken,
+        refreshToken,
+        salesPlanType);
+  }
+
   public List<Permission> getPermissions() {
     return permissions;
   }
 
   public void addPermission(Permission permission) {
     this.permissions.add(permission);
-  }
-
-  public TokenAuthentication setAuthorizations(List<IdentityAuthorization> authorizations) {
-    this.authorizations = authorizations;
-    return this;
   }
 
   public List<IdentityAuthorization> getAuthorizations() {
@@ -111,6 +141,11 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
       }
     }
     return authorizations;
+  }
+
+  public TokenAuthentication setAuthorizations(List<IdentityAuthorization> authorizations) {
+    this.authorizations = authorizations;
+    return this;
   }
 
   public boolean needToUpdate() {
@@ -261,42 +296,6 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
 
   public void setSalesPlanType(final String salesPlanType) {
     this.salesPlanType = salesPlanType;
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final TokenAuthentication that = (TokenAuthentication) o;
-    return claimName.equals(that.claimName)
-        && organization.equals(that.organization)
-        && domain.equals(that.domain)
-        && clientId.equals(that.clientId)
-        && clientSecret.equals(that.clientSecret)
-        && idToken.equals(that.idToken)
-        && Objects.equals(refreshToken, that.refreshToken)
-        && Objects.equals(salesPlanType, that.salesPlanType);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        claimName,
-        organization,
-        domain,
-        clientId,
-        clientSecret,
-        idToken,
-        refreshToken,
-        salesPlanType);
   }
 
   public String getAccessToken() {

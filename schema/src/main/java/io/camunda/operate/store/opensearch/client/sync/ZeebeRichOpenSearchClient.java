@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class ZeebeRichOpenSearchClient {
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeRichOpenSearchClient.class);
-
   BeanFactory beanFactory;
   OpenSearchClient openSearchClient;
   private final OpenSearchDocumentOperations openSearchDocumentOperations;

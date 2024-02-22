@@ -35,6 +35,11 @@ public class FlowNodeInstanceRequestDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(queries);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -44,10 +49,5 @@ public class FlowNodeInstanceRequestDto {
     }
     final FlowNodeInstanceRequestDto that = (FlowNodeInstanceRequestDto) o;
     return Objects.equals(queries, that.queries);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(queries);
   }
 }

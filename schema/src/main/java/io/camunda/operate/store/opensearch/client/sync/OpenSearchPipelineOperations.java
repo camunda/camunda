@@ -18,11 +18,11 @@ import org.opensearch.client.opensearch.ingest.Processor;
 import org.slf4j.Logger;
 
 public class OpenSearchPipelineOperations extends OpenSearchRetryOperation {
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   public OpenSearchPipelineOperations(Logger logger, OpenSearchClient openSearchClient) {
     super(logger, openSearchClient);
   }
-
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   public boolean addPipelineWithRetries(String name, String definition) {
     try {

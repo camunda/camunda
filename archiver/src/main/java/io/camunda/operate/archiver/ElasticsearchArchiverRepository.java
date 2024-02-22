@@ -72,31 +72,28 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   private static final Logger logger =
       LoggerFactory.getLogger(ElasticsearchArchiverRepository.class);
 
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
-
-  @Autowired private ListViewTemplate processInstanceTemplate;
-
-  @Autowired private OperateProperties operateProperties;
-
-  @Autowired private Metrics metrics;
-
-  @Autowired private RestHighLevelClient esClient;
-
   @Autowired
   @Qualifier("archiverThreadPoolExecutor")
   protected ThreadPoolTaskScheduler archiverExecutor;
 
+  @Autowired private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private ListViewTemplate processInstanceTemplate;
+  @Autowired private OperateProperties operateProperties;
+  @Autowired private Metrics metrics;
+  @Autowired private RestHighLevelClient esClient;
   @Autowired private ObjectMapper objectMapper;
 
   private ArchiveBatch createArchiveBatch(
-      SearchResponse searchResponse, String datesAggName, String instancesAggName) {
+      final SearchResponse searchResponse,
+      final String datesAggName,
+      final String instancesAggName) {
     final List<? extends Histogram.Bucket> buckets =
         ((Histogram) searchResponse.getAggregations().get(datesAggName)).getBuckets();
 
     if (buckets.size() > 0) {
       final Histogram.Bucket bucket = buckets.get(0);
       final String finishDate = bucket.getKeyAsString();
-      SearchHits hits = ((TopHits) bucket.getAggregations().get(instancesAggName)).getHits();
+      final SearchHits hits = ((TopHits) bucket.getAggregations().get(instancesAggName)).getHits();
       final ArrayList<Object> ids =
           Arrays.stream(hits.getHits())
               .collect(
@@ -114,7 +111,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   }
 
   private CompletableFuture<ArchiveBatch> searchAsync(
-      SearchRequest searchRequest, Function<Throwable, String> errorMessage) {
+      final SearchRequest searchRequest, final Function<Throwable, String> errorMessage) {
     final var batchFuture = new CompletableFuture<ArchiveBatch>();
 
     final var startTimer = Timer.start();
@@ -135,131 +132,25 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   public CompletableFuture<ArchiveBatch> getBatchOperationNextBatch() {
     final var aggregation = createFinishedBatchOperationsAggregation(DATES_AGG, INSTANCES_AGG);
     final var searchRequest = createFinishedBatchOperationsSearchRequest(aggregation);
-    Function<Throwable, String> errorMessage =
+    final Function<Throwable, String> errorMessage =
         t ->
             format(
                 "Exception occurred, while obtaining finished batch operations: %s",
                 t.getMessage());
     return searchAsync(searchRequest, errorMessage);
-  }
-
-  private SearchRequest createFinishedBatchOperationsSearchRequest(AggregationBuilder agg) {
-    final QueryBuilder endDateQ =
-        rangeQuery(BatchOperationTemplate.END_DATE)
-            .lte(operateProperties.getArchiver().getArchivingTimepoint());
-    final ConstantScoreQueryBuilder q = constantScoreQuery(endDateQ);
-
-    final SearchRequest searchRequest =
-        new SearchRequest(batchOperationTemplate.getFullQualifiedName())
-            .source(
-                new SearchSourceBuilder()
-                    .query(q)
-                    .aggregation(agg)
-                    .fetchSource(false)
-                    .size(0)
-                    .sort(BatchOperationTemplate.END_DATE, SortOrder.ASC))
-            .requestCache(false); // we don't need to cache this, as each time we need new data
-
-    logger.debug(
-        "Finished batch operations for archiving request: \n{}\n and aggregation: \n{}",
-        q.toString(),
-        agg.toString());
-    return searchRequest;
-  }
-
-  private AggregationBuilder createFinishedBatchOperationsAggregation(
-      String datesAggName, String instancesAggName) {
-    return dateHistogram(datesAggName)
-        .field(BatchOperationTemplate.END_DATE)
-        .calendarInterval(
-            new DateHistogramInterval(operateProperties.getArchiver().getRolloverInterval()))
-        .format(operateProperties.getArchiver().getElsRolloverDateFormat())
-        .keyed(true) // get result as a map (not an array)
-        // we want to get only one bucket at a time
-        .subAggregation(
-            bucketSort("datesSortedAgg", Arrays.asList(new FieldSortBuilder("_key"))).size(1))
-        // we need process instance ids, also taking into account batch size
-        .subAggregation(
-            topHits(instancesAggName)
-                .size(operateProperties.getArchiver().getRolloverBatchSize())
-                .sort(BatchOperationTemplate.ID, SortOrder.ASC)
-                .fetchSource(BatchOperationTemplate.ID, null));
-  }
-
-  private Either<Throwable, ArchiveBatch> handleSearchResponse(
-      final SearchResponse searchResponse,
-      final Throwable error,
-      Function<Throwable, String> errorMessage) {
-    if (error != null) {
-      return Either.left(new OperateRuntimeException(errorMessage.apply(error), error));
-    }
-
-    final var batch = createArchiveBatch(searchResponse, DATES_AGG, INSTANCES_AGG);
-    return Either.right(batch);
-  }
-
-  private Timer getArchiverQueryTimer() {
-    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY);
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(List<Integer> partitionIds) {
+  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(
+      final List<Integer> partitionIds) {
     final var aggregation = createFinishedInstancesAggregation(DATES_AGG, INSTANCES_AGG);
     final var searchRequest = createFinishedInstancesSearchRequest(aggregation, partitionIds);
-    Function<Throwable, String> errorMessage =
+    final Function<Throwable, String> errorMessage =
         t ->
             format(
                 "Exception occurred, while obtaining finished batch operations: %s",
                 t.getMessage());
     return searchAsync(searchRequest, errorMessage);
-  }
-
-  private SearchRequest createFinishedInstancesSearchRequest(
-      AggregationBuilder agg, List<Integer> partitionIds) {
-    final QueryBuilder endDateQ =
-        rangeQuery(ListViewTemplate.END_DATE)
-            .lte(operateProperties.getArchiver().getArchivingTimepoint());
-    final TermQueryBuilder isProcessInstanceQ =
-        termQuery(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
-    final TermsQueryBuilder partitionQ = termsQuery(ListViewTemplate.PARTITION_ID, partitionIds);
-    final ConstantScoreQueryBuilder q =
-        constantScoreQuery(ElasticsearchUtil.joinWithAnd(endDateQ, isProcessInstanceQ, partitionQ));
-
-    final SearchRequest searchRequest =
-        new SearchRequest(processInstanceTemplate.getFullQualifiedName())
-            .source(
-                new SearchSourceBuilder()
-                    .query(q)
-                    .aggregation(agg)
-                    .fetchSource(false)
-                    .size(0)
-                    .sort(ListViewTemplate.END_DATE, SortOrder.ASC))
-            .requestCache(false); // we don't need to cache this, as each time we need new data
-
-    logger.debug(
-        "Finished process instances for archiving request: \n{}\n and aggregation: \n{}",
-        q.toString(),
-        agg.toString());
-    return searchRequest;
-  }
-
-  private AggregationBuilder createFinishedInstancesAggregation(
-      String datesAggName, String instancesAggName) {
-    return dateHistogram(datesAggName)
-        .field(ListViewTemplate.END_DATE)
-        .calendarInterval(
-            new DateHistogramInterval(operateProperties.getArchiver().getRolloverInterval()))
-        .format(operateProperties.getArchiver().getElsRolloverDateFormat())
-        .keyed(true) // get result as a map (not an array)
-        // we want to get only one bucket at a time
-        .subAggregation(
-            bucketSort("datesSortedAgg", Arrays.asList(new FieldSortBuilder("_key"))).size(1))
-        // we need process instance ids, also taking into account batch size
-        .subAggregation(
-            topHits(instancesAggName)
-                .size(operateProperties.getArchiver().getRolloverBatchSize())
-                .sort(ListViewTemplate.ID, SortOrder.ASC)
-                .fetchSource(ListViewTemplate.ID, null));
   }
 
   @Override
@@ -276,7 +167,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                             .build()),
                 RequestOptions.DEFAULT);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.warn(
           "Could not set ILM policy {} for index {}: {}",
           OPERATE_DELETE_ARCHIVED_INDICES,
@@ -343,6 +234,113 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
               return null;
             });
     return reindexFuture;
+  }
+
+  private SearchRequest createFinishedBatchOperationsSearchRequest(final AggregationBuilder agg) {
+    final QueryBuilder endDateQ =
+        rangeQuery(BatchOperationTemplate.END_DATE)
+            .lte(operateProperties.getArchiver().getArchivingTimepoint());
+    final ConstantScoreQueryBuilder q = constantScoreQuery(endDateQ);
+
+    final SearchRequest searchRequest =
+        new SearchRequest(batchOperationTemplate.getFullQualifiedName())
+            .source(
+                new SearchSourceBuilder()
+                    .query(q)
+                    .aggregation(agg)
+                    .fetchSource(false)
+                    .size(0)
+                    .sort(BatchOperationTemplate.END_DATE, SortOrder.ASC))
+            .requestCache(false); // we don't need to cache this, as each time we need new data
+
+    logger.debug(
+        "Finished batch operations for archiving request: \n{}\n and aggregation: \n{}",
+        q.toString(),
+        agg.toString());
+    return searchRequest;
+  }
+
+  private AggregationBuilder createFinishedBatchOperationsAggregation(
+      final String datesAggName, final String instancesAggName) {
+    return dateHistogram(datesAggName)
+        .field(BatchOperationTemplate.END_DATE)
+        .calendarInterval(
+            new DateHistogramInterval(operateProperties.getArchiver().getRolloverInterval()))
+        .format(operateProperties.getArchiver().getElsRolloverDateFormat())
+        .keyed(true) // get result as a map (not an array)
+        // we want to get only one bucket at a time
+        .subAggregation(
+            bucketSort("datesSortedAgg", Arrays.asList(new FieldSortBuilder("_key"))).size(1))
+        // we need process instance ids, also taking into account batch size
+        .subAggregation(
+            topHits(instancesAggName)
+                .size(operateProperties.getArchiver().getRolloverBatchSize())
+                .sort(BatchOperationTemplate.ID, SortOrder.ASC)
+                .fetchSource(BatchOperationTemplate.ID, null));
+  }
+
+  private Either<Throwable, ArchiveBatch> handleSearchResponse(
+      final SearchResponse searchResponse,
+      final Throwable error,
+      final Function<Throwable, String> errorMessage) {
+    if (error != null) {
+      return Either.left(new OperateRuntimeException(errorMessage.apply(error), error));
+    }
+
+    final var batch = createArchiveBatch(searchResponse, DATES_AGG, INSTANCES_AGG);
+    return Either.right(batch);
+  }
+
+  private Timer getArchiverQueryTimer() {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY);
+  }
+
+  private SearchRequest createFinishedInstancesSearchRequest(
+      final AggregationBuilder agg, final List<Integer> partitionIds) {
+    final QueryBuilder endDateQ =
+        rangeQuery(ListViewTemplate.END_DATE)
+            .lte(operateProperties.getArchiver().getArchivingTimepoint());
+    final TermQueryBuilder isProcessInstanceQ =
+        termQuery(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
+    final TermsQueryBuilder partitionQ = termsQuery(ListViewTemplate.PARTITION_ID, partitionIds);
+    final ConstantScoreQueryBuilder q =
+        constantScoreQuery(ElasticsearchUtil.joinWithAnd(endDateQ, isProcessInstanceQ, partitionQ));
+
+    final SearchRequest searchRequest =
+        new SearchRequest(processInstanceTemplate.getFullQualifiedName())
+            .source(
+                new SearchSourceBuilder()
+                    .query(q)
+                    .aggregation(agg)
+                    .fetchSource(false)
+                    .size(0)
+                    .sort(ListViewTemplate.END_DATE, SortOrder.ASC))
+            .requestCache(false); // we don't need to cache this, as each time we need new data
+
+    logger.debug(
+        "Finished process instances for archiving request: \n{}\n and aggregation: \n{}",
+        q.toString(),
+        agg.toString());
+    return searchRequest;
+  }
+
+  private AggregationBuilder createFinishedInstancesAggregation(
+      final String datesAggName, final String instancesAggName) {
+    return dateHistogram(datesAggName)
+        .field(ListViewTemplate.END_DATE)
+        .calendarInterval(
+            new DateHistogramInterval(operateProperties.getArchiver().getRolloverInterval()))
+        .format(operateProperties.getArchiver().getElsRolloverDateFormat())
+        .keyed(true) // get result as a map (not an array)
+        // we want to get only one bucket at a time
+        .subAggregation(
+            bucketSort("datesSortedAgg", Arrays.asList(new FieldSortBuilder("_key"))).size(1))
+        // we need process instance ids, also taking into account batch size
+        .subAggregation(
+            topHits(instancesAggName)
+                .size(operateProperties.getArchiver().getRolloverBatchSize())
+                .sort(ListViewTemplate.ID, SortOrder.ASC)
+                .fetchSource(ListViewTemplate.ID, null));
   }
 
   private ReindexRequest createReindexRequestWithDefaults() {

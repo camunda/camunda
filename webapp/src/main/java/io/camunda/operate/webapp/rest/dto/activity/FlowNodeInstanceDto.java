@@ -40,6 +40,39 @@ public class FlowNodeInstanceDto {
    */
   private SortValuesWrapper[] sortValues;
 
+  public static FlowNodeInstanceDto createFrom(
+      final FlowNodeInstanceEntity flowNodeInstanceEntity, final ObjectMapper objectMapper) {
+    FlowNodeInstanceDto instance =
+        new FlowNodeInstanceDto()
+            .setId(flowNodeInstanceEntity.getId())
+            .setFlowNodeId(flowNodeInstanceEntity.getFlowNodeId())
+            .setStartDate(flowNodeInstanceEntity.getStartDate())
+            .setEndDate(flowNodeInstanceEntity.getEndDate());
+    if (flowNodeInstanceEntity.getState() == FlowNodeState.ACTIVE
+        && flowNodeInstanceEntity.isIncident()) {
+      instance.setState(FlowNodeStateDto.INCIDENT);
+    } else {
+      instance.setState(FlowNodeStateDto.getState(flowNodeInstanceEntity.getState()));
+    }
+    instance
+        .setType(flowNodeInstanceEntity.getType())
+        .setSortValues(
+            SortValuesWrapper.createFrom(flowNodeInstanceEntity.getSortValues(), objectMapper))
+        .setTreePath(flowNodeInstanceEntity.getTreePath());
+    return instance;
+  }
+
+  public static List<FlowNodeInstanceDto> createFrom(
+      List<FlowNodeInstanceEntity> flowNodeInstanceEntities, ObjectMapper objectMapper) {
+    if (flowNodeInstanceEntities == null) {
+      return new ArrayList<>();
+    }
+    return flowNodeInstanceEntities.stream()
+        .filter(item -> item != null)
+        .map(item -> createFrom(item, objectMapper))
+        .collect(Collectors.toList());
+  }
+
   public String getId() {
     return id;
   }
@@ -112,37 +145,11 @@ public class FlowNodeInstanceDto {
     return this;
   }
 
-  public static FlowNodeInstanceDto createFrom(
-      final FlowNodeInstanceEntity flowNodeInstanceEntity, final ObjectMapper objectMapper) {
-    FlowNodeInstanceDto instance =
-        new FlowNodeInstanceDto()
-            .setId(flowNodeInstanceEntity.getId())
-            .setFlowNodeId(flowNodeInstanceEntity.getFlowNodeId())
-            .setStartDate(flowNodeInstanceEntity.getStartDate())
-            .setEndDate(flowNodeInstanceEntity.getEndDate());
-    if (flowNodeInstanceEntity.getState() == FlowNodeState.ACTIVE
-        && flowNodeInstanceEntity.isIncident()) {
-      instance.setState(FlowNodeStateDto.INCIDENT);
-    } else {
-      instance.setState(FlowNodeStateDto.getState(flowNodeInstanceEntity.getState()));
-    }
-    instance
-        .setType(flowNodeInstanceEntity.getType())
-        .setSortValues(
-            SortValuesWrapper.createFrom(flowNodeInstanceEntity.getSortValues(), objectMapper))
-        .setTreePath(flowNodeInstanceEntity.getTreePath());
-    return instance;
-  }
-
-  public static List<FlowNodeInstanceDto> createFrom(
-      List<FlowNodeInstanceEntity> flowNodeInstanceEntities, ObjectMapper objectMapper) {
-    if (flowNodeInstanceEntities == null) {
-      return new ArrayList<>();
-    }
-    return flowNodeInstanceEntities.stream()
-        .filter(item -> item != null)
-        .map(item -> createFrom(item, objectMapper))
-        .collect(Collectors.toList());
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(id, type, state, flowNodeId, startDate, endDate, treePath);
+    result = 31 * result + Arrays.hashCode(sortValues);
+    return result;
   }
 
   @Override
@@ -162,12 +169,5 @@ public class FlowNodeInstanceDto {
         && Objects.equals(endDate, that.endDate)
         && Objects.equals(treePath, that.treePath)
         && Arrays.equals(sortValues, that.sortValues);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(id, type, state, flowNodeId, startDate, endDate, treePath);
-    result = 31 * result + Arrays.hashCode(sortValues);
-    return result;
   }
 }

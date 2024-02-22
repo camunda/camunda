@@ -139,6 +139,20 @@ public class ProcessInstance {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        key,
+        processVersion,
+        bpmnProcessId,
+        parentKey,
+        startDate,
+        endDate,
+        state,
+        processDefinitionKey,
+        tenantId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -152,20 +166,6 @@ public class ProcessInstance {
         && Objects.equals(state, that.state)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        key,
-        processVersion,
-        bpmnProcessId,
-        parentKey,
-        startDate,
-        endDate,
-        state,
-        processDefinitionKey,
-        tenantId);
   }
 
   @Override

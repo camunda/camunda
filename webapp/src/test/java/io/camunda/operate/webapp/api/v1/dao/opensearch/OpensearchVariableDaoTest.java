@@ -88,7 +88,7 @@ public class OpensearchVariableDaoTest {
 
   @Test
   public void testBuildFilteringWithNullFilter() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
+    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
     underTest.buildFiltering(new Query<>(), mockSearchRequest);
 
     // Verify that the query was not modified in any way
@@ -98,8 +98,8 @@ public class OpensearchVariableDaoTest {
 
   @Test
   public void testBuildFilteringWithValidFields() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    Variable filter =
+    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
+    final Variable filter =
         new Variable()
             .setKey(1L)
             .setName("var")
@@ -109,7 +109,7 @@ public class OpensearchVariableDaoTest {
             .setValue("val")
             .setTenantId("tenant");
 
-    Query<Variable> inputQuery = new Query<Variable>().setFilter(filter);
+    final Query<Variable> inputQuery = new Query<Variable>().setFilter(filter);
 
     underTest.buildFiltering(inputQuery, mockSearchRequest);
 

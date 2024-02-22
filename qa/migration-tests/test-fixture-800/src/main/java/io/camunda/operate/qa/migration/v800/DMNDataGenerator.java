@@ -39,11 +39,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class DMNDataGenerator {
 
-  private static final Logger logger = LoggerFactory.getLogger(DMNDataGenerator.class);
   public static final String PROCESS_BPMN_PROCESS_ID = "basicDecision";
   public static final int PROCESS_INSTANCE_COUNT = 13;
-
   public static final int DECISION_COUNT = 2;
+  private static final Logger logger = LoggerFactory.getLogger(DMNDataGenerator.class);
 
   /**
    * ZeebeClient must not be reused between different test fixtures, as this may be different

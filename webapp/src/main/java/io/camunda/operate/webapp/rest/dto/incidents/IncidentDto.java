@@ -58,6 +58,104 @@ public class IncidentDto {
 
   private DecisionInstanceReferenceDto rootCauseDecision;
 
+  public static <T> IncidentDto createFrom(
+      final IncidentEntity incidentEntity,
+      final Map<Long, String> processNames,
+      IncidentDataHolder incidentData,
+      DecisionInstanceReferenceDto rootCauseDecision) {
+    return createFrom(
+        incidentEntity, Collections.emptyList(), processNames, incidentData, rootCauseDecision);
+  }
+
+  public static IncidentDto createFrom(
+      IncidentEntity incidentEntity,
+      List<OperationEntity> operations,
+      Map<Long, String> processNames,
+      IncidentDataHolder incidentData,
+      DecisionInstanceReferenceDto rootCauseDecision) {
+    if (incidentEntity == null) {
+      return null;
+    }
+
+    IncidentDto incident =
+        new IncidentDto()
+            .setId(incidentEntity.getId())
+            .setFlowNodeId(incidentEntity.getFlowNodeId())
+            .setFlowNodeInstanceId(
+                ConversionUtils.toStringOrNull(incidentEntity.getFlowNodeInstanceKey()))
+            .setErrorMessage(incidentEntity.getErrorMessage())
+            .setErrorType(ErrorTypeDto.createFrom(incidentEntity.getErrorType()))
+            .setJobId(ConversionUtils.toStringOrNull(incidentEntity.getJobKey()))
+            .setCreationTime(incidentEntity.getCreationTime());
+
+    if (operations != null && operations.size() > 0) {
+      OperationEntity lastOperation = operations.get(0); // operations are
+      // sorted by start date
+      // descendant
+      incident
+          .setLastOperation(DtoCreator.create(lastOperation, OperationDto.class))
+          .setHasActiveOperation(
+              operations.stream()
+                  .anyMatch(
+                      o ->
+                          o.getState().equals(OperationState.SCHEDULED)
+                              || o.getState().equals(OperationState.LOCKED)
+                              || o.getState().equals(OperationState.SENT)));
+    }
+
+    // do not return root cause when it's a "local" incident
+    if (incidentData != null
+        && incident.getFlowNodeInstanceId() != incidentData.getFinalFlowNodeInstanceId()) {
+      incident.setFlowNodeId(incidentData.getFinalFlowNodeId());
+      incident.setFlowNodeInstanceId(incidentData.getFinalFlowNodeInstanceId());
+
+      final ProcessInstanceReferenceDto rootCauseInstance =
+          new ProcessInstanceReferenceDto()
+              .setInstanceId(String.valueOf(incidentEntity.getProcessInstanceKey()))
+              .setProcessDefinitionId(String.valueOf(incidentEntity.getProcessDefinitionKey()));
+      if (processNames != null
+          && processNames.get(incidentEntity.getProcessDefinitionKey()) != null) {
+        rootCauseInstance.setProcessDefinitionName(
+            processNames.get(incidentEntity.getProcessDefinitionKey()));
+      } else {
+        rootCauseInstance.setProcessDefinitionName(FALLBACK_PROCESS_DEFINITION_NAME);
+      }
+      incident.setRootCauseInstance(rootCauseInstance);
+    }
+
+    if (rootCauseDecision != null) {
+      incident.setRootCauseDecision(rootCauseDecision);
+    }
+
+    return incident;
+  }
+
+  public static List<IncidentDto> createFrom(
+      List<IncidentEntity> incidentEntities,
+      Map<Long, List<OperationEntity>> operations,
+      Map<Long, String> processNames,
+      Map<String, IncidentDataHolder> incidentData) {
+    if (incidentEntities != null) {
+      return incidentEntities.stream()
+          .filter(inc -> inc != null)
+          .map(
+              inc ->
+                  createFrom(
+                      inc,
+                      operations.get(inc.getKey()),
+                      processNames,
+                      incidentData.get(inc.getId()),
+                      null))
+          .collect(Collectors.toList());
+    }
+    return new ArrayList<>();
+  }
+
+  public static List<IncidentDto> sortDefault(List<IncidentDto> incidents) {
+    Collections.sort(incidents, INCIDENT_DEFAULT_COMPARATOR);
+    return incidents;
+  }
+
   public String getId() {
     return id;
   }
@@ -157,102 +255,20 @@ public class IncidentDto {
     return this;
   }
 
-  public static <T> IncidentDto createFrom(
-      final IncidentEntity incidentEntity,
-      final Map<Long, String> processNames,
-      IncidentDataHolder incidentData,
-      DecisionInstanceReferenceDto rootCauseDecision) {
-    return createFrom(
-        incidentEntity, Collections.emptyList(), processNames, incidentData, rootCauseDecision);
-  }
-
-  public static IncidentDto createFrom(
-      IncidentEntity incidentEntity,
-      List<OperationEntity> operations,
-      Map<Long, String> processNames,
-      IncidentDataHolder incidentData,
-      DecisionInstanceReferenceDto rootCauseDecision) {
-    if (incidentEntity == null) {
-      return null;
-    }
-
-    IncidentDto incident =
-        new IncidentDto()
-            .setId(incidentEntity.getId())
-            .setFlowNodeId(incidentEntity.getFlowNodeId())
-            .setFlowNodeInstanceId(
-                ConversionUtils.toStringOrNull(incidentEntity.getFlowNodeInstanceKey()))
-            .setErrorMessage(incidentEntity.getErrorMessage())
-            .setErrorType(ErrorTypeDto.createFrom(incidentEntity.getErrorType()))
-            .setJobId(ConversionUtils.toStringOrNull(incidentEntity.getJobKey()))
-            .setCreationTime(incidentEntity.getCreationTime());
-
-    if (operations != null && operations.size() > 0) {
-      OperationEntity lastOperation = operations.get(0); // operations are
-      // sorted by start date
-      // descendant
-      incident
-          .setLastOperation(DtoCreator.create(lastOperation, OperationDto.class))
-          .setHasActiveOperation(
-              operations.stream()
-                  .anyMatch(
-                      o ->
-                          o.getState().equals(OperationState.SCHEDULED)
-                              || o.getState().equals(OperationState.LOCKED)
-                              || o.getState().equals(OperationState.SENT)));
-    }
-
-    // do not return root cause when it's a "local" incident
-    if (incidentData != null
-        && incident.getFlowNodeInstanceId() != incidentData.getFinalFlowNodeInstanceId()) {
-      incident.setFlowNodeId(incidentData.getFinalFlowNodeId());
-      incident.setFlowNodeInstanceId(incidentData.getFinalFlowNodeInstanceId());
-
-      final ProcessInstanceReferenceDto rootCauseInstance =
-          new ProcessInstanceReferenceDto()
-              .setInstanceId(String.valueOf(incidentEntity.getProcessInstanceKey()))
-              .setProcessDefinitionId(String.valueOf(incidentEntity.getProcessDefinitionKey()));
-      if (processNames != null
-          && processNames.get(incidentEntity.getProcessDefinitionKey()) != null) {
-        rootCauseInstance.setProcessDefinitionName(
-            processNames.get(incidentEntity.getProcessDefinitionKey()));
-      } else {
-        rootCauseInstance.setProcessDefinitionName(FALLBACK_PROCESS_DEFINITION_NAME);
-      }
-      incident.setRootCauseInstance(rootCauseInstance);
-    }
-
-    if (rootCauseDecision != null) {
-      incident.setRootCauseDecision(rootCauseDecision);
-    }
-
-    return incident;
-  }
-
-  public static List<IncidentDto> createFrom(
-      List<IncidentEntity> incidentEntities,
-      Map<Long, List<OperationEntity>> operations,
-      Map<Long, String> processNames,
-      Map<String, IncidentDataHolder> incidentData) {
-    if (incidentEntities != null) {
-      return incidentEntities.stream()
-          .filter(inc -> inc != null)
-          .map(
-              inc ->
-                  createFrom(
-                      inc,
-                      operations.get(inc.getKey()),
-                      processNames,
-                      incidentData.get(inc.getId()),
-                      null))
-          .collect(Collectors.toList());
-    }
-    return new ArrayList<>();
-  }
-
-  public static List<IncidentDto> sortDefault(List<IncidentDto> incidents) {
-    Collections.sort(incidents, INCIDENT_DEFAULT_COMPARATOR);
-    return incidents;
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        id,
+        errorType,
+        errorMessage,
+        flowNodeId,
+        flowNodeInstanceId,
+        jobId,
+        creationTime,
+        hasActiveOperation,
+        lastOperation,
+        rootCauseInstance,
+        rootCauseDecision);
   }
 
   @Override
@@ -275,22 +291,6 @@ public class IncidentDto {
         && Objects.equals(lastOperation, that.lastOperation)
         && Objects.equals(rootCauseInstance, that.rootCauseInstance)
         && Objects.equals(rootCauseDecision, that.rootCauseDecision);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        id,
-        errorType,
-        errorMessage,
-        flowNodeId,
-        flowNodeInstanceId,
-        jobId,
-        creationTime,
-        hasActiveOperation,
-        lastOperation,
-        rootCauseInstance,
-        rootCauseDecision);
   }
 
   @Override

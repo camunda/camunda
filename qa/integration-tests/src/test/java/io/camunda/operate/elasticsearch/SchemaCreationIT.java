@@ -40,17 +40,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class SchemaCreationIT extends OperateAbstractIT {
 
-  @Rule public SearchTestRule searchTestRule = new SearchTestRule(operatePropertiesCustomizer);
-  @Autowired private TestSearchRepository testSearchRepository;
-  @Autowired private SchemaManager schemaManager;
-  @Autowired private IncidentTemplate processInstanceTemplate;
-  @Autowired private EventTemplate eventTemplate;
-  @Autowired private ListViewTemplate listViewTemplate;
-  @Autowired private ProcessIndex processIndex;
-  @Autowired private DecisionIndex decisionIndex;
-  @Autowired private List<IndexDescriptor> indexDescriptors;
-  @Autowired private IndicesCheck indicesCheck;
-
   private static final Consumer<OperateProperties> operatePropertiesCustomizer =
       operateProperties -> {
         operateProperties.getArchiver().setIlmEnabled(true);
@@ -70,6 +59,16 @@ public class SchemaCreationIT extends OperateAbstractIT {
             .getElasticsearch()
             .setNumberOfReplicasForIndices(numberOfReplicasForIndices);
       };
+  @Rule public SearchTestRule searchTestRule = new SearchTestRule(operatePropertiesCustomizer);
+  @Autowired private TestSearchRepository testSearchRepository;
+  @Autowired private SchemaManager schemaManager;
+  @Autowired private IncidentTemplate processInstanceTemplate;
+  @Autowired private EventTemplate eventTemplate;
+  @Autowired private ListViewTemplate listViewTemplate;
+  @Autowired private ProcessIndex processIndex;
+  @Autowired private DecisionIndex decisionIndex;
+  @Autowired private List<IndexDescriptor> indexDescriptors;
+  @Autowired private IndicesCheck indicesCheck;
 
   @Test
   @Ignore("For some reason fails on CI, so skipping")

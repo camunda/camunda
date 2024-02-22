@@ -65,7 +65,7 @@ public class OpensearchSequenceFlowDaoTest {
 
   @Test
   public void testBuildFilteringWithNullFilter() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
+    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
     underTest.buildFiltering(new Query<>(), mockSearchRequest);
 
     // Verify that the query was not modified in any way
@@ -75,15 +75,15 @@ public class OpensearchSequenceFlowDaoTest {
 
   @Test
   public void testBuildFilteringWithValidFields() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    SequenceFlow filter =
+    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
+    final SequenceFlow filter =
         new SequenceFlow()
             .setId("id")
             .setActivityId("activity_id")
             .setTenantId("tenant")
             .setProcessInstanceKey(1L);
 
-    Query<SequenceFlow> inputQuery = new Query<SequenceFlow>().setFilter(filter);
+    final Query<SequenceFlow> inputQuery = new Query<SequenceFlow>().setFilter(filter);
 
     underTest.buildFiltering(inputQuery, mockSearchRequest);
 

@@ -58,16 +58,11 @@ import org.springframework.context.annotation.Configuration;
     matchIfMissing = true)
 public class ElasticsearchChecks {
 
-  @Autowired private RestHighLevelClient esClient;
-
-  @Autowired private ObjectMapper objectMapper;
-
-  @Autowired private ProcessReader processReader;
-
-  @Autowired private ProcessInstanceReader processInstanceReader;
-
   @Autowired UserTaskReader userTaskReader;
-
+  @Autowired private RestHighLevelClient esClient;
+  @Autowired private ObjectMapper objectMapper;
+  @Autowired private ProcessReader processReader;
+  @Autowired private ProcessInstanceReader processInstanceReader;
   @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;

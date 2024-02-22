@@ -27,11 +27,9 @@ import org.springframework.web.bind.annotation.*;
 @RestControllerEndpoint(id = "backups")
 public class BackupController extends ErrorController {
 
-  @Autowired private BackupService backupService;
-
-  @Autowired private OperateProperties operateProperties;
-
   private final Pattern pattern = Pattern.compile("((?![A-Z \"*\\\\<|,>\\/?_]).){0,3996}$");
+  @Autowired private BackupService backupService;
+  @Autowired private OperateProperties operateProperties;
 
   @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
   public TakeBackupResponseDto takeBackup(@RequestBody TakeBackupRequestDto request) {

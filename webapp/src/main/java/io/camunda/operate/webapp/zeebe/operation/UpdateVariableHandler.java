@@ -33,12 +33,12 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
     markAsSent(operation, response.getKey());
   }
 
-  private String mergeVariableJson(String variableName, String variableValue) {
-    return String.format("{\"%s\":%s}", variableName, variableValue);
-  }
-
   @Override
   public Set<OperationType> getTypes() {
     return Set.of(UPDATE_VARIABLE, ADD_VARIABLE);
+  }
+
+  private String mergeVariableJson(String variableName, String variableValue) {
+    return String.format("{\"%s\":%s}", variableName, variableValue);
   }
 }

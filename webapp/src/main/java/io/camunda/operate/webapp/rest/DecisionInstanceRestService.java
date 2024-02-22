@@ -40,10 +40,10 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
 
   public static final String DECISION_INSTANCE_URL = "/api/decision-instances";
 
-  @Autowired private DecisionInstanceReader decisionInstanceReader;
-
   @Autowired(required = false)
   protected PermissionsService permissionsService;
+
+  @Autowired private DecisionInstanceReader decisionInstanceReader;
 
   @Operation(summary = "Query decision instances by different parameters")
   @PostMapping

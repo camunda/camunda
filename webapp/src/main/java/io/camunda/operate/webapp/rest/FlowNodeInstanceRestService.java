@@ -35,12 +35,11 @@ public class FlowNodeInstanceRestService extends InternalAPIErrorController {
 
   public static final String FLOW_NODE_INSTANCE_URL = "/api/flow-node-instances";
 
-  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
-
-  @Autowired private ProcessInstanceReader processInstanceReader;
-
   @Autowired(required = false)
   protected PermissionsService permissionsService;
+
+  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
+  @Autowired private ProcessInstanceReader processInstanceReader;
 
   @Operation(summary = "Query flow node instance tree. Returns map treePath <-> list of children.")
   @PostMapping

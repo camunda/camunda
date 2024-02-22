@@ -44,10 +44,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class IncidentController extends ErrorController implements SearchController<Incident> {
 
   public static final String URI = "/v1/incidents";
-
-  @Autowired private IncidentDao incidentDao;
-
-  private final QueryValidator<Incident> queryValidator = new QueryValidator<>();
   private static final CustomQueryValidator<Incident> messageSortValidator =
       query -> {
         List<Sort> sorts = query.getSort();
@@ -60,6 +56,8 @@ public class IncidentController extends ErrorController implements SearchControl
           }
         }
       };
+  private final QueryValidator<Incident> queryValidator = new QueryValidator<>();
+  @Autowired private IncidentDao incidentDao;
 
   @Operation(
       summary = "Search incidents",

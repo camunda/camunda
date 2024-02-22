@@ -26,9 +26,10 @@ import org.springframework.stereotype.Component;
 public class UserTaskZeebeRecordProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(UserTaskZeebeRecordProcessor.class);
-
+  private static final Set<String> CREATE_STATES = Set.of(UserTaskIntent.CREATED.name());
+  private static final Set<String> UPDATE_STATES =
+      Set.of(UserTaskIntent.ASSIGNED.name(), UserTaskIntent.MIGRATED.name());
   private final UserTaskTemplate userTaskTemplate;
-
   private final ObjectMapper objectMapper;
 
   public UserTaskZeebeRecordProcessor(
@@ -37,36 +38,10 @@ public class UserTaskZeebeRecordProcessor {
     this.objectMapper = objectMapper;
   }
 
-  private static final Set<String> CREATE_STATES = Set.of(UserTaskIntent.CREATED.name());
-  private static final Set<String> UPDATE_STATES =
-      Set.of(UserTaskIntent.ASSIGNED.name(), UserTaskIntent.MIGRATED.name());
-
-  public void processUserTaskRecord(
-      BatchRequest batchRequest, Record<UserTaskRecordValue> userTaskRecord)
-      throws PersistenceException {
-    final String intent = userTaskRecord.getIntent().name();
-    logger.info("Intent is: {}", intent);
-    var userTaskValue = userTaskRecord.getValue();
-    UserTaskEntity userTaskEntity;
-    try {
-      userTaskEntity = createEntity(userTaskRecord);
-    } catch (JsonProcessingException e) {
-      throw new OperateRuntimeException(
-          String.format("Could not create UserTaskEntity from record value %s", userTaskValue), e);
-    }
-    if (CREATE_STATES.contains(intent)) {
-      persistUserTask(userTaskEntity, batchRequest);
-    } else if (UPDATE_STATES.contains(intent)) {
-      Map<String, Object> updateFields =
-          getUpdateFieldsMapByIntent(intent, userTaskValue, userTaskEntity);
-      updateUserTask(userTaskEntity, updateFields, batchRequest);
-    } else {
-      logger.debug("UserTask record with intent {} is ignored", intent);
-    }
-  }
-
   private static Map<String, Object> getUpdateFieldsMapByIntent(
-      String intent, UserTaskRecordValue userTaskValue, UserTaskEntity userTaskEntity) {
+      final String intent,
+      final UserTaskRecordValue userTaskValue,
+      final UserTaskEntity userTaskEntity) {
     final Map<String, Object> updateFields = new HashMap<>();
     if (intent.equals(UserTaskIntent.ASSIGNED.name())) {
       updateFields.put(UserTaskTemplate.ASSIGNEE, userTaskValue.getAssignee());
@@ -83,8 +58,34 @@ public class UserTaskZeebeRecordProcessor {
     return updateFields;
   }
 
+  public void processUserTaskRecord(
+      final BatchRequest batchRequest, final Record<UserTaskRecordValue> userTaskRecord)
+      throws PersistenceException {
+    final String intent = userTaskRecord.getIntent().name();
+    logger.info("Intent is: {}", intent);
+    final var userTaskValue = userTaskRecord.getValue();
+    final UserTaskEntity userTaskEntity;
+    try {
+      userTaskEntity = createEntity(userTaskRecord);
+    } catch (final JsonProcessingException e) {
+      throw new OperateRuntimeException(
+          String.format("Could not create UserTaskEntity from record value %s", userTaskValue), e);
+    }
+    if (CREATE_STATES.contains(intent)) {
+      persistUserTask(userTaskEntity, batchRequest);
+    } else if (UPDATE_STATES.contains(intent)) {
+      final Map<String, Object> updateFields =
+          getUpdateFieldsMapByIntent(intent, userTaskValue, userTaskEntity);
+      updateUserTask(userTaskEntity, updateFields, batchRequest);
+    } else {
+      logger.debug("UserTask record with intent {} is ignored", intent);
+    }
+  }
+
   private void updateUserTask(
-      UserTaskEntity userTaskEntity, Map<String, Object> updateFields, BatchRequest batchRequest)
+      final UserTaskEntity userTaskEntity,
+      final Map<String, Object> updateFields,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.update(
         userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), updateFields);
@@ -94,16 +95,16 @@ public class UserTaskZeebeRecordProcessor {
         updateFields);
   }
 
-  private void persistUserTask(UserTaskEntity userTaskEntity, BatchRequest batchRequest)
+  private void persistUserTask(final UserTaskEntity userTaskEntity, final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.addWithId(
         userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), userTaskEntity);
     logger.debug("Added UserTaskEntity {} to batch request", userTaskEntity);
   }
 
-  private UserTaskEntity createEntity(Record<UserTaskRecordValue> userTaskRecord)
+  private UserTaskEntity createEntity(final Record<UserTaskRecordValue> userTaskRecord)
       throws JsonProcessingException {
-    UserTaskRecordValue userTaskRecordValue = userTaskRecord.getValue();
+    final UserTaskRecordValue userTaskRecordValue = userTaskRecord.getValue();
     return new UserTaskEntity()
         .setId(String.valueOf(userTaskRecordValue.getUserTaskKey()))
         .setKey(userTaskRecordValue.getUserTaskKey())
@@ -125,11 +126,11 @@ public class UserTaskZeebeRecordProcessor {
         .setFormKey(userTaskRecordValue.getFormKey());
   }
 
-  private OffsetDateTime toDateOrNull(String dateString) {
+  private OffsetDateTime toDateOrNull(final String dateString) {
     if (dateString == null) return null;
     try {
       return OffsetDateTime.parse(dateString);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.warn("Could not parse {} as OffsetDateTime. Use null.", dateString);
       return null;
     }

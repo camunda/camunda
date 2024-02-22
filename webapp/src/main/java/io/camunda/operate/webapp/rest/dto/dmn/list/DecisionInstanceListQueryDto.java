@@ -105,6 +105,19 @@ public class DecisionInstanceListQueryDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        decisionDefinitionIds,
+        evaluated,
+        failed,
+        ids,
+        processInstanceId,
+        evaluationDateAfter,
+        evaluationDateBefore,
+        tenantId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -117,19 +130,6 @@ public class DecisionInstanceListQueryDto {
         && Objects.equals(evaluationDateAfter, that.evaluationDateAfter)
         && Objects.equals(evaluationDateBefore, that.evaluationDateBefore)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        decisionDefinitionIds,
-        evaluated,
-        failed,
-        ids,
-        processInstanceId,
-        evaluationDateAfter,
-        evaluationDateBefore,
-        tenantId);
   }
 
   @Override

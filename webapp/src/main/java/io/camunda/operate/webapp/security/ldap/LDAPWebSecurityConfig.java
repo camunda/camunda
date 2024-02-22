@@ -29,9 +29,8 @@ import org.springframework.util.StringUtils;
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class LDAPWebSecurityConfig extends BaseWebConfigurer {
-  @Autowired private LDAPUserService userService;
-
   @Autowired protected OAuth2WebConfigurer oAuth2WebConfigurer;
+  @Autowired private LDAPUserService userService;
 
   @Override
   protected void applyAuthenticationSettings(final AuthenticationManagerBuilder auth)
@@ -42,6 +41,20 @@ public class LDAPWebSecurityConfig extends BaseWebConfigurer {
     } else {
       setupStandardLDAP(auth, ldapConfig);
     }
+  }
+
+  @Override
+  protected void applyOAuth2Settings(final HttpSecurity http) throws Exception {
+    oAuth2WebConfigurer.configure(http);
+  }
+
+  @Override
+  protected void logoutSuccessHandler(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
+    userService.cleanUp(authentication);
+    super.logoutSuccessHandler(request, response, authentication);
   }
 
   private void setUpActiveDirectoryLDAP(
@@ -66,19 +79,5 @@ public class LDAPWebSecurityConfig extends BaseWebConfigurer {
         .url(ldapConfig.getUrl() + ldapConfig.getBaseDn())
         .managerDn(ldapConfig.getManagerDn())
         .managerPassword(ldapConfig.getManagerPassword());
-  }
-
-  @Override
-  protected void applyOAuth2Settings(final HttpSecurity http) throws Exception {
-    oAuth2WebConfigurer.configure(http);
-  }
-
-  @Override
-  protected void logoutSuccessHandler(
-      final HttpServletRequest request,
-      final HttpServletResponse response,
-      final Authentication authentication) {
-    userService.cleanUp(authentication);
-    super.logoutSuccessHandler(request, response, authentication);
   }
 }

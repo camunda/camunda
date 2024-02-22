@@ -33,7 +33,7 @@ public class ZeebePostImporter {
 
   @Autowired private BeanFactory beanFactory;
 
-  private List<PostImportAction> postImportActions = new ArrayList<>();
+  private final List<PostImportAction> postImportActions = new ArrayList<>();
 
   public void initPostImporters() {
     postImportActions.clear();

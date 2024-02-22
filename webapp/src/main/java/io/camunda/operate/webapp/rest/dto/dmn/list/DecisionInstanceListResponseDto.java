@@ -36,6 +36,11 @@ public class DecisionInstanceListResponseDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(decisionInstances, totalCount);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -46,10 +51,5 @@ public class DecisionInstanceListResponseDto {
     final DecisionInstanceListResponseDto that = (DecisionInstanceListResponseDto) o;
     return totalCount == that.totalCount
         && Objects.equals(decisionInstances, that.decisionInstances);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(decisionInstances, totalCount);
   }
 }

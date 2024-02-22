@@ -61,12 +61,6 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Autowired private ObjectMapper objectMapper;
 
   @Override
-  public <R> List<R> searchAll(String index, Class<R> clazz) throws IOException {
-    var requestBuilder = searchRequestBuilder(index).query(matchAll());
-    return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
-  }
-
-  @Override
   public boolean isConnected() {
     return richOpenSearchClient != null;
   }
@@ -113,6 +107,11 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
+  public void deleteById(String index, String id) throws IOException {
+    richOpenSearchClient.doc().delete(index, id);
+  }
+
+  @Override
   public Set<String> getFieldNames(String indexName) throws IOException {
     var requestBuilder = getIndexRequestBuilder(indexName);
     return richOpenSearchClient
@@ -122,24 +121,6 @@ public class TestOpenSearchRepository implements TestSearchRepository {
         .mappings()
         .properties()
         .keySet();
-  }
-
-  @Override
-  public IndexSettings getIndexSettings(String indexName) throws IOException {
-    var settings = new MapPath(richOpenSearchClient.index().getIndexSettings(indexName));
-    String shards =
-        settings
-            .getByPath("settings", "index", "number_of_shards")
-            .flatMap(Convertable::<String>to)
-            .orElse(null);
-    String replicas =
-        settings
-            .getByPath("settings", "index", "number_of_replicas")
-            .flatMap(Convertable::<String>to)
-            .orElse(null);
-    return new IndexSettings(
-        shards == null ? null : Integer.parseInt(shards),
-        replicas == null ? null : Integer.parseInt(replicas));
   }
 
   @Override
@@ -172,6 +153,12 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
+  public <R> List<R> searchAll(String index, Class<R> clazz) throws IOException {
+    var requestBuilder = searchRequestBuilder(index).query(matchAll());
+    return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
+  }
+
+  @Override
   public <T> List<T> searchJoinRelation(String index, String joinRelation, Class<T> clazz, int size)
       throws IOException {
     var searchRequestBuilder =
@@ -180,23 +167,6 @@ public class TestOpenSearchRepository implements TestSearchRepository {
             .size(size);
 
     return richOpenSearchClient.doc().searchValues(searchRequestBuilder, clazz);
-  }
-
-  @Override
-  public List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size)
-      throws IOException {
-    var searchRequestBuilder =
-        searchRequestBuilder(index).query(longTerms(idFieldName, ids)).size(size);
-
-    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, HashMap.class).stream()
-        .map(map -> (Long) map.get(idFieldName))
-        .toList();
-  }
-
-  @Override
-  public void deleteByTermsQuery(String index, String fieldName, List<Long> values)
-      throws IOException {
-    richOpenSearchClient.doc().deleteByQuery(index, longTerms(fieldName, values));
   }
 
   @Override
@@ -225,8 +195,20 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public void deleteById(String index, String id) throws IOException {
-    richOpenSearchClient.doc().delete(index, id);
+  public List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size)
+      throws IOException {
+    var searchRequestBuilder =
+        searchRequestBuilder(index).query(longTerms(idFieldName, ids)).size(size);
+
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, HashMap.class).stream()
+        .map(map -> (Long) map.get(idFieldName))
+        .toList();
+  }
+
+  @Override
+  public void deleteByTermsQuery(String index, String fieldName, List<Long> values)
+      throws IOException {
+    richOpenSearchClient.doc().deleteByQuery(index, longTerms(fieldName, values));
   }
 
   @Override
@@ -269,6 +251,24 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Override
   public boolean ilmPolicyExists(String policyName) {
     return !richOpenSearchClient.ism().getPolicy(policyName).isEmpty();
+  }
+
+  @Override
+  public IndexSettings getIndexSettings(String indexName) throws IOException {
+    var settings = new MapPath(richOpenSearchClient.index().getIndexSettings(indexName));
+    String shards =
+        settings
+            .getByPath("settings", "index", "number_of_shards")
+            .flatMap(Convertable::<String>to)
+            .orElse(null);
+    String replicas =
+        settings
+            .getByPath("settings", "index", "number_of_replicas")
+            .flatMap(Convertable::<String>to)
+            .orElse(null);
+    return new IndexSettings(
+        shards == null ? null : Integer.parseInt(shards),
+        replicas == null ? null : Integer.parseInt(replicas));
   }
 
   @Override

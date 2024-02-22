@@ -49,16 +49,11 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @ActiveProfiles({"test"})
 @AutoConfigureMockMvc
 public class InternalAPIErrorControllerIT {
-  @Autowired private MockMvc mockMvc;
-
-  @MockBean private OperationReader operationReader;
-
-  @MockBean private OperateProfileService mockProfileService;
-
-  @Autowired private ObjectMapper objectMapper;
-
   private static final String EXCEPTION_MESSAGE = "profile exception message";
-
+  @Autowired private MockMvc mockMvc;
+  @MockBean private OperationReader operationReader;
+  @MockBean private OperateProfileService mockProfileService;
+  @Autowired private ObjectMapper objectMapper;
   private MockHttpServletRequestBuilder mockGetRequest;
 
   @Before

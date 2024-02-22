@@ -70,11 +70,11 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
   private ObjectMapper localObjectMapper;
 
   private static <T> T fromSearchHit(
-      String searchHitString, ObjectMapper objectMapper, JavaType valueType) {
-    T entity;
+      final String searchHitString, final ObjectMapper objectMapper, final JavaType valueType) {
+    final T entity;
     try {
       entity = objectMapper.readValue(searchHitString, valueType);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       logger.error(
           String.format(
               "Error while reading entity of type %s from indices!", valueType.toString()),
@@ -86,7 +86,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
   }
 
   @Override
-  protected void processZeebeRecords(ImportBatch importBatch, BatchRequest batchRequest)
+  protected void processZeebeRecords(final ImportBatch importBatch, final BatchRequest batchRequest)
       throws PersistenceException {
     final List<HitEntity> hits = importBatch.getHits();
     final List<Record> zeebeRecords =
@@ -105,7 +105,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
         importBatch.getImportValueType(),
         importBatch.getPartitionId());
 
-    ImportValueType importValueType = importBatch.getImportValueType();
+    final ImportValueType importValueType = importBatch.getImportValueType();
     switch (importValueType) {
       case DECISION:
         processDecisionRecords(batchRequest, zeebeRecords);
@@ -163,10 +163,11 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
       final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
     // per flow node instance
-    Map<Long, List<Record<ProcessMessageSubscriptionRecordValue>>> groupedRecordsPerFlowNodeInst =
-        zeebeRecords.stream()
-            .map(obj -> (Record<ProcessMessageSubscriptionRecordValue>) obj)
-            .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
+    final Map<Long, List<Record<ProcessMessageSubscriptionRecordValue>>>
+        groupedRecordsPerFlowNodeInst =
+            zeebeRecords.stream()
+                .map(obj -> (Record<ProcessMessageSubscriptionRecordValue>) obj)
+                .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
     eventZeebeRecordProcessor.processProcessMessageSubscription(
         groupedRecordsPerFlowNodeInst, batchRequest);
   }
@@ -181,7 +182,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
   private void processDecisionRecords(
       final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
-    for (Record record : zeebeRecords) {
+    for (final Record record : zeebeRecords) {
       // deployment records can be processed one by one
       decisionZeebeRecordProcessor.processDecisionRecord(record, batchRequest);
     }
@@ -190,7 +191,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
   private void processDecisionRequirementsRecord(
       final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
-    for (Record record : zeebeRecords) {
+    for (final Record record : zeebeRecords) {
       // deployment records can be processed one by one
       decisionRequirementsZeebeRecordProcessor.processDecisionRequirementsRecord(
           record, batchRequest);
@@ -200,7 +201,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
   private void processDecisionEvaluationRecords(
       final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
-    for (Record record : zeebeRecords) {
+    for (final Record record : zeebeRecords) {
       decisionEvaluationZeebeRecordProcessor.processDecisionEvaluationRecord(record, batchRequest);
     }
   }
@@ -208,7 +209,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
   private void processJobRecords(final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
     // per activity
-    Map<Long, List<Record<JobRecordValue>>> groupedJobRecordsPerActivityInst =
+    final Map<Long, List<Record<JobRecordValue>>> groupedJobRecordsPerActivityInst =
         zeebeRecords.stream()
             .map(obj -> (Record<JobRecordValue>) obj)
             .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
@@ -219,7 +220,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
   private void processProcessRecords(
       final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
-    for (Record record : zeebeRecords) {
+    for (final Record record : zeebeRecords) {
       // deployment records can be processed one by one
       processZeebeRecordProcessor.processDeploymentRecord(record, batchRequest);
     }
@@ -228,7 +229,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
   private void processVariableDocumentRecords(
       final BatchRequest batchRequest, final List<Record> zeebeRecords)
       throws PersistenceException {
-    for (Record record : zeebeRecords) {
+    for (final Record record : zeebeRecords) {
       operationZeebeRecordProcessor.processVariableDocumentRecords(record, batchRequest);
     }
   }
@@ -251,11 +252,11 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
       throws PersistenceException {
     // old style
     incidentZeebeRecordProcessor.processIncidentRecord(zeebeRecords, batchRequest);
-    for (Record record : zeebeRecords) {
+    for (final Record record : zeebeRecords) {
       listViewZeebeRecordProcessor.processIncidentRecord(record, batchRequest);
       flowNodeInstanceZeebeRecordProcessor.processIncidentRecord(record, batchRequest);
     }
-    Map<Long, List<Record<IncidentRecordValue>>> groupedIncidentRecordsPerActivityInst =
+    final Map<Long, List<Record<IncidentRecordValue>>> groupedIncidentRecordsPerActivityInst =
         zeebeRecords.stream()
             .map(obj -> (Record<IncidentRecordValue>) obj)
             .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
@@ -268,7 +269,7 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
       final BatchRequest batchRequest,
       final List<Record> zeebeRecords)
       throws PersistenceException {
-    Map<Long, List<Record<ProcessInstanceRecordValue>>> groupedWIRecords =
+    final Map<Long, List<Record<ProcessInstanceRecordValue>>> groupedWIRecords =
         zeebeRecords.stream()
             .map(obj -> (Record<ProcessInstanceRecordValue>) obj)
             .collect(
@@ -278,17 +279,17 @@ public class ImportBulkProcessor extends AbstractImportBatchProcessor {
                 Map::putAll);
     listViewZeebeRecordProcessor.processProcessInstanceRecord(
         groupedWIRecords, batchRequest, importBatch);
-    Map<Long, List<Record<ProcessInstanceRecordValue>>> groupedWIRecordsPerActivityInst =
+    final Map<Long, List<Record<ProcessInstanceRecordValue>>> groupedWIRecordsPerActivityInst =
         zeebeRecords.stream()
             .map(obj -> (Record<ProcessInstanceRecordValue>) obj)
             .collect(Collectors.groupingBy(obj -> obj.getKey()));
-    List<Long> flowNodeInstanceKeysOrdered =
+    final List<Long> flowNodeInstanceKeysOrdered =
         zeebeRecords.stream().map(Record::getKey).distinct().collect(Collectors.toList());
     flowNodeInstanceZeebeRecordProcessor.processProcessInstanceRecord(
         groupedWIRecordsPerActivityInst, flowNodeInstanceKeysOrdered, batchRequest);
     eventZeebeRecordProcessor.processProcessInstanceRecords(
         groupedWIRecordsPerActivityInst, batchRequest);
-    for (Record record : zeebeRecords) {
+    for (final Record record : zeebeRecords) {
       sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord(record, batchRequest);
     }
   }

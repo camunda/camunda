@@ -45,9 +45,9 @@ public class Archiver {
       logger.info("INIT: Start archiving data...");
 
       // split the list of partitionIds to parallelize
-      List<Integer> partitionIds = partitionHolder.getPartitionIds();
+      final List<Integer> partitionIds = partitionHolder.getPartitionIds();
       logger.info("Starting archiver for partitions: {}", partitionIds);
-      int threadsCount = operateProperties.getArchiver().getThreadsCount();
+      final int threadsCount = operateProperties.getArchiver().getThreadsCount();
       if (threadsCount > partitionIds.size()) {
         logger.warn(
             "Too many archiver threads are configured, not all of them will be in use. Number of threads: {}, number of partitions to parallelize by: {}",
@@ -56,7 +56,7 @@ public class Archiver {
       }
 
       for (int i = 0; i < threadsCount; i++) {
-        List<Integer> partitionIdsSubset =
+        final List<Integer> partitionIdsSubset =
             CollectionUtil.splitAndGetSublist(partitionIds, threadsCount, i);
         if (!partitionIdsSubset.isEmpty()) {
           final var archiverJob =
@@ -73,7 +73,10 @@ public class Archiver {
   }
 
   public CompletableFuture<Void> moveDocuments(
-      String sourceIndexName, String idFieldName, String finishDate, List<Object> ids) {
+      final String sourceIndexName,
+      final String idFieldName,
+      final String finishDate,
+      final List<Object> ids) {
     final var destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
     return archiverRepository
         .reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids)
@@ -84,7 +87,7 @@ public class Archiver {
             });
   }
 
-  public String getDestinationIndexName(String sourceIndexName, String finishDate) {
+  public String getDestinationIndexName(final String sourceIndexName, final String finishDate) {
     return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
   }
 }

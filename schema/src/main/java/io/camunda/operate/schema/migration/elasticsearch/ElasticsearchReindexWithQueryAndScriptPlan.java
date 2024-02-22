@@ -77,6 +77,18 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
     return this;
   }
 
+  @Override
+  public ReindexWithQueryAndScriptPlan setSteps(List<Step> steps) {
+    this.steps = steps;
+    return this;
+  }
+
+  @Override
+  public ReindexWithQueryAndScriptPlan setListViewIndexName(String listViewIndexName) {
+    this.listViewIndexName = listViewIndexName;
+    return this;
+  }
+
   private Script buildScript(
       final String scriptContent, final Map<String, Tuple<String, String>> bpmnProcessIdsMap)
       throws JsonProcessingException {
@@ -90,18 +102,6 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
   @Override
   public List<Step> getSteps() {
     return steps;
-  }
-
-  @Override
-  public ReindexWithQueryAndScriptPlan setSteps(List<Step> steps) {
-    this.steps = steps;
-    return this;
-  }
-
-  @Override
-  public ReindexWithQueryAndScriptPlan setListViewIndexName(String listViewIndexName) {
-    this.listViewIndexName = listViewIndexName;
-    return this;
   }
 
   @Override
@@ -155,6 +155,19 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
     }
   }
 
+  @Override
+  public void validateMigrationResults(final SchemaManager schemaManager)
+      throws MigrationException {
+    long srcCount = schemaManager.getNumberOfDocumentsFor(srcIndex + "_*");
+    long dstCount = schemaManager.getNumberOfDocumentsFor(dstIndex + "_*");
+    if (srcCount != dstCount) {
+      throw new MigrationException(
+          String.format(
+              "Exception occurred when migrating %s. Number of documents in source indices: %s, number of documents in destination indices: %s",
+              srcIndex, srcCount, dstCount));
+    }
+  }
+
   private void reindexPart(RestHighLevelClient esClient, Set<Long> processInstanceKeys)
       throws MigrationException, JsonProcessingException {
     Map<String, Tuple<String, String>> bpmnProcessIdsMap =
@@ -180,19 +193,6 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
         buildScript(PRESERVE_INDEX_SUFFIX_SCRIPT + content, bpmnProcessIdsMap));
 
     retryElasticsearchClient.reindex(reindexRequest, false);
-  }
-
-  @Override
-  public void validateMigrationResults(final SchemaManager schemaManager)
-      throws MigrationException {
-    long srcCount = schemaManager.getNumberOfDocumentsFor(srcIndex + "_*");
-    long dstCount = schemaManager.getNumberOfDocumentsFor(dstIndex + "_*");
-    if (srcCount != dstCount) {
-      throw new MigrationException(
-          String.format(
-              "Exception occurred when migrating %s. Number of documents in source indices: %s, number of documents in destination indices: %s",
-              srcIndex, srcCount, dstCount));
-    }
   }
 
   private Map<String, Tuple<String, String>> getBpmnProcessIds(

@@ -103,6 +103,38 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
     return result;
   }
 
+  @Override
+  public Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(String decisionInstanceId) {
+    // we need to find all decision instances with the same key, which we extract from
+    // decisionInstanceId
+    final Long decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
+
+    var searchRequest =
+        searchRequestBuilder(decisionInstanceTemplate)
+            .query(withTenantCheck(term(DecisionInstanceTemplate.KEY, decisionInstanceKey)))
+            .source(sourceInclude(DECISION_ID, STATE));
+
+    List<DRDDataEntryDto> results = new ArrayList<>();
+    richOpenSearchClient
+        .doc()
+        .scrollWith(
+            searchRequest,
+            Map.class,
+            hits ->
+                hits.stream()
+                    .filter(hit -> hit.source() != null)
+                    .forEach(
+                        hit -> {
+                          var map = hit.source();
+                          results.add(
+                              new DRDDataEntryDto(
+                                  hit.id(),
+                                  (String) map.get(DECISION_ID),
+                                  DecisionInstanceState.valueOf((String) map.get(STATE))));
+                        }));
+    return results.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId));
+  }
+
   private List<DecisionInstanceEntity> queryDecisionInstancesEntities(
       final DecisionInstanceListRequestDto request, final DecisionInstanceListResponseDto result) {
     var query = createRequestQuery(request.getQuery());
@@ -279,37 +311,5 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
       return sortBy;
     }
     return null;
-  }
-
-  @Override
-  public Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(String decisionInstanceId) {
-    // we need to find all decision instances with the same key, which we extract from
-    // decisionInstanceId
-    final Long decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
-
-    var searchRequest =
-        searchRequestBuilder(decisionInstanceTemplate)
-            .query(withTenantCheck(term(DecisionInstanceTemplate.KEY, decisionInstanceKey)))
-            .source(sourceInclude(DECISION_ID, STATE));
-
-    List<DRDDataEntryDto> results = new ArrayList<>();
-    richOpenSearchClient
-        .doc()
-        .scrollWith(
-            searchRequest,
-            Map.class,
-            hits ->
-                hits.stream()
-                    .filter(hit -> hit.source() != null)
-                    .forEach(
-                        hit -> {
-                          var map = hit.source();
-                          results.add(
-                              new DRDDataEntryDto(
-                                  hit.id(),
-                                  (String) map.get(DECISION_ID),
-                                  DecisionInstanceState.valueOf((String) map.get(STATE))));
-                        }));
-    return results.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId));
   }
 }

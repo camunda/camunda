@@ -63,13 +63,13 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return this;
   }
 
+  public Integer getErrorMessageHash() {
+    return errorMessage.hashCode();
+  }
+
   public IncidentEntity setErrorMessageHash(Integer errorMessageHash) {
     this.errorMessageHash = errorMessageHash;
     return this;
-  }
-
-  public Integer getErrorMessageHash() {
-    return errorMessage.hashCode();
   }
 
   public IncidentState getState() {

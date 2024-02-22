@@ -55,9 +55,8 @@ import org.springframework.util.StringUtils;
 
 public abstract class TestUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(TestUtil.class);
-
   public static final String ERROR_MSG = "No more retries left.";
+  private static final Logger logger = LoggerFactory.getLogger(TestUtil.class);
   private static Random random = new Random();
 
   public static String createRandomString(int length) {

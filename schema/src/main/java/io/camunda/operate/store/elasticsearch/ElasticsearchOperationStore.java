@@ -171,6 +171,11 @@ public class ElasticsearchOperationStore implements OperationStore {
     }
   }
 
+  @Override
+  public BatchRequest newBatchRequest() {
+    return beanFactory.getBean(BatchRequest.class);
+  }
+
   private Script getScriptWithParameters(String script, Map<String, Object> parameters)
       throws PersistenceException {
     try {
@@ -182,10 +187,5 @@ public class ElasticsearchOperationStore implements OperationStore {
     } catch (IOException e) {
       throw new PersistenceException(e);
     }
-  }
-
-  @Override
-  public BatchRequest newBatchRequest() {
-    return beanFactory.getBean(BatchRequest.class);
   }
 }

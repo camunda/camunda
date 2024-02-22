@@ -114,6 +114,21 @@ public class EventMetadataEntity {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        jobType,
+        jobRetries,
+        jobWorker,
+        jobDeadline,
+        jobCustomHeaders,
+        jobKey,
+        incidentErrorType,
+        incidentErrorMessage,
+        messageName,
+        correlationKey);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -132,20 +147,5 @@ public class EventMetadataEntity {
         && Objects.equals(incidentErrorMessage, that.incidentErrorMessage)
         && Objects.equals(messageName, that.messageName)
         && Objects.equals(correlationKey, that.correlationKey);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        jobType,
-        jobRetries,
-        jobWorker,
-        jobDeadline,
-        jobCustomHeaders,
-        jobKey,
-        incidentErrorType,
-        incidentErrorMessage,
-        messageName,
-        correlationKey);
   }
 }

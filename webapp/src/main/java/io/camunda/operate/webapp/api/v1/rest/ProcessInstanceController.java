@@ -56,14 +56,10 @@ public class ProcessInstanceController extends ErrorController
     implements SearchController<ProcessInstance> {
 
   public static final String URI = "/v1/process-instances";
-
-  @Autowired private ProcessInstanceDao processInstanceDao;
-
-  @Autowired private SequenceFlowDao sequenceFlowDao;
-
-  @Autowired private FlowNodeStatisticsDao flowNodeStatisticsDao;
-
   private final QueryValidator<ProcessInstance> queryValidator = new QueryValidator<>();
+  @Autowired private ProcessInstanceDao processInstanceDao;
+  @Autowired private SequenceFlowDao sequenceFlowDao;
+  @Autowired private FlowNodeStatisticsDao flowNodeStatisticsDao;
 
   @Operation(
       summary = "Search process instances",

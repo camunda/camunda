@@ -91,53 +91,25 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
-  @Autowired private ListViewTemplate listViewTemplate;
-
-  @Autowired private VariableTemplate variableTemplate;
-
-  @Autowired private ProcessIndex processIndex;
-
-  @Autowired private OperationTemplate operationTemplate;
-
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
-
-  @Autowired private IncidentTemplate incidentTemplate;
-
-  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
-
-  @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
-
-  @Autowired private DecisionIndex decisionIndex;
-
   @Autowired protected OperateProperties operateProperties;
-
-  @Autowired private SchemaManager schemaManager;
-
   @Autowired protected ZeebeImporter zeebeImporter;
-
   @Autowired protected ZeebePostImporter zeebePostImporter;
-
-  @Autowired private ObjectMapper objectMapper;
-
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
-
-  @Autowired private TestImportListener testImportListener;
-
-  Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
-
   protected boolean failed = false;
-
+  Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
+  @Autowired private ListViewTemplate listViewTemplate;
+  @Autowired private VariableTemplate variableTemplate;
+  @Autowired private ProcessIndex processIndex;
+  @Autowired private OperationTemplate operationTemplate;
+  @Autowired private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private IncidentTemplate incidentTemplate;
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
+  @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
+  @Autowired private DecisionIndex decisionIndex;
+  @Autowired private SchemaManager schemaManager;
+  @Autowired private ObjectMapper objectMapper;
+  @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
-
-  public void setIndexPrefix(String indexPrefix) {
-    this.indexPrefix = indexPrefix;
-  }
-
-  @Override
-  public boolean indexExists(String index) throws IOException {
-    var request = new GetIndexRequest(index);
-    return esClient.indices().exists(request, RequestOptions.DEFAULT);
-  }
 
   @Override
   public void failed(Throwable e, Description description) {
@@ -356,19 +328,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     return areCreated;
   }
 
-  private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices)
-      throws IOException {
-    GetIndexResponse response =
-        esClient
-            .indices()
-            .get(
-                new GetIndexRequest(indexPrefix + "*")
-                    .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
-                RequestOptions.DEFAULT);
-    String[] indices = response.getIndices();
-    return indices != null && indices.length >= minCountOfIndices;
-  }
-
   public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
     return recordsReaderHolder.getAllRecordsReaders().stream()
         .filter(rr -> rr.getImportValueType().equals(importValueType))
@@ -444,6 +403,29 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   public int getOpenScrollcontextSize() {
     return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
+  }
+
+  public void setIndexPrefix(String indexPrefix) {
+    this.indexPrefix = indexPrefix;
+  }
+
+  @Override
+  public boolean indexExists(String index) throws IOException {
+    var request = new GetIndexRequest(index);
+    return esClient.indices().exists(request, RequestOptions.DEFAULT);
+  }
+
+  private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices)
+      throws IOException {
+    GetIndexResponse response =
+        esClient
+            .indices()
+            .get(
+                new GetIndexRequest(indexPrefix + "*")
+                    .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
+                RequestOptions.DEFAULT);
+    String[] indices = response.getIndices();
+    return indices != null && indices.length >= minCountOfIndices;
   }
 
   private int getIntValueForJSON(

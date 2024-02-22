@@ -103,7 +103,7 @@ public class OpensearchFlowNodeInstanceDaoTest {
 
   @Test
   public void testBuildFilteringWithNullFilter() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
+    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
     underTest.buildFiltering(new Query<>(), mockSearchRequest);
 
     // Verify that the query was not modified in any way
@@ -113,8 +113,8 @@ public class OpensearchFlowNodeInstanceDaoTest {
 
   @Test
   public void testBuildFilteringWithValidFields() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    FlowNodeInstance filter =
+    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
+    final FlowNodeInstance filter =
         new FlowNodeInstance()
             .setKey(1L)
             .setProcessInstanceKey(2L)
@@ -128,10 +128,10 @@ public class OpensearchFlowNodeInstanceDaoTest {
             .setIncidentKey(4L)
             .setTenantId("tenant");
 
-    String expectedDateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
+    final String expectedDateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
     when(mockDateTimeFormatter.getApiDateTimeFormatString()).thenReturn(expectedDateFormat);
 
-    Query<FlowNodeInstance> inputQuery = new Query<FlowNodeInstance>().setFilter(filter);
+    final Query<FlowNodeInstance> inputQuery = new Query<FlowNodeInstance>().setFilter(filter);
 
     underTest.buildFiltering(inputQuery, mockSearchRequest);
 
@@ -155,13 +155,14 @@ public class OpensearchFlowNodeInstanceDaoTest {
 
   @Test
   public void testConvertInternalToModelResultWithValidItem() {
-    FlowNodeInstance item = new FlowNodeInstance().setProcessDefinitionKey(1L).setFlowNodeId("id");
+    final FlowNodeInstance item =
+        new FlowNodeInstance().setProcessDefinitionKey(1L).setFlowNodeId("id");
 
     when(mockProcessCache.getFlowNodeNameOrDefaultValue(
             item.getProcessDefinitionKey(), item.getFlowNodeId(), null))
         .thenReturn("name");
 
-    FlowNodeInstance result = underTest.convertInternalToApiResult(item);
+    final FlowNodeInstance result = underTest.convertInternalToApiResult(item);
 
     assertThat(result.getFlowNodeName()).isEqualTo("name");
     verify(mockProcessCache, times(1))
@@ -170,9 +171,9 @@ public class OpensearchFlowNodeInstanceDaoTest {
 
   @Test
   public void testConvertInternalToModelResultWithNoId() {
-    FlowNodeInstance item = new FlowNodeInstance().setProcessDefinitionKey(1L);
+    final FlowNodeInstance item = new FlowNodeInstance().setProcessDefinitionKey(1L);
 
-    FlowNodeInstance result = underTest.convertInternalToApiResult(item);
+    final FlowNodeInstance result = underTest.convertInternalToApiResult(item);
 
     assertThat(result).isSameAs(item);
     verifyNoInteractions(mockProcessCache);
@@ -180,7 +181,7 @@ public class OpensearchFlowNodeInstanceDaoTest {
 
   @Test
   public void testConvertInternalToModelResultWithNoNullHit() {
-    FlowNodeInstance result = underTest.convertInternalToApiResult(null);
+    final FlowNodeInstance result = underTest.convertInternalToApiResult(null);
 
     assertThat(result).isNull();
     verifyNoInteractions(mockProcessCache);
@@ -188,8 +189,8 @@ public class OpensearchFlowNodeInstanceDaoTest {
 
   @Test
   public void testSearchByKey() {
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
+    final SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
+    final org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
         Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
 
     when(mockRequestWrapper.searchRequestBuilder(underTest.getIndexName()))
@@ -197,15 +198,15 @@ public class OpensearchFlowNodeInstanceDaoTest {
     when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
     when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
 
-    OpenSearchDocumentOperations mockDoc = Mockito.mock(OpenSearchDocumentOperations.class);
+    final OpenSearchDocumentOperations mockDoc = Mockito.mock(OpenSearchDocumentOperations.class);
     when(mockOpensearchClient.doc()).thenReturn(mockDoc);
 
-    List<FlowNodeInstance> validResults =
+    final List<FlowNodeInstance> validResults =
         Collections.singletonList(
             new FlowNodeInstance().setProcessDefinitionKey(1L).setFlowNodeId("id"));
     when(mockDoc.searchValues(mockRequestBuilder, FlowNodeInstance.class)).thenReturn(validResults);
 
-    List<FlowNodeInstance> results = underTest.searchByKey(1L);
+    final List<FlowNodeInstance> results = underTest.searchByKey(1L);
 
     // Verify the request was built with a tenant check, the index name, and permissive matching
     assertThat(results).containsExactlyElementsOf(validResults);

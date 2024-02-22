@@ -37,6 +37,20 @@ public abstract class BaseWebConfigurer {
 
   @Autowired OperateProfileService errorMessageService;
 
+  public static void sendJSONErrorMessage(final HttpServletResponse response, final String message)
+      throws IOException {
+    response.reset();
+    response.setCharacterEncoding(RESPONSE_CHARACTER_ENCODING);
+
+    PrintWriter writer = response.getWriter();
+    response.setContentType(APPLICATION_JSON.getMimeType());
+
+    String jsonResponse = Json.createObjectBuilder().add("message", message).build().toString();
+
+    writer.append(jsonResponse);
+    response.setStatus(UNAUTHORIZED.value());
+  }
+
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     final var authenticationManagerBuilder =
@@ -142,19 +156,5 @@ public abstract class BaseWebConfigurer {
       throws IOException {
     request.getSession().invalidate();
     sendJSONErrorMessage(response, errorMessageService.getMessageByProfileFor(ex));
-  }
-
-  public static void sendJSONErrorMessage(final HttpServletResponse response, final String message)
-      throws IOException {
-    response.reset();
-    response.setCharacterEncoding(RESPONSE_CHARACTER_ENCODING);
-
-    PrintWriter writer = response.getWriter();
-    response.setContentType(APPLICATION_JSON.getMimeType());
-
-    String jsonResponse = Json.createObjectBuilder().add("message", message).build().toString();
-
-    writer.append(jsonResponse);
-    response.setStatus(UNAUTHORIZED.value());
   }
 }

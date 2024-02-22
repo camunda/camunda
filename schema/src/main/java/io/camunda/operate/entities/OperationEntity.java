@@ -203,6 +203,30 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        processInstanceKey,
+        processDefinitionKey,
+        bpmnProcessId,
+        decisionDefinitionKey,
+        incidentKey,
+        scopeKey,
+        variableName,
+        variableValue,
+        type,
+        lockExpirationTime,
+        lockOwner,
+        state,
+        errorMessage,
+        batchOperationId,
+        zeebeCommandKey,
+        username,
+        modifyInstructions,
+        migrationPlan);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -226,30 +250,6 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
         && Objects.equals(username, that.username)
         && Objects.equals(modifyInstructions, that.modifyInstructions)
         && Objects.equals(migrationPlan, that.migrationPlan);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        processInstanceKey,
-        processDefinitionKey,
-        bpmnProcessId,
-        decisionDefinitionKey,
-        incidentKey,
-        scopeKey,
-        variableName,
-        variableValue,
-        type,
-        lockExpirationTime,
-        lockOwner,
-        state,
-        errorMessage,
-        batchOperationId,
-        zeebeCommandKey,
-        username,
-        modifyInstructions,
-        migrationPlan);
   }
 
   @Override

@@ -45,40 +45,6 @@ public class DecisionRequirementsController extends ErrorController
   @Autowired private DecisionRequirementsDao decisionRequirementsDao;
 
   @Operation(
-      summary = "Get decision requirements by key",
-      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
-      responses = {
-        @ApiResponse(description = "Success", responseCode = "200"),
-        @ApiResponse(
-            description = ServerException.TYPE,
-            responseCode = "500",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class))),
-        @ApiResponse(
-            description = ClientException.TYPE,
-            responseCode = "400",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class))),
-        @ApiResponse(
-            description = ResourceNotFoundException.TYPE,
-            responseCode = "404",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class)))
-      })
-  @Override
-  public DecisionRequirements byKey(
-      @Parameter(description = "Key of decision requirements", required = true) @PathVariable
-          final Long key) {
-    return decisionRequirementsDao.byKey(key);
-  }
-
-  @Operation(
       summary = "Get decision requirements as XML by key",
       security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
       responses = {
@@ -191,5 +157,39 @@ public class DecisionRequirementsController extends ErrorController
   public Results<DecisionRequirements> search(
       @RequestBody final Query<DecisionRequirements> query) {
     return decisionRequirementsDao.search(query);
+  }
+
+  @Operation(
+      summary = "Get decision requirements by key",
+      security = {@SecurityRequirement(name = "bearer-key"), @SecurityRequirement(name = "cookie")},
+      responses = {
+        @ApiResponse(description = "Success", responseCode = "200"),
+        @ApiResponse(
+            description = ServerException.TYPE,
+            responseCode = "500",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ClientException.TYPE,
+            responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ResourceNotFoundException.TYPE,
+            responseCode = "404",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class)))
+      })
+  @Override
+  public DecisionRequirements byKey(
+      @Parameter(description = "Key of decision requirements", required = true) @PathVariable
+          final Long key) {
+    return decisionRequirementsDao.byKey(key);
   }
 }

@@ -27,18 +27,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 public abstract class AbstractDataGenerator implements DataGenerator {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractDataGenerator.class);
-
-  private boolean shutdown = false;
-
   @Autowired protected ZeebeClient client;
-
-  @Autowired private ZeebeStore zeebeStore;
-
   @Autowired protected OperateProperties operateProperties;
-
   protected boolean manuallyCalled = false;
-
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
+  private boolean shutdown = false;
+  @Autowired private ZeebeStore zeebeStore;
 
   @PreDestroy
   public void shutdown() {
@@ -50,21 +44,21 @@ public abstract class AbstractDataGenerator implements DataGenerator {
         if (!scheduler.awaitTermination(200, TimeUnit.MILLISECONDS)) {
           scheduler.shutdownNow();
         }
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         scheduler.shutdownNow();
       }
     }
   }
 
   @Override
-  public void createZeebeDataAsync(boolean manuallyCalled) {
+  public void createZeebeDataAsync(final boolean manuallyCalled) {
     scheduler.execute(
         () -> {
           Boolean zeebeDataCreated = null;
           while (zeebeDataCreated == null && !shutdown) {
             try {
               zeebeDataCreated = createZeebeData(manuallyCalled);
-            } catch (Exception ex) {
+            } catch (final Exception ex) {
               logger.error(
                   String.format(
                       "Error occurred when creating demo data: %s. Retrying...", ex.getMessage()),
@@ -75,7 +69,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
         });
   }
 
-  public boolean createZeebeData(boolean manuallyCalled) {
+  public boolean createZeebeData(final boolean manuallyCalled) {
     this.manuallyCalled = manuallyCalled;
 
     if (!shouldCreateData(manuallyCalled)) {
@@ -85,9 +79,9 @@ public abstract class AbstractDataGenerator implements DataGenerator {
     return true;
   }
 
-  public boolean shouldCreateData(boolean manuallyCalled) {
+  public boolean shouldCreateData(final boolean manuallyCalled) {
     if (!manuallyCalled) { // when called manually, always create the data
-      boolean exists =
+      final boolean exists =
           zeebeStore.zeebeIndicesExists(
               operateProperties.getZeebeElasticsearch().getPrefix() + "*");
       if (exists) {
@@ -99,7 +93,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
     return true;
   }
 
-  protected JobWorker progressSimpleTask(String taskType) {
+  protected JobWorker progressSimpleTask(final String taskType) {
     return client
         .newWorker()
         .jobType(taskType)
@@ -125,7 +119,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
         .open();
   }
 
-  protected JobWorker progressSimpleTask(String taskType, int retriesLeft) {
+  protected JobWorker progressSimpleTask(final String taskType, final int retriesLeft) {
     return client
         .newWorker()
         .jobType(taskType)
@@ -137,7 +131,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
         .open();
   }
 
-  protected String getTenant(String tenantId) {
+  protected String getTenant(final String tenantId) {
     if (operateProperties.getMultiTenancy().isEnabled()) {
       return tenantId;
     }

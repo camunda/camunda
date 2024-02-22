@@ -35,65 +35,6 @@ public class VariableDto {
    */
   private SortValuesWrapper[] sortValues;
 
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getValue() {
-    return value;
-  }
-
-  public void setValue(String value) {
-    this.value = value;
-  }
-
-  public boolean getIsPreview() {
-    return isPreview;
-  }
-
-  public VariableDto setIsPreview(final boolean preview) {
-    isPreview = preview;
-    return this;
-  }
-
-  public boolean isHasActiveOperation() {
-    return hasActiveOperation;
-  }
-
-  public void setHasActiveOperation(boolean hasActiveOperation) {
-    this.hasActiveOperation = hasActiveOperation;
-  }
-
-  public boolean getIsFirst() {
-    return isFirst;
-  }
-
-  public VariableDto setIsFirst(final boolean first) {
-    isFirst = first;
-    return this;
-  }
-
-  public SortValuesWrapper[] getSortValues() {
-    return sortValues;
-  }
-
-  public VariableDto setSortValues(final SortValuesWrapper[] sortValues) {
-    this.sortValues = sortValues;
-    return this;
-  }
-
   public static VariableDto createFrom(
       VariableEntity variableEntity,
       List<OperationEntity> operations,
@@ -170,5 +111,64 @@ public class VariableDto {
                     variableSizeThreshold,
                     objectMapper))
         .collect(Collectors.toList());
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getValue() {
+    return value;
+  }
+
+  public void setValue(String value) {
+    this.value = value;
+  }
+
+  public boolean getIsPreview() {
+    return isPreview;
+  }
+
+  public VariableDto setIsPreview(final boolean preview) {
+    isPreview = preview;
+    return this;
+  }
+
+  public boolean isHasActiveOperation() {
+    return hasActiveOperation;
+  }
+
+  public void setHasActiveOperation(boolean hasActiveOperation) {
+    this.hasActiveOperation = hasActiveOperation;
+  }
+
+  public boolean getIsFirst() {
+    return isFirst;
+  }
+
+  public VariableDto setIsFirst(final boolean first) {
+    isFirst = first;
+    return this;
+  }
+
+  public SortValuesWrapper[] getSortValues() {
+    return sortValues;
+  }
+
+  public VariableDto setSortValues(final SortValuesWrapper[] sortValues) {
+    this.sortValues = sortValues;
+    return this;
   }
 }

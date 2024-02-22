@@ -24,6 +24,21 @@ public class Metadata {
   private Integer partNo;
   private Integer partCount;
 
+  public static String buildSnapshotNamePrefix(Long backupId) {
+    return SNAPSHOT_NAME_PREFIX_PATTERN.replace("{backupId}", String.valueOf(backupId));
+  }
+
+  // backward compatibility with v. 8.1
+  public static Long extractBackupIdFromSnapshotName(String snapshotName) {
+    Matcher matcher = BACKUPID_PATTERN.matcher(snapshotName);
+    if (matcher.matches()) {
+      return Long.valueOf(matcher.group(1));
+    } else {
+      throw new OperateRuntimeException(
+          "Unable to extract backupId. Snapshot name: " + snapshotName);
+    }
+  }
+
   public Long getBackupId() {
     return backupId;
   }
@@ -68,19 +83,9 @@ public class Metadata {
         .replace("{count}", partCount + "");
   }
 
-  public static String buildSnapshotNamePrefix(Long backupId) {
-    return SNAPSHOT_NAME_PREFIX_PATTERN.replace("{backupId}", String.valueOf(backupId));
-  }
-
-  // backward compatibility with v. 8.1
-  public static Long extractBackupIdFromSnapshotName(String snapshotName) {
-    Matcher matcher = BACKUPID_PATTERN.matcher(snapshotName);
-    if (matcher.matches()) {
-      return Long.valueOf(matcher.group(1));
-    } else {
-      throw new OperateRuntimeException(
-          "Unable to extract backupId. Snapshot name: " + snapshotName);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(version, partNo, partCount);
   }
 
   @Override
@@ -91,10 +96,5 @@ public class Metadata {
     return Objects.equals(version, that.version)
         && Objects.equals(partNo, that.partNo)
         && Objects.equals(partCount, that.partCount);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(version, partNo, partCount);
   }
 }

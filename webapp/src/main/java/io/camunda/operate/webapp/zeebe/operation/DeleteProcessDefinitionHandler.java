@@ -86,6 +86,11 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
     logger.info(String.format("Operation [%s]: Completed.", operation.getId()));
   }
 
+  @Override
+  public Set<OperationType> getTypes() {
+    return Set.of(OperationType.DELETE_PROCESS_DEFINITION);
+  }
+
   private void cascadeDeleteProcessInstances(Long processDefinitionKey, OperationEntity operation)
       throws PersistenceException {
 
@@ -146,10 +151,5 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
   private void updateInstancesInBatchOperation(final OperationEntity operation, long increment)
       throws PersistenceException {
     operationsManager.updateInstancesInBatchOperation(operation.getBatchOperationId(), increment);
-  }
-
-  @Override
-  public Set<OperationType> getTypes() {
-    return Set.of(OperationType.DELETE_PROCESS_DEFINITION);
   }
 }

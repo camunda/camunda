@@ -20,14 +20,12 @@ import java.time.Duration;
 
 public abstract class ZeebeContainerManager {
 
+  protected static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
   protected final OperateProperties operateProperties;
   protected final TestContainerUtil testContainerUtil;
-
   protected String prefix;
   protected ZeebeContainer zeebeContainer;
   protected ZeebeClient client;
-
-  protected static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
 
   public ZeebeContainerManager(
       OperateProperties operateProperties, TestContainerUtil testContainerUtil) {

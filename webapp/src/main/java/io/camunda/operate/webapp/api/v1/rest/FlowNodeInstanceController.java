@@ -42,10 +42,8 @@ public class FlowNodeInstanceController extends ErrorController
     implements SearchController<FlowNodeInstance> {
 
   public static final String URI = "/v1/flownode-instances";
-
-  @Autowired private FlowNodeInstanceDao flowNodeInstanceDao;
-
   private final QueryValidator<FlowNodeInstance> queryValidator = new QueryValidator<>();
+  @Autowired private FlowNodeInstanceDao flowNodeInstanceDao;
 
   @Operation(
       summary = "Search flownode-instances",

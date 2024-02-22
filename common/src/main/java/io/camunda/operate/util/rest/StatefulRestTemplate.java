@@ -89,14 +89,6 @@ public class StatefulRestTemplate extends RestTemplate {
   }
 
   @Override
-  public <T> ResponseEntity<T> exchange(RequestEntity<?> requestEntity, Class<T> responseType)
-      throws RestClientException {
-    final ResponseEntity<T> responseEntity = super.exchange(requestEntity, responseType);
-    saveCSRFTokenWhenAvailable(responseEntity);
-    return responseEntity;
-  }
-
-  @Override
   public <T> ResponseEntity<T> postForEntity(URI url, Object request, Class<T> responseType)
       throws RestClientException {
     RequestEntity<Object> requestEntity =
@@ -107,6 +99,14 @@ public class StatefulRestTemplate extends RestTemplate {
     final ResponseEntity<T> tResponseEntity = exchange(requestEntity, responseType);
     saveCSRFTokenWhenAvailable(tResponseEntity);
     return tResponseEntity;
+  }
+
+  @Override
+  public <T> ResponseEntity<T> exchange(RequestEntity<?> requestEntity, Class<T> responseType)
+      throws RestClientException {
+    final ResponseEntity<T> responseEntity = super.exchange(requestEntity, responseType);
+    saveCSRFTokenWhenAvailable(responseEntity);
+    return responseEntity;
   }
 
   public StatefulHttpComponentsClientHttpRequestFactory getStatefulHttpClientRequestFactory() {

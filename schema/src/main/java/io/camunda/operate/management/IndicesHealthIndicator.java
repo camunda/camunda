@@ -21,6 +21,11 @@ public class IndicesHealthIndicator implements HealthIndicator {
   @Autowired private IndicesCheck indicesCheck;
 
   @Override
+  public Health getHealth(final boolean includeDetails) {
+    return health();
+  }
+
+  @Override
   public Health health() {
     logger.debug("Indices check is called");
     if (indicesCheck.isHealthy() && indicesCheck.indicesArePresent()) {
@@ -28,10 +33,5 @@ public class IndicesHealthIndicator implements HealthIndicator {
     } else {
       return Health.down().build();
     }
-  }
-
-  @Override
-  public Health getHealth(final boolean includeDetails) {
-    return health();
   }
 }

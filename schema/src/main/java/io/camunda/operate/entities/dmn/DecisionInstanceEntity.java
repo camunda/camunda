@@ -48,12 +48,12 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   ;
   @JsonIgnore private Object[] sortValues;
 
-  public DecisionInstanceEntity setId(Long key, int executionIndex) {
-    return setId(String.format("%d-%d", key, executionIndex));
-  }
-
   public static Long extractKey(String id) {
     return Long.valueOf(id.split("-")[0]);
+  }
+
+  public DecisionInstanceEntity setId(Long key, int executionIndex) {
+    return setId(String.format("%d-%d", key, executionIndex));
   }
 
   public Integer getExecutionIndex() {

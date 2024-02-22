@@ -84,70 +84,6 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
     super(partitionId);
   }
 
-  protected boolean processIncidents(AdditionalData data, PendingIncidentsBatch batch)
-      throws PersistenceException {
-
-    ElasticsearchPostImporterRequests updateRequests = new ElasticsearchPostImporterRequests();
-
-    final List<String> treePathTerms =
-        data.getIncidentTreePaths().values().stream()
-            .map(s -> getTreePathTerms(s))
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
-    getTreePathsWithIncidents(treePathTerms, data);
-
-    for (IncidentEntity incident : batch.getIncidents()) {
-      if (instanceExists(
-          incident.getProcessInstanceKey(), data.getProcessInstanceTreePaths().keySet())) {
-
-        // extract all process instance ids and flow node instance ids from tree path
-        final String incidentTreePath = data.getIncidentTreePaths().get(incident.getId());
-
-        List<String> piIds = new TreePath(incidentTreePath).extractProcessInstanceIds();
-
-        IncidentState newState = batch.getNewIncidentStates().get(incident.getKey());
-        updateProcessInstancesState(incident.getId(), newState, piIds, data, updateRequests);
-
-        incident.setState(newState);
-
-        final List<String> fniIds = new TreePath(incidentTreePath).extractFlowNodeInstanceIds();
-        updateFlowNodeInstancesState(incident, fniIds, data, updateRequests);
-        updateIncidents(
-            incident,
-            newState,
-            data.getIncidentIndices().get(incident.getId()),
-            incidentTreePath,
-            updateRequests);
-
-      } else {
-        if (!operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
-          throw new OperateRuntimeException(
-              String.format(
-                  "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s",
-                  incident.getId(), incident.getProcessInstanceKey()));
-        } else {
-          logger.warn(
-              String.format(
-                  "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s. Ignoring.",
-                  incident.getId(), incident.getProcessInstanceKey()));
-          final String incidentTreePath = data.getIncidentTreePaths().get(incident.getId());
-          IncidentState newState = batch.getNewIncidentStates().get(incident.getKey());
-          incident.setState(newState);
-          updateIncidents(
-              incident,
-              newState,
-              data.getIncidentIndices().get(incident.getId()),
-              incidentTreePath,
-              updateRequests);
-        }
-      }
-    }
-    if (!updateRequests.isEmpty()) {
-      return updateRequests.execute(esClient, operateProperties);
-    }
-    return false;
-  }
-
   /**
    * Returns map incident key -> intent (CRAETED|RESOLVED)
    *
@@ -155,12 +91,13 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
    * @param lastProcessedPosition
    * @return
    */
+  @Override
   protected PendingIncidentsBatch getPendingIncidents(
       final AdditionalData data, final Long lastProcessedPosition) {
 
-    PendingIncidentsBatch pendingIncidentsBatch = new PendingIncidentsBatch();
+    final PendingIncidentsBatch pendingIncidentsBatch = new PendingIncidentsBatch();
 
-    Map<Long, IncidentState> incidents2Process;
+    final Map<Long, IncidentState> incidents2Process;
 
     // query post importer queue
     QueryBuilder partitionQ = termQuery(PARTITION_ID, partitionId);
@@ -201,7 +138,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
                 .getSourceAsMap()
                 .get(POSITION));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while processing pending incidents: %s", e.getMessage());
@@ -230,7 +167,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
                     .sort(KEY)
                     .size(operateProperties.getZeebeElasticsearch().getBatchSize()));
     final SearchResponse response;
-    List<IncidentEntity> incidents;
+    final List<IncidentEntity> incidents;
     try {
       response = esClient.search(request, RequestOptions.DEFAULT);
       incidents =
@@ -242,14 +179,14 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
                 data.getIncidentIndices().put(sh.getId(), sh.getIndex());
                 return incident;
               });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while processing pending incidents: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
     if (incidents2Process.size() > incidents.size()) {
-      Set<Long> absentIncidents = new HashSet<>(incidents2Process.keySet());
+      final Set<Long> absentIncidents = new HashSet<>(incidents2Process.keySet());
       absentIncidents.removeAll(
           incidents.stream().map(i -> i.getKey()).collect(Collectors.toSet()));
       if (operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
@@ -266,8 +203,118 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
     return pendingIncidentsBatch;
   }
 
+  @Override
+  protected void searchForInstances(final List<IncidentEntity> incidents, final AdditionalData data)
+      throws IOException {
+
+    try {
+      queryData(incidents, data);
+      checkDataAndCollectParentTreePaths(incidents, data, false);
+    } catch (final OperateRuntimeException ex) {
+      // if it failed once we want to give it a chance and to import more data
+      // next failure will fail in case ignoring of missing data is not configured
+      sleepFor(5000L);
+      queryData(incidents, data);
+      checkDataAndCollectParentTreePaths(
+          incidents, data, operateProperties.getImporter().isPostImporterIgnoreMissingData());
+    }
+
+    // find flow node instances in list view
+    final SearchRequest fniInListViewRequest =
+        ElasticsearchUtil.createSearchRequest(listViewTemplate)
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        joinWithAnd(
+                            idsQuery()
+                                .addIds(
+                                    incidents.stream()
+                                        .map(i -> String.valueOf(i.getFlowNodeInstanceKey()))
+                                        .toArray(String[]::new)),
+                            termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION)))
+                    .fetchSource(false));
+    scrollWith(
+        fniInListViewRequest,
+        esClient,
+        sh -> {
+          Arrays.stream(sh.getHits())
+              .forEach(
+                  hit ->
+                      CollectionUtil.addToMap(
+                          data.getFlowNodeInstanceInListViewIndices(),
+                          hit.getId(),
+                          hit.getIndex()));
+        });
+  }
+
+  @Override
+  protected boolean processIncidents(final AdditionalData data, final PendingIncidentsBatch batch)
+      throws PersistenceException {
+
+    final ElasticsearchPostImporterRequests updateRequests =
+        new ElasticsearchPostImporterRequests();
+
+    final List<String> treePathTerms =
+        data.getIncidentTreePaths().values().stream()
+            .map(s -> getTreePathTerms(s))
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
+    getTreePathsWithIncidents(treePathTerms, data);
+
+    for (final IncidentEntity incident : batch.getIncidents()) {
+      if (instanceExists(
+          incident.getProcessInstanceKey(), data.getProcessInstanceTreePaths().keySet())) {
+
+        // extract all process instance ids and flow node instance ids from tree path
+        final String incidentTreePath = data.getIncidentTreePaths().get(incident.getId());
+
+        final List<String> piIds = new TreePath(incidentTreePath).extractProcessInstanceIds();
+
+        final IncidentState newState = batch.getNewIncidentStates().get(incident.getKey());
+        updateProcessInstancesState(incident.getId(), newState, piIds, data, updateRequests);
+
+        incident.setState(newState);
+
+        final List<String> fniIds = new TreePath(incidentTreePath).extractFlowNodeInstanceIds();
+        updateFlowNodeInstancesState(incident, fniIds, data, updateRequests);
+        updateIncidents(
+            incident,
+            newState,
+            data.getIncidentIndices().get(incident.getId()),
+            incidentTreePath,
+            updateRequests);
+
+      } else {
+        if (!operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
+          throw new OperateRuntimeException(
+              String.format(
+                  "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s",
+                  incident.getId(), incident.getProcessInstanceKey()));
+        } else {
+          logger.warn(
+              String.format(
+                  "Process instance is not yet imported for incident processing. Incident id: %s, process instance id: %s. Ignoring.",
+                  incident.getId(), incident.getProcessInstanceKey()));
+          final String incidentTreePath = data.getIncidentTreePaths().get(incident.getId());
+          final IncidentState newState = batch.getNewIncidentStates().get(incident.getKey());
+          incident.setState(newState);
+          updateIncidents(
+              incident,
+              newState,
+              data.getIncidentIndices().get(incident.getId()),
+              incidentTreePath,
+              updateRequests);
+        }
+      }
+    }
+    if (!updateRequests.isEmpty()) {
+      return updateRequests.execute(esClient, operateProperties);
+    }
+    return false;
+  }
+
   private List<String> getTreePathTerms(final String treePath) {
-    AnalyzeRequest request =
+    final AnalyzeRequest request =
         AnalyzeRequest.withField(
             listViewTemplate.getFullQualifiedName(), ListViewTemplate.TREE_PATH, treePath);
     try {
@@ -277,7 +324,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
       return analyzeResponse.getTokens().stream()
           .map(AnalyzeToken::getTerm)
           .collect(Collectors.toList());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(
           "Exception occurred when requesting term vectors for tree_path");
     }
@@ -300,12 +347,12 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
             Arrays.stream(shs.getHits())
                 .forEach(
                     sh -> {
-                      List<String> piIds =
+                      final List<String> piIds =
                           new TreePath((String) sh.getSourceAsMap().get(TREE_PATH))
                               .extractProcessInstanceIds();
                       piIds.stream()
                           .forEach(piId -> data.addPiIdsWithIncidentIds(piId, sh.getId()));
-                      List<String> fniIds =
+                      final List<String> fniIds =
                           new TreePath((String) sh.getSourceAsMap().get(TREE_PATH))
                               .extractFlowNodeInstanceIds();
                       fniIds.stream()
@@ -313,7 +360,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
                     });
           },
           esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while searching for process instances with active incidents: %s",
@@ -333,10 +380,10 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
       data.getProcessInstanceIndices().putAll(getIndexNames(listViewTemplate, piIds, esClient));
     }
 
-    Map<String, Object> updateFields = new HashMap<>();
+    final Map<String, Object> updateFields = new HashMap<>();
     if (newState.equals(ACTIVE)) {
       updateFields.put(ListViewTemplate.INCIDENT, true);
-      for (String piId : piIds) {
+      for (final String piId : piIds) {
         // add incident id
         data.addPiIdsWithIncidentIds(piId, incidentId);
         // if there were no incidents and now one
@@ -347,7 +394,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
     } else {
       updateFields.put(ListViewTemplate.INCIDENT, false);
       // exclude instances with other incidents
-      for (String piId : piIds) {
+      for (final String piId : piIds) {
         // remove incident id
         data.deleteIncidentIdByPiId(piId, incidentId);
         if (data.getPiIdsWithIncidentIds().get(piId) == null
@@ -359,11 +406,11 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
   }
 
   private void updateProcessInstance(
-      Map<String, String> processInstanceIndices,
-      ElasticsearchPostImporterRequests requests,
-      Map<String, Object> updateFields,
-      String piId) {
-    String index = processInstanceIndices.get(piId);
+      final Map<String, String> processInstanceIndices,
+      final ElasticsearchPostImporterRequests requests,
+      final Map<String, Object> updateFields,
+      final String piId) {
+    final String index = processInstanceIndices.get(piId);
     createUpdateRequestFor(index, piId, updateFields, null, piId, requests.getListViewRequests());
   }
 
@@ -383,11 +430,11 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
           .putAll(getIndexNamesAsList(listViewTemplate, fniIds, esClient));
     }
 
-    Map<String, Object> updateFields = new HashMap<>();
+    final Map<String, Object> updateFields = new HashMap<>();
     if (incident.getState().equals(ACTIVE)) {
       updateFields.put(ListViewTemplate.INCIDENT, true);
 
-      for (String fniId : fniIds) {
+      for (final String fniId : fniIds) {
 
         // add incident id
         data.addFniIdsWithIncidentIds(fniId, incident.getId());
@@ -405,7 +452,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
     } else {
       updateFields.put(ListViewTemplate.INCIDENT, false);
       // exclude instances with other incidents
-      for (String fniId : fniIds) {
+      for (final String fniId : fniIds) {
 
         // remove incident id
         data.deleteIncidentIdByFniId(fniId, incident.getId());
@@ -424,12 +471,12 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
   }
 
   private void updateFlowNodeInstance(
-      IncidentEntity incident,
-      Map<String, List<String>> flowNodeInstanceIndices,
-      Map<String, List<String>> flowNodeInstanceInListViewIndices,
-      ElasticsearchPostImporterRequests requests,
-      Map<String, Object> updateFields,
-      String fniId) {
+      final IncidentEntity incident,
+      final Map<String, List<String>> flowNodeInstanceIndices,
+      final Map<String, List<String>> flowNodeInstanceInListViewIndices,
+      final ElasticsearchPostImporterRequests requests,
+      final Map<String, Object> updateFields,
+      final String fniId) {
     if (flowNodeInstanceIndices.get(fniId) == null) {
       throw new OperateRuntimeException(
           String.format("Flow node instance was not yet imported %s", fniId));
@@ -470,7 +517,7 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
       final String index,
       final String incidentTreePath,
       final ElasticsearchPostImporterRequests requests) {
-    Map<String, Object> updateFields = new HashMap<>();
+    final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(STATE, newState);
     if (newState.equals(ACTIVE)) {
       updateFields.put(TREE_PATH, incidentTreePath);
@@ -491,50 +538,8 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
     return idSet.contains(key);
   }
 
-  protected void searchForInstances(final List<IncidentEntity> incidents, final AdditionalData data)
+  private void queryData(final List<IncidentEntity> incidents, final AdditionalData data)
       throws IOException {
-
-    try {
-      queryData(incidents, data);
-      checkDataAndCollectParentTreePaths(incidents, data, false);
-    } catch (OperateRuntimeException ex) {
-      // if it failed once we want to give it a chance and to import more data
-      // next failure will fail in case ignoring of missing data is not configured
-      sleepFor(5000L);
-      queryData(incidents, data);
-      checkDataAndCollectParentTreePaths(
-          incidents, data, operateProperties.getImporter().isPostImporterIgnoreMissingData());
-    }
-
-    // find flow node instances in list view
-    final SearchRequest fniInListViewRequest =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(
-                        joinWithAnd(
-                            idsQuery()
-                                .addIds(
-                                    incidents.stream()
-                                        .map(i -> String.valueOf(i.getFlowNodeInstanceKey()))
-                                        .toArray(String[]::new)),
-                            termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION)))
-                    .fetchSource(false));
-    scrollWith(
-        fniInListViewRequest,
-        esClient,
-        sh -> {
-          Arrays.stream(sh.getHits())
-              .forEach(
-                  hit ->
-                      CollectionUtil.addToMap(
-                          data.getFlowNodeInstanceInListViewIndices(),
-                          hit.getId(),
-                          hit.getIndex()));
-        });
-  }
-
-  private void queryData(List<IncidentEntity> incidents, AdditionalData data) throws IOException {
     // find process instances (if they exist) that correspond to given incidents
     final SearchRequest piRequest =
         ElasticsearchUtil.createSearchRequest(listViewTemplate)
@@ -571,11 +576,13 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
   }
 
   private void checkDataAndCollectParentTreePaths(
-      List<IncidentEntity> incidents, AdditionalData data, boolean ignoreMissingData)
+      final List<IncidentEntity> incidents,
+      final AdditionalData data,
+      final boolean ignoreMissingData)
       throws IOException {
     int countMissingInstance = 0;
-    for (Iterator<IncidentEntity> iterator = incidents.iterator(); iterator.hasNext(); ) {
-      IncidentEntity i = iterator.next();
+    for (final Iterator<IncidentEntity> iterator = incidents.iterator(); iterator.hasNext(); ) {
+      final IncidentEntity i = iterator.next();
       String piTreePath = data.getProcessInstanceTreePaths().get(i.getProcessInstanceKey());
       if (piTreePath == null || piTreePath.isEmpty()) {
         // check whether DELETE_PROCESS_INSTANCE operation exists
@@ -622,8 +629,8 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
     }
   }
 
-  private boolean processInstanceWasDeleted(long processInstanceKey) throws IOException {
-    SearchRequest request =
+  private boolean processInstanceWasDeleted(final long processInstanceKey) throws IOException {
+    final SearchRequest request =
         ElasticsearchUtil.createSearchRequest(operationTemplate)
             .source(
                 new SearchSourceBuilder()
@@ -633,17 +640,17 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
                             termQuery(OperationTemplate.TYPE, DELETE_PROCESS_INSTANCE.name()),
                             termsQuery(OperationTemplate.STATE, SENT.name(), COMPLETED.name())))
                     .size(0));
-    SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+    final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
     return response.getHits().getTotalHits().value > 0;
   }
 
   private void createUpdateRequestFor(
-      String index,
-      String id,
-      @Nullable Map<String, Object> doc,
-      @Nullable Script script,
-      String routing,
-      Map<String, UpdateRequest> requestMap) {
+      final String index,
+      final String id,
+      @Nullable final Map<String, Object> doc,
+      @Nullable final Script script,
+      final String routing,
+      final Map<String, UpdateRequest> requestMap) {
     if ((doc == null) == (script == null)) {
       throw new OperateRuntimeException(
           "One and only one of 'doc' or 'script' must be provided for the update request");
@@ -651,7 +658,8 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
     if (index == null && operateProperties.getImporter().isPostImporterIgnoreMissingData()) {
       return;
     }
-    UpdateRequest updateRequest = new UpdateRequest(index, id).retryOnConflict(UPDATE_RETRY_COUNT);
+    final UpdateRequest updateRequest =
+        new UpdateRequest(index, id).retryOnConflict(UPDATE_RETRY_COUNT);
     if (doc == null) {
       updateRequest.script(script);
     } else {

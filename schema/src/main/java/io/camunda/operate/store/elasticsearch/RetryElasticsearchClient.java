@@ -83,11 +83,11 @@ public class RetryElasticsearchClient {
   public static final String NO_REFRESH = "-1";
   public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
   public static final String NO_REPLICA = "0";
-  private static final Logger logger = LoggerFactory.getLogger(RetryElasticsearchClient.class);
   public static final int SCROLL_KEEP_ALIVE_MS = 60_000;
   public static final int DEFAULT_NUMBER_OF_RETRIES =
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
+  private static final Logger logger = LoggerFactory.getLogger(RetryElasticsearchClient.class);
   @Autowired private RestHighLevelClient esClient;
   @Autowired private ElasticsearchTaskStore elasticsearchTaskStore;
   private RequestOptions requestOptions = RequestOptions.DEFAULT;
@@ -96,6 +96,11 @@ public class RetryElasticsearchClient {
 
   public int getNumberOfRetries() {
     return numberOfRetries;
+  }
+
+  public RetryElasticsearchClient setNumberOfRetries(int numberOfRetries) {
+    this.numberOfRetries = numberOfRetries;
+    return this;
   }
 
   public boolean isHealthy() {
@@ -116,11 +121,6 @@ public class RetryElasticsearchClient {
           e);
       return false;
     }
-  }
-
-  public RetryElasticsearchClient setNumberOfRetries(int numberOfRetries) {
-    this.numberOfRetries = numberOfRetries;
-    return this;
   }
 
   public int getDelayIntervalInSeconds() {

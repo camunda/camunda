@@ -71,17 +71,15 @@ public class M2mTokenManagerIT {
   protected static final String M2M_CLIENT_ID = "clientId";
   protected static final String M2M_CLIENT_SECRET = "clientSecret";
   protected static final String M2M_AUDIENCE = "audience";
-
+  private final String mockJwtToken =
+      JWT.create()
+          .withExpiresAt(new Date(Instant.now().plus(10, ChronoUnit.MINUTES).toEpochMilli()))
+          .sign(Algorithm.HMAC256("secret"));
   @Autowired @InjectMocks private M2mTokenManager m2mTokenManager;
 
   @MockBean
   @Qualifier("incidentNotificationRestTemplate")
   private RestTemplate restTemplate;
-
-  private final String mockJwtToken =
-      JWT.create()
-          .withExpiresAt(new Date(Instant.now().plus(10, ChronoUnit.MINUTES).toEpochMilli()))
-          .sign(Algorithm.HMAC256("secret"));
 
   @Before
   public void setup() {}
@@ -156,16 +154,16 @@ public class M2mTokenManagerIT {
     clearInvocations(restTemplate);
 
     // when asking for token again
-    String token = m2mTokenManager.getToken();
+    final String token = m2mTokenManager.getToken();
     assertAuth0IsRequested(1);
     assertThat(token).isEqualTo(mockJwtToken);
   }
 
-  private void assertAuth0IsRequested(int times) {
+  private void assertAuth0IsRequested(final int times) {
     // assert request to Auth0
-    ArgumentCaptor<ObjectNode> tokenRequestCaptor = ArgumentCaptor.forClass(ObjectNode.class);
-    ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<Class> responseTypeCaptor = ArgumentCaptor.forClass(Class.class);
+    final ArgumentCaptor<ObjectNode> tokenRequestCaptor = ArgumentCaptor.forClass(ObjectNode.class);
+    final ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+    final ArgumentCaptor<Class> responseTypeCaptor = ArgumentCaptor.forClass(Class.class);
     verify(restTemplate, times(times))
         .postForEntity(
             urlCaptor.capture(), tokenRequestCaptor.capture(), responseTypeCaptor.capture());

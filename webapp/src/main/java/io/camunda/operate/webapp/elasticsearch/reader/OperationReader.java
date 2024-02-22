@@ -164,10 +164,6 @@ public class OperationReader extends AbstractReader
     }
   }
 
-  private QueryBuilder createUsernameQuery() {
-    return termQuery(OperationTemplate.USERNAME, userService.getCurrentUser().getUsername());
-  }
-
   @Override
   public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(String processInstanceId) {
     Map<Long, List<OperationEntity>> result = new HashMap<>();
@@ -337,5 +333,9 @@ public class OperationReader extends AbstractReader
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
+  }
+
+  private QueryBuilder createUsernameQuery() {
+    return termQuery(OperationTemplate.USERNAME, userService.getCurrentUser().getUsername());
   }
 }

@@ -10,12 +10,6 @@ import io.camunda.operate.entities.OperationType;
 
 public class CreateOperationRequestDto {
 
-  public CreateOperationRequestDto() {}
-
-  public CreateOperationRequestDto(OperationType operationType) {
-    this.operationType = operationType;
-  }
-
   private OperationType operationType;
 
   /** Batch operation name. */
@@ -28,8 +22,13 @@ public class CreateOperationRequestDto {
   private String variableScopeId;
 
   private String variableName;
-
   private String variableValue;
+
+  public CreateOperationRequestDto() {}
+
+  public CreateOperationRequestDto(OperationType operationType) {
+    this.operationType = operationType;
+  }
 
   public OperationType getOperationType() {
     return operationType;
@@ -81,6 +80,17 @@ public class CreateOperationRequestDto {
   }
 
   @Override
+  public int hashCode() {
+    int result = operationType != null ? operationType.hashCode() : 0;
+    result = 31 * result + (name != null ? name.hashCode() : 0);
+    result = 31 * result + (incidentId != null ? incidentId.hashCode() : 0);
+    result = 31 * result + (variableScopeId != null ? variableScopeId.hashCode() : 0);
+    result = 31 * result + (variableName != null ? variableName.hashCode() : 0);
+    result = 31 * result + (variableValue != null ? variableValue.hashCode() : 0);
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -99,17 +109,6 @@ public class CreateOperationRequestDto {
     return variableValue != null
         ? variableValue.equals(that.variableValue)
         : that.variableValue == null;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = operationType != null ? operationType.hashCode() : 0;
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    result = 31 * result + (incidentId != null ? incidentId.hashCode() : 0);
-    result = 31 * result + (variableScopeId != null ? variableScopeId.hashCode() : 0);
-    result = 31 * result + (variableName != null ? variableName.hashCode() : 0);
-    result = 31 * result + (variableValue != null ? variableValue.hashCode() : 0);
-    return result;
   }
 
   @Override

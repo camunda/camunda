@@ -28,6 +28,11 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return name;
   }
 
+  public ProcessEntity setName(String name) {
+    this.name = name;
+    return this;
+  }
+
   @Override
   public ProcessEntity setId(String id) {
     super.setId(id);
@@ -35,9 +40,30 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return this;
   }
 
-  public ProcessEntity setName(String name) {
-    this.name = name;
-    return this;
+  @Override
+  public String toString() {
+    return "ProcessEntity{"
+        + "name='"
+        + name
+        + '\''
+        + ", version="
+        + version
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", bpmnXml='"
+        + bpmnXml
+        + '\''
+        + ", resourceName='"
+        + resourceName
+        + '\''
+        + ", flowNodes="
+        + flowNodes
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + "} "
+        + super.toString();
   }
 
   public int getVersion() {
@@ -116,31 +142,5 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   public int hashCode() {
     return Objects.hash(
         super.hashCode(), name, version, bpmnProcessId, bpmnXml, resourceName, flowNodes, tenantId);
-  }
-
-  @Override
-  public String toString() {
-    return "ProcessEntity{"
-        + "name='"
-        + name
-        + '\''
-        + ", version="
-        + version
-        + ", bpmnProcessId='"
-        + bpmnProcessId
-        + '\''
-        + ", bpmnXml='"
-        + bpmnXml
-        + '\''
-        + ", resourceName='"
-        + resourceName
-        + '\''
-        + ", flowNodes="
-        + flowNodes
-        + ", tenantId='"
-        + tenantId
-        + '\''
-        + "} "
-        + super.toString();
   }
 }

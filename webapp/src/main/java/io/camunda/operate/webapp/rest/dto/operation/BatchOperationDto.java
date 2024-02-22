@@ -34,6 +34,33 @@ public class BatchOperationDto {
    */
   private SortValuesWrapper[] sortValues;
 
+  public static BatchOperationDto createFrom(
+      final BatchOperationEntity batchOperationEntity, ObjectMapper objectMapper) {
+    return new BatchOperationDto()
+        .setId(batchOperationEntity.getId())
+        .setName(batchOperationEntity.getName())
+        .setType(OperationTypeDto.getType(batchOperationEntity.getType()))
+        .setStartDate(batchOperationEntity.getStartDate())
+        .setEndDate(batchOperationEntity.getEndDate())
+        .setInstancesCount(batchOperationEntity.getInstancesCount())
+        .setOperationsTotalCount(batchOperationEntity.getOperationsTotalCount())
+        .setOperationsFinishedCount(batchOperationEntity.getOperationsFinishedCount())
+        // convert to String[]
+        .setSortValues(
+            SortValuesWrapper.createFrom(batchOperationEntity.getSortValues(), objectMapper));
+  }
+
+  public static List<BatchOperationDto> createFrom(
+      List<BatchOperationEntity> batchOperationEntities, ObjectMapper objectMapper) {
+    if (batchOperationEntities == null) {
+      return new ArrayList<>();
+    }
+    return batchOperationEntities.stream()
+        .filter(item -> item != null)
+        .map(item -> createFrom(item, objectMapper))
+        .collect(Collectors.toList());
+  }
+
   public String getName() {
     return name;
   }
@@ -115,31 +142,19 @@ public class BatchOperationDto {
     return this;
   }
 
-  public static BatchOperationDto createFrom(
-      final BatchOperationEntity batchOperationEntity, ObjectMapper objectMapper) {
-    return new BatchOperationDto()
-        .setId(batchOperationEntity.getId())
-        .setName(batchOperationEntity.getName())
-        .setType(OperationTypeDto.getType(batchOperationEntity.getType()))
-        .setStartDate(batchOperationEntity.getStartDate())
-        .setEndDate(batchOperationEntity.getEndDate())
-        .setInstancesCount(batchOperationEntity.getInstancesCount())
-        .setOperationsTotalCount(batchOperationEntity.getOperationsTotalCount())
-        .setOperationsFinishedCount(batchOperationEntity.getOperationsFinishedCount())
-        // convert to String[]
-        .setSortValues(
-            SortValuesWrapper.createFrom(batchOperationEntity.getSortValues(), objectMapper));
-  }
-
-  public static List<BatchOperationDto> createFrom(
-      List<BatchOperationEntity> batchOperationEntities, ObjectMapper objectMapper) {
-    if (batchOperationEntities == null) {
-      return new ArrayList<>();
-    }
-    return batchOperationEntities.stream()
-        .filter(item -> item != null)
-        .map(item -> createFrom(item, objectMapper))
-        .collect(Collectors.toList());
+  @Override
+  public int hashCode() {
+    int result = id != null ? id.hashCode() : 0;
+    result = 31 * result + (name != null ? name.hashCode() : 0);
+    result = 31 * result + (type != null ? type.hashCode() : 0);
+    result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
+    result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
+    result = 31 * result + (instancesCount != null ? instancesCount.hashCode() : 0);
+    result = 31 * result + (operationsTotalCount != null ? operationsTotalCount.hashCode() : 0);
+    result =
+        31 * result + (operationsFinishedCount != null ? operationsFinishedCount.hashCode() : 0);
+    result = 31 * result + Arrays.hashCode(sortValues);
+    return result;
   }
 
   @Override
@@ -166,20 +181,5 @@ public class BatchOperationDto {
         : that.operationsFinishedCount != null) return false;
     // Probably incorrect - comparing Object[] arrays with Arrays.equals
     return Arrays.equals(sortValues, that.sortValues);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    result = 31 * result + (type != null ? type.hashCode() : 0);
-    result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
-    result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
-    result = 31 * result + (instancesCount != null ? instancesCount.hashCode() : 0);
-    result = 31 * result + (operationsTotalCount != null ? operationsTotalCount.hashCode() : 0);
-    result =
-        31 * result + (operationsFinishedCount != null ? operationsFinishedCount.hashCode() : 0);
-    result = 31 * result + Arrays.hashCode(sortValues);
-    return result;
   }
 }

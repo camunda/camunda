@@ -80,17 +80,6 @@ import org.springframework.web.client.RestTemplate;
 public class IncidentNotifierIT {
 
   protected static final String ALERT_WEBHOOKURL_URL = "http://WEBHOOKURL/path";
-
-  @MockBean private M2mTokenManager m2mTokenManager;
-
-  @MockBean private ProcessCache processCache;
-
-  @MockBean
-  @Qualifier("incidentNotificationRestTemplate")
-  private RestTemplate restTemplate;
-
-  @Autowired @InjectMocks private IncidentNotifier incidentNotifier;
-
   private final String m2mToken = "mockM2mToken";
   private final String incident1Id = "incident1";
   private final String incident2Id = "incident2";
@@ -105,6 +94,14 @@ public class IncidentNotifierIT {
   private final String bpmnProcessId = "testProcessId";
   private final String processName = "processName";
   private final int processVersion = 234;
+  @MockBean private M2mTokenManager m2mTokenManager;
+  @MockBean private ProcessCache processCache;
+
+  @MockBean
+  @Qualifier("incidentNotificationRestTemplate")
+  private RestTemplate restTemplate;
+
+  @Autowired @InjectMocks private IncidentNotifier incidentNotifier;
 
   @Before
   public void setup() {
@@ -125,12 +122,13 @@ public class IncidentNotifierIT {
         .willReturn(new ResponseEntity<>(HttpStatus.NO_CONTENT));
 
     // when
-    List<IncidentEntity> incidents =
+    final List<IncidentEntity> incidents =
         asList(createIncident(incident1Id), createIncident(incident2Id));
     incidentNotifier.notifyOnIncidents(incidents);
 
     // then
-    ArgumentCaptor<HttpEntity<String>> requestCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+    final ArgumentCaptor<HttpEntity<String>> requestCaptor =
+        ArgumentCaptor.forClass(HttpEntity.class);
     verify(restTemplate, times(1))
         .postForEntity(eq(ALERT_WEBHOOKURL_URL), requestCaptor.capture(), eq(String.class));
     final HttpEntity<String> request = requestCaptor.getValue();
@@ -159,14 +157,15 @@ public class IncidentNotifierIT {
             new ResponseEntity<>(HttpStatus.UNAUTHORIZED), new ResponseEntity<>(HttpStatus.OK));
 
     // when
-    List<IncidentEntity> incidents = asList(createIncident(incident1Id));
+    final List<IncidentEntity> incidents = asList(createIncident(incident1Id));
     incidentNotifier.notifyOnIncidents(incidents);
 
     // then
     // new token was requested
     verify(m2mTokenManager, times(1)).getToken(eq(true));
     // incident data was sent
-    ArgumentCaptor<HttpEntity<String>> requestCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+    final ArgumentCaptor<HttpEntity<String>> requestCaptor =
+        ArgumentCaptor.forClass(HttpEntity.class);
     verify(restTemplate, times(2))
         .postForEntity(eq(ALERT_WEBHOOKURL_URL), requestCaptor.capture(), eq(String.class));
     final HttpEntity<String> request = requestCaptor.getValue();
@@ -188,7 +187,7 @@ public class IncidentNotifierIT {
         .thenReturn(new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR));
 
     // when
-    List<IncidentEntity> incidents = asList(createIncident(incident1Id));
+    final List<IncidentEntity> incidents = asList(createIncident(incident1Id));
     incidentNotifier.notifyOnIncidents(incidents);
 
     // silently fails without exception
@@ -205,7 +204,7 @@ public class IncidentNotifierIT {
             new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR));
 
     // when
-    List<IncidentEntity> incidents = asList(createIncident(incident1Id));
+    final List<IncidentEntity> incidents = asList(createIncident(incident1Id));
     incidentNotifier.notifyOnIncidents(incidents);
 
     // then
@@ -222,7 +221,7 @@ public class IncidentNotifierIT {
         .thenThrow(new RuntimeException("Something went wrong"));
 
     // when
-    List<IncidentEntity> incidents = asList(createIncident(incident1Id));
+    final List<IncidentEntity> incidents = asList(createIncident(incident1Id));
     incidentNotifier.notifyOnIncidents(incidents);
 
     // then
@@ -248,7 +247,7 @@ public class IncidentNotifierIT {
         .isEqualTo(String.valueOf(processInstanceKey));
   }
 
-  private IncidentEntity createIncident(String id) {
+  private IncidentEntity createIncident(final String id) {
     return new IncidentEntity()
         .setId(id)
         .setCreationTime(OffsetDateTime.now())

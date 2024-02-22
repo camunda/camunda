@@ -80,6 +80,60 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     return collectStatisticsForProcessGroups(incidentsByProcessMap);
   }
 
+  @Override
+  public Set<IncidentsByErrorMsgStatisticsDto> getIncidentStatisticsByError() {
+    Set<IncidentsByErrorMsgStatisticsDto> result =
+        new TreeSet<>(IncidentsByErrorMsgStatisticsDto.COMPARATOR);
+
+    Map<Long, ProcessEntity> processes =
+        processReader.getProcessesWithFields(
+            ProcessIndex.KEY,
+            ProcessIndex.NAME,
+            ProcessIndex.BPMN_PROCESS_ID,
+            ProcessIndex.TENANT_ID,
+            ProcessIndex.VERSION);
+
+    Query query =
+        permissionsService == null
+            ? ACTIVE_INCIDENT_QUERY
+            : and(
+                ACTIVE_INCIDENT_QUERY,
+                createQueryForProcessesByPermission(IdentityPermission.READ));
+
+    var uniqueProcessInstances = cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
+    var groupByProcessKeys =
+        termAggregation(IncidentTemplate.PROCESS_DEFINITION_KEY, TERMS_AGG_SIZE);
+    var errorMessage = topHitsAggregation(List.of(IncidentTemplate.ERROR_MSG), 1);
+    var groupByErrorMessageHash = termAggregation(IncidentTemplate.ERROR_MSG_HASH, TERMS_AGG_SIZE);
+
+    var searchRequestBuilder =
+        searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
+            .query(withTenantCheck(query))
+            .aggregations(
+                GROUP_BY_ERROR_MESSAGE_HASH,
+                withSubaggregations(
+                    groupByErrorMessageHash,
+                    Map.of(
+                        ERROR_MESSAGE, errorMessage._toAggregation(),
+                        GROUP_BY_PROCESS_KEYS,
+                            withSubaggregations(
+                                groupByProcessKeys,
+                                Map.of(
+                                    UNIQ_PROCESS_INSTANCES,
+                                    uniqueProcessInstances._toAggregation())))));
+
+    richOpenSearchClient
+        .doc()
+        .searchAggregations(searchRequestBuilder)
+        .get(GROUP_BY_ERROR_MESSAGE_HASH)
+        .lterms()
+        .buckets()
+        .array()
+        .forEach(bucket -> result.add(getIncidentsByErrorMsgStatistic(processes, bucket)));
+
+    return result;
+  }
+
   private List<LongTermsBucket> searchAggBuckets(Query query) {
     var searchRequestBuilder =
         searchRequestBuilder(processInstanceTemplate, ONLY_RUNTIME)
@@ -181,60 +235,6 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
       stat.setInstancesWithActiveIncidentsCount(instancesWithActiveIncidentsCount);
       result.add(stat);
     }
-    return result;
-  }
-
-  @Override
-  public Set<IncidentsByErrorMsgStatisticsDto> getIncidentStatisticsByError() {
-    Set<IncidentsByErrorMsgStatisticsDto> result =
-        new TreeSet<>(IncidentsByErrorMsgStatisticsDto.COMPARATOR);
-
-    Map<Long, ProcessEntity> processes =
-        processReader.getProcessesWithFields(
-            ProcessIndex.KEY,
-            ProcessIndex.NAME,
-            ProcessIndex.BPMN_PROCESS_ID,
-            ProcessIndex.TENANT_ID,
-            ProcessIndex.VERSION);
-
-    Query query =
-        permissionsService == null
-            ? ACTIVE_INCIDENT_QUERY
-            : and(
-                ACTIVE_INCIDENT_QUERY,
-                createQueryForProcessesByPermission(IdentityPermission.READ));
-
-    var uniqueProcessInstances = cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
-    var groupByProcessKeys =
-        termAggregation(IncidentTemplate.PROCESS_DEFINITION_KEY, TERMS_AGG_SIZE);
-    var errorMessage = topHitsAggregation(List.of(IncidentTemplate.ERROR_MSG), 1);
-    var groupByErrorMessageHash = termAggregation(IncidentTemplate.ERROR_MSG_HASH, TERMS_AGG_SIZE);
-
-    var searchRequestBuilder =
-        searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
-            .query(withTenantCheck(query))
-            .aggregations(
-                GROUP_BY_ERROR_MESSAGE_HASH,
-                withSubaggregations(
-                    groupByErrorMessageHash,
-                    Map.of(
-                        ERROR_MESSAGE, errorMessage._toAggregation(),
-                        GROUP_BY_PROCESS_KEYS,
-                            withSubaggregations(
-                                groupByProcessKeys,
-                                Map.of(
-                                    UNIQ_PROCESS_INSTANCES,
-                                    uniqueProcessInstances._toAggregation())))));
-
-    richOpenSearchClient
-        .doc()
-        .searchAggregations(searchRequestBuilder)
-        .get(GROUP_BY_ERROR_MESSAGE_HASH)
-        .lterms()
-        .buckets()
-        .array()
-        .forEach(bucket -> result.add(getIncidentsByErrorMsgStatistic(processes, bucket)));
-
     return result;
   }
 

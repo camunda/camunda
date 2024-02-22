@@ -14,11 +14,10 @@ import org.testcontainers.containers.GenericContainer;
 
 public abstract class AbstractTestFixture implements TestFixture {
 
-  @Autowired private TestContainerUtil testContainerUtil;
   protected ZeebeContainer broker;
   protected GenericContainer<?> operateContainer;
-
   protected TestContext testContext;
+  @Autowired private TestContainerUtil testContainerUtil;
 
   @Override
   public void setup(TestContext testContext) {

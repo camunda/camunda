@@ -34,17 +34,9 @@ public abstract class AbstractOperationHandler implements OperationHandler {
 
   @Autowired protected ZeebeClient zeebeClient;
   @Autowired protected BatchOperationWriter batchOperationWriter;
-
-  @Autowired private OperationsManager operationsManager;
-
   @Autowired protected OperateProperties operateProperties;
-
   @Autowired protected Metrics metrics;
-
-  // Needed for tests
-  public void setZeebeClient(final ZeebeClient zeebeClient) {
-    this.zeebeClient = zeebeClient;
-  }
+  @Autowired private OperationsManager operationsManager;
 
   @Override
   public void handle(OperationEntity operation) {
@@ -72,6 +64,11 @@ public abstract class AbstractOperationHandler implements OperationHandler {
             ex);
       }
     }
+  }
+
+  // Needed for tests
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
   }
 
   private boolean isExceptionRetriable(Exception ex) {

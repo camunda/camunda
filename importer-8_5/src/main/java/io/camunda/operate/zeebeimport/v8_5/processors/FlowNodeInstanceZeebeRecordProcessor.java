@@ -46,11 +46,8 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   private static final Set<String> AI_FINISH_STATES =
       Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
   private static final Set<String> AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
-
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
-
   @Autowired protected FlowNodeStore flowNodeStore;
-
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   @Autowired private OperateProperties operateProperties;
 
   // treePath by flowNodeInstanceKey cache
@@ -61,13 +58,13 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     treePathCache = new SoftHashMap<>(operateProperties.getImporter().getFlowNodeTreeCacheSize());
   }
 
-  public void processIncidentRecord(Record record, BatchRequest batchRequest)
+  public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
-    IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
+    final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
 
     // update activity instance
-    FlowNodeInstanceEntity entity =
+    final FlowNodeInstanceEntity entity =
         new FlowNodeInstanceEntity()
             .setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()))
             .setKey(recordValue.getElementInstanceKey())
@@ -84,22 +81,22 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     }
 
     logger.debug("Flow node instance: id {}", entity.getId());
-    Map<String, Object> updateFields = new HashMap<>();
+    final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
     batchRequest.upsert(
         flowNodeInstanceTemplate.getFullQualifiedName(), entity.getId(), entity, updateFields);
   }
 
   public void processProcessInstanceRecord(
-      Map<Long, List<Record<ProcessInstanceRecordValue>>> records,
+      final Map<Long, List<Record<ProcessInstanceRecordValue>>> records,
       final List<Long> flowNodeInstanceKeysOrdered,
-      BatchRequest batchRequest)
+      final BatchRequest batchRequest)
       throws PersistenceException {
 
-    for (Long key : flowNodeInstanceKeysOrdered) {
-      List<Record<ProcessInstanceRecordValue>> wiRecords = records.get(key);
+    for (final Long key : flowNodeInstanceKeysOrdered) {
+      final List<Record<ProcessInstanceRecordValue>> wiRecords = records.get(key);
       FlowNodeInstanceEntity fniEntity = null;
-      for (Record<ProcessInstanceRecordValue> record : wiRecords) {
+      for (final Record<ProcessInstanceRecordValue> record : wiRecords) {
 
         if (shouldProcessProcessInstanceRecord(record)) {
           fniEntity = updateFlowNodeInstance(record, fniEntity);
@@ -110,7 +107,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
         if (canOptimizeFlowNodeInstanceIndexing(fniEntity)) {
           batchRequest.add(flowNodeInstanceTemplate.getFullQualifiedName(), fniEntity);
         } else {
-          Map<String, Object> updateFields = new HashMap<>();
+          final Map<String, Object> updateFields = new HashMap<>();
           updateFields.put(FlowNodeInstanceTemplate.ID, fniEntity.getId());
           updateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, fniEntity.getPartitionId());
           updateFields.put(FlowNodeInstanceTemplate.TYPE, fniEntity.getType());
@@ -151,7 +148,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   }
 
   private FlowNodeInstanceEntity updateFlowNodeInstance(
-      Record<ProcessInstanceRecordValue> record, FlowNodeInstanceEntity entity) {
+      final Record<ProcessInstanceRecordValue> record, FlowNodeInstanceEntity entity) {
     if (entity == null) {
       entity = new FlowNodeInstanceEntity();
     }
@@ -170,7 +167,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
 
     if (entity.getTreePath() == null) {
 
-      String parentTreePath = getParentTreePath(record, recordValue);
+      final String parentTreePath = getParentTreePath(record, recordValue);
       entity.setTreePath(
           String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
       entity.setLevel(parentTreePath.split("/").length);
@@ -260,11 +257,12 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     return false;
   }
 
-  private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
+  private boolean isProcessEvent(final ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
 
-  private boolean isOfType(ProcessInstanceRecordValue recordValue, BpmnElementType type) {
+  private boolean isOfType(
+      final ProcessInstanceRecordValue recordValue, final BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;

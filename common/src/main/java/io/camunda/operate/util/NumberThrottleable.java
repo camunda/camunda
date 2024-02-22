@@ -59,17 +59,17 @@ public interface NumberThrottleable {
       return currentSize;
     }
 
+    @Override
+    public int getOriginal() {
+      return originalSize;
+    }
+
     private boolean canSetToOriginalValue() {
       // Consider
       // - used throttled value (currentSize),
       // - how often it was used (changedSizeUsed)
       // - and a coefficient value (2)
       return changedSizeUsed * currentSize * 2 > originalSize;
-    }
-
-    @Override
-    public int getOriginal() {
-      return originalSize;
     }
   }
 }

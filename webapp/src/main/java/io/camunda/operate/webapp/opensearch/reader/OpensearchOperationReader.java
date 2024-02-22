@@ -59,16 +59,11 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   private static final String SCHEDULED_OPERATION = SCHEDULED.toString();
   private static final String LOCKED_OPERATION = LOCKED.toString();
-
-  @Autowired private OperationTemplate operationTemplate;
-
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
-
-  @Autowired private DateTimeFormatter dateTimeFormatter;
-
-  @Autowired private UserService userService;
-
   @Autowired RichOpenSearchClient richOpenSearchClient;
+  @Autowired private OperationTemplate operationTemplate;
+  @Autowired private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private DateTimeFormatter dateTimeFormatter;
+  @Autowired private UserService userService;
 
   private Query usernameQuery() {
     return term(OperationTemplate.USERNAME, userService.getCurrentUser().getUsername());

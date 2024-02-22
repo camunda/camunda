@@ -119,6 +119,11 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return permissions.stream().map(permissionConverter::convert).collect(Collectors.toList());
   }
 
+  public IdentityAuthentication setPermissions(final List<String> permissions) {
+    this.permissions = permissions;
+    return this;
+  }
+
   public List<IdentityAuthorization> getAuthorizations() {
     if (authorizations == null) {
       synchronized (this) {
@@ -226,11 +231,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
 
   public IdentityAuthentication setExpires(final Date expires) {
     this.expires = expires;
-    return this;
-  }
-
-  public IdentityAuthentication setPermissions(final List<String> permissions) {
-    this.permissions = permissions;
     return this;
   }
 

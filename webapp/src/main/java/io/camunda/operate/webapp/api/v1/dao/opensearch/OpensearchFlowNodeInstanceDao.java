@@ -69,11 +69,6 @@ public class OpensearchFlowNodeInstanceDao
   }
 
   @Override
-  protected String getIndexName() {
-    return flowNodeInstanceIndex.getAlias();
-  }
-
-  @Override
   protected String getUniqueSortKey() {
     return FlowNodeInstance.KEY;
   }
@@ -81,6 +76,11 @@ public class OpensearchFlowNodeInstanceDao
   @Override
   protected Class<FlowNodeInstance> getInternalDocumentModelClass() {
     return FlowNodeInstance.class;
+  }
+
+  @Override
+  protected String getIndexName() {
+    return flowNodeInstanceIndex.getAlias();
   }
 
   @Override

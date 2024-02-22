@@ -95,6 +95,11 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     completeOperation(operation, false);
   }
 
+  @Override
+  public Set<OperationType> getTypes() {
+    return Set.of(OperationType.MODIFY_PROCESS_INSTANCE);
+  }
+
   private void updateFinishedInBatchOperation(final OperationEntity operation)
       throws PersistenceException {
     operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId());
@@ -130,11 +135,6 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
       final Long processInstanceKey, final String flowNodeId) {
     return flowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
         processInstanceKey, flowNodeId, List.of(FlowNodeState.ACTIVE));
-  }
-
-  @Override
-  public Set<OperationType> getTypes() {
-    return Set.of(OperationType.MODIFY_PROCESS_INSTANCE);
   }
 
   // Needed for tests

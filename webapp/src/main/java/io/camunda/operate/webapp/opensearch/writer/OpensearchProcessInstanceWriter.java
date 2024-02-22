@@ -38,14 +38,6 @@ public class OpensearchProcessInstanceWriter
 
   @Autowired private ProcessStore processStore;
 
-  @Override
-  public void deleteInstanceById(Long id) throws IOException {
-    ProcessInstanceForListViewEntity processInstanceEntity =
-        processInstanceReader.getProcessInstanceByKey(id);
-    validateDeletion(processInstanceEntity);
-    deleteProcessInstanceAndDependants(processInstanceEntity.getProcessInstanceKey().toString());
-  }
-
   private static void validateDeletion(
       final ProcessInstanceForListViewEntity processInstanceEntity) {
     if (!STATES_FOR_DELETION.contains(processInstanceEntity.getState())) {
@@ -60,6 +52,14 @@ public class OpensearchProcessInstanceWriter
               "Process instances needs to have an endDate before now: %s < %s",
               processInstanceEntity.getEndDate(), OffsetDateTime.now()));
     }
+  }
+
+  @Override
+  public void deleteInstanceById(Long id) throws IOException {
+    ProcessInstanceForListViewEntity processInstanceEntity =
+        processInstanceReader.getProcessInstanceByKey(id);
+    validateDeletion(processInstanceEntity);
+    deleteProcessInstanceAndDependants(processInstanceEntity.getProcessInstanceKey().toString());
   }
 
   private void deleteProcessInstanceAndDependants(final String processInstanceKey)

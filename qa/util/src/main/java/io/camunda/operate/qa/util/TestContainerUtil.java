@@ -52,13 +52,7 @@ import org.testcontainers.utility.MountableFile;
 @Component
 public class TestContainerUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(TestContainerUtil.class);
-
-  private static final String DOCKER_OPERATE_IMAGE_NAME = "camunda/operate";
-  private static final Integer OPERATE_HTTP_PORT = 8080;
   public static final String PROPERTIES_PREFIX = "camunda.operate.";
-  private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
-      "docker.elastic.co/elasticsearch/elasticsearch";
   public static final String ELS_DOCKER_TESTCONTAINER_URL =
       "http://host.testcontainers.internal:9200"; // FIXME "http://elasticsearch:9200"
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
@@ -86,6 +80,11 @@ public class TestContainerUtil {
   public static final String IDENTITY_DATABASE_PASSWORD = "t2L@!AqSMg8%I%NmHM";
   public static final String TENANT_1 = "tenant_1";
   public static final String TENANT_2 = "tenant_2";
+  private static final Logger logger = LoggerFactory.getLogger(TestContainerUtil.class);
+  private static final String DOCKER_OPERATE_IMAGE_NAME = "camunda/operate";
+  private static final Integer OPERATE_HTTP_PORT = 8080;
+  private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
+      "docker.elastic.co/elasticsearch/elasticsearch";
   private static final String ZEEBE = "zeebe";
   private static final String KEYCLOAK_ZEEBE_SECRET = "zecret";
   private static final String USER_MEMBER_TYPE = "USER";
@@ -99,6 +98,11 @@ public class TestContainerUtil {
   private ZeebeContainer broker;
   private GenericContainer operateContainer;
   private Keycloak keycloakClient;
+
+  public static RestHighLevelClient getEsClient() {
+    return new RestHighLevelClient(
+        RestClient.builder(new HttpHost(ELS_HOST, ELS_PORT, ELS_SCHEME)));
+  }
 
   public void startIdentity(TestContext testContext, String version, boolean multiTenancyEnabled) {
     startPostgres(testContext);
@@ -426,11 +430,6 @@ public class TestContainerUtil {
     }
     properties.setProperty(PROPERTIES_PREFIX + "archiver.waitPeriodBeforeArchiving", "2m");
     return properties;
-  }
-
-  public static RestHighLevelClient getEsClient() {
-    return new RestHighLevelClient(
-        RestClient.builder(new HttpHost(ELS_HOST, ELS_PORT, ELS_SCHEME)));
   }
 
   public ZeebeContainer startZeebe(

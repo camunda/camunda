@@ -27,6 +27,35 @@ public class DecisionGroupDto {
 
   private List<DecisionDto> decisions;
 
+  public static List<DecisionGroupDto> createFrom(
+      Map<String, List<DecisionDefinitionEntity>> decisionsGrouped) {
+    return createFrom(decisionsGrouped, null);
+  }
+
+  public static List<DecisionGroupDto> createFrom(
+      Map<String, List<DecisionDefinitionEntity>> decisionsGrouped,
+      PermissionsService permissionsService) {
+    List<DecisionGroupDto> groups = new ArrayList<>();
+    decisionsGrouped.values().stream()
+        .forEach(
+            group -> {
+              DecisionGroupDto groupDto = new DecisionGroupDto();
+              DecisionDefinitionEntity decision0 = group.get(0);
+              groupDto.setDecisionId(decision0.getDecisionId());
+              groupDto.setTenantId(decision0.getTenantId());
+              groupDto.setName(decision0.getName());
+              groupDto.setPermissions(
+                  permissionsService == null
+                      ? new HashSet<>()
+                      : permissionsService.getDecisionDefinitionPermission(
+                          decision0.getDecisionId()));
+              groupDto.setDecisions(DtoCreator.create(group, DecisionDto.class));
+              groups.add(groupDto);
+            });
+    groups.sort(new DecisionGroupComparator());
+    return groups;
+  }
+
   public String getDecisionId() {
     return decisionId;
   }
@@ -68,33 +97,9 @@ public class DecisionGroupDto {
     this.decisions = decisions;
   }
 
-  public static List<DecisionGroupDto> createFrom(
-      Map<String, List<DecisionDefinitionEntity>> decisionsGrouped) {
-    return createFrom(decisionsGrouped, null);
-  }
-
-  public static List<DecisionGroupDto> createFrom(
-      Map<String, List<DecisionDefinitionEntity>> decisionsGrouped,
-      PermissionsService permissionsService) {
-    List<DecisionGroupDto> groups = new ArrayList<>();
-    decisionsGrouped.values().stream()
-        .forEach(
-            group -> {
-              DecisionGroupDto groupDto = new DecisionGroupDto();
-              DecisionDefinitionEntity decision0 = group.get(0);
-              groupDto.setDecisionId(decision0.getDecisionId());
-              groupDto.setTenantId(decision0.getTenantId());
-              groupDto.setName(decision0.getName());
-              groupDto.setPermissions(
-                  permissionsService == null
-                      ? new HashSet<>()
-                      : permissionsService.getDecisionDefinitionPermission(
-                          decision0.getDecisionId()));
-              groupDto.setDecisions(DtoCreator.create(group, DecisionDto.class));
-              groups.add(groupDto);
-            });
-    groups.sort(new DecisionGroupComparator());
-    return groups;
+  @Override
+  public int hashCode() {
+    return Objects.hash(decisionId, tenantId, name, permissions, decisions);
   }
 
   @Override
@@ -107,11 +112,6 @@ public class DecisionGroupDto {
         && Objects.equals(name, that.name)
         && Objects.equals(permissions, that.permissions)
         && Objects.equals(decisions, that.decisions);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(decisionId, tenantId, name, permissions, decisions);
   }
 
   public static class DecisionGroupComparator implements Comparator<DecisionGroupDto> {

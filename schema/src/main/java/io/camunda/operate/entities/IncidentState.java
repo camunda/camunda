@@ -27,11 +27,11 @@ public enum IncidentState {
     this.zeebeIntent = zeebeIntent;
   }
 
-  public String getZeebeIntent() {
-    return zeebeIntent;
-  }
-
   public static IncidentState createFrom(String zeebeIntent) {
     return intentMap.get(zeebeIntent);
+  }
+
+  public String getZeebeIntent() {
+    return zeebeIntent;
   }
 }

@@ -48,23 +48,23 @@ public class OpensearchKeyFilteringDaoTest {
         new OpensearchKeyFilteringDao<>(
             mockQueryWrapper, mockRequestWrapper, mockOpensearchClient) {
           @Override
-          protected String getByKeyServerReadErrorMessage(Long key) {
+          protected String getKeyFieldName() {
+            return "key";
+          }
+
+          @Override
+          protected String getByKeyServerReadErrorMessage(final Long key) {
             return "server read error";
           }
 
           @Override
-          protected String getByKeyNoResultsErrorMessage(Long key) {
+          protected String getByKeyNoResultsErrorMessage(final Long key) {
             return "no results error";
           }
 
           @Override
-          protected String getByKeyTooManyResultsErrorMessage(Long key) {
+          protected String getByKeyTooManyResultsErrorMessage(final Long key) {
             return "too many results error";
-          }
-
-          @Override
-          protected String getKeyFieldName() {
-            return "key";
           }
 
           @Override
@@ -83,10 +83,11 @@ public class OpensearchKeyFilteringDaoTest {
           }
 
           @Override
-          protected void buildFiltering(Query<Object> query, SearchRequest.Builder request) {}
+          protected void buildFiltering(
+              final Query<Object> query, final SearchRequest.Builder request) {}
 
           @Override
-          protected Object convertInternalToApiResult(Object internalResult) {
+          protected Object convertInternalToApiResult(final Object internalResult) {
             return internalResult;
           }
         };
@@ -95,8 +96,8 @@ public class OpensearchKeyFilteringDaoTest {
   @Test
   public void testByKeyWithServerException() {
     // Mock the request building classes
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
+    final SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
+    final org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
         Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
 
     when(mockRequestWrapper.searchRequestBuilder(underTest.getIndexName()))
@@ -107,7 +108,7 @@ public class OpensearchKeyFilteringDaoTest {
     // Set the mocked opensearch client to throw an exception
     when(mockOpensearchClient.doc()).thenThrow(new RuntimeException());
 
-    Exception exception = assertThrows(ServerException.class, () -> underTest.byKey(1L));
+    final Exception exception = assertThrows(ServerException.class, () -> underTest.byKey(1L));
 
     assertThat(exception.getMessage()).isEqualTo(underTest.getByKeyServerReadErrorMessage(1L));
   }
@@ -120,10 +121,10 @@ public class OpensearchKeyFilteringDaoTest {
   @Test
   public void testByKeyWithEmptyResults() {
     // Mock the request building classes
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
+    final SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
+    final org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
         Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
-    OpenSearchDocumentOperations mockDocumentOperations =
+    final OpenSearchDocumentOperations mockDocumentOperations =
         Mockito.mock(OpenSearchDocumentOperations.class);
 
     when(mockRequestWrapper.searchRequestBuilder(underTest.getIndexName()))
@@ -135,7 +136,8 @@ public class OpensearchKeyFilteringDaoTest {
     when(mockOpensearchClient.doc()).thenReturn(mockDocumentOperations);
     when(mockDocumentOperations.searchValues(any(), any())).thenReturn(Collections.emptyList());
 
-    Exception exception = assertThrows(ResourceNotFoundException.class, () -> underTest.byKey(1L));
+    final Exception exception =
+        assertThrows(ResourceNotFoundException.class, () -> underTest.byKey(1L));
 
     assertThat(exception.getMessage()).isEqualTo(underTest.getByKeyNoResultsErrorMessage(1L));
   }
@@ -143,10 +145,10 @@ public class OpensearchKeyFilteringDaoTest {
   @Test
   public void testByKeyWithValidResult() {
     // Mock the request building classes
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
+    final SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
+    final org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
         Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
-    OpenSearchDocumentOperations mockDocumentOperations =
+    final OpenSearchDocumentOperations mockDocumentOperations =
         Mockito.mock(OpenSearchDocumentOperations.class);
 
     when(mockRequestWrapper.searchRequestBuilder(underTest.getIndexName()))
@@ -154,24 +156,24 @@ public class OpensearchKeyFilteringDaoTest {
     when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
     when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
 
-    Object validResult = new Object();
+    final Object validResult = new Object();
 
     // Set the mocked opensearch client to return the mocked response
     when(mockOpensearchClient.doc()).thenReturn(mockDocumentOperations);
     when(mockDocumentOperations.searchValues(any(), any())).thenReturn(List.of(validResult));
 
     // Verify the result returned is the same as the one that came directly from opensearch
-    Object result = underTest.byKey(1L);
+    final Object result = underTest.byKey(1L);
     assertThat(result).isSameAs(validResult);
   }
 
   @Test
   public void testByKeyWithMultipleResult() {
     // Mock the request building classes
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
+    final SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
+    final org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
         Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
-    OpenSearchDocumentOperations mockDocumentOperations =
+    final OpenSearchDocumentOperations mockDocumentOperations =
         Mockito.mock(OpenSearchDocumentOperations.class);
 
     when(mockRequestWrapper.searchRequestBuilder(underTest.getIndexName()))
@@ -184,28 +186,28 @@ public class OpensearchKeyFilteringDaoTest {
     when(mockDocumentOperations.searchValues(any(), any()))
         .thenReturn(List.of(new Object(), new Object()));
 
-    Exception exception = assertThrows(ServerException.class, () -> underTest.byKey(1L));
+    final Exception exception = assertThrows(ServerException.class, () -> underTest.byKey(1L));
 
     assertThat(exception.getMessage()).isEqualTo(underTest.getByKeyTooManyResultsErrorMessage(1L));
   }
 
   @Test
   public void testSearchByKey() {
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
+    final SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
+    final org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
         Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
 
     when(mockRequestWrapper.searchRequestBuilder("index")).thenReturn(mockRequestBuilder);
     when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
     when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
 
-    OpenSearchDocumentOperations mockDoc = Mockito.mock(OpenSearchDocumentOperations.class);
+    final OpenSearchDocumentOperations mockDoc = Mockito.mock(OpenSearchDocumentOperations.class);
     when(mockOpensearchClient.doc()).thenReturn(mockDoc);
 
-    List<Object> validResults = Collections.singletonList(new Object());
+    final List<Object> validResults = Collections.singletonList(new Object());
     when(mockDoc.searchValues(any(), any())).thenReturn(validResults);
 
-    List<Object> results = underTest.searchByKey(1L);
+    final List<Object> results = underTest.searchByKey(1L);
 
     // Verify the request was built with a tenant check, the index name, and permissive matching
     assertThat(results).containsExactlyElementsOf(validResults);
@@ -223,7 +225,7 @@ public class OpensearchKeyFilteringDaoTest {
   public void testValidateKey() {
     try {
       underTest.validateKey(1L);
-    } catch (ServerException e) {
+    } catch (final ServerException e) {
       fail("Unexpected server exception on non-null key");
     }
   }

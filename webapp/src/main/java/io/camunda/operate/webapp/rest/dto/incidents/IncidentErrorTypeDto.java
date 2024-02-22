@@ -17,6 +17,10 @@ public class IncidentErrorTypeDto {
 
   private int count;
 
+  public static IncidentErrorTypeDto createFrom(ErrorType errorType) {
+    return new IncidentErrorTypeDto().setId(errorType.name()).setName(errorType.getTitle());
+  }
+
   public String getId() {
     return id;
   }
@@ -44,8 +48,9 @@ public class IncidentErrorTypeDto {
     return this;
   }
 
-  public static IncidentErrorTypeDto createFrom(ErrorType errorType) {
-    return new IncidentErrorTypeDto().setId(errorType.name()).setName(errorType.getTitle());
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, name, count);
   }
 
   @Override
@@ -58,10 +63,5 @@ public class IncidentErrorTypeDto {
     }
     final IncidentErrorTypeDto that = (IncidentErrorTypeDto) o;
     return count == that.count && Objects.equals(id, that.id) && Objects.equals(name, that.name);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, name, count);
   }
 }

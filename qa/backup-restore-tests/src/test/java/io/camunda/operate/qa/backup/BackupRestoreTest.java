@@ -46,14 +46,12 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 @ContextConfiguration(classes = {TestConfig.class})
 public class BackupRestoreTest {
 
-  private static final Logger logger = LoggerFactory.getLogger(BackupRestoreTest.class);
-
   public static final String ZEEBE_INDEX_PREFIX = "backup-restore-test";
-  private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
   public static final String VERSION = "SNAPSHOT";
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
-
+  private static final Logger logger = LoggerFactory.getLogger(BackupRestoreTest.class);
+  private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
   @Autowired private OperateAPICaller operateAPICaller;
 
   @Autowired private DataGenerator dataGenerator;

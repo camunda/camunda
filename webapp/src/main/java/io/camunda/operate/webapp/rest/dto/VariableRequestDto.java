@@ -35,14 +35,9 @@ public class VariableRequestDto extends PaginatedQuery<VariableRequestDto> {
     return this;
   }
 
-  public VariableRequestDto createCopy() {
-    return new VariableRequestDto()
-        .setSearchBefore(getSearchBefore())
-        .setSearchAfter(getSearchAfter())
-        .setPageSize(getPageSize())
-        .setSearchAfterOrEqual(getSearchAfterOrEqual())
-        .setSearchBeforeOrEqual(getSearchBeforeOrEqual())
-        .setScopeId(this.scopeId);
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), scopeId);
   }
 
   @Override
@@ -60,9 +55,14 @@ public class VariableRequestDto extends PaginatedQuery<VariableRequestDto> {
     return Objects.equals(scopeId, that.scopeId);
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), scopeId);
+  public VariableRequestDto createCopy() {
+    return new VariableRequestDto()
+        .setSearchBefore(getSearchBefore())
+        .setSearchAfter(getSearchAfter())
+        .setPageSize(getPageSize())
+        .setSearchAfterOrEqual(getSearchAfterOrEqual())
+        .setSearchBeforeOrEqual(getSearchBeforeOrEqual())
+        .setScopeId(this.scopeId);
   }
 
   @Override

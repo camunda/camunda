@@ -8,24 +8,15 @@ package io.camunda.operate.property;
 
 public class ImportProperties {
 
-  private static final int DEFAULT_IMPORT_THREADS_COUNT = 3;
-
-  private static final int DEFAULT_POST_IMPORT_THREADS_COUNT = 1;
-
-  private static final int DEFAULT_READER_THREADS_COUNT = 3;
-
-  private static final int DEFAULT_IMPORT_QUEUE_SIZE = 3;
-
-  private static final int DEFAULT_READER_BACKOFF = 5000;
-
-  private static final int DEFAULT_SCHEDULER_BACKOFF = 5000;
-
-  private static final int DEFAULT_FLOW_NODE_TREE_CACHE_SIZE = 1000;
-
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
-
   public static final int DEFAULT_IMPORT_POSITION_UPDATE_INTERVAL = 10000;
-
+  private static final int DEFAULT_IMPORT_THREADS_COUNT = 3;
+  private static final int DEFAULT_POST_IMPORT_THREADS_COUNT = 1;
+  private static final int DEFAULT_READER_THREADS_COUNT = 3;
+  private static final int DEFAULT_IMPORT_QUEUE_SIZE = 3;
+  private static final int DEFAULT_READER_BACKOFF = 5000;
+  private static final int DEFAULT_SCHEDULER_BACKOFF = 5000;
+  private static final int DEFAULT_FLOW_NODE_TREE_CACHE_SIZE = 1000;
   private static final int DEFAULT_MAX_EMPTY_RUNS = 10;
 
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;

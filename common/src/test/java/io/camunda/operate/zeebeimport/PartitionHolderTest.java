@@ -25,6 +25,11 @@ public class PartitionHolderTest {
       new PartitionHolder() {
 
         @Override
+        protected List<Integer> extractCurrentNodePartitions(List<Integer> partitionIds) {
+          return partitionIds;
+        }
+
+        @Override
         protected Optional<List<Integer>> getPartitionIdsFromZeebe() {
           return zeebePartitionIds;
         }
@@ -32,11 +37,6 @@ public class PartitionHolderTest {
         @Override
         protected void sleepFor(long milliseconds) {
           slept++;
-        }
-
-        @Override
-        protected List<Integer> extractCurrentNodePartitions(List<Integer> partitionIds) {
-          return partitionIds;
         }
       };
 

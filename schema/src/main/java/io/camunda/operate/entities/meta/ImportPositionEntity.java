@@ -23,6 +23,19 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
 
   private String indexName;
 
+  public static ImportPositionEntity createFrom(
+      final long sequence,
+      ImportPositionEntity importPositionEntity,
+      long newPosition,
+      String indexName) {
+    return new ImportPositionEntity()
+        .setSequence(sequence)
+        .setAliasName(importPositionEntity.getAliasName())
+        .setPartitionId(importPositionEntity.getPartitionId())
+        .setIndexName(indexName)
+        .setPosition(newPosition);
+  }
+
   public String getAliasName() {
     return aliasName;
   }
@@ -79,19 +92,6 @@ public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
 
   public String getId() {
     return String.format("%s-%s", partitionId, aliasName);
-  }
-
-  public static ImportPositionEntity createFrom(
-      final long sequence,
-      ImportPositionEntity importPositionEntity,
-      long newPosition,
-      String indexName) {
-    return new ImportPositionEntity()
-        .setSequence(sequence)
-        .setAliasName(importPositionEntity.getAliasName())
-        .setPartitionId(importPositionEntity.getPartitionId())
-        .setIndexName(indexName)
-        .setPosition(newPosition);
   }
 
   @Override

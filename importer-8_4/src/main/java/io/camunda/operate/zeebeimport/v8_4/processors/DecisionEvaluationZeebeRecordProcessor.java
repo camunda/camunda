@@ -40,7 +40,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
 
   @Autowired private MetricsStore metricsStore;
 
-  public void processDecisionEvaluationRecord(Record record, BatchRequest batchRequest)
+  public void processDecisionEvaluationRecord(final Record record, final BatchRequest batchRequest)
       throws PersistenceException {
     final DecisionEvaluationRecordValue decision =
         (DecisionEvaluationRecordValue) record.getValue();
@@ -59,9 +59,9 @@ public class DecisionEvaluationZeebeRecordProcessor {
         record.getKey(),
         decisionEvaluation.getDecisionId());
 
-    OffsetDateTime timestamp =
+    final OffsetDateTime timestamp =
         DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
-    for (DecisionInstanceEntity entity : decisionEntities) {
+    for (final DecisionInstanceEntity entity : decisionEntities) {
       batchRequest.add(decisionInstanceTemplate.getFullQualifiedName(), entity);
       metricsStore.registerDecisionInstanceCompleteEvent(
           entity.getId(), decisionEvaluation.getTenantId(), timestamp, batchRequest);
@@ -70,10 +70,10 @@ public class DecisionEvaluationZeebeRecordProcessor {
 
   private List<DecisionInstanceEntity> createEntities(
       final Record record, final DecisionEvaluationRecordValue decisionEvaluation) {
-    List<DecisionInstanceEntity> entities = new ArrayList<>();
+    final List<DecisionInstanceEntity> entities = new ArrayList<>();
     for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
       final EvaluatedDecisionValue decision = decisionEvaluation.getEvaluatedDecisions().get(i - 1);
-      OffsetDateTime timestamp =
+      final OffsetDateTime timestamp =
           DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
       final DecisionInstanceState state = getState(record, decisionEvaluation, i);
 
@@ -137,7 +137,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
 
   private List<DecisionInstanceOutputEntity> createEvaluationOutputs(
       final List<MatchedRuleValue> matchedRules) {
-    List<DecisionInstanceOutputEntity> outputs = new ArrayList<>();
+    final List<DecisionInstanceOutputEntity> outputs = new ArrayList<>();
     matchedRules.stream()
         .forEach(
             rule ->

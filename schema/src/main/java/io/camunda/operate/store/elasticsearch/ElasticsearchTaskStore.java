@@ -33,15 +33,14 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchTaskStore implements TaskStore {
 
   public static final String ID = "id";
-  private static final String TASKS_ENDPOINT = "_tasks";
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTaskStore.class);
   public static final String REASON = "reason";
   public static final String CAUSE = "cause";
   public static final String CREATED = "created";
   public static final String TASK_ACTION_INDICES_REINDEX = "indices:data/write/reindex";
   public static final String DESCRIPTION_PREFIX_FROM_INDEX = "reindex from [";
   public static final String DESCRIPTION_PREFIX_TO_INDEX = "to [";
-
+  private static final String TASKS_ENDPOINT = "_tasks";
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTaskStore.class);
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private ObjectMapper objectMapper;

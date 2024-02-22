@@ -24,6 +24,9 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
 
   private static final int DEFAULT_PAGE_SIZE = 50;
 
+  /** Page size. */
+  protected Integer pageSize = DEFAULT_PAGE_SIZE;
+
   private SortingDto sorting;
 
   /** Search for process instances that goes exactly after the given sort values. */
@@ -35,9 +38,6 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
   private SortValuesWrapper[] searchBefore;
 
   private SortValuesWrapper[] searchBeforeOrEqual;
-
-  /** Page size. */
-  protected Integer pageSize = DEFAULT_PAGE_SIZE;
 
   public SortingDto getSorting() {
     return sorting;
@@ -127,6 +127,16 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
   }
 
   @Override
+  public int hashCode() {
+    int result = Objects.hash(sorting, pageSize);
+    result = 31 * result + Arrays.hashCode(searchAfter);
+    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
+    result = 31 * result + Arrays.hashCode(searchBefore);
+    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -141,15 +151,5 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
         && Arrays.equals(searchBefore, that.searchBefore)
         && Arrays.equals(searchBeforeOrEqual, that.searchBeforeOrEqual)
         && Objects.equals(pageSize, that.pageSize);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(sorting, pageSize);
-    result = 31 * result + Arrays.hashCode(searchAfter);
-    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
-    result = 31 * result + Arrays.hashCode(searchBefore);
-    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
-    return result;
   }
 }

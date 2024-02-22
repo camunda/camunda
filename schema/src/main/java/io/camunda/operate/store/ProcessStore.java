@@ -86,17 +86,17 @@ public interface ProcessStore {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(bpmnProcessId, tenantId);
+    }
+
+    @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       ProcessKey that = (ProcessKey) o;
       return Objects.equals(bpmnProcessId, that.bpmnProcessId)
           && Objects.equals(tenantId, that.tenantId);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(bpmnProcessId, tenantId);
     }
   }
 }

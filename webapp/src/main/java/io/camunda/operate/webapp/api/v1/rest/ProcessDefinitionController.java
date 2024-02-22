@@ -47,10 +47,8 @@ public class ProcessDefinitionController extends ErrorController
 
   public static final String URI = "/v1/process-definitions";
   public static final String AS_XML = "/xml";
-
-  @Autowired private ProcessDefinitionDao processDefinitionDao;
-
   private final QueryValidator<ProcessDefinition> queryValidator = new QueryValidator<>();
+  @Autowired private ProcessDefinitionDao processDefinitionDao;
 
   @Operation(
       summary = "Search process definitions",

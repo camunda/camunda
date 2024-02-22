@@ -27,7 +27,7 @@ public class OperationZeebeRecordProcessor {
 
   @Autowired private OperationsManager operationsManager;
 
-  public void processVariableDocumentRecords(Record record, BatchRequest batchRequest)
+  public void processVariableDocumentRecords(final Record record, final BatchRequest batchRequest)
       throws PersistenceException {
     if (!VARIABLE_DOCUMENT_STATES.contains(record.getIntent().name())) {
       return;

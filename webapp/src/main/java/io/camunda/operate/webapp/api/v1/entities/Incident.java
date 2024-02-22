@@ -131,6 +131,20 @@ public class Incident {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        key,
+        processDefinitionKey,
+        processInstanceKey,
+        type,
+        message,
+        creationTime,
+        state,
+        jobKey,
+        tenantId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -144,20 +158,6 @@ public class Incident {
         && Objects.equals(state, incident.state)
         && Objects.equals(jobKey, incident.jobKey)
         && Objects.equals(tenantId, incident.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        key,
-        processDefinitionKey,
-        processInstanceKey,
-        type,
-        message,
-        creationTime,
-        state,
-        jobKey,
-        tenantId);
   }
 
   @Override

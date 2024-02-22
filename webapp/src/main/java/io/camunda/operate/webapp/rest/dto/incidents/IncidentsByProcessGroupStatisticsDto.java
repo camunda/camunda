@@ -81,6 +81,17 @@ public class IncidentsByProcessGroupStatisticsDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        bpmnProcessId,
+        tenantId,
+        processName,
+        instancesWithActiveIncidentsCount,
+        activeInstancesCount,
+        processes);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -91,17 +102,6 @@ public class IncidentsByProcessGroupStatisticsDto {
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(processName, that.processName)
         && Objects.equals(processes, that.processes);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        bpmnProcessId,
-        tenantId,
-        processName,
-        instancesWithActiveIncidentsCount,
-        activeInstancesCount,
-        processes);
   }
 
   public static class IncidentsByProcessGroupStatisticsDtoComparator

@@ -41,8 +41,8 @@ public class DecisionRequirementsZeebeRecordProcessor {
 
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
 
-  public void processDecisionRequirementsRecord(Record record, BatchRequest batchRequest)
-      throws PersistenceException {
+  public void processDecisionRequirementsRecord(
+      final Record record, final BatchRequest batchRequest) throws PersistenceException {
     final String intentStr = record.getIntent().name();
     if (STATES.contains(intentStr)) {
       final DecisionRequirementsRecordValue decisionRequirements =
@@ -67,9 +67,9 @@ public class DecisionRequirementsZeebeRecordProcessor {
   }
 
   private DecisionRequirementsEntity createEntity(
-      DecisionRequirementsRecordValue decisionRequirements) {
-    byte[] byteArray = decisionRequirements.getResource();
-    String dmn = new String(byteArray, CHARSET);
+      final DecisionRequirementsRecordValue decisionRequirements) {
+    final byte[] byteArray = decisionRequirements.getResource();
+    final String dmn = new String(byteArray, CHARSET);
     return new DecisionRequirementsEntity()
         .setId(String.valueOf(decisionRequirements.getDecisionRequirementsKey()))
         .setKey(decisionRequirements.getDecisionRequirementsKey())

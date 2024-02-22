@@ -29,14 +29,13 @@ import org.springframework.stereotype.Component;
 @EnableSpringHttpSession
 public class SessionService
     implements org.springframework.session.SessionRepository<OperateSession> {
-  private static final Logger logger = LoggerFactory.getLogger(SessionService.class);
   public static final int DELETE_EXPIRED_SESSIONS_DELAY = 1_000 * 60 * 30; // min
+  private static final Logger logger = LoggerFactory.getLogger(SessionService.class);
+  @Autowired SessionRepository sessionRepository;
 
   @Autowired
   @Qualifier("sessionThreadPoolScheduler")
   private ThreadPoolTaskScheduler sessionThreadScheduler;
-
-  @Autowired SessionRepository sessionRepository;
 
   @PostConstruct
   private void setUp() {

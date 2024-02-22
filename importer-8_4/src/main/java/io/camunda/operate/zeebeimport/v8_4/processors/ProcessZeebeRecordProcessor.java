@@ -49,17 +49,17 @@ public class ProcessZeebeRecordProcessor {
 
   @Autowired private XMLUtil xmlUtil;
 
-  public void processDeploymentRecord(Record record, BatchRequest batchRequest)
+  public void processDeploymentRecord(final Record record, final BatchRequest batchRequest)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
 
     if (STATES.contains(intentStr)) {
-      ProcessMetadataValue recordValue = (ProcessMetadataValue) record.getValue();
+      final ProcessMetadataValue recordValue = (ProcessMetadataValue) record.getValue();
       persistProcess((Process) recordValue, batchRequest);
     }
   }
 
-  private void persistProcess(Process process, BatchRequest batchRequest)
+  private void persistProcess(final Process process, final BatchRequest batchRequest)
       throws PersistenceException {
     final ProcessEntity processEntity = createEntity(process);
     logger.debug(
@@ -74,11 +74,12 @@ public class ProcessZeebeRecordProcessor {
   }
 
   private void updateFieldsInInstancesFor(
-      final ProcessEntity processEntity, BatchRequest batchRequest) throws PersistenceException {
-    List<Long> processInstanceKeys =
+      final ProcessEntity processEntity, final BatchRequest batchRequest)
+      throws PersistenceException {
+    final List<Long> processInstanceKeys =
         listViewStore.getProcessInstanceKeysWithEmptyProcessVersionFor(processEntity.getKey());
-    for (Long processInstanceKey : processInstanceKeys) {
-      Map<String, Object> updateFields = new HashMap<>();
+    for (final Long processInstanceKey : processInstanceKeys) {
+      final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.PROCESS_NAME, processEntity.getName());
       updateFields.put(ListViewTemplate.PROCESS_VERSION, processEntity.getVersion());
       batchRequest.update(
@@ -86,8 +87,8 @@ public class ProcessZeebeRecordProcessor {
     }
   }
 
-  private ProcessEntity createEntity(Process process) {
-    ProcessEntity processEntity =
+  private ProcessEntity createEntity(final Process process) {
+    final ProcessEntity processEntity =
         new ProcessEntity()
             .setId(String.valueOf(process.getProcessDefinitionKey()))
             .setKey(process.getProcessDefinitionKey())
@@ -95,12 +96,12 @@ public class ProcessZeebeRecordProcessor {
             .setVersion(process.getVersion())
             .setTenantId(tenantOrDefault(process.getTenantId()));
 
-    byte[] byteArray = process.getResource();
+    final byte[] byteArray = process.getResource();
 
-    String bpmn = new String(byteArray, CHARSET);
+    final String bpmn = new String(byteArray, CHARSET);
     processEntity.setBpmnXml(bpmn);
 
-    String resourceName = process.getResourceName();
+    final String resourceName = process.getResourceName();
     processEntity.setResourceName(resourceName);
 
     final Optional<ProcessEntity> diagramData =

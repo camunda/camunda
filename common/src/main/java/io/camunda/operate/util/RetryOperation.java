@@ -20,16 +20,7 @@ import org.slf4j.LoggerFactory;
 //
 public class RetryOperation<T> {
 
-  public static interface RetryConsumer<T> {
-    T evaluate() throws Exception;
-  }
-
-  public static interface RetryPredicate<T> {
-    boolean shouldRetry(T t);
-  }
-
   private static final Logger logger = LoggerFactory.getLogger(RetryOperation.class);
-
   private RetryConsumer<T> retryConsumer;
   private int noOfRetry;
   private int delayInterval;
@@ -37,6 +28,87 @@ public class RetryOperation<T> {
   private RetryPredicate<T> retryPredicate;
   private List<Class<? extends Throwable>> exceptionList;
   private String message;
+
+  private RetryOperation(
+      RetryConsumer<T> retryConsumer,
+      int noOfRetry,
+      int delayInterval,
+      TimeUnit timeUnit,
+      RetryPredicate<T> retryPredicate,
+      List<Class<? extends Throwable>> exceptionList,
+      String message) {
+    this.retryConsumer = retryConsumer;
+    this.noOfRetry = noOfRetry;
+    this.delayInterval = delayInterval;
+    this.timeUnit = timeUnit;
+    this.retryPredicate = retryPredicate;
+    this.exceptionList = exceptionList;
+    this.message = message;
+  }
+
+  public static <T> OperationBuilder<T> newBuilder() {
+    return new OperationBuilder<>();
+  }
+
+  public T retry() throws Exception {
+    T result = null;
+    int retries = 0;
+    while (retries < noOfRetry) {
+      try {
+        result = retryConsumer.evaluate();
+        if (Objects.nonNull(retryPredicate)) {
+          boolean shouldItRetry = retryPredicate.shouldRetry(result);
+          if (shouldItRetry) {
+            retries = increaseRetryCountAndSleep(retries);
+          } else {
+            return result;
+          }
+        } else {
+          // no retry condition defined, no exception thrown. This is the desired result.
+          return result;
+        }
+      } catch (Exception e) {
+        logger.warn(String.format("Retry Operation %s failed: %s", message, e.getMessage()), e);
+        retries = handleException(retries, e);
+      }
+    }
+    return result;
+  }
+
+  private int handleException(int retries, Exception e) throws Exception {
+    if (exceptionList.isEmpty()
+        || exceptionList.stream().anyMatch(ex -> ex.isAssignableFrom(e.getClass()))) {
+      // exception is accepted, continue retry.
+      retries = increaseRetryCountAndSleep(retries);
+      if (retries == noOfRetry) {
+        // evaluation is throwing exception, no more retry left. Throw it.
+        throw e;
+      }
+    } else {
+      // unexpected exception, no retry required. Throw it.
+      throw e;
+    }
+    return retries;
+  }
+
+  private int increaseRetryCountAndSleep(int retries) {
+    retries++;
+    if (retries < noOfRetry && delayInterval > 0) {
+      try {
+        if (retries % 20 == 0) {
+          logger.info(
+              "{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
+        } else {
+          logger.debug(
+              "{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
+        }
+        timeUnit.sleep(delayInterval);
+      } catch (InterruptedException ignore) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return retries;
+  }
 
   public static class OperationBuilder<T> {
     private RetryConsumer<T> iRetryConsumer;
@@ -103,84 +175,11 @@ public class RetryOperation<T> {
     }
   }
 
-  public static <T> OperationBuilder<T> newBuilder() {
-    return new OperationBuilder<>();
+  public static interface RetryConsumer<T> {
+    T evaluate() throws Exception;
   }
 
-  private RetryOperation(
-      RetryConsumer<T> retryConsumer,
-      int noOfRetry,
-      int delayInterval,
-      TimeUnit timeUnit,
-      RetryPredicate<T> retryPredicate,
-      List<Class<? extends Throwable>> exceptionList,
-      String message) {
-    this.retryConsumer = retryConsumer;
-    this.noOfRetry = noOfRetry;
-    this.delayInterval = delayInterval;
-    this.timeUnit = timeUnit;
-    this.retryPredicate = retryPredicate;
-    this.exceptionList = exceptionList;
-    this.message = message;
-  }
-
-  public T retry() throws Exception {
-    T result = null;
-    int retries = 0;
-    while (retries < noOfRetry) {
-      try {
-        result = retryConsumer.evaluate();
-        if (Objects.nonNull(retryPredicate)) {
-          boolean shouldItRetry = retryPredicate.shouldRetry(result);
-          if (shouldItRetry) {
-            retries = increaseRetryCountAndSleep(retries);
-          } else {
-            return result;
-          }
-        } else {
-          // no retry condition defined, no exception thrown. This is the desired result.
-          return result;
-        }
-      } catch (Exception e) {
-        logger.warn(String.format("Retry Operation %s failed: %s", message, e.getMessage()), e);
-        retries = handleException(retries, e);
-      }
-    }
-    return result;
-  }
-
-  private int handleException(int retries, Exception e) throws Exception {
-    if (exceptionList.isEmpty()
-        || exceptionList.stream().anyMatch(ex -> ex.isAssignableFrom(e.getClass()))) {
-      // exception is accepted, continue retry.
-      retries = increaseRetryCountAndSleep(retries);
-      if (retries == noOfRetry) {
-        // evaluation is throwing exception, no more retry left. Throw it.
-        throw e;
-      }
-    } else {
-      // unexpected exception, no retry required. Throw it.
-      throw e;
-    }
-    return retries;
-  }
-
-  private int increaseRetryCountAndSleep(int retries) {
-    retries++;
-    if (retries < noOfRetry && delayInterval > 0) {
-      try {
-        if (retries % 20 == 0) {
-          logger.info(
-              "{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
-        } else {
-          logger.debug(
-              "{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
-        }
-        timeUnit.sleep(delayInterval);
-      } catch (InterruptedException ignore) {
-        Thread.currentThread().interrupt();
-      }
-    }
-    return retries;
+  public static interface RetryPredicate<T> {
+    boolean shouldRetry(T t);
   }
 }

@@ -42,16 +42,15 @@ import org.springframework.test.web.servlet.MvcResult;
 
 public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
 
-  private static final String QUERY_PROCESS_STATISTICS_URL = "/api/process-instances/statistics";
-  private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
-  private static final String QUERY_PROCESS_CORE_STATISTICS_URL =
-      "/api/process-instances/core-statistics";
-
   public static final String PARENT_PROCESS_ID = "parentProcess";
   public static final String CALLED_PROCESS_ID = "process";
   public static final String CALL_ACTIVITY_ID = "callActivity";
   public static final String TASK_ID = "task";
   public static final String TASK_ID_2 = "task2";
+  private static final String QUERY_PROCESS_STATISTICS_URL = "/api/process-instances/statistics";
+  private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
+  private static final String QUERY_PROCESS_CORE_STATISTICS_URL =
+      "/api/process-instances/core-statistics";
   private long calledProcessDefinitionKey;
   private long parentProcessDefinitionKey;
   private long incidentProcessInstanceKey;

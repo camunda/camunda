@@ -41,6 +41,11 @@ public class FlowNodeInstanceBreadcrumbEntryDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(flowNodeId, flowNodeType);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -50,11 +55,6 @@ public class FlowNodeInstanceBreadcrumbEntryDto {
     }
     final FlowNodeInstanceBreadcrumbEntryDto that = (FlowNodeInstanceBreadcrumbEntryDto) o;
     return Objects.equals(flowNodeId, that.flowNodeId) && flowNodeType == that.flowNodeType;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(flowNodeId, flowNodeType);
   }
 
   @Override

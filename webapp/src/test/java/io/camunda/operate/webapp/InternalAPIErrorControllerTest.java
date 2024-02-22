@@ -29,11 +29,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 public class InternalAPIErrorControllerTest {
 
-  @Mock private OperateProfileService mockProfileService;
-
-  private InternalAPIErrorController underTest;
-
   private static final String EXCEPTION_MESSAGE = "profile exception message";
+  @Mock private OperateProfileService mockProfileService;
+  private InternalAPIErrorController underTest;
 
   @BeforeEach
   public void setup() {

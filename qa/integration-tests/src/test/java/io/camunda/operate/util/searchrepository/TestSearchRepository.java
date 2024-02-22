@@ -16,13 +16,6 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface TestSearchRepository {
-  enum DynamicMappingType {
-    Strict,
-    True
-  }
-
-  record IndexSettings(Integer shards, Integer replicas) {}
-
   boolean isConnected();
 
   boolean isZeebeConnected();
@@ -81,4 +74,11 @@ public interface TestSearchRepository {
   Optional<List<Long>> getIds(
       String indexName, String idFieldName, List<Long> ids, boolean ignoreAbsentIndex)
       throws IOException;
+
+  record IndexSettings(Integer shards, Integer replicas) {}
+
+  enum DynamicMappingType {
+    Strict,
+    True
+  }
 }

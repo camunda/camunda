@@ -24,7 +24,7 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
 
   private static final Logger logger = LoggerFactory.getLogger(BatchOperationArchiverJob.class);
 
-  private Archiver archiver;
+  private final Archiver archiver;
 
   @Autowired private BatchOperationTemplate batchOperationTemplate;
 
@@ -34,12 +34,12 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
 
   @Autowired private ArchiverRepository archiverRepository;
 
-  public BatchOperationArchiverJob(Archiver archiver) {
+  public BatchOperationArchiverJob(final Archiver archiver) {
     this.archiver = archiver;
   }
 
   @Override
-  public CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch) {
+  public CompletableFuture<Integer> archiveBatch(final ArchiveBatch archiveBatch) {
     final CompletableFuture<Integer> archiveBatchFuture;
 
     if (archiveBatch != null) {

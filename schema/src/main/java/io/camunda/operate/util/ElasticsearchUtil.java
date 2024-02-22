@@ -68,18 +68,16 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 public abstract class ElasticsearchUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
   public static final int TERMS_AGG_SIZE = 10000;
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
   public static final int UPDATE_RETRY_COUNT = 3;
-
   public static final Function<SearchHit, Long> searchHitIdToLong =
       (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit, String> searchHitIdToString = SearchHit::getId;
-
   public static RequestOptions requestOptions = RequestOptions.DEFAULT;
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
   public static void setRequestOptions(final RequestOptions newRequestOptions) {
     requestOptions = newRequestOptions;
@@ -220,16 +218,11 @@ public abstract class ElasticsearchUtil {
     return total;
   }
 
-  public enum QueryType {
-    ONLY_RUNTIME,
-    ALL
-  }
-
-  /* CREATE QUERIES */
-
   public static SearchRequest createSearchRequest(TemplateDescriptor template) {
     return createSearchRequest(template, QueryType.ALL);
   }
+
+  /* CREATE QUERIES */
 
   public static SearchRequest createSearchRequest(
       TemplateDescriptor template, QueryType queryType) {
@@ -312,13 +305,13 @@ public abstract class ElasticsearchUtil {
     return boolQuery().must(QueryBuilders.wrapperQuery("{\"match_none\": {}}"));
   }
 
-  /* EXECUTE QUERY */
-
   public static void processBulkRequest(
       RestHighLevelClient esClient, BulkRequest bulkRequest, long maxBulkRequestSizeInBytes)
       throws PersistenceException {
     processBulkRequest(esClient, bulkRequest, false, maxBulkRequestSizeInBytes);
   }
+
+  /* EXECUTE QUERY */
 
   public static void processBulkRequest(
       RestHighLevelClient esClient,
@@ -860,5 +853,10 @@ public abstract class ElasticsearchUtil {
     public void onFailure(Exception e) {
       executorDelegate.execute(() -> future.completeExceptionally(e));
     }
+  }
+
+  public enum QueryType {
+    ONLY_RUNTIME,
+    ALL
   }
 }

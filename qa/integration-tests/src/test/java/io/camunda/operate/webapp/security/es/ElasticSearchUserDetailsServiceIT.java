@@ -46,16 +46,11 @@ public class ElasticSearchUserDetailsServiceIT extends OperateAbstractIT {
   public static final String TEST_USER_ID = "user1";
   public static final String TEST_USER_DISPLAYNAME = "Quentin Tarantino";
   public static final String TEST_PASSWORD = "psw1";
-
-  @Autowired private OperateUserDetailsService userDetailsService;
-
-  @Autowired private TestSearchRepository testSearchRepository;
-
-  @Autowired private UserIndex userIndex;
-
-  @Autowired private PasswordEncoder passwordEncoder;
-
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
+  @Autowired private OperateUserDetailsService userDetailsService;
+  @Autowired private TestSearchRepository testSearchRepository;
+  @Autowired private UserIndex userIndex;
+  @Autowired private PasswordEncoder passwordEncoder;
 
   @Before
   public void setUp() {

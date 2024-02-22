@@ -34,15 +34,13 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 public class BackupService {
-  public record SnapshotRequest(
-      String repositoryName, String snapshotName, List<String> indices, Metadata metadata) {}
-
   private static final Logger logger = LoggerFactory.getLogger(BackupService.class);
 
   @Qualifier("backupThreadPoolExecutor")
   @Autowired
   ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
+  private final Queue<SnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
   @Autowired private List<Prio1Backup> prio1BackupIndices;
   @Autowired private List<Prio2Backup> prio2BackupTemplates;
   @Autowired private List<Prio3Backup> prio3BackupTemplates;
@@ -50,8 +48,6 @@ public class BackupService {
   @Autowired private OperateProperties operateProperties;
   @Autowired private BackupRepository repository;
   @Autowired private ObjectMapper objectMapper;
-  private final Queue<SnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
-
   private String[][] indexPatternsOrdered;
 
   public void deleteBackup(Long backupId) {
@@ -179,4 +175,7 @@ public class BackupService {
   public List<GetBackupStateResponseDto> getBackups() {
     return repository.getBackups(getRepositoryName());
   }
+
+  public record SnapshotRequest(
+      String repositoryName, String snapshotName, List<String> indices, Metadata metadata) {}
 }

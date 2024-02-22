@@ -34,13 +34,13 @@ public class DecisionInstanceListRequestDto extends PaginatedQuery<DecisionInsta
     VALID_SORT_BY_VALUES.add(SORT_BY_TENANT_ID);
   }
 
+  private DecisionInstanceListQueryDto query;
+
   public DecisionInstanceListRequestDto() {}
 
   public DecisionInstanceListRequestDto(final DecisionInstanceListQueryDto query) {
     this.query = query;
   }
-
-  private DecisionInstanceListQueryDto query;
 
   public DecisionInstanceListQueryDto getQuery() {
     return query;

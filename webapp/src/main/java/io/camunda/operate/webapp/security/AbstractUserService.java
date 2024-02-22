@@ -28,14 +28,14 @@ public abstract class AbstractUserService<T extends Authentication> implements U
     }
   }
 
-  protected T getCurrentAuthentication() {
-    SecurityContext context = SecurityContextHolder.getContext();
-    return (T) context.getAuthentication();
-  }
-
   @Override
   public String getUserToken() {
     return getUserToken(getCurrentAuthentication());
+  }
+
+  protected T getCurrentAuthentication() {
+    SecurityContext context = SecurityContextHolder.getContext();
+    return (T) context.getAuthentication();
   }
 
   public abstract String getUserToken(final T authentication);

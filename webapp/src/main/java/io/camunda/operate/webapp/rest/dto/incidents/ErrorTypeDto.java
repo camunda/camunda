@@ -14,6 +14,10 @@ public class ErrorTypeDto implements Comparable<ErrorTypeDto> {
   private String id;
   private String name;
 
+  public static ErrorTypeDto createFrom(ErrorType errorType) {
+    return new ErrorTypeDto().setId(errorType.name()).setName(errorType.getTitle());
+  }
+
   public String getId() {
     return id;
   }
@@ -32,8 +36,9 @@ public class ErrorTypeDto implements Comparable<ErrorTypeDto> {
     return this;
   }
 
-  public static ErrorTypeDto createFrom(ErrorType errorType) {
-    return new ErrorTypeDto().setId(errorType.name()).setName(errorType.getTitle());
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, name);
   }
 
   @Override
@@ -46,11 +51,6 @@ public class ErrorTypeDto implements Comparable<ErrorTypeDto> {
     }
     final ErrorTypeDto that = (ErrorTypeDto) o;
     return Objects.equals(id, that.id) && Objects.equals(name, that.name);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, name);
   }
 
   @Override

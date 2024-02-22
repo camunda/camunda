@@ -37,11 +37,9 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class OpensearchPipelineReindexPlan extends PipelineReindexPlan implements ReindexPlan {
 
-  private Script script;
-
   private final RichOpenSearchClient richOpenSearchClient;
-
   private final MigrationProperties migrationProperties;
+  private Script script;
 
   @Autowired
   public OpensearchPipelineReindexPlan(

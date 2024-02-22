@@ -22,15 +22,15 @@ public class User extends org.springframework.security.core.userdetails.User {
   private List<Role> roles;
   private boolean canLogout = true;
 
-  private static Collection<? extends GrantedAuthority> toAuthorities(List<Role> roles) {
-    return map(roles, role -> new SimpleGrantedAuthority("ROLE_" + role));
-  }
-
   public User(String userId, String displayName, String password, List<Role> roles) {
     super(userId, password, toAuthorities(roles));
     this.userId = userId;
     this.displayName = displayName;
     this.roles = roles;
+  }
+
+  private static Collection<? extends GrantedAuthority> toAuthorities(List<Role> roles) {
+    return map(roles, role -> new SimpleGrantedAuthority("ROLE_" + role));
   }
 
   public String getUserId() {
@@ -60,13 +60,13 @@ public class User extends org.springframework.security.core.userdetails.User {
     return this;
   }
 
+  public List<Role> getRoles() {
+    return roles;
+  }
+
   public User setRoles(List<Role> roles) {
     this.roles = roles;
     return this;
-  }
-
-  public List<Role> getRoles() {
-    return roles;
   }
 
   @Override

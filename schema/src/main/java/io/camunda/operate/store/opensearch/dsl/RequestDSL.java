@@ -36,11 +36,6 @@ import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
 
 public interface RequestDSL {
-  enum QueryType {
-    ONLY_RUNTIME,
-    ALL
-  }
-
   private static String whereToSearch(TemplateDescriptor template, QueryType queryType) {
     return switch (queryType) {
       case ONLY_RUNTIME -> template.getFullQualifiedName();
@@ -164,5 +159,10 @@ public interface RequestDSL {
 
   static Time time(String value) {
     return Time.of(b -> b.time(value));
+  }
+
+  enum QueryType {
+    ONLY_RUNTIME,
+    ALL
   }
 }

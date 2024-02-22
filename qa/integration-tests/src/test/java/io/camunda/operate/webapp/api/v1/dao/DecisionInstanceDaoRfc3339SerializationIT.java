@@ -33,15 +33,11 @@ import org.springframework.boot.test.context.SpringBootTest;
       OperateProperties.PREFIX + ".rfc3339ApiDateFormat = true"
     })
 public class DecisionInstanceDaoRfc3339SerializationIT extends OperateSearchAbstractIT {
-  @Autowired private DecisionInstanceDao dao;
-
-  @Autowired private DecisionInstanceTemplate decisionInstanceIndex;
-
-  @Autowired private OperateDateTimeFormatter dateTimeFormatter;
-
   private static final Long FAKE_PROCESS_DEFINITION_KEY = 2251799813685253L;
   private static final Long FAKE_PROCESS_INSTANCE_KEY = 2251799813685255L;
-
+  @Autowired private DecisionInstanceDao dao;
+  @Autowired private DecisionInstanceTemplate decisionInstanceIndex;
+  @Autowired private OperateDateTimeFormatter dateTimeFormatter;
   private String firstDecisionEvaluationDate = "2024-02-15T22:40:10.834+0000";
   private String firstDecisionRfc3339EvaluationDate = "2024-02-15T22:40:10.834+00:00";
   private String secondDecisionEvaluationDate = "2024-02-15T22:41:10.834+0000";

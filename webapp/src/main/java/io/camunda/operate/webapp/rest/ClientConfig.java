@@ -17,32 +17,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class ClientConfig {
 
+  public boolean isEnterprise;
+  public boolean canLogout;
+  public String contextPath;
+  public String organizationId;
+  public String clusterId;
+  public String mixpanelAPIHost;
+  public String mixpanelToken;
+  public boolean isLoginDelegated;
+  public String tasklistUrl;
+  public boolean resourcePermissionsEnabled;
+  public boolean multiTenancyEnabled;
   @Autowired private OperateProfileService profileService;
   @Autowired private OperateProperties operateProperties;
-
   @Autowired private ServletContext context;
-
-  public boolean isEnterprise;
-
-  public boolean canLogout;
-
-  public String contextPath;
-
-  public String organizationId;
-
-  public String clusterId;
-
-  public String mixpanelAPIHost;
-
-  public String mixpanelToken;
-
-  public boolean isLoginDelegated;
-
-  public String tasklistUrl;
-
-  public boolean resourcePermissionsEnabled;
-
-  public boolean multiTenancyEnabled;
 
   public String asJson() {
     isEnterprise = operateProperties.isEnterprise();

@@ -48,10 +48,8 @@ import org.springframework.test.web.servlet.MvcResult;
     })
 public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
 
-  @MockBean private FlowNodeInstanceReader flowNodeInstanceReader;
-
   @MockBean protected ProcessInstanceReader processInstanceReader;
-
+  @MockBean private FlowNodeInstanceReader flowNodeInstanceReader;
   @MockBean private PermissionsService permissionsService;
 
   @Test

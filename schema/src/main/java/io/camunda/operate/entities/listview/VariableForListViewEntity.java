@@ -22,12 +22,12 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(ListViewTemplate.VARIABLES_JOIN_RELATION);
 
-  public Long getProcessInstanceKey() {
-    return processInstanceKey;
-  }
-
   public static String getIdBy(long scopeKey, String name) {
     return String.format("%d-%s", scopeKey, name);
+  }
+
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
   public void setProcessInstanceKey(Long processInstanceKey) {

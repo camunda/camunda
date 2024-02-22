@@ -34,12 +34,6 @@ import org.springframework.boot.test.context.SpringBootTest;
       OperateProperties.PREFIX + ".rfc3339ApiDateFormat = true"
     })
 public class ProcessInstanceDaoRfc3339DateSerializationIT extends OperateSearchAbstractIT {
-  @Autowired private ProcessInstanceDao dao;
-
-  @Autowired private ListViewTemplate processInstanceIndex;
-
-  @Autowired private OperateDateTimeFormatter dateTimeFormatter;
-
   private final String firstInstanceStartDate = "2024-02-15T22:40:10.834+0000";
   private final String firstInstanceRfc3339StartDate = "2024-02-15T22:40:10.834+00:00";
   private final String secondInstanceStartDate = "2024-02-15T22:41:10.834+0000";
@@ -48,6 +42,9 @@ public class ProcessInstanceDaoRfc3339DateSerializationIT extends OperateSearchA
   private final String thirdInstanceRfc3339StartDate = "2024-01-15T22:40:10.834+00:00";
   private final String endDate = "2024-02-15T22:41:10.834+0000";
   private final String rfc3339endDate = "2024-02-15T22:41:10.834+00:00";
+  @Autowired private ProcessInstanceDao dao;
+  @Autowired private ListViewTemplate processInstanceIndex;
+  @Autowired private OperateDateTimeFormatter dateTimeFormatter;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {

@@ -38,7 +38,7 @@ public interface RecordsReader extends Runnable {
    * @param counter
    * @return
    */
-  default long sequence(int partitionId, long counter) {
+  default long sequence(final int partitionId, final long counter) {
     return ((long) partitionId << 51) + counter;
   }
 }

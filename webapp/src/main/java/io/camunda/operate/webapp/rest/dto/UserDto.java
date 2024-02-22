@@ -92,13 +92,13 @@ public class UserDto {
     return this;
   }
 
+  public String getSalesPlanType() {
+    return salesPlanType;
+  }
+
   public UserDto setSalesPlanType(final String salesPlanType) {
     this.salesPlanType = salesPlanType;
     return this;
-  }
-
-  public String getSalesPlanType() {
-    return salesPlanType;
   }
 
   public Map<ClusterMetadata.AppName, String> getC8Links() {
@@ -110,6 +110,11 @@ public class UserDto {
       this.c8Links = c8Links;
     }
     return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(userId, displayName, canLogout, permissions, roles, salesPlanType, c8Links);
   }
 
   @Override
@@ -128,10 +133,5 @@ public class UserDto {
         && Objects.equals(roles, userDto.roles)
         && Objects.equals(salesPlanType, userDto.salesPlanType)
         && Objects.equals(c8Links, userDto.c8Links);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(userId, displayName, canLogout, permissions, roles, salesPlanType, c8Links);
   }
 }

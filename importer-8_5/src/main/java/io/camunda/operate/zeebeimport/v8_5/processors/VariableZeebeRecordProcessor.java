@@ -65,7 +65,7 @@ public class VariableZeebeRecordProcessor {
         if (initialIntent == VariableIntent.CREATED) {
           batchRequest.add(variableTemplate.getFullQualifiedName(), variableEntity);
         } else if (initialIntent == VariableIntent.MIGRATED) {
-          Map<String, Object> updateFields = new HashMap<>();
+          final Map<String, Object> updateFields = new HashMap<>();
           updateFields.put(
               VariableTemplate.PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
           updateFields.put(VariableTemplate.BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
@@ -75,7 +75,7 @@ public class VariableZeebeRecordProcessor {
               variableEntity,
               updateFields);
         } else {
-          Map<String, Object> updateFields = new HashMap<>();
+          final Map<String, Object> updateFields = new HashMap<>();
           updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
           updateFields.put(VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
           updateFields.put(VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
@@ -92,7 +92,8 @@ public class VariableZeebeRecordProcessor {
     }
   }
 
-  private void processVariableRecord(Record<VariableRecordValue> record, VariableEntity entity) {
+  private void processVariableRecord(
+      final Record<VariableRecordValue> record, final VariableEntity entity) {
     final var recordValue = record.getValue();
 
     entity

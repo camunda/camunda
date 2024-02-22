@@ -56,6 +56,13 @@ public class GetBackupStateResponseDetailDto {
   }
 
   @Override
+  public int hashCode() {
+    int result = Objects.hash(snapshotName, state, startTime);
+    result = 31 * result + Arrays.hashCode(failures);
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -64,12 +71,5 @@ public class GetBackupStateResponseDetailDto {
         && Objects.equals(state, that.state)
         && Objects.equals(startTime, that.startTime)
         && Arrays.equals(failures, that.failures);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(snapshotName, state, startTime);
-    result = 31 * result + Arrays.hashCode(failures);
-    return result;
   }
 }

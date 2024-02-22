@@ -52,6 +52,11 @@ public class FlowNodeMetadataRequestDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(flowNodeId, flowNodeInstanceId, flowNodeType);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -63,11 +68,6 @@ public class FlowNodeMetadataRequestDto {
     return Objects.equals(flowNodeId, that.flowNodeId)
         && Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
         && flowNodeType == that.flowNodeType;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(flowNodeId, flowNodeInstanceId, flowNodeType);
   }
 
   @Override

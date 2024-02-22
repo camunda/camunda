@@ -56,11 +56,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public class ListViewQueryIT extends OperateAbstractIT {
 
   private static final String QUERY_INSTANCES_URL = PROCESS_INSTANCE_URL;
-
-  @MockBean private PermissionsService permissionsService;
-
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
-
+  @MockBean private PermissionsService permissionsService;
   private ProcessInstanceForListViewEntity instanceWithoutIncident;
   private ProcessInstanceForListViewEntity runningInstance;
   private ProcessInstanceForListViewEntity completedInstance;

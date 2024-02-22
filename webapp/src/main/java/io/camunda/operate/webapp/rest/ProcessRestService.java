@@ -34,16 +34,14 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(value = PROCESS_URL)
 public class ProcessRestService extends InternalAPIErrorController {
 
+  public static final String PROCESS_URL = "/api/processes";
   @Autowired protected ProcessReader processReader;
-
   @Autowired protected ProcessInstanceReader processInstanceReader;
 
   @Autowired(required = false)
   protected PermissionsService permissionsService;
 
   @Autowired private BatchOperationWriter batchOperationWriter;
-
-  public static final String PROCESS_URL = "/api/processes";
 
   @Operation(summary = "Get process BPMN XML")
   @GetMapping(path = "/{id}/xml")

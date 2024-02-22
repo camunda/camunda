@@ -25,9 +25,9 @@ import org.springframework.stereotype.Component;
 public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
   private static final Logger logger = LoggerFactory.getLogger(ProcessInstancesArchiverJob.class);
 
-  private List<Integer> partitionIds;
+  private final List<Integer> partitionIds;
 
-  private Archiver archiver;
+  private final Archiver archiver;
 
   @Autowired private ListViewTemplate processInstanceTemplate;
 
@@ -37,18 +37,13 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
 
   @Autowired private ArchiverRepository archiverRepository;
 
-  public ProcessInstancesArchiverJob(Archiver archiver, List<Integer> partitionIds) {
+  public ProcessInstancesArchiverJob(final Archiver archiver, final List<Integer> partitionIds) {
     this.partitionIds = partitionIds;
     this.archiver = archiver;
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getNextBatch() {
-    return archiverRepository.getProcessInstancesNextBatch(partitionIds);
-  }
-
-  @Override
-  public CompletableFuture<Integer> archiveBatch(ArchiveBatch archiveBatch) {
+  public CompletableFuture<Integer> archiveBatch(final ArchiveBatch archiveBatch) {
     final CompletableFuture<Integer> archiveBatchFuture;
 
     if (archiveBatch != null) {
@@ -82,11 +77,16 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
     return archiveBatchFuture;
   }
 
+  @Override
+  public CompletableFuture<ArchiveBatch> getNextBatch() {
+    return archiverRepository.getProcessInstancesNextBatch(partitionIds);
+  }
+
   private CompletableFuture<Void> moveDependableDocuments(
       final String finishDate, final List<Object> processInstanceKeys) {
     final var dependableFutures = new ArrayList<CompletableFuture<Void>>();
 
-    for (ProcessInstanceDependant template : processInstanceDependantTemplates) {
+    for (final ProcessInstanceDependant template : processInstanceDependantTemplates) {
       final var moveDocumentsFuture =
           archiver.moveDocuments(
               template.getFullQualifiedName(),

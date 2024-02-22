@@ -32,10 +32,8 @@ public class ProcessOldIT extends OperateAbstractIT {
 
   private static final String QUERY_PROCESS_GROUPED_URL =
       ProcessRestService.PROCESS_URL + "/grouped";
-
-  @MockBean private PermissionsService permissionsService;
-
   @Rule public SearchTestRule elasticsearchTestRule = new SearchTestRule();
+  @MockBean private PermissionsService permissionsService;
 
   @Test
   public void testProcessesGroupedWithPermissionWhenNotAllowed() throws Exception {

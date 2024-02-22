@@ -20,11 +20,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 public class ProcessStatisticsAfterArchivingIT extends ProcessStatisticsIT {
 
-  @Autowired private BeanFactory beanFactory;
-
-  @MockBean private PartitionHolder partitionHolder;
-
   @Rule public TestName name = new TestName();
+  @Autowired private BeanFactory beanFactory;
+  @MockBean private PartitionHolder partitionHolder;
 
   @Before
   public void before() {

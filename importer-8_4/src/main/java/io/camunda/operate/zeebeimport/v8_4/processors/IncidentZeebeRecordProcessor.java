@@ -53,10 +53,10 @@ public class IncidentZeebeRecordProcessor {
 
   @Autowired private IncidentNotifier incidentNotifier;
 
-  public void processIncidentRecord(List<Record> records, BatchRequest batchRequest)
+  public void processIncidentRecord(final List<Record> records, final BatchRequest batchRequest)
       throws PersistenceException {
-    List<IncidentEntity> newIncidents = new ArrayList<>();
-    for (Record record : records) {
+    final List<IncidentEntity> newIncidents = new ArrayList<>();
+    for (final Record record : records) {
       processIncidentRecord(record, batchRequest, newIncidents::add);
     }
     if (operateProperties.getAlert().getWebhook() != null) {
@@ -65,9 +65,11 @@ public class IncidentZeebeRecordProcessor {
   }
 
   public void processIncidentRecord(
-      Record record, BatchRequest batchRequest, Consumer<IncidentEntity> newIncidentHandler)
+      final Record record,
+      final BatchRequest batchRequest,
+      final Consumer<IncidentEntity> newIncidentHandler)
       throws PersistenceException {
-    IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
+    final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
 
     persistIncident(record, recordValue, batchRequest, newIncidentHandler);
 
@@ -75,10 +77,10 @@ public class IncidentZeebeRecordProcessor {
   }
 
   private void persistPostImportQueueEntry(
-      Record record, IncidentRecordValue recordValue, BatchRequest batchRequest)
+      final Record record, final IncidentRecordValue recordValue, final BatchRequest batchRequest)
       throws PersistenceException {
-    String intent = record.getIntent().name();
-    PostImporterQueueEntity postImporterQueueEntity =
+    final String intent = record.getIntent().name();
+    final PostImporterQueueEntity postImporterQueueEntity =
         new PostImporterQueueEntity()
             // id = incident key + intent
             .setId(String.format("%d-%s", record.getKey(), intent))
@@ -94,10 +96,10 @@ public class IncidentZeebeRecordProcessor {
   }
 
   private void persistIncident(
-      Record record,
-      IncidentRecordValue recordValue,
-      BatchRequest batchRequest,
-      Consumer<IncidentEntity> newIncidentHandler)
+      final Record record,
+      final IncidentRecordValue recordValue,
+      final BatchRequest batchRequest,
+      final Consumer<IncidentEntity> newIncidentHandler)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
     final Long incidentKey = record.getKey();
@@ -112,7 +114,7 @@ public class IncidentZeebeRecordProcessor {
           batchRequest);
       // resolved incident is not updated directly, only in post importer
     } else if (intentStr.equals(IncidentIntent.CREATED.toString())) {
-      IncidentEntity incident =
+      final IncidentEntity incident =
           new IncidentEntity()
               .setId(ConversionUtils.toStringOrNull(incidentKey))
               .setKey(incidentKey)
@@ -127,7 +129,7 @@ public class IncidentZeebeRecordProcessor {
         incident.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
       }
       incident.setBpmnProcessId(recordValue.getBpmnProcessId());
-      String errorMessage = StringUtils.trimWhitespace(recordValue.getErrorMessage());
+      final String errorMessage = StringUtils.trimWhitespace(recordValue.getErrorMessage());
       incident
           .setErrorMessage(errorMessage)
           .setErrorType(

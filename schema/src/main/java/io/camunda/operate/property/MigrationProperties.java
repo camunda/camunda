@@ -69,13 +69,13 @@ public class MigrationProperties {
     return this;
   }
 
+  public boolean isDeleteSrcSchema() {
+    return deleteSrcSchema;
+  }
+
   public MigrationProperties setDeleteSrcSchema(boolean deleteSrcSchema) {
     this.deleteSrcSchema = deleteSrcSchema;
     return this;
-  }
-
-  public boolean isDeleteSrcSchema() {
-    return deleteSrcSchema;
   }
 
   public int getReindexBatchSize() {

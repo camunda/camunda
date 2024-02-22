@@ -30,12 +30,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
-  @Autowired private DecisionInstanceDao dao;
-
-  @Autowired private DecisionInstanceTemplate decisionInstanceIndex;
-
   private static final Long FAKE_PROCESS_DEFINITION_KEY = 2251799813685253L;
   private static final Long FAKE_PROCESS_INSTANCE_KEY = 2251799813685255L;
+  @Autowired private DecisionInstanceDao dao;
+  @Autowired private DecisionInstanceTemplate decisionInstanceIndex;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {

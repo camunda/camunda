@@ -48,12 +48,11 @@ import org.springframework.util.StringUtils;
 @Component
 public class ListViewZeebeRecordProcessor {
 
+  protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
   private static final Logger logger = LoggerFactory.getLogger(ListViewZeebeRecordProcessor.class);
-
   private static final Set<String> PI_AND_AI_START_STATES = new HashSet<>();
   private static final Set<String> PI_AND_AI_FINISH_STATES = new HashSet<>();
   private static final Set<String> FAILED_JOB_EVENTS = new HashSet<>();
-  protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
 
   static {
     PI_AND_AI_START_STATES.add(ELEMENT_ACTIVATING.name());
@@ -108,13 +107,13 @@ public class ListViewZeebeRecordProcessor {
     return callActivityIdCache;
   }
 
-  public void processIncidentRecord(Record record, BatchRequest batchRequest)
+  public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
-    IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
+    final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
 
     // update activity instance
-    FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
     entity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getPartitionId());
@@ -129,11 +128,11 @@ public class ListViewZeebeRecordProcessor {
     }
 
     // set parent
-    Long processInstanceKey = recordValue.getProcessInstanceKey();
+    final Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
 
     logger.debug("Activity instance for list view: id {}", entity.getId());
-    var updateFields = new HashMap<String, Object>();
+    final var updateFields = new HashMap<String, Object>();
     updateFields.put(ListViewTemplate.ERROR_MSG, entity.getErrorMessage());
     batchRequest.upsertWithRouting(
         listViewTemplate.getFullQualifiedName(),
@@ -179,7 +178,7 @@ public class ListViewZeebeRecordProcessor {
         } else {
           final var processInstanceKey = variableEntity.getProcessInstanceKey();
 
-          Map<String, Object> updateFields = new HashMap<>();
+          final Map<String, Object> updateFields = new HashMap<>();
           updateFields.put(ListViewTemplate.VAR_NAME, variableEntity.getVarName());
           updateFields.put(ListViewTemplate.VAR_VALUE, variableEntity.getVarValue());
           batchRequest.upsertWithRouting(
@@ -194,19 +193,19 @@ public class ListViewZeebeRecordProcessor {
   }
 
   public void processProcessInstanceRecord(
-      Map<Long, List<Record<ProcessInstanceRecordValue>>> records,
-      BatchRequest batchRequest,
-      ImportBatch importBatch)
+      final Map<Long, List<Record<ProcessInstanceRecordValue>>> records,
+      final BatchRequest batchRequest,
+      final ImportBatch importBatch)
       throws PersistenceException {
     final Map<String, String> treePathMap = new HashMap<>();
-    for (Map.Entry<Long, List<Record<ProcessInstanceRecordValue>>> wiRecordsEntry :
+    for (final Map.Entry<Long, List<Record<ProcessInstanceRecordValue>>> wiRecordsEntry :
         records.entrySet()) {
       ProcessInstanceForListViewEntity piEntity = null;
-      Map<Long, FlowNodeInstanceForListViewEntity> actEntities =
+      final Map<Long, FlowNodeInstanceForListViewEntity> actEntities =
           new HashMap<Long, FlowNodeInstanceForListViewEntity>();
-      Long processInstanceKey = wiRecordsEntry.getKey();
+      final Long processInstanceKey = wiRecordsEntry.getKey();
 
-      for (Record<ProcessInstanceRecordValue> record : wiRecordsEntry.getValue()) {
+      for (final Record<ProcessInstanceRecordValue> record : wiRecordsEntry.getValue()) {
         if (shouldProcessProcessInstanceRecord(record)) {
           final var recordValue = record.getValue();
           if (isProcessEvent(recordValue)) {
@@ -237,7 +236,7 @@ public class ListViewZeebeRecordProcessor {
         if (canOptimizeProcessInstanceIndexing(piEntity)) {
           batchRequest.add(listViewTemplate.getFullQualifiedName(), piEntity);
         } else {
-          Map<String, Object> updateFields = new HashMap<>();
+          final Map<String, Object> updateFields = new HashMap<>();
           if (piEntity.getStartDate() != null) {
             updateFields.put(ListViewTemplate.START_DATE, piEntity.getStartDate());
           }
@@ -256,13 +255,13 @@ public class ListViewZeebeRecordProcessor {
               listViewTemplate.getFullQualifiedName(), piEntity.getId(), piEntity, updateFields);
         }
       }
-      for (FlowNodeInstanceForListViewEntity actEntity : actEntities.values()) {
+      for (final FlowNodeInstanceForListViewEntity actEntity : actEntities.values()) {
         logger.debug("Flow node instance for list view: id {}", actEntity.getId());
         if (canOptimizeFlowNodeInstanceIndexing(actEntity)) {
           batchRequest.addWithRouting(
               listViewTemplate.getFullQualifiedName(), actEntity, processInstanceKey.toString());
         } else {
-          Map<String, Object> updateFields = new HashMap<>();
+          final Map<String, Object> updateFields = new HashMap<>();
           updateFields.put(ListViewTemplate.ID, actEntity.getId());
           updateFields.put(ListViewTemplate.PARTITION_ID, actEntity.getPartitionId());
           updateFields.put(ListViewTemplate.PROCESS_KEY, actEntity.getProcessInstanceKey());
@@ -282,9 +281,9 @@ public class ListViewZeebeRecordProcessor {
   }
 
   public void processJobRecords(
-      Map<Long, List<Record<JobRecordValue>>> records, BatchRequest batchRequest)
+      final Map<Long, List<Record<JobRecordValue>>> records, final BatchRequest batchRequest)
       throws PersistenceException {
-    for (List<Record<JobRecordValue>> jobRecords : records.values()) {
+    for (final List<Record<JobRecordValue>> jobRecords : records.values()) {
       processLastRecord(
           jobRecords,
           rethrowConsumer(
@@ -319,11 +318,11 @@ public class ListViewZeebeRecordProcessor {
   }
 
   private ProcessInstanceForListViewEntity updateProcessInstance(
-      ImportBatch importBatch,
-      Record<ProcessInstanceRecordValue> record,
+      final ImportBatch importBatch,
+      final Record<ProcessInstanceRecordValue> record,
       ProcessInstanceForListViewEntity piEntity,
-      Map<String, String> treePathMap,
-      BatchRequest batchRequest)
+      final Map<String, String> treePathMap,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     if (piEntity == null) {
       piEntity = new ProcessInstanceForListViewEntity();
@@ -345,7 +344,7 @@ public class ListViewZeebeRecordProcessor {
             processCache.getProcessNameOrDefaultValue(
                 piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));
 
-    OffsetDateTime timestamp =
+    final OffsetDateTime timestamp =
         DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
     final boolean isRootProcessInstance =
         recordValue.getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID;
@@ -389,11 +388,11 @@ public class ListViewZeebeRecordProcessor {
   }
 
   private void registerStartedRootProcessInstance(
-      ProcessInstanceForListViewEntity piEntity,
-      BatchRequest batchRequest,
-      OffsetDateTime timestamp)
+      final ProcessInstanceForListViewEntity piEntity,
+      final BatchRequest batchRequest,
+      final OffsetDateTime timestamp)
       throws PersistenceException {
-    String processInstanceKey = String.valueOf(piEntity.getProcessInstanceKey());
+    final String processInstanceKey = String.valueOf(piEntity.getProcessInstanceKey());
     metricsStore.registerProcessInstanceStartEvent(
         processInstanceKey, piEntity.getTenantId(), timestamp, batchRequest);
   }
@@ -418,7 +417,7 @@ public class ListViewZeebeRecordProcessor {
       final String flowNodeInstanceId =
           ConversionUtils.toStringOrNull(recordValue.getParentElementInstanceKey());
       final String callActivityId = getCallActivityId(flowNodeInstanceId);
-      String treePath =
+      final String treePath =
           new TreePath(parentTreePath)
               .appendEntries(
                   callActivityId,
@@ -432,7 +431,7 @@ public class ListViewZeebeRecordProcessor {
       logger.warn(
           "Unable to find parent tree path for parent instance id "
               + recordValue.getParentProcessInstanceKey());
-      String treePath =
+      final String treePath =
           new TreePath()
               .startTreePath(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()))
               .toString();
@@ -442,7 +441,7 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private String getCallActivityId(String flowNodeInstanceId) {
+  private String getCallActivityId(final String flowNodeInstanceId) {
     String callActivityId = getCallActivityIdCache().get(flowNodeInstanceId);
     if (callActivityId == null) {
       callActivityId = flowNodeStore.getFlowNodeIdByFlowNodeInstanceId(flowNodeInstanceId);
@@ -452,8 +451,9 @@ public class ListViewZeebeRecordProcessor {
   }
 
   private void updateFlowNodeInstanceFromJob(
-      Record<JobRecordValue> record, BatchRequest batchRequest) throws PersistenceException {
-    FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+      final Record<JobRecordValue> record, final BatchRequest batchRequest)
+      throws PersistenceException {
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
 
     final var recordValue = record.getValue();
     final var intentStr = record.getIntent().name();
@@ -476,7 +476,7 @@ public class ListViewZeebeRecordProcessor {
         "Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}",
         entity.getId(),
         entity.isJobFailedWithRetriesLeft());
-    Map<String, Object> updateFields = new HashMap<>();
+    final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(ListViewTemplate.ID, entity.getId());
     updateFields.put(
         ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, entity.isJobFailedWithRetriesLeft());
@@ -490,12 +490,12 @@ public class ListViewZeebeRecordProcessor {
   }
 
   private void updateFlowNodeInstance(
-      Record<ProcessInstanceRecordValue> record,
-      Map<Long, FlowNodeInstanceForListViewEntity> entities) {
+      final Record<ProcessInstanceRecordValue> record,
+      final Map<Long, FlowNodeInstanceForListViewEntity> entities) {
     if (entities.get(record.getKey()) == null) {
       entities.put(record.getKey(), new FlowNodeInstanceForListViewEntity());
     }
-    FlowNodeInstanceForListViewEntity entity = entities.get(record.getKey());
+    final FlowNodeInstanceForListViewEntity entity = entities.get(record.getKey());
 
     final var recordValue = record.getValue();
     final var intentStr = record.getIntent().name();
@@ -532,12 +532,12 @@ public class ListViewZeebeRecordProcessor {
     }
 
     // set parent
-    Long processInstanceKey = recordValue.getProcessInstanceKey();
+    final Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
   }
 
   private void processVariableRecord(
-      Record<VariableRecordValue> record, VariableForListViewEntity entity) {
+      final Record<VariableRecordValue> record, final VariableForListViewEntity entity) {
     final var recordValue = record.getValue();
     entity.setId(
         VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
@@ -550,7 +550,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     // set parent
-    Long processInstanceKey = recordValue.getProcessInstanceKey();
+    final Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
   }
 
@@ -600,11 +600,12 @@ public class ListViewZeebeRecordProcessor {
     return false;
   }
 
-  private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
+  private boolean isProcessEvent(final ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
 
-  private boolean isOfType(ProcessInstanceRecordValue recordValue, BpmnElementType type) {
+  private boolean isOfType(
+      final ProcessInstanceRecordValue recordValue, final BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;

@@ -211,19 +211,6 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     return this;
   }
 
-  private Script getScriptWithParameters(String script, Map<String, Object> parameters)
-      throws PersistenceException {
-    try {
-      return new Script(
-          ScriptType.INLINE,
-          Script.DEFAULT_SCRIPT_LANG,
-          script,
-          objectMapper.readValue(objectMapper.writeValueAsString(parameters), HashMap.class));
-    } catch (IOException e) {
-      throw new PersistenceException(e);
-    }
-  }
-
   @Override
   public void execute() throws PersistenceException {
     logger.debug("Execute batchRequest with {} requests", bulkRequest.requests().size());
@@ -240,5 +227,18 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         bulkRequest,
         true,
         operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
+  }
+
+  private Script getScriptWithParameters(String script, Map<String, Object> parameters)
+      throws PersistenceException {
+    try {
+      return new Script(
+          ScriptType.INLINE,
+          Script.DEFAULT_SCRIPT_LANG,
+          script,
+          objectMapper.readValue(objectMapper.writeValueAsString(parameters), HashMap.class));
+    } catch (IOException e) {
+      throw new PersistenceException(e);
+    }
   }
 }

@@ -157,6 +157,18 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
     }
   }
 
+  @Override
+  public void validateMigrationResults(final SchemaManager schemaManager)
+      throws MigrationException {
+    long dstCount = schemaManager.getNumberOfDocumentsFor(postImporterQueueIndexName);
+    if (flowNodesWithIncidentsCount != null && flowNodesWithIncidentsCount > dstCount) {
+      throw new MigrationException(
+          String.format(
+              "Exception occurred when migrating %s. Number of flow nodes with pending incidents: %s, number of documents in post-importer-queue: %s",
+              postImporterQueueIndexName, flowNodesWithIncidentsCount, dstCount));
+    }
+  }
+
   private List<IncidentEntity> getIncidentEntities(
       String incidentKeysFieldName, RestHighLevelClient esClient, SearchHits hits)
       throws IOException {
@@ -192,18 +204,6 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
         .setPartitionId(incident.getPartitionId())
         .setActionType(PostImporterActionType.INCIDENT)
         .setProcessInstanceKey(incident.getProcessInstanceKey());
-  }
-
-  @Override
-  public void validateMigrationResults(final SchemaManager schemaManager)
-      throws MigrationException {
-    long dstCount = schemaManager.getNumberOfDocumentsFor(postImporterQueueIndexName);
-    if (flowNodesWithIncidentsCount != null && flowNodesWithIncidentsCount > dstCount) {
-      throw new MigrationException(
-          String.format(
-              "Exception occurred when migrating %s. Number of flow nodes with pending incidents: %s, number of documents in post-importer-queue: %s",
-              postImporterQueueIndexName, flowNodesWithIncidentsCount, dstCount));
-    }
   }
 
   @Override

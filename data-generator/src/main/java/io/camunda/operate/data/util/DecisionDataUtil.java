@@ -49,14 +49,10 @@ public class DecisionDataUtil {
 
   public static final String TENANT1 = "tenant1";
   public static final String TENANT2 = "tenant2";
-
-  private Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
-  private Random random = new Random();
-
-  @Autowired private ObjectMapper objectMapper;
-
   @Autowired protected DecisionStore decisionStore;
-
+  private Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
+  private final Random random = new Random();
+  @Autowired private ObjectMapper objectMapper;
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
@@ -134,7 +130,7 @@ public class DecisionDataUtil {
   }
 
   public List<DecisionInstanceEntity> createDecisionInstances() {
-    List<DecisionInstanceEntity> result = new ArrayList<>();
+    final List<DecisionInstanceEntity> result = new ArrayList<>();
 
     // 3 EVALUATED, 1 decision1 + 2 decision2, 2 version1 + 1 version2
     result.add(
@@ -312,11 +308,11 @@ public class DecisionDataUtil {
         .setTenantId(tenantId);
   }
 
-  public void persistOperateEntities(List<? extends OperateEntity> operateEntities)
+  public void persistOperateEntities(final List<? extends OperateEntity> operateEntities)
       throws PersistenceException {
     try {
-      BatchRequest batchRequest = decisionStore.newBatchRequest();
-      for (OperateEntity<?> entity : operateEntities) {
+      final BatchRequest batchRequest = decisionStore.newBatchRequest();
+      for (final OperateEntity<?> entity : operateEntities) {
         final String alias = getEntityToESAliasMap().get(entity.getClass());
         if (alias == null) {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
@@ -324,7 +320,7 @@ public class DecisionDataUtil {
         batchRequest.add(alias, entity);
       }
       batchRequest.execute();
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new PersistenceException(ex);
     }
   }

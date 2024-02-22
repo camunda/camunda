@@ -156,6 +156,23 @@ public class FlowNodeInstance {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        key,
+        processInstanceKey,
+        processDefinitionKey,
+        startDate,
+        endDate,
+        flowNodeId,
+        flowNodeName,
+        incidentKey,
+        type,
+        state,
+        incident,
+        tenantId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -172,23 +189,6 @@ public class FlowNodeInstance {
         && Objects.equals(state, that.state)
         && Objects.equals(incident, that.incident)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        key,
-        processInstanceKey,
-        processDefinitionKey,
-        startDate,
-        endDate,
-        flowNodeId,
-        flowNodeName,
-        incidentKey,
-        type,
-        state,
-        incident,
-        tenantId);
   }
 
   @Override

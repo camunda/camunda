@@ -79,6 +79,11 @@ public class OperationDto implements CreatableFromEntity<OperationDto, Operation
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(id, batchOperationId, type, state, errorMessage);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -92,10 +97,5 @@ public class OperationDto implements CreatableFromEntity<OperationDto, Operation
         && type == that.type
         && state == that.state
         && Objects.equals(errorMessage, that.errorMessage);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, batchOperationId, type, state, errorMessage);
   }
 }

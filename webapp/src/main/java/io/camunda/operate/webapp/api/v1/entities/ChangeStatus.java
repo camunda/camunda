@@ -32,6 +32,11 @@ public class ChangeStatus {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(message, deleted);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -41,11 +46,6 @@ public class ChangeStatus {
     }
     final ChangeStatus status = (ChangeStatus) o;
     return deleted.equals(status.deleted) && Objects.equals(message, status.message);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(message, deleted);
   }
 
   @Override

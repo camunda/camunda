@@ -64,6 +64,22 @@ public class ElasticsearchConnector {
 
   private ElasticsearchClient elasticsearchClient;
 
+  public static void closeEsClient(RestHighLevelClient esClient) {
+    if (esClient != null) {
+      try {
+        esClient.close();
+      } catch (IOException e) {
+        logger.error("Could not close esClient", e);
+      }
+    }
+  }
+
+  public static void closeEsClient(ElasticsearchClient esClient) {
+    if (esClient != null) {
+      esClient.shutdown();
+    }
+  }
+
   @Bean
   public ElasticsearchClient elasticsearchClient() {
     logger.debug("Creating ElasticsearchClient ...");
@@ -133,22 +149,6 @@ public class ElasticsearchConnector {
     // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
     System.setProperty("es.set.netty.runtime.available.processors", "false");
     return createEsClient(operateProperties.getZeebeElasticsearch());
-  }
-
-  public static void closeEsClient(RestHighLevelClient esClient) {
-    if (esClient != null) {
-      try {
-        esClient.close();
-      } catch (IOException e) {
-        logger.error("Could not close esClient", e);
-      }
-    }
-  }
-
-  public static void closeEsClient(ElasticsearchClient esClient) {
-    if (esClient != null) {
-      esClient.shutdown();
-    }
   }
 
   @PreDestroy

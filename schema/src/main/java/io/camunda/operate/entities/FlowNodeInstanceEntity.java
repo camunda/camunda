@@ -173,29 +173,6 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    FlowNodeInstanceEntity that = (FlowNodeInstanceEntity) o;
-    return level == that.level
-        && incident == that.incident
-        && Objects.equals(flowNodeId, that.flowNodeId)
-        && Objects.equals(startDate, that.startDate)
-        && Objects.equals(endDate, that.endDate)
-        && state == that.state
-        && type == that.type
-        && Objects.equals(incidentKey, that.incidentKey)
-        && Objects.equals(processInstanceKey, that.processInstanceKey)
-        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
-        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(treePath, that.treePath)
-        && Objects.equals(position, that.position)
-        && Objects.equals(tenantId, that.tenantId)
-        && Arrays.equals(sortValues, that.sortValues);
-  }
-
-  @Override
   public int hashCode() {
     int result =
         Objects.hash(
@@ -216,5 +193,28 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
             tenantId);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+    FlowNodeInstanceEntity that = (FlowNodeInstanceEntity) o;
+    return level == that.level
+        && incident == that.incident
+        && Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && state == that.state
+        && type == that.type
+        && Objects.equals(incidentKey, that.incidentKey)
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(treePath, that.treePath)
+        && Objects.equals(position, that.position)
+        && Objects.equals(tenantId, that.tenantId)
+        && Arrays.equals(sortValues, that.sortValues);
   }
 }

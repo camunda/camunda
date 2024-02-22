@@ -73,14 +73,6 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   @Autowired private ObjectMapper objectMapper;
 
   @Override
-  public <R> List<R> searchAll(String index, Class<R> clazz) throws IOException {
-    final SearchRequest searchRequest =
-        new SearchRequest(index).source(new SearchSourceBuilder().query(matchAllQuery()));
-    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, clazz);
-  }
-
-  @Override
   public boolean isConnected() {
     return esClient != null;
   }
@@ -99,17 +91,6 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public boolean createOrUpdateDocument(String name, String id, Map<String, ?> doc)
-      throws IOException {
-    final IndexResponse response =
-        esClient.index(
-            new IndexRequest(name).id(id).source(doc, XContentType.JSON), RequestOptions.DEFAULT);
-    DocWriteResponse.Result result = response.getResult();
-    return result.equals(DocWriteResponse.Result.CREATED)
-        || result.equals(DocWriteResponse.Result.UPDATED);
-  }
-
-  @Override
   public boolean createOrUpdateDocumentFromObject(String indexName, String docId, Object data)
       throws IOException {
     Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
@@ -123,6 +104,17 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   }
 
   @Override
+  public boolean createOrUpdateDocument(String name, String id, Map<String, ?> doc)
+      throws IOException {
+    final IndexResponse response =
+        esClient.index(
+            new IndexRequest(name).id(id).source(doc, XContentType.JSON), RequestOptions.DEFAULT);
+    DocWriteResponse.Result result = response.getResult();
+    return result.equals(DocWriteResponse.Result.CREATED)
+        || result.equals(DocWriteResponse.Result.UPDATED);
+  }
+
+  @Override
   public String createOrUpdateDocument(String name, Map<String, ?> doc) throws IOException {
     String docId = UUID.randomUUID().toString();
     if (createOrUpdateDocument(name, UUID.randomUUID().toString(), doc)) {
@@ -133,17 +125,14 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public Set<String> getFieldNames(String indexName) throws IOException {
-    return ((Map<String, Object>) getMappingSource(indexName).get("properties")).keySet();
+  public void deleteById(String index, String id) throws IOException {
+    DeleteRequest request = new DeleteRequest().index(index).id(id);
+    esClient.delete(request, RequestOptions.DEFAULT);
   }
 
-  private Map<String, Object> getMappingSource(String indexName) throws IOException {
-    return esClient
-        .indices()
-        .get(new GetIndexRequest(indexName), RequestOptions.DEFAULT)
-        .getMappings()
-        .get(indexName)
-        .getSourceAsMap();
+  @Override
+  public Set<String> getFieldNames(String indexName) throws IOException {
+    return ((Map<String, Object>) getMappingSource(indexName).get("properties")).keySet();
   }
 
   @Override
@@ -171,6 +160,14 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   }
 
   @Override
+  public <R> List<R> searchAll(String index, Class<R> clazz) throws IOException {
+    final SearchRequest searchRequest =
+        new SearchRequest(index).source(new SearchSourceBuilder().query(matchAllQuery()));
+    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, clazz);
+  }
+
+  @Override
   public <T> List<T> searchJoinRelation(String index, String joinRelation, Class<T> clazz, int size)
       throws IOException {
     final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, joinRelation);
@@ -183,6 +180,18 @@ public class TestElasticSearchRepository implements TestSearchRepository {
                     .size(size));
 
     final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, clazz);
+  }
+
+  @Override
+  public <A, R> List<R> searchTerm(String index, String field, A value, Class<R> clazz, int size)
+      throws IOException {
+    var request =
+        new SearchRequest(index)
+            .source(new SearchSourceBuilder().query(QueryBuilders.termQuery(field, value)));
+
+    var response = esClient.search(request, RequestOptions.DEFAULT);
 
     return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, clazz);
   }
@@ -203,24 +212,6 @@ public class TestElasticSearchRepository implements TestSearchRepository {
     DeleteByQueryRequest request =
         new DeleteByQueryRequest(index).setQuery(termsQuery(fieldName, values));
     esClient.deleteByQuery(request, RequestOptions.DEFAULT);
-  }
-
-  @Override
-  public <A, R> List<R> searchTerm(String index, String field, A value, Class<R> clazz, int size)
-      throws IOException {
-    var request =
-        new SearchRequest(index)
-            .source(new SearchSourceBuilder().query(QueryBuilders.termQuery(field, value)));
-
-    var response = esClient.search(request, RequestOptions.DEFAULT);
-
-    return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, clazz);
-  }
-
-  @Override
-  public void deleteById(String index, String id) throws IOException {
-    DeleteRequest request = new DeleteRequest().index(index).id(id);
-    esClient.delete(request, RequestOptions.DEFAULT);
   }
 
   @Override
@@ -336,5 +327,14 @@ public class TestElasticSearchRepository implements TestSearchRepository {
       }
       return Optional.empty();
     }
+  }
+
+  private Map<String, Object> getMappingSource(String indexName) throws IOException {
+    return esClient
+        .indices()
+        .get(new GetIndexRequest(indexName), RequestOptions.DEFAULT)
+        .getMappings()
+        .get(indexName)
+        .getSourceAsMap();
   }
 }

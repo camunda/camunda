@@ -134,6 +134,16 @@ public class ImportBatch {
   }
 
   @Override
+  public int hashCode() {
+    int result = partitionId;
+    result = 31 * result + (importValueType != null ? importValueType.hashCode() : 0);
+    result = 31 * result + (hits != null ? hits.hashCode() : 0);
+    result = 31 * result + (lastRecordIndexName != null ? lastRecordIndexName.hashCode() : 0);
+    result = 31 * result + finishedWiCount;
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -145,15 +155,5 @@ public class ImportBatch {
     if (importValueType != that.importValueType) return false;
     if (!Objects.equals(hits, that.hits)) return false;
     return Objects.equals(lastRecordIndexName, that.lastRecordIndexName);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = partitionId;
-    result = 31 * result + (importValueType != null ? importValueType.hashCode() : 0);
-    result = 31 * result + (hits != null ? hits.hashCode() : 0);
-    result = 31 * result + (lastRecordIndexName != null ? lastRecordIndexName.hashCode() : 0);
-    result = 31 * result + finishedWiCount;
-    return result;
   }
 }

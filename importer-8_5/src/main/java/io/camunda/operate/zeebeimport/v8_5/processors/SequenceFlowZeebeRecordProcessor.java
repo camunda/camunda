@@ -29,19 +29,21 @@ public class SequenceFlowZeebeRecordProcessor {
 
   @Autowired private SequenceFlowTemplate sequenceFlowTemplate;
 
-  public void processSequenceFlowRecord(Record record, BatchRequest batchRequest)
+  public void processSequenceFlowRecord(final Record record, final BatchRequest batchRequest)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
     if (intentStr.equals(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN.name())) {
-      ProcessInstanceRecordValue recordValue = (ProcessInstanceRecordValue) record.getValue();
+      final ProcessInstanceRecordValue recordValue = (ProcessInstanceRecordValue) record.getValue();
       persistSequenceFlow(record, recordValue, batchRequest);
     }
   }
 
   private void persistSequenceFlow(
-      Record record, ProcessInstanceRecordValue recordValue, BatchRequest batchRequest)
+      final Record record,
+      final ProcessInstanceRecordValue recordValue,
+      final BatchRequest batchRequest)
       throws PersistenceException {
-    SequenceFlowEntity entity =
+    final SequenceFlowEntity entity =
         new SequenceFlowEntity()
             .setId(
                 String.format(

@@ -19,12 +19,6 @@ public enum ImportValueType {
   PROCESS_MESSAGE_SUBSCRIPTION(ZeebeESConstants.PROCESS_MESSAGE_SUBSCRIPTION_INDEX_NAME),
   USER_TASK(ZeebeESConstants.USER_TASK_INDEX_NAME);
 
-  private final String aliasTemplate;
-
-  ImportValueType(String aliasTemplate) {
-    this.aliasTemplate = aliasTemplate;
-  }
-
   public static final ImportValueType[] IMPORT_VALUE_TYPES =
       new ImportValueType[] {
         PROCESS,
@@ -39,16 +33,21 @@ public enum ImportValueType {
         PROCESS_MESSAGE_SUBSCRIPTION,
         USER_TASK
       };
+  private final String aliasTemplate;
+
+  ImportValueType(final String aliasTemplate) {
+    this.aliasTemplate = aliasTemplate;
+  }
 
   public String getAliasTemplate() {
     return aliasTemplate;
   }
 
-  public String getIndicesPattern(String prefix) {
+  public String getIndicesPattern(final String prefix) {
     return String.format("%s*%s*", prefix, aliasTemplate);
   }
 
-  public String getAliasName(String prefix) {
+  public String getAliasName(final String prefix) {
     return String.format("%s-%s", prefix, aliasTemplate);
   }
 }

@@ -20,25 +20,22 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 public abstract class AbstractArchiverJob implements ArchiverJob {
 
-  private static final Logger logger = LoggerFactory.getLogger(AbstractArchiverJob.class);
-
   public static final String DATES_AGG = "datesAgg";
   public static final String INSTANCES_AGG = "instancesAgg";
-
-  private final BackoffIdleStrategy idleStrategy;
-  private final BackoffIdleStrategy errorStrategy;
-
-  private boolean shutdown = false;
+  private static final Logger logger = LoggerFactory.getLogger(AbstractArchiverJob.class);
 
   @Autowired
   @Qualifier("archiverThreadPoolExecutor")
   protected ThreadPoolTaskScheduler archiverExecutor;
 
+  private final BackoffIdleStrategy idleStrategy;
+  private final BackoffIdleStrategy errorStrategy;
+  private boolean shutdown = false;
   @Autowired private OperateProperties operateProperties;
 
   public AbstractArchiverJob() {
-    this.idleStrategy = new BackoffIdleStrategy(2_000, 1.2f, 60_000);
-    this.errorStrategy = new BackoffIdleStrategy(100, 1.2f, 10_000);
+    idleStrategy = new BackoffIdleStrategy(2_000, 1.2f, 60_000);
+    errorStrategy = new BackoffIdleStrategy(100, 1.2f, 10_000);
   }
 
   @Override

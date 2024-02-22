@@ -19,11 +19,11 @@ public enum DatabaseType {
     this.code = code;
   }
 
-  public String getCode() {
-    return code;
-  }
-
   public static Optional<DatabaseType> byCode(String code) {
     return Arrays.stream(values()).filter(dt -> dt.code.equals(code)).findFirst();
+  }
+
+  public String getCode() {
+    return code;
   }
 }

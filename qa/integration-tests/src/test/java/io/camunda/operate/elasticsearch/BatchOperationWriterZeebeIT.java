@@ -45,18 +45,13 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
       ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/batch-operation";
   private static final IdentityPermission UPDATE = IdentityPermission.UPDATE_PROCESS_INSTANCE;
   private static final IdentityPermission DELETE = IdentityPermission.DELETE_PROCESS_INSTANCE;
-
+  @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   private final String bpmnProcessId1 = "bpmnProcessId1";
   private final String bpmnProcessId2 = "bpmnProcessId2";
   private final String bpmnProcessId3 = "bpmnProcessId3";
-
   @Autowired private BatchOperationWriter batchOperationWriter;
-
   @Autowired private OperationTemplate operationTemplate;
-
   @MockBean private PermissionsService permissionsService;
-
-  @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Test
   public void testBatchUpdateWithPermisssionWhenAllowed() throws Exception {

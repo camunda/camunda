@@ -102,8 +102,8 @@ public class OpensearchProcessInstanceDaoTest {
 
   @Test
   public void testSearchByKey() {
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
+    final SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
+    final org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
         Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
 
     when(mockRequestWrapper.searchRequestBuilder(underTest.getIndexName()))
@@ -111,13 +111,13 @@ public class OpensearchProcessInstanceDaoTest {
     when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
     when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
 
-    OpenSearchDocumentOperations mockDoc = Mockito.mock(OpenSearchDocumentOperations.class);
+    final OpenSearchDocumentOperations mockDoc = Mockito.mock(OpenSearchDocumentOperations.class);
     when(mockOpensearchClient.doc()).thenReturn(mockDoc);
 
-    List<ProcessInstance> validResults = Collections.singletonList(new ProcessInstance());
+    final List<ProcessInstance> validResults = Collections.singletonList(new ProcessInstance());
     when(mockDoc.searchValues(mockRequestBuilder, ProcessInstance.class)).thenReturn(validResults);
 
-    List<ProcessInstance> results = underTest.searchByKey(1L);
+    final List<ProcessInstance> results = underTest.searchByKey(1L);
 
     // Verify the request was built with a tenant check, the index name, and permissive matching
     assertThat(results).isSameAs(validResults);
@@ -130,7 +130,7 @@ public class OpensearchProcessInstanceDaoTest {
 
   @Test
   public void testBuildFilteringWithNullFilter() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
+    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
     underTest.buildFiltering(new Query<>(), mockSearchRequest);
 
     // Verify that the join relation was still set
@@ -140,8 +140,8 @@ public class OpensearchProcessInstanceDaoTest {
 
   @Test
   public void testBuildFilteringWithAllNullFilterFields() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    Query<ProcessInstance> inputQuery =
+    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
+    final Query<ProcessInstance> inputQuery =
         new Query<ProcessInstance>().setFilter(new ProcessInstance());
 
     underTest.buildFiltering(inputQuery, mockSearchRequest);
@@ -153,8 +153,8 @@ public class OpensearchProcessInstanceDaoTest {
 
   @Test
   public void testBuildFilteringWithValidFields() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    ProcessInstance filter =
+    final SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
+    final ProcessInstance filter =
         new ProcessInstance()
             .setKey(1L)
             .setProcessDefinitionKey(2L)
@@ -167,10 +167,10 @@ public class OpensearchProcessInstanceDaoTest {
             .setStartDate("2024-01-19T18:39:05.196-0500")
             .setEndDate("2024-01-19T18:39:06.196-0500");
 
-    String expectedDateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
+    final String expectedDateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
     when(mockDateTimeFormatter.getApiDateTimeFormatString()).thenReturn(expectedDateFormat);
 
-    Query<ProcessInstance> inputQuery = new Query<ProcessInstance>().setFilter(filter);
+    final Query<ProcessInstance> inputQuery = new Query<ProcessInstance>().setFilter(filter);
 
     underTest.buildFiltering(inputQuery, mockSearchRequest);
 

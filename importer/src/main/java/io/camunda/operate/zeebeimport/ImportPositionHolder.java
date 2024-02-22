@@ -33,15 +33,16 @@ public class ImportPositionHolder {
   private static final Logger logger = LoggerFactory.getLogger(ImportPositionHolder.class);
 
   // this is the in-memory only storage
-  private Map<String, ImportPositionEntity> lastScheduledPositions = new HashMap<>();
+  private final Map<String, ImportPositionEntity> lastScheduledPositions = new HashMap<>();
 
-  private Map<String, ImportPositionEntity> pendingImportPositionUpdates = new HashMap<>();
-  private Map<String, ImportPositionEntity> pendingPostImportPositionUpdates = new HashMap<>();
-  private Map<String, ImportPositionEntity> inflightImportPositions = new HashMap<>();
-  private Map<String, ImportPositionEntity> inflightPostImportPositions = new HashMap<>();
+  private final Map<String, ImportPositionEntity> pendingImportPositionUpdates = new HashMap<>();
+  private final Map<String, ImportPositionEntity> pendingPostImportPositionUpdates =
+      new HashMap<>();
+  private final Map<String, ImportPositionEntity> inflightImportPositions = new HashMap<>();
+  private final Map<String, ImportPositionEntity> inflightPostImportPositions = new HashMap<>();
 
   private ScheduledFuture<?> scheduledImportPositionUpdateTask;
-  private ReentrantLock inflightImportPositionLock = new ReentrantLock();
+  private final ReentrantLock inflightImportPositionLock = new ReentrantLock();
 
   @Autowired private OperateProperties operateProperties;
 
@@ -79,13 +80,13 @@ public class ImportPositionHolder {
     return future;
   }
 
-  public ImportPositionEntity getLatestScheduledPosition(String aliasTemplate, int partitionId)
-      throws IOException {
-    String key = getKey(aliasTemplate, partitionId);
+  public ImportPositionEntity getLatestScheduledPosition(
+      final String aliasTemplate, final int partitionId) throws IOException {
+    final String key = getKey(aliasTemplate, partitionId);
     if (lastScheduledPositions.containsKey(key)) {
       return lastScheduledPositions.get(key);
     } else {
-      ImportPositionEntity latestLoadedPosition =
+      final ImportPositionEntity latestLoadedPosition =
           getLatestLoadedPosition(aliasTemplate, partitionId);
       lastScheduledPositions.put(key, latestLoadedPosition);
       return latestLoadedPosition;
@@ -93,22 +94,24 @@ public class ImportPositionHolder {
   }
 
   public void recordLatestScheduledPosition(
-      String aliasName, int partitionId, ImportPositionEntity importPositionEntity) {
+      final String aliasName,
+      final int partitionId,
+      final ImportPositionEntity importPositionEntity) {
     lastScheduledPositions.put(getKey(aliasName, partitionId), importPositionEntity);
   }
 
-  public ImportPositionEntity getLatestLoadedPosition(String aliasTemplate, int partitionId)
-      throws IOException {
+  public ImportPositionEntity getLatestLoadedPosition(
+      final String aliasTemplate, final int partitionId) throws IOException {
     return importStore.getImportPositionByAliasAndPartitionId(aliasTemplate, partitionId);
   }
 
-  public void recordLatestLoadedPosition(ImportPositionEntity lastProcessedPosition) {
+  public void recordLatestLoadedPosition(final ImportPositionEntity lastProcessedPosition) {
     withInflightImportPositionLock(
         () -> {
           final var aliasName = lastProcessedPosition.getAliasName();
           final var partition = lastProcessedPosition.getPartitionId();
           // update only import fields (not post import)
-          String key = getKey(aliasName, partition);
+          final String key = getKey(aliasName, partition);
           ImportPositionEntity importPosition = inflightImportPositions.get(key);
           if (importPosition == null) {
             importPosition = lastProcessedPosition;
@@ -122,13 +125,14 @@ public class ImportPositionHolder {
         });
   }
 
-  public void recordLatestPostImportedPosition(ImportPositionEntity lastPostImportedPosition) {
+  public void recordLatestPostImportedPosition(
+      final ImportPositionEntity lastPostImportedPosition) {
     withInflightImportPositionLock(
         () -> {
           final var aliasName = lastPostImportedPosition.getAliasName();
           final var partition = lastPostImportedPosition.getPartitionId();
           // update only post import fields (not import)
-          String key = getKey(aliasName, partition);
+          final String key = getKey(aliasName, partition);
           ImportPositionEntity importPosition = inflightPostImportPositions.get(key);
           if (importPosition == null) {
             importPosition = lastPostImportedPosition;
@@ -177,7 +181,7 @@ public class ImportPositionHolder {
         });
   }
 
-  private String getKey(String aliasTemplate, int partitionId) {
+  private String getKey(final String aliasTemplate, final int partitionId) {
     return String.format("%s-%d", aliasTemplate, partitionId);
   }
 

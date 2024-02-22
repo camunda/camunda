@@ -67,11 +67,6 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
 
   @Autowired private QueryHelper queryHelper;
 
-  @FunctionalInterface
-  private interface MapUpdater {
-    void updateMapEntry(FlowNodeStatisticsDto statistics, Long value);
-  }
-
   @Override
   public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(ListViewQueryDto query) {
 
@@ -214,5 +209,10 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
                 .subAggregation(parent(AGG_ACTIVITY_TO_PROCESS, ACTIVITIES_JOIN_RELATION))
             // we need this to count process instances, not the activity instances
             );
+  }
+
+  @FunctionalInterface
+  private interface MapUpdater {
+    void updateMapEntry(FlowNodeStatisticsDto statistics, Long value);
   }
 }

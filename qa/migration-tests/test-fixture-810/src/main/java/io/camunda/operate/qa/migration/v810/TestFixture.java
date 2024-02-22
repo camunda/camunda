@@ -41,12 +41,9 @@ public class TestFixture extends AbstractTestFixture {
   public static final String VERSION = "8.1.14";
 
   private static final Logger logger = LoggerFactory.getLogger(TestFixture.class);
-
-  @Autowired private RestHighLevelClient esClient;
-
   @Autowired protected ListViewTemplate listViewTemplate;
-
   @Autowired protected IncidentTemplate incidentTemplate;
+  @Autowired private RestHighLevelClient esClient;
 
   @Override
   public void setup(TestContext testContext) {

@@ -45,6 +45,11 @@ public class FlowNodeInstanceResponseDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(isRunning, children);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -54,10 +59,5 @@ public class FlowNodeInstanceResponseDto {
     }
     final FlowNodeInstanceResponseDto that = (FlowNodeInstanceResponseDto) o;
     return Objects.equals(isRunning, that.isRunning) && Objects.equals(children, that.children);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(isRunning, children);
   }
 }

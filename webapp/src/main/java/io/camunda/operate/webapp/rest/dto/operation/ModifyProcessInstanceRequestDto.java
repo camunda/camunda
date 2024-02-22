@@ -35,17 +35,17 @@ public class ModifyProcessInstanceRequestDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(modifications, processInstanceKey);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ModifyProcessInstanceRequestDto that = (ModifyProcessInstanceRequestDto) o;
     return Objects.equals(modifications, that.modifications)
         && Objects.equals(processInstanceKey, that.processInstanceKey);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(modifications, processInstanceKey);
   }
 
   @Override
@@ -59,14 +59,6 @@ public class ModifyProcessInstanceRequestDto {
   }
 
   public static class Modification {
-
-    public enum Type {
-      ADD_TOKEN,
-      CANCEL_TOKEN,
-      MOVE_TOKEN,
-      ADD_VARIABLE,
-      EDIT_VARIABLE
-    }
 
     private Type modification;
     private String fromFlowNodeId;
@@ -117,6 +109,11 @@ public class ModifyProcessInstanceRequestDto {
       return variables;
     }
 
+    public Modification setVariables(final Map<String, Object> variables) {
+      this.variables = variables;
+      return this;
+    }
+
     public Map<String, List<Map<String, Object>>> variablesForAddToken() {
       if (variables == null || MapUtils.isEmpty(variables)) return null;
       Map<String, List<Map<String, Object>>> result = new HashMap<>();
@@ -126,11 +123,6 @@ public class ModifyProcessInstanceRequestDto {
         result.put(flowNodeId, variablesList);
       }
       return result;
-    }
-
-    public Modification setVariables(final Map<String, Object> variables) {
-      this.variables = variables;
-      return this;
     }
 
     public String getFromFlowNodeInstanceKey() {
@@ -161,6 +153,19 @@ public class ModifyProcessInstanceRequestDto {
     }
 
     @Override
+    public int hashCode() {
+      return Objects.hash(
+          modification,
+          fromFlowNodeId,
+          toFlowNodeId,
+          scopeKey,
+          newTokensCount,
+          variables,
+          fromFlowNodeInstanceKey,
+          ancestorElementInstanceKey);
+    }
+
+    @Override
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
@@ -173,19 +178,6 @@ public class ModifyProcessInstanceRequestDto {
           && Objects.equals(variables, that.variables)
           && Objects.equals(fromFlowNodeInstanceKey, that.fromFlowNodeInstanceKey)
           && Objects.equals(ancestorElementInstanceKey, that.ancestorElementInstanceKey);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(
-          modification,
-          fromFlowNodeId,
-          toFlowNodeId,
-          scopeKey,
-          newTokensCount,
-          variables,
-          fromFlowNodeInstanceKey,
-          ancestorElementInstanceKey);
     }
 
     @Override
@@ -211,6 +203,14 @@ public class ModifyProcessInstanceRequestDto {
           + ", ancestorElementInstanceKey="
           + ancestorElementInstanceKey
           + "}";
+    }
+
+    public enum Type {
+      ADD_TOKEN,
+      CANCEL_TOKEN,
+      MOVE_TOKEN,
+      ADD_VARIABLE,
+      EDIT_VARIABLE
     }
   }
 }

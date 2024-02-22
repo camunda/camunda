@@ -14,31 +14,6 @@ import java.util.function.Supplier;
 /** Helper class to rethrow checked exceptions in lambda expressions. */
 public final class LambdaExceptionUtil {
 
-  @FunctionalInterface
-  public interface ConsumerWithExceptions<T, E extends Exception> {
-    void accept(T t) throws E;
-  }
-
-  @FunctionalInterface
-  public interface BiConsumerWithExceptions<T, U, E extends Exception> {
-    void accept(T t, U u) throws E;
-  }
-
-  @FunctionalInterface
-  public interface FunctionWithExceptions<T, R, E extends Exception> {
-    R apply(T t) throws E;
-  }
-
-  @FunctionalInterface
-  public interface SupplierWithExceptions<T, E extends Exception> {
-    T get() throws E;
-  }
-
-  @FunctionalInterface
-  public interface RunnableWithExceptions<E extends Exception> {
-    void run() throws E;
-  }
-
   /**
    * .forEach(rethrowConsumer(name -> System.out.println(Class.forName(name)))); or
    * .forEach(rethrowConsumer(ClassNameUtil::println));
@@ -124,5 +99,30 @@ public final class LambdaExceptionUtil {
   @SuppressWarnings("unchecked")
   private static <E extends Throwable> void throwAsUnchecked(Exception exception) throws E {
     throw (E) exception;
+  }
+
+  @FunctionalInterface
+  public interface ConsumerWithExceptions<T, E extends Exception> {
+    void accept(T t) throws E;
+  }
+
+  @FunctionalInterface
+  public interface BiConsumerWithExceptions<T, U, E extends Exception> {
+    void accept(T t, U u) throws E;
+  }
+
+  @FunctionalInterface
+  public interface FunctionWithExceptions<T, R, E extends Exception> {
+    R apply(T t) throws E;
+  }
+
+  @FunctionalInterface
+  public interface SupplierWithExceptions<T, E extends Exception> {
+    T get() throws E;
+  }
+
+  @FunctionalInterface
+  public interface RunnableWithExceptions<E extends Exception> {
+    void run() throws E;
   }
 }

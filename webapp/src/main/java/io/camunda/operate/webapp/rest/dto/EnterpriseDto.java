@@ -21,6 +21,11 @@ public class EnterpriseDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(enterprise);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -30,11 +35,6 @@ public class EnterpriseDto {
     }
     EnterpriseDto that = (EnterpriseDto) o;
     return enterprise == that.enterprise;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(enterprise);
   }
 
   @Override

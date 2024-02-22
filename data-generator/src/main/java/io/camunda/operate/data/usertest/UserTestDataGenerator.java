@@ -36,9 +36,8 @@ import org.springframework.stereotype.Component;
 @Profile("usertest-data")
 public class UserTestDataGenerator extends AbstractDataGenerator {
 
-  private static final Logger logger = LoggerFactory.getLogger(UserTestDataGenerator.class);
-
   public static final int JOB_WORKER_TIMEOUT = 5;
+  private static final Logger logger = LoggerFactory.getLogger(UserTestDataGenerator.class);
   private static final String TENANT_B = "tenantB";
 
   protected List<Long> processInstanceKeys = new ArrayList<>();
@@ -49,7 +48,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   @Autowired protected PayloadUtil payloadUtil;
 
   @Override
-  public boolean createZeebeData(boolean manuallyCalled) {
+  public boolean createZeebeData(final boolean manuallyCalled) {
     if (!super.createZeebeData(manuallyCalled)) {
       return false;
     }
@@ -105,13 +104,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   private void createAndStartProcessWithLargeVariableValue() {
     logger.debug("Deploy and start process with large variable value >32kb");
     ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_B), "usertest/single-task.bpmn");
-    String jsonString = payloadUtil.readStringFromClasspath("/usertest/large-payload.json");
+    final String jsonString = payloadUtil.readStringFromClasspath("/usertest/large-payload.json");
     ZeebeTestUtil.startProcessInstance(
         true, client, getTenant(TENANT_B), "bigVarProcess", jsonString);
   }
 
   private void createAndStartProcessWithLotOfVariables() {
-    StringBuffer vars = new StringBuffer("{");
+    final StringBuffer vars = new StringBuffer("{");
     for (char letter1 = 'a'; letter1 <= 'z'; letter1++) {
       for (char letter2 = 'a'; letter2 <= 'z'; letter2++) {
         if (vars.length() > 1) {
@@ -268,10 +267,11 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     doNotTouchProcessInstanceKeys.add(instanceKey11);
   }
 
-  public void completeTask(long processInstanceKey, String jobType, String payload) {
+  public void completeTask(
+      final long processInstanceKey, final String jobType, final String payload) {
     final CompleteJobHandler completeJobHandler =
         new CompleteJobHandler(payload, processInstanceKey);
-    JobWorker jobWorker =
+    final JobWorker jobWorker =
         client
             .newWorker()
             .jobType(jobType)
@@ -292,9 +292,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     jobWorker.close();
   }
 
-  public void failTask(long processInstanceKey, String jobType, String errorMessage) {
+  public void failTask(
+      final long processInstanceKey, final String jobType, final String errorMessage) {
     final FailJobHandler failJobHandler = new FailJobHandler(processInstanceKey, errorMessage);
-    JobWorker jobWorker =
+    final JobWorker jobWorker =
         client
             .newWorker()
             .jobType(jobType)
@@ -350,7 +351,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     scheduler.schedule(
         () -> {
-          for (JobWorker jobWorker : jobWorkers) {
+          for (final JobWorker jobWorker : jobWorkers) {
             jobWorker.close();
           }
         },
@@ -368,10 +369,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         .jobType("alwaysFailingTask")
         .handler(
             (jobClient, job) -> {
-              StringWriter sw = new StringWriter();
-              PrintWriter pw = new PrintWriter(sw);
+              final StringWriter sw = new StringWriter();
+              final PrintWriter pw = new PrintWriter(sw);
               new Throwable().printStackTrace(pw);
-              String errorMessage = "Something went wrong. \n" + sw.toString();
+              final String errorMessage = "Something went wrong. \n" + sw.toString();
               jobClient
                   .newFailCommand(job.getKey())
                   .retries(0)
@@ -385,7 +386,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private List<JobWorker> progressMultiInstanceTasks() {
-    JobHandler handler =
+    final JobHandler handler =
         (c, j) -> {
           if (ThreadLocalRandom.current().nextBoolean()) {
             c.newCompleteCommand(j.getKey()).send().join();
@@ -394,7 +395,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
           }
         };
 
-    List<JobWorker> workers = new ArrayList<>();
+    final List<JobWorker> workers = new ArrayList<>();
     workers.add(client.newWorker().jobType("filter").handler(handler).open());
     workers.add(client.newWorker().jobType("map").handler(handler).open());
     workers.add(client.newWorker().jobType("reduce").handler(handler).open());
@@ -405,11 +406,11 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   private void cancelSomeInstances() {
     final Iterator<Long> iterator = processInstanceKeys.iterator();
     while (iterator.hasNext()) {
-      long processInstanceKey = iterator.next();
+      final long processInstanceKey = iterator.next();
       if (ThreadLocalRandom.current().nextInt(15) == 1) {
         try {
           client.newCancelInstanceCommand(processInstanceKey).send().join();
-        } catch (ClientException ex) {
+        } catch (final ClientException ex) {
           logger.error("Error occurred when cancelling process instance:", ex);
         }
       }
@@ -642,15 +643,15 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         .open();
   }
 
-  private boolean canProgress(long key) {
+  private boolean canProgress(final long key) {
     return !doNotTouchProcessInstanceKeys.contains(key);
   }
 
   protected void createProcessWithoutInstances() {
-    Long processDefinitionKeyVersion1 =
+    final Long processDefinitionKeyVersion1 =
         ZeebeTestUtil.deployProcess(
             true, client, getTenant(TENANT_B), "usertest/withoutInstancesProcess_v_1.bpmn");
-    Long processDefinitionKeyVersion2 =
+    final Long processDefinitionKeyVersion2 =
         ZeebeTestUtil.deployProcess(
             true, client, getTenant(TENANT_B), "usertest/withoutInstancesProcess_v_2.bpmn");
     logger.info(
@@ -659,11 +660,12 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         processDefinitionKeyVersion2);
   }
 
-  protected void createProcessWithInstancesThatHasOnlyIncidents(int forVersion1, int forVersion2) {
+  protected void createProcessWithInstancesThatHasOnlyIncidents(
+      final int forVersion1, final int forVersion2) {
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_B), "usertest/onlyIncidentsProcess_v_1.bpmn");
     for (int i = 0; i < forVersion1; i++) {
-      Long processInstanceKey =
+      final Long processInstanceKey =
           ZeebeTestUtil.startProcessInstance(
               true, client, getTenant(TENANT_B), "onlyIncidentsProcess", null);
       failTask(processInstanceKey, "alwaysFails", "No memory left.");
@@ -671,7 +673,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_B), "usertest/onlyIncidentsProcess_v_2.bpmn");
     for (int i = 0; i < forVersion2; i++) {
-      Long processInstanceKey =
+      final Long processInstanceKey =
           ZeebeTestUtil.startProcessInstance(
               true, client, getTenant(TENANT_B), "onlyIncidentsProcess", null);
       failTask(processInstanceKey, "alwaysFails", "No space left on device.");
@@ -683,7 +685,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         forVersion2);
   }
 
-  protected void createProcessWithInstancesWithoutIncidents(int forVersion1, int forVersion2) {
+  protected void createProcessWithInstancesWithoutIncidents(
+      final int forVersion1, final int forVersion2) {
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_B), "usertest/withoutIncidentsProcess_v_1.bpmn");
     for (int i = 0; i < forVersion1; i++) {
@@ -693,7 +696,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_B), "usertest/withoutIncidentsProcess_v_2.bpmn");
     for (int i = 0; i < forVersion2; i++) {
-      Long processInstanceKey =
+      final Long processInstanceKey =
           ZeebeTestUtil.startProcessInstance(
               true, client, getTenant(TENANT_B), "withoutIncidentsProcess", null);
       completeTask(processInstanceKey, "neverFails", null);
@@ -732,7 +735,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_B), "usertest/invoice.bpmn");
   }
 
-  protected void startProcessInstances(int version) {
+  protected void startProcessInstances(final int version) {
     final int instancesCount = ThreadLocalRandom.current().nextInt(15) + 15;
     for (int i = 0; i < instancesCount; i++) {
       processInstanceKeys.add(startDMNInvoice());
@@ -775,8 +778,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private long startOrderProcess() {
-    float price1 = Math.round(ThreadLocalRandom.current().nextFloat() * 100000) / 100;
-    float price2 = Math.round(ThreadLocalRandom.current().nextFloat() * 10000) / 100;
+    final float price1 = Math.round(ThreadLocalRandom.current().nextFloat() * 100000) / 100;
+    final float price2 = Math.round(ThreadLocalRandom.current().nextFloat() * 10000) / 100;
     return ZeebeTestUtil.startProcessInstance(
         true,
         client,
@@ -920,13 +923,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     private final long processInstanceKey;
     private boolean taskCompleted = false;
 
-    public CompleteJobHandler(String payload, long processInstanceKey) {
+    public CompleteJobHandler(final String payload, final long processInstanceKey) {
       this.payload = payload;
       this.processInstanceKey = processInstanceKey;
     }
 
     @Override
-    public void handle(JobClient jobClient, ActivatedJob job) {
+    public void handle(final JobClient jobClient, final ActivatedJob job) {
       if (!taskCompleted && processInstanceKey == job.getProcessInstanceKey()) {
         if (payload == null) {
           jobClient.newCompleteCommand(job.getKey()).variables(job.getVariables()).send().join();
@@ -947,13 +950,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     private final String errorMessage;
     private boolean taskFailed = false;
 
-    public FailJobHandler(long processInstanceKey, String errorMessage) {
+    public FailJobHandler(final long processInstanceKey, final String errorMessage) {
       this.processInstanceKey = processInstanceKey;
       this.errorMessage = errorMessage;
     }
 
     @Override
-    public void handle(JobClient jobClient, ActivatedJob job) {
+    public void handle(final JobClient jobClient, final ActivatedJob job) {
       if (!taskFailed && processInstanceKey == job.getProcessInstanceKey()) {
         FinalCommandStep failCmd = jobClient.newFailCommand(job.getKey()).retries(0);
         if (errorMessage != null) {

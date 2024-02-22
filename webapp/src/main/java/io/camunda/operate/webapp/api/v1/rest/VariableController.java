@@ -42,10 +42,8 @@ public class VariableController extends ErrorController implements SearchControl
 
   public static final String URI = "/v1/variables";
   public static final String BY_PROCESS_INSTANCE_KEY = "/process-instance/{key}";
-
-  @Autowired private VariableDao variableDao;
-
   private final QueryValidator<Variable> queryValidator = new QueryValidator<>();
+  @Autowired private VariableDao variableDao;
 
   @Operation(
       summary = "Search variables for process instances",

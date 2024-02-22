@@ -32,6 +32,11 @@ public class DecisionInstanceReferenceDto {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(instanceId, decisionName);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -42,10 +47,5 @@ public class DecisionInstanceReferenceDto {
     final DecisionInstanceReferenceDto that = (DecisionInstanceReferenceDto) o;
     return Objects.equals(instanceId, that.instanceId)
         && Objects.equals(decisionName, that.decisionName);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(instanceId, decisionName);
   }
 }

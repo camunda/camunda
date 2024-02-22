@@ -117,21 +117,22 @@ public class OpensearchRecordsReader implements RecordsReader {
   @Autowired(required = false)
   private List<ImportListener> importListeners;
 
-  public OpensearchRecordsReader(int partitionId, ImportValueType importValueType, int queueSize) {
+  public OpensearchRecordsReader(
+      final int partitionId, final ImportValueType importValueType, final int queueSize) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
-    this.importJobs = new LinkedBlockingQueue<>(queueSize);
-    this.schedulingImportJobLock = new ReentrantLock();
+    importJobs = new LinkedBlockingQueue<>(queueSize);
+    schedulingImportJobLock = new ReentrantLock();
   }
 
   @PostConstruct
   private void postConstruct() {
-    this.batchSizeThrottle =
+    batchSizeThrottle =
         new NumberThrottleable.DivideNumberThrottle(
             operateProperties.getZeebeOpensearch().getBatchSize());
     // 1st sequence of next partition - 1
-    this.maxPossibleSequence = sequence(partitionId + 1, 0) - 1;
-    this.countEmptyRuns = 0;
+    maxPossibleSequence = sequence(partitionId + 1, 0) - 1;
+    countEmptyRuns = 0;
   }
 
   @Override
@@ -144,7 +145,7 @@ public class OpensearchRecordsReader implements RecordsReader {
   }
 
   @Override
-  public void readAndScheduleNextBatch(boolean autoContinue) {
+  public void readAndScheduleNextBatch(final boolean autoContinue) {
     final int readerBackoff = operateProperties.getImporter().getReaderBackoff();
     final boolean useOnlyPosition = operateProperties.getImporter().isUseOnlyPosition();
     try {
@@ -155,7 +156,7 @@ public class OpensearchRecordsReader implements RecordsReader {
           String.valueOf(partitionId),
           TAG_KEY_TYPE,
           importValueType.name());
-      ImportBatch importBatch;
+      final ImportBatch importBatch;
       final ImportPositionEntity latestPosition =
           importPositionHolder.getLatestScheduledPosition(
               importValueType.getAliasTemplate(), partitionId);
@@ -186,12 +187,12 @@ public class OpensearchRecordsReader implements RecordsReader {
       if (autoContinue) {
         rescheduleReader(nextRunDelay);
       }
-    } catch (NoSuchIndexException ex) {
+    } catch (final NoSuchIndexException ex) {
       // if no index found, we back off current reader
       if (autoContinue) {
         rescheduleReader(readerBackoff);
       }
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       logger.error(ex.getMessage(), ex);
       if (autoContinue) {
         rescheduleReader(null);
@@ -199,16 +200,12 @@ public class OpensearchRecordsReader implements RecordsReader {
     }
   }
 
-  private ImportBatch readNextBatchBySequence(final Long sequence) throws NoSuchIndexException {
-    return readNextBatchBySequence(sequence, null);
-  }
-
   @Override
   public ImportBatch readNextBatchBySequence(final Long sequence, final Long lastSequence)
       throws NoSuchIndexException {
     final String aliasName =
         importValueType.getAliasName(operateProperties.getZeebeOpensearch().getPrefix());
-    int batchSize = batchSizeThrottle.get();
+    final int batchSize = batchSizeThrottle.get();
     if (batchSize != batchSizeThrottle.getOriginal()) {
       logger.warn(
           "Use new batch size {} (original {})", batchSize, batchSizeThrottle.getOriginal());
@@ -244,14 +241,14 @@ public class OpensearchRecordsReader implements RecordsReader {
       }
     }
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(aliasName)
             .routing(String.valueOf(partitionId))
             .requestCache(false)
             .size(Math.min(maxNumberOfHits, QUERY_MAX_SIZE))
             .sort(sortOptions(ImportPositionIndex.SEQUENCE, SortOrder.Asc))
             .query(gtLte(ImportPositionIndex.SEQUENCE, sequence, lessThanEqualsSequence));
-    boolean scrollNeeded = maxNumberOfHits >= ElasticsearchUtil.QUERY_MAX_SIZE;
+    final boolean scrollNeeded = maxNumberOfHits >= ElasticsearchUtil.QUERY_MAX_SIZE;
     try {
       final HitEntity[] hits = withTimerSearchHits(() -> read(searchRequestBuilder, scrollNeeded));
       if (hits.length == 0) {
@@ -260,7 +257,7 @@ public class OpensearchRecordsReader implements RecordsReader {
         countEmptyRuns = 0;
       }
       return createImportBatch(hits);
-    } catch (OpenSearchException ex) {
+    } catch (final OpenSearchException ex) {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
@@ -270,7 +267,7 @@ public class OpensearchRecordsReader implements RecordsReader {
                 aliasName, ex.getMessage());
         throw new OperateRuntimeException(message, ex);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
         logger.info(
             "{}. Will decrease batch size for {}-{}",
@@ -289,30 +286,13 @@ public class OpensearchRecordsReader implements RecordsReader {
     }
   }
 
-  private HitEntity[] read(SearchRequest.Builder searchRequestBuilder, boolean scrollNeeded)
-      throws IOException {
-    List<Hit<Object>> hits =
-        scrollNeeded
-            ? zeebeRichOpenSearchClient
-                .doc()
-                .scrollHits(searchRequestBuilder, Object.class)
-                .values()
-            : zeebeRichOpenSearchClient
-                .doc()
-                .search(searchRequestBuilder, Object.class)
-                .hits()
-                .hits();
-
-    return hits.stream().map(this::searchHitToOperateHit).toArray(HitEntity[]::new);
-  }
-
   @Override
-  public ImportBatch readNextBatchByPositionAndPartition(long positionFrom, Long positionTo)
-      throws NoSuchIndexException {
-    String aliasName =
+  public ImportBatch readNextBatchByPositionAndPartition(
+      final long positionFrom, final Long positionTo) throws NoSuchIndexException {
+    final String aliasName =
         importValueType.getAliasName(operateProperties.getZeebeOpensearch().getPrefix());
     int size = batchSizeThrottle.get();
-    Query rangeQuery;
+    final Query rangeQuery;
 
     if (positionTo != null) {
       logger.debug(
@@ -329,9 +309,9 @@ public class OpensearchRecordsReader implements RecordsReader {
       rangeQuery = gt(ImportPositionIndex.POSITION, positionFrom);
     }
 
-    Query query = and(term(PARTITION_ID_FIELD_NAME, partitionId), rangeQuery);
+    final Query query = and(term(PARTITION_ID_FIELD_NAME, partitionId), rangeQuery);
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(aliasName)
             .query(query)
             .sort(sortOptions(ImportPositionIndex.POSITION, SortOrder.Asc))
@@ -353,7 +333,7 @@ public class OpensearchRecordsReader implements RecordsReader {
                       .toArray(HitEntity[]::new));
 
       return createImportBatch(hits);
-    } catch (OpenSearchException ex) {
+    } catch (final OpenSearchException ex) {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
@@ -363,7 +343,7 @@ public class OpensearchRecordsReader implements RecordsReader {
                 aliasName, ex.getMessage());
         throw new OperateRuntimeException(message, ex);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
         batchSizeThrottle.throttle();
         return readNextBatchByPositionAndPartition(positionFrom, positionTo);
@@ -377,7 +357,44 @@ public class OpensearchRecordsReader implements RecordsReader {
     }
   }
 
-  private void rescheduleReader(Integer readerDelay) {
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public ImportValueType getImportValueType() {
+    return importValueType;
+  }
+
+  @Override
+  public BlockingQueue<Callable<Boolean>> getImportJobs() {
+    return importJobs;
+  }
+
+  private ImportBatch readNextBatchBySequence(final Long sequence) throws NoSuchIndexException {
+    return readNextBatchBySequence(sequence, null);
+  }
+
+  private HitEntity[] read(
+      final SearchRequest.Builder searchRequestBuilder, final boolean scrollNeeded)
+      throws IOException {
+    final List<Hit<Object>> hits =
+        scrollNeeded
+            ? zeebeRichOpenSearchClient
+                .doc()
+                .scrollHits(searchRequestBuilder, Object.class)
+                .values()
+            : zeebeRichOpenSearchClient
+                .doc()
+                .search(searchRequestBuilder, Object.class)
+                .hits()
+                .hits();
+
+    return hits.stream().map(this::searchHitToOperateHit).toArray(HitEntity[]::new);
+  }
+
+  private void rescheduleReader(final Integer readerDelay) {
     if (readerDelay != null) {
       readersExecutor.schedule(
           this, Date.from(OffsetDateTime.now().plus(readerDelay, ChronoUnit.MILLIS).toInstant()));
@@ -386,15 +403,15 @@ public class OpensearchRecordsReader implements RecordsReader {
     }
   }
 
-  private HitEntity searchHitToOperateHit(Hit<?> searchHit) {
+  private HitEntity searchHitToOperateHit(final Hit<?> searchHit) {
     if (searchHit.source() == null) return null;
-    var stringWriter = new StringWriter();
+    final var stringWriter = new StringWriter();
     try {
       new ObjectMapper().writeValue(stringWriter, searchHit.source());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
-    var jsonString = stringWriter.toString();
+    final var jsonString = stringWriter.toString();
     return new HitEntity().setIndex(searchHit.index()).setSourceAsString(jsonString);
   }
 
@@ -428,13 +445,13 @@ public class OpensearchRecordsReader implements RecordsReader {
     job.recordLatestScheduledPosition();
   }
 
-  private void notifyImportListenersAsScheduled(ImportBatch importBatch) {
+  private void notifyImportListenersAsScheduled(final ImportBatch importBatch) {
     if (importListeners != null) {
       importListeners.forEach(listener -> listener.scheduled(importBatch));
     }
   }
 
-  private ImportBatch createImportBatch(HitEntity[] hits) {
+  private ImportBatch createImportBatch(final HitEntity[] hits) {
     String indexName = null;
     if (hits.length > 0) {
       indexName = hits[hits.length - 1].getIndex();
@@ -442,7 +459,7 @@ public class OpensearchRecordsReader implements RecordsReader {
     return new ImportBatch(partitionId, importValueType, Arrays.asList(hits), indexName);
   }
 
-  private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
+  private SearchResponse withTimer(final Callable<SearchResponse> callable) throws Exception {
     return metrics
         .getTimer(
             Metrics.TIMER_NAME_IMPORT_QUERY,
@@ -453,7 +470,7 @@ public class OpensearchRecordsReader implements RecordsReader {
         .recordCallable(callable);
   }
 
-  private HitEntity[] withTimerSearchHits(Callable<HitEntity[]> callable) throws Exception {
+  private HitEntity[] withTimerSearchHits(final Callable<HitEntity[]> callable) throws Exception {
     return metrics
         .getTimer(
             Metrics.TIMER_NAME_IMPORT_QUERY,
@@ -515,7 +532,7 @@ public class OpensearchRecordsReader implements RecordsReader {
     }
   }
 
-  private void execute(Callable<Boolean> job) {
+  private void execute(final Callable<Boolean> job) {
     importExecutor.submit(job);
     // TODO what to do with failing jobs
     logger.debug("Submitted the same job");
@@ -576,25 +593,10 @@ public class OpensearchRecordsReader implements RecordsReader {
     try {
       schedulingImportJobLock.lock();
       return action.call();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException(e);
     } finally {
       schedulingImportJobLock.unlock();
     }
-  }
-
-  @Override
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  @Override
-  public ImportValueType getImportValueType() {
-    return importValueType;
-  }
-
-  @Override
-  public BlockingQueue<Callable<Boolean>> getImportJobs() {
-    return importJobs;
   }
 }

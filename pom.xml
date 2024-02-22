@@ -85,6 +85,9 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
 
+    <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
+    <version.checkstyle>10.13.0</version.checkstyle>
+    <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
   </properties>
 
   <dependencyManagement>
@@ -441,6 +444,46 @@
             </dependency>
           </dependencies>
         </plugin>
+
+        <!-- CHECKSTYLE -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>${plugin.version.checkstyle}</version>
+          <configuration>
+            <configLocation>check/.checkstyle.xml</configLocation>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+            <failOnViolation>true</failOnViolation>
+            <sourceDirectories>
+              <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+              <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+            </sourceDirectories>
+          </configuration>
+          <!-- dependency on build tool to reference the checkstyle cfg -->
+          <dependencies>
+            <dependency>
+              <groupId>io.camunda</groupId>
+              <artifactId>zeebe-build-tools</artifactId>
+              <version>${version.zeebe}</version>
+            </dependency>
+            <dependency>
+              <groupId>com.puppycrawl.tools</groupId>
+              <artifactId>checkstyle</artifactId>
+              <version>${version.checkstyle}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <id>validate-java</id>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <phase>validate</phase>
+              <configuration></configuration>
+            </execution>
+          </executions>
+        </plugin>
+
       </plugins>
     </pluginManagement>
 
@@ -535,7 +578,12 @@
               </execution>
             </executions>
           </plugin>
-       </plugins>
+
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-checkstyle-plugin</artifactId>
+          </plugin>
+        </plugins>
       </build>
     </profile>
 

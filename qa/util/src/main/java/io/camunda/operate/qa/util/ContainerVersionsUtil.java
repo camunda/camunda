@@ -13,12 +13,12 @@ import java.util.Properties;
 
 public class ContainerVersionsUtil {
 
-  private static final String VERSIONS_FILE = "/container-versions.properties";
   public static final String ZEEBE_VERSIONS_PROPERTY_NAME = "zeebe.versions";
   public static final String ZEEBE_CURRENTVERSION_PROPERTY_NAME = "zeebe.currentVersion";
   public static final String IDENTITY_CURRENTVERSION_DOCKER_PROPERTY_NAME =
       "identity.currentVersion";
   public static final String VERSIONS_DELIMITER = ",";
+  private static final String VERSIONS_FILE = "/container-versions.properties";
 
   public static String readProperty(String propertyName) {
     try (InputStream propsFile = ContainerVersionsUtil.class.getResourceAsStream(VERSIONS_FILE)) {

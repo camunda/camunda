@@ -41,6 +41,17 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
     super(transport);
   }
 
+  private static <R> SimpleEndpoint<Map<String, Object>, R> arbitraryEndpoint(
+      String method, String path, JsonpDeserializer<R> responseParser) {
+    return new SimpleEndpoint<>(
+        request -> method, // Request method
+        request -> path, // Request path
+        request -> Map.of(), // Request parameters
+        request -> Map.of(), // Headers
+        true, // Has body
+        responseParser);
+  }
+
   private ObjectMapper objectMapper() {
     return ((JacksonJsonpMapper) transport.jsonpMapper()).objectMapper();
   }
@@ -115,16 +126,5 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
       String json, JsonEndpoint<Map<String, Object>, R, ErrorResponse> endpoint)
       throws IOException, OpenSearchException {
     return transport.performRequest(jsonToMap(json), endpoint, null);
-  }
-
-  private static <R> SimpleEndpoint<Map<String, Object>, R> arbitraryEndpoint(
-      String method, String path, JsonpDeserializer<R> responseParser) {
-    return new SimpleEndpoint<>(
-        request -> method, // Request method
-        request -> path, // Request path
-        request -> Map.of(), // Request parameters
-        request -> Map.of(), // Headers
-        true, // Has body
-        responseParser);
   }
 }

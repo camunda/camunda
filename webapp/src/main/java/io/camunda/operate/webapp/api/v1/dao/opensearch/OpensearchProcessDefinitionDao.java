@@ -84,11 +84,6 @@ public class OpensearchProcessDefinitionDao
   }
 
   @Override
-  protected String getIndexName() {
-    return processIndex.getAlias();
-  }
-
-  @Override
   protected String getUniqueSortKey() {
     return ProcessIndex.KEY;
   }
@@ -96,6 +91,11 @@ public class OpensearchProcessDefinitionDao
   @Override
   protected Class<ProcessDefinition> getInternalDocumentModelClass() {
     return ProcessDefinition.class;
+  }
+
+  @Override
+  protected String getIndexName() {
+    return processIndex.getAlias();
   }
 
   @Override

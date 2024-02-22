@@ -117,6 +117,20 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
     }
   }
 
+  @Override
+  protected Incident convertInternalToApiResult(OpensearchIncident osIncident) {
+    return new Incident()
+        .setKey(osIncident.key())
+        .setProcessInstanceKey(osIncident.processInstanceKey())
+        .setProcessDefinitionKey(osIncident.processDefinitionKey())
+        .setType(osIncident.errorType())
+        .setMessage(osIncident.errorMessage())
+        .setCreationTime(dateTimeFormatter.convertGeneralToApiDateTime(osIncident.creationTime()))
+        .setState(osIncident.state())
+        .setJobKey(osIncident.jobKey())
+        .setTenantId(osIncident.tenantId());
+  }
+
   private void mapFieldsInSort(final Query<Incident> query) {
     if (query.getSort() == null) {
       return;
@@ -131,19 +145,5 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
             .toList();
 
     query.setSort(rewrittenSort);
-  }
-
-  @Override
-  protected Incident convertInternalToApiResult(OpensearchIncident osIncident) {
-    return new Incident()
-        .setKey(osIncident.key())
-        .setProcessInstanceKey(osIncident.processInstanceKey())
-        .setProcessDefinitionKey(osIncident.processDefinitionKey())
-        .setType(osIncident.errorType())
-        .setMessage(osIncident.errorMessage())
-        .setCreationTime(dateTimeFormatter.convertGeneralToApiDateTime(osIncident.creationTime()))
-        .setState(osIncident.state())
-        .setJobKey(osIncident.jobKey())
-        .setTenantId(osIncident.tenantId());
   }
 }

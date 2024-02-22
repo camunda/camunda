@@ -37,19 +37,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvider {
 
+  public static final String YYYY_MM_DD = "uuuu-MM-dd";
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
-
   private static final Logger logger =
       LoggerFactory.getLogger(OpensearchOperateZeebeRuleProvider.class);
-  public static final String YYYY_MM_DD = "uuuu-MM-dd";
-
   @Autowired public OperateProperties operateProperties;
 
   @Autowired protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
-
-  @Autowired private TestContainerUtil testContainerUtil;
-
   protected ZeebeContainer zeebeContainer;
+  @Autowired private TestContainerUtil testContainerUtil;
   private ZeebeClient client;
 
   private String prefix;
@@ -126,18 +122,6 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
     testZeebeIsReady();
   }
 
-  private void testZeebeIsReady() {
-    // get topology to check that cluster is available and ready for work
-    Topology topology = null;
-    while (topology == null) {
-      try {
-        topology = client.newTopologyRequest().send().join();
-      } catch (ClientException ex) {
-        ex.printStackTrace();
-      }
-    }
-  }
-
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stopZeebe() {
     testContainerUtil.stopZeebe(null);
@@ -162,5 +146,17 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   @Override
   public boolean isMultitTenancyEnabled() {
     return operateProperties.getMultiTenancy().isEnabled();
+  }
+
+  private void testZeebeIsReady() {
+    // get topology to check that cluster is available and ready for work
+    Topology topology = null;
+    while (topology == null) {
+      try {
+        topology = client.newTopologyRequest().send().join();
+      } catch (ClientException ex) {
+        ex.printStackTrace();
+      }
+    }
   }
 }

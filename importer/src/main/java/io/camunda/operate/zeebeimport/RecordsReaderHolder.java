@@ -43,13 +43,13 @@ public class RecordsReaderHolder {
       return recordsReaders;
     }
     recordsReaders = new HashSet<>();
-    int queueSize = operateProperties.getImporter().getQueueSize();
+    final int queueSize = operateProperties.getImporter().getQueueSize();
     // create readers
-    List<Integer> partitionIds = partitionHolder.getPartitionIds();
+    final List<Integer> partitionIds = partitionHolder.getPartitionIds();
     logger.info("Starting import for partitions: {}", partitionIds);
-    for (Integer partitionId : partitionIds) {
+    for (final Integer partitionId : partitionIds) {
       // TODO what if it's not the final list of partitions
-      for (ImportValueType importValueType : IMPORT_VALUE_TYPES) {
+      for (final ImportValueType importValueType : IMPORT_VALUE_TYPES) {
         recordsReaders.add(
             beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));
       }
@@ -57,8 +57,9 @@ public class RecordsReaderHolder {
     return recordsReaders;
   }
 
-  public RecordsReader getRecordsReader(int partitionId, ImportValueType importValueType) {
-    for (RecordsReader recordsReader : recordsReaders) {
+  public RecordsReader getRecordsReader(
+      final int partitionId, final ImportValueType importValueType) {
+    for (final RecordsReader recordsReader : recordsReaders) {
       if (recordsReader.getPartitionId() == partitionId
           && recordsReader.getImportValueType().equals(importValueType)) {
         return recordsReader;

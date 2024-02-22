@@ -133,13 +133,10 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   public static final String CONTEXT_PATH = "/operate-test";
   @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
   @Rule public final SpringMethodRule springMethodRule = new SpringMethodRule();
-
+  private final BiFunction<String, String, Tokens> orgExtractor;
   @LocalServerPort private int randomServerPort;
-
   @Autowired private TestRestTemplate testRestTemplate;
-
   @Autowired private OperateProperties operateProperties;
-
   @MockBean private AuthenticationController authenticationController;
 
   @MockBean
@@ -147,10 +144,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   private RestTemplate restTemplate;
 
   @MockBean private IndicesCheck probes;
-
   @Autowired private ApplicationContext applicationContext;
-
-  private final BiFunction<String, String, Tokens> orgExtractor;
 
   public AuthenticationWithPersistentSessionsIT(BiFunction<String, String, Tokens> orgExtractor) {
     this.orgExtractor = orgExtractor;
@@ -159,6 +153,41 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Parameters
   public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
     return Arrays.asList(AuthenticationWithPersistentSessionsIT::tokensWithOrgAsMapFrom);
+  }
+
+  private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
+    String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
+    long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
+    Map<String, Object> orgMap = Map.of("id", organization);
+    String accountData =
+        toEncodedToken(
+            asMap(
+                claim,
+                List.of(orgMap),
+                "exp",
+                expiresInSeconds,
+                "name",
+                "operate-testuser",
+                DEFAULT_ORGANIZATIONS_KEY,
+                List.of(Map.of("id", "3", "roles", List.of("user", "analyst")))));
+    return new Tokens(
+        "accessToken",
+        emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
+        "refreshToken",
+        "type",
+        5L);
+  }
+
+  private static String toEncodedToken(Map map) {
+    return toBase64(toJSON(map));
+  }
+
+  private static String toBase64(String input) {
+    return new String(Base64.getEncoder().encode(input.getBytes()));
+  }
+
+  private static String toJSON(Map map) {
+    return new JSONObject(map).toString();
   }
 
   @Before
@@ -367,41 +396,6 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   private String urlFor(String path) {
     return String.format("http://localhost:%d%s%s", randomServerPort, CONTEXT_PATH, path);
-  }
-
-  private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
-    String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
-    long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
-    Map<String, Object> orgMap = Map.of("id", organization);
-    String accountData =
-        toEncodedToken(
-            asMap(
-                claim,
-                List.of(orgMap),
-                "exp",
-                expiresInSeconds,
-                "name",
-                "operate-testuser",
-                DEFAULT_ORGANIZATIONS_KEY,
-                List.of(Map.of("id", "3", "roles", List.of("user", "analyst")))));
-    return new Tokens(
-        "accessToken",
-        emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
-        "refreshToken",
-        "type",
-        5L);
-  }
-
-  private static String toEncodedToken(Map map) {
-    return toBase64(toJSON(map));
-  }
-
-  private static String toBase64(String input) {
-    return new String(Base64.getEncoder().encode(input.getBytes()));
-  }
-
-  private static String toJSON(Map map) {
-    return new JSONObject(map).toString();
   }
 
   @Override

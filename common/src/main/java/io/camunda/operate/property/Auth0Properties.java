@@ -37,12 +37,12 @@ public class Auth0Properties {
   private String m2mAudience;
   private String organizationsKey = DEFAULT_ORGANIZATIONS_KEY;
 
-  public void setOrganizationsKey(final String organizationsKey) {
-    this.organizationsKey = organizationsKey;
-  }
-
   public String getOrganizationsKey() {
     return organizationsKey;
+  }
+
+  public void setOrganizationsKey(final String organizationsKey) {
+    this.organizationsKey = organizationsKey;
   }
 
   public String getDomain() {

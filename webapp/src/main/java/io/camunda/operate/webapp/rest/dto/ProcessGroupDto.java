@@ -32,6 +32,35 @@ public class ProcessGroupDto {
 
   private List<ProcessDto> processes;
 
+  public static List<ProcessGroupDto> createFrom(
+      Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped) {
+    return createFrom(processesGrouped, null);
+  }
+
+  public static List<ProcessGroupDto> createFrom(
+      Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped,
+      PermissionsService permissionsService) {
+    List<ProcessGroupDto> groups = new ArrayList<>();
+    processesGrouped.values().stream()
+        .forEach(
+            group -> {
+              ProcessGroupDto groupDto = new ProcessGroupDto();
+              ProcessEntity process0 = group.get(0);
+              groupDto.setBpmnProcessId(process0.getBpmnProcessId());
+              groupDto.setTenantId(process0.getTenantId());
+              groupDto.setName(process0.getName());
+              groupDto.setPermissions(
+                  permissionsService == null
+                      ? new HashSet<>()
+                      : permissionsService.getProcessDefinitionPermission(
+                          process0.getBpmnProcessId()));
+              groupDto.setProcesses(DtoCreator.create(group, ProcessDto.class));
+              groups.add(groupDto);
+            });
+    groups.sort(new ProcessGroupDto.ProcessGroupComparator());
+    return groups;
+  }
+
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
@@ -73,33 +102,9 @@ public class ProcessGroupDto {
     this.processes = processes;
   }
 
-  public static List<ProcessGroupDto> createFrom(
-      Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped) {
-    return createFrom(processesGrouped, null);
-  }
-
-  public static List<ProcessGroupDto> createFrom(
-      Map<ProcessStore.ProcessKey, List<ProcessEntity>> processesGrouped,
-      PermissionsService permissionsService) {
-    List<ProcessGroupDto> groups = new ArrayList<>();
-    processesGrouped.values().stream()
-        .forEach(
-            group -> {
-              ProcessGroupDto groupDto = new ProcessGroupDto();
-              ProcessEntity process0 = group.get(0);
-              groupDto.setBpmnProcessId(process0.getBpmnProcessId());
-              groupDto.setTenantId(process0.getTenantId());
-              groupDto.setName(process0.getName());
-              groupDto.setPermissions(
-                  permissionsService == null
-                      ? new HashSet<>()
-                      : permissionsService.getProcessDefinitionPermission(
-                          process0.getBpmnProcessId()));
-              groupDto.setProcesses(DtoCreator.create(group, ProcessDto.class));
-              groups.add(groupDto);
-            });
-    groups.sort(new ProcessGroupDto.ProcessGroupComparator());
-    return groups;
+  @Override
+  public int hashCode() {
+    return bpmnProcessId != null ? bpmnProcessId.hashCode() : 0;
   }
 
   @Override
@@ -112,11 +117,6 @@ public class ProcessGroupDto {
     return bpmnProcessId != null
         ? bpmnProcessId.equals(that.bpmnProcessId)
         : that.bpmnProcessId == null;
-  }
-
-  @Override
-  public int hashCode() {
-    return bpmnProcessId != null ? bpmnProcessId.hashCode() : 0;
   }
 
   public static class ProcessGroupComparator implements Comparator<ProcessGroupDto> {

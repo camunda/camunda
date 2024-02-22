@@ -22,12 +22,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class FlowNodeStatisticsDaoIT extends OperateSearchAbstractIT {
 
-  @Autowired private FlowNodeStatisticsDao dao;
-
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
-
   private static final Long PROCESS_INSTANCE_KEY = 2251799813685251L;
   private static final Long PROCESS_DEFINITION_KEY = 2251799813685249L;
+  @Autowired private FlowNodeStatisticsDao dao;
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
   @Override
   public void runAdditionalBeforeAllSetup() throws Exception {

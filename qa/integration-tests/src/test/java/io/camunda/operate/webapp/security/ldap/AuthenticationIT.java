@@ -70,30 +70,17 @@ import org.testcontainers.containers.GenericContainer;
 @ContextConfiguration(initializers = {AuthenticationIT.Initializer.class})
 public class AuthenticationIT implements AuthenticationTestable {
 
-  @Autowired private TestRestTemplate testRestTemplate;
-
-  @Autowired private OperateProperties operateProperties;
-
   @ClassRule
   public static GenericContainer<?> ldapServer =
       // https://github.com/rroemhild/docker-test-openldap
       new GenericContainer<>("rroemhild/test-openldap").withExposedPorts(10389);
 
+  @Autowired private TestRestTemplate testRestTemplate;
+  @Autowired private OperateProperties operateProperties;
+
   @Override
   public TestRestTemplate getTestRestTemplate() {
     return testRestTemplate;
-  }
-
-  static class Initializer
-      implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-    public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
-      TestPropertyValues.of(
-              "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID,
-              String.format(
-                  "camunda.operate.ldap.url=ldap://%s:%d/",
-                  ldapServer.getHost(), ldapServer.getFirstMappedPort()))
-          .applyTo(configurableApplicationContext.getEnvironment());
-    }
   }
 
   @Test
@@ -130,5 +117,17 @@ public class AuthenticationIT implements AuthenticationTestable {
     assertThat(userInfo.getUserId()).isEqualTo("bender");
     assertThat(userInfo.getDisplayName()).isEqualTo("Bender");
     assertThat(userInfo.isCanLogout()).isTrue();
+  }
+
+  static class Initializer
+      implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+    public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
+      TestPropertyValues.of(
+              "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID,
+              String.format(
+                  "camunda.operate.ldap.url=ldap://%s:%d/",
+                  ldapServer.getHost(), ldapServer.getFirstMappedPort()))
+          .applyTo(configurableApplicationContext.getEnvironment());
+    }
   }
 }

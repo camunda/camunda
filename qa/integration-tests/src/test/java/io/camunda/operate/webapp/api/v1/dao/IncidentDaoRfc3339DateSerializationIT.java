@@ -34,18 +34,15 @@ import org.springframework.boot.test.context.SpringBootTest;
       OperateProperties.PREFIX + ".rfc3339ApiDateFormat = true"
     })
 public class IncidentDaoRfc3339DateSerializationIT extends OperateSearchAbstractIT {
-  @Autowired private IncidentDao dao;
-
-  @Autowired private IncidentTemplate incidentIndex;
-
-  @Autowired private OperateDateTimeFormatter dateTimeFormatter;
-
   private final String firstIncidentCreationTime = "2024-02-15T22:40:10.834+0000";
   private final String firstIncidentRfc3339CreationTime = "2024-02-15T22:40:10.834+00:00";
   private final String secondIncidentCreationTime = "2024-02-15T22:41:10.834+0000";
   private final String secondIncidentRfc3339CreationTime = "2024-02-15T22:41:10.834+00:00";
   private final String thirdIncidentCreationTime = "2024-01-15T22:40:10.834+0000";
   private final String thirdIncidentRfc3339CreationTime = "2024-01-15T22:40:10.834+00:00";
+  @Autowired private IncidentDao dao;
+  @Autowired private IncidentTemplate incidentIndex;
+  @Autowired private OperateDateTimeFormatter dateTimeFormatter;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {

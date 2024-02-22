@@ -20,6 +20,11 @@ public abstract class OperateEntity<T extends OperateEntity<T>> {
   }
 
   @Override
+  public int hashCode() {
+    return id != null ? id.hashCode() : 0;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -27,11 +32,6 @@ public abstract class OperateEntity<T extends OperateEntity<T>> {
     OperateEntity<T> that = (OperateEntity<T>) o;
 
     return id != null ? id.equals(that.id) : that.id == null;
-  }
-
-  @Override
-  public int hashCode() {
-    return id != null ? id.hashCode() : 0;
   }
 
   @Override

@@ -20,7 +20,7 @@ public class ImportConfig {
 
   @Bean("importThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
-    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(operateProperties.getImporter().getThreadsCount());
     executor.setMaxPoolSize(operateProperties.getImporter().getThreadsCount());
     executor.setThreadNamePrefix("import_");
@@ -29,8 +29,9 @@ public class ImportConfig {
   }
 
   @Bean("postImportThreadPoolScheduler")
-  public ThreadPoolTaskScheduler getPostImportTaskScheduler(OperateProperties operateProperties) {
-    ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+  public ThreadPoolTaskScheduler getPostImportTaskScheduler(
+      final OperateProperties operateProperties) {
+    final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
     scheduler.setPoolSize(operateProperties.getImporter().getPostImportThreadsCount());
     scheduler.setThreadNamePrefix("postimport_");
     scheduler.initialize();
@@ -39,7 +40,7 @@ public class ImportConfig {
 
   @Bean("recordsReaderThreadPoolExecutor")
   public ThreadPoolTaskScheduler getRecordsReaderTaskExecutor() {
-    ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();
+    final ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();
     executor.setPoolSize(operateProperties.getImporter().getReaderThreadsCount());
     executor.setThreadNamePrefix("records_reader_");
     executor.initialize();
@@ -48,7 +49,7 @@ public class ImportConfig {
 
   @Bean("importPositionUpdateThreadPoolExecutor")
   public ThreadPoolTaskScheduler getImportPositionUpdateTaskExecutor() {
-    ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();
+    final ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();
     executor.setPoolSize(1);
     executor.setThreadNamePrefix("import_position_update_");
     executor.initialize();

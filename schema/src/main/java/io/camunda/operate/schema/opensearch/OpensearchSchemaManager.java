@@ -47,7 +47,6 @@ import org.springframework.util.StreamUtils;
 @Conditional(OpensearchCondition.class)
 public class OpensearchSchemaManager implements SchemaManager {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchSchemaManager.class);
   public static final String SCHEMA_OPENSEARCH_CREATE_TEMPLATE_JSON =
       "/schema/opensearch/create/template/operate-%s.json";
   public static final String SCHEMA_OPENSEARCH_CREATE_INDEX_JSON =
@@ -56,7 +55,7 @@ public class OpensearchSchemaManager implements SchemaManager {
       "/schema/opensearch/create/policy/%s.json";
   public static final String SETTINGS = "settings";
   public static final String MAPPINGS = "mappings";
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchSchemaManager.class);
   protected final OperateProperties operateProperties;
 
   protected final RichOpenSearchClient richOpenSearchClient;
@@ -174,6 +173,11 @@ public class OpensearchSchemaManager implements SchemaManager {
       }
     }
     return result;
+  }
+
+  @Override
+  public String getIndexPrefix() {
+    return operateProperties.getOpensearch().getIndexPrefix();
   }
 
   private void createDefaults() {
@@ -379,11 +383,6 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   private void createIndices() {
     indexDescriptors.forEach(this::createIndex);
-  }
-
-  @Override
-  public String getIndexPrefix() {
-    return operateProperties.getOpensearch().getIndexPrefix();
   }
 
   private Optional<Map<String, Object>> fetchIsmPolicy() {

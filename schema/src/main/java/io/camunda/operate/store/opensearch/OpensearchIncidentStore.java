@@ -39,13 +39,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchIncidentStore implements IncidentStore {
 
-  private static final Logger logger = LoggerFactory.getLogger(OpensearchIncidentStore.class);
   public static Query ACTIVE_INCIDENT_QUERY =
       TermQuery.of(
               q ->
                   q.field(IncidentTemplate.STATE).value(FieldValue.of(IncidentState.ACTIVE.name())))
           ._toQuery();
-
+  private static final Logger logger = LoggerFactory.getLogger(OpensearchIncidentStore.class);
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Autowired private IncidentTemplate incidentTemplate;
@@ -63,6 +62,43 @@ public class OpensearchIncidentStore implements IncidentStore {
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
             .query(withTenantCheck(activeIncidentConstantScore(ids(key))));
     return richOpenSearchClient.doc().searchUnique(searchRequestBuilder, IncidentEntity.class, key);
+  }
+
+  @Override
+  public List<IncidentEntity> getIncidentsWithErrorTypesFor(
+      String treePath, List<Map<ErrorType, Long>> errorTypes) {
+    final String errorTypesAggName = "errorTypesAgg";
+    var request =
+        searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
+            .query(
+                withTenantCheck(
+                    constantScore(
+                        and(term(IncidentTemplate.TREE_PATH, treePath), ACTIVE_INCIDENT_QUERY))))
+            .aggregations(
+                Map.of(
+                    errorTypesAggName,
+                    termAggregation(
+                            IncidentTemplate.ERROR_TYPE,
+                            ErrorType.values().length,
+                            Map.of("_key", SortOrder.Asc))
+                        ._toAggregation()));
+
+    OpenSearchDocumentOperations.AggregatedResult<IncidentEntity> result =
+        richOpenSearchClient.doc().scrollValuesAndAggregations(request, IncidentEntity.class);
+
+    result
+        .aggregates()
+        .get(errorTypesAggName)
+        .sterms()
+        .buckets()
+        .array()
+        .forEach(
+            b -> {
+              ErrorType errorType = ErrorType.valueOf(b.key());
+              errorTypes.add(Map.of(errorType, b.docCount()));
+            });
+
+    return result.values();
   }
 
   @Override
@@ -103,42 +139,5 @@ public class OpensearchIncidentStore implements IncidentStore {
                     result, hit.source().processInstanceKey(), Long.valueOf(hit.id())));
 
     return result;
-  }
-
-  @Override
-  public List<IncidentEntity> getIncidentsWithErrorTypesFor(
-      String treePath, List<Map<ErrorType, Long>> errorTypes) {
-    final String errorTypesAggName = "errorTypesAgg";
-    var request =
-        searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
-            .query(
-                withTenantCheck(
-                    constantScore(
-                        and(term(IncidentTemplate.TREE_PATH, treePath), ACTIVE_INCIDENT_QUERY))))
-            .aggregations(
-                Map.of(
-                    errorTypesAggName,
-                    termAggregation(
-                            IncidentTemplate.ERROR_TYPE,
-                            ErrorType.values().length,
-                            Map.of("_key", SortOrder.Asc))
-                        ._toAggregation()));
-
-    OpenSearchDocumentOperations.AggregatedResult<IncidentEntity> result =
-        richOpenSearchClient.doc().scrollValuesAndAggregations(request, IncidentEntity.class);
-
-    result
-        .aggregates()
-        .get(errorTypesAggName)
-        .sterms()
-        .buckets()
-        .array()
-        .forEach(
-            b -> {
-              ErrorType errorType = ErrorType.valueOf(b.key());
-              errorTypes.add(Map.of(errorType, b.docCount()));
-            });
-
-    return result.values();
   }
 }

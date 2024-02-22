@@ -33,8 +33,37 @@ public class DecisionInstanceForListDto {
    */
   private SortValuesWrapper[] sortValues;
 
+  public static DecisionInstanceForListDto createFrom(
+      final DecisionInstanceEntity entity, ObjectMapper objectMapper) {
+    return new DecisionInstanceForListDto()
+        .setDecisionName(entity.getDecisionName())
+        .setDecisionVersion(entity.getDecisionVersion())
+        .setEvaluationDate(entity.getEvaluationDate())
+        .setId(entity.getId())
+        .setProcessInstanceId(String.valueOf(entity.getProcessInstanceKey()))
+        .setState(DecisionInstanceStateDto.getState(entity.getState()))
+        .setSortValues(SortValuesWrapper.createFrom(entity.getSortValues(), objectMapper))
+        .setTenantId(entity.getTenantId());
+  }
+
+  public static List<DecisionInstanceForListDto> createFrom(
+      List<DecisionInstanceEntity> decisionInstanceEntities, ObjectMapper objectMapper) {
+    if (decisionInstanceEntities == null) {
+      return new ArrayList<>();
+    }
+    return decisionInstanceEntities.stream()
+        .filter(item -> item != null)
+        .map(item -> createFrom(item, objectMapper))
+        .collect(Collectors.toList());
+  }
+
   public String getId() {
     return id;
+  }
+
+  public DecisionInstanceForListDto setId(final String id) {
+    this.id = id;
+    return this;
   }
 
   public DecisionInstanceStateDto getState() {
@@ -43,11 +72,6 @@ public class DecisionInstanceForListDto {
 
   public DecisionInstanceForListDto setState(final DecisionInstanceStateDto state) {
     this.state = state;
-    return this;
-  }
-
-  public DecisionInstanceForListDto setId(final String id) {
-    this.id = id;
     return this;
   }
 
@@ -105,28 +129,13 @@ public class DecisionInstanceForListDto {
     return this;
   }
 
-  public static DecisionInstanceForListDto createFrom(
-      final DecisionInstanceEntity entity, ObjectMapper objectMapper) {
-    return new DecisionInstanceForListDto()
-        .setDecisionName(entity.getDecisionName())
-        .setDecisionVersion(entity.getDecisionVersion())
-        .setEvaluationDate(entity.getEvaluationDate())
-        .setId(entity.getId())
-        .setProcessInstanceId(String.valueOf(entity.getProcessInstanceKey()))
-        .setState(DecisionInstanceStateDto.getState(entity.getState()))
-        .setSortValues(SortValuesWrapper.createFrom(entity.getSortValues(), objectMapper))
-        .setTenantId(entity.getTenantId());
-  }
-
-  public static List<DecisionInstanceForListDto> createFrom(
-      List<DecisionInstanceEntity> decisionInstanceEntities, ObjectMapper objectMapper) {
-    if (decisionInstanceEntities == null) {
-      return new ArrayList<>();
-    }
-    return decisionInstanceEntities.stream()
-        .filter(item -> item != null)
-        .map(item -> createFrom(item, objectMapper))
-        .collect(Collectors.toList());
+  @Override
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            id, state, decisionName, decisionVersion, evaluationDate, processInstanceId, tenantId);
+    result = 31 * result + Arrays.hashCode(sortValues);
+    return result;
   }
 
   @Override
@@ -142,15 +151,6 @@ public class DecisionInstanceForListDto {
         && Objects.equals(processInstanceId, that.processInstanceId)
         && Objects.equals(tenantId, that.tenantId)
         && Arrays.equals(sortValues, that.sortValues);
-  }
-
-  @Override
-  public int hashCode() {
-    int result =
-        Objects.hash(
-            id, state, decisionName, decisionVersion, evaluationDate, processInstanceId, tenantId);
-    result = 31 * result + Arrays.hashCode(sortValues);
-    return result;
   }
 
   @Override

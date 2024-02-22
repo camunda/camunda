@@ -39,14 +39,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
       OperateProperties.PREFIX + ".rfc3339ApiDateFormat = true"
     })
 public class FlowNodeInstanceDaoRfc3339DateSerializationIT extends OperateSearchAbstractIT {
-  @Autowired private FlowNodeInstanceDao dao;
-
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
-
-  @MockBean private ProcessCache processCache;
-
-  @Autowired private OperateDateTimeFormatter dateTimeFormatter;
-
   private final String firstNodeStartDate = "2024-02-15T22:40:10.834+0000";
   private final String firstNodeStartDateRfc3339 = "2024-02-15T22:40:10.834+00:00";
   private final String secondNodeStartDate = "2024-02-15T22:41:10.834+0000";
@@ -55,6 +47,10 @@ public class FlowNodeInstanceDaoRfc3339DateSerializationIT extends OperateSearch
   private final String thirdNodeStartDateRfc3339 = "2024-01-15T22:40:10.834+00:00";
   private final String endDate = "2024-02-15T22:41:10.834+0000";
   private final String endDateRfc3339 = "2024-02-15T22:41:10.834+00:00";
+  @Autowired private FlowNodeInstanceDao dao;
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
+  @MockBean private ProcessCache processCache;
+  @Autowired private OperateDateTimeFormatter dateTimeFormatter;
 
   @Override
   public void runAdditionalBeforeAllSetup() throws Exception {

@@ -147,6 +147,16 @@ public class FlowNodeInstanceQueryDto {
   }
 
   @Override
+  public int hashCode() {
+    int result = Objects.hash(processInstanceId, treePath, pageSize);
+    result = 31 * result + Arrays.hashCode(searchBefore);
+    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
+    result = 31 * result + Arrays.hashCode(searchAfter);
+    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -162,15 +172,5 @@ public class FlowNodeInstanceQueryDto {
         && Arrays.equals(searchAfter, queryDto.searchAfter)
         && Arrays.equals(searchAfterOrEqual, queryDto.searchAfterOrEqual)
         && Objects.equals(pageSize, queryDto.pageSize);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(processInstanceId, treePath, pageSize);
-    result = 31 * result + Arrays.hashCode(searchBefore);
-    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
-    result = 31 * result + Arrays.hashCode(searchAfter);
-    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
-    return result;
   }
 }

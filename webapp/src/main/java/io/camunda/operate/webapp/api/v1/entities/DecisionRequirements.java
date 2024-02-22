@@ -94,6 +94,11 @@ public class DecisionRequirements {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(id, key, decisionRequirementsId, name, version, resourceName, tenantId);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -105,11 +110,6 @@ public class DecisionRequirements {
         && Objects.equals(version, that.version)
         && Objects.equals(resourceName, that.resourceName)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, key, decisionRequirementsId, name, version, resourceName, tenantId);
   }
 
   @Override

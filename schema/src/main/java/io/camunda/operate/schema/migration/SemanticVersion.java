@@ -29,20 +29,6 @@ public final class SemanticVersion implements Comparable<SemanticVersion> {
   private final String displayText;
 
   /**
-   * Factory for creating a SemanticVersion from a version String
-   *
-   * @param version The version String like
-   * @return The MigrationVersion
-   */
-  public static SemanticVersion fromVersion(final String version) {
-    return new SemanticVersion(version);
-  }
-
-  public boolean isBetween(final SemanticVersion olderVersion, final SemanticVersion newerVersion) {
-    return isNewerThan(olderVersion) && !isNewerThan(newerVersion);
-  }
-
-  /**
    * Creates a Version using this version string.
    *
    * @param version The version in one of the following formats: 6, 6.0, 005, 1.2.3.4, 201004200021.
@@ -61,6 +47,20 @@ public final class SemanticVersion implements Comparable<SemanticVersion> {
     }
     this.versionParts = tokenize(normalizedVersion);
     this.displayText = versionParts.stream().map(Object::toString).collect(Collectors.joining("."));
+  }
+
+  /**
+   * Factory for creating a SemanticVersion from a version String
+   *
+   * @param version The version String like
+   * @return The MigrationVersion
+   */
+  public static SemanticVersion fromVersion(final String version) {
+    return new SemanticVersion(version);
+  }
+
+  public boolean isBetween(final SemanticVersion olderVersion, final SemanticVersion newerVersion) {
+    return isNewerThan(olderVersion) && !isNewerThan(newerVersion);
   }
 
   /**
