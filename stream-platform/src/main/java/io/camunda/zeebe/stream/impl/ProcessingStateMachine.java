@@ -200,18 +200,21 @@ public final class ProcessingStateMachine {
 
   private void skipRecord() {
     notifySkippedListener(currentRecord);
-    inProcessing = false;
+    markProcessingCompleted();
     actor.submit(this::readNextRecord);
     metrics.eventSkipped();
   }
 
   void readNextRecord() {
+    tryToReadNextRecord();
+  }
+
+  void markProcessingCompleted() {
+    inProcessing = false;
     if (onErrorRetries > 0) {
       onErrorRetries = 0;
       errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
     }
-
-    tryToReadNextRecord();
   }
 
   private void tryToReadNextRecord() {
@@ -700,7 +703,7 @@ public final class ProcessingStateMachine {
           processingTimer.close();
 
           // continue with next record
-          inProcessing = false;
+          markProcessingCompleted();
           actor.submit(this::readNextRecord);
         });
   }
