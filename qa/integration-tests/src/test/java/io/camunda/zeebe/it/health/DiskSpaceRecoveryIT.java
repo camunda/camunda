@@ -7,14 +7,18 @@
  */
 package io.camunda.zeebe.it.health;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.grpc.Status.Code;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeVolume;
 import io.zeebe.containers.engine.ContainerEngine;
@@ -27,6 +31,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -49,6 +54,11 @@ final class DiskSpaceRecoveryIT {
           .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "1MB")
           .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "1MB")
           .withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.5");
+
+  @SuppressWarnings("JUnitMalformedDeclaration")
+  @RegisterExtension
+  private final ContainerLogsDumper logsDumper =
+      new ContainerLogsDumper(() -> Map.of("broker", container));
 
   private ZeebeClient client;
 
@@ -139,10 +149,32 @@ final class DiskSpaceRecoveryIT {
 
     @Test
     void shouldNotProcessWhenOutOfDiskSpaceOnStart() {
-      // when - then
-      assertThatThrownBy(DiskSpaceRecoveryIT.this::publishMessage)
-          .hasRootCauseMessage(
-              "RESOURCE_EXHAUSTED: Cannot accept requests for partition 1. Broker is out of disk space");
+      // given
+      var retryCount = 0;
+
+      // when
+      while (retryCount < 3) {
+        try {
+          publishMessage();
+        } catch (final ClientStatusException e) {
+          retryCount++;
+
+          if (e.getStatusCode() == Code.DEADLINE_EXCEEDED) {
+            continue;
+          }
+
+          // then
+          assertThat(e.getStatusCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
+          assertThat(e)
+              .hasRootCauseMessage(
+                  "RESOURCE_EXHAUSTED: Cannot accept requests for partition 1. Broker is out of disk space");
+        }
+      }
+
+      assertThat(retryCount)
+          .as(
+              "Expected at least one out of three requests to not timeout; the container may be broken")
+          .isLessThan(4);
     }
   }
 }
