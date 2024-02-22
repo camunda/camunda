@@ -200,7 +200,9 @@ public final class ProcessingStateMachine {
   }
 
   void readNextRecord() {
+    LOG.error("find me readNextRecord before onErrorRetries {}", onErrorRetries);
     if (onErrorRetries > 0) {
+      LOG.error("find me readNextRecord updated onErrorRetries {}", onErrorRetries);
       onErrorRetries = 0;
       errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
     }
@@ -226,6 +228,7 @@ public final class ProcessingStateMachine {
     }
 
     if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
+      LOG.error("find me tryToReadNextRecord errorHandlingPhase {} {}", errorHandlingPhase, onErrorRetries);
       currentRecord = logStreamReader.next();
 
       if (eventFilter.applies(currentRecord) && !currentRecord.shouldSkipProcessing()) {
@@ -256,6 +259,7 @@ public final class ProcessingStateMachine {
 
     metadata.reset();
     loggedEvent.readMetadata(metadata);
+    LOG.error("find me processCommand entrance intent:{} key:{} position:{}", metadata.getIntent(), loggedEvent.getKey(), loggedEvent.getPosition());
 
     try {
       // Here we need to get the current time, since we want to calculate
@@ -306,6 +310,7 @@ public final class ProcessingStateMachine {
             });
       }
     } catch (final Exception e) {
+      LOG.error("find me processCommand exception catch errorHandlingPhase {} {}", errorHandlingPhase, onErrorRetries, e);
       onError(
           e,
           () -> {
@@ -425,6 +430,7 @@ public final class ProcessingStateMachine {
   private void onError(final Throwable error, final NextProcessingStep nextStep) {
     onErrorRetries++;
     switchErrorPhase();
+    LOG.error("find me onError entrance {} {}", errorHandlingPhase, onErrorRetries);
 
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
@@ -478,6 +484,7 @@ public final class ProcessingStateMachine {
 
   private void startErrorLoop(final boolean isUserCommand) {
     if (errorHandlingPhase == ErrorHandlingPhase.NO_ERROR) {
+      LOG.error("find me inside startErrorLoop errorHandlingPhase {} {}", errorHandlingPhase, onErrorRetries);
       errorHandlingPhase =
           isUserCommand
               ? ErrorHandlingPhase.USER_COMMAND_PROCESSING_FAILED
@@ -505,6 +512,8 @@ public final class ProcessingStateMachine {
           }
           case ENDLESS_ERROR_LOOP -> ErrorHandlingPhase.ENDLESS_ERROR_LOOP;
         };
+
+    LOG.error("find me switchErrorPhase errorHandlingPhase {} {}", errorHandlingPhase, onErrorRetries);
   }
 
   private void tryRejectingIfUserCommand(final String errorMessage) {
