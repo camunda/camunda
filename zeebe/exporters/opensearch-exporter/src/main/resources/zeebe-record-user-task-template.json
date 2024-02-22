@@ -73,6 +73,9 @@
             "variables": {
               "enabled": false
             },
+            "customHeaders": {
+              "enabled": false
+            },
             "tenantId": {
               "type": "keyword"
             }
