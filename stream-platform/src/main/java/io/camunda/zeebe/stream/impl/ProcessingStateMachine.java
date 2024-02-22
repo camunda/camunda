@@ -60,7 +60,7 @@ import org.slf4j.Logger;
  *
  * +------------------+            +--------------------+
  * |                  |            |                    |      exception
- * | readNextRecord() |----------->|  processCommand()  |------------------+
+ * | tryToReadNextRecord() |----------->|  processCommand()  |------------------+
  * |                  |            |                    |                  v
  * +------------------+            +--------------------+            +---------------+
  *           ^                             |                         |               |------+
@@ -199,12 +199,8 @@ public final class ProcessingStateMachine {
   private void skipRecord() {
     notifySkippedListener(currentRecord);
     markProcessingCompleted();
-    actor.submit(this::readNextRecord);
+    actor.submit(this::tryToReadNextRecord);
     metrics.eventSkipped();
-  }
-
-  void readNextRecord() {
-    tryToReadNextRecord();
   }
 
   void markProcessingCompleted() {
@@ -215,7 +211,7 @@ public final class ProcessingStateMachine {
     }
   }
 
-  private void tryToReadNextRecord() {
+  void tryToReadNextRecord() {
     final var hasNext = logStreamReader.hasNext();
 
     if (currentRecord != null) {
@@ -696,7 +692,7 @@ public final class ProcessingStateMachine {
 
           // continue with next record
           markProcessingCompleted();
-          actor.submit(this::readNextRecord);
+          actor.submit(this::tryToReadNextRecord);
         });
   }
 
@@ -749,7 +745,7 @@ public final class ProcessingStateMachine {
       lastWrittenPosition = lastProcessingPositions.getLastWrittenPosition();
     }
 
-    actor.submit(this::readNextRecord);
+    actor.submit(this::tryToReadNextRecord);
   }
 
   private record BatchProcessingStepResult(
