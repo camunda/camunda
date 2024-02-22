@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -957,6 +958,127 @@ public class MigrateProcessInstanceRejectionTest {
                 + "Target processes with event subprocesses cannot be migrated yet.")
         .hasKey(processInstanceKey);
   }
+
+  @Test
+  public void shouldRejectCommandWhenTimerBoundaryEventMapped() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("timer", t -> t.timerWithDuration(Duration.ofDays(1)))
+                    .endEvent("timer-end")
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("timer2", t -> t.timerWithDuration(Duration.ofDays(2)))
+                    .endEvent("timer-end")
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, "process2");
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("A", "B")
+            .addMappingInstruction("timer", "timer2")
+            .expectRejection()
+            .migrate();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+            Expected to migrate process instance '%s' but active element with id 'A' has a \
+            boundary event. Migrating active elements with boundary events is not possible yet."""
+                .formatted(processInstanceKey));
+  }
+
+  @Test
+  public void shouldRejectCommandWhenMessageBoundaryEventMapped() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent(
+                        "msg",
+                        b ->
+                            b.message(
+                                m ->
+                                    m.name("message")
+                                        .zeebeCorrelationKeyExpression("\"correlationKey\"")))
+                    .endEvent("msg-end")
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent(
+                        "msg2",
+                        b ->
+                            b.message(
+                                m ->
+                                    m.name("message")
+                                        .zeebeCorrelationKeyExpression("\"correlationKey\"")))
+                    .endEvent("timer-end")
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, "process2");
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("A", "B")
+            .addMappingInstruction("msg", "msg2")
+            .expectRejection()
+            .migrate();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+            Expected to migrate process instance '%s' but active element with id 'A' has a \
+            boundary event. Migrating active elements with boundary events is not possible yet."""
+                .formatted(processInstanceKey));
+  }
+
+  @Test
+  public void shouldRejectCommandWhenEventSubprocessMapped() {}
 
   @Test
   public void shouldRejectCommandWhenNativeUserTaskIsMappedToUserTask() {
