@@ -34,13 +34,19 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class BpmnUserTaskBehavior {
 
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BpmnUserTaskBehavior.class.getPackageName());
   private static final Set<LifecycleState> CANCELABLE_LIFECYCLE_STATES =
       EnumSet.complementOf(EnumSet.of(LifecycleState.NOT_FOUND, LifecycleState.CANCELING));
   private final UserTaskRecord userTaskRecord =
       new UserTaskRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
+
+  private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final ExpressionProcessor expressionBehavior;
@@ -101,6 +107,9 @@ public final class BpmnUserTaskBehavior {
       final UserTaskProperties userTaskProperties) {
     final var userTaskKey = keyGenerator.nextKey();
 
+    final var encodedHeaders =
+        headerEncoder.encode(element.getUserTaskProperties().getTaskHeaders());
+
     userTaskRecord
         .setUserTaskKey(userTaskKey)
         .setAssignee(userTaskProperties.getAssignee())
@@ -110,6 +119,7 @@ public final class BpmnUserTaskBehavior {
         .setFollowUpDate(userTaskProperties.getFollowUpDate())
         .setFormKey(userTaskProperties.getFormKey())
         .setExternalFormReference(userTaskProperties.getExternalFormReference())
+        .setCustomHeaders(encodedHeaders)
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessDefinitionVersion(context.getProcessVersion())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
