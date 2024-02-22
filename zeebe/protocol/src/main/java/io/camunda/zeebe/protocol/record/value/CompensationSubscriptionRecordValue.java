@@ -66,9 +66,15 @@ public interface CompensationSubscriptionRecordValue extends RecordValue {
   String getCompensationHandlerId();
 
   /**
-   * @return the instance key of the process containing the element
+   * @return the instance key of the flow scope that contains the activity with the compensation
+   *     handler
    */
-  long getScopeInstanceKey();
+  long getCompensableActivityScopeKey();
+
+  /**
+   * @return the parent element key of the current element
+   */
+  long getCompensableParentKey();
 
   /**
    * @return the local variables of activity with compensation handler

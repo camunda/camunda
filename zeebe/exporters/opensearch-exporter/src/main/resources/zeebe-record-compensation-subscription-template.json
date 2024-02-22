@@ -43,7 +43,10 @@
             "compensationHandlerId": {
               "type": "keyword"
             },
-            "scopeInstanceKey":{
+            "compensableActivityScopeKey":{
+              "type": "long"
+            },
+            "compensableParentKey":{
               "type": "long"
             },
             "variables": {
