@@ -9,10 +9,13 @@ package io.camunda.zeebe.gateway.rest;
 
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskCompletionRequest;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +40,40 @@ public class RequestMapper {
             getDocumentOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
             getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction));
 
+    final String authorizationToken = getAuthorizationToken(context);
+    brokerRequest.setAuthorization(authorizationToken);
+
+    return brokerRequest;
+  }
+
+  public static BrokerUserTaskAssignmentRequest toUserTaskAssignmentRequest(
+      final UserTaskAssignmentRequest assignmentRequest,
+      final long userTaskKey,
+      final ServerWebExchange context) {
+
+    String action = getStringOrEmpty(assignmentRequest, UserTaskAssignmentRequest::getAction);
+    if (action.isBlank()) {
+      action = "assign";
+    }
+
+    final BrokerUserTaskAssignmentRequest brokerRequest;
+    if (assignmentRequest.getAllowOverride() == null || assignmentRequest.getAllowOverride()) {
+      brokerRequest =
+          new BrokerUserTaskAssignmentRequest(
+              userTaskKey, assignmentRequest.getAssignee(), action, UserTaskIntent.ASSIGN);
+    } else {
+      brokerRequest =
+          new BrokerUserTaskAssignmentRequest(
+              userTaskKey, assignmentRequest.getAssignee(), action, UserTaskIntent.CLAIM);
+    }
+
+    final String authorizationToken = getAuthorizationToken(context);
+    brokerRequest.setAuthorization(authorizationToken);
+
+    return brokerRequest;
+  }
+
+  private static String getAuthorizationToken(final ServerWebExchange context) {
     final List<String> authorizedTenants =
         context.getAttributeOrDefault(
             TENANT_CTX_KEY, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
@@ -48,9 +85,7 @@ public class RequestMapper {
             .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
             .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
             .encode();
-    brokerRequest.setAuthorization(authorizationToken);
-
-    return brokerRequest;
+    return authorizationToken;
   }
 
   private static DirectBuffer getDocumentOrEmpty(
@@ -65,6 +100,13 @@ public class RequestMapper {
   private static String getStringOrEmpty(
       final UserTaskCompletionRequest request,
       final Function<UserTaskCompletionRequest, String> valueExtractor) {
+    final String value = request == null ? null : valueExtractor.apply(request);
+    return value == null ? "" : value;
+  }
+
+  private static String getStringOrEmpty(
+      final UserTaskAssignmentRequest request,
+      final Function<UserTaskAssignmentRequest, String> valueExtractor) {
     final String value = request == null ? null : valueExtractor.apply(request);
     return value == null ? "" : value;
   }
