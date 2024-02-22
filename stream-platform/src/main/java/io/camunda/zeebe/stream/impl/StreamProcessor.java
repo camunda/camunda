@@ -563,7 +563,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
               streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
               if (processingStateMachine != null) {
-                actor.submit(processingStateMachine::readNextRecord);
+                actor.submit(processingStateMachine::tryToReadNextRecord);
               }
               LOG.debug("Resumed processing for partition {}", partitionId);
             }
@@ -573,7 +573,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   public void onRecordAvailable() {
-    actor.run(processingStateMachine::readNextRecord);
+    actor.run(processingStateMachine::tryToReadNextRecord);
   }
 
   private static final class AsyncProcessingScheduleServiceActor extends Actor {
