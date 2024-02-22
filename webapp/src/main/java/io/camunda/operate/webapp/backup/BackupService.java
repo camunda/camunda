@@ -6,7 +6,6 @@
  */
 package io.camunda.operate.webapp.backup;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.backup.Prio1Backup;
 import io.camunda.operate.schema.backup.Prio2Backup;
@@ -25,7 +24,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -34,20 +32,43 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 public class BackupService {
-  private static final Logger logger = LoggerFactory.getLogger(BackupService.class);
+  public record SnapshotRequest(
+      String repositoryName, String snapshotName, List<String> indices, Metadata metadata) {}
 
-  @Qualifier("backupThreadPoolExecutor")
-  @Autowired
-  ThreadPoolTaskExecutor threadPoolTaskExecutor;
+  private static final Logger logger = LoggerFactory.getLogger(BackupService.class);
+  private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
+
+  private final List<Prio1Backup> prio1BackupIndices;
+
+  private final List<Prio2Backup> prio2BackupTemplates;
+
+  private final List<Prio3Backup> prio3BackupTemplates;
+
+  private final List<Prio4Backup> prio4BackupIndices;
+
+  private final OperateProperties operateProperties;
+
+  private final BackupRepository repository;
+
+  public BackupService(
+      @Qualifier("backupThreadPoolExecutor") ThreadPoolTaskExecutor threadPoolTaskExecutor,
+      List<Prio1Backup> prio1BackupIndices,
+      List<Prio2Backup> prio2BackupTemplates,
+      List<Prio3Backup> prio3BackupTemplates,
+      List<Prio4Backup> prio4BackupIndices,
+      OperateProperties operateProperties,
+      BackupRepository repository) {
+    this.threadPoolTaskExecutor = threadPoolTaskExecutor;
+    this.prio1BackupIndices = prio1BackupIndices;
+    this.prio2BackupTemplates = prio2BackupTemplates;
+    this.prio3BackupTemplates = prio3BackupTemplates;
+    this.prio4BackupIndices = prio4BackupIndices;
+    this.repository = repository;
+    this.operateProperties = operateProperties;
+  }
 
   private final Queue<SnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
-  @Autowired private List<Prio1Backup> prio1BackupIndices;
-  @Autowired private List<Prio2Backup> prio2BackupTemplates;
-  @Autowired private List<Prio3Backup> prio3BackupTemplates;
-  @Autowired private List<Prio4Backup> prio4BackupIndices;
-  @Autowired private OperateProperties operateProperties;
-  @Autowired private BackupRepository repository;
-  @Autowired private ObjectMapper objectMapper;
+
   private String[][] indexPatternsOrdered;
 
   public void deleteBackup(Long backupId) {
@@ -70,11 +91,11 @@ public class BackupService {
   public TakeBackupResponseDto takeBackup(TakeBackupRequestDto request) {
     repository.validateRepositoryExists(getRepositoryName());
     repository.validateNoDuplicateBackupId(getRepositoryName(), request.getBackupId());
-    if (requestsQueue.size() > 0) {
+    if (!requestsQueue.isEmpty()) {
       throw new InvalidRequestException("Another backup is running at the moment");
     }
     synchronized (requestsQueue) {
-      if (requestsQueue.size() > 0) {
+      if (!requestsQueue.isEmpty()) {
         throw new InvalidRequestException("Another backup is running at the moment");
       }
       return scheduleSnapshots(request);
@@ -99,7 +120,7 @@ public class BackupService {
           new SnapshotRequest(repositoryName, snapshotName, indexPattern, metadata);
 
       requestsQueue.offer(snapshotRequest);
-      logger.debug("Snapshot scheduled: " + snapshotName);
+      logger.debug("Snapshot scheduled: {}", snapshotName);
       snapshotNames.add(snapshotName);
     }
     // schedule next snapshot
@@ -111,11 +132,10 @@ public class BackupService {
     SnapshotRequest nextRequest = requestsQueue.poll();
     if (nextRequest != null) {
       threadPoolTaskExecutor.submit(
-          () -> {
-            repository.executeSnapshotting(
-                nextRequest, () -> scheduleNextSnapshot(), () -> requestsQueue.clear());
-          });
-      logger.debug("Snapshot picked for execution: " + nextRequest);
+          () ->
+              repository.executeSnapshotting(
+                  nextRequest, this::scheduleNextSnapshot, requestsQueue::clear));
+      logger.debug("Snapshot picked for execution: {}", nextRequest);
     }
   }
 
@@ -141,7 +161,7 @@ public class BackupService {
                           ((TemplateDescriptor) index).getFullQualifiedName() + "*",
                           "-" + ((TemplateDescriptor) index).getFullQualifiedName()
                         })
-                .flatMap(x -> Arrays.stream(x))
+                .flatMap(Arrays::stream)
                 .toArray(String[]::new),
             prio3BackupTemplates.stream()
                 .map(index -> ((TemplateDescriptor) index).getFullQualifiedName())
@@ -154,7 +174,7 @@ public class BackupService {
                           ((TemplateDescriptor) index).getFullQualifiedName() + "*",
                           "-" + ((TemplateDescriptor) index).getFullQualifiedName()
                         })
-                .flatMap(x -> Arrays.stream(x))
+                .flatMap(Arrays::stream)
                 .toArray(String[]::new),
             prio4BackupIndices.stream()
                 .map(index -> ((IndexDescriptor) index).getFullQualifiedName())
@@ -175,7 +195,4 @@ public class BackupService {
   public List<GetBackupStateResponseDto> getBackups() {
     return repository.getBackups(getRepositoryName());
   }
-
-  public record SnapshotRequest(
-      String repositoryName, String snapshotName, List<String> indices, Metadata metadata) {}
 }
