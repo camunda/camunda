@@ -1944,10 +1944,10 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@camunda/camunda-composite-components@^0.4.0":
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.4.1.tgz#979ca6da6b60ae7aeed434bccfbbb0b49a1492f9"
-  integrity sha512-YX1shE6qPNd+FJfYzgxGznOx9k8diV+6J/wPQzrvzB/Jqxz5azAoPuL/S82Bh6/ddgFCjOToyVlci/XYKRBMxQ==
+"@camunda/camunda-composite-components@^0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.5.0.tgz#cd9282f7317cafe7da12ac295ca85a6a29cb3570"
+  integrity sha512-6rCRmTdqUU2w1ieOMcCCS1lobJVe12JCIO0DxUKx8AR9ASkiHx+jbnQa2632uJE2gVLbFqb6XHeqE0iYPApRSA==
   dependencies:
     jwt-decode "4.0.0"
     react-markdown "8.0.7"
