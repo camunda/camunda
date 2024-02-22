@@ -21,23 +21,17 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
-import java.util.NavigableMap;
 import java.util.Set;
-import java.util.TreeMap;
-import org.agrona.collections.Long2LongHashMap;
 
 public class MetricsExporter implements Exporter {
 
   public static final Duration TIME_TO_LIVE = Duration.ofSeconds(10);
   private final ExecutionLatencyMetrics executionLatencyMetrics;
-  private final Long2LongHashMap jobKeyToCreationTimeMap;
-  private final Long2LongHashMap processInstanceKeyToCreationTimeMap;
-
-  // only used to keep track of how long the entries are existing and to clean up the corresponding
-  // maps
-  private final NavigableMap<Long, Long> creationTimeToJobKeyNavigableMap;
-  private final NavigableMap<Long, Long> creationTimeToProcessInstanceKeyNavigableMap;
+  private final TtlKeyCache processInstanceCache;
+  private final TtlKeyCache jobCache;
 
   private Controller controller;
 
@@ -46,11 +40,20 @@ public class MetricsExporter implements Exporter {
   }
 
   public MetricsExporter(final ExecutionLatencyMetrics executionLatencyMetrics) {
+    this(
+        executionLatencyMetrics,
+        new TtlKeyCache(TIME_TO_LIVE.toMillis()),
+        new TtlKeyCache(TIME_TO_LIVE.toMillis()));
+  }
+
+  @VisibleForTesting
+  MetricsExporter(
+      final ExecutionLatencyMetrics executionLatencyMetrics,
+      final TtlKeyCache processInstanceCache,
+      final TtlKeyCache jobCache) {
     this.executionLatencyMetrics = executionLatencyMetrics;
-    jobKeyToCreationTimeMap = new Long2LongHashMap(-1);
-    processInstanceKeyToCreationTimeMap = new Long2LongHashMap(-1);
-    creationTimeToJobKeyNavigableMap = new TreeMap<>();
-    creationTimeToProcessInstanceKeyNavigableMap = new TreeMap<>();
+    this.processInstanceCache = processInstanceCache;
+    this.jobCache = jobCache;
   }
 
   @Override
@@ -81,10 +84,8 @@ public class MetricsExporter implements Exporter {
 
   @Override
   public void close() {
-    jobKeyToCreationTimeMap.clear();
-    processInstanceKeyToCreationTimeMap.clear();
-    creationTimeToJobKeyNavigableMap.clear();
-    creationTimeToProcessInstanceKeyNavigableMap.clear();
+    processInstanceCache.clear();
+    jobCache.clear();
   }
 
   @Override
@@ -115,18 +116,13 @@ public class MetricsExporter implements Exporter {
 
     if (currentIntent == ProcessInstanceIntent.ELEMENT_ACTIVATING
         && isProcessInstanceRecord(record)) {
-      storeProcessInstanceCreation(record.getTimestamp(), recordKey);
+      processInstanceCache.store(recordKey, record.getTimestamp());
     } else if (currentIntent == ProcessInstanceIntent.ELEMENT_COMPLETED
         && isProcessInstanceRecord(record)) {
-      final var creationTime = processInstanceKeyToCreationTimeMap.remove(recordKey);
+      final var creationTime = processInstanceCache.remove(recordKey);
       executionLatencyMetrics.observeProcessInstanceExecutionTime(
           partitionId, creationTime, record.getTimestamp());
     }
-  }
-
-  private void storeProcessInstanceCreation(final long creationTime, final long recordKey) {
-    processInstanceKeyToCreationTimeMap.put(recordKey, creationTime);
-    creationTimeToProcessInstanceKeyNavigableMap.put(creationTime, recordKey);
   }
 
   private void handleJobRecord(
@@ -134,9 +130,9 @@ public class MetricsExporter implements Exporter {
     final var currentIntent = record.getIntent();
 
     if (currentIntent == JobIntent.CREATED) {
-      storeJobCreation(record.getTimestamp(), recordKey);
+      jobCache.store(recordKey, record.getTimestamp());
     } else if (currentIntent == JobIntent.COMPLETED) {
-      final var creationTime = jobKeyToCreationTimeMap.remove(recordKey);
+      final var creationTime = jobCache.remove(recordKey);
       executionLatencyMetrics.observeJobLifeTime(partitionId, creationTime, record.getTimestamp());
     }
   }
@@ -147,41 +143,19 @@ public class MetricsExporter implements Exporter {
     if (currentIntent == JobBatchIntent.ACTIVATED) {
       final var value = (JobBatchRecordValue) record.getValue();
       for (final long jobKey : value.getJobKeys()) {
-        final var creationTime = jobKeyToCreationTimeMap.get(jobKey);
+        final var creationTime = jobCache.remove(jobKey);
         executionLatencyMetrics.observeJobActivationTime(
             partitionId, creationTime, record.getTimestamp());
       }
     }
   }
 
-  private void storeJobCreation(final long creationTime, final long recordKey) {
-    jobKeyToCreationTimeMap.put(recordKey, creationTime);
-    creationTimeToJobKeyNavigableMap.put(creationTime, recordKey);
-  }
-
   private void cleanUp() {
-    final var currentTimeMillis = System.currentTimeMillis();
-
+    final var currentTimeMillis = ActorClock.currentTimeMillis();
     final var deadTime = currentTimeMillis - TIME_TO_LIVE.toMillis();
-    clearMaps(deadTime, creationTimeToJobKeyNavigableMap, jobKeyToCreationTimeMap);
-    clearMaps(
-        deadTime,
-        creationTimeToProcessInstanceKeyNavigableMap,
-        processInstanceKeyToCreationTimeMap);
-
+    processInstanceCache.cleanup(deadTime);
+    jobCache.cleanup(deadTime);
     controller.scheduleCancellableTask(TIME_TO_LIVE, this::cleanUp);
-  }
-
-  private void clearMaps(
-      final long deadTime,
-      final NavigableMap<Long, Long> timeToKeyMap,
-      final Long2LongHashMap keyToTimestampMap) {
-    final var outOfScopeInstances = timeToKeyMap.headMap(deadTime);
-
-    for (final Long key : outOfScopeInstances.values()) {
-      keyToTimestampMap.remove(key);
-    }
-    outOfScopeInstances.clear();
   }
 
   public static ExporterCfg defaultConfig() {
