@@ -37,11 +37,11 @@ public class ImportIndexWriterOS implements ImportIndexWriter {
   private final DateTimeFormatter dateTimeFormatter;
 
   public void importIndexes(List<EngineImportIndexDto> engineImportIndexDtos) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   private void addImportIndexRequest(BulkRequest.Builder bulkRequestBuilder, OptimizeDto optimizeDto) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   private IndexRequest.Builder<TimestampBasedImportIndexDto> createTimestampBasedRequest(TimestampBasedImportIndexDto importIndex) {
@@ -60,7 +60,7 @@ public class ImportIndexWriterOS implements ImportIndexWriter {
   }
 
   private IndexRequest createAllEntitiesBasedRequest(AllEntitiesBasedImportIndexDto importIndex) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 

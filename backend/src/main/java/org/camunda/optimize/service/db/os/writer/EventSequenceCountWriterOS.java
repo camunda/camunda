@@ -27,7 +27,7 @@ public class EventSequenceCountWriterOS implements EventSequenceCountWriter {
 
   @Override
   public void updateEventSequenceCountsWithAdjustments(final List<EventSequenceCountDto> eventSequenceCountDtos) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
 }

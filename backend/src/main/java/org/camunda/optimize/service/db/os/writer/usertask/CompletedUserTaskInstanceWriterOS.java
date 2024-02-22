@@ -28,7 +28,7 @@ public class CompletedUserTaskInstanceWriterOS extends AbstractUserTaskWriterOS 
 
   @Override
   protected String createInlineUpdateScript() {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
@@ -40,7 +40,7 @@ public class CompletedUserTaskInstanceWriterOS extends AbstractUserTaskWriterOS 
   @Override
   public List<ImportRequestDto> generateUserTaskImports(final String importItemName, final DatabaseClient databaseClient,
                                                         final List<FlowNodeInstanceDto> userTaskInstances) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 

@@ -32,25 +32,25 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
   public void consumeAssigneesInBatches(@NonNull final String engineAlias,
                                         @NonNull final Consumer<List<String>> assigneeBatchConsumer,
                                         final int batchSize) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void consumeCandidateGroupsInBatches(@NonNull final String engineAlias,
                                               @NonNull final Consumer<List<String>> candidateGroupBatchConsumer,
                                               final int batchSize) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public Set<String> getAssigneeIdsForProcess(final Map<String, Set<String>> definitionKeyToTenantsMap) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 
   @Override
   public Set<String> getCandidateGroupIdsForProcess(final Map<String, Set<String>> definitionKeyToTenantsMap) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 

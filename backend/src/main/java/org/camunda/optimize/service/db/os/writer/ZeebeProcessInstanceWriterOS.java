@@ -22,7 +22,7 @@ public class ZeebeProcessInstanceWriterOS implements ZeebeProcessInstanceWriter 
   @Override
   public List<ImportRequestDto> generateProcessInstanceImports(final List<ProcessInstanceDto> processInstances,
                                                                final String sourceExportIndex) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 

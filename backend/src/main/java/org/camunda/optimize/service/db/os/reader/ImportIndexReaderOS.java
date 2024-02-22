@@ -23,7 +23,7 @@ public class ImportIndexReaderOS implements ImportIndexReader {
 
   @Override
   public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(final String id) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return Optional.empty();
   }
 

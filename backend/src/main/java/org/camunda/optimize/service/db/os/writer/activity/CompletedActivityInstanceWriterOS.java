@@ -25,13 +25,13 @@ public class CompletedActivityInstanceWriterOS extends AbstractActivityInstanceW
 
   @Override
   public List<ImportRequestDto> generateActivityInstanceImports(final List<FlowNodeEventDto> activityInstances) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public FlowNodeInstanceDto fromActivityInstance(final FlowNodeEventDto activityInstance) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
@@ -39,7 +39,7 @@ public class CompletedActivityInstanceWriterOS extends AbstractActivityInstanceW
   protected String createInlineUpdateScript() {
     // new import flowNodeInstances should win over already imported flowNodeInstances, since those might be running
     // instances.
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return "";
   }
 

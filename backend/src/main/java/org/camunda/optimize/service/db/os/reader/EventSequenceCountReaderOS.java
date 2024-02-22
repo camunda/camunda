@@ -30,45 +30,45 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
 
   @Override
   public List<EventSequenceCountDto> getEventSequencesWithSourceInIncomingOrTargetInOutgoing(final List<EventTypeDto> incomingEvents, final List<EventTypeDto> outgoingEvents) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventCountResponseDto> getEventCountsForAllExternalEventsUsingSearchTerm(final String searchTerm) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventCountResponseDto> getEventCountsForExternalGroupsUsingSearchTerm(final List<String> groups,
                                                                                     final String searchTerm) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventCountResponseDto> getEventCountsForCamundaSources(final List<CamundaEventSourceEntryDto> camundaSources) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public Set<String> getIndexSuffixesForCurrentSequenceCountIndices() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventSequenceCountDto> getEventSequencesContainingBothEventTypes(final EventTypeDto firstEventTypeDto,
                                                                                final EventTypeDto secondEventTypeDto) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventSequenceCountDto> getAllSequenceCounts() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 

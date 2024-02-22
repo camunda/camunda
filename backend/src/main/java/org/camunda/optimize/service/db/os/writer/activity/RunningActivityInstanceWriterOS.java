@@ -21,7 +21,7 @@ public class RunningActivityInstanceWriterOS extends AbstractActivityInstanceWri
 
   @Override
   protected String createInlineUpdateScript() {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return "";
   }
 

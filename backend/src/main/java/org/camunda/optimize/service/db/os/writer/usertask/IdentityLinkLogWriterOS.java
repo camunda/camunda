@@ -28,19 +28,19 @@ public class IdentityLinkLogWriterOS extends AbstractUserTaskWriterOS implements
 
   @Override
   protected String createInlineUpdateScript() {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return "";
   }
 
   @Override
   public List<ImportRequestDto> generateIdentityLinkLogImports(final List<IdentityLinkLogEntryDto> identityLinkLogs) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<ImportRequestDto> generateUserTaskImports(final String importItemName, final DatabaseClient databaseClient, final List<FlowNodeInstanceDto> userTaskInstances) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 

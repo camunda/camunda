@@ -24,12 +24,12 @@ public class EventProcessDefinitionWriterOS implements EventProcessDefinitionWri
 
   @Override
   public void importEventProcessDefinitions(final List<EventProcessDefinitionDto> definitionOptimizeDtos) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void deleteEventProcessDefinitions(final Collection<String> definitionIds) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
 }

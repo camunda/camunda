@@ -25,29 +25,29 @@ public class BackupReaderOS implements BackupReader {
 
   @Override
   public void validateRepositoryExistsOrFail() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void validateNoDuplicateBackupId(final Long backupId) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public Map<Long, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<SnapshotInfo> getAllOptimizeSnapshots() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<SnapshotInfo> getOptimizeSnapshotsForBackupId(final Long backupId) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 

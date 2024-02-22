@@ -26,7 +26,7 @@ public abstract class AbstractUserTaskWriterOS implements AbstractUserTaskWriter
   public List<ImportRequestDto> generateUserTaskImports(final String importItemName,
                                                         final DatabaseClient databaseClient,
                                                         final List<FlowNodeInstanceDto> userTaskInstances) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return Collections.emptyList();
   }
 

@@ -23,13 +23,13 @@ public class ProcessVariableUpdateWriterOS
   implements ProcessVariableUpdateWriter {
   @Override
   public List<ImportRequestDto> generateVariableUpdateImports(final List<ProcessVariableDto> variables) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public void deleteVariableDataByProcessInstanceIds(final String processDefinitionKey, final List<String> processInstanceIds) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
 }

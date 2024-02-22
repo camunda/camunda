@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.os.reader;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.reader.DecisionInstanceReader;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
@@ -17,11 +18,12 @@ import java.util.Set;
 @AllArgsConstructor
 @Component
 @Conditional(OpenSearchCondition.class)
+@Slf4j
 public class DecisionInstanceReaderOS implements DecisionInstanceReader {
 
   @Override
   public Set<String> getExistingDecisionDefinitionKeysFromInstances() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 

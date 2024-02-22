@@ -24,7 +24,7 @@ public class EventTraceStateWriterOS implements EventTraceStateWriter {
 
   @Override
   public void upsertEventTraceStates(final List<EventTraceStateDto> eventTraceStateDtos) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
   }
 
 }

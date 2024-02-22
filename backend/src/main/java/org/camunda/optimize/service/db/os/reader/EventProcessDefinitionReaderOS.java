@@ -25,13 +25,13 @@ public class EventProcessDefinitionReaderOS implements EventProcessDefinitionRea
 
   @Override
   public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(final String eventProcessDefinitionKey) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return Optional.empty();
   }
 
   @Override
   public List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 

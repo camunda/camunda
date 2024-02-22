@@ -30,49 +30,49 @@ public class ExternalEventReaderOS implements ExternalEventReader {
 
   @Override
   public List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventDto> getEventsIngestedAfterForGroups(final Long ingestTimestamp, final int limit, final List<String> groups) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventDto> getEventsIngestedAt(final Long ingestTimestamp) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventDto> getEventsIngestedAtForGroups(final Long ingestTimestamp, final List<String> groups) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestamps() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForGroups(final List<String> groups) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public Page<DeletableEventDto> getEventsForRequest(final EventSearchRequestDto eventSearchRequestDto) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<String> getEventGroups(final EventGroupRequestDto eventGroupRequestDto) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 

@@ -24,29 +24,29 @@ public class EventProcessMappingWriterOS implements EventProcessMappingWriter {
 
   @Override
   public IdResponseDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public void updateEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void updateRoles(final EventProcessMappingDto eventProcessMappingDto) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
     return false;
   }
 
   @Override
   public void deleteEventProcessMappings(final List<String> eventProcessMappingIds) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
 }

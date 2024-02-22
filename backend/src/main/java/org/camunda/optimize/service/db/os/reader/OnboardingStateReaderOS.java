@@ -23,7 +23,7 @@ public class OnboardingStateReaderOS implements OnboardingStateReader {
 
   @Override
   public Optional<OnboardingStateDto> getOnboardingStateByKeyAndUserId(final String key, final String userId) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return Optional.empty();
   }
 

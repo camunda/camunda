@@ -26,14 +26,14 @@ public class ProcessInstanceReaderOS implements ProcessInstanceReader {
 
   @Override
   public PageResultDto<String> getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(final String processDefinitionKey, final OffsetDateTime endDate, final Integer limit) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public PageResultDto<String> getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(final String processDefinitionKey
     , final OffsetDateTime endDate, final Integer limit, final PageResultDto<String> previousPage) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
@@ -41,7 +41,7 @@ public class ProcessInstanceReaderOS implements ProcessInstanceReader {
   public PageResultDto<String> getFirstPageOfProcessInstanceIdsThatEndedBefore(final String processDefinitionKey,
                                                                                final OffsetDateTime endDate,
                                                                                final Integer limit) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
@@ -49,25 +49,25 @@ public class ProcessInstanceReaderOS implements ProcessInstanceReader {
   public PageResultDto<String> getNextPageOfProcessInstanceIdsThatEndedBefore(final String processDefinitionKey,
                                                                               final OffsetDateTime endDate, final Integer limit
     , final PageResultDto<String> previousPage) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public Set<String> getExistingProcessDefinitionKeysFromInstances() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 
   @Override
   public Optional<String> getProcessDefinitionKeysForInstanceId(final String instanceId) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return Optional.empty();
   }
 
   @Override
   public boolean processDefinitionHasStartedInstances(final String processDefinitionKey) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return false;
   }
 

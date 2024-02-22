@@ -27,7 +27,7 @@ public class DecisionVariableReaderOS implements DecisionVariableReader {
   public List<DecisionVariableNameResponseDto> getInputVariableNames(final String decisionDefinitionKey,
                                                                      final List<String> decisionDefinitionVersions,
                                                                      final List<String> tenantIds) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
@@ -35,19 +35,19 @@ public class DecisionVariableReaderOS implements DecisionVariableReader {
   public List<DecisionVariableNameResponseDto> getOutputVariableNames(final String decisionDefinitionKey,
                                                                       final List<String> decisionDefinitionVersions,
                                                                       final List<String> tenantIds) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<String> getInputVariableValues(final DecisionVariableValueRequestDto requestDto) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<String> getOutputVariableValues(final DecisionVariableValueRequestDto requestDto) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 

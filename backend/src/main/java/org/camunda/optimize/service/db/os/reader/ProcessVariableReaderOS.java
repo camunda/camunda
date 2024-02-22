@@ -29,13 +29,13 @@ public class ProcessVariableReaderOS implements ProcessVariableReader {
 
   @Override
   public List<ProcessVariableNameResponseDto> getVariableNames(final ProcessVariableNameRequestDto requestDto) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<ProcessVariableNameResponseDto> getVariableNames(final List<ProcessVariableNameRequestDto> variableNameRequests) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
@@ -43,19 +43,19 @@ public class ProcessVariableReaderOS implements ProcessVariableReader {
   public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(final BoolQueryBuilder baseQuery,
                                                                                         final Map<String,
                                                                                           DefinitionVariableLabelsDto> definitionLabelsDtos) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public String extractProcessDefinitionKeyFromIndexName(final String indexName) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return "";
   }
 
   @Override
   public List<String> getVariableValues(final ProcessVariableValuesQueryDto requestDto) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 

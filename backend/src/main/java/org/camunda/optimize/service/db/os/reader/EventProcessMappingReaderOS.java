@@ -27,19 +27,19 @@ public class EventProcessMappingReaderOS implements EventProcessMappingReader {
 
   @Override
   public Optional<EventProcessMappingDto> getEventProcessMapping(final String eventProcessMappingId) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return Optional.empty();
   }
 
   @Override
   public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<EventProcessRoleRequestDto<IdentityDto>> getEventProcessRoles(final String eventProcessMappingId) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 

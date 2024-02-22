@@ -25,27 +25,27 @@ public class ProcessOverviewWriterOS implements ProcessOverviewWriter {
 
   @Override
   public void updateProcessConfiguration(final String processDefinitionKey, final ProcessUpdateDto processUpdateDto) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void updateProcessDigestResults(final String processDefKey, final ProcessDigestDto processDigestDto) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void updateProcessOwnerIfNotSet(final String processDefinitionKey, final String ownerId) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void updateKpisForProcessDefinitions(final Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void deleteProcessOwnerEntry(final String processDefinitionKey) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
   }
 
 }

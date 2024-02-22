@@ -25,19 +25,19 @@ public class EventProcessPublishStateReaderOS implements EventProcessPublishStat
 
   @Override
   public Optional<EventProcessPublishStateDto> getEventProcessPublishStateByEventProcessId(final String eventProcessMappingId) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return Optional.empty();
   }
 
   @Override
   public List<EventProcessPublishStateDto> getAllEventProcessPublishStates() {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
   public List<EventProcessPublishStateDto> getAllEventProcessPublishStatesWithDeletedState(final boolean deleted) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.os.writer.activity;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
@@ -18,11 +19,12 @@ import java.util.List;
 
 @Component
 @Conditional(OpenSearchCondition.class)
+@Slf4j
 public abstract class AbstractActivityInstanceWriterOS implements AbstractActivityInstanceWriter {
 
   @Override
   public List<ImportRequestDto> generateActivityInstanceImports(List<FlowNodeEventDto> activityInstances) {
-    //todo will be handled in the OPT-7376
+    log.error("Functionality not implemented for OpenSearch");
    return new ArrayList<>();
   }
 

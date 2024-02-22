@@ -26,7 +26,7 @@ public class EventTraceStateReaderOS implements EventTraceStateReader {
 
   @Override
   public List<EventTraceStateDto> getEventTraceStateForTraceIds(final List<String> traceIds) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
@@ -34,13 +34,13 @@ public class EventTraceStateReaderOS implements EventTraceStateReader {
   public List<EventTraceStateDto> getTracesContainingAtLeastOneEventFromEach(final List<EventTypeDto> startEvents,
                                                                              final List<EventTypeDto> endEvents,
                                                                              final int maxResultsSize) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
   public List<EventTraceStateDto> getTracesWithTraceIdIn(final List<String> traceIds) {
-    //todo will be handled in the OPT-7230
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
   
