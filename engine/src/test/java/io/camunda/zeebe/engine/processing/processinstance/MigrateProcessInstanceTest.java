@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -1022,6 +1023,120 @@ public class MigrateProcessInstanceTest {
         .hasProcessInstanceKey(variable2.getProcessInstanceKey())
         .hasScopeKey(variable2.getScopeKey())
         .hasTenantId(variable2.getTenantId());
+  }
+
+  @Test
+  public void shouldCloseMessageSubscriptionForUnmappedBoundaryEvent() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .boundaryEvent("boundary")
+                    .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask("B", a -> a.zeebeJobType("B"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("key", "key").create();
+
+    final var messageSubscription =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
+                .withRecordKey(messageSubscription.getKey())
+                .exists())
+        .describedAs("Expect that the message subscription is closed")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldCloseMessageSubscriptionForUnmappedEventSubprocess() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .eventSubProcess(
+                        "sub",
+                        sub ->
+                            sub.startEvent()
+                                .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
+                                .endEvent())
+                    .startEvent()
+                    .userTask("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("key", "key").create();
+
+    final var messageSubscription =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
+                .withRecordKey(messageSubscription.getKey())
+                .exists())
+        .describedAs("Expect that the message subscription is closed")
+        .isTrue();
   }
 
   private static long extractProcessDefinitionKeyByProcessId(
