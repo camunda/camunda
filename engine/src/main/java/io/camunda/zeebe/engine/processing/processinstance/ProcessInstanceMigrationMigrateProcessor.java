@@ -10,6 +10,10 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditionChecker.*;
 
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -20,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -41,6 +46,7 @@ import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -61,9 +67,13 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final VariableState variableState;
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final ProcessMessageSubscriptionState processMessageSubscriptionState;
+  private final CatchEventBehavior catchEventBehavior;
 
   public ProcessInstanceMigrationMigrateProcessor(
-      final Writers writers, final ProcessingState processingState) {
+      final Writers writers,
+      final ProcessingState processingState,
+      final BpmnBehaviors bpmnBehaviors) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -74,6 +84,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
+    catchEventBehavior = bpmnBehaviors.catchEventBehavior();
   }
 
   @Override
@@ -101,7 +113,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
     requireReferredElementsExist(
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
-    requireNoEventSubprocess(sourceProcessDefinition, targetProcessDefinition);
 
     final Map<String, String> mappedElementIds =
         mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
@@ -182,8 +193,6 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
-    requireNoBoundaryEventInSource(sourceProcessDefinition, elementInstanceRecord);
-    requireNoBoundaryEventInTarget(targetProcessDefinition, targetElementId, elementInstanceRecord);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(
@@ -251,6 +260,41 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessDefinitionKey(targetProcessDefinition.getKey())
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
+
+    final var context = new BpmnElementContextImpl();
+    context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
+    final var targetElement =
+        targetProcessDefinition
+            .getProcess()
+            .getElementById(targetElementId, ExecutableActivity.class);
+
+    // unsubscribe from any unmapped events
+    catchEventBehavior.unsubscribeFromEvents(
+        elementInstance.getKey(),
+        catchEventId -> {
+          if (sourceElementIdToTargetElementId.containsKey(
+              BufferUtil.bufferAsString(catchEventId))) {
+            throw new ProcessInstanceMigrationPreconditionFailedException(
+                "Mapped catch events are not yet supported.", RejectionType.INVALID_STATE);
+          }
+          throw new ProcessInstanceMigrationPreconditionFailedException(
+              "Unmapped catch events are not yet supported.", RejectionType.INVALID_STATE);
+        });
+
+    // subscribe to unmapped events in target process
+    catchEventBehavior.subscribeToEvents(
+        context,
+        targetElement,
+        (final DirectBuffer catchEventId) -> {
+          if (sourceElementIdToTargetElementId.containsValue(
+              BufferUtil.bufferAsString(catchEventId))) {
+            // mapped catch events are already taken care of by the migration mapping
+            return false;
+          }
+          throw new ProcessInstanceMigrationPreconditionFailedException(
+              "Unmapped catch events in target process are not yet supported.",
+              RejectionType.INVALID_STATE);
+        });
   }
 
   /**

@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,5 +71,10 @@ public class ExecutableFlowElementContainer extends ExecutableActivity {
 
   public Collection<AbstractFlowElement> getChildElements() {
     return childElements.values();
+  }
+
+  public boolean hasStartEventOfType(final EnumSet<BpmnEventType> eventTypes) {
+    return startEvents.stream()
+        .anyMatch(startEvent -> eventTypes.contains(startEvent.getEventType()));
   }
 }

@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.EnumSet;
@@ -251,15 +252,18 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Checks whether the given source and target process definition contain event subprocesses.
+   * Checks whether the given process definitions contain event subprocesses.
    *
-   * @param sourceProcessDefinition source process definition
-   * @param targetProcessDefinition target process definition
+   * @param sourceProcessDefinition source process definition to check for event subprocesses
+   * @param targetProcessDefinition target process definition to check for event subprocesses
+   * @param eventTypes event types to throw an exception for (only checked for source process)
    */
-  public static void requireNoEventSubprocess(
+  public static void requireNoEventSubprocessOfTypes(
       final DeployedProcess sourceProcessDefinition,
-      final DeployedProcess targetProcessDefinition) {
-    if (!sourceProcessDefinition.getProcess().getEventSubprocesses().isEmpty()) {
+      final DeployedProcess targetProcessDefinition,
+      final EnumSet<BpmnEventType> eventTypes) {
+    if (sourceProcessDefinition.getProcess().getEventSubprocesses().stream()
+        .anyMatch(sub -> sub.hasStartEventOfType(eventTypes))) {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE,
           RejectionType.INVALID_STATE);
@@ -471,15 +475,51 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    */
   public static void requireNoBoundaryEventInSource(
       final DeployedProcess sourceProcessDefinition,
-      final ProcessInstanceRecord elementInstanceRecord) {
+      final ProcessInstanceRecord elementInstanceRecord,
+      final EnumSet<BpmnEventType> eventTypes) {
     final boolean hasBoundaryEventInSource =
-        !sourceProcessDefinition
+        sourceProcessDefinition
             .getProcess()
             .getElementById(elementInstanceRecord.getElementId(), ExecutableActivity.class)
             .getBoundaryEvents()
-            .isEmpty();
+            .stream()
+            .anyMatch(boundaryEvent -> eventTypes.contains(boundaryEvent.getEventType()));
 
     if (hasBoundaryEventInSource) {
+      final String reason =
+          String.format(
+              ERROR_ACTIVE_ELEMENT_WITH_BOUNDARY_EVENT,
+              elementInstanceRecord.getProcessInstanceKey(),
+              elementInstanceRecord.getElementId());
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
+    }
+  }
+
+  /**
+   * Checks whether the element instance has any mapped boundary events as these are not yet
+   * supported. Throws an exception if the element instance has a mapped boundary event.
+   *
+   * @param sourceProcessDefinition source process definition to do the check
+   * @param elementInstanceRecord element instance to consider boundary events for
+   * @param sourceToTargetElementIds source to target element ids mapping
+   */
+  public static void requireBoundaryEventUnmapped(
+      final DeployedProcess sourceProcessDefinition,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final Map<String, String> sourceToTargetElementIds) {
+    final boolean hasMappedBoundaryEvent =
+        sourceProcessDefinition
+            .getProcess()
+            .getElementById(elementInstanceRecord.getElementId(), ExecutableActivity.class)
+            .getBoundaryEvents()
+            .stream()
+            .anyMatch(
+                boundaryEvent ->
+                    sourceToTargetElementIds.containsKey(
+                        BufferUtil.bufferAsString(boundaryEvent.getId())));
+
+    if (hasMappedBoundaryEvent) {
       final String reason =
           String.format(
               ERROR_ACTIVE_ELEMENT_WITH_BOUNDARY_EVENT,

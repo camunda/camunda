@@ -129,7 +129,7 @@ public final class CatchEventBehavior {
    * @param elementInstanceKey the element instance key to subscript from
    * @param elementIdFilter the filter for events to unsubscribe
    */
-  private void unsubscribeFromEvents(
+  public void unsubscribeFromEvents(
       final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
 
     unsubscribeFromTimerEvents(elementInstanceKey, elementIdFilter);
@@ -142,9 +142,17 @@ public final class CatchEventBehavior {
    */
   public Either<Failure, Void> subscribeToEvents(
       final BpmnElementContext context, final ExecutableCatchEventSupplier supplier) {
+    return subscribeToEvents(context, supplier, elementId -> true);
+  }
+
+  public Either<Failure, Void> subscribeToEvents(
+      final BpmnElementContext context,
+      final ExecutableCatchEventSupplier supplier,
+      final Predicate<DirectBuffer> elementIdFilter) {
     final var evaluationResults =
         supplier.getEvents().stream()
             .filter(event -> event.isTimer() || event.isMessage() || event.isSignal())
+            .filter(event -> elementIdFilter.test(event.getId()))
             .map(event -> evalExpressions(expressionProcessor, event, context))
             .collect(Either.collectorFoldingLeft());
 
@@ -154,7 +162,6 @@ public final class CatchEventBehavior {
           subscribeToTimerEvents(context, results);
           subscribeToSignalEvents(context, results);
         });
-
     return evaluationResults.map(r -> null);
   }
 
