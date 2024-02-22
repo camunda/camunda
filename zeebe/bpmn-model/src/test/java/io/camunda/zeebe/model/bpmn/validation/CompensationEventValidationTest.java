@@ -22,7 +22,6 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -189,31 +188,5 @@ class CompensationEventValidationTest {
                 builder.endEvent(
                     "compensation-event",
                     event -> event.compensateEventDefinition(COMPENSATION_EVENT_DEFINITION_ID))));
-  }
-
-  private static final class BpmnElementBuilder {
-
-    private final String elementType;
-    private final UnaryOperator<AbstractFlowNodeBuilder<?, ?>> builder;
-
-    private BpmnElementBuilder(
-        final String elementType, final UnaryOperator<AbstractFlowNodeBuilder<?, ?>> builder) {
-      this.elementType = elementType;
-      this.builder = builder;
-    }
-
-    public AbstractFlowNodeBuilder<?, ?> build(final AbstractFlowNodeBuilder<?, ?> processBuilder) {
-      return builder.apply(processBuilder);
-    }
-
-    private static BpmnElementBuilder of(
-        final String elementType, final UnaryOperator<AbstractFlowNodeBuilder<?, ?>> builder) {
-      return new BpmnElementBuilder(elementType, builder);
-    }
-
-    @Override
-    public String toString() {
-      return elementType;
-    }
   }
 }
