@@ -49,7 +49,11 @@ it('invoke loadRawData on button Click', async () => {
   expect(loadRawData).toHaveBeenCalledWith({
     filter: [
       {
-        data: {flowNodeId: {operator: '>', unit: 'millis', value: 1250}},
+        type: 'completedInstancesOnly',
+        filterLevel: 'instance',
+      },
+      {
+        data: {flowNodeId: {operator: '>=', unit: 'millis', value: 1250}},
         type: 'flowNodeDuration',
         filterLevel: 'instance',
       },

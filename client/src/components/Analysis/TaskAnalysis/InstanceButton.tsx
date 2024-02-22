@@ -33,8 +33,12 @@ export function InstancesButton({id, name, config, value, totalCount}: Instances
           ...restConfig,
           filter: [
             {
+              type: 'completedInstancesOnly',
+              filterLevel: 'instance',
+            },
+            {
               type: 'flowNodeDuration',
-              data: {[id]: {operator: '>', value, unit: 'millis'}},
+              data: {[id]: {operator: '>=', value, unit: 'millis'}},
               filterLevel: 'instance',
             },
             ...filters,
