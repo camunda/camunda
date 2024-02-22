@@ -75,14 +75,14 @@ if [ -n "$VERSION" ]; then
 fi
 
 echo "Building benchmark project"
-./mvnw -B -D skipTests -D skipChecks -am -pl benchmarks/project package
+./mvnw -B -D skipTests -D skipChecks -am -pl zeebe/benchmarks/project package
 
 TAG=${VERSION:-SNAPSHOT}
 echo "Building gcr.io/zeebe-io/starter:${TAG}"
-./mvnw -B -D skipTests -D skipChecks -D image="gcr.io/zeebe-io/starter:${TAG}" -P starter -pl benchmarks/project jib:buildDocker
+./mvnw -B -D skipTests -D skipChecks -D image="gcr.io/zeebe-io/starter:${TAG}" -P starter -pl zeebe/benchmarks/project jib:buildDocker
 
 echo "Building gcr.io/zeebe-io/worker:${TAG}"
-./mvnw -B -D skipTests -D skipChecks -D image="gcr.io/zeebe-io/worker:${TAG}" -P worker -pl benchmarks/project jib:buildDocker
+./mvnw -B -D skipTests -D skipChecks -D image="gcr.io/zeebe-io/worker:${TAG}" -P worker -pl zeebe/benchmarks/project jib:buildDocker
 
 PUSH=${PUSH:-0}
 if [ "${PUSH}" -ne "1" ]; then
