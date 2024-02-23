@@ -161,7 +161,7 @@ RUN groupadd --gid 1001 camunda && \
     chown -R 1001:0 ${ZB_HOME} && \
     chmod -R 0775 ${ZB_HOME}
 
-COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
+COPY --link --chown=1001:0 docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
 
 USER 1001:1001
