@@ -262,6 +262,43 @@ public class BpmnCompensationSubscriptionBehaviour {
         boundaryEventKey, ProcessInstanceIntent.ELEMENT_COMPLETED, boundaryEventRecord);
   }
 
+  public boolean triggerCompensationForActivity(
+      final ExecutableActivity compensationActivity, final BpmnElementContext context) {
+    final String compensationActivityId = BufferUtil.bufferAsString(compensationActivity.getId());
+
+    final Set<CompensationSubscription> subscriptions =
+        compensationSubscriptionState
+            .findSubscriptionsByProcessInstanceKey(
+                context.getTenantId(), context.getProcessInstanceKey())
+            .stream()
+            .filter(
+                subscription ->
+                    subscription
+                        .getRecord()
+                        .getCompensableActivityId()
+                        .equals(compensationActivityId))
+            .filter(
+                subscription ->
+                    subscription.getRecord().getCompensableActivityScopeKey()
+                        == context.getFlowScopeKey())
+            .filter(
+                compensationSubscription ->
+                    compensationSubscription.getRecord().getThrowEventId().isEmpty())
+            .collect(Collectors.toSet());
+
+    if (subscriptions.isEmpty()) {
+      return false;
+    }
+
+    subscriptions.forEach(
+        subscription -> {
+          appendCompensationSubscriptionTriggerEvent(context, subscription);
+          activateCompensationHandler(context, subscription.getRecord().getCompensableActivityId());
+        });
+
+    return true;
+  }
+
   public void completeCompensationHandler(final BpmnElementContext context) {
 
     if (BpmnEventType.COMPENSATION != context.getBpmnEventType()) {

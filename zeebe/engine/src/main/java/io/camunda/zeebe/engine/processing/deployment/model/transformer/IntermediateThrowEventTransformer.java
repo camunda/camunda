@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCompensation;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
@@ -50,7 +53,7 @@ public final class IntermediateThrowEventTransformer
     } else if (isSignalEvent(element)) {
       transformSignalEventDefinition(element, context);
     } else if (isCompensationEvent(element)) {
-      transformCompensationEventDefinition(element, context);
+      transformCompensationEventDefinition(element, throwEvent, context);
     }
   }
 
@@ -124,10 +127,22 @@ public final class IntermediateThrowEventTransformer
   }
 
   private void transformCompensationEventDefinition(
-      final IntermediateThrowEvent element, final TransformContext context) {
-    final var currentProcess = context.getCurrentProcess();
-    final var executableElement =
-        currentProcess.getElementById(element.getId(), ExecutableIntermediateThrowEvent.class);
+      final IntermediateThrowEvent element,
+      final ExecutableIntermediateThrowEvent executableElement,
+      final TransformContext context) {
     executableElement.setEventType(BpmnEventType.COMPENSATION);
+
+    final var eventDefinition =
+        (CompensateEventDefinition) element.getEventDefinitions().iterator().next();
+
+    final ExecutableCompensation compensation = new ExecutableCompensation(eventDefinition.getId());
+
+    final Activity activityRef = eventDefinition.getActivity();
+    if (activityRef != null) {
+      final ExecutableActivity activity =
+          context.getCurrentProcess().getElementById(activityRef.getId(), ExecutableActivity.class);
+      compensation.setReferenceCompensationActivity(activity);
+    }
+    executableElement.setCompensation(compensation);
   }
 }

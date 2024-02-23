@@ -314,8 +314,12 @@ public class IntermediateThrowEventProcessor
       final BpmnElementContext activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
 
+      final var compensation = element.getCompensation();
       final var isCompensationTriggered =
-          compensationSubscriptionBehaviour.triggerCompensation(activating);
+          compensation.hasReferenceActivity()
+              ? compensationSubscriptionBehaviour.triggerCompensationForActivity(
+                  compensation.getReferenceCompensationActivity(), activated)
+              : compensationSubscriptionBehaviour.triggerCompensation(activating);
 
       if (isCompensationTriggered) {
         return SUCCESS;

@@ -19,6 +19,8 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
 
   private boolean isTerminateEndEvent;
 
+  private ExecutableCompensation compensation;
+
   public ExecutableEndEvent(final String id) {
     super(id);
   }
@@ -45,6 +47,14 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
 
   public void setSignal(final ExecutableSignal signal) {
     this.signal = signal;
+  }
+
+  public ExecutableCompensation getCompensation() {
+    return compensation;
+  }
+
+  public void setCompensation(final ExecutableCompensation compensation) {
+    this.compensation = compensation;
   }
 
   @Override

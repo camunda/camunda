@@ -20,6 +20,8 @@ public class ExecutableIntermediateThrowEvent extends ExecutableFlowNode
 
   private ExecutableSignal signal;
 
+  private ExecutableCompensation compensation;
+
   public ExecutableIntermediateThrowEvent(final String id) {
     super(id);
   }
@@ -56,6 +58,14 @@ public class ExecutableIntermediateThrowEvent extends ExecutableFlowNode
 
   public void setSignal(final ExecutableSignal signal) {
     this.signal = signal;
+  }
+
+  public ExecutableCompensation getCompensation() {
+    return compensation;
+  }
+
+  public void setCompensation(final ExecutableCompensation compensation) {
+    this.compensation = compensation;
   }
 
   public boolean isNoneThrowEvent() {
