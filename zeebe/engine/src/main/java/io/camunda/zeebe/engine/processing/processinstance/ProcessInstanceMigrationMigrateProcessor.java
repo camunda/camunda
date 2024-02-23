@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -76,6 +78,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
   }
 
   @Override
@@ -258,6 +261,26 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessDefinitionKey(targetProcessDefinition.getKey())
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
+
+    processMessageSubscriptionState.visitElementSubscriptions(
+        elementInstance.getKey(),
+        subscription -> {
+          if (!subscription.isOpen()) {
+            // ignore subscriptions that are opening or closing
+            // todo consider whether this makes sense or not
+            return true;
+          }
+          stateWriter.appendFollowUpEvent(
+              subscription.getKey(),
+              ProcessMessageSubscriptionIntent.MIGRATING,
+              subscription
+                  .getRecord()
+                  .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                  .setElementId(BufferUtil.wrapString(targetElementId))
+                  .setVariables(NIL_VALUE));
+
+          return true;
+        });
   }
 
   /**

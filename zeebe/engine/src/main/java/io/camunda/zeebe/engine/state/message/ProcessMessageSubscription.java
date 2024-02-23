@@ -50,6 +50,10 @@ public final class ProcessMessageSubscription extends UnpackedObject implements 
     return this;
   }
 
+  public boolean isOpen() {
+    return stateProp.getValue() == State.STATE_OPENED;
+  }
+
   public boolean isClosing() {
     return stateProp.getValue() == State.STATE_CLOSING;
   }
