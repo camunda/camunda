@@ -273,8 +273,8 @@ it('should display an empty state if no outliers found', async () => {
     tenantIds: ['a', 'b'],
   });
 
-  runAllEffects();
   await flushPromises();
+  await runAllEffects();
 
   expect(node.find('.noOutliers')).toExist();
 });

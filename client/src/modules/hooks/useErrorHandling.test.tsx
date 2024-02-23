@@ -128,7 +128,7 @@ it('should call finally after success', async () => {
 
   runLastEffect();
   node.find('button').simulate('click');
-  await node.update();
+  await flushPromises();
 
   expect(spy).toHaveBeenCalled();
 });

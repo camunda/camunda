@@ -33,17 +33,19 @@ export default function TaskAnalysis() {
   });
   const [xml, setXml] = useState(null);
   const [nodeOutliers, setNodeOutliers] = useState({});
-  const [higherNodeOutliersHeatData, setHigherNodeOutliersHeatData] = useState({});
+  const [higherNodeOutliersHeatData, setHigherNodeOutliersHeatData] = useState();
   const [flowNodeNames, setFlowNodeNames] = useState({});
   const [selectedOutlierNode, setSelectedOutlierNode] = useState(null);
   const [higherNodeOutlierVariables, setHigherNodeOutlierVariables] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [isLoadingXml, setIsLoadingXml] = useState(false);
+  const [isLoadingFlowNodeNames, setIsLoadingFlowNodeNames] = useState(false);
+  const [isLoadingNodeOutliers, setIsLoadingNodeOutliers] = useState(false);
   const {mightFail} = useErrorHandling();
   const nodeOutliersRef = useRef();
 
   const loadFlowNodeNames = useCallback(
     (config) => {
-      setLoading(true);
+      setIsLoadingFlowNodeNames(true);
       mightFail(
         getFlowNodeNames(
           config.processDefinitionKey,
@@ -52,7 +54,7 @@ export default function TaskAnalysis() {
         ),
         (flowNodeNames) => setFlowNodeNames(flowNodeNames),
         showError,
-        () => setLoading(false)
+        () => setIsLoadingFlowNodeNames(false)
       );
     },
     [mightFail]
@@ -63,7 +65,7 @@ export default function TaskAnalysis() {
     const {processDefinitionKey, processDefinitionVersions, tenantIds} = updates;
 
     if (processDefinitionKey && processDefinitionVersions && tenantIds) {
-      setLoading(true);
+      setIsLoadingXml(true);
       await mightFail(
         loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersions[0], tenantIds[0]),
         (xml) => {
@@ -71,7 +73,7 @@ export default function TaskAnalysis() {
           track('startOutlierAnalysis', {processDefinitionKey});
         },
         showError,
-        () => setLoading(false)
+        () => setIsLoadingXml(false)
       );
     } else if (
       !newConfig.processDefinitionKey ||
@@ -101,7 +103,7 @@ export default function TaskAnalysis() {
 
   const loadOutlierData = useCallback(
     (config) => {
-      setLoading(true);
+      setIsLoadingNodeOutliers(true);
       loadFlowNodeNames(config);
       mightFail(
         loadNodesOutliers(config),
@@ -135,7 +137,7 @@ export default function TaskAnalysis() {
           setHigherNodeOutlierVariables(higherNodeOutlierVariables);
         },
         showError,
-        () => setLoading(false)
+        () => setIsLoadingNodeOutliers(false)
       );
     },
     [loadOutlierVariables, loadFlowNodeNames, mightFail]
@@ -151,7 +153,7 @@ export default function TaskAnalysis() {
   }
 
   function loadChartData(id, nodeData) {
-    setLoading(true);
+    setIsLoadingXml(true);
     mightFail(
       loadDurationData({
         ...config,
@@ -167,7 +169,7 @@ export default function TaskAnalysis() {
         });
       },
       undefined,
-      () => setLoading(false)
+      () => setIsLoadingXml(false)
     );
   }
 
@@ -178,7 +180,12 @@ export default function TaskAnalysis() {
     }
   }, [config, loadOutlierData]);
 
-  const empty = xml && !loading && Object.keys(higherNodeOutliersHeatData).length === 0;
+  const loading = isLoadingXml || isLoadingFlowNodeNames || isLoadingNodeOutliers;
+  const empty =
+    !!xml &&
+    !loading &&
+    !!higherNodeOutliersHeatData &&
+    Object.keys(higherNodeOutliersHeatData).length === 0;
   const matchingInstancesCount = Object.values(nodeOutliers).reduce(
     (matchingInstancesCount, nodeOutlierData) => {
       if (nodeOutlierData?.totalCount) {
@@ -199,8 +206,8 @@ export default function TaskAnalysis() {
       )}
       {hasData && <h2>{t('analysis.task.result', {count: matchingInstancesCount})}</h2>}
       <div className={classnames('TaskAnalysis__diagram', {empty})}>
-        {xml && hasData && (
-          <BPMNDiagram xml={xml} loading={loading}>
+        {hasData && (
+          <BPMNDiagram xml={xml} loading={isLoadingXml}>
             <HeatmapOverlay data={higherNodeOutliersHeatData} onNodeClick={onNodeClick} />
           </BPMNDiagram>
         )}
@@ -218,7 +225,7 @@ export default function TaskAnalysis() {
           <h2>{t('analysis.task.table.heading')}</h2>
           <OutlierDetailsTable
             flowNodeNames={flowNodeNames}
-            loading={loading}
+            loading={isLoadingFlowNodeNames || isLoadingNodeOutliers}
             onDetailsClick={loadChartData}
             outlierVariables={higherNodeOutlierVariables}
             nodeOutliers={nodeOutliers}

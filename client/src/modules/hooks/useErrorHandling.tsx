@@ -20,7 +20,7 @@ export default function useErrorHandling<D = any>() {
     try {
       const response = await retriever;
       if (mounted.current) {
-        return successHandler(response);
+        return await successHandler(response);
       }
     } catch (error) {
       if (mounted.current) {
