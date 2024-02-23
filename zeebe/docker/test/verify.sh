@@ -69,7 +69,7 @@ if [ "$imageManifestMediaType" != "$imageManifestMediaTypeExpected" ]; then
 fi
 
 DIGEST_REGEX="BASE_DIGEST=\"(sha256\:[a-f0-9\:]+)\""
-DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../Dockerfile")
+DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../../Dockerfile")
 if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
     DIGEST="${BASH_REMATCH[1]}"
     echo "Digest found: $DIGEST"
