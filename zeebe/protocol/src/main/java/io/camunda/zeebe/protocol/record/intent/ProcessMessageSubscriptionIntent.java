@@ -25,7 +25,27 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
 
   DELETING((short) 5),
   DELETE((short) 6),
-  DELETED((short) 7);
+  DELETED((short) 7),
+
+  /**
+   * Event that indicates that the process message subscription is currently migrating. This can be
+   * used to prevent the subscription from being correlated while the process instance is being
+   * migrated.
+   */
+  MIGRATING((short) 8),
+
+  /**
+   * Command send by the message subscription partition to indicate that the message subscription
+   * has been migrated and the process message subscription can be considered fully migrated.
+   */
+  MIGRATE((short) 9),
+
+  /**
+   * Event that indicates that the process message subscription has been migrated completely, i.e.
+   * the message subscription has also been migrated. This can be used to allow the subscription to
+   * be correlated again.
+   */
+  MIGRATED((short) 10);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -52,6 +72,8 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
       case CORRELATED:
       case DELETING:
       case DELETED:
+      case MIGRATING:
+      case MIGRATED:
         return true;
       default:
         return false;
@@ -76,6 +98,12 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
         return DELETE;
       case 7:
         return DELETED;
+      case 8:
+        return MIGRATING;
+      case 9:
+        return MIGRATE;
+      case 10:
+        return MIGRATED;
       default:
         return Intent.UNKNOWN;
     }
