@@ -53,8 +53,7 @@ import org.testcontainers.utility.MountableFile;
 public class TestContainerUtil {
 
   public static final String PROPERTIES_PREFIX = "camunda.operate.";
-  public static final String ELS_DOCKER_TESTCONTAINER_URL =
-      "http://host.testcontainers.internal:9200"; // FIXME "http://elasticsearch:9200"
+  public static final String ELS_DOCKER_TESTCONTAINER_URL = "http://elasticsearch:9200";
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
   public static final int ELS_PORT = 9200;
   public static final String ELS_HOST = "localhost";
