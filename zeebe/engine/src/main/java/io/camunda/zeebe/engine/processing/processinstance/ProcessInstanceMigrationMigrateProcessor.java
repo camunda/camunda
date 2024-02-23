@@ -34,10 +34,12 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -182,7 +184,8 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
-    requireNoBoundaryEventInSource(sourceProcessDefinition, elementInstanceRecord);
+    requireNoBoundaryEventInSource(
+        sourceProcessDefinition, elementInstanceRecord, EnumSet.of(BpmnEventType.MESSAGE));
     requireNoBoundaryEventInTarget(targetProcessDefinition, targetElementId, elementInstanceRecord);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
