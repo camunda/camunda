@@ -9,12 +9,16 @@ package io.camunda.zeebe.gateway.rest;
 
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
@@ -71,6 +75,21 @@ public class RequestMapper {
     return brokerRequest;
   }
 
+  public static BrokerUserTaskUpdateRequest toUserTaskUpdateRequest(
+      final UserTaskUpdateRequest updateRequest,
+      final long userTaskKey,
+      final ServerWebExchange context) {
+    final var brokerRequest =
+        new BrokerUserTaskUpdateRequest(
+            userTaskKey,
+            getRecordWithChangedAttributes(updateRequest),
+            getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction));
+
+    brokerRequest.setAuthorization(getAuthorizationToken(context));
+
+    return brokerRequest;
+  }
+
   private static String getAuthorizationToken(final ServerWebExchange context) {
     final List<String> authorizedTenants =
         context.getAttributeOrDefault(
@@ -82,6 +101,28 @@ public class RequestMapper {
         .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
         .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
         .encode();
+  }
+
+  private static UserTaskRecord getRecordWithChangedAttributes(
+      final UserTaskUpdateRequest updateRequest) {
+    final var record = new UserTaskRecord();
+    if (updateRequest == null || updateRequest.getChangeset() == null) {
+      return record;
+    }
+    final Changeset changeset = updateRequest.getChangeset();
+    if (changeset.getCandidateGroups() != null) {
+      record.setCandidateGroupsList(changeset.getCandidateGroups()).setCandidateGroupsChanged();
+    }
+    if (changeset.getCandidateUsers() != null) {
+      record.setCandidateUsersList(changeset.getCandidateUsers()).setCandidateUsersChanged();
+    }
+    if (changeset.getDueDate() != null) {
+      record.setDueDate(changeset.getDueDate()).setDueDateChanged();
+    }
+    if (changeset.getFollowUpDate() != null) {
+      record.setFollowUpDate(changeset.getFollowUpDate()).setFollowUpDateChanged();
+    }
+    return record;
   }
 
   private static DirectBuffer getDocumentOrEmpty(
