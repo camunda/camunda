@@ -288,11 +288,22 @@ public class ProcessInstanceMigrationMigrateProcessor
                   .setElementId(BufferUtil.wrapString(targetElementId))
                   .setVariables(NIL_VALUE));
           // todo: consider whether subscription.key is unique enough for command distribution
+          // for example, can we have multiple distributions for the same subscription
+          // simultaneously?
           commandDistributionBehavior.distributeCommand(
               subscription.getKey(),
               ValueType.MESSAGE_SUBSCRIPTION,
               MessageSubscriptionIntent.MIGRATE,
-              new MessageSubscriptionRecord());
+              new MessageSubscriptionRecord()
+                  .setElementInstanceKey(elementInstance.getKey())
+                  .setProcessInstanceKey(processInstanceKey)
+                  .setCorrelationKey(subscription.getRecord().getCorrelationKeyBuffer())
+                  .setMessageKey(subscription.getRecord().getMessageKey())
+                  .setMessageName(subscription.getRecord().getMessageNameBuffer())
+                  .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                  .setInterrupting(subscription.getRecord().isInterrupting())
+                  .setTenantId(subscription.getRecord().getTenantId())
+                  .setVariables(NIL_VALUE));
           return true;
         });
   }
