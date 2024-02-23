@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.gateway.rest.RestErrorMapper.getValidationResponse;
+import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -17,7 +17,6 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskCompletionRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,14 +66,13 @@ public class UserTaskController {
   public CompletableFuture<ResponseEntity<Object>> assignUserTask(
       final ServerWebExchange context,
       @PathVariable final long userTaskKey,
-      @RequestBody() final UserTaskAssignmentRequest assignmentRequest) {
+      @RequestBody final UserTaskAssignmentRequest assignmentRequest) {
 
-    final Optional<ValidationErrorMessage> validationErrorMessage =
+    final Optional<ResponseEntity<Object>> validationErrorResponse =
         validateAssignmentRequest(assignmentRequest);
 
-    if (validationErrorMessage.isPresent()) {
-      final ResponseEntity<Object> response = getValidationResponse(validationErrorMessage.get());
-      return CompletableFuture.completedFuture(response);
+    if (validationErrorResponse.isPresent()) {
+      return CompletableFuture.completedFuture(validationErrorResponse.get());
     }
 
     final BrokerUserTaskAssignmentRequest brokerRequest =
@@ -111,12 +109,14 @@ public class UserTaskController {
     };
   }
 
-  private static Optional<ValidationErrorMessage> validateAssignmentRequest(
+  private static Optional<ResponseEntity<Object>> validateAssignmentRequest(
       final UserTaskAssignmentRequest assignmentRequest) {
     if (assignmentRequest.getAssignee() == null || assignmentRequest.getAssignee().isBlank()) {
-      final ValidationErrorMessage exception =
-          new ValidationErrorMessage(UserTaskIntent.ASSIGN, "No assignee provided");
-      return Optional.of(exception);
+      final String message = "No assignee provided";
+      final ProblemDetail problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST, message, INVALID_ARGUMENT.name());
+      return Optional.of(ResponseEntity.of(problemDetail).build());
     }
     return Optional.empty();
   }

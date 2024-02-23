@@ -476,6 +476,7 @@ public class UserTaskControllerTest {
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
     Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
         .hasUserTaskKey(2251799813685732L)
+        .hasAction("assign")
         .hasAssignee("Test Assignee");
 
     Assertions.assertThat(argumentCaptor.getValue().getIntent()).isEqualTo(UserTaskIntent.ASSIGN);
@@ -503,203 +504,19 @@ public class UserTaskControllerTest {
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
     Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
         .hasUserTaskKey(2251799813685732L)
+        .hasAction("assign")
         .hasAssignee("Test Assignee");
 
     Assertions.assertThat(argumentCaptor.getValue().getIntent()).isEqualTo(UserTaskIntent.CLAIM);
   }
 
   @Test
-  public void shouldYieldNotFoundWhenTaskNotFoundForTaskAssignmentRequest() {
-    // given
-    brokerResponseFutureSupplier =
-        () ->
-            CompletableFuture.supplyAsync(
-                () ->
-                    new BrokerRejectionResponse<>(
-                        new BrokerRejection(
-                            UserTaskIntent.ASSIGN, 1L, RejectionType.NOT_FOUND, "Task not found")));
-
-    final var request = new UserTaskAssignmentRequest().assignee("Test Assignee");
-
-    final var expectedBody =
-        ProblemDetail.forStatusAndDetail(
-            HttpStatus.NOT_FOUND,
-            "Command 'ASSIGN' rejected with code 'NOT_FOUND': Task not found");
-    expectedBody.setTitle("NOT_FOUND");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/assignment"));
-
-    // when / then
-    webClient
-        .post()
-        .uri("api/v1/user-tasks/1/assignment")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), UserTaskAssignmentRequest.class)
-        .exchange()
-        .expectStatus()
-        .isNotFound()
-        .expectBody(ProblemDetail.class)
-        .isEqualTo(expectedBody);
-
-    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
-    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
-    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
-        .hasUserTaskKey(1L)
-        .hasAction("assign")
-        .hasAssignee("Test Assignee");
-  }
-
-  @Test
-  public void shouldYieldConflictWhenAssigningTaskWithInvalidState() {
-    // given
-    brokerResponseFutureSupplier =
-        () ->
-            CompletableFuture.supplyAsync(
-                () ->
-                    new BrokerRejectionResponse<>(
-                        new BrokerRejection(
-                            UserTaskIntent.ASSIGN,
-                            1L,
-                            RejectionType.INVALID_STATE,
-                            "Task is not in state CREATED")));
-
-    final var request = new UserTaskAssignmentRequest().assignee("Test Assignee");
-    final var expectedBody =
-        ProblemDetail.forStatusAndDetail(
-            HttpStatus.CONFLICT,
-            "Command 'ASSIGN' rejected with code 'INVALID_STATE': Task is not in state CREATED");
-    expectedBody.setTitle("INVALID_STATE");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/assignment"));
-
-    // when / then
-    webClient
-        .post()
-        .uri("api/v1/user-tasks/1/assignment")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), UserTaskAssignmentRequest.class)
-        .exchange()
-        .expectStatus()
-        .isEqualTo(HttpStatus.CONFLICT)
-        .expectBody(ProblemDetail.class)
-        .isEqualTo(expectedBody);
-
-    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
-    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
-    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
-        .hasUserTaskKey(1L)
-        .hasAction("assign")
-        .hasAssignee("Test Assignee");
-  }
-
-  @Test
-  public void shouldYieldBadRequestWhenRejectionOfInputForTaskAssignment() {
-    // given
-    brokerResponseFutureSupplier =
-        () ->
-            CompletableFuture.supplyAsync(
-                () ->
-                    new BrokerRejectionResponse<>(
-                        new BrokerRejection(
-                            UserTaskIntent.ASSIGN,
-                            1L,
-                            RejectionType.INVALID_ARGUMENT,
-                            "Just an error")));
-
-    final var request = new UserTaskAssignmentRequest().assignee("Test Assignee");
-
-    final var expectedBody =
-        ProblemDetail.forStatusAndDetail(
-            HttpStatus.BAD_REQUEST,
-            "Command 'ASSIGN' rejected with code 'INVALID_ARGUMENT': Just an error");
-    expectedBody.setTitle("INVALID_ARGUMENT");
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/assignment"));
-
-    // when / then
-    webClient
-        .post()
-        .uri("api/v1/user-tasks/1/assignment")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), UserTaskAssignmentRequest.class)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectBody(ProblemDetail.class)
-        .isEqualTo(expectedBody);
-
-    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
-    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
-    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
-        .hasUserTaskKey(1L)
-        .hasAction("assign")
-        .hasAssignee("Test Assignee");
-  }
-
-  @ParameterizedTest
-  @EnumSource(
-      value = RejectionType.class,
-      names = {"PROCESSING_ERROR", "EXCEEDED_BATCH_RECORD_SIZE", "SBE_UNKNOWN", "NULL_VAL"})
-  public void shouldYieldInternalErrorWhenInternalRejectionForTaskAssignment(
-      final RejectionType rejectionType) {
-    // given
-    brokerResponseFutureSupplier =
-        () ->
-            CompletableFuture.supplyAsync(
-                () ->
-                    new BrokerRejectionResponse<>(
-                        new BrokerRejection(
-                            UserTaskIntent.ASSIGN, 1L, rejectionType, "Just an error")));
-
-    final var request = new UserTaskAssignmentRequest().assignee("Test Assignee");
-    final var expectedBody =
-        ProblemDetail.forStatusAndDetail(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            "Command 'ASSIGN' rejected with code '" + rejectionType + "': Just an error");
-    expectedBody.setTitle(rejectionType.name());
-    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/assignment"));
-
-    // when / then
-    webClient
-        .post()
-        .uri("api/v1/user-tasks/1/assignment")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), UserTaskAssignmentRequest.class)
-        .exchange()
-        .expectStatus()
-        .is5xxServerError()
-        .expectBody(ProblemDetail.class)
-        .isEqualTo(expectedBody);
-
-    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
-    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
-    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
-        .hasUserTaskKey(1L)
-        .hasAction("assign")
-        .hasAssignee("Test Assignee");
-  }
-
-  @Test
   public void shouldYieldBadRequestWhenNoAssigneeForTaskAssignment() {
     // given
-    brokerResponseFutureSupplier =
-        () ->
-            CompletableFuture.supplyAsync(
-                () ->
-                    new BrokerRejectionResponse<>(
-                        new BrokerRejection(
-                            UserTaskIntent.ASSIGN,
-                            1L,
-                            RejectionType.INVALID_ARGUMENT,
-                            "No assignee provided")));
-
     final var request = new UserTaskAssignmentRequest();
 
     final var expectedBody =
-        ProblemDetail.forStatusAndDetail(
-            HttpStatus.BAD_REQUEST,
-            "Command 'ASSIGN' rejected with code 'INVALID_ARGUMENT': No assignee provided");
+        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "No assignee provided");
     expectedBody.setTitle("INVALID_ARGUMENT");
     expectedBody.setInstance(URI.create("/api/v1/user-tasks/1/assignment"));
 

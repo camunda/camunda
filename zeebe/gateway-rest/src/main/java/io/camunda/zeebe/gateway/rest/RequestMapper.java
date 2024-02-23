@@ -56,16 +56,14 @@ public class RequestMapper {
       action = "assign";
     }
 
-    final BrokerUserTaskAssignmentRequest brokerRequest;
-    if (assignmentRequest.getAllowOverride() == null || assignmentRequest.getAllowOverride()) {
-      brokerRequest =
-          new BrokerUserTaskAssignmentRequest(
-              userTaskKey, assignmentRequest.getAssignee(), action, UserTaskIntent.ASSIGN);
-    } else {
-      brokerRequest =
-          new BrokerUserTaskAssignmentRequest(
-              userTaskKey, assignmentRequest.getAssignee(), action, UserTaskIntent.CLAIM);
-    }
+    final UserTaskIntent intent =
+        assignmentRequest.getAllowOverride() == null || assignmentRequest.getAllowOverride()
+            ? UserTaskIntent.ASSIGN
+            : UserTaskIntent.CLAIM;
+
+    final BrokerUserTaskAssignmentRequest brokerRequest =
+        new BrokerUserTaskAssignmentRequest(
+            userTaskKey, assignmentRequest.getAssignee(), action, intent);
 
     final String authorizationToken = getAuthorizationToken(context);
     brokerRequest.setAuthorization(authorizationToken);
@@ -78,14 +76,12 @@ public class RequestMapper {
         context.getAttributeOrDefault(
             TENANT_CTX_KEY, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
-    final String authorizationToken =
-        Authorization.jwtEncoder()
-            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
-            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-            .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
-            .encode();
-    return authorizationToken;
+    return Authorization.jwtEncoder()
+        .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+        .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+        .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+        .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
+        .encode();
   }
 
   private static DirectBuffer getDocumentOrEmpty(
@@ -97,16 +93,8 @@ public class RequestMapper {
         : new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
   }
 
-  private static String getStringOrEmpty(
-      final UserTaskCompletionRequest request,
-      final Function<UserTaskCompletionRequest, String> valueExtractor) {
-    final String value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? "" : value;
-  }
-
-  private static String getStringOrEmpty(
-      final UserTaskAssignmentRequest request,
-      final Function<UserTaskAssignmentRequest, String> valueExtractor) {
+  private static <R> String getStringOrEmpty(
+      final R request, final Function<R, String> valueExtractor) {
     final String value = request == null ? null : valueExtractor.apply(request);
     return value == null ? "" : value;
   }

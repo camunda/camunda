@@ -73,7 +73,7 @@ paths:
         - name: userTaskKey
           in: path
           required: true
-          description: The key of the user task to complete.
+          description: The key of the user task to assign.
           schema:
             type: integer
             format: int64
@@ -84,8 +84,6 @@ paths:
             schema:
               $ref: "#/components/schemas/UserTaskAssignmentRequest"
       responses:
-        '202':
-          description: The  user task’s assignment change is accepted and processed by task listeners.
         '204':
           description: The user task's assignment was adjusted.
         '404':
@@ -209,14 +207,15 @@ components:
       type: object
       properties:
         assignee:
-          description: The assignee for the user task. The assignee must not be empty or null.
+          description: The assignee for the user task. The assignee must not be empty or `null`.
           type: string
           nullable: false
         allowOverride:
           description: >
-            By default, the task is reassigned if it was already assigned. If this option is set
-            to false then an error will be returned in such cases. The task must then first be
-            unassigned in order to be assigned again.
+            By default, the task is reassigned if it was already assigned. Set this to `false`
+            to return an error in such cases. The task must then first be unassigned to
+            be assigned again. Use this when you have users picking from group task
+            queues to prevent race conditions.
           type: boolean
           nullable: true
         action:

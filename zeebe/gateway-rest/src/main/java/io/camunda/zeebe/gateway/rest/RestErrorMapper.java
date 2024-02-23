@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
-
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -39,19 +37,6 @@ public class RestErrorMapper {
         .or(() -> mapBrokerErrorToProblem(brokerResponse))
         .or(() -> mapRejectionToProblem(brokerResponse, rejectionMapper))
         .map(p -> ResponseEntity.of(p).build());
-  }
-
-  public static ResponseEntity<Object> getValidationResponse(
-      final ValidationErrorMessage exception) {
-    final String message =
-        String.format(
-            "Command '%s' rejected with code '%s': %s",
-            exception.getIntent(), INVALID_ARGUMENT, exception.getMessage());
-
-    final ProblemDetail problemDetail =
-        RestErrorMapper.createProblemDetail(
-            HttpStatus.BAD_REQUEST, message, INVALID_ARGUMENT.name());
-    return ResponseEntity.of(problemDetail).build();
   }
 
   private static ProblemDetail mapErrorToProblem(
