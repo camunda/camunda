@@ -98,6 +98,39 @@ paths:
             The assignment of the user task with the given key cannot be completed.
             More details are provided in the response body.
           $ref: "#/components/responses/ProblemResponse"
+  /user-tasks/{userTaskKey}/update:
+    patch:
+      summary: Update a user task.
+      description: Update a user task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to update.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskUpdateRequest"
+      responses:
+        '204':
+          description: The user task was updated successfully.
+        '404':
+          description: The user task with the given key was not found.
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          $ref: "#/components/responses/ProblemResponse"
+        '400':
+          description: >
+            The user task with the given key cannot be updated.
+            More details are provided in the response body.
+          $ref: "#/components/responses/ProblemResponse"
 
 components:
   responses:
@@ -224,10 +257,64 @@ components:
             from this endpoint invocation. If not provided, it will default to "assign".
           type: string
           nullable: true
+    UserTaskUpdateRequest:
+      type: object
+      properties:
+        changeset:
+          description: |
+            JSON object with changed task attribute values.
+
+            The following attributes can be adjusted with this endpoint, additional attributes
+            will be ignored:
+
+            * `candidateGroups` - reset by providing an empty list
+            * `candidateUsers` - reset by providing an empty list
+            * `dueDate` - reset by providing an empty String
+            * `followUpDate` - reset by providing an empty String
+
+            Providing any of those attributes with a `null` value or omitting it preserves
+            the persisted attribute's value.
+
+            The assignee cannot be adjusted with this endpoint, use the Assign task endpoint.
+            This ensures correct event emission for assignee changes.
+          type: object
+          nullable: true
+          $ref: "#/components/schemas/Changeset"
+        action:
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "update".
+          type: string
+          nullable: true
     Variables:
       description: A map of variables.
       type: object
       additionalProperties: true
+    Changeset:
+      description: A map of changes.
+      type: object
+      additionalProperties: true
+      properties:
+        dueDate:
+          type: string
+          description: The due date of the task. Reset by providing an empty String.
+          nullable: true
+        followUpDate:
+          type: string
+          description: The follow-up date of the task. Reset by providing an empty String.
+          nullable: true
+        candidateUsers:
+          type: array
+          description: The list of candidate users of the task. Reset by providing an empty list.
+          items:
+            type: string
+          nullable: true
+        candidateGroups:
+          type: array
+          description: The list of candidate groups of the task. Reset by providing an empty list.
+          items:
+            type: string
+          nullable: true
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
