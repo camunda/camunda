@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +25,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class IdentityAuthorizationService {
+
+  private final Logger logger = LoggerFactory.getLogger(IdentityAuthorizationService.class);
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -62,19 +66,29 @@ public class IdentityAuthorizationService {
   public List<String> getUserGroups() {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String accessToken = null;
-
+    final Identity identity = SpringContextHolder.getBean(Identity.class);
     // Extract access token based on authentication type
     if (authentication instanceof IdentityAuthentication) {
       accessToken = ((IdentityAuthentication) authentication).getTokens().getAccessToken();
-    } else if (authentication instanceof TokenAuthentication) {
-      accessToken = ((TokenAuthentication) authentication).getAccessToken();
-    } else if (authentication instanceof JwtAuthenticationToken) {
-      accessToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
-    }
-
-    if (accessToken != null) {
-      final Identity identity = SpringContextHolder.getBean(Identity.class);
       return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
+    } else if (authentication instanceof TokenAuthentication) {
+      logger.info("Token of the instance TokenAuthentication");
+      accessToken = ((TokenAuthentication) authentication).getAccessToken();
+      logger.info("Try to decode the JWT token" + accessToken);
+      return identity
+          .authentication()
+          .verifyToken(identity.authentication().decodeJWT(accessToken).getToken())
+          .getUserDetails()
+          .getGroups();
+    } else if (authentication instanceof JwtAuthenticationToken) {
+      logger.info("Token of the instance JWT Authentication Token");
+      accessToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
+      logger.info("Try to decode the JWT token" + accessToken);
+      return identity
+          .authentication()
+          .verifyToken(identity.authentication().decodeJWT(accessToken).getToken())
+          .getUserDetails()
+          .getGroups();
     }
 
     // Fallback groups if authentication type is unrecognized or access token is null
