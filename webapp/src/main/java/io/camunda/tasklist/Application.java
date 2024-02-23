@@ -20,6 +20,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
@@ -43,7 +44,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
           pattern = "io\\.camunda\\.tasklist\\.archiver\\..*")
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@EnableAutoConfiguration
+@EnableAutoConfiguration(exclude = ElasticsearchClientAutoConfiguration.class)
 public class Application {
 
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";

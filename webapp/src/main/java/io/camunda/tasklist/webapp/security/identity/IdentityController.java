@@ -30,6 +30,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
@@ -73,8 +74,13 @@ public class IdentityController {
    */
   @GetMapping(value = IDENTITY_CALLBACK_URI)
   public void loggedInCallback(
-      final HttpServletRequest req, final HttpServletResponse res, AuthCodeDto authCodeDto)
+      final HttpServletRequest req,
+      final HttpServletResponse res,
+      @RequestParam(required = false, name = "code") String code,
+      @RequestParam(required = false, name = "state") String state,
+      @RequestParam(required = false, name = "error") String error)
       throws IOException {
+    final AuthCodeDto authCodeDto = new AuthCodeDto(code, state, error);
     logger.debug(
         "Called back by identity with {} {}, SessionId: {} and AuthCode {}",
         req.getRequestURI(),

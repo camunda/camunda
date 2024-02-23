@@ -47,7 +47,7 @@
           </platforms>
           <programs>
             <program>
-              <mainClass>org.springframework.boot.loader.JarLauncher</mainClass>
+              <mainClass>org.springframework.boot.loader.launch.JarLauncher</mainClass>
               <id>tasklist</id>
             </program>
             <program>

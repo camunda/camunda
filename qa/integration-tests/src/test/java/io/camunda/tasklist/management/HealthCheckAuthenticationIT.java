@@ -33,6 +33,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -59,6 +60,7 @@ public class HealthCheckAuthenticationIT {
 
   @Autowired private TestRestTemplate testRestTemplate;
 
+  @MockBean private UserDetailsService userDetailsService;
   @MockBean private SearchEngineHealthIndicator probes;
 
   @MockBean private OAuth2WebConfigurer oAuth2WebConfigurer;

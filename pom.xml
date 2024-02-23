@@ -32,9 +32,9 @@
     <version.zeebe>8.5.0-alpha1</version.zeebe>
     <version.identity>8.4.0-SNAPSHOT</version.identity> <!-- 8.4.0-SNAPSHOT as Identity didnt setup the artifactory corrected yet -->
     <version.elasticsearch>7.17.17</version.elasticsearch>
-    <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
+    <version.elasticsearch-client>8.10.4</version.elasticsearch-client>
     <version.opensearch>2.8.0</version.opensearch>
-    <version.spring.boot>3.1.8</version.spring.boot>
+    <version.spring.boot>3.2.2</version.spring.boot>
     <version.log4j>2.19.0</version.log4j>
     <version.junit>5.9.3</version.junit>
     <version.jakarta.json>2.0.1</version.jakarta.json>
@@ -443,6 +443,7 @@
           <version>3.12.1</version>
           <configuration>
             <forceJavacCompilerUse>true</forceJavacCompilerUse>
+            <parameters>true</parameters>
           </configuration>
         </plugin>
 
