@@ -182,6 +182,8 @@ public class JobBackoffRestoreMigrationTest {
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
     assertThat(backoffColumnFamily.count()).isEqualTo(1);
+    backoffKey.wrapLong(record.getRecurringTime());
+    assertThat(backoffColumnFamily.exists(backoffJobKey)).isFalse();
   }
 
   private static JobRecord createJobRecord(final long retryBackoff) {
