@@ -7,14 +7,17 @@ package org.camunda.optimize.service.db.repository.os;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.repository.ImportRepository;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DatabaseHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
@@ -25,6 +28,7 @@ import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,6 +48,7 @@ public class ImportRepositoryOS implements ImportRepository {
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
+  private final DateTimeFormatter dateTimeFormatter;
 
   @Override
   public List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(List<String> indexTypes) {
@@ -132,5 +137,64 @@ public class ImportRepositoryOS implements ImportRepository {
       );
       return Optional.empty();
     }
+  }
+
+  @Override
+  public void importIndices(final String importItemName, final List<EngineImportIndexDto> engineImportIndexDtos) {
+    osClient.doImportBulkRequestWithList(
+      importItemName,
+      engineImportIndexDtos,
+      this::addImportIndexRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
+    );
+  }
+
+  private BulkOperation addImportIndexRequest(OptimizeDto optimizeDto) {
+    if (optimizeDto instanceof TimestampBasedImportIndexDto timestampBasedIndexDto) {
+      return createTimestampBasedRequest(timestampBasedIndexDto);
+    } else if (optimizeDto instanceof AllEntitiesBasedImportIndexDto entitiesBasedIndexDto) {
+      return createAllEntitiesBasedRequest(entitiesBasedIndexDto);
+    } else {
+      throw new OptimizeRuntimeException(
+        format("Import bulk operation is not supported for %s", optimizeDto.getClass().getName())
+      );
+    }
+  }
+
+  private BulkOperation createTimestampBasedRequest(TimestampBasedImportIndexDto importIndex) {
+    String currentTimeStamp = dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
+    log.debug(
+      "Writing timestamp based import index [{}] of type [{}] with execution timestamp [{}] to opensearch",
+      currentTimeStamp, importIndex.getEsTypeIndexRefersTo(), importIndex.getLastImportExecutionTimestamp()
+    );
+    return new BulkOperation.Builder()
+      .index(
+        new IndexOperation.Builder<TimestampBasedImportIndexDto>()
+          .index(indexNameService.getOptimizeIndexAliasForIndex(TIMESTAMP_BASED_IMPORT_INDEX_NAME))
+          .id(getId(importIndex))
+          .document(importIndex)
+          .build()
+      )
+      .build();
+  }
+
+  private String getId(EngineImportIndexDto importIndex) {
+    return DatabaseHelper.constructKey(importIndex.getEsTypeIndexRefersTo(), importIndex.getEngine());
+  }
+
+  private BulkOperation createAllEntitiesBasedRequest(AllEntitiesBasedImportIndexDto importIndex) {
+    record Doc(String engine, long importIndex){}
+    log.debug("Writing all entities based import index type [{}] to opensearch. Starting from [{}]",
+              importIndex.getEsTypeIndexRefersTo(), importIndex.getImportIndex()
+    );
+    return new BulkOperation.Builder()
+      .index(
+        new IndexOperation.Builder<Doc>()
+          .index(indexNameService.getOptimizeIndexAliasForIndex(IMPORT_INDEX_INDEX_NAME))
+          .id(getId(importIndex))
+          .document(new Doc(importIndex.getEngine(), importIndex.getImportIndex()))
+          .build()
+      )
+      .build();
   }
 }

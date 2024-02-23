@@ -472,7 +472,7 @@ public class DefinitionReaderOS implements DefinitionReader {
                                                                           final BoolQuery filterQuery,
                                                                           final boolean withXml) {
     final String xmlField = resolveXmlFieldFromType(type);
-    final List<String> fieldsToExclude = withXml ? null : List.of(xmlField);
+    final List<String> fieldsToExclude = withXml ? Collections.emptyList() : List.of(xmlField);
     final SourceConfig searchSourceBuilder = new SourceConfig.Builder()
       .filter(new SourceFilter.Builder().excludes(fieldsToExclude).build())
       .build();

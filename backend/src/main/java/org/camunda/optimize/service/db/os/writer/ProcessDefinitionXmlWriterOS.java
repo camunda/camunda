@@ -28,11 +28,12 @@ public class ProcessDefinitionXmlWriterOS extends AbstractProcessDefinitionWrite
 
   @Override
   public void importProcessDefinitionXmls(final List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos) {
-
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   Script createUpdateScript(final ProcessDefinitionOptimizeDto processDefinitionDtos) {
+    log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 

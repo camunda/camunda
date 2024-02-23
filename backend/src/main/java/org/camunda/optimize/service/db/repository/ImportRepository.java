@@ -7,6 +7,7 @@ package org.camunda.optimize.service.db.repository;
 
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
@@ -28,4 +29,6 @@ public interface ImportRepository {
   void importPositionBasedIndices(String importItemName, List<PositionBasedImportIndexDto> importIndexDtos);
 
   Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id);
+
+  void importIndices(String importItemName, List<EngineImportIndexDto> engineImportIndexDtos);
 }
