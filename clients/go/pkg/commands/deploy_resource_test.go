@@ -29,7 +29,7 @@ func TestDeployResourceCommand_AddResourceFile(t *testing.T) {
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
+	demoName := "../../cmd/zbctl/testdata/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
 	anotherName := "../../cmd/zbctl/testdata/drg-force-user.dmn"
 	anotherBytes := readBytes(t, anotherName)
@@ -79,7 +79,7 @@ func TestDeployResourceCommand_AddResource(t *testing.T) {
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
+	demoName := "../../cmd/zbctl/testdata/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
 
 	request := &pb.DeployResourceRequest{
@@ -118,7 +118,7 @@ func TestDeployResourceCommand_TenantId(t *testing.T) {
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
+	demoName := "../../cmd/zbctl/testdata/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
 
 	request := &pb.DeployResourceRequest{

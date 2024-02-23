@@ -38,5 +38,5 @@ runs:
 
         for platform in "${platforms[@]}"; do
           docker pull --platform "$platform" "${{ inputs.imageName }}:${VERSION}"
-          ${PWD}/docker/test/verify.sh "${{ inputs.imageName }}:${VERSION}" "$(echo $platform | cut -d '/' -f 2)"
+          ${PWD}/zeebe/docker/test/verify.sh "${{ inputs.imageName }}:${VERSION}" "$(echo $platform | cut -d '/' -f 2)"
         done

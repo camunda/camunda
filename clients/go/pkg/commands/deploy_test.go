@@ -30,9 +30,9 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
+	demoName := "../../cmd/zbctl/testdata/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
-	anotherName := "../../../java/src/test/resources/processes/another-demo-process.bpmn"
+	anotherName := "../../cmd/zbctl/testdata/another-demo-process.bpmn"
 	anotherBytes := readBytes(t, anotherName)
 
 	//nolint
@@ -74,7 +74,7 @@ func TestDeployCommand_AddResource(t *testing.T) {
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
+	demoName := "../../cmd/zbctl/testdata/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
 
 	//nolint

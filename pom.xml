@@ -18,51 +18,51 @@
   <modules>
     <module>bom</module>
     <module>parent</module>
-    <module>atomix</module>
-    <module>auth</module>
-    <module>broker</module>
-    <module>broker-client</module>
-    <module>protocol-test-util</module>
     <module>dist</module>
-    <module>protocol</module>
-    <module>bpmn-model</module>
-    <module>logstreams</module>
-    <module>stream-platform</module>
-    <module>engine</module>
-    <module>transport</module>
-    <module>util</module>
-    <module>test-util</module>
-    <module>msgpack-core</module>
-    <module>msgpack-value</module>
     <module>build-tools</module>
-    <module>gateway-protocol</module>
-    <module>gateway-protocol-impl</module>
-    <module>gateway</module>
-    <module>gateway-rest</module>
-    <module>clients/java</module>
-    <module>exporter-api</module>
-    <module>exporter-test</module>
-    <module>protocol-asserts</module>
-    <module>exporters/elasticsearch-exporter</module>
-    <module>exporters/opensearch-exporter</module>
-    <module>protocol-impl</module>
-    <module>protocol-jackson</module>
-    <module>zb-db</module>
-    <module>expression-language</module>
-    <module>feel</module>
-    <module>dmn</module>
-    <module>snapshot</module>
-    <module>journal</module>
-    <module>qa</module>
-    <module>benchmarks/project</module>
-    <module>scheduler</module>
-    <module>backup</module>
-    <module>backup-stores/testkit</module>
-    <module>backup-stores/s3</module>
-    <module>backup-stores/gcs</module>
-    <module>backup-stores/azure</module>
-    <module>restore</module>
-    <module>topology</module>
+    <module>zeebe/atomix</module>
+    <module>zeebe/auth</module>
+    <module>zeebe/broker</module>
+    <module>zeebe/broker-client</module>
+    <module>zeebe/protocol-test-util</module>
+    <module>zeebe/protocol</module>
+    <module>zeebe/bpmn-model</module>
+    <module>zeebe/logstreams</module>
+    <module>zeebe/stream-platform</module>
+    <module>zeebe/engine</module>
+    <module>zeebe/transport</module>
+    <module>zeebe/util</module>
+    <module>zeebe/test-util</module>
+    <module>zeebe/msgpack-core</module>
+    <module>zeebe/msgpack-value</module>
+    <module>zeebe/gateway-protocol</module>
+    <module>zeebe/gateway-protocol-impl</module>
+    <module>zeebe/gateway</module>
+    <module>zeebe/gateway-rest</module>
+    <module>zeebe/clients/java</module>
+    <module>zeebe/exporter-api</module>
+    <module>zeebe/exporter-test</module>
+    <module>zeebe/protocol-asserts</module>
+    <module>zeebe/exporters/elasticsearch-exporter</module>
+    <module>zeebe/exporters/opensearch-exporter</module>
+    <module>zeebe/protocol-impl</module>
+    <module>zeebe/protocol-jackson</module>
+    <module>zeebe/zb-db</module>
+    <module>zeebe/expression-language</module>
+    <module>zeebe/feel</module>
+    <module>zeebe/dmn</module>
+    <module>zeebe/snapshot</module>
+    <module>zeebe/journal</module>
+    <module>zeebe/qa</module>
+    <module>zeebe/benchmarks/project</module>
+    <module>zeebe/scheduler</module>
+    <module>zeebe/backup</module>
+    <module>zeebe/backup-stores/testkit</module>
+    <module>zeebe/backup-stores/s3</module>
+    <module>zeebe/backup-stores/gcs</module>
+    <module>zeebe/backup-stores/azure</module>
+    <module>zeebe/restore</module>
+    <module>zeebe/topology</module>
   </modules>
 
   <scm>
