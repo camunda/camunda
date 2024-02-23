@@ -14,8 +14,10 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -23,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -77,6 +80,27 @@ public class UserTaskController {
 
     final BrokerUserTaskAssignmentRequest brokerRequest =
         RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey, context);
+
+    final CompletableFuture<BrokerResponse<UserTaskRecord>> brokerResponse =
+        brokerClient.sendRequest(brokerRequest);
+
+    return brokerResponse.handleAsync(
+        (response, error) ->
+            RestErrorMapper.getResponse(response, error, UserTaskController::mapRejectionToProblem)
+                .orElseGet(() -> ResponseEntity.noContent().build()));
+  }
+
+  @PatchMapping(
+      path = "/user-tasks/{userTaskKey}",
+      produces = "application/json",
+      consumes = "application/json")
+  public CompletableFuture<ResponseEntity<Object>> updateUserTask(
+      final ServerWebExchange context,
+      @PathVariable final long userTaskKey,
+      @RequestBody(required = false) final UserTaskUpdateRequest updateRequest) {
+
+    final BrokerUserTaskUpdateRequest brokerRequest =
+        RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey, context);
 
     final CompletableFuture<BrokerResponse<UserTaskRecord>> brokerResponse =
         brokerClient.sendRequest(brokerRequest);
