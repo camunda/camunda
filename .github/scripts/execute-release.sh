@@ -1,6 +1,7 @@
 #!/bin/bash
 set -ex
-echo "DRY_RUN=${DRY_RUN}"
+echo "IS_DRY_RUN=${IS_DRY_RUN}"
+echo "IS_RC=${IS_RC}"
 
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -10,7 +11,7 @@ git checkout $BRANCH
 
 SKIP_PUSH_ARTIFACTS=""
 PUSH_CHANGES=""
-if [ "$DRY_RUN" = "true" ]; then
+if [ "$IS_DRY_RUN" = "true" ]; then
     SKIP_PUSH_ARTIFACTS="true"
     PUSH_CHANGES="false"
     echo "WARNING: You are running the release in DRY RUN mode."
@@ -29,6 +30,11 @@ echo "PUSH_CHANGES=${PUSH_CHANGES}"
 
 echo "Starting artifact creation:"
 mvn -DpushChanges="${PUSH_CHANGES}" -DskipTests -Prelease,engine-latest release:prepare release:perform -Dtag="${RELEASE_VERSION}" -DreleaseVersion="${RELEASE_VERSION}" -DdevelopmentVersion="${DEVELOPMENT_VERSION}" -Darguments="-DskipTests -DskipNexusStagingDeployMojo=${SKIP_PUSH_ARTIFACTS} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+
+if [[ $IS_RC == true ]]; then
+    echo "Removing tag for RC release"
+    git push origin ":refs/tags/$RELEASE_VERSION"
+fi
 
 echo "Artifacts created:"
 ls -1 distro/target
