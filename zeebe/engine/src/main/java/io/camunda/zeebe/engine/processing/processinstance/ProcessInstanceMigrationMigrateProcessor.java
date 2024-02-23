@@ -192,7 +192,11 @@ public class ProcessInstanceMigrationMigrateProcessor
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoBoundaryEventInSource(
         sourceProcessDefinition, elementInstanceRecord, EnumSet.of(BpmnEventType.MESSAGE));
-    requireNoBoundaryEventInTarget(targetProcessDefinition, targetElementId, elementInstanceRecord);
+    requireNoBoundaryEventInTarget(
+        targetProcessDefinition,
+        targetElementId,
+        elementInstanceRecord,
+        EnumSet.of(BpmnEventType.MESSAGE));
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(
