@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1x2c0k1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.15.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1x2c0k1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
   <bpmn:process id="compensation-process" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_1evmw69</bpmn:outgoing>
@@ -21,7 +21,7 @@
     <bpmn:intermediateThrowEvent id="Event_1afnxa2">
       <bpmn:incoming>Flow_13spwoi</bpmn:incoming>
       <bpmn:outgoing>Flow_0n0oakg</bpmn:outgoing>
-      <bpmn:compensateEventDefinition id="CompensateEventDefinition_1ce2r2v" waitForCompletion="false" activityRef="Activity_05iamly" />
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_1ce2r2v" waitForCompletion="false" />
     </bpmn:intermediateThrowEvent>
     <bpmn:association id="Association_1jwpcsv" associationDirection="One" sourceRef="Event_14k1uqy" targetRef="Activity_1epoz0g" />
   </bpmn:process>
@@ -33,12 +33,12 @@
       <bpmndi:BPMNShape id="Activity_1761rwu_di" bpmnElement="Activity_05iamly">
         <dc:Bounds x="270" y="77" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0iasuoa_di" bpmnElement="Event_0iasuoa">
+        <dc:Bounds x="632" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1en6ywx_di" bpmnElement="Activity_1epoz0g">
         <dc:Bounds x="440" y="200" width="100" height="80" />
         <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0iasuoa_di" bpmnElement="Event_0iasuoa">
-        <dc:Bounds x="632" y="99" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1qpwd18_di" bpmnElement="Event_1afnxa2">
         <dc:Bounds x="472" y="99" width="36" height="36" />
@@ -54,14 +54,14 @@
         <di:waypoint x="370" y="117" />
         <di:waypoint x="472" y="117" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0n0oakg_di" bpmnElement="Flow_0n0oakg">
+        <di:waypoint x="508" y="117" />
+        <di:waypoint x="632" y="117" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Association_1jwpcsv_di" bpmnElement="Association_1jwpcsv">
         <di:waypoint x="350" y="175" />
         <di:waypoint x="350" y="240" />
         <di:waypoint x="420" y="240" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0n0oakg_di" bpmnElement="Flow_0n0oakg">
-        <di:waypoint x="508" y="117" />
-        <di:waypoint x="632" y="117" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
