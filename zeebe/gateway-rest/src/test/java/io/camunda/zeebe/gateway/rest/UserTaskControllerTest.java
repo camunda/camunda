@@ -13,17 +13,21 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.rest.TopologyControllerTest.TestTopologyApplication;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.net.URI;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -41,6 +45,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
 @SpringBootTest(
@@ -163,6 +168,327 @@ public class UserTaskControllerTest {
         .hasUserTaskKey(1L)
         .hasAction("customAction")
         .hasVariables(Map.of("foo", "bar", "baz", 1234));
+  }
+
+  @Test
+  public void shouldUpdateTaskWithoutActionAndChanges() {
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
+    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
+    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
+        .hasUserTaskKey(1L)
+        .hasAction("")
+        .hasNoChangedAttributes()
+        .hasDueDate("")
+        .hasFollowUpDate("")
+        .hasNoCandidateGroupsList()
+        .hasNoCandidateUsersList();
+  }
+
+  @Test
+  public void shouldUpdateTaskWithAction() {
+    // given
+    final var request = new UserTaskUpdateRequest().action("customAction");
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskUpdateRequest.class)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
+    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
+    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
+        .hasUserTaskKey(1L)
+        .hasAction("customAction")
+        .hasNoChangedAttributes()
+        .hasDueDate("")
+        .hasFollowUpDate("")
+        .hasNoCandidateGroupsList()
+        .hasNoCandidateUsersList();
+  }
+
+  @Test
+  public void shouldUpdateTaskWithChanges() {
+    // given
+    final var request =
+        new UserTaskUpdateRequest()
+            .changeset(
+                new Changeset()
+                    .addCandidateGroupsItem("foo")
+                    .addCandidateUsersItem("bar")
+                    .dueDate("abc")
+                    .followUpDate("def"));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskUpdateRequest.class)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
+    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
+    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
+        .hasUserTaskKey(1L)
+        .hasAction("")
+        .hasChangedAttributes(
+            UserTaskRecord.CANDIDATE_USERS,
+            UserTaskRecord.CANDIDATE_GROUPS,
+            UserTaskRecord.DUE_DATE,
+            UserTaskRecord.FOLLOW_UP_DATE)
+        .hasDueDate("abc")
+        .hasFollowUpDate("def")
+        .hasCandidateGroupsList("foo")
+        .hasCandidateUsersList("bar");
+  }
+
+  @Test
+  public void shouldUpdateTaskWithPartialChanges() {
+    // given
+    final var request =
+        new UserTaskUpdateRequest()
+            .changeset(new Changeset().addCandidateGroupsItem("foo").followUpDate("def"));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskUpdateRequest.class)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
+    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
+    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
+        .hasUserTaskKey(1L)
+        .hasAction("")
+        .hasChangedAttributes(UserTaskRecord.CANDIDATE_GROUPS, UserTaskRecord.FOLLOW_UP_DATE)
+        .hasDueDate("")
+        .hasFollowUpDate("def")
+        .hasCandidateGroupsList("foo")
+        .hasNoCandidateUsersList();
+  }
+
+  @Test
+  public void shouldUpdateTaskWithPartialChangesRawJson() {
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(
+            BodyInserters.fromValue(
+                "{\"changeset\": { \"followUpDate\": \"def\", \"candidateGroups\": [\"foo\"]}}"))
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
+    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
+    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
+        .hasUserTaskKey(1L)
+        .hasAction("")
+        .hasChangedAttributes(UserTaskRecord.CANDIDATE_GROUPS, UserTaskRecord.FOLLOW_UP_DATE)
+        .hasDueDate("")
+        .hasFollowUpDate("def")
+        .hasCandidateGroupsList("foo")
+        .hasNoCandidateUsersList();
+  }
+
+  @Test
+  public void shouldUpdateTaskWithPartialEmptyValueChanges() {
+    // given
+    final var request =
+        new UserTaskUpdateRequest()
+            .changeset(new Changeset().candidateGroups(List.of()).followUpDate(""));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskUpdateRequest.class)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
+    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
+    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
+        .hasUserTaskKey(1L)
+        .hasAction("")
+        .hasChangedAttributes(UserTaskRecord.CANDIDATE_GROUPS, UserTaskRecord.FOLLOW_UP_DATE)
+        .hasDueDate("")
+        .hasFollowUpDate("")
+        .hasNoCandidateGroupsList()
+        .hasNoCandidateUsersList();
+  }
+
+  @Test
+  public void shouldUpdateTaskWithPartialEmptyValueChangesRawJson() {
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(
+            BodyInserters.fromValue(
+                "{\"changeset\": { \"followUpDate\": \"\", \"candidateGroups\": []}}"))
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
+    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
+    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
+        .hasUserTaskKey(1L)
+        .hasAction("")
+        .hasChangedAttributes(UserTaskRecord.CANDIDATE_GROUPS, UserTaskRecord.FOLLOW_UP_DATE)
+        .hasDueDate("")
+        .hasFollowUpDate("")
+        .hasNoCandidateGroupsList()
+        .hasNoCandidateUsersList();
+  }
+
+  @Test
+  public void shouldUpdateTaskWithUntrackedChanges() {
+    // given
+    final var request =
+        new UserTaskUpdateRequest()
+            .changeset(new Changeset().putAdditionalProperty("elementInstanceKey", 123456L));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskUpdateRequest.class)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
+    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
+    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
+        .hasUserTaskKey(1L)
+        .hasAction("")
+        .hasNoChangedAttributes()
+        .hasDueDate("")
+        .hasFollowUpDate("")
+        .hasNoCandidateGroupsList()
+        .hasNoCandidateUsersList()
+        .hasElementInstanceKey(-1L);
+  }
+
+  @Test
+  public void shouldUpdateTaskWithUntrackedChangesRawJson() {
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(BodyInserters.fromValue("{ \"changeset\": {\"elementInstanceKey\": 123456}}"))
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
+    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
+    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
+        .hasUserTaskKey(1L)
+        .hasAction("")
+        .hasNoChangedAttributes()
+        .hasDueDate("")
+        .hasFollowUpDate("")
+        .hasNoCandidateGroupsList()
+        .hasNoCandidateUsersList()
+        .hasElementInstanceKey(-1L);
+  }
+
+  @Test
+  public void shouldUpdateTaskWithActionAndChanges() {
+    // given
+    final var request =
+        new UserTaskUpdateRequest()
+            .action("customAction")
+            .changeset(
+                new Changeset()
+                    .addCandidateGroupsItem("foo")
+                    .addCandidateUsersItem("bar")
+                    .dueDate("abc")
+                    .followUpDate("def"));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskUpdateRequest.class)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
+    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
+    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
+        .hasUserTaskKey(1L)
+        .hasAction("customAction")
+        .hasChangedAttributes(
+            UserTaskRecord.CANDIDATE_USERS,
+            UserTaskRecord.CANDIDATE_GROUPS,
+            UserTaskRecord.DUE_DATE,
+            UserTaskRecord.FOLLOW_UP_DATE)
+        .hasDueDate("abc")
+        .hasFollowUpDate("def")
+        .hasCandidateGroupsList("foo")
+        .hasCandidateUsersList("bar");
   }
 
   @Test
