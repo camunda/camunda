@@ -16,8 +16,10 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -1022,6 +1024,99 @@ public class MigrateProcessInstanceTest {
         .hasProcessInstanceKey(variable2.getProcessInstanceKey())
         .hasScopeKey(variable2.getScopeKey())
         .hasTenantId(variable2.getTenantId());
+  }
+
+  @Test
+  public void shouldWriteProcessMessageSubscriptionMigratedForBoundaryEvent() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("B")
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("C")
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("key", "key").create();
+
+    final var messageSubscription =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var processMessageSubscription =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A")
+        .addMappingInstruction("B", "C")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.MIGRATED)
+                .withRecordKey(processMessageSubscription.getKey())
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("C")
+        .describedAs("Expect that the other values are left unchanged")
+        .hasMessageName(processMessageSubscription.getValue().getMessageName())
+        .hasCorrelationKey(processMessageSubscription.getValue().getCorrelationKey())
+        .hasProcessInstanceKey(processMessageSubscription.getValue().getProcessInstanceKey())
+        .hasElementInstanceKey(processMessageSubscription.getValue().getElementInstanceKey())
+        .hasTenantId(processMessageSubscription.getValue().getTenantId())
+        .describedAs("Expect that the variables are unset to avoid exceeding the max record size")
+        .hasVariables(Map.of());
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.MIGRATED)
+                .withRecordKey(messageSubscription.getKey())
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the other values are left unchanged")
+        .hasMessageKey(messageSubscription.getValue().getMessageKey())
+        .hasMessageName(messageSubscription.getValue().getMessageName())
+        .hasCorrelationKey(messageSubscription.getValue().getCorrelationKey())
+        .hasProcessInstanceKey(messageSubscription.getValue().getProcessInstanceKey())
+        .hasElementInstanceKey(messageSubscription.getValue().getElementInstanceKey())
+        .hasTenantId(messageSubscription.getValue().getTenantId())
+        .describedAs("Expect that the variables are unset to avoid exceeding the max record size")
+        .hasVariables(Map.of());
   }
 
   private static long extractProcessDefinitionKeyByProcessId(
