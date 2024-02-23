@@ -255,7 +255,7 @@ public final class DbJobState implements JobState, MutableJobState {
   public void restoreBackoff() {
     final var failedKeys = getFailedJobKeys();
 
-    removeWrongJobs();
+    removeJobsWithoutRetries();
 
     failedKeys.removeAll(getBackoffJobKeys());
     failedKeys.forEach(
@@ -520,12 +520,10 @@ public final class DbJobState implements JobState, MutableJobState {
    * Removing jobs that are mistakenly inserted into the backoff column family due to <a
    * href="https://github.com/camunda/zeebe/issues/15954">this issue</a>
    */
-  private void removeWrongJobs() {
-    final var failedKeys = getFailedJobKeys();
-    final var backoffJobs = getBackoffJobKey();
+  private void removeJobsWithoutRetries() {
+    final var backoffJobKeys = getBackoffJobKeys();
 
-    backoffJobs.retainAll(failedKeys);
-    backoffJobs.forEach(
+    backoffJobKeys.forEach(
         key -> {
           jobKey.wrapLong(key);
           final var jobRecord = jobsColumnFamily.get(jobKey);
