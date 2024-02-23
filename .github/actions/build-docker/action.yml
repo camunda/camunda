@@ -77,8 +77,7 @@ runs:
     - name: Build Docker image
       uses: docker/build-push-action@v5
       with:
-        context: .
-        file: zeebe/Dockerfile
+        context: zeebe
         tags: ${{ steps.get-image.outputs.result }}
         load: ${{ inputs.push != 'true' }}
         push: ${{ inputs.push }}
