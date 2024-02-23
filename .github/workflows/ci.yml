@@ -440,7 +440,7 @@ jobs:
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           config: ./.hadolint.yaml
-          dockerfile: ./zeebe/Dockerfile
+          dockerfile: ./Dockerfile
           format: sarif
           output-file: ./hadolint.sarif
           no-color: true

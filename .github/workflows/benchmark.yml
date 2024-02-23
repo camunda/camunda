@@ -110,7 +110,6 @@ jobs:
       - uses: docker/build-push-action@v5
         with:
           context: .
-          file: zeebe/Dockerfile
           tags: gcr.io/zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
           push: true
           cache-from: type=gha,ignore-error=true
