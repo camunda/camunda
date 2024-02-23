@@ -27,7 +27,16 @@ public enum MessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
   REJECTED((short) 5),
 
   DELETE((short) 6),
-  DELETED((short) 7);
+  DELETED((short) 7),
+
+  /**
+   * Command send by the process message subscription partition to indicate that the message
+   * subscription should migrate.
+   */
+  MIGRATE((short) 8),
+
+  /** Event that indicates that the message subscription has been migrated. */
+  MIGRATED((short) 9);
 
   private final short value;
   private final boolean shouldBanInstance;
