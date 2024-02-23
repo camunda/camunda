@@ -75,11 +75,16 @@ public class IdentityAuthorizationService {
       logger.info("Token of the instance TokenAuthentication");
       accessToken = ((TokenAuthentication) authentication).getAccessToken();
       logger.info("Try to decode the JWT token" + accessToken);
-      return identity
-          .authentication()
-          .verifyToken(identity.authentication().decodeJWT(accessToken).getToken())
-          .getUserDetails()
-          .getGroups();
+      final String tokenDecoded =
+          identity
+              .authentication()
+              .verifyAndDecode(
+                  accessToken, ((TokenAuthentication) authentication).getOrganization())
+              .getToken();
+
+      logger.info(
+          "User details: " + identity.authentication().verifyToken(tokenDecoded).getUserDetails());
+      return identity.authentication().verifyToken(tokenDecoded).getUserDetails().getGroups();
     } else if (authentication instanceof JwtAuthenticationToken) {
       logger.info("Token of the instance JWT Authentication Token");
       accessToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
