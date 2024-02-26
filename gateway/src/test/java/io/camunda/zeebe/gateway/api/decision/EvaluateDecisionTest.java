@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.api.decision;
 
-import static io.camunda.zeebe.gateway.api.decision.EvaluateDecisionStub.DECISION_RECORD;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
@@ -27,6 +26,7 @@ public class EvaluateDecisionTest extends GatewayTest {
   @Test
   public void shouldMapToBrokerRequest() {
     // given
+    final DecisionEvaluationRecord evaluationRecord = EvaluateDecisionStub.createDecisionRecord();
     final EvaluateDecisionStub stub = new EvaluateDecisionStub();
     stub.registerWith(brokerClient);
 
@@ -34,8 +34,8 @@ public class EvaluateDecisionTest extends GatewayTest {
 
     final EvaluateDecisionRequest request =
         EvaluateDecisionRequest.newBuilder()
-            .setDecisionId(DECISION_RECORD.getDecisionId())
-            .setDecisionKey(DECISION_RECORD.getDecisionKey())
+            .setDecisionId(evaluationRecord.getDecisionId())
+            .setDecisionKey(evaluationRecord.getDecisionKey())
             .setVariables(variables)
             .build();
 
@@ -48,14 +48,15 @@ public class EvaluateDecisionTest extends GatewayTest {
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.DECISION_EVALUATION);
 
     final DecisionEvaluationRecord record = brokerRequest.getRequestWriter();
-    assertThat(record.getDecisionId()).isEqualTo(DECISION_RECORD.getDecisionId());
-    assertThat(record.getDecisionKey()).isEqualTo(DECISION_RECORD.getDecisionKey());
+    assertThat(record.getDecisionId()).isEqualTo(evaluationRecord.getDecisionId());
+    assertThat(record.getDecisionKey()).isEqualTo(evaluationRecord.getDecisionKey());
     MsgPackUtil.assertEqualityExcluding(record.getVariablesBuffer(), variables);
   }
 
   @Test
   public void shouldMapRequestAndResponse() {
     // given
+    final DecisionEvaluationRecord evaluationRecord = EvaluateDecisionStub.createDecisionRecord();
     final EvaluateDecisionStub stub = new EvaluateDecisionStub();
     stub.registerWith(brokerClient);
 
@@ -63,8 +64,8 @@ public class EvaluateDecisionTest extends GatewayTest {
 
     final EvaluateDecisionRequest request =
         EvaluateDecisionRequest.newBuilder()
-            .setDecisionId(DECISION_RECORD.getDecisionId())
-            .setDecisionKey(DECISION_RECORD.getDecisionKey())
+            .setDecisionId(evaluationRecord.getDecisionId())
+            .setDecisionKey(evaluationRecord.getDecisionKey())
             .setVariables(variables)
             .build();
 
@@ -75,20 +76,20 @@ public class EvaluateDecisionTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // assert DecisionEvaluationRecord mapping
-    assertThat(response.getDecisionId()).isEqualTo(DECISION_RECORD.getDecisionId());
-    assertThat(response.getDecisionKey()).isEqualTo(DECISION_RECORD.getDecisionKey());
-    assertThat(response.getDecisionName()).isEqualTo(DECISION_RECORD.getDecisionName());
-    assertThat(response.getDecisionVersion()).isEqualTo(DECISION_RECORD.getDecisionVersion());
+    assertThat(response.getDecisionId()).isEqualTo(evaluationRecord.getDecisionId());
+    assertThat(response.getDecisionKey()).isEqualTo(evaluationRecord.getDecisionKey());
+    assertThat(response.getDecisionName()).isEqualTo(evaluationRecord.getDecisionName());
+    assertThat(response.getDecisionVersion()).isEqualTo(evaluationRecord.getDecisionVersion());
     assertThat(response.getDecisionRequirementsId())
-        .isEqualTo(DECISION_RECORD.getDecisionRequirementsId());
+        .isEqualTo(evaluationRecord.getDecisionRequirementsId());
     assertThat(response.getDecisionRequirementsKey())
-        .isEqualTo(DECISION_RECORD.getDecisionRequirementsKey());
-    assertThat(response.getDecisionOutput()).isEqualTo(DECISION_RECORD.getDecisionOutput());
+        .isEqualTo(evaluationRecord.getDecisionRequirementsKey());
+    assertThat(response.getDecisionOutput()).isEqualTo(evaluationRecord.getDecisionOutput());
 
     // assert EvaluatedDecisionRecord mapping
     assertThat(response.getEvaluatedDecisionsCount()).isOne();
     final var intermediateResultResponse = response.getEvaluatedDecisions(0);
-    final var expectedIntermediateDecisionResult = DECISION_RECORD.getEvaluatedDecisions().get(0);
+    final var expectedIntermediateDecisionResult = evaluationRecord.getEvaluatedDecisions().get(0);
     assertThat(intermediateResultResponse.getDecisionId())
         .isEqualTo(expectedIntermediateDecisionResult.getDecisionId());
     assertThat(intermediateResultResponse.getDecisionKey())
