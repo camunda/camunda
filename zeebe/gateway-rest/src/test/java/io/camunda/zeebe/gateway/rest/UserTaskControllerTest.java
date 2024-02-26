@@ -171,32 +171,6 @@ public class UserTaskControllerTest {
   }
 
   @Test
-  public void shouldUpdateTaskWithoutActionAndChanges() {
-    // when / then
-    webClient
-        .patch()
-        .uri("api/v1/user-tasks/1")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isNoContent()
-        .expectBody()
-        .isEmpty();
-
-    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
-    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
-    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
-        .hasUserTaskKey(1L)
-        .hasAction("")
-        .hasNoChangedAttributes()
-        .hasDueDate("")
-        .hasFollowUpDate("")
-        .hasNoCandidateGroupsList()
-        .hasNoCandidateUsersList();
-  }
-
-  @Test
   public void shouldUpdateTaskWithAction() {
     // given
     final var request = new UserTaskUpdateRequest().action("customAction");
@@ -389,67 +363,6 @@ public class UserTaskControllerTest {
   }
 
   @Test
-  public void shouldUpdateTaskWithUntrackedChanges() {
-    // given
-    final var request =
-        new UserTaskUpdateRequest()
-            .changeset(new Changeset().putAdditionalProperty("elementInstanceKey", 123456L));
-
-    // when / then
-    webClient
-        .patch()
-        .uri("api/v1/user-tasks/1")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(request), UserTaskUpdateRequest.class)
-        .exchange()
-        .expectStatus()
-        .isNoContent()
-        .expectBody()
-        .isEmpty();
-
-    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
-    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
-    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
-        .hasUserTaskKey(1L)
-        .hasAction("")
-        .hasNoChangedAttributes()
-        .hasDueDate("")
-        .hasFollowUpDate("")
-        .hasNoCandidateGroupsList()
-        .hasNoCandidateUsersList()
-        .hasElementInstanceKey(-1L);
-  }
-
-  @Test
-  public void shouldUpdateTaskWithUntrackedChangesRawJson() {
-    // when / then
-    webClient
-        .patch()
-        .uri("api/v1/user-tasks/1")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(BodyInserters.fromValue("{ \"changeset\": {\"elementInstanceKey\": 123456}}"))
-        .exchange()
-        .expectStatus()
-        .isNoContent()
-        .expectBody()
-        .isEmpty();
-
-    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
-    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
-    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
-        .hasUserTaskKey(1L)
-        .hasAction("")
-        .hasNoChangedAttributes()
-        .hasDueDate("")
-        .hasFollowUpDate("")
-        .hasNoCandidateGroupsList()
-        .hasNoCandidateUsersList()
-        .hasElementInstanceKey(-1L);
-  }
-
-  @Test
   public void shouldUpdateTaskWithActionAndChanges() {
     // given
     final var request =
@@ -489,6 +402,90 @@ public class UserTaskControllerTest {
         .hasFollowUpDate("def")
         .hasCandidateGroupsList("foo")
         .hasCandidateUsersList("bar");
+  }
+
+  @Test
+  public void shouldYieldBadRequestWhenUpdateTaskWithoutActionAndChanges() {
+    // given
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "No update data provided. Provide at least an \"action\" or a non-null value "
+                + "for a supported attribute in the \"changeset\".");
+    expectedBody.setTitle("INVALID_ARGUMENT");
+    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+
+    Mockito.verifyNoInteractions(brokerClient);
+  }
+
+  @Test
+  public void shouldYieldBadRequestWhenUpdateTaskWithUntrackedChanges() {
+    // given
+    final var request =
+        new UserTaskUpdateRequest()
+            .changeset(new Changeset().putAdditionalProperty("elementInstanceKey", 123456L));
+
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "No update data provided. Provide at least an \"action\" or a non-null value "
+                + "for a supported attribute in the \"changeset\".");
+    expectedBody.setTitle("INVALID_ARGUMENT");
+    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskUpdateRequest.class)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+
+    Mockito.verifyNoInteractions(brokerClient);
+  }
+
+  @Test
+  public void shouldYieldBadRequestWhenUpdateTaskWithUntrackedChangesRawJson() {
+    // given
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "No update data provided. Provide at least an \"action\" or a non-null value "
+                + "for a supported attribute in the \"changeset\".");
+    expectedBody.setTitle("INVALID_ARGUMENT");
+    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(BodyInserters.fromValue("{ \"changeset\": {\"elementInstanceKey\": 123456}}"))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+
+    Mockito.verifyNoInteractions(brokerClient);
   }
 
   @Test
