@@ -1,4 +1,4 @@
-name: Start a test in Testbench
+name: Start a Zeebe test in Testbench
 
 on:
   workflow_call:
@@ -59,8 +59,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-      - uses: ./.github/actions/build-docker
-        id: build-docker
+      - uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
         with:
           repository: gcr.io/zeebe-io/zeebe
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -88,7 +88,7 @@ jobs:
           variables=$(echo "${{ inputs.variables }}" | envsubst)
           clients/go/cmd/zbctl/dist/zbctl create instance ${{ inputs.processId }} --variables "$variables"
         env:
-          IMAGE: ${{ steps.build-docker.outputs.image }}
+          IMAGE: ${{ steps.build-zeebe-docker.outputs.image }}
           ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.TESTBENCH_PROD_CLIENT_SECRET }}
           ZEEBE_ADDRESS: ${{ steps.secrets.outputs.TESTBENCH_PROD_CONTACT_POINT }}
           ZEEBE_AUTHORIZATION_SERVER_URL: 'https://login.cloud.camunda.io/oauth/token'

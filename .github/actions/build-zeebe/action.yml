@@ -1,5 +1,5 @@
 # This action packages the complete Zeebe distribution artifacts. This includes the Go client,
-# zbctl, and the Zeebe distribution TAR ball. This excludes the Docker image. See the build-docker
+# zbctl, and the Zeebe distribution TAR ball. This excludes the Docker image. See the build-zeebe-docker
 # for that.
 
 ---
