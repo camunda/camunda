@@ -38,29 +38,29 @@ public class SchemaStartup {
 
   @PostConstruct
   public void initializeSchema() throws MigrationException {
-    LOGGER.info("SchemaStartup started.");
-    LOGGER.info("SchemaStartup: validate schema.");
-    schemaValidator.validate();
-    boolean createSchema =
-        DatabaseInfo.isOpensearch()
-            ? operateProperties.getOpensearch().isCreateSchema()
-            : operateProperties.getElasticsearch().isCreateSchema();
-    if (createSchema && !schemaValidator.schemaExists()) {
-      LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
-      schemaManager.createSchema();
-    } else {
-      LOGGER.info(
-          "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
-    }
-    if (migrationProperties.isMigrationEnabled()) {
-      LOGGER.info("SchemaStartup: migrate schema.");
-      try {
-        migrator.migrate();
-      } catch (Exception ex) {
-        LOGGER.error("Exception occured during migration: " + ex.getMessage(), ex);
-        throw ex;
+    try {
+      LOGGER.info("SchemaStartup started.");
+      LOGGER.info("SchemaStartup: validate schema.");
+      schemaValidator.validate();
+      boolean createSchema =
+          DatabaseInfo.isOpensearch()
+              ? operateProperties.getOpensearch().isCreateSchema()
+              : operateProperties.getElasticsearch().isCreateSchema();
+      if (createSchema && !schemaValidator.schemaExists()) {
+        LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
+        schemaManager.createSchema();
+      } else {
+        LOGGER.info(
+            "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
       }
+      if (migrationProperties.isMigrationEnabled()) {
+        LOGGER.info("SchemaStartup: migrate schema.");
+        migrator.migrate();
+      }
+      LOGGER.info("SchemaStartup finished.");
+    } catch (Exception ex){
+      LOGGER.error("Schema startup failed: " + ex.getMessage(), ex);
+      throw ex;
     }
-    LOGGER.info("SchemaStartup finished.");
   }
 }
