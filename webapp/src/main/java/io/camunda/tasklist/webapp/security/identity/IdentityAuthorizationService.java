@@ -72,23 +72,19 @@ public class IdentityAuthorizationService {
       accessToken = ((IdentityAuthentication) authentication).getTokens().getAccessToken();
       return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
     } else if (authentication instanceof TokenAuthentication) {
-      logger.info("Token of the instance TokenAuthentication");
+      tasklistProperties.getIdentity().setIssuerUrl(tasklistProperties.getAuth0().getDomain());
       accessToken = ((TokenAuthentication) authentication).getAccessToken();
-      logger.info("Try to decode the JWT token" + accessToken);
+
       final String tokenDecoded =
           identity
               .authentication()
               .verifyAndDecode(
                   accessToken, ((TokenAuthentication) authentication).getOrganization())
               .getToken();
-
-      logger.info(
-          "User details: " + identity.authentication().verifyToken(tokenDecoded).getUserDetails());
       return identity.authentication().verifyToken(tokenDecoded).getUserDetails().getGroups();
     } else if (authentication instanceof JwtAuthenticationToken) {
-      logger.info("Token of the instance JWT Authentication Token");
+      tasklistProperties.getIdentity().setIssuerUrl(tasklistProperties.getAuth0().getDomain());
       accessToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
-      logger.info("Try to decode the JWT token" + accessToken);
       return identity
           .authentication()
           .verifyToken(identity.authentication().decodeJWT(accessToken).getToken())
