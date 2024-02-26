@@ -1,6 +1,6 @@
 # This workflow either scans all distribute-able projects with snyk, or updates the relevant
 # projects on the Snyk servers
-name: Snyk
+name: Zeebe Snyk
 
 on:
   workflow_dispatch:
@@ -105,8 +105,8 @@ jobs:
         id: build-zeebe
         if: inputs.build
       - name: Build Docker Image
-        uses: ./.github/actions/build-docker
-        id: build-docker
+        uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
         if: inputs.build
         with:
           distball: ${{ steps.build-zeebe.outputs.distball }}
@@ -123,7 +123,7 @@ jobs:
           export LIFECYCLE=$([[ "${VERSION}" == *-SNAPSHOT ]] && echo 'development' || echo 'production')
 
           # use inputs.dockerImage if present; otherwise if building, use the output of the build step; otherwise infer from version and default repository camunda/zeebe
-          export DOCKER_IMAGE=$([[ ! -z '${{ inputs.dockerImage }}' ]] && echo '${{ inputs.dockerImage }}' || ([[ '${{ inputs.build }}' == 'true' ]] && echo '${{ steps.build-docker.outputs.image }}' || echo "camunda/zeebe:${VERSION}"))
+          export DOCKER_IMAGE=$([[ ! -z '${{ inputs.dockerImage }}' ]] && echo '${{ inputs.dockerImage }}' || ([[ '${{ inputs.build }}' == 'true' ]] && echo '${{ steps.build-zeebe-docker.outputs.image }}' || echo "camunda/zeebe:${VERSION}"))
 
           if [[ '${{ inputs.useMinorVersion }}' == 'true' ]]; then
             export TARGET="$(echo $VERSION | sed -E -e 's/\.[^.]*$//')"

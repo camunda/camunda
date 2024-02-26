@@ -1,4 +1,4 @@
-name: Release Workflow
+name: Zeebe Release Workflow
 on:
   workflow_call:
     inputs:
@@ -299,8 +299,8 @@ jobs:
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Docker Image
-        uses: ./.github/actions/build-docker
-        id: build-docker
+        uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
         with:
           repository: ${{ env.LOCAL_DOCKER_IMAGE }}
           version: ${{ inputs.releaseVersion }}
@@ -313,7 +313,7 @@ jobs:
         uses: ./.github/actions/verify-zeebe-docker
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-docker.outputs.date }}
+          date: ${{ steps.build-zeebe-docker.outputs.date }}
           revision: ${{ needs.release.outputs.releaseTagRevision }}
           version: ${{ inputs.releaseVersion }}
           platforms: ${{ env.PLATFORMS }}
@@ -325,7 +325,7 @@ jobs:
           docker buildx imagetools create \
             --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
             ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
-            ${{ steps.build-docker.outputs.image }}
+            ${{ steps.build-zeebe-docker.outputs.image }}
   snyk:
     name: Snyk Monitor
     needs: [ docker, release ]
@@ -334,7 +334,7 @@ jobs:
     concurrency:
       group: release-snyk-${{ inputs.releaseVersion }}
       cancel-in-progress: false
-    uses: ./.github/workflows/snyk.yml
+    uses: ./.github/workflows/zeebe-snyk.yml
     with:
       # Can't reference env.RELEASE_BRANCH directly due to https://github.com/actions/runner/issues/2372
       ref: ${{ needs.release.outputs.releaseBranch }}

@@ -1,4 +1,4 @@
-name: Pull Request Benchmark
+name: Zeebe Pull Request Benchmark
 on:
   pull_request:
     types:
@@ -13,7 +13,7 @@ jobs:
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'benchmark')
       || (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
-    uses: ./.github/workflows/benchmark.yml
+    uses: ./.github/workflows/zeebe-benchmark.yml
     secrets: inherit
     with:
       name: ${{github.event.pull_request.head.ref}}-benchmark
