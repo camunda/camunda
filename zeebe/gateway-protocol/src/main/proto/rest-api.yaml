@@ -65,7 +65,39 @@ paths:
             The user task with the given key cannot be completed.
             More details are provided in the response body.
           $ref: "#/components/responses/ProblemResponse"
-
+  /user-tasks/{userTaskKey}/assignment:
+    post:
+      summary: Assigns a user task.
+      description: Assigns a user task with the given key to the given assignee.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to assign.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskAssignmentRequest"
+      responses:
+        '204':
+          description: The user task's assignment was adjusted.
+        '404':
+          description: The user task with the given key was not found.
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          $ref: "#/components/responses/ProblemResponse"
+        '400':
+          description: >
+            The assignment of the user task with the given key cannot be completed.
+            More details are provided in the response body.
+          $ref: "#/components/responses/ProblemResponse"
 
 components:
   responses:
@@ -169,6 +201,27 @@ components:
           description: >
             A custom action value that will be accessible from user task events resulting
             from this endpoint invocation. If not provided, it will default to "complete".
+          type: string
+          nullable: true
+    UserTaskAssignmentRequest:
+      type: object
+      properties:
+        assignee:
+          description: The assignee for the user task. The assignee must not be empty or `null`.
+          type: string
+          nullable: false
+        allowOverride:
+          description: >
+            By default, the task is reassigned if it was already assigned. Set this to `false`
+            to return an error in such cases. The task must then first be unassigned to
+            be assigned again. Use this when you have users picking from group task
+            queues to prevent race conditions.
+          type: boolean
+          nullable: true
+        action:
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "assign".
           type: string
           nullable: true
     Variables:
