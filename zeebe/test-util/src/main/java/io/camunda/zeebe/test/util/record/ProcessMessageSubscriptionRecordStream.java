@@ -40,6 +40,10 @@ public final class ProcessMessageSubscriptionRecordStream
     return valueFilter(v -> messageName.equals(v.getMessageName()));
   }
 
+  public ProcessMessageSubscriptionRecordStream withCorrelationKey(final String correlationKey) {
+    return valueFilter(v -> correlationKey.equals(v.getCorrelationKey()));
+  }
+
   public ProcessMessageSubscriptionRecordStream withTenantId(final String tenantId) {
     return valueFilter(v -> tenantId.equals(v.getTenantId()));
   }
