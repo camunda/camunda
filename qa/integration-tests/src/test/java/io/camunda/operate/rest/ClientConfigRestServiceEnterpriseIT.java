@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -49,8 +49,8 @@ public class ClientConfigRestServiceEnterpriseIT extends OperateAbstractIT {
   @Test
   public void testGetClientConfig() throws Exception {
     // when
-    MockHttpServletRequestBuilder request = get("/client-config.js");
-    MvcResult mvcResult =
+    final MockHttpServletRequestBuilder request = get("/client-config.js");
+    final MvcResult mvcResult =
         mockMvc
             .perform(request)
             .andExpect(status().isOk())

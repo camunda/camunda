@@ -15,7 +15,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.property.OperateProperties;
@@ -56,14 +56,14 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
   @Test
   public void testDecisionDefinitionXmlFailsWhenNoPermissions() throws Exception {
     // given
-    Long decisionDefinitionKey = 123L;
-    String decisionId = "decisionId";
+    final Long decisionDefinitionKey = 123L;
+    final String decisionId = "decisionId";
     // when
     when(decisionReader.getDecision(decisionDefinitionKey))
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
     when(permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.READ))
         .thenReturn(false);
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         getRequestShouldFailWithNoAuthorization(
             getDecisionXmlByIdUrl(decisionDefinitionKey.toString()));
     // then
@@ -73,8 +73,8 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
   @Test
   public void testDeleteDecisionDefinition() throws Exception {
     // given
-    Long decisionDefinitionKey = 123L;
-    String decisionId = "decisionId";
+    final Long decisionDefinitionKey = 123L;
+    final String decisionId = "decisionId";
     // when
     when(decisionReader.getDecision(decisionDefinitionKey))
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
@@ -82,11 +82,11 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
         .thenReturn(true);
     when(batchOperationWriter.scheduleDeleteDecisionDefinition(any()))
         .thenReturn(new BatchOperationEntity());
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         MockMvcRequestBuilders.delete(getDecisionByIdUrl(decisionDefinitionKey.toString()))
             .accept(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
-    BatchOperationEntity batchOperationEntity =
+    final MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
+    final BatchOperationEntity batchOperationEntity =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     // then
     assertThat(batchOperationEntity).isNotNull();
@@ -94,21 +94,22 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
 
   @Test
   public void testDeleteDecisionDefinitionFailsForMissingKey() throws Exception {
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         MockMvcRequestBuilders.delete(DecisionRestService.DECISION_URL)
             .accept(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isNotFound()).andReturn();
+    final MvcResult mvcResult =
+        mockMvc.perform(request).andExpect(status().isNotFound()).andReturn();
   }
 
   @Test
   public void testDeleteDecisionDefinitionFailsForNotExistingDefinition() throws Exception {
-    Long decisionDefinitionKey = 123L;
+    final Long decisionDefinitionKey = 123L;
     when(decisionReader.getDecision(decisionDefinitionKey))
         .thenThrow(new NotFoundException("Not found"));
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         MockMvcRequestBuilders.delete(getDecisionByIdUrl(decisionDefinitionKey.toString()))
             .accept(mockMvcTestRule.getContentType());
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         mockMvc
             .perform(request)
             .andExpect(status().isNotFound())
@@ -121,8 +122,8 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
   @Test
   public void testDeleteDecisionDefinitionFailsWhenNoPermissions() throws Exception {
     // given
-    Long decisionDefinitionKey = 123L;
-    String decisionId = "decisionId";
+    final Long decisionDefinitionKey = 123L;
+    final String decisionId = "decisionId";
     // when
     when(decisionReader.getDecision(decisionDefinitionKey))
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
@@ -130,18 +131,18 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
         .thenReturn(false);
     when(batchOperationWriter.scheduleDeleteDecisionDefinition(any()))
         .thenReturn(new BatchOperationEntity());
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         deleteRequestShouldFailWithNoAuthorization(
             getDecisionByIdUrl(decisionDefinitionKey.toString()));
     // then
     assertErrorMessageContains(mvcResult, "No delete permission for decision");
   }
 
-  private String getDecisionXmlByIdUrl(String id) {
+  private String getDecisionXmlByIdUrl(final String id) {
     return DecisionRestService.DECISION_URL + "/" + id + "/xml";
   }
 
-  private String getDecisionByIdUrl(String id) {
+  private String getDecisionByIdUrl(final String id) {
     return DecisionRestService.DECISION_URL + "/" + id;
   }
 }

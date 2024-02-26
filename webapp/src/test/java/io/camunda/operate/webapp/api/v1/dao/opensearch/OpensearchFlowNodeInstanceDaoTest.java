@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.cache.ProcessCache;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;

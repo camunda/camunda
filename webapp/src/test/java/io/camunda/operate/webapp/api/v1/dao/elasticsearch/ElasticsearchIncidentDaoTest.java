@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -50,8 +50,8 @@ public class ElasticsearchIncidentDaoTest {
 
   @Test
   public void testBuildFilteringWithIncidentFilter() {
-    OffsetDateTime creationTime = OffsetDateTime.now();
-    Incident testFilter = new Incident();
+    final OffsetDateTime creationTime = OffsetDateTime.now();
+    final Incident testFilter = new Incident();
     testFilter
         .setKey(123L)
         .setProcessDefinitionKey(222L)
@@ -63,23 +63,23 @@ public class ElasticsearchIncidentDaoTest {
         .setTenantId("fakeTenant")
         .setCreationTime("2024-02-13T15:10:33.013+0000");
 
-    SearchSourceBuilder mockBuilder = Mockito.mock(SearchSourceBuilder.class);
-    Query<Incident> mockQuery = Mockito.mock(Query.class);
+    final SearchSourceBuilder mockBuilder = Mockito.mock(SearchSourceBuilder.class);
+    final Query<Incident> mockQuery = Mockito.mock(Query.class);
 
     when(mockQuery.getFilter()).thenReturn(testFilter);
 
-    String expectedDateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
+    final String expectedDateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
     when(mockDateTimeFormatter.getApiDateTimeFormatString()).thenReturn(expectedDateFormat);
 
     underTest.buildFiltering(mockQuery, mockBuilder);
 
     // Capture the queryBuilder object
     verify(mockBuilder).query(queryCaptor.capture());
-    QueryBuilder capturedArgument = queryCaptor.getValue();
+    final QueryBuilder capturedArgument = queryCaptor.getValue();
     assertThat(capturedArgument instanceof BoolQueryBuilder).isTrue();
 
     // Check that 9 filters are present
-    List<QueryBuilder> mustClauses = ((BoolQueryBuilder) capturedArgument).must();
+    final List<QueryBuilder> mustClauses = ((BoolQueryBuilder) capturedArgument).must();
     assertThat(mustClauses.size()).isEqualTo(9);
 
     // Check the validity of each filter
@@ -114,8 +114,8 @@ public class ElasticsearchIncidentDaoTest {
 
   @Test
   public void testFilteringWithNoIncidentFilter() {
-    SearchSourceBuilder mockBuilder = Mockito.mock(SearchSourceBuilder.class);
-    Query<Incident> mockQuery = Mockito.mock(Query.class);
+    final SearchSourceBuilder mockBuilder = Mockito.mock(SearchSourceBuilder.class);
+    final Query<Incident> mockQuery = Mockito.mock(Query.class);
 
     when(mockQuery.getFilter()).thenReturn(null);
 
@@ -123,7 +123,7 @@ public class ElasticsearchIncidentDaoTest {
 
     // Capture the queryBuilder object
     verify(mockBuilder).query(queryCaptor.capture());
-    QueryBuilder capturedArgument = queryCaptor.getValue();
+    final QueryBuilder capturedArgument = queryCaptor.getValue();
     assertThat(capturedArgument).isNull();
 
     verifyNoInteractions(mockDateTimeFormatter);
@@ -131,9 +131,9 @@ public class ElasticsearchIncidentDaoTest {
 
   @Test
   public void testSearchHitToIncident() {
-    SearchHit mockSearchHit = Mockito.mock(SearchHit.class);
+    final SearchHit mockSearchHit = Mockito.mock(SearchHit.class);
 
-    Map<String, Object> searchHitAsMap = new HashMap<>();
+    final Map<String, Object> searchHitAsMap = new HashMap<>();
     searchHitAsMap.put(IncidentTemplate.KEY, 123L);
     searchHitAsMap.put(IncidentTemplate.PROCESS_INSTANCE_KEY, 222L);
     searchHitAsMap.put(IncidentTemplate.PROCESS_DEFINITION_KEY, 333L);
@@ -145,10 +145,10 @@ public class ElasticsearchIncidentDaoTest {
     searchHitAsMap.put(IncidentTemplate.TENANT_ID, "tenant");
 
     when(mockSearchHit.getSourceAsMap()).thenReturn(searchHitAsMap);
-    String parsedDateTime = "2024-02-13T15:10:33.013+00:00";
+    final String parsedDateTime = "2024-02-13T15:10:33.013+00:00";
     when(mockDateTimeFormatter.convertGeneralToApiDateTime(anyString())).thenReturn(parsedDateTime);
 
-    Incident result = underTest.searchHitToIncident(mockSearchHit);
+    final Incident result = underTest.searchHitToIncident(mockSearchHit);
 
     assertThat(result).isNotNull();
     assertThat(result.getKey()).isEqualTo(searchHitAsMap.get(IncidentTemplate.KEY));

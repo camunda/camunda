@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.api.v1.dao;
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;

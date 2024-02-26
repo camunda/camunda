@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -57,8 +57,8 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
     operateProperties.setTasklistUrl("https://tasklist.camunda.io/tl");
     given(operateProfileService.currentProfileCanLogout()).willReturn(true);
     // when
-    MockHttpServletRequestBuilder request = get("/client-config.js");
-    MvcResult mvcResult =
+    final MockHttpServletRequestBuilder request = get("/client-config.js");
+    final MvcResult mvcResult =
         mockMvc
             .perform(request)
             .andExpect(status().isOk())
@@ -89,8 +89,8 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
     operateProperties.setTasklistUrl(null);
     given(operateProfileService.currentProfileCanLogout()).willReturn(false);
     // when
-    MockHttpServletRequestBuilder request = get("/client-config.js");
-    MvcResult mvcResult =
+    final MockHttpServletRequestBuilder request = get("/client-config.js");
+    final MvcResult mvcResult =
         mockMvc
             .perform(request)
             .andExpect(status().isOk())
@@ -122,8 +122,8 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
     given(operateProfileService.isDevelopmentProfileActive()).willReturn(false);
 
     // when
-    MockHttpServletRequestBuilder request = get("/client-config.js");
-    MvcResult mvcResult =
+    final MockHttpServletRequestBuilder request = get("/client-config.js");
+    final MvcResult mvcResult =
         mockMvc
             .perform(request)
             .andExpect(status().isOk())

@@ -12,7 +12,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;

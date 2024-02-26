@@ -14,7 +14,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.cache.ProcessCache;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
@@ -43,7 +43,7 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
   @Override
   public void runAdditionalBeforeAllSetup() throws Exception {
 
-    String indexName = flowNodeInstanceIndex.getFullQualifiedName();
+    final String indexName = flowNodeInstanceIndex.getFullQualifiedName();
     testSearchRepository.createOrUpdateDocumentFromObject(
         indexName,
         new FlowNodeInstanceEntity()
@@ -85,7 +85,7 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnFlowNodeInstances() {
-    Results<FlowNodeInstance> flowNodeInstanceResults = dao.search(new Query<>());
+    final Results<FlowNodeInstance> flowNodeInstanceResults = dao.search(new Query<>());
 
     assertThat(flowNodeInstanceResults.getItems()).hasSize(2);
 
@@ -112,7 +112,7 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldFilterFlowNodeInstances() {
-    Results<FlowNodeInstance> flowNodeInstanceResults =
+    final Results<FlowNodeInstance> flowNodeInstanceResults =
         dao.search(
             new Query<FlowNodeInstance>().setFilter(new FlowNodeInstance().setType("START_EVENT")));
 
@@ -125,7 +125,7 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortFlowNodeInstancesAsc() {
-    Results<FlowNodeInstance> flowNodeInstanceResults =
+    final Results<FlowNodeInstance> flowNodeInstanceResults =
         dao.search(
             new Query<FlowNodeInstance>()
                 .setSort(Query.Sort.listOf(FlowNodeInstance.FLOW_NODE_ID, Query.Sort.Order.ASC)));
@@ -143,7 +143,7 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldSortFlowNodeInstancesDesc() {
-    Results<FlowNodeInstance> flowNodeInstanceResults =
+    final Results<FlowNodeInstance> flowNodeInstanceResults =
         dao.search(
             new Query<FlowNodeInstance>()
                 .setSort(Query.Sort.listOf(FlowNodeInstance.FLOW_NODE_ID, Query.Sort.Order.DESC)));
@@ -173,7 +173,7 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
         .extracting("flowNodeId", "flowNodeName")
         .containsExactly("start", "start");
 
-    Object[] searchAfter = flowNodeInstanceResults.getSortValues();
+    final Object[] searchAfter = flowNodeInstanceResults.getSortValues();
 
     flowNodeInstanceResults =
         dao.search(
@@ -191,7 +191,7 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnByKey() {
-    FlowNodeInstance flowNodeInstance = dao.byKey(2251799813685258L);
+    final FlowNodeInstance flowNodeInstance = dao.byKey(2251799813685258L);
 
     assertThat(flowNodeInstance)
         .extracting("flowNodeId", "flowNodeName")

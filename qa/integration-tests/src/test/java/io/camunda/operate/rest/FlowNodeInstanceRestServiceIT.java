@@ -14,7 +14,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
@@ -55,10 +55,10 @@ public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
   @Test
   public void testFlowNodeInstancesFailsWhenNoPermissions() throws Exception {
     // given
-    String processInstanceId = "123";
-    String treePath = "456";
-    String bpmnProcessId = "processId";
-    FlowNodeInstanceRequestDto requestDto =
+    final String processInstanceId = "123";
+    final String treePath = "456";
+    final String bpmnProcessId = "processId";
+    final FlowNodeInstanceRequestDto requestDto =
         (new FlowNodeInstanceRequestDto())
             .setQueries(
                 List.of(
@@ -70,7 +70,7 @@ public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
         .thenReturn(false);
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         postRequestShouldFailWithNoAuthorization(FLOW_NODE_INSTANCE_URL, requestDto);
     // then
     assertErrorMessageContains(mvcResult, "No read permission for process instance");
@@ -79,10 +79,10 @@ public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
   @Test
   public void testFlowNodeInstancesOkWhenHasPermissions() throws Exception {
     // given
-    String processInstanceId = "123";
-    String treePath = "456";
-    String bpmnProcessId = "processId";
-    FlowNodeInstanceRequestDto requestDto =
+    final String processInstanceId = "123";
+    final String treePath = "456";
+    final String bpmnProcessId = "processId";
+    final FlowNodeInstanceRequestDto requestDto =
         (new FlowNodeInstanceRequestDto())
             .setQueries(
                 List.of(
@@ -95,7 +95,7 @@ public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
         .thenReturn(true);
     when(flowNodeInstanceReader.getFlowNodeInstances(requestDto)).thenReturn(new LinkedHashMap<>());
-    MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, requestDto);
+    final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, requestDto);
     final Map<String, FlowNodeInstanceResponseDto> response =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     // then

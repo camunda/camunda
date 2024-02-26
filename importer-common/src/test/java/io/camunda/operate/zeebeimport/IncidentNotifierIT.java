@@ -40,7 +40,7 @@ import com.jayway.jsonpath.JsonPath;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;

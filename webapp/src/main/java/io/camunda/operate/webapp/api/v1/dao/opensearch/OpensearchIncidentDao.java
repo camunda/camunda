@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.api.v1.dao.opensearch;
 import static java.lang.String.format;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.IncidentDao;
@@ -36,11 +36,11 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
   private final OperateDateTimeFormatter dateTimeFormatter;
 
   public OpensearchIncidentDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      IncidentTemplate incidentIndex,
-      OperateDateTimeFormatter dateTimeFormatter) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final IncidentTemplate incidentIndex,
+      final OperateDateTimeFormatter dateTimeFormatter) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.incidentIndex = incidentIndex;
     this.dateTimeFormatter = dateTimeFormatter;
@@ -52,22 +52,22 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
   }
 
   @Override
-  protected String getByKeyServerReadErrorMessage(Long key) {
+  protected String getByKeyServerReadErrorMessage(final Long key) {
     return format("Error in reading incident for key %s", key);
   }
 
   @Override
-  protected String getByKeyNoResultsErrorMessage(Long key) {
+  protected String getByKeyNoResultsErrorMessage(final Long key) {
     return format("No incident found for key %s ", key);
   }
 
   @Override
-  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+  protected String getByKeyTooManyResultsErrorMessage(final Long key) {
     return format("Found more than one incidents for key %s", key);
   }
 
   @Override
-  public Results<Incident> search(Query<Incident> query) throws APIException {
+  public Results<Incident> search(final Query<Incident> query) throws APIException {
     mapFieldsInSort(query);
 
     return super.search(query);
@@ -89,10 +89,10 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
   }
 
   @Override
-  protected void buildFiltering(Query<Incident> query, SearchRequest.Builder request) {
+  protected void buildFiltering(final Query<Incident> query, final SearchRequest.Builder request) {
     final Incident filter = query.getFilter();
     if (filter != null) {
-      var queryTerms =
+      final var queryTerms =
           Stream.of(
                   queryDSLWrapper.term(Incident.KEY, filter.getKey()),
                   queryDSLWrapper.term(
@@ -118,7 +118,7 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
   }
 
   @Override
-  protected Incident convertInternalToApiResult(OpensearchIncident osIncident) {
+  protected Incident convertInternalToApiResult(final OpensearchIncident osIncident) {
     return new Incident()
         .setKey(osIncident.key())
         .setProcessInstanceKey(osIncident.processInstanceKey())
@@ -136,7 +136,7 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
       return;
     }
 
-    var rewrittenSort =
+    final var rewrittenSort =
         query.getSort().stream()
             .map(
                 s ->

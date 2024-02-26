@@ -7,7 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
@@ -42,12 +42,12 @@ public class OpensearchProcessInstanceDao
   private final OperateDateTimeFormatter dateTimeFormatter;
 
   public OpensearchProcessInstanceDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      ListViewTemplate processInstanceIndex,
-      ProcessInstanceWriter processInstanceWriter,
-      OperateDateTimeFormatter dateTimeFormatter) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final ListViewTemplate processInstanceIndex,
+      final ProcessInstanceWriter processInstanceWriter,
+      final OperateDateTimeFormatter dateTimeFormatter) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.processInstanceIndex = processInstanceIndex;
     this.processInstanceWriter = processInstanceWriter;
@@ -79,13 +79,15 @@ public class OpensearchProcessInstanceDao
   }
 
   @Override
-  protected void buildFiltering(Query<ProcessInstance> query, SearchRequest.Builder request) {
-    List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
+  protected void buildFiltering(
+      final Query<ProcessInstance> query, final SearchRequest.Builder request) {
+    final List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms =
+        new LinkedList<>();
     queryTerms.add(
         queryDSLWrapper.term(
             ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
 
-    ProcessInstance filter = query.getFilter();
+    final ProcessInstance filter = query.getFilter();
 
     if (filter != null) {
       queryTerms.add(queryDSLWrapper.term(ProcessInstance.KEY, filter.getKey()));
@@ -114,13 +116,13 @@ public class OpensearchProcessInstanceDao
               dateTimeFormatter.getApiDateTimeFormatString()));
     }
 
-    var nonNullQueryTerms = queryTerms.stream().filter(Objects::nonNull).toList();
+    final var nonNullQueryTerms = queryTerms.stream().filter(Objects::nonNull).toList();
 
     request.query(queryDSLWrapper.and(nonNullQueryTerms));
   }
 
   @Override
-  protected ProcessInstance convertInternalToApiResult(ProcessInstance internalResult) {
+  protected ProcessInstance convertInternalToApiResult(final ProcessInstance internalResult) {
     if (internalResult != null) {
       if (StringUtils.isNotEmpty(internalResult.getEndDate())) {
         internalResult.setEndDate(
@@ -137,7 +139,7 @@ public class OpensearchProcessInstanceDao
 
   @Override
   @PreAuthorize("hasPermission('write')")
-  public ChangeStatus delete(Long key) throws APIException {
+  public ChangeStatus delete(final Long key) throws APIException {
     // Check for not exists
     byKey(key);
     try {
@@ -146,9 +148,9 @@ public class OpensearchProcessInstanceDao
           .setDeleted(1)
           .setMessage(
               String.format("Process instance and dependant data deleted for key '%s'", key));
-    } catch (IllegalArgumentException iae) {
+    } catch (final IllegalArgumentException iae) {
       throw new ClientException(iae.getMessage(), iae);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in deleting process instance and dependant data for key '%s'", key),
           e);
@@ -156,14 +158,15 @@ public class OpensearchProcessInstanceDao
   }
 
   @Override
-  protected List<ProcessInstance> searchByKey(Long key) {
-    List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
+  protected List<ProcessInstance> searchByKey(final Long key) {
+    final List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms =
+        new LinkedList<>();
     queryTerms.add(
         queryDSLWrapper.term(
             ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
     queryTerms.add(queryDSLWrapper.term(getKeyFieldName(), key));
 
-    SearchRequest.Builder request =
+    final SearchRequest.Builder request =
         requestDSLWrapper
             .searchRequestBuilder(getIndexName())
             .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.and(queryTerms)));
@@ -177,17 +180,17 @@ public class OpensearchProcessInstanceDao
   }
 
   @Override
-  protected String getByKeyServerReadErrorMessage(Long key) {
+  protected String getByKeyServerReadErrorMessage(final Long key) {
     return String.format("Error in reading process instance for key %s", key);
   }
 
   @Override
-  protected String getByKeyNoResultsErrorMessage(Long key) {
+  protected String getByKeyNoResultsErrorMessage(final Long key) {
     return String.format("No process instances found for key %s", key);
   }
 
   @Override
-  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+  protected String getByKeyTooManyResultsErrorMessage(final Long key) {
     return String.format("Found more than one process instances for key %s", key);
   }
 }

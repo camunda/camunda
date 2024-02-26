@@ -15,7 +15,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.property.OperateProperties;
@@ -59,14 +59,14 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
   @Test
   public void testProcessDefinitionByIdFailsWhenNoPermissions() throws Exception {
     // given
-    Long processDefinitionKey = 123L;
-    String bpmnProcessId = "processId";
+    final Long processDefinitionKey = 123L;
+    final String bpmnProcessId = "processId";
     // when
     when(processReader.getProcess(processDefinitionKey))
         .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
         .thenReturn(false);
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         getRequestShouldFailWithNoAuthorization(getProcessByIdUrl(processDefinitionKey.toString()));
     // then
     assertErrorMessageContains(mvcResult, "No read permission for process");
@@ -75,14 +75,14 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
   @Test
   public void testProcessDefinitionXmlFailsWhenNoPermissions() throws Exception {
     // given
-    Long processDefinitionKey = 123L;
-    String bpmnProcessId = "processId";
+    final Long processDefinitionKey = 123L;
+    final String bpmnProcessId = "processId";
     // when
     when(processReader.getProcess(processDefinitionKey))
         .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
         .thenReturn(false);
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         getRequestShouldFailWithNoAuthorization(
             getProcessXmlByIdUrl(processDefinitionKey.toString()));
     // then
@@ -92,8 +92,8 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
   @Test
   public void testDeleteProcessDefinition() throws Exception {
     // given
-    Long processDefinitionKey = 123L;
-    String bpmnProcessId = "processId";
+    final Long processDefinitionKey = 123L;
+    final String bpmnProcessId = "processId";
     // when
     when(processReader.getProcess(processDefinitionKey))
         .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
@@ -101,11 +101,11 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
         .thenReturn(true);
     when(batchOperationWriter.scheduleDeleteProcessDefinition(any()))
         .thenReturn(new BatchOperationEntity());
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         MockMvcRequestBuilders.delete(getProcessByIdUrl(processDefinitionKey.toString()))
             .accept(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
-    BatchOperationEntity batchOperationEntity =
+    final MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
+    final BatchOperationEntity batchOperationEntity =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     // then
     assertThat(batchOperationEntity).isNotNull();
@@ -113,21 +113,22 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
 
   @Test
   public void testDeleteProcessDefinitionFailsForMissingKey() throws Exception {
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         MockMvcRequestBuilders.delete(ProcessRestService.PROCESS_URL)
             .accept(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isNotFound()).andReturn();
+    final MvcResult mvcResult =
+        mockMvc.perform(request).andExpect(status().isNotFound()).andReturn();
   }
 
   @Test
   public void testDeleteProcessDefinitionFailsForNotExistingProcess() throws Exception {
-    Long processDefinitionKey = 123L;
+    final Long processDefinitionKey = 123L;
     when(processReader.getProcess(processDefinitionKey))
         .thenThrow(new NotFoundException("Not found"));
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         MockMvcRequestBuilders.delete(getProcessByIdUrl(processDefinitionKey.toString()))
             .accept(mockMvcTestRule.getContentType());
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         mockMvc
             .perform(request)
             .andExpect(status().isNotFound())
@@ -140,8 +141,8 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
   @Test
   public void testDeleteProcessDefinitionFailsWhenNoPermissions() throws Exception {
     // given
-    Long processDefinitionKey = 123L;
-    String bpmnProcessId = "processId";
+    final Long processDefinitionKey = 123L;
+    final String bpmnProcessId = "processId";
     // when
     when(processReader.getProcess(processDefinitionKey))
         .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
@@ -149,18 +150,18 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
         .thenReturn(false);
     when(batchOperationWriter.scheduleDeleteProcessDefinition(any()))
         .thenReturn(new BatchOperationEntity());
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         deleteRequestShouldFailWithNoAuthorization(
             getProcessByIdUrl(processDefinitionKey.toString()));
     // then
     assertErrorMessageContains(mvcResult, "No delete permission for process");
   }
 
-  public String getProcessByIdUrl(String id) {
+  public String getProcessByIdUrl(final String id) {
     return ProcessRestService.PROCESS_URL + "/" + id;
   }
 
-  public String getProcessXmlByIdUrl(String id) {
+  public String getProcessXmlByIdUrl(final String id) {
     return ProcessRestService.PROCESS_URL + "/" + id + "/xml";
   }
 }

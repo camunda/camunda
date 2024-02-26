@@ -20,7 +20,7 @@ public abstract class AbstractTestFixture implements TestFixture {
   @Autowired private TestContainerUtil testContainerUtil;
 
   @Override
-  public void setup(TestContext testContext) {
+  public void setup(final TestContext testContext) {
     this.testContext = testContext;
   }
 
@@ -29,7 +29,7 @@ public abstract class AbstractTestFixture implements TestFixture {
     operateContainer = testContainerUtil.startOperate(getVersion(), testContext);
   }
 
-  protected void stopZeebeAndOperate(TestContext testContext) {
+  protected void stopZeebeAndOperate(final TestContext testContext) {
     testContainerUtil.stopZeebeAndOperate(testContext);
   }
 }

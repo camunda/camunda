@@ -7,7 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.DecisionInstanceDao;
@@ -46,16 +46,6 @@ public class OpensearchDecisionInstanceDao
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionInstanceTemplate = decisionInstanceTemplate;
     this.dateTimeFormatter = dateTimeFormatter;
-  }
-
-  @Override
-  protected DecisionInstance convertInternalToApiResult(final DecisionInstance internalResult) {
-    if (internalResult != null && StringUtils.isNotEmpty(internalResult.getEvaluationDate())) {
-      internalResult.setEvaluationDate(
-          dateTimeFormatter.convertGeneralToApiDateTime(internalResult.getEvaluationDate()));
-    }
-
-    return internalResult;
   }
 
   @Override
@@ -152,5 +142,15 @@ public class OpensearchDecisionInstanceDao
         request.query(queryDSLWrapper.and(queryTerms));
       }
     }
+  }
+
+  @Override
+  protected DecisionInstance convertInternalToApiResult(final DecisionInstance internalResult) {
+    if (internalResult != null && StringUtils.isNotEmpty(internalResult.getEvaluationDate())) {
+      internalResult.setEvaluationDate(
+          dateTimeFormatter.convertGeneralToApiDateTime(internalResult.getEvaluationDate()));
+    }
+
+    return internalResult;
   }
 }

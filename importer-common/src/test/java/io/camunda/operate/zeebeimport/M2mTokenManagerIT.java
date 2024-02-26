@@ -27,7 +27,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.zeebeimport.util.TestApplicationWithNoBeans;
 import java.time.Instant;

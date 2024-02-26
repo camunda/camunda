@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.webapp.management.dto;
 
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -26,7 +26,7 @@ public class UsageMetricQueryDTO {
     return startTime;
   }
 
-  public void setStartTime(OffsetDateTime startTime) {
+  public void setStartTime(final OffsetDateTime startTime) {
     this.startTime = startTime;
   }
 
@@ -34,7 +34,7 @@ public class UsageMetricQueryDTO {
     return endTime;
   }
 
-  public void setEndTime(OffsetDateTime endTime) {
+  public void setEndTime(final OffsetDateTime endTime) {
     this.endTime = endTime;
   }
 
@@ -42,7 +42,7 @@ public class UsageMetricQueryDTO {
     return pageSize;
   }
 
-  public void setPageSize(int pageSize) {
+  public void setPageSize(final int pageSize) {
     this.pageSize = pageSize;
   }
 
@@ -52,7 +52,7 @@ public class UsageMetricQueryDTO {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

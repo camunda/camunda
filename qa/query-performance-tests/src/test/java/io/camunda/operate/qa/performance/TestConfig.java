@@ -14,7 +14,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.connect.CustomOffsetDateTimeDeserializer;
 import io.camunda.operate.connect.CustomOffsetDateTimeSerializer;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
@@ -45,9 +45,9 @@ public class TestConfig {
 
   @Bean
   public PropertySourcesPlaceholderConfigurer properties() {
-    PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer =
+    final PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer =
         new PropertySourcesPlaceholderConfigurer();
-    YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
+    final YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
     yaml.setResources(new ClassPathResource("application.yml"));
     propertySourcesPlaceholderConfigurer.setProperties(yaml.getObject());
     return propertySourcesPlaceholderConfigurer;
@@ -55,7 +55,7 @@ public class TestConfig {
 
   @Bean
   public ObjectMapper getObjectMapper() {
-    JavaTimeModule javaTimeModule = new JavaTimeModule();
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(
         OffsetDateTime.class, new CustomOffsetDateTimeSerializer(getDateTimeFormatter()));
     javaTimeModule.addDeserializer(

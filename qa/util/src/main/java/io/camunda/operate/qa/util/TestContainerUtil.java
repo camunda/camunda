@@ -53,7 +53,12 @@ import org.testcontainers.utility.MountableFile;
 public class TestContainerUtil {
 
   public static final String PROPERTIES_PREFIX = "camunda.operate.";
-  public static final String ELS_DOCKER_TESTCONTAINER_URL = "http://elasticsearch:9200";
+  // Note: This url should be "http://elasticsearch:9200" but changing it causes several ITs to
+  // break because
+  // the zeebe indices no longer get created in elasticsearch. Needs further investigation before
+  // changing.
+  public static final String ELS_DOCKER_TESTCONTAINER_URL =
+      "http://host.testcontainers.internal:9200";
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
   public static final int ELS_PORT = 9200;
   public static final String ELS_HOST = "localhost";
@@ -103,7 +108,8 @@ public class TestContainerUtil {
         RestClient.builder(new HttpHost(ELS_HOST, ELS_PORT, ELS_SCHEME)));
   }
 
-  public void startIdentity(TestContext testContext, String version, boolean multiTenancyEnabled) {
+  public void startIdentity(
+      final TestContext testContext, final String version, final boolean multiTenancyEnabled) {
     startPostgres(testContext);
     startKeyCloak(testContext);
 
@@ -206,12 +212,12 @@ public class TestContainerUtil {
                       .getSecret())
           .build()
           .retry();
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
   }
 
-  public void startKeyCloak(TestContext testContext) {
+  public void startKeyCloak(final TestContext testContext) {
     logger.info("************ Starting Keycloak ************");
     keycloakContainer =
         new GenericContainer<>(DockerImageName.parse("bitnami/keycloak:22.0.1"))
@@ -255,7 +261,7 @@ public class TestContainerUtil {
             "admin-cli");
   }
 
-  public void startPostgres(TestContext testContext) {
+  public void startPostgres(final TestContext testContext) {
     logger.info("************ Starting Postgres ************");
     postgreSQLContainer =
         new PostgreSQLContainer("postgres:15.2-alpine")
@@ -277,7 +283,7 @@ public class TestContainerUtil {
         testContext.getExternalPostgresPort());
   }
 
-  public void startElasticsearch(TestContext testContext) {
+  public void startElasticsearch(final TestContext testContext) {
     logger.info("************ Starting Elasticsearch ************");
     elsContainer =
         new ElasticsearchContainer(
@@ -306,9 +312,9 @@ public class TestContainerUtil {
         testContext.getExternalElsPort());
   }
 
-  public boolean checkElasctisearchHealth(TestContext testContext) {
+  public boolean checkElasctisearchHealth(final TestContext testContext) {
     try {
-      RestHighLevelClient esClient =
+      final RestHighLevelClient esClient =
           new RestHighLevelClient(
               RestClient.builder(
                   new HttpHost(
@@ -325,12 +331,12 @@ public class TestContainerUtil {
               })
           .build()
           .retry();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
     }
   }
 
-  public GenericContainer startOperate(String version, TestContext testContext) {
+  public GenericContainer startOperate(final String version, final TestContext testContext) {
     if (operateContainer == null) {
       logger.info("************ Starting Operate {} ************", version);
       operateContainer = createOperateContainer(version, testContext);
@@ -343,7 +349,7 @@ public class TestContainerUtil {
   }
 
   public GenericContainer createOperateContainer(
-      String dockerImageName, String version, TestContext testContext) {
+      final String dockerImageName, final String version, final TestContext testContext) {
     operateContainer =
         new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
             .withExposedPorts(8080)
@@ -361,11 +367,13 @@ public class TestContainerUtil {
     return operateContainer;
   }
 
-  public GenericContainer createOperateContainer(String version, TestContext testContext) {
+  public GenericContainer createOperateContainer(
+      final String version, final TestContext testContext) {
     return createOperateContainer(DOCKER_OPERATE_IMAGE_NAME, version, testContext);
   }
 
-  public void startOperateContainer(GenericContainer operateContainer, TestContext testContext) {
+  public void startOperateContainer(
+      final GenericContainer operateContainer, final TestContext testContext) {
     operateContainer.start();
 
     testContext.setExternalOperateHost(operateContainer.getHost());
@@ -374,9 +382,9 @@ public class TestContainerUtil {
 
   // for newer versions
   private void applyConfiguration(
-      final GenericContainer<?> operateContainer, TestContext testContext) {
-    String elsHost = testContext.getInternalElsHost();
-    Integer elsPort = testContext.getInternalElsPort();
+      final GenericContainer<?> operateContainer, final TestContext testContext) {
+    final String elsHost = testContext.getInternalElsHost();
+    final Integer elsPort = testContext.getInternalElsPort();
     operateContainer
         .withEnv(
             "CAMUNDA_OPERATE_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
@@ -389,7 +397,7 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort))
         .withEnv("SPRING_PROFILES_ACTIVE", "dev");
 
-    String zeebeContactPoint = testContext.getInternalZeebeContactPoint();
+    final String zeebeContactPoint = testContext.getInternalZeebeContactPoint();
     if (zeebeContactPoint != null) {
       operateContainer.withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebeContactPoint);
     }
@@ -399,9 +407,9 @@ public class TestContainerUtil {
     }
   }
 
-  protected Path createConfigurationFile(TestContext testContext) {
+  protected Path createConfigurationFile(final TestContext testContext) {
     try {
-      Properties properties =
+      final Properties properties =
           getOperateElsProperties(
               testContext.getInternalElsHost(),
               testContext.getInternalElsPort(),
@@ -410,15 +418,18 @@ public class TestContainerUtil {
       final Path tempFile = Files.createTempFile(getClass().getPackage().getName(), ".tmp");
       properties.store(new FileWriter(tempFile.toFile()), null);
       return tempFile;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
   // for older versions
   protected Properties getOperateElsProperties(
-      String elsHost, Integer elsPort, String zeebeContactPoint, String zeebeIndexPrefix) {
-    Properties properties = new Properties();
+      final String elsHost,
+      final Integer elsPort,
+      final String zeebeContactPoint,
+      final String zeebeIndexPrefix) {
+    final Properties properties = new Properties();
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.host", elsHost);
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.port", String.valueOf(elsPort));
     properties.setProperty(PROPERTIES_PREFIX + "zeebeElasticsearch.host", elsHost);
@@ -436,7 +447,7 @@ public class TestContainerUtil {
       final String version,
       final String prefix,
       final Integer partitionCount) {
-    TestContext testContext =
+    final TestContext testContext =
         new TestContext()
             .setZeebeDataFolder(new File(dataFolderPath))
             .setZeebeIndexPrefix(prefix)
@@ -448,8 +459,8 @@ public class TestContainerUtil {
       final String version,
       final String prefix,
       final Integer partitionCount,
-      boolean multitenancyEnabled) {
-    TestContext testContext =
+      final boolean multitenancyEnabled) {
+    final TestContext testContext =
         new TestContext()
             .setZeebeIndexPrefix(prefix)
             .setPartitionCount(partitionCount)
@@ -457,10 +468,10 @@ public class TestContainerUtil {
     return startZeebe(version, testContext);
   }
 
-  public ZeebeContainer startZeebe(final String version, TestContext testContext) {
+  public ZeebeContainer startZeebe(final String version, final TestContext testContext) {
     if (broker == null) {
       logger.info("************ Starting Zeebe {} ************", version);
-      long startTime = System.currentTimeMillis();
+      final long startTime = System.currentTimeMillis();
       Testcontainers.exposeHostPorts(ELS_PORT);
       broker = new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + version));
       if (testContext.getNetwork() != null) {
@@ -543,16 +554,16 @@ public class TestContainerUtil {
     return broker;
   }
 
-  public void stopZeebeAndOperate(TestContext testContext) {
+  public void stopZeebeAndOperate(final TestContext testContext) {
     stopZeebe(testContext);
     stopOperate(testContext);
   }
 
-  protected void stopZeebe(TestContext testContext) {
-    this.stopZeebe(testContext, null);
+  protected void stopZeebe(final TestContext testContext) {
+    stopZeebe(testContext, null);
   }
 
-  public void stopZeebe(TestContext testContext, final File tmpFolder) {
+  public void stopZeebe(final TestContext testContext, final File tmpFolder) {
     stopZeebe(tmpFolder);
     testContext.setInternalZeebeContactPoint(null);
     testContext.setExternalZeebeContactPoint(null);
@@ -587,18 +598,18 @@ public class TestContainerUtil {
             throw new AssertionError("Zeebe snapshot was never taken");
           }
         }
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new RuntimeException(e);
       } finally {
         try {
           broker.shutdownGracefully(Duration.ofSeconds(3));
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
           logger.error("broker.shutdownGracefully failed", ex);
           // ignore
         }
         try {
           broker.stop();
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
           logger.error("broker.stop failed", ex);
           // ignore
         }
@@ -607,7 +618,7 @@ public class TestContainerUtil {
     }
   }
 
-  protected void stopOperate(TestContext testContext) {
+  protected void stopOperate(final TestContext testContext) {
     if (operateContainer != null) {
       operateContainer.close();
       operateContainer = null;

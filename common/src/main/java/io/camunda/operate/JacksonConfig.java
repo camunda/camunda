@@ -17,7 +17,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.connect.CustomInstantDeserializer;
 import io.camunda.operate.connect.CustomOffsetDateTimeDeserializer;
 import io.camunda.operate.connect.CustomOffsetDateTimeSerializer;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -28,9 +28,9 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 @Configuration
 public class JacksonConfig {
   @Bean("operateObjectMapper")
-  public ObjectMapper objectMapper(OperateDateTimeFormatter dateTimeFormatter) {
+  public ObjectMapper objectMapper(final OperateDateTimeFormatter dateTimeFormatter) {
 
-    JavaTimeModule javaTimeModule = new JavaTimeModule();
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(
         OffsetDateTime.class,
         new CustomOffsetDateTimeSerializer(dateTimeFormatter.getGeneralDateTimeFormatter()));
@@ -62,7 +62,7 @@ public class JacksonConfig {
   // as
   // a bean just like it was before the introduction of the OperateDateTimeFormatter component
   @Bean
-  public DateTimeFormatter dateTimeFormatter(OperateDateTimeFormatter dateTimeFormatter) {
+  public DateTimeFormatter dateTimeFormatter(final OperateDateTimeFormatter dateTimeFormatter) {
     return dateTimeFormatter.getGeneralDateTimeFormatter();
   }
 }

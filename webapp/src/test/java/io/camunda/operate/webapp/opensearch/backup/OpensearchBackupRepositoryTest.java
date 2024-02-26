@@ -28,7 +28,6 @@ import io.camunda.operate.webapp.management.dto.BackupStateDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,10 +42,6 @@ import org.opensearch.client.opensearch.snapshot.*;
 
 @ExtendWith(MockitoExtension.class)
 class OpensearchBackupRepositoryTest {
-
-  private static final DateTimeFormatter TEST_DATE_FORMATTER =
-      DateTimeFormatter.ofPattern("yyyy.MM.yyyy");
-
   @Mock private RichOpenSearchClient richOpenSearchClient;
 
   @Mock private RichOpenSearchClient.Async richOpenSearchClientAsync;
@@ -116,8 +111,7 @@ class OpensearchBackupRepositoryTest {
     assertThat(snapshotDtoDetail.getSnapshotName()).isEqualTo("test-snapshot");
     assertThat(snapshotDtoDetail.getState()).isEqualTo("STARTED");
     assertThat(snapshotDtoDetail.getFailures()).isNull();
-    assertThat(TEST_DATE_FORMATTER.format(snapshotDtoDetail.getStartTime()))
-        .isEqualTo("1970.01.1970");
+    assertThat(snapshotDtoDetail.getStartTime().toInstant().toEpochMilli()).isEqualTo(23L);
   }
 
   @Test
@@ -216,7 +210,7 @@ class OpensearchBackupRepositoryTest {
     assertThat(snapshotDetails).hasSize(1);
     final var snapshotDetail = snapshotDetails.get(0);
     assertThat(snapshotDetail.getState()).isEqualTo(SnapshotState.SUCCESS.toString());
-    assertThat(TEST_DATE_FORMATTER.format(snapshotDetail.getStartTime())).isEqualTo("1970.01.1970");
+    assertThat(snapshotDetail.getStartTime().toInstant().toEpochMilli()).isEqualTo(23L);
     assertThat(snapshotDetail.getSnapshotName()).isEqualTo("snapshot");
     assertThat(snapshotDetail.getFailures()).isNull();
   }

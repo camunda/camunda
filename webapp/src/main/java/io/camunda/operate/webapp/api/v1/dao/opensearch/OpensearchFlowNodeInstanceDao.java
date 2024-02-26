@@ -8,7 +8,7 @@ package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.data.OperateDateTimeFormatter;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeInstanceDao;
@@ -36,12 +36,12 @@ public class OpensearchFlowNodeInstanceDao
   private final OperateDateTimeFormatter dateTimeFormatter;
 
   public OpensearchFlowNodeInstanceDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      FlowNodeInstanceTemplate flowNodeInstanceIndex,
-      ProcessCache processCache,
-      OperateDateTimeFormatter dateTimeFormatter) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final FlowNodeInstanceTemplate flowNodeInstanceIndex,
+      final ProcessCache processCache,
+      final OperateDateTimeFormatter dateTimeFormatter) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.flowNodeInstanceIndex = flowNodeInstanceIndex;
     this.processCache = processCache;
@@ -54,17 +54,17 @@ public class OpensearchFlowNodeInstanceDao
   }
 
   @Override
-  protected String getByKeyServerReadErrorMessage(Long key) {
+  protected String getByKeyServerReadErrorMessage(final Long key) {
     return String.format("Error in reading flownode instance for key %s", key);
   }
 
   @Override
-  protected String getByKeyNoResultsErrorMessage(Long key) {
+  protected String getByKeyNoResultsErrorMessage(final Long key) {
     return String.format("No flownode instance found for key %s", key);
   }
 
   @Override
-  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+  protected String getByKeyTooManyResultsErrorMessage(final Long key) {
     return String.format("Found more than one flownode instances for key %s", key);
   }
 
@@ -84,11 +84,12 @@ public class OpensearchFlowNodeInstanceDao
   }
 
   @Override
-  protected void buildFiltering(Query<FlowNodeInstance> query, SearchRequest.Builder request) {
-    FlowNodeInstance filter = query.getFilter();
+  protected void buildFiltering(
+      final Query<FlowNodeInstance> query, final SearchRequest.Builder request) {
+    final FlowNodeInstance filter = query.getFilter();
 
     if (filter != null) {
-      var queryTerms =
+      final var queryTerms =
           Stream.of(
                   queryDSLWrapper.term(FlowNodeInstance.KEY, filter.getKey()),
                   queryDSLWrapper.term(
@@ -119,7 +120,7 @@ public class OpensearchFlowNodeInstanceDao
   }
 
   @Override
-  protected FlowNodeInstance convertInternalToApiResult(FlowNodeInstance internalResult) {
+  protected FlowNodeInstance convertInternalToApiResult(final FlowNodeInstance internalResult) {
     if (internalResult != null) {
       if (StringUtils.isNotEmpty(internalResult.getStartDate())) {
         internalResult.setStartDate(
@@ -131,7 +132,7 @@ public class OpensearchFlowNodeInstanceDao
       }
 
       if (internalResult.getFlowNodeId() != null) {
-        String flowNodeName =
+        final String flowNodeName =
             processCache.getFlowNodeNameOrDefaultValue(
                 internalResult.getProcessDefinitionKey(), internalResult.getFlowNodeId(), null);
         internalResult.setFlowNodeName(flowNodeName);
