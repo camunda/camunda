@@ -1,4 +1,4 @@
-name: QA Testbench run
+name: Zeebe QA Testbench run
 
 on:
   workflow_dispatch:
@@ -42,7 +42,7 @@ jobs:
   qa:
     needs: prepare
     name: Run testbench process
-    uses: ./.github/workflows/testbench.yaml
+    uses: ./.github/workflows/zeebe-testbench.yaml
     with:
       processId: qa-github-trigger
       variables: >
