@@ -72,12 +72,7 @@ public class IdentityAuthorizationService {
       accessToken = ((IdentityAuthentication) authentication).getTokens().getAccessToken();
       return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
     } else if (authentication instanceof TokenAuthentication) {
-
-      logger.info(" --- Identity issuer data  --- ");
-      logger.info("Identity issuer url: " + tasklistProperties.getIdentity().getIssuerUrl());
-      logger.info(
-          "Identity backend issuer url: " + tasklistProperties.getIdentity().getIssuerBackendUrl());
-
+      accessToken = ((TokenAuthentication) authentication).getAccessToken();
       return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
     } else if (authentication instanceof JwtAuthenticationToken) {
       tasklistProperties.getIdentity().setIssuerUrl(tasklistProperties.getAuth0().getDomain());
