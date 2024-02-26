@@ -21,19 +21,18 @@ public class EvaluateDecisionStub
     implements RequestStub<
         BrokerEvaluateDecisionRequest, BrokerResponse<DecisionEvaluationRecord>> {
 
-  public static final DecisionEvaluationRecord DECISION_RECORD = new DecisionEvaluationRecord();
-
-  {
-    DECISION_RECORD
-        .setDecisionId("decision")
-        .setDecisionKey(123L)
-        .setDecisionVersion(1)
-        .setDecisionName("Decision")
-        .setDecisionOutput(toMessagePack("\"decision-output\""))
-        .setDecisionRequirementsId("decisionRequirements")
-        .setDecisionRequirementsKey(124L);
+  public static DecisionEvaluationRecord createDecisionRecord() {
+    final DecisionEvaluationRecord evaluationRecord =
+        new DecisionEvaluationRecord()
+            .setDecisionId("decision")
+            .setDecisionKey(123L)
+            .setDecisionVersion(1)
+            .setDecisionName("Decision")
+            .setDecisionOutput(toMessagePack("\"decision-output\""))
+            .setDecisionRequirementsId("decisionRequirements")
+            .setDecisionRequirementsKey(124L);
     final EvaluatedDecisionRecord evaluatedDecisionRecord =
-        DECISION_RECORD.evaluatedDecisions().add();
+        evaluationRecord.evaluatedDecisions().add();
     evaluatedDecisionRecord
         .setDecisionId("intermediateDecision")
         .setDecisionKey(125L)
@@ -56,6 +55,7 @@ public class EvaluateDecisionStub
         .setOutputId("outputId")
         .setOutputName("OUTPUT NAME")
         .setOutputValue(toMessagePack("\"output-value\""));
+    return evaluationRecord;
   }
 
   @Override
@@ -66,7 +66,9 @@ public class EvaluateDecisionStub
   @Override
   public BrokerResponse<DecisionEvaluationRecord> handle(
       final BrokerEvaluateDecisionRequest request) throws Exception {
-    return new BrokerResponse<>(DECISION_RECORD, request.getPartitionId(), request.getKey());
+    final DecisionEvaluationRecord evaluationRecord = createDecisionRecord();
+    return new BrokerResponse<>(
+        evaluationRecord, request.getPartitionId(), evaluationRecord.getDecisionKey());
   }
 
   private static DirectBuffer toMessagePack(final String json) {
