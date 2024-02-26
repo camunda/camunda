@@ -14,7 +14,6 @@ const {formatReportResult} = formatters;
 
 export default function createDefaultChartData(props) {
   const datasets = [];
-  let labels = [];
 
   const {
     result: {measures = []},
@@ -23,42 +22,42 @@ export default function createDefaultChartData(props) {
     },
   } = props.report;
 
-  measures.forEach((measure, idx) => {
-    const {
-      labels: measureLabels,
-      formattedResult,
-      visualization,
-      targetValue,
-      color,
-      isDark,
-    } = extractDefaultChartData(props, idx);
-    let type = visualization;
-    let order;
-    if (visualization === 'barLine') {
-      type = measureVisualizations[measure.property];
-      order = type === 'line' ? 0 : 1;
+  const chartData = measures.map((_, idx) => extractDefaultChartData(props, idx));
+  const labels = chartData[0].labels;
+
+  chartData.forEach(
+    ({labels: measureLabels, formattedResult, visualization, targetValue, color, isDark}, idx) => {
+      const measure = measures[idx];
+      let type = visualization;
+      let order;
+      if (visualization === 'barLine') {
+        type = measureVisualizations[measure.property];
+        order = type === 'line' ? 0 : 1;
+      }
+
+      datasets.push({
+        [horizontalBar ? 'xAxisID' : 'yAxisID']: 'axis-' + getAxisIdx(measures, idx),
+        label: getLabel(measure),
+        data: sortValues(
+          labels,
+          measureLabels,
+          formattedResult.map(({value}) => value)
+        ),
+        formatter: formatters[measure.property],
+        order,
+        ...createDatasetOptions({
+          type,
+          data: formattedResult,
+          targetValue,
+          datasetColor: color,
+          isStriped: false,
+          isDark,
+          measureCount: measures.length,
+          datasetIdx: idx,
+        }),
+      });
     }
-
-    datasets.push({
-      [horizontalBar ? 'xAxisID' : 'yAxisID']: 'axis-' + getAxisIdx(measures, idx),
-      label: getLabel(measure),
-      data: formattedResult.map(({value}) => value),
-      formatter: formatters[measure.property],
-      order,
-      ...createDatasetOptions({
-        type,
-        data: formattedResult,
-        targetValue,
-        datasetColor: color,
-        isStriped: false,
-        isDark,
-        measureCount: measures.length,
-        datasetIdx: idx,
-      }),
-    });
-
-    labels = measureLabels;
-  });
+  );
 
   return {labels, datasets};
 }
@@ -84,4 +83,14 @@ export function extractDefaultChartData({report, theme, targetValue}, measureIdx
     color,
     isDark,
   };
+}
+
+// sorts values based on refLabels
+function sortValues(refLabels, labels, values) {
+  let labelValueMap = {};
+  labels.forEach((label, index) => {
+    labelValueMap[label] = values[index];
+  });
+
+  return refLabels.map((label) => labelValueMap[label]);
 }
