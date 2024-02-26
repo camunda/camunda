@@ -98,6 +98,11 @@ public final class MessageEventProcessors {
             MessageSubscriptionIntent.REJECT,
             new MessageSubscriptionRejectProcessor(
                 messageState, subscriptionState, subscriptionCommandSender, writers))
+        .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.MIGRATE,
+            new MessageSubscriptionMigrateProcessor(
+                messageState, subscriptionState, subscriptionCommandSender, writers))
         .withListener(
             new MessageObserver(
                 scheduledTaskStateFactory,

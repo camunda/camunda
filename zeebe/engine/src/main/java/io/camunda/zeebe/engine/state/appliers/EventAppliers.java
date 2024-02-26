@@ -275,6 +275,7 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessMessageSubscriptionIntent.CREATED,
         new ProcessMessageSubscriptionCreatedApplier(subscriptionState));
+    register(ProcessMessageSubscriptionIntent.MIGRATING, NOOP_EVENT_APPLIER);
     register(
         ProcessMessageSubscriptionIntent.CORRELATED,
         new ProcessMessageSubscriptionCorrelatedApplier(subscriptionState));
