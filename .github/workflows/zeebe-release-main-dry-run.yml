@@ -1,51 +1,34 @@
-name: Release Dry Run from stable branches
+name: Zeebe Release Dry Run from main
 on:
   workflow_dispatch: { }
   schedule:
-    # Runs at 02:00 every week day; see this link for more: https://crontab.guru/#0_2_*_*_1-5
-    - cron: '0 2 * * 1-5'
+    # Runs at 01:00 every week day; see this link for more: https://crontab.guru/#0_1_*_*_1-5
+    - cron: '0 1 * * 1-5'
 
 jobs:
-  dry-run-release-82:
-    name: "Release from stable/8.2"
-    uses: camunda/zeebe/.github/workflows/release.yml@stable/8.2
+  dry-run-release:
+    name: "${{ matrix.version }} from main"
+    uses: ./.github/workflows/zeebe-release.yml
     secrets: inherit
     strategy:
       fail-fast: false
+      matrix:
+        version: [ 0.8.2, 0.8.2-alpha1 ]
+        include:
+          - version: 0.8.2
+            latest: true
+          - version: 0.8.2-alpha1
+            latest: false
     with:
-      releaseBranch: stable/8.2
-      releaseVersion: 0.8.2
+      releaseBranch: main
+      releaseVersion: ${{ matrix.version }}
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: true
-      dryRun: true
-  dry-run-release-81:
-    name: "Release from stable/8.1"
-    uses: camunda/zeebe/.github/workflows/release.yml@stable/8.1
-    secrets: inherit
-    strategy:
-      fail-fast: false
-    with:
-      releaseBranch: stable/8.1
-      releaseVersion: 0.8.1
-      nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: true
-      dryRun: true
-  dry-run-release-80:
-    name: "Release from stable/8.0"
-    uses: camunda/zeebe/.github/workflows/release.yml@stable/8.0
-    secrets: inherit
-    strategy:
-      fail-fast: false
-    with:
-      releaseBranch: stable/8.0
-      releaseVersion: 0.8.0
-      nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: false
+      isLatest: ${{ matrix.latest }}
       dryRun: true
   notify:
     name: Send slack notification
     runs-on: ubuntu-latest
-    needs: [ dry-run-release-80, dry-run-release-81, dry-run-release-82 ]
+    needs: [ dry-run-release ]
     if: ${{ always() }}
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -54,7 +37,7 @@ jobs:
       - id: slack-notify-failure
         name: Send failure slack notification
         uses: slackapi/slack-github-action@v1.24.0
-        if: ${{ always() && (needs.dry-run-release-80.result != 'success' || needs.dry-run-release-81.result != 'success' || needs.dry-run-release-82.result != 'success') }}
+        if: ${{ always() && needs.dry-run-release.result != 'success' }}
         with:
           # For posting a rich message using Block Kit
           payload: |
@@ -64,7 +47,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":alarm: *Release Dry Run* from `stable/*` failed! :alarm:\n"
+                    "text": ":alarm: *Release Dry Run* from `main` failed! :alarm:\n"
                   }
                 },
                 {
@@ -79,7 +62,7 @@ jobs:
       - id: slack-notify-success
         name: Send success slack notification
         uses: slackapi/slack-github-action@v1.24.0
-        if: ${{ always() && needs.dry-run-release-80.result == 'success' && needs.dry-run-release-81.result == 'success' && needs.dry-run-release-82.result == 'success' }}
+        if: ${{ always() && needs.dry-run-release.result == 'success' }}
         with:
           # For posting a rich message using Block Kit
           payload: |
@@ -89,7 +72,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":tada: *Release Dry Run* from `stable/*` succeeded! :tada:\n"
+                    "text": ":tada: *Release Dry Run* from `main` succeeded! :tada:\n"
                   }
                 },
                 {
@@ -101,3 +84,4 @@ jobs:
                 }
               ]
             }
+
