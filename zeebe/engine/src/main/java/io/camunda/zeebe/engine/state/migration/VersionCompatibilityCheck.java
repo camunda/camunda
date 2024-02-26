@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Compatible;
 import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
+import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible.ChangeOfPreReleaseVersion;
 import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import io.camunda.zeebe.util.SemanticVersion;
 
@@ -54,6 +55,8 @@ final class VersionCompatibilityCheck {
 
     if (previous.compareTo(current) == 0) {
       return new Compatible.SameVersion(current);
+    } else if (previous.preRelease() != null) {
+      return new ChangeOfPreReleaseVersion(previous, current);
     } else if (previous.compareTo(current) > 0) {
       if (previous.major() > current.major()) {
         return new Incompatible.MajorDowngrade(previous, current);
@@ -71,10 +74,8 @@ final class VersionCompatibilityCheck {
         return new Incompatible.SkippedMinorVersion(previous, current);
       } else if (previous.minor() < current.minor()) {
         return new Compatible.MinorUpgrade(previous, current);
-      } else if (previous.patch() < current.patch()) {
-        return new Compatible.PatchUpgrade(previous, current);
       } else {
-        return new Compatible.PreReleaseUpgrade(previous, current);
+        return new Compatible.PatchUpgrade(previous, current);
       }
     }
   }
@@ -98,7 +99,7 @@ final class VersionCompatibilityCheck {
       record SkippedMinorVersion(SemanticVersion from, SemanticVersion to)
           implements Incompatible {}
 
-      record PreReleaseDowngrade(SemanticVersion from, SemanticVersion to)
+      record ChangeOfPreReleaseVersion(SemanticVersion from, SemanticVersion to)
           implements Incompatible {}
 
       record PatchDowngrade(SemanticVersion from, SemanticVersion to) implements Incompatible {}
@@ -106,12 +107,13 @@ final class VersionCompatibilityCheck {
       record MinorDowngrade(SemanticVersion from, SemanticVersion to) implements Incompatible {}
 
       record MajorDowngrade(SemanticVersion from, SemanticVersion to) implements Incompatible {}
+
+      record PreReleaseDowngrade(SemanticVersion from, SemanticVersion to)
+          implements Incompatible {}
     }
 
     sealed interface Compatible extends CheckResult {
       record SameVersion(SemanticVersion version) implements Compatible {}
-
-      record PreReleaseUpgrade(SemanticVersion from, SemanticVersion to) implements Compatible {}
 
       record PatchUpgrade(SemanticVersion from, SemanticVersion to) implements Compatible {}
 
