@@ -72,11 +72,6 @@ public class IdentityAuthorizationService {
       accessToken = ((IdentityAuthentication) authentication).getTokens().getAccessToken();
       return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
     } else if (authentication instanceof TokenAuthentication) {
-      tasklistProperties.getIdentity().setIssuerUrl(tasklistProperties.getAuth0().getDomain());
-      tasklistProperties
-          .getIdentity()
-          .setIssuerBackendUrl(tasklistProperties.getAuth0().getDomain());
-
       logger.info("Auth0 domain: " + tasklistProperties.getAuth0().getDomain());
       logger.info("Identity issuer url: " + tasklistProperties.getIdentity().getIssuerUrl());
       logger.info(
