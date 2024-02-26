@@ -131,6 +131,33 @@ paths:
             The user task with the given key cannot be updated.
             More details are provided in the response body.
           $ref: "#/components/responses/ProblemResponse"
+  /user-tasks/{userTaskKey}/assignee:
+    delete:
+      summary: Remove the assignee of a task.
+      description: Removes the assignee of a task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: The user task was unassigned successfully.
+        '404':
+          description: The user task with the given key was not found.
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          $ref: "#/components/responses/ProblemResponse"
+        '400':
+          description: >
+            The user task with the given key cannot be unassigned.
+            More details are provided in the response body.
+          $ref: "#/components/responses/ProblemResponse"
 
 components:
   responses:
