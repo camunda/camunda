@@ -19,6 +19,9 @@ Steps to reproduce the behavior:
 
 <!-- Please attach screenshots, a screen recording, or a file (e.g. the BPMN/DMN/Form file) that has the problem you are describing to help us better debug the respective issue. -->
 
+### Actual behavior
+<!-- A clear and concise description of what is currently happening. -->
+
 ### Expected behavior
 <!-- A clear and concise description of what you expected to happen. -->
 
@@ -47,3 +50,7 @@ Steps to reproduce the behavior:
 For UI changes required to solve the bug:
 
 - [ ] Design input has been collected by the assignee
+
+### After solving the issue - Answer and document in the comments the questions below
+- [ ] What was the root cause for this bug?
+- [ ] Is there anything we should do for the error to not happen anymore?
