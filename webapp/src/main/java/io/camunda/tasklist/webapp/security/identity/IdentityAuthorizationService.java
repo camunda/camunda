@@ -72,23 +72,13 @@ public class IdentityAuthorizationService {
       accessToken = ((IdentityAuthentication) authentication).getTokens().getAccessToken();
       return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
     } else if (authentication instanceof TokenAuthentication) {
-      logger.info("Auth0 domain: " + tasklistProperties.getAuth0().getDomain());
+
+      logger.info(" --- Identity issuer data  --- ");
       logger.info("Identity issuer url: " + tasklistProperties.getIdentity().getIssuerUrl());
       logger.info(
           "Identity backend issuer url: " + tasklistProperties.getIdentity().getIssuerBackendUrl());
 
-      accessToken = ((TokenAuthentication) authentication).getAccessToken();
-
-      final String tokenDecoded =
-          identity
-              .authentication()
-              .verifyAndDecode(
-                  accessToken, ((TokenAuthentication) authentication).getOrganization())
-              .getToken();
-
-      logger.info("Token decoded: " + tokenDecoded);
-
-      return identity.authentication().verifyToken(tokenDecoded).getUserDetails().getGroups();
+      return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
     } else if (authentication instanceof JwtAuthenticationToken) {
       tasklistProperties.getIdentity().setIssuerUrl(tasklistProperties.getAuth0().getDomain());
       accessToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
