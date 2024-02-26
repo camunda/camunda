@@ -392,7 +392,7 @@ public final class CatchEventBehavior {
     stateWriter.appendFollowUpEvent(timer.getKey(), TimerIntent.CANCELED, timerRecord);
   }
 
-  private void unsubscribeFromMessageEvents(
+  public void unsubscribeFromMessageEvents(
       final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
     processMessageSubscriptionState.visitElementSubscriptions(
         elementInstanceKey,

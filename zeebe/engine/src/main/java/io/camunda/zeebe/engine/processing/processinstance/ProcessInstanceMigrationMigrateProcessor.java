@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditionChecker.*;
 
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -63,9 +65,12 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final VariableState variableState;
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final CatchEventBehavior catchEventBehavior;
 
   public ProcessInstanceMigrationMigrateProcessor(
-      final Writers writers, final ProcessingState processingState) {
+      final Writers writers,
+      final ProcessingState processingState,
+      final BpmnBehaviors bpmnBehaviors) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -76,6 +81,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    catchEventBehavior = bpmnBehaviors.catchEventBehavior();
   }
 
   @Override
@@ -170,13 +176,12 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     final var elementInstanceRecord = elementInstance.getValue();
     final long processInstanceKey = elementInstanceRecord.getProcessInstanceKey();
+    final var elementId = elementInstanceRecord.getElementId();
 
     requireSupportedElementType(elementInstanceRecord, processInstanceKey);
 
-    final String targetElementId =
-        sourceElementIdToTargetElementId.get(elementInstanceRecord.getElementId());
-    requireNonNullTargetElementId(
-        targetElementId, processInstanceKey, elementInstanceRecord.getElementId());
+    final String targetElementId = sourceElementIdToTargetElementId.get(elementId);
+    requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireNoIncident(incidentState, elementInstance);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstanceRecord, processInstanceKey);
@@ -254,6 +259,22 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessDefinitionKey(targetProcessDefinition.getKey())
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
+
+    catchEventBehavior.unsubscribeFromMessageEvents(
+        elementInstance.getKey(),
+        catchEventIdBuffer -> {
+          final String catchEventId = BufferUtil.bufferAsString(catchEventIdBuffer);
+          if (sourceElementIdToTargetElementId.containsKey(catchEventId)) {
+            throw new ProcessInstanceMigrationPreconditionFailedException(
+                """
+                Expected to migrate process instance '%s' \
+                but active element with id '%s' is subscribed to mapped catch event with id '%s'. \
+                Migrating active elements with mapped catch events is not possible yet."""
+                    .formatted(processInstanceKey, elementId, catchEventId),
+                RejectionType.INVALID_STATE);
+          }
+          return true;
+        });
   }
 
   /**
