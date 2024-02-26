@@ -43,13 +43,6 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
     if (!element.getEventDefinitions().isEmpty()) {
       transformEventDefinition(element, context, endEvent);
     }
-
-    if (isMessageEvent(element)) {
-      endEvent.setEventType(BpmnEventType.MESSAGE);
-      if (hasTaskDefinition(element)) {
-        jobWorkerElementTransformer.transform(element, context);
-      }
-    }
   }
 
   private void transformEventDefinition(
@@ -59,22 +52,29 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
 
     final var eventDefinition = element.getEventDefinitions().iterator().next();
 
-    if (eventDefinition instanceof ErrorEventDefinition) {
-      transformErrorEventDefinition(
-          context, executableElement, (ErrorEventDefinition) eventDefinition);
+    if (eventDefinition instanceof MessageEventDefinition) {
+      executableElement.setEventType(BpmnEventType.MESSAGE);
+      if (hasTaskDefinition(element)) {
+        jobWorkerElementTransformer.transform(element, context);
+      }
+
+    } else if (eventDefinition instanceof final ErrorEventDefinition errorEventDefinition) {
+      transformErrorEventDefinition(context, executableElement, errorEventDefinition);
 
     } else if (eventDefinition instanceof TerminateEventDefinition) {
       executableElement.setTerminateEndEvent(true);
       executableElement.setEventType(BpmnEventType.TERMINATE);
-    } else if (eventDefinition instanceof EscalationEventDefinition) {
-      transformEscalationEventDefinition(
-          context, executableElement, (EscalationEventDefinition) eventDefinition);
-    } else if (eventDefinition instanceof SignalEventDefinition) {
-      transformSignalEventDefinition(
-          context, executableElement, (SignalEventDefinition) eventDefinition);
-    } else if (eventDefinition instanceof CompensateEventDefinition) {
-      transformCompensationEventDefinition(
-          context, executableElement, (CompensateEventDefinition) eventDefinition);
+
+    } else if (eventDefinition
+        instanceof final EscalationEventDefinition escalationEventDefinition) {
+      transformEscalationEventDefinition(context, executableElement, escalationEventDefinition);
+
+    } else if (eventDefinition instanceof final SignalEventDefinition signalEventDefinition) {
+      transformSignalEventDefinition(context, executableElement, signalEventDefinition);
+
+    } else if (eventDefinition
+        instanceof final CompensateEventDefinition compensateEventDefinition) {
+      transformCompensationEventDefinition(context, executableElement, compensateEventDefinition);
     }
   }
 
@@ -87,11 +87,6 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
     final var executableError = context.getError(error.getId());
     executableElement.setError(executableError);
     executableElement.setEventType(BpmnEventType.ERROR);
-  }
-
-  private boolean isMessageEvent(final EndEvent element) {
-    return element.getEventDefinitions().stream()
-        .anyMatch(MessageEventDefinition.class::isInstance);
   }
 
   private boolean hasTaskDefinition(final EndEvent element) {
@@ -124,7 +119,6 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
       final TransformContext context,
       final ExecutableEndEvent executableElement,
       final CompensateEventDefinition eventDefinition) {
-    executableElement.setEventType(BpmnEventType.COMPENSATION);
 
     final ExecutableCompensation compensation = new ExecutableCompensation(eventDefinition.getId());
 
@@ -135,5 +129,6 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
       compensation.setReferenceCompensationActivity(activity);
     }
     executableElement.setCompensation(compensation);
+    executableElement.setEventType(BpmnEventType.COMPENSATION);
   }
 }
