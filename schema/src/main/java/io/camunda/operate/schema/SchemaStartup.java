@@ -58,7 +58,7 @@ public class SchemaStartup {
         migrator.migrate();
       }
       LOGGER.info("SchemaStartup finished.");
-    } catch (Exception ex){
+    } catch (Exception ex) {
       LOGGER.error("Schema startup failed: " + ex.getMessage(), ex);
       throw ex;
     }
