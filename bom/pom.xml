@@ -185,7 +185,7 @@
               <include>**/*.scala</include>
             </includes>
             <excludes>
-              <exclude>benchmarks/project/**/*</exclude>
+              <exclude>zeebe/benchmarks/project/**/*</exclude>
             </excludes>
             <mapping>
               <java>SLASHSTAR_STYLE</java>
