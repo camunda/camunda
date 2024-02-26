@@ -7,20 +7,15 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
-
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
-import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskAssignmentRequest;
-import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskCompletionRequest;
-import io.camunda.zeebe.gateway.rest.impl.broker.request.BrokerUserTaskUpdateRequest;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import java.util.Optional;
+import io.camunda.zeebe.util.Either;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -50,16 +45,10 @@ public class UserTaskController {
       @PathVariable final long userTaskKey,
       @RequestBody(required = false) final UserTaskCompletionRequest completionRequest) {
 
-    final BrokerUserTaskCompletionRequest brokerRequest =
-        RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey, context);
-
-    final CompletableFuture<BrokerResponse<UserTaskRecord>> brokerResponse =
-        brokerClient.sendRequest(brokerRequest);
-
-    return brokerResponse.handleAsync(
-        (response, error) ->
-            RestErrorMapper.getResponse(response, error, UserTaskController::mapRejectionToProblem)
-                .orElseGet(() -> ResponseEntity.noContent().build()));
+    return fold(
+        RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey, context),
+        this::sendBrokerRequest,
+        UserTaskController::handleRequestMappingError);
   }
 
   @PostMapping(
@@ -71,23 +60,10 @@ public class UserTaskController {
       @PathVariable final long userTaskKey,
       @RequestBody final UserTaskAssignmentRequest assignmentRequest) {
 
-    final Optional<ResponseEntity<Object>> validationErrorResponse =
-        validateAssignmentRequest(assignmentRequest);
-
-    if (validationErrorResponse.isPresent()) {
-      return CompletableFuture.completedFuture(validationErrorResponse.get());
-    }
-
-    final BrokerUserTaskAssignmentRequest brokerRequest =
-        RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey, context);
-
-    final CompletableFuture<BrokerResponse<UserTaskRecord>> brokerResponse =
-        brokerClient.sendRequest(brokerRequest);
-
-    return brokerResponse.handleAsync(
-        (response, error) ->
-            RestErrorMapper.getResponse(response, error, UserTaskController::mapRejectionToProblem)
-                .orElseGet(() -> ResponseEntity.noContent().build()));
+    return fold(
+        RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey, context),
+        this::sendBrokerRequest,
+        UserTaskController::handleRequestMappingError);
   }
 
   @PatchMapping(
@@ -99,16 +75,26 @@ public class UserTaskController {
       @PathVariable final long userTaskKey,
       @RequestBody(required = false) final UserTaskUpdateRequest updateRequest) {
 
-    final BrokerUserTaskUpdateRequest brokerRequest =
-        RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey, context);
+    return fold(
+        RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey, context),
+        this::sendBrokerRequest,
+        UserTaskController::handleRequestMappingError);
+  }
 
-    final CompletableFuture<BrokerResponse<UserTaskRecord>> brokerResponse =
-        brokerClient.sendRequest(brokerRequest);
+  private CompletableFuture<ResponseEntity<Object>> sendBrokerRequest(
+      final BrokerRequest<?> brokerRequest) {
+    return brokerClient
+        .sendRequest(brokerRequest)
+        .handleAsync(
+            (response, error) ->
+                RestErrorMapper.getResponse(
+                        response, error, UserTaskController::mapRejectionToProblem)
+                    .orElseGet(() -> ResponseEntity.noContent().build()));
+  }
 
-    return brokerResponse.handleAsync(
-        (response, error) ->
-            RestErrorMapper.getResponse(response, error, UserTaskController::mapRejectionToProblem)
-                .orElseGet(() -> ResponseEntity.noContent().build()));
+  private static CompletableFuture<ResponseEntity<Object>> handleRequestMappingError(
+      final ProblemDetail problemDetail) {
+    return CompletableFuture.completedFuture(ResponseEntity.of(problemDetail).build());
   }
 
   private static ProblemDetail mapRejectionToProblem(final BrokerRejection rejection) {
@@ -133,15 +119,9 @@ public class UserTaskController {
     };
   }
 
-  private static Optional<ResponseEntity<Object>> validateAssignmentRequest(
-      final UserTaskAssignmentRequest assignmentRequest) {
-    if (assignmentRequest.getAssignee() == null || assignmentRequest.getAssignee().isBlank()) {
-      final String message = "No assignee provided";
-      final ProblemDetail problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST, message, INVALID_ARGUMENT.name());
-      return Optional.of(ResponseEntity.of(problemDetail).build());
-    }
-    return Optional.empty();
+  private static <T, L, R> T fold(
+      final Either<L, R> either, final Function<R, T> rightFn, final Function<L, T> leftFn) {
+    final var responseOption = either.map(rightFn).mapLeft(leftFn);
+    return responseOption.isLeft() ? responseOption.getLeft() : responseOption.get();
   }
 }
