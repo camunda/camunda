@@ -185,5 +185,5 @@
   digest: {
     automerge: true,
   },
-  platformAutomerge: false,
+  platformAutomerge: true,
 }
