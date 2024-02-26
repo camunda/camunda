@@ -3,7 +3,7 @@
 #
 # As this is meant to be run via scheduling, the workflow itself only runs on the default branch
 # (e.g. main), so any changes you make will affect any other branches we test via this workflow.
-name: Daily tests
+name: Zeebe Daily tests
 
 on:
   workflow_dispatch: { }
@@ -35,7 +35,7 @@ jobs:
       - run: git fetch --tags
       - run: |
           versions=($(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | uniq))
-          
+
           latest="${versions[0]}"
           second_last="${versions[1]}"
           third_last="${versions[2]}"
@@ -79,7 +79,7 @@ jobs:
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.fourth-last-version) }}
             generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.fourth-last-version) }}
     name: Daily QA
-    uses: ./.github/workflows/qa-testbench.yaml
+    uses: ./.github/workflows/zeebe-qa-testbench.yaml
     with:
       branch: ${{ matrix.branch }}
       generation: ${{ matrix.generation_template }}

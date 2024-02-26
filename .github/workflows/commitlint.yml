@@ -1,5 +1,5 @@
-on: [pull_request]
 name: Commitlint
+on: [pull_request]
 
 jobs:
   lint-commits:
