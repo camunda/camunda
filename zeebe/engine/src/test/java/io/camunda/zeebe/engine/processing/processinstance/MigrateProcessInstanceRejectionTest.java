@@ -19,12 +19,14 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -726,8 +728,7 @@ public class MigrateProcessInstanceRejectionTest {
                     .startEvent("start")
                     .serviceTask("A", t -> t.zeebeJobType("A"))
                     .boundaryEvent("boundary")
-                    .message(
-                        m -> m.name("message").zeebeCorrelationKeyExpression("\"correlationKey\""))
+                    .timerWithDuration(Duration.ofDays(1))
                     .endEvent()
                     .moveToActivity("A")
                     .endEvent("end")
@@ -742,10 +743,9 @@ public class MigrateProcessInstanceRejectionTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withMessageName("message")
-        .withCorrelationKey("correlationKey")
+        .withHandlerNodeId("boundary")
         .await();
 
     final long targetProcessDefinitionKey =
@@ -770,9 +770,9 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             """
-              Expected to migrate process instance '%s' \
-              but active element with id 'A' has a boundary event. \
-              Migrating active elements with boundary events is not possible yet."""
+            Expected to migrate process instance '%s' \
+            but active element with id 'A' has one or more boundary events of types 'TIMER'. \
+            Migrating active elements with boundary events of these types is not possible yet."""
                 .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
   }
