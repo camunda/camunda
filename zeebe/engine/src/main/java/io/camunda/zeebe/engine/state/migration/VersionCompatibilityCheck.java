@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Compatible;
 import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible.UseOfPreReleaseVersion;
 import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import io.camunda.zeebe.util.SemanticVersion;
 
@@ -56,7 +55,7 @@ final class VersionCompatibilityCheck {
     if (previous.compareTo(current) == 0) {
       return new Compatible.SameVersion(current);
     } else if (previous.preRelease() != null || current.preRelease() != null) {
-      return new UseOfPreReleaseVersion(previous, current);
+      return new Incompatible.UseOfPreReleaseVersion(previous, current);
     } else if (previous.compareTo(current) > 0) {
       if (previous.major() > current.major()) {
         return new Incompatible.MajorDowngrade(previous, current);
