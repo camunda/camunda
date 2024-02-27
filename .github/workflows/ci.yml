@@ -663,6 +663,7 @@ jobs:
     needs: [ test-summary ]
     if: |
       github.repository == 'camunda/zeebe' &&
+      github.event_name == 'pull_request' &&
       (github.actor == 'backport-action' || github.actor == 'renovate[bot]' || github.actor == 'camundait')
     permissions:
       checks: read
