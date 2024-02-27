@@ -138,12 +138,35 @@ public final class CatchEventBehavior {
   }
 
   /**
+   * Subscribes to all events of the given supplier.
+   *
+   * @param context the context of the element instance that subscribes to events
+   * @param supplier the supplier of catch events to subscribe to, typically the element of the
+   *     element instance that subscribes to events
    * @return either a failure or nothing
    */
   public Either<Failure, Void> subscribeToEvents(
       final BpmnElementContext context, final ExecutableCatchEventSupplier supplier) {
+    return subscribeToEvents(context, supplier, catchEventId -> true);
+  }
+
+  /**
+   * Subscribes to all events of the given supplier that match the given catch event id filter.
+   *
+   * @param context the context of the element instance that subscribes to events
+   * @param supplier the supplier of catch events to subscribe to, typically the element of the
+   *     element instance that subscribes to events
+   * @param catchEventIdFilter the filter for catch event ids to subscribe to, only events that
+   *     match the filter are subscribed to
+   * @return either a failure or nothing
+   */
+  public Either<Failure, Void> subscribeToEvents(
+      final BpmnElementContext context,
+      final ExecutableCatchEventSupplier supplier,
+      final Predicate<DirectBuffer> catchEventIdFilter) {
     final var evaluationResults =
         supplier.getEvents().stream()
+            .filter(event -> catchEventIdFilter.test(event.getId()))
             .filter(event -> event.isTimer() || event.isMessage() || event.isSignal())
             .map(event -> evalExpressions(expressionProcessor, event, context))
             .collect(Either.collectorFoldingLeft());
