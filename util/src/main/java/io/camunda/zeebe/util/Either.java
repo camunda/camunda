@@ -11,7 +11,6 @@ import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -59,7 +58,7 @@ import java.util.stream.Collector;
  * @param <L> The left type
  * @param <R> The right type
  */
-public interface Either<L, R> {
+public sealed interface Either<L, R> {
 
   /**
    * Returns a {@link Right} describing the given value.
@@ -287,6 +286,41 @@ public interface Either<L, R> {
   <T> Either<L, T> flatMap(Function<? super R, ? extends Either<L, T>> right);
 
   /**
+   * Executes the given action with the right value if this is a {@link Right}, otherwise does
+   * nothing. This method facilitates side-effect operations on the right value without altering the
+   * state or the type of the {@code Either}. After executing the action, the original {@code
+   * Either<L, R>} is returned, allowing for further chaining of operations in a fluent API style.
+   *
+   * <p>When the instance is a {@link Right}, the action is executed, and the original {@code
+   * Either<L, R>} is returned. This maintains the right value's type and allows the action to be
+   * performed as a side-effect without changing the outcome. When the instance is a {@link Left},
+   * no action is performed, and the {@code Left} instance is returned unchanged, preserving the
+   * error information.
+   *
+   * <p>Usage example when {@code Either} is a {@link Right}:
+   *
+   * <pre>{@code
+   * Either<Exception, String> rightEither = Either.right("Success");
+   * Either<Exception, String> result = rightEither.thenDo(value -> System.out.println("Processed value: " + value));
+   * // Output: Processed value: Success
+   * // result remains a Right<Exception, String>, with the value "Success"
+   * }</pre>
+   *
+   * <p>Usage example when {@code Either} is a {@link Left}:
+   *
+   * <pre>{@code
+   * Either<String, Integer> leftEither = Either.left("Error occurred");
+   * Either<String, Integer> result = leftEither.thenDo(value -> System.out.println("This will not be printed"));
+   * // No output as the action is not executed
+   * // result remains an unchanged Left<String, Integer>, containing the original error message
+   * }</pre>
+   *
+   * @param action the consuming function to perform with the right value, if present
+   * @return Either<L, R> the original Either instance, allowing further operations.
+   */
+  Either<L, R> thenDo(Consumer<R> action);
+
+  /**
    * Performs the given action with the value if this is a {@link Right}, otherwise does nothing.
    *
    * @param action the consuming function for the right value
@@ -310,6 +344,30 @@ public interface Either<L, R> {
   void ifRightOrLeft(Consumer<R> rightAction, Consumer<L> leftAction);
 
   /**
+   * Maps the right or left value into a new type using the provided functions, depending on whether
+   * this is a {@link Left} or {@link Right}.
+   *
+   * <p>A common use case is to map to a new common value in success and error cases. Example:
+   *
+   * <pre>{@code
+   * * Either<String, Integer> success = Either.right(42); // => Right(42)
+   * * Either<String, Integer> failure = Either.left("Error occurred"); // => Left("Error occurred")
+   * *
+   * * var rightFn = result -> "Success: " + result;
+   * * var leftFn = error -> "Failure: " + error;
+   * *
+   * * success.fold(rightFn, leftFn); // => "Success: 42"
+   * * failure.fold(rightFn, leftFn); // => "Failure: Error occurred"
+   * }</pre>
+   *
+   * @param rightFn the mapping function for the right value
+   * @param leftFn the mapping function for the left value
+   * @return either a mapped {@link Left} or {@link Right}, folded to the new type
+   * @param <T> the type of the resulting value
+   */
+  <T> T fold(Function<? super R, ? extends T> rightFn, Function<? super L, ? extends T> leftFn);
+
+  /**
    * A right for either a left or right. By convention, right is used for success and left for
    * error.
    *
@@ -317,14 +375,7 @@ public interface Either<L, R> {
    * @param <R> The right type
    */
   @SuppressWarnings("java:S2972")
-  final class Right<L, R> implements Either<L, R> {
-
-    private final R value;
-
-    private Right(final R value) {
-      this.value = value;
-    }
-
+  record Right<L, R>(R value) implements Either<L, R> {
     @Override
     public boolean isRight() {
       return true;
@@ -367,6 +418,12 @@ public interface Either<L, R> {
     }
 
     @Override
+    public Either<L, R> thenDo(final Consumer<R> action) {
+      action.accept(value);
+      return this;
+    }
+
+    @Override
     public void ifRight(final Consumer<R> right) {
       right.accept(value);
     }
@@ -382,25 +439,10 @@ public interface Either<L, R> {
     }
 
     @Override
-    public int hashCode() {
-      return Objects.hash(value);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final Right<?, ?> right = (Right<?, ?>) o;
-      return Objects.equals(value, right.value);
-    }
-
-    @Override
-    public String toString() {
-      return "Right[" + value + ']';
+    public <T> T fold(
+        final Function<? super R, ? extends T> rightFn,
+        final Function<? super L, ? extends T> leftFn) {
+      return rightFn.apply(value);
     }
   }
 
@@ -411,13 +453,7 @@ public interface Either<L, R> {
    * @param <R> The right type
    */
   @SuppressWarnings("java:S2972")
-  final class Left<L, R> implements Either<L, R> {
-
-    private final L value;
-
-    private Left(final L value) {
-      this.value = value;
-    }
+  record Left<L, R>(L value) implements Either<L, R> {
 
     @Override
     public boolean isRight() {
@@ -462,6 +498,11 @@ public interface Either<L, R> {
     }
 
     @Override
+    public Either<L, R> thenDo(final Consumer<R> action) {
+      return this;
+    }
+
+    @Override
     public void ifRight(final Consumer<R> right) {
       // do nothing
     }
@@ -477,37 +518,14 @@ public interface Either<L, R> {
     }
 
     @Override
-    public int hashCode() {
-      return Objects.hash(value);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final Left<?, ?> left = (Left<?, ?>) o;
-      return Objects.equals(value, left.value);
-    }
-
-    @Override
-    public String toString() {
-      return "Left[" + value + ']';
+    public <T> T fold(
+        final Function<? super R, ? extends T> rightFn,
+        final Function<? super L, ? extends T> leftFn) {
+      return leftFn.apply(value);
     }
   }
 
-  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  final class EitherOptional<R> {
-
-    private final Optional<R> right;
-
-    private EitherOptional(final Optional<R> right) {
-      this.right = right;
-    }
-
+  record EitherOptional<R>(Optional<R> right) {
     public <L> Either<L, R> orElse(final L left) {
       return right.<Either<L, R>>map(Either::right).orElse(Either.left(left));
     }

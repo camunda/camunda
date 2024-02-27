@@ -270,4 +270,66 @@ class EitherTest {
               collection.stream().filter(Either::isLeft).map(Either::getLeft).toList().get(0));
     }
   }
+
+  @DisplayName("`thenDo` method tests")
+  @Nested
+  class ThenDoMethodTests {
+
+    @DisplayName(
+        "Executes the consumer action and returns the original `Either` when it is a `Right`")
+    @ParameterizedTest
+    @MethodSource("io.camunda.zeebe.util.EitherTest#parameters")
+    void thenDoExecutesActionAndReturnsOriginalEitherWhenRight(final Object value) {
+      final var verifiableConsumer = new VerifiableConsumer();
+      final Either<Object, Object> originalRight = Either.right(value);
+
+      final Either<Object, Object> result = originalRight.thenDo(verifiableConsumer);
+
+      assertThat(verifiableConsumer.hasBeenExecuted).isTrue();
+      assertThat(result).as("Should return the original `Either` instance").isSameAs(originalRight);
+      assertThat(result.get()).isEqualTo(value);
+    }
+
+    @DisplayName(
+        "Does not execute the consumer action and returns the original `Either` when it is a `Left`")
+    @ParameterizedTest
+    @MethodSource("io.camunda.zeebe.util.EitherTest#parameters")
+    void thenDoDoesNotExecuteActionAndReturnsOriginalEitherWhenLeft(final Object value) {
+      final var verifiableConsumer = new VerifiableConsumer();
+      final Either<Object, Object> originalLeft = Either.left(value);
+
+      final Either<Object, Object> result = originalLeft.thenDo(verifiableConsumer);
+
+      assertThat(verifiableConsumer.hasBeenExecuted).isFalse();
+      assertThat(result).as("Should return the original `Either` instance").isSameAs(originalLeft);
+      assertThat(result.getLeft()).isEqualTo(value);
+    }
+  }
+
+  @DisplayName("Folding method tests")
+  @Nested
+  class FoldingMethodTests {
+
+    @DisplayName("Folds `Left`s into target types using the left function.")
+    @ParameterizedTest
+    @MethodSource("io.camunda.zeebe.util.EitherTest#parameters")
+    void foldsLeftsIntoTargetTypeUsingLeftFunction(final Object value) {
+      final Function<Object, String> leftMapper = o -> "Expected-" + o.toString();
+      final Function<Object, String> rightMapper = o -> "Unexpected-" + o.toString();
+      final String mappedValue = leftMapper.apply(value);
+      assertThat(mappedValue).isNotEqualTo(value);
+      assertThat(Either.left(value).fold(rightMapper, leftMapper)).isEqualTo(mappedValue);
+    }
+
+    @DisplayName("Folds `Right`s into target types using the right function.")
+    @ParameterizedTest
+    @MethodSource("io.camunda.zeebe.util.EitherTest#parameters")
+    void foldsRightsIntoTargetTypeUsingRightFunction(final Object value) {
+      final Function<Object, String> leftMapper = o -> "Unexpected-" + o.toString();
+      final Function<Object, String> rightMapper = o -> "Expected-" + o.toString();
+      final String mappedValue = rightMapper.apply(value);
+      assertThat(mappedValue).isNotEqualTo(value);
+      assertThat(Either.right(value).fold(rightMapper, leftMapper)).isEqualTo(mappedValue);
+    }
+  }
 }
