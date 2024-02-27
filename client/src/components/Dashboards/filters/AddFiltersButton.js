@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import useDeepCompareEffect from 'use-deep-compare-effect';
 import update from 'immutability-helper';
 import {Checkbox, MenuItem} from '@carbon/react';
@@ -18,7 +18,6 @@ import {VariableFilter, AssigneeFilter} from 'filter';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {showPrompt} from 'prompt';
-import {getOptimizeProfile} from 'config';
 import {useErrorHandling} from 'hooks';
 
 export function AddFiltersButton({
@@ -32,14 +31,7 @@ export function AddFiltersButton({
   const [openModalAfterReportUpdate, setOpenModalAfterReportUpdate] = useState(null);
   const [availableVariables, setAvailableVariables] = useState([]);
   const [allowCustomValues, setAllowCustomValues] = useState(false);
-  const [optimizeProfile, setOptimizeProfile] = useState();
   const {mightFail} = useErrorHandling();
-
-  useEffect(() => {
-    (async () => {
-      setOptimizeProfile(await getOptimizeProfile());
-    })();
-  }, []);
 
   const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
   const hasUnsavedReports = reports.some(({id, report}) => report && !id);
@@ -125,16 +117,15 @@ export function AddFiltersButton({
           onClick={() => saveAndContinue('variable')}
           label={t('dashboard.filter.types.variable')}
         />
-        {optimizeProfile === 'platform' &&
-          ['assignee', 'candidateGroup'].map((type) => (
-            <MenuItem
-              key={type}
-              title={noReports ? t('dashboard.filter.disabledAssignee') : undefined}
-              disabled={noReports}
-              onClick={() => saveAndContinue(type)}
-              label={t('common.filter.types.' + type)}
-            />
-          ))}
+        {['assignee', 'candidateGroup'].map((type) => (
+          <MenuItem
+            key={type}
+            title={noReports ? t('dashboard.filter.disabledAssignee') : undefined}
+            disabled={noReports}
+            onClick={() => saveAndContinue(type)}
+            label={t('common.filter.types.' + type)}
+          />
+        ))}
       </MenuButton>
 
       {showModal === 'variable' && (

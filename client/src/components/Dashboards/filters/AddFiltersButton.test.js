@@ -10,15 +10,10 @@ import {shallow} from 'enzyme';
 import {MenuItem} from '@carbon/react';
 
 import {showPrompt} from 'prompt';
-import {getOptimizeProfile} from 'config';
 
 import {getVariableNames} from './service';
 
 import {AddFiltersButton} from './AddFiltersButton';
-
-jest.mock('config', () => ({
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
-}));
 
 jest.mock('hooks', () => ({
   useErrorHandling: () => ({
@@ -208,18 +203,4 @@ it('should show an assignee filter modal with additional content', async () => {
     node.find('.dashboardAssigneeFilter').prop('getPosttext')({type: 'String'})
   );
   expect(postText.find('[type="checkbox"]')).toExist();
-});
-
-it('should not show assignee/group options in cloud environment', async () => {
-  getOptimizeProfile.mockReturnValueOnce('cloud');
-  const node = shallow(<AddFiltersButton {...props} />);
-
-  await runAllEffects();
-
-  expect(
-    node
-      .find(MenuItem)
-      .findWhere((n) => n.prop('label') === 'Assignee' || n.prop('label') === 'Candidate group')
-      .length
-  ).toBe(0);
 });

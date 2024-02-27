@@ -5,18 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {CarbonSelect} from 'components';
 import {reportConfig, createReportUpdate} from 'services';
-import {getOptimizeProfile} from 'config';
 
 import DistributedBy from './DistributedBy';
-
-jest.mock('config', () => ({
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
-}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -134,15 +128,6 @@ it('should have a button to remove the distribution', () => {
 
   expect(createReportUpdate.mock.calls[0][3]).toBe('none');
   expect(spy).toHaveBeenCalledWith({content: 'change'});
-});
-
-it('should hide assignee option in cloud environment', async () => {
-  getOptimizeProfile.mockReturnValueOnce('cloud');
-  const node = shallow(<DistributedBy {...config} />);
-
-  await runAllEffects();
-
-  expect(node.find({value: 'assignee'})).not.toExist();
 });
 
 it('should not fail if variables are null', () => {
