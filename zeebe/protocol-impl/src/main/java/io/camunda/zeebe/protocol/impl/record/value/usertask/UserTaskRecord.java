@@ -16,7 +16,9 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -28,8 +30,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecordValue {
+
+  public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
   public static final String CANDIDATE_GROUPS = "candidateGroupsList";
   public static final String CANDIDATE_USERS = "candidateUsersList";
@@ -55,6 +60,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new StringProperty("externalFormReference", EMPTY_STRING);
 
   private final DocumentProperty variableProp = new DocumentProperty("variables");
+  private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
 
   private final LongProperty processInstanceKeyProp =
       new LongProperty(PROP_PROCESS_INSTANCE_KEY, -1L);
@@ -74,7 +80,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
 
   public UserTaskRecord() {
-    super(19);
+    super(20);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -84,6 +90,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(formKeyProp)
         .declareProperty(externalFormReferenceProp)
         .declareProperty(variableProp)
+        .declareProperty(customHeadersProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionVersionProp)
         .declareProperty(processDefinitionKeyProp)
@@ -105,6 +112,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     followUpDateProp.setValue(record.getFollowUpDateBuffer());
     formKeyProp.setValue(record.getFormKey());
     externalFormReferenceProp.setValue(record.getExternalFormReferenceBuffer());
+    final DirectBuffer customHeaders = record.getCustomHeadersBuffer();
+    customHeadersProp.setValue(customHeaders, 0, customHeaders.capacity());
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
     processDefinitionVersionProp.setValue(record.getProcessDefinitionVersion());
     processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
@@ -205,6 +214,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @Override
+  public Map<String, String> getCustomHeaders() {
+    return MsgPackConverter.convertToStringMap(customHeadersProp.getValue());
+  }
+
+  @Override
   public long getCreationTimestamp() {
     return creationTimestampProp.getValue();
   }
@@ -271,6 +285,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setCreationTimestamp(final long creationTimestamp) {
     creationTimestampProp.setValue(creationTimestamp);
+    return this;
+  }
+
+  public UserTaskRecord setCustomHeaders(final DirectBuffer buffer) {
+    customHeadersProp.setValue(buffer, 0, buffer.capacity());
     return this;
   }
 
@@ -393,6 +412,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public UserTaskRecord setVariables(final DirectBuffer variables) {
     variableProp.setValue(variables);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getCustomHeadersBuffer() {
+    return customHeadersProp.getValue();
   }
 
   @JsonIgnore

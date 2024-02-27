@@ -161,6 +161,27 @@ public final class NativeUserTaskTest {
   }
 
   @Test
+  public void shouldCreateUserTaskWithCustomHeaders() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeTaskHeader("a", "b").zeebeTaskHeader("c", "d")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = userTask.getValue().getCustomHeaders();
+    assertThat(customHeaders).hasSize(2).containsEntry("a", "b").containsEntry("c", "d");
+  }
+
+  @Test
   public void shouldPickUpCustomFormForUserTask() {
     // given
     final String externalReference = "http://example.com/my-external-form";

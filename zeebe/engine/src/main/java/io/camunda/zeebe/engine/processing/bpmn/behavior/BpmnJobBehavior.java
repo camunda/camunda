@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -21,7 +19,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -33,14 +30,9 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +44,7 @@ public final class BpmnJobBehavior {
       EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN);
 
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
-  private final HeaderEncoder headerEncoder = new HeaderEncoder();
-
+  private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final JobState jobState;
@@ -313,53 +304,6 @@ public final class BpmnJobBehavior {
 
     public String getFormKey() {
       return formKey;
-    }
-  }
-
-  private static final class HeaderEncoder {
-
-    private static final int INITIAL_SIZE_KEY_VALUE_PAIR = 128;
-
-    private final MsgPackWriter msgPackWriter = new MsgPackWriter();
-
-    public DirectBuffer encode(final Map<String, String> taskHeaders) {
-      if (taskHeaders == null || taskHeaders.isEmpty()) {
-        return JobRecord.NO_HEADERS;
-      }
-
-      final MutableDirectBuffer buffer = new UnsafeBuffer(0, 0);
-
-      final var validHeaders =
-          taskHeaders.entrySet().stream()
-              .filter(entry -> isValidHeader(entry.getKey(), entry.getValue()))
-              .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-
-      if (validHeaders.size() != taskHeaders.size()) {
-        LOGGER.debug("Ignored {} invalid headers.", taskHeaders.size() - validHeaders.size());
-      }
-
-      final ExpandableArrayBuffer expandableBuffer =
-          new ExpandableArrayBuffer(INITIAL_SIZE_KEY_VALUE_PAIR * validHeaders.size());
-
-      msgPackWriter.wrap(expandableBuffer, 0);
-      msgPackWriter.writeMapHeader(validHeaders.size());
-
-      validHeaders.forEach(
-          (k, v) -> {
-            final DirectBuffer key = wrapString(k);
-            msgPackWriter.writeString(key);
-
-            final DirectBuffer value = wrapString(v);
-            msgPackWriter.writeString(value);
-          });
-
-      buffer.wrap(expandableBuffer.byteArray(), 0, msgPackWriter.getOffset());
-
-      return buffer;
-    }
-
-    private boolean isValidHeader(final String key, final String value) {
-      return key != null && !key.isEmpty() && value != null && !value.isEmpty();
     }
   }
 }

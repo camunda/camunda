@@ -2088,6 +2088,8 @@ final class JsonSerializableToJsonTest {
                     .setFormKey(456)
                     .setExternalFormReference("myReference")
                     .setVariables(VARIABLES_MSGPACK)
+                    .setCustomHeaders(
+                        wrapArray(MsgPackConverter.convertToMsgPack(Map.of("foo", "bar"))))
                     .setChangedAttributes(List.of("foo", "bar"))
                     .setAction("complete")
                     .setBpmnProcessId("test-process")
@@ -2113,6 +2115,9 @@ final class JsonSerializableToJsonTest {
         "changedAttributes": ["foo", "bar"],
         "externalFormReference": "myReference",
         "variables": {
+          "foo": "bar"
+        },
+        "customHeaders": {
           "foo": "bar"
         },
         "action": "complete",
@@ -2146,6 +2151,7 @@ final class JsonSerializableToJsonTest {
         "changedAttributes": [],
         "externalFormReference": "",
         "variables": {},
+        "customHeaders": {},
         "action": "",
         "formKey": -1,
         "userTaskKey": -1,
@@ -2182,6 +2188,7 @@ final class JsonSerializableToJsonTest {
         "variables": {
           "foo": null
         },
+        "customHeaders": {},
         "action": "",
         "formKey": -1,
         "userTaskKey": -1,

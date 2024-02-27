@@ -57,6 +57,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformAssignmentDefinition(element, userTaskProperties);
     transformTaskSchedule(element, userTaskProperties);
     transformTaskFormId(element, userTaskProperties);
+    transformModelTaskHeaders(element, userTaskProperties);
 
     if (isZeebeUserTask) {
       transformExternalReference(element, userTaskProperties);
@@ -65,8 +66,8 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
       final var jobWorkerProperties = new JobWorkerProperties();
       jobWorkerProperties.wrap(userTaskProperties);
 
+      addZeebeUserTaskFormKeyHeader(element, jobWorkerProperties.getTaskHeaders());
       transformTaskDefinition(jobWorkerProperties);
-      transformTaskHeaders(element, jobWorkerProperties);
       userTask.setJobWorkerProperties(jobWorkerProperties);
     }
   }
@@ -88,16 +89,12 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformCandidateUsers(userTaskProperties, assignmentDefinition);
   }
 
-  private void transformTaskHeaders(
-      final UserTask element, final JobWorkerProperties jobWorkerProperties) {
+  private void transformModelTaskHeaders(
+      final UserTask element, final UserTaskProperties userTaskProperties) {
     final Map<String, String> taskHeaders = new HashMap<>();
 
     collectModelTaskHeaders(element, taskHeaders);
-    addZeebeUserTaskFormKeyHeader(element, taskHeaders);
-
-    if (!taskHeaders.isEmpty()) {
-      jobWorkerProperties.setTaskHeaders(taskHeaders);
-    }
+    userTaskProperties.setTaskHeaders(taskHeaders);
   }
 
   private void addZeebeUserTaskFormKeyHeader(

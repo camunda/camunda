@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
+import java.util.Map;
 
 /** The properties of a user task element. */
 public class UserTaskProperties {
@@ -19,6 +20,7 @@ public class UserTaskProperties {
   private Expression externalFormReference;
   private Expression followUpDate;
   private Expression formId;
+  private Map<String, String> taskHeaders = Map.of();
 
   public Expression getAssignee() {
     return assignee;
@@ -76,6 +78,14 @@ public class UserTaskProperties {
     this.formId = formId;
   }
 
+  public Map<String, String> getTaskHeaders() {
+    return taskHeaders;
+  }
+
+  public void setTaskHeaders(final Map<String, String> taskHeaders) {
+    this.taskHeaders = taskHeaders;
+  }
+
   public void wrap(final UserTaskProperties userTaskProperties) {
     setAssignee(userTaskProperties.getAssignee());
     setCandidateGroups(userTaskProperties.getCandidateGroups());
@@ -84,5 +94,6 @@ public class UserTaskProperties {
     setExternalFormReference(userTaskProperties.getExternalFormReference());
     setFollowUpDate(userTaskProperties.getFollowUpDate());
     setFormId(userTaskProperties.getFormId());
+    setTaskHeaders(userTaskProperties.getTaskHeaders());
   }
 }

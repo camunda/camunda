@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 
 /**
@@ -50,6 +51,8 @@ public interface UserTaskRecordValue
   String getAction();
 
   String getExternalFormReference();
+
+  Map<String, String> getCustomHeaders();
 
   long getCreationTimestamp();
 
