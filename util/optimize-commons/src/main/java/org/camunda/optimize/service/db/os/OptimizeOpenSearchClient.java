@@ -700,7 +700,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
         int currentProgress = taskProgress(taskResponse).orElse(-1);
         if (currentProgress != progress) {
-          final Status taskStatus = taskResponse.response();
+          final Status taskStatus = taskResponse.task().status();
           progress = currentProgress;
           log.info(
             "Progress of task (ID:{}) on {}: {}% (total: {}, updated: {}, created: {}, deleted: {}). Completed: {}",

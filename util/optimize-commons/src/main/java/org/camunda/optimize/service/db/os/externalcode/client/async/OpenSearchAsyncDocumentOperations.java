@@ -22,11 +22,13 @@ public class OpenSearchAsyncDocumentOperations extends OpenSearchAsyncOperation 
 
   public CompletableFuture<UpdateByQueryResponse> updateByQuery(UpdateByQueryRequest.Builder requestBuilder,
                                                                 Function<Exception, String> errorMessageSupplier) {
+    requestBuilder.waitForCompletion(false);
     return safe(() -> openSearchAsyncClient.updateByQuery(requestBuilder.build()), errorMessageSupplier);
   }
 
   public CompletableFuture<DeleteByQueryResponse> deleteByQuery(DeleteByQueryRequest.Builder requestBuilder,
                                                                 Function<Exception, String> errorMessageSupplier) {
+    requestBuilder.waitForCompletion(false);
     return safe(() -> openSearchAsyncClient.deleteByQuery(requestBuilder.build()), errorMessageSupplier);
   }
 }

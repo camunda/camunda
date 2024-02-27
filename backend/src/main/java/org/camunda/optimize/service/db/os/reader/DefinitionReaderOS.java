@@ -605,14 +605,13 @@ public class DefinitionReaderOS implements DefinitionReader {
       "versionForSorting",
       AggregationBuilders.min()
         .script(numericVersionScript)
-        .field("versionForSorting")
         .build()
         ._toAggregation()
     );
 
     subAggregations.put(
       "topHits",
-      AggregationDSL.topHitsAggregation(List.of(TOP_HITS_AGGREGATION), 1)._toAggregation()
+      AggregationDSL.topHitsAggregation(1)._toAggregation() // Use size=1
     );
 
     final Aggregation definitionAgg = AggregationDSL.withSubaggregations(
