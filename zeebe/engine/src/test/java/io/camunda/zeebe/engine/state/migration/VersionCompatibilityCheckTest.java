@@ -34,8 +34,11 @@ final class VersionCompatibilityCheckTest {
     @Test
     public void shouldRejectChangeOfPreRelease() {
       assertThat(check("8.0.0-alpha1", "8.0.0-alpha2")).isInstanceOf(UseOfPreReleaseVersion.class);
-      assertThat(check("8.1.0-alpha1", "8.0.0-beta1")).isInstanceOf(UseOfPreReleaseVersion.class);
-      assertThat(check("8.0.1-beta1", "8.0.2-rc1")).isInstanceOf(UseOfPreReleaseVersion.class);
+      assertThat(check("8.0.0-alpha1", "8.0.0-beta1")).isInstanceOf(UseOfPreReleaseVersion.class);
+      assertThat(check("8.0.0-beta1", "8.0.0-rc1")).isInstanceOf(UseOfPreReleaseVersion.class);
+      assertThat(check("8.0.0-rc1", "8.0.0")).isInstanceOf(UseOfPreReleaseVersion.class);
+      assertThat(check("8.0.0-alpha1", "8.1.0")).isInstanceOf(UseOfPreReleaseVersion.class);
+      assertThat(check("8.0.0-alpha2", "8.0.1")).isInstanceOf(UseOfPreReleaseVersion.class);
     }
 
     @Test
@@ -44,6 +47,10 @@ final class VersionCompatibilityCheckTest {
       assertThat(check("8.0.0-alpha1", "8.0.1")).isInstanceOf(UseOfPreReleaseVersion.class);
       assertThat(check("8.0.0-beta1", "8.0.1")).isInstanceOf(UseOfPreReleaseVersion.class);
       assertThat(check("8.0.0-rc1", "8.1.0")).isInstanceOf(UseOfPreReleaseVersion.class);
+      assertThat(check("8.5.3", "8.5.3-alpha1"))
+          .isInstanceOf(Incompatible.UseOfPreReleaseVersion.class);
+      assertThat(check("8.1.0", "8.1.0-alpha1"))
+          .isInstanceOf(Incompatible.UseOfPreReleaseVersion.class);
     }
 
     @Test
@@ -54,20 +61,6 @@ final class VersionCompatibilityCheckTest {
       assertThat(check("8.5.0", "8.4.1")).isInstanceOf(Incompatible.MinorDowngrade.class);
       assertThat(check("8.5.3", "8.5.2")).isInstanceOf(Incompatible.PatchDowngrade.class);
       assertThat(check("8.5.3", "8.5.0")).isInstanceOf(Incompatible.PatchDowngrade.class);
-      assertThat(check("8.5.3", "8.5.3-alpha1"))
-          .isInstanceOf(Incompatible.UseOfPreReleaseVersion.class);
-      assertThat(check("8.1.0", "8.1.0-alpha1"))
-          .isInstanceOf(Incompatible.UseOfPreReleaseVersion.class);
-    }
-
-    @Test
-    public void shouldRejectChangeOfPreReleaseVersion() {
-      assertThat(check("8.0.0-alpha1", "8.0.0-alpha2")).isInstanceOf(UseOfPreReleaseVersion.class);
-      assertThat(check("8.0.0-alpha1", "8.0.0-beta1")).isInstanceOf(UseOfPreReleaseVersion.class);
-      assertThat(check("8.0.0-beta1", "8.0.0-rc1")).isInstanceOf(UseOfPreReleaseVersion.class);
-      assertThat(check("8.0.0-rc1", "8.0.0")).isInstanceOf(UseOfPreReleaseVersion.class);
-      assertThat(check("8.0.0-alpha1", "8.1.0")).isInstanceOf(UseOfPreReleaseVersion.class);
-      assertThat(check("8.0.0-alpha2", "8.0.1")).isInstanceOf(UseOfPreReleaseVersion.class);
     }
 
     @Test
@@ -105,12 +98,14 @@ final class VersionCompatibilityCheckTest {
     void shouldAcceptPatchUpgrades() {
       assertThat(check("8.0.0", "8.0.1")).isInstanceOf(Compatible.PatchUpgrade.class);
       assertThat(check("8.1.4", "8.1.5")).isInstanceOf(Compatible.PatchUpgrade.class);
+      assertThat(check("8.1.4", "8.1.8")).isInstanceOf(Compatible.PatchUpgrade.class);
     }
 
     @Test
     void shouldAcceptMinorUpgrades() {
       assertThat(check("8.0.0", "8.1.0")).isInstanceOf(Compatible.MinorUpgrade.class);
       assertThat(check("8.1.3", "8.2.0")).isInstanceOf(Compatible.MinorUpgrade.class);
+      assertThat(check("8.1.3", "8.2.5")).isInstanceOf(Compatible.MinorUpgrade.class);
     }
 
     @Test
