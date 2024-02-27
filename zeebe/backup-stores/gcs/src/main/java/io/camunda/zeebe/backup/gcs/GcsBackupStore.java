@@ -19,6 +19,7 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.CouldNotAccessBucketException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -79,7 +80,7 @@ public final class GcsBackupStore implements BackupStore {
           if (manifest == null) {
             return BackupStatusImpl.doesNotExist(id);
           }
-          return BackupStore.toStatus(manifest);
+          return GcsBackupStore.toStatus(manifest);
         },
         executor);
   }
@@ -87,7 +88,8 @@ public final class GcsBackupStore implements BackupStore {
   @Override
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
     return CompletableFuture.supplyAsync(
-        () -> manifestManager.listManifests(wildcard).stream().map(BackupStore::toStatus).toList(),
+        () ->
+            manifestManager.listManifests(wildcard).stream().map(GcsBackupStore::toStatus).toList(),
         executor);
   }
 
@@ -111,9 +113,8 @@ public final class GcsBackupStore implements BackupStore {
             throw new RuntimeException(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
           }
           return switch (manifest.statusCode()) {
-            case FAILED, IN_PROGRESS ->
-                throw new RuntimeException(
-                    ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
+            case FAILED, IN_PROGRESS -> throw new RuntimeException(
+                ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
               final var snapshot =
@@ -172,5 +173,31 @@ public final class GcsBackupStore implements BackupStore {
       throw new CouldNotAccessBucketException(
           ERROR_MSG_ACCESS_FAILED.formatted(config.bucketName()), e);
     }
+  }
+
+  private static BackupStatus toStatus(final Manifest manifest) {
+    return switch (manifest.statusCode()) {
+      case IN_PROGRESS -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.IN_PROGRESS,
+          Optional.empty(),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+      case COMPLETED -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.COMPLETED,
+          Optional.empty(),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+      case FAILED -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.FAILED,
+          Optional.ofNullable(manifest.asFailed().failureReason()),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+    };
   }
 }

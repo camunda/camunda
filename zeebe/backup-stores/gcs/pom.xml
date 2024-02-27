@@ -79,6 +79,13 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup-store-common</artifactId>
+      <version>8.5.0-SNAPSHOT</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-testkit</artifactId>
       <scope>test</scope>
     </dependency>
