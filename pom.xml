@@ -379,7 +379,6 @@
           <version>${surefire-plugin.version}</version>
           <configuration>
             <skipTests>${skip.unit.tests}</skipTests>
-            <rerunFailingTestsCount>2</rerunFailingTestsCount>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
             <argLine>--add-opens java.base/java.util=ALL-UNNAMED</argLine>

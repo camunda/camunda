@@ -322,6 +322,7 @@ jobs:
           verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
           -Dit.test.includedGroups=${{ matrix.includedGroups }}
           -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
+          -Dfailsafe.rerunFailingTestsCount=2
           -Ddatabase.type=${{ matrix.database }} -pl backend -am
 
     - name: Upload Test Results

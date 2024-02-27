@@ -124,7 +124,8 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
     assertThat(processDefinitionDocuments).hasSize(1);
     assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
     logCapturer.assertContains(
-      "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance json file.");
+      "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance " +
+        "json file.");
   }
 
   @Test
@@ -145,7 +146,8 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
     assertThat(processDefinitionDocuments).hasSize(1);
     assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
     logCapturer.assertContains(
-      "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance json file.");
+      "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance " +
+        "json file.");
   }
 
   @Test
@@ -204,7 +206,7 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
     assertThat(processInstanceDto)
       .singleElement()
       .satisfies(instance -> {
-        assertThat(instance.getFlowNodeInstances()).singleElement().satisfies(flowNode ->  {
+        assertThat(instance.getFlowNodeInstances()).singleElement().satisfies(flowNode -> {
           assertThat(flowNode.getStartDate()).isEqualTo(newFlowNodeStartDate);
           assertThat(flowNode.getEndDate()).isEqualTo(newFlowNodeEndDate);
         });
