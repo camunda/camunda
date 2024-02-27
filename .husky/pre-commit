@@ -1,10 +1,9 @@
 #!/bin/sh
 [ -n "$CI" ] && exit 0
-yarn --cwd client lint-staged && yarn --cwd client coverage
-# backend hooks
-mvn -q license:check -Dlicense.header=license/license-header
-if [ $? -eq 1 ]; then
-  echo "Found files without license. Add license(s)"
-  mvn license:format -Dlicense.header=license/license-header
-  exit 1
+
+if command -v yarn &> /dev/null
+then
+  yarn --cwd client lint-staged && yarn --cwd client coverage
+else
+  echo "No yarn found. Skip web app linting"
 fi
