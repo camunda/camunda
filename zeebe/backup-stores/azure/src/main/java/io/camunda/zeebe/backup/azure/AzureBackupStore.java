@@ -23,7 +23,6 @@ import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestSta
 import io.camunda.zeebe.backup.common.Manifest;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -102,7 +101,7 @@ public final class AzureBackupStore implements BackupStore {
           if (manifest == null) {
             return BackupStatusImpl.doesNotExist(id);
           }
-          return AzureBackupStore.toStatus(manifest);
+          return Manifest.toStatus(manifest);
         },
         executor);
   }
@@ -110,10 +109,7 @@ public final class AzureBackupStore implements BackupStore {
   @Override
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
     return CompletableFuture.supplyAsync(
-        () ->
-            manifestManager.listManifests(wildcard).stream()
-                .map(AzureBackupStore::toStatus)
-                .toList(),
+        () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
         executor);
   }
 
@@ -137,8 +133,9 @@ public final class AzureBackupStore implements BackupStore {
             throw new UnexpectedManifestState(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
           }
           return switch (manifest.statusCode()) {
-            case FAILED, IN_PROGRESS -> throw new UnexpectedManifestState(
-                ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
+            case FAILED, IN_PROGRESS ->
+                throw new UnexpectedManifestState(
+                    ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
               final var snapshot =
@@ -194,31 +191,5 @@ public final class AzureBackupStore implements BackupStore {
     if (config.containerName() == null) {
       throw new IllegalArgumentException("Container name cannot be null.");
     }
-  }
-
-  private static BackupStatus toStatus(final Manifest manifest) {
-    return switch (manifest.statusCode()) {
-      case IN_PROGRESS -> new BackupStatusImpl(
-          manifest.id(),
-          Optional.ofNullable(manifest.descriptor()),
-          BackupStatusCode.IN_PROGRESS,
-          Optional.empty(),
-          Optional.ofNullable(manifest.createdAt()),
-          Optional.ofNullable(manifest.modifiedAt()));
-      case COMPLETED -> new BackupStatusImpl(
-          manifest.id(),
-          Optional.ofNullable(manifest.descriptor()),
-          BackupStatusCode.COMPLETED,
-          Optional.empty(),
-          Optional.ofNullable(manifest.createdAt()),
-          Optional.ofNullable(manifest.modifiedAt()));
-      case FAILED -> new BackupStatusImpl(
-          manifest.id(),
-          Optional.ofNullable(manifest.descriptor()),
-          BackupStatusCode.FAILED,
-          Optional.ofNullable(manifest.asFailed().failureReason()),
-          Optional.ofNullable(manifest.createdAt()),
-          Optional.ofNullable(manifest.modifiedAt()));
-    };
   }
 }
