@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client;
 
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_COMMUNICATION_API;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
@@ -23,6 +24,7 @@ import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_COMMUNICATION_API_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
@@ -38,6 +40,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
@@ -494,6 +497,77 @@ public final class ZeebeClientTest extends ClientTest {
       verify(executor)
           .schedule(any(Runnable.class), eq(pollInterval.toMillis()), eq(TimeUnit.MILLISECONDS));
     }
+  }
+
+  @Test
+  public void shouldUseClientDefaultCommunicationApi() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultCommunicationApi())
+        .isEqualTo(CommandWithCommunicationApiStep.DEFAULT_COMMUNICATION_API);
+  }
+
+  @Test
+  public void shouldSetDefaultCommunicationApiFromSetterWithClientBuilder() {
+    // given
+    final String overrideCommunicationApi = "GRPC";
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.defaultCommunicationApi(overrideCommunicationApi);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultCommunicationApi()).isEqualTo(overrideCommunicationApi);
+  }
+
+  @Test
+  public void shouldNotSetIncorrectValueForDefaultCommunicationApiFromSetterWithClientBuilder() {
+    // given
+    final String overrideCommunicationApi = "FALSE";
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    // when / then
+    assertThatThrownBy(() -> builder.defaultCommunicationApi(overrideCommunicationApi))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "The default communication API must be one of %s but was '%s'.",
+            CommandWithCommunicationApiStep.AVAILABLE_COMMUNICATION_API, overrideCommunicationApi);
+  }
+
+  @Test
+  public void shouldSetDefaultCommunicationApiFromPropertyWithClientBuilder() {
+    // given
+    final String overrideCommunicationApi = "GRPC";
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_COMMUNICATION_API, overrideCommunicationApi);
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultCommunicationApi()).isEqualTo(overrideCommunicationApi);
+  }
+
+  @Test
+  public void shouldSetDefaultCommunicationApiFromEnvVarWithClientBuilder() {
+    // given
+    final String overrideCommunicationApi = "GRPC";
+    Environment.system().put(DEFAULT_COMMUNICATION_API_VAR, overrideCommunicationApi);
+
+    // when
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultCommunicationApi()).isEqualTo(overrideCommunicationApi);
   }
 
   @Test

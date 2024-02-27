@@ -51,6 +51,17 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder gatewayAddress(String gatewayAddress);
 
   /**
+   * @param communicationApi the communication API to use. It can be one of:
+   *     <ul>
+   *       <li>REST
+   *       <li>GRPC
+   *     </ul>
+   *     The default value is {@link
+   *     io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep#DEFAULT_COMMUNICATION_API}.
+   */
+  ZeebeClientBuilder defaultCommunicationApi(String communicationApi);
+
+  /**
    * @param tenantId the tenant identifier which is used for tenant-aware commands when no tenant
    *     identifier is set. The default value is {@link
    *     io.camunda.zeebe.client.api.command.CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.

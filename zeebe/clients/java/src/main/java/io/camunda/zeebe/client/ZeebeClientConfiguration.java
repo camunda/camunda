@@ -22,10 +22,21 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
 public interface ZeebeClientConfiguration {
+
   /**
    * @see ZeebeClientBuilder#gatewayAddress(String)
    */
   String getGatewayAddress();
+
+  /**
+   * @see ZeebeClientBuilder#defaultCommunicationApi(String)
+   */
+  String getDefaultCommunicationApi();
+
+  /**
+   * @see ZeebeClientBuilder#defaultCommunicationApi(String)
+   */
+  boolean useRestApi();
 
   /**
    * @see ZeebeClientBuilder#defaultTenantId(String)

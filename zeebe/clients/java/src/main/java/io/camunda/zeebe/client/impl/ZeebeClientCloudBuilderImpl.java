@@ -120,6 +120,12 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder defaultCommunicationApi(final String communicationApi) {
+    innerBuilder.defaultCommunicationApi(communicationApi);
+    return this;
+  }
+
+  @Override
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/14106")
   public ZeebeClientCloudBuilderStep4 defaultTenantId(final String tenantId) {
     Loggers.LOGGER.debug(

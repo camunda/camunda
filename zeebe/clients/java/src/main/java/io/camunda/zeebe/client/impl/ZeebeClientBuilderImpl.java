@@ -33,6 +33,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.impl.util.DataSizeUtil;
@@ -55,6 +56,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String ZEEBE_CLIENT_WORKER_STREAM_ENABLED =
       "ZEEBE_CLIENT_WORKER_STREAM_ENABLED";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
+  public static final String DEFAULT_COMMUNICATION_API =
+      CommandWithCommunicationApiStep.DEFAULT_COMMUNICATION_API;
+  public static final String DEFAULT_COMMUNICATION_API_VAR = "ZEEBE_DEFAULT_COMMUNICATION_API";
   public static final String DEFAULT_TENANT_ID_VAR = "ZEEBE_DEFAULT_TENANT_ID";
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
       "ZEEBE_DEFAULT_JOB_WORKER_TENANT_IDS";
@@ -65,6 +69,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
+  private String defaultCommunicationApi = DEFAULT_COMMUNICATION_API;
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
   private List<String> defaultJobWorkerTenantIds =
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
@@ -90,6 +95,16 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public String getGatewayAddress() {
     return gatewayAddress;
+  }
+
+  @Override
+  public String getDefaultCommunicationApi() {
+    return defaultCommunicationApi;
+  }
+
+  @Override
+  public boolean useRestApi() {
+    return CommandWithCommunicationApiStep.REST.equals(defaultCommunicationApi);
   }
 
   @Override
@@ -207,6 +222,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (properties.containsKey(ClientProperties.GATEWAY_ADDRESS)) {
       gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
     }
+    if (properties.containsKey(ClientProperties.DEFAULT_COMMUNICATION_API)) {
+      defaultCommunicationApi(properties.getProperty(ClientProperties.DEFAULT_COMMUNICATION_API));
+    }
     if (properties.containsKey(ClientProperties.DEFAULT_TENANT_ID)) {
       defaultTenantId(properties.getProperty(ClientProperties.DEFAULT_TENANT_ID));
     }
@@ -291,6 +309,18 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public ZeebeClientBuilder gatewayAddress(final String gatewayAddress) {
     this.gatewayAddress = gatewayAddress;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultCommunicationApi(final String communicationApi) {
+    if (!CommandWithCommunicationApiStep.AVAILABLE_COMMUNICATION_API.contains(communicationApi)) {
+      throw new IllegalArgumentException(
+          String.format(
+              "The default communication API must be one of %s but was '%s'.",
+              CommandWithCommunicationApiStep.AVAILABLE_COMMUNICATION_API, communicationApi));
+    }
+    defaultCommunicationApi = communicationApi;
     return this;
   }
 
@@ -458,6 +488,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
     if (Environment.system().isDefined(MAX_MESSAGE_SIZE)) {
       maxMessageSize(DataSizeUtil.parse(Environment.system().get(MAX_MESSAGE_SIZE)));
+    }
+
+    if (Environment.system().isDefined(DEFAULT_COMMUNICATION_API_VAR)) {
+      defaultCommunicationApi(Environment.system().get(DEFAULT_COMMUNICATION_API_VAR));
     }
 
     if (Environment.system().isDefined(DEFAULT_TENANT_ID_VAR)) {
