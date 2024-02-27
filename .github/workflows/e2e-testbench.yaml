@@ -84,13 +84,14 @@ jobs:
         \"branch\": \"${{ inputs.branch || 'main' }}\",
         \"build\":  \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
         \"clusterPlan\":\"${{ inputs.clusterPlan }}\",
-        \"region\":\"new chaos\",
+        \"region\":\"Chaos, Belgium, Europe (europe-west1)\",
         \"properties\":[\"allInstancesAreCompleted\"],
         \"testProcessId\": \"e2e-test\",
         \"testParams\":
         {
         \"maxTestDuration\": \"${{ inputs.maxTestDuration || 'P5D' }}\",
-        \"starter\": [ {\"rate\": 50, \"processId\": \"one-task-one-timer\" } ],
+        \"starter\": [ {\"rate\": 20, \"processId\": \"one-task-one-timer\" },
+                       {\"rate\": 10, \"processId\": \"ping-pong-message\" } ],
         \"verifier\" : { \"maxInstanceDuration\" : \"${{ inputs.maxInstanceDuration }}\" },
         \"fault\": ${{ inputs.fault || 'null' }}
         }
