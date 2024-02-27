@@ -77,7 +77,7 @@ final class TestState {
 
   private ZeebeRocksDbFactory<ZbColumnFamilies> createDbFactory() {
     return new ZeebeRocksDbFactory<>(
-        new RocksDbConfiguration(), new ConsistencyChecksSettings(false, false));
+        1, new RocksDbConfiguration(), new ConsistencyChecksSettings(false, false));
   }
 
   private void insertData(final List<ColumnFamily<DbString, DbString>> columns) {

@@ -48,12 +48,15 @@ public final class ZeebeRocksDbFactory<
     RocksDB.loadLibrary();
   }
 
+  private final int partitionId;
   private final RocksDbConfiguration rocksDbConfiguration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
 
   public ZeebeRocksDbFactory(
+      final int partitionId,
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings) {
+    this.partitionId = partitionId;
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
   }
@@ -63,6 +66,7 @@ public final class ZeebeRocksDbFactory<
     final List<AutoCloseable> closeables = Collections.synchronizedList(new ArrayList<>());
     try {
       return ZeebeTransactionDb.openTransactionalDb(
+          partitionId,
           prepareOptions(closeables),
           pathName.getAbsolutePath(),
           closeables,

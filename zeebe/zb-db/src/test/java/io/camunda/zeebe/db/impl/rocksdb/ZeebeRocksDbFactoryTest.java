@@ -83,6 +83,7 @@ final class ZeebeRocksDbFactoryTest {
             DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory();
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
+            1,
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings());
 
@@ -115,6 +116,7 @@ final class ZeebeRocksDbFactoryTest {
 
     final var factoryWithCustomOptions =
         new ZeebeRocksDbFactory<>(
+            1,
             new RocksDbConfiguration().setColumnFamilyOptions(customProperties),
             new ConsistencyChecksSettings());
 

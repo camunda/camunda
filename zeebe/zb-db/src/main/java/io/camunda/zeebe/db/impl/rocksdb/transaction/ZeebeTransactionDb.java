@@ -50,8 +50,10 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
   private final ColumnFamilyHandle defaultHandle;
   private final long defaultNativeHandle;
   private final ConsistencyChecksSettings consistencyChecksSettings;
+  private final int partitionId;
 
   protected ZeebeTransactionDb(
+      final int partitionId,
       final ColumnFamilyHandle defaultHandle,
       final OptimisticTransactionDB optimisticTransactionDB,
       final List<AutoCloseable> closables,
@@ -62,6 +64,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     this.optimisticTransactionDB = optimisticTransactionDB;
     this.closables = closables;
     this.consistencyChecksSettings = consistencyChecksSettings;
+    this.partitionId = partitionId;
 
     prefixReadOptions =
         new ReadOptions()
@@ -80,6 +83,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
 
   public static <ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
       ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
+          final int partitionId,
           final RocksDbOptions options,
           final String path,
           final List<AutoCloseable> closables,
@@ -104,6 +108,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     closables.add(defaultColumnFamilyHandle);
 
     return new ZeebeTransactionDb<>(
+        partitionId,
         defaultColumnFamilyHandle,
         optimisticTransactionDB,
         closables,
@@ -144,7 +149,13 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
           final KeyType keyInstance,
           final ValueType valueInstance) {
     return new TransactionalColumnFamily<>(
-        this, consistencyChecksSettings, columnFamily, context, keyInstance, valueInstance);
+        partitionId,
+        this,
+        consistencyChecksSettings,
+        columnFamily,
+        context,
+        keyInstance,
+        valueInstance);
   }
 
   @Override

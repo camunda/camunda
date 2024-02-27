@@ -19,6 +19,6 @@ public final class DefaultZeebeDbFactory {
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory() {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
-    return new ZeebeRocksDbFactory<>(new RocksDbConfiguration(), consistencyChecks);
+    return new ZeebeRocksDbFactory<>(1, new RocksDbConfiguration(), consistencyChecks);
   }
 }

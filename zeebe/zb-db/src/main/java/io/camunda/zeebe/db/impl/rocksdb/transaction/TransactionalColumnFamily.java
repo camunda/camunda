@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.db.impl.ColumnFamilyMetrics;
 import io.camunda.zeebe.protocol.EnumValue;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,8 +55,10 @@ class TransactionalColumnFamily<
   private final KeyType keyInstance;
   private final ColumnFamilyContext columnFamilyContext;
   private final ForeignKeyChecker foreignKeyChecker;
+  private final ColumnFamilyMetrics metrics;
 
   TransactionalColumnFamily(
+      final int partitionId,
       final ZeebeTransactionDb<ColumnFamilyNames> transactionDb,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final ColumnFamilyNames columnFamily,
@@ -70,78 +73,87 @@ class TransactionalColumnFamily<
     this.valueInstance = valueInstance;
     columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
     foreignKeyChecker = new ForeignKeyChecker(transactionDb, consistencyChecksSettings);
+    metrics = new ColumnFamilyMetrics(partitionId, columnFamily);
   }
 
   @Override
   public void insert(final KeyType key, final ValueType value) {
-    ensureInOpenTransaction(
-        transaction -> {
-          columnFamilyContext.writeKey(key);
-          columnFamilyContext.writeValue(value);
+    try (final var timer = metrics.measurePutLatency()) {
+      ensureInOpenTransaction(
+          transaction -> {
+            columnFamilyContext.writeKey(key);
+            columnFamilyContext.writeValue(value);
 
-          assertKeyDoesNotExist(transaction);
-          assertForeignKeysExist(transaction, key, value);
-          transaction.put(
-              transactionDb.getDefaultNativeHandle(),
-              columnFamilyContext.getKeyBufferArray(),
-              columnFamilyContext.getKeyLength(),
-              columnFamilyContext.getValueBufferArray(),
-              value.getLength());
-        });
+            assertKeyDoesNotExist(transaction);
+            assertForeignKeysExist(transaction, key, value);
+            transaction.put(
+                transactionDb.getDefaultNativeHandle(),
+                columnFamilyContext.getKeyBufferArray(),
+                columnFamilyContext.getKeyLength(),
+                columnFamilyContext.getValueBufferArray(),
+                value.getLength());
+          });
+    }
   }
 
   @Override
   public void update(final KeyType key, final ValueType value) {
-    ensureInOpenTransaction(
-        transaction -> {
-          columnFamilyContext.writeKey(key);
-          columnFamilyContext.writeValue(value);
-          assertKeyExists(transaction);
-          assertForeignKeysExist(transaction, key, value);
-          transaction.put(
-              transactionDb.getDefaultNativeHandle(),
-              columnFamilyContext.getKeyBufferArray(),
-              columnFamilyContext.getKeyLength(),
-              columnFamilyContext.getValueBufferArray(),
-              value.getLength());
-        });
+    try (final var timer = metrics.measurePutLatency()) {
+      ensureInOpenTransaction(
+          transaction -> {
+            columnFamilyContext.writeKey(key);
+            columnFamilyContext.writeValue(value);
+            assertKeyExists(transaction);
+            assertForeignKeysExist(transaction, key, value);
+            transaction.put(
+                transactionDb.getDefaultNativeHandle(),
+                columnFamilyContext.getKeyBufferArray(),
+                columnFamilyContext.getKeyLength(),
+                columnFamilyContext.getValueBufferArray(),
+                value.getLength());
+          });
+    }
   }
 
   @Override
   public void upsert(final KeyType key, final ValueType value) {
-    ensureInOpenTransaction(
-        transaction -> {
-          columnFamilyContext.writeKey(key);
-          columnFamilyContext.writeValue(value);
-          assertForeignKeysExist(transaction, key, value);
-          transaction.put(
-              transactionDb.getDefaultNativeHandle(),
-              columnFamilyContext.getKeyBufferArray(),
-              columnFamilyContext.getKeyLength(),
-              columnFamilyContext.getValueBufferArray(),
-              value.getLength());
-        });
+    try (final var timer = metrics.measurePutLatency()) {
+      ensureInOpenTransaction(
+          transaction -> {
+            columnFamilyContext.writeKey(key);
+            columnFamilyContext.writeValue(value);
+            assertForeignKeysExist(transaction, key, value);
+            transaction.put(
+                transactionDb.getDefaultNativeHandle(),
+                columnFamilyContext.getKeyBufferArray(),
+                columnFamilyContext.getKeyLength(),
+                columnFamilyContext.getValueBufferArray(),
+                value.getLength());
+          });
+    }
   }
 
   @Override
   public ValueType get(final KeyType key) {
-    ensureInOpenTransaction(
-        transaction -> {
-          columnFamilyContext.writeKey(key);
-          final byte[] value =
-              transaction.get(
-                  transactionDb.getDefaultNativeHandle(),
-                  transactionDb.getReadOptionsNativeHandle(),
-                  columnFamilyContext.getKeyBufferArray(),
-                  columnFamilyContext.getKeyLength());
-          columnFamilyContext.wrapValueView(value);
-        });
-    final var valueBuffer = columnFamilyContext.getValueView();
-    if (valueBuffer != null) {
-      valueInstance.wrap(valueBuffer, 0, valueBuffer.capacity());
-      return valueInstance;
+    try (final var timer = metrics.measureGetLatency()) {
+      ensureInOpenTransaction(
+          transaction -> {
+            columnFamilyContext.writeKey(key);
+            final byte[] value =
+                transaction.get(
+                    transactionDb.getDefaultNativeHandle(),
+                    transactionDb.getReadOptionsNativeHandle(),
+                    columnFamilyContext.getKeyBufferArray(),
+                    columnFamilyContext.getKeyLength());
+            columnFamilyContext.wrapValueView(value);
+          });
+      final var valueBuffer = columnFamilyContext.getValueView();
+      if (valueBuffer != null) {
+        valueInstance.wrap(valueBuffer, 0, valueBuffer.capacity());
+        return valueInstance;
+      }
+      return null;
     }
-    return null;
   }
 
   @Override
@@ -208,43 +220,49 @@ class TransactionalColumnFamily<
 
   @Override
   public void deleteExisting(final KeyType key) {
-    ensureInOpenTransaction(
-        transaction -> {
-          columnFamilyContext.writeKey(key);
-          assertKeyExists(transaction);
-          transaction.delete(
-              transactionDb.getDefaultNativeHandle(),
-              columnFamilyContext.getKeyBufferArray(),
-              columnFamilyContext.getKeyLength());
-        });
+    try (final var timer = metrics.measureDeleteLatency()) {
+      ensureInOpenTransaction(
+          transaction -> {
+            columnFamilyContext.writeKey(key);
+            assertKeyExists(transaction);
+            transaction.delete(
+                transactionDb.getDefaultNativeHandle(),
+                columnFamilyContext.getKeyBufferArray(),
+                columnFamilyContext.getKeyLength());
+          });
+    }
   }
 
   @Override
   public void deleteIfExists(final KeyType key) {
-    ensureInOpenTransaction(
-        transaction -> {
-          columnFamilyContext.writeKey(key);
-          transaction.delete(
-              transactionDb.getDefaultNativeHandle(),
-              columnFamilyContext.getKeyBufferArray(),
-              columnFamilyContext.getKeyLength());
-        });
+    try (final var timer = metrics.measureDeleteLatency()) {
+      ensureInOpenTransaction(
+          transaction -> {
+            columnFamilyContext.writeKey(key);
+            transaction.delete(
+                transactionDb.getDefaultNativeHandle(),
+                columnFamilyContext.getKeyBufferArray(),
+                columnFamilyContext.getKeyLength());
+          });
+    }
   }
 
   @Override
   public boolean exists(final KeyType key) {
-    ensureInOpenTransaction(
-        transaction -> {
-          columnFamilyContext.writeKey(key);
-          final byte[] value =
-              transaction.get(
-                  transactionDb.getDefaultNativeHandle(),
-                  transactionDb.getReadOptionsNativeHandle(),
-                  columnFamilyContext.getKeyBufferArray(),
-                  columnFamilyContext.getKeyLength());
-          columnFamilyContext.wrapValueView(value);
-        });
-    return !columnFamilyContext.isValueViewEmpty();
+    try (final var timer = metrics.measureGetLatency()) {
+      ensureInOpenTransaction(
+          transaction -> {
+            columnFamilyContext.writeKey(key);
+            final byte[] value =
+                transaction.get(
+                    transactionDb.getDefaultNativeHandle(),
+                    transactionDb.getReadOptionsNativeHandle(),
+                    columnFamilyContext.getKeyBufferArray(),
+                    columnFamilyContext.getKeyLength());
+            columnFamilyContext.wrapValueView(value);
+          });
+      return !columnFamilyContext.isValueViewEmpty();
+    }
   }
 
   @Override
@@ -356,39 +374,41 @@ class TransactionalColumnFamily<
       final DbKey startAt,
       final DbKey prefix,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    final var seekTarget = Objects.requireNonNullElse(startAt, prefix);
-    Objects.requireNonNull(prefix);
-    Objects.requireNonNull(visitor);
+    try (final var timer = metrics.measureIterateLatency()) {
+      final var seekTarget = Objects.requireNonNullElse(startAt, prefix);
+      Objects.requireNonNull(prefix);
+      Objects.requireNonNull(visitor);
 
-    /*
-     * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
-     * iterators at the moment, so using prefixes seem to be mostly related to skipping files that
-     * do not contain keys with the given prefix (which is useful anyway), but it will still iterate
-     * over all keys contained in those files, so we still need to make sure the key actually
-     * matches the prefix.
-     *
-     * <p>While iterating over subsequent keys we have to validate it.
-     */
-    columnFamilyContext.withPrefixKey(
-        prefix,
-        (prefixKey, prefixLength) -> {
-          try (final RocksIterator iterator =
-              newIterator(context, transactionDb.getPrefixReadOptions())) {
+      /*
+       * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
+       * iterators at the moment, so using prefixes seem to be mostly related to skipping files that
+       * do not contain keys with the given prefix (which is useful anyway), but it will still iterate
+       * over all keys contained in those files, so we still need to make sure the key actually
+       * matches the prefix.
+       *
+       * <p>While iterating over subsequent keys we have to validate it.
+       */
+      columnFamilyContext.withPrefixKey(
+          prefix,
+          (prefixKey, prefixLength) -> {
+            try (final RocksIterator iterator =
+                newIterator(context, transactionDb.getPrefixReadOptions())) {
 
-            boolean shouldVisitNext = true;
+              boolean shouldVisitNext = true;
 
-            for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
-                iterator.isValid() && shouldVisitNext;
-                iterator.next()) {
-              final byte[] keyBytes = iterator.key();
-              if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                break;
+              for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+                  iterator.isValid() && shouldVisitNext;
+                  iterator.next()) {
+                final byte[] keyBytes = iterator.key();
+                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+                  break;
+                }
+
+                shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
               }
-
-              shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
             }
-          }
-        });
+          });
+    }
   }
 
   /**
