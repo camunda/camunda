@@ -86,6 +86,17 @@ public class RequestMapper {
     return Either.right(brokerRequest);
   }
 
+  public static Either<ProblemDetail, BrokerUserTaskAssignmentRequest>
+      toUserTaskUnassignmentRequest(final long userTaskKey, final ServerWebExchange context) {
+    final BrokerUserTaskAssignmentRequest brokerRequest =
+        new BrokerUserTaskAssignmentRequest(userTaskKey, "", "unassign", UserTaskIntent.ASSIGN);
+
+    final String authorizationToken = getAuthorizationToken(context);
+    brokerRequest.setAuthorization(authorizationToken);
+
+    return Either.right(brokerRequest);
+  }
+
   private static Optional<ProblemDetail> validateAssignmentRequest(
       final UserTaskAssignmentRequest assignmentRequest) {
     if (assignmentRequest.getAssignee() == null || assignmentRequest.getAssignee().isBlank()) {

@@ -858,4 +858,26 @@ public class UserTaskControllerTest {
 
     Mockito.verifyNoInteractions(brokerClient);
   }
+
+  @Test
+  public void shouldUnassignTask() {
+    // when / then
+    webClient
+        .delete()
+        .uri("api/v1/user-tasks/2251799813685732/assignee")
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
+    Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
+    Assertions.assertThat(argumentCaptor.getValue().getRequestWriter())
+        .hasUserTaskKey(2251799813685732L)
+        .hasAction("unassign")
+        .hasAssignee("");
+
+    Assertions.assertThat(argumentCaptor.getValue().getIntent()).isEqualTo(UserTaskIntent.ASSIGN);
+  }
 }
