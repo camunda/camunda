@@ -36,7 +36,7 @@ This action is heavily WIP and maybe the old Jenkins functionality can be realis
 
 ```yaml
 jobs:
-    steps:
+    environment:
         name: Define global values
         runs-on: ubuntu-latest
         outputs:
@@ -53,14 +53,17 @@ jobs:
         - id: define-values
           uses: ./.github/actions/git-environment
     ...
-    - name: Expose common variables as Env
-      env:
-        RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
-      run: |
-        {
-        echo "VERSION=$RELEASE_VERSION"
-        echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
-        } >> "$GITHUB_ENV"
-
+    release:
+      name: Perform the release
+      runs-on: ubuntu-latest
+      needs: ['environment']
+      steps:
+        - uses: actions/checkout@v3
+        - name: Expose common variables as Env
+          run: |
+            {
+            echo "VERSION=$RELEASE_VERSION"
+            echo "REVISION=${{ needs.environment.define-values.outputs.git_commit_hash }}"
+            } >> "$GITHUB_ENV"
     ...
 ```

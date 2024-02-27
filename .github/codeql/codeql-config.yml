@@ -1,5 +1,0 @@
-name: "CodeQL config"
-paths-ignore: # do not scan .js files on these paths
-  - client/build/static
-  - client/scripts
-  - backend/target/classes/webapp

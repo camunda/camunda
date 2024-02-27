@@ -1,0 +1,38 @@
+name: code-scanning-javascript-typescript
+
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "maintenance/**"
+      - "release/**"
+    paths:
+      - "**/*.js"
+      - "**/*.tsx"
+      - "**/*.ts"
+  schedule:
+    - cron: "30 2 * * 1-5"
+  workflow_dispatch: # can be used to trigger the workflow manually
+
+jobs:
+  codeql-analysis-javascript:
+    name: code-scanning-javascript
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3

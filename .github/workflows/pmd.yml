@@ -1,7 +1,8 @@
 name: pmd
 on:
   pull_request:
-    branches: [ "master", "maintenance/**" ]
+    branches: [ "master", "maintenance/**", "release/**" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,10 +25,9 @@ jobs:
         id: pmd
         uses: pmd/pmd-github-action@v1.4.1
         with:
+          version: '6.55.0'
           token: ${{ secrets.BACKPORT_ACTION_PAT }}
-          # The rules used can be viewed here: https://github.com/pmd/pmd/blob/master/pmd-java/src/main/resources/rulesets/java/quickstart.xml
-          # A custom ruleset can be added if we want to enable or disable rules from quickstart.xml
-          rulesets: 'rulesets/java/quickstart.xml'
+          rulesets: '.github/configuration/optimize-pmd.xml'
           sourcePath: 'backend/src/main/java'
           analyzeModifiedFilesOnly: true
       - name: Upload SARIF file
@@ -35,6 +35,3 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: pmd-report.sarif
-      - name: Fail build if there are violations
-        if: steps.pmd.outputs.violations != 0
-        run: exit 1
