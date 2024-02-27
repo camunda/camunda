@@ -17,7 +17,9 @@ import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.Permission;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationContext;
-import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -60,7 +62,7 @@ class IdentityAuthenticationTest {
   }
 
   @Test
-  public void isAuthenticatedShouldReturnTrueWhenAccessTokenNotExpired() {
+  public void authenticatedShouldReturnTrueWhenAccessTokenNotExpired() {
     // when
     identityAuthentication.setAuthenticated(true);
     identityAuthentication.setExpires(new Date(futureTime));
@@ -70,50 +72,44 @@ class IdentityAuthenticationTest {
   }
 
   @Test
-  public void isAuthenticateShouldReturnExceptionWhenRefreshTokenIsExpired() {
+  public void authenticateShouldReturnFalseWhenRefreshTokenIsExpired() {
     // given
     when(SpringContextHolder.getBean(Identity.class)).thenReturn(identity);
     when(identity.authentication()).thenReturn(mock(Authentication.class));
     when(identity.authentication().decodeJWT(any())).thenReturn(mock(DecodedJWT.class));
 
-    // when
-    final InsufficientAuthenticationException exception =
-        assertThrows(
-            InsufficientAuthenticationException.class,
-            () -> {
-              identityAuthentication.isAuthenticated();
-            });
-
     // then
-    assertEquals("Access token and refresh token are expired.", exception.getMessage());
+    assertFalse(identityAuthentication.isAuthenticated());
   }
 
   @Test
-  public void isAuthenticatedShouldReturnTrueWhenAccessTokenExpiredButRefreshTokenValid() {
+  public void authenticationShouldReturnTrueWhenAccessTokenExpiredButRefreshTokenValid() {
     // given
     identityAuthentication.setAuthenticated(true);
+
+    ReflectionTestUtils.setField(
+        identityAuthentication, "refreshTokenExpiresAt", new Date(futureTime));
+
     final List<String> permissionsList =
         Arrays.asList(
             PermissionConverter.READ_PERMISSION_VALUE, PermissionConverter.WRITE_PERMISSION_VALUE);
     identityAuthentication.setPermissions(permissionsList);
-
     when(SpringContextHolder.getBean(Identity.class)).thenReturn(identity);
     when(identity.authentication()).thenReturn(mock(Authentication.class));
+    when(identity.authentication().verifyToken(any())).thenReturn(accessToken);
+    when(accessToken.getUserDetails()).thenReturn(mock(UserDetails.class));
+    when(accessToken.getPermissions()).thenReturn(permissionsList);
+    when(accessToken.getToken()).thenReturn(decodedJWT);
+    when(accessToken.getToken().getExpiresAt()).thenReturn(new Date(futureTime));
     when(identity.authentication().decodeJWT(any())).thenReturn(mock(DecodedJWT.class));
     when(identity.authentication().decodeJWT(any()).getExpiresAt())
         .thenReturn(new Date(futureTime));
-    when(identity.authentication().verifyToken(any())).thenReturn(accessToken);
-    when(accessToken.getToken()).thenReturn(decodedJWT);
-    when(accessToken.getUserDetails()).thenReturn(mock(UserDetails.class));
-    when(accessToken.getPermissions()).thenReturn(permissionsList);
-    when(accessToken.getToken().getExpiresAt()).thenReturn(new Date(futureTime));
-
     // then
     assertTrue(identityAuthentication.isAuthenticated());
   }
 
   @Test
-  public void isAuthenticatedShouldReturnFalseWhenAccessTokenExpiredButRefreshTokenInvalid() {
+  public void authenticationShouldReturnFalseWhenAccessTokenExpiredButRefreshTokenInvalid() {
     // given
     identityAuthentication.setAuthenticated(true);
     final List<String> permissionsList =
@@ -137,7 +133,7 @@ class IdentityAuthenticationTest {
   }
 
   @Test
-  public void isAuthenticateShouldReturnInsufficientAuthenticationExceptionWhenNoPermissions() {
+  public void authenticationShouldReturnFalseWhenNoPermissions() {
     // given
     when(SpringContextHolder.getBean(Identity.class)).thenReturn(identity);
     when(identity.authentication()).thenReturn(mock(Authentication.class));
@@ -147,9 +143,7 @@ class IdentityAuthenticationTest {
     when(accessToken.getUserDetails()).thenReturn(mock(UserDetails.class));
 
     // then
-    assertThrows(
-        InsufficientAuthenticationException.class,
-        () -> identityAuthentication.authenticate(tokens));
+    assertFalse(identityAuthentication.isAuthenticated());
   }
 
   @Test

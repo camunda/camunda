@@ -6,7 +6,6 @@
  */
 package io.camunda.tasklist.webapp.security.identity;
 
-import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
@@ -15,6 +14,7 @@ import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
+import io.camunda.tasklist.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.tasklist.webapp.security.OldUsernameAware;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
@@ -29,6 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 public class IdentityAuthentication extends AbstractAuthenticationToken
     implements OldUsernameAware, TenantAwareAuthentication {
@@ -41,6 +44,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   private List<String> permissions;
   private String subject;
   private Date expires;
+  private Date refreshTokenExpiresAt;
   private volatile List<TasklistTenant> tenants = Collections.emptyList();
   private IdentityAuthorization authorization;
 
@@ -104,9 +108,6 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
 
   private boolean hasRefreshTokenExpired() {
     try {
-      final DecodedJWT refreshToken =
-          getIdentity().authentication().decodeJWT(tokens.getRefreshToken());
-      final Date refreshTokenExpiresAt = refreshToken.getExpiresAt();
       LOGGER.info("Refresh token will expire at {}", refreshTokenExpiresAt);
       return refreshTokenExpiresAt == null || refreshTokenExpiresAt.before(new Date());
     } catch (final TokenDecodeException e) {
@@ -127,13 +128,13 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     if (hasExpired()) {
       LOGGER.info("Access token is expired");
       if (hasRefreshTokenExpired()) {
-        setAuthenticated(false);
         LOGGER.info("No refresh token available. Authentication is invalid.");
-        throw new InsufficientAuthenticationException(
-            "Access token and refresh token are expired.");
+        setAuthenticated(false);
+        getIdentity().authentication().revokeToken(tokens.getRefreshToken());
+        return false;
       } else {
-        LOGGER.info("Get a new access token by using refresh token");
         try {
+          LOGGER.info("Get a new access token by using refresh token");
           renewAccessToken();
         } catch (Exception e) {
           LOGGER.error("Renewing access token failed with exception", e);
@@ -184,6 +185,10 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     }
     subject = accessToken.getToken().getSubject();
     expires = accessToken.getToken().getExpiresAt();
+    if (!isPolling()) {
+      refreshTokenExpiresAt =
+          getIdentity().authentication().decodeJWT(this.tokens.getRefreshToken()).getExpiresAt();
+    }
     if (!hasExpired()) {
       setAuthenticated(true);
     } else {
@@ -253,5 +258,19 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   public IdentityAuthentication setAuthorizations(IdentityAuthorization authorization) {
     this.authorization = authorization;
     return this;
+  }
+
+  private boolean isPolling() {
+    final RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+    if (requestAttributes instanceof ServletRequestAttributes) {
+      return RequestContextHolder.getRequestAttributes() != null
+          && Boolean.TRUE.equals(
+              Boolean.parseBoolean(
+                  ((ServletRequestAttributes) requestAttributes)
+                      .getRequest()
+                      .getHeader(ElasticsearchSessionRepository.POLLING_HEADER)));
+    } else {
+      return false;
+    }
   }
 }
