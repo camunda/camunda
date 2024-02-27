@@ -8,7 +8,7 @@
     "@bpmn-io/form-js-viewer": "1.7.1",
     "@camunda/camunda-composite-components": "0.4.1",
     "@carbon/elements": "11.39.0",
-    "@carbon/react": "1.50.0",
+    "@carbon/react": "1.51.1",
     "@monaco-editor/react": "4.6.0",
     "@tanstack/react-query": "4.36.1",
     "date-fns": "3.3.1",

@@ -354,16 +354,16 @@
   resolved "https://registry.yarnpkg.com/@carbon/motion/-/motion-11.16.1.tgz#91d6cd57cc4402d391ac55e3985f96d051a749be"
   integrity sha512-e865DvKnoxg41/L3g2zaNc5+xA+OXk0dNfOmG9MpzWBMlViCYUnCYCVKuyhdT7YSbRJuBuXXsisAVIJzBkEQKQ==
 
-"@carbon/react@1.50.0":
-  version "1.50.0"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.50.0.tgz#41e1adf68b854bc60edfe5880a0f882b3c41db91"
-  integrity sha512-x8hmCRd2A4qelrvnaP6Hb23oGvIuuNlzBfjYrzTcDKCe/t+d2Wd5XsPJ2AsaJRhw3Yd5MvCt81aMNtF0Rajpkw==
+"@carbon/react@1.51.1":
+  version "1.51.1"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.51.1.tgz#5fe622bf276b0fff8de5830935dd64125da4a0ae"
+  integrity sha512-ExvVdjLa03v5evwF7wwOT+XMNqNOAhW+QCUtxsHMrf5qvNi4TFqnaocBJ1oCrSkm/l5dJtRaEzFCmCJQyRtlKw==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@carbon/feature-flags" "^0.16.0"
     "@carbon/icons-react" "^11.36.0"
     "@carbon/layout" "^11.20.0"
-    "@carbon/styles" "^1.50.0"
+    "@carbon/styles" "^1.51.1"
     "@ibm/telemetry-js" "^1.2.0"
     classnames "2.5.1"
     copy-to-clipboard "^3.3.1"
@@ -381,17 +381,17 @@
     wicg-inert "^3.1.1"
     window-or-global "^1.0.1"
 
-"@carbon/styles@^1.50.0":
-  version "1.50.0"
-  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.50.0.tgz#837adf6ac2c77668bf21dd387bcf816ab18bfd2f"
-  integrity sha512-md1gIYPCl53FyNLQTXVItBWNFgt354hg2l6Gimbvp1yC9ew0XfwcywwNK1Tq7GZwCUfj3d7Wsfn93BObu+2E2Q==
+"@carbon/styles@^1.51.1":
+  version "1.51.1"
+  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.51.1.tgz#99b9e4c5a646421e3bd89daf74059ea42e8917c2"
+  integrity sha512-JncoM2zQiaUINP8Wt3jsPtXJMFqB6sToWy3BvQWVLZGi5v/ZCS8zv//3ZtJpUsgD6t3klnjvW3qzkPsk5aJcLg==
   dependencies:
     "@carbon/colors" "^11.20.0"
     "@carbon/feature-flags" "^0.16.0"
     "@carbon/grid" "^11.21.0"
     "@carbon/layout" "^11.20.0"
     "@carbon/motion" "^11.16.0"
-    "@carbon/themes" "^11.31.0"
+    "@carbon/themes" "^11.32.0"
     "@carbon/type" "^11.25.0"
     "@ibm/plex" "6.0.0-next.6"
 
@@ -404,6 +404,16 @@
   version "11.31.0"
   resolved "https://registry.yarnpkg.com/@carbon/themes/-/themes-11.31.0.tgz#985d016384a2c8ad54478ea5dcbec06adb337651"
   integrity sha512-oHSbYLKxjdGOmPRgJw6LyODiFeN1YkwrxdV6gtDnFYNc4jeCCQV4DitOZV2OeCZWTPP7/8CnB98b4Mai2EJ2Ug==
+  dependencies:
+    "@carbon/colors" "^11.20.0"
+    "@carbon/layout" "^11.20.0"
+    "@carbon/type" "^11.25.0"
+    color "^4.0.0"
+
+"@carbon/themes@^11.32.0":
+  version "11.32.0"
+  resolved "https://registry.yarnpkg.com/@carbon/themes/-/themes-11.32.0.tgz#84d051ec1341bc08a1dddc68980c1cd99bb01601"
+  integrity sha512-OpXya8wEgTO2aAgddVrb1aBmdnAEUf9NJFxrBTFBXzex83MN66u3mNfyCjKa85RkTVHsoXYuzafaS6X5VxVeTQ==
   dependencies:
     "@carbon/colors" "^11.20.0"
     "@carbon/layout" "^11.20.0"
