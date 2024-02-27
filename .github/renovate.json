@@ -71,7 +71,7 @@
   ],
   "dockerfile": {
     "ignorePaths": [
-      "benchmarks/**",
+      "zeebe/benchmarks/**",
       "clients/go/vendor/**"
     ]
   },
