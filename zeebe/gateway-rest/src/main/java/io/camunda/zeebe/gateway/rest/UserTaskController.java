@@ -65,10 +65,8 @@ public class UserTaskController {
   public CompletableFuture<ResponseEntity<Object>> unassignUserTask(
       final ServerWebExchange context, @PathVariable final long userTaskKey) {
 
-    return fold(
-        RequestMapper.toUserTaskUnassignmentRequest(userTaskKey, context),
-        this::sendBrokerRequest,
-        UserTaskController::handleRequestMappingError);
+    return RequestMapper.toUserTaskUnassignmentRequest(userTaskKey, context)
+        .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
   }
 
   @PatchMapping(
