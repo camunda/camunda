@@ -344,6 +344,30 @@ public sealed interface Either<L, R> {
   void ifRightOrLeft(Consumer<R> rightAction, Consumer<L> leftAction);
 
   /**
+   * Maps the right or left value into a new type using the provided functions, depending on whether
+   * this is a {@link Left} or {@link Right}.
+   *
+   * <p>A common use case is to map to a new common value in success and error cases. Example:
+   *
+   * <pre>{@code
+   * * Either<String, Integer> success = Either.right(42); // => Right(42)
+   * * Either<String, Integer> failure = Either.left("Error occurred"); // => Left("Error occurred")
+   * *
+   * * var rightFn = result -> "Success: " + result;
+   * * var leftFn = error -> "Failure: " + error;
+   * *
+   * * success.fold(rightFn, leftFn); // => "Success: 42"
+   * * failure.fold(rightFn, leftFn); // => "Failure: Error occurred"
+   * }</pre>
+   *
+   * @param rightFn the mapping function for the right value
+   * @param leftFn the mapping function for the left value
+   * @return either a mapped {@link Left} or {@link Right}, folded to the new type
+   * @param <T> the type of the resulting value
+   */
+  <T> T fold(Function<? super R, ? extends T> rightFn, Function<? super L, ? extends T> leftFn);
+
+  /**
    * A right for either a left or right. By convention, right is used for success and left for
    * error.
    *
@@ -412,6 +436,13 @@ public sealed interface Either<L, R> {
     @Override
     public void ifRightOrLeft(final Consumer<R> rightAction, final Consumer<L> leftAction) {
       rightAction.accept(value);
+    }
+
+    @Override
+    public <T> T fold(
+        final Function<? super R, ? extends T> rightFn,
+        final Function<? super L, ? extends T> leftFn) {
+      return rightFn.apply(value);
     }
   }
 
@@ -484,6 +515,13 @@ public sealed interface Either<L, R> {
     @Override
     public void ifRightOrLeft(final Consumer<R> rightAction, final Consumer<L> leftAction) {
       leftAction.accept(value);
+    }
+
+    @Override
+    public <T> T fold(
+        final Function<? super R, ? extends T> rightFn,
+        final Function<? super L, ? extends T> leftFn) {
+      return leftFn.apply(value);
     }
   }
 

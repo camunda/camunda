@@ -305,4 +305,31 @@ class EitherTest {
       assertThat(result.getLeft()).isEqualTo(value);
     }
   }
+
+  @DisplayName("Folding method tests")
+  @Nested
+  class FoldingMethodTests {
+
+    @DisplayName("Folds `Left`s into target types using the left function.")
+    @ParameterizedTest
+    @MethodSource("io.camunda.zeebe.util.EitherTest#parameters")
+    void foldsLeftsIntoTargetTypeUsingLeftFunction(final Object value) {
+      final Function<Object, String> leftMapper = o -> "Expected-" + o.toString();
+      final Function<Object, String> rightMapper = o -> "Unexpected-" + o.toString();
+      final String mappedValue = leftMapper.apply(value);
+      assertThat(mappedValue).isNotEqualTo(value);
+      assertThat(Either.left(value).fold(rightMapper, leftMapper)).isEqualTo(mappedValue);
+    }
+
+    @DisplayName("Folds `Right`s into target types using the right function.")
+    @ParameterizedTest
+    @MethodSource("io.camunda.zeebe.util.EitherTest#parameters")
+    void foldsRightsIntoTargetTypeUsingRightFunction(final Object value) {
+      final Function<Object, String> leftMapper = o -> "Unexpected-" + o.toString();
+      final Function<Object, String> rightMapper = o -> "Expected-" + o.toString();
+      final String mappedValue = rightMapper.apply(value);
+      assertThat(mappedValue).isNotEqualTo(value);
+      assertThat(Either.right(value).fold(rightMapper, leftMapper)).isEqualTo(mappedValue);
+    }
+  }
 }
