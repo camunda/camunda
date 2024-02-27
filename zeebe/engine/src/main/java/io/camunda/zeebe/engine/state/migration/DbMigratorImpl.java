@@ -101,6 +101,9 @@ public class DbMigratorImpl implements DbMigrator {
       case final Indeterminate indeterminate ->
           LOGGER.warn(
               "Could not check compatibility of snapshot with current version: {}", indeterminate);
+      case final Incompatible.UseOfPreReleaseVersion preRelease ->
+          throw new IllegalStateException(
+              "Cannot upgrade to or from a pre-release version: %s".formatted(preRelease));
       case final Incompatible incompatible ->
           throw new IllegalStateException(
               "Snapshot is not compatible with current version: %s".formatted(incompatible));
