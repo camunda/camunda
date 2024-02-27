@@ -5,26 +5,20 @@
  */
 package org.camunda.optimize.service.util;
 
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.core.Response;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.EngineVersionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-
-import static org.camunda.optimize.service.metadata.Version.getMajorAndMinor;
-import static org.camunda.optimize.service.metadata.Version.getMajorVersionFrom;
-import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
-import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
-import static org.camunda.optimize.service.metadata.Version.isAlphaVersion;
-import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -37,7 +31,6 @@ public class EngineVersionChecker {
 
   // Any minor or major versions newer than specified here will also be accepted
   static {
-    supportedEngines.add("7.18.0");
     supportedEngines.add("7.19.0");
     supportedEngines.add("7.20.0");
   }
@@ -49,7 +42,7 @@ public class EngineVersionChecker {
       response = engineClient.target(engineRestPath + EngineConstants.VERSION_ENDPOINT).request().get();
     } catch (Exception e) {
       log.error(ERROR_CONNECTION_REFUSED, e);
-      throw new OptimizeRuntimeException(ERROR_CONNECTION_REFUSED);
+      throw new OptimizeRuntimeException(ERROR_CONNECTION_REFUSED, e);
     }
 
     final int status = response.getStatus();
@@ -74,25 +67,25 @@ public class EngineVersionChecker {
   }
 
   public static boolean isVersionSupported(String currentVersion, List<String> supportedVersions) {
-    if (isAlphaVersion(currentVersion)) {
+    if (Version.isAlphaVersion(currentVersion)) {
       log.warn("You are using a development version of the engine");
     }
 
-    String plainVersion = stripToPlainVersion(currentVersion);
-    String currentMajorAndMinor = getMajorAndMinor(currentVersion);
+    String plainVersion = Version.stripToPlainVersion(currentVersion);
+    String currentMajorAndMinor = Version.getMajorAndMinor(currentVersion);
     return supportedVersions.stream()
-      .filter(v -> currentMajorAndMinor.equals(getMajorAndMinor(v)))
+      .filter(v -> currentMajorAndMinor.equals(Version.getMajorAndMinor(v)))
       .findFirst()
-      .map(s -> Integer.parseInt(getPatchVersionFrom(plainVersion)) >= Integer.parseInt(getPatchVersionFrom(s)))
+      .map(s -> Integer.parseInt(Version.getPatchVersionFrom(plainVersion)) >= Integer.parseInt(Version.getPatchVersionFrom(s)))
       .orElseGet(() -> isCurrentBiggerThanSupported(plainVersion, supportedVersions));
   }
 
   private static boolean isCurrentBiggerThanSupported(String currentVersion, List<String> supportedVersions) {
     boolean match;
     Comparator<String> versionComparator = (String a, String b) ->
-      Integer.parseInt(getMajorVersionFrom(a)) - Integer.parseInt(getMajorVersionFrom(b)) != 0 ?
-        Integer.parseInt(getMajorVersionFrom(a)) - Integer.parseInt(getMajorVersionFrom(b)) :
-        Integer.parseInt(getMinorVersionFrom(a)) - Integer.parseInt(getMinorVersionFrom(b));
+      Integer.parseInt(Version.getMajorVersionFrom(a)) - Integer.parseInt(Version.getMajorVersionFrom(b)) != 0 ?
+        Integer.parseInt(Version.getMajorVersionFrom(a)) - Integer.parseInt(Version.getMajorVersionFrom(b)) :
+        Integer.parseInt(Version.getMinorVersionFrom(a)) - Integer.parseInt(Version.getMinorVersionFrom(b));
 
     supportedEngines.sort(versionComparator);
 

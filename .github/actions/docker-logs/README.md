@@ -25,7 +25,7 @@ steps:
     compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
     project_name: cambpm
   env:
-    CAMBPM_VERSION: 7.18.0
+    CAMBPM_VERSION: 7.19.0
     CAMBPM_JVM_MEMORY: 1
 ...
 - name: Docker log dump

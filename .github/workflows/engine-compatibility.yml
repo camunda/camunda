@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cambpm: ["7.18", "7.19", "7.20"] #TODO: add the 'snapshot' option back when we find a solution for new engine DMN transform error and BPMN history ttl issues
+        cambpm: ["7.19", "7.20"] #TODO: add the 'snapshot' option back when we find a solution for new engine DMN transform error and BPMN history ttl issues
         includedGroups:
           ["import,eventBasedProcess", "reportEvaluation", ""]
         include:
@@ -59,7 +59,7 @@ jobs:
             secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
 
       - name: "Read pom.xml file"
-        id: "pom-info"
+        id: "pom_info"
         uses: YunaBraska/java-info-action@main
 
       - name: Get engine property name
@@ -85,7 +85,7 @@ jobs:
           compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
           project_name: cambpm
         env:
-          CAMBPM_VERSION: ${{ matrix.cambpm == 'snapshot' && steps.pom-info.outputs[env.ENGINE_VERSION_PROP] || env.CAMBPM_SNAPSHOT_VERSION }}
+          CAMBPM_VERSION: ${{ matrix.cambpm == 'snapshot' && steps.pom_info.outputs[env.ENGINE_VERSION_PROP] || env.CAMBPM_SNAPSHOT_VERSION }}
           CAMBPM_JVM_MEMORY: 12
 
       - name: Start Elastic
@@ -94,11 +94,11 @@ jobs:
           compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch-secured.yml
           project_name: elasticsearch
         env:
-          ELASTIC_VERSION: ${{ steps.java_info.outputs.x_elasticsearch8.test.version }}
+          ELASTIC_VERSION: ${{ steps.pom_info.outputs.x_elasticsearch8_test_version }}
           ELASTIC_JVM_MEMORY: 12
           ELASTIC_HTTP_PORT: 9200
 
-      - name: IT ${{ matrix.includedGroups }}${{ matrix.excludedGroups }} - ES ${{ steps.java_info.outputs.x_elasticsearch8.test.version }}, CamBPM ${{ matrix.cambpm }}
+      - name: IT ${{ matrix.includedGroups }}${{ matrix.excludedGroups }} - ES ${{ steps.pom_info.outputs.x_elasticsearch8_test_version }}, CamBPM ${{ matrix.cambpm }}
         if: always()
         uses: ./.github/actions/run-maven
         env:
