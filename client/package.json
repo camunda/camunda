@@ -60,7 +60,7 @@
     "start-backend-sm": "node scripts/start-backend self-managed",
     "restart-backend": "curl http://localhost:8100/api/restartBackend",
     "dependencies": "node scripts/dependencies.js",
-    "prepare": "cd .. && husky install client/.husky"
+    "prepare": "cd .. && husky client/.husky"
   },
   "lint-staged": {
     "src/**/*.scss": [
@@ -103,7 +103,7 @@
     "eslint-plugin-testcafe": "^0.2.1",
     "event-source-polyfill": "^1.0.31",
     "http-proxy-middleware": "^2.0.6",
-    "husky": "^8.0.3",
+    "husky": "^9.0.0",
     "jest-enzyme": "^7.1.2",
     "jest-junit": "^16.0.0",
     "license-checker": "^25.0.1",
