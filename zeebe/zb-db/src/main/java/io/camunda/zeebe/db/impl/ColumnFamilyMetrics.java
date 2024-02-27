@@ -18,6 +18,7 @@ public final class ColumnFamilyMetrics {
       Histogram.build()
           .namespace("zeebe")
           .name("rocksdb_latency")
+          .exponentialBuckets(0.00001, 2, 15)
           .labelNames("partition", "columnFamily", "operation")
           .help("Latency of RocksDB operations per column family")
           .register();
