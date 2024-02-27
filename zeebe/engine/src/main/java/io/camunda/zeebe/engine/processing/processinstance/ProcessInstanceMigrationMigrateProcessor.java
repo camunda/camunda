@@ -11,8 +11,10 @@ import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstance
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -289,6 +291,30 @@ public class ProcessInstanceMigrationMigrateProcessor
                     but active element with id '%s' is subscribed to mapped catch event with id '%s'. \
                     Migrating active elements with mapped catch events is not possible yet."""
                     .formatted(processInstanceKey, elementId, catchEventId),
+                RejectionType.INVALID_STATE);
+          }
+          return true;
+        });
+
+    final var context = new BpmnElementContextImpl();
+    context.init(elementInstance.getKey(), elementInstanceRecord, elementInstance.getState());
+    final var targetElement =
+        targetProcessDefinition
+            .getProcess()
+            .getElementById(targetElementId, ExecutableActivity.class);
+    catchEventBehavior.subscribeToEvents(
+        context,
+        targetElement,
+        catchEventId -> {
+          final String targetCatchEventId = BufferUtil.bufferAsString(catchEventId);
+          if (sourceElementIdToTargetElementId.containsValue(targetCatchEventId)) {
+            throw new ProcessInstanceMigrationPreconditionFailedException(
+                """
+                Expected to migrate process instance '%s' \
+                but active element with id '%s' is mapped to element with id '%s' \
+                that must be subscribed to mapped catch event with id '%s'. \
+                Migrating active elements with mapped catch events is not possible yet."""
+                    .formatted(processInstanceKey, elementId, targetElementId, targetCatchEventId),
                 RejectionType.INVALID_STATE);
           }
           return true;
