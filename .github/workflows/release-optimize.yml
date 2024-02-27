@@ -90,9 +90,6 @@ jobs:
         env:
           RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
         run: |
-          if [[ $RELEASE_VERSION == 0* ]]; then
-            exit 1;
-          fi
           is_major_or_minor="false"
           is_patch="true"
           is_rc="true"
