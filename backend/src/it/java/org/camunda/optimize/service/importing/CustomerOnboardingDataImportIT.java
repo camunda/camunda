@@ -6,16 +6,20 @@
 package org.camunda.optimize.service.importing;
 
 import io.github.netmikey.logunit.api.LogCapturer;
+import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
+@Tag(OPENSEARCH_PASSING)
 public class CustomerOnboardingDataImportIT extends AbstractImportIT {
 
   public static final String CUSTOMER_ONBOARDING_PROCESS_INSTANCES = "customer_onboarding_test_process_instances.json";
@@ -50,7 +54,7 @@ public class CustomerOnboardingDataImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void dataImportIsSkippedIfEnabledInConfigButRunningInPlatformMode() {
+  public void dataImportDataGetsConvertedWithWarningIfEnabledInConfigButRunningInPlatformMode() {
     // given
     embeddedOptimizeExtension.getConfigurationService().setCustomerOnboardingImport(true);
     embeddedOptimizeExtension.reloadConfiguration();
@@ -62,10 +66,14 @@ public class CustomerOnboardingDataImportIT extends AbstractImportIT {
     assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       PROCESS_DEFINITION_INDEX_NAME,
       ProcessDefinitionOptimizeDto.class
-    )).isEmpty();
-    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
+    )).singleElement().satisfies(def -> {
+      assertThat(def.getTenantId()).isNull();
+      assertThat(def.getDataSource().getType()).isEqualTo(DataImportSourceType.ENGINE);
+      assertThat(def.getDataSource().getName()).isEqualTo("camunda-bpm");
+    });
+    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isTrue();
     logCapturer.assertContains(
-      "C8 Customer onboarding data enabled but running in Platform mode. Skipping customer onboarding data import");
+      "C8 Customer onboarding data enabled but running in Platform mode. Converting data to C7 test data");
   }
 
   protected boolean indexExist(final String indexName) {

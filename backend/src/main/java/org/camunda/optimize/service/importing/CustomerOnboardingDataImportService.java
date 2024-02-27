@@ -12,10 +12,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.OptimizeProfile;
@@ -60,55 +63,74 @@ public class CustomerOnboardingDataImportService {
 
   public void importData(final String processInstances, final String processDefinition, final int batchSize) {
     if (configurationService.getCustomerOnboardingImport()) {
-      if (ConfigurationService.getOptimizeProfile(environment).equals(OptimizeProfile.PLATFORM)) {
-        log.warn("C8 Customer onboarding data enabled but running in Platform mode. Skipping customer onboarding data import");
-      } else {
-        log.info("C8 Customer onboarding data enabled, importing customer onboarding data");
-        importCustomerOnboardingDefinition(processDefinition, processInstances, batchSize);
-      }
+      importCustomerOnboardingData(
+        processDefinition,
+        processInstances,
+        batchSize,
+        ConfigurationService.getOptimizeProfile(environment)
+      );
     } else {
       log.info("C8 Customer onboarding data disabled, will not perform data import");
     }
   }
 
-  private void importCustomerOnboardingDefinition(final String processDefinition, final String pathToProcessInstances,
-                                                  final int batchSize) {
-    try {
-      if (processDefinition != null) {
-        try (InputStream customerOnboardingDefinition = this.getClass()
-          .getClassLoader()
-          .getResourceAsStream(processDefinition)) {
-          if (customerOnboardingDefinition != null) {
-            String result = new String(customerOnboardingDefinition.readAllBytes(), StandardCharsets.UTF_8);
-            ProcessDefinitionOptimizeDto processDefinitionDto = objectMapper.readValue(
-              result,
-              ProcessDefinitionOptimizeDto.class
-            );
-            if (processDefinitionDto != null) {
-              Optional.ofNullable(processDefinitionDto.getKey())
-                .ifPresentOrElse(
-                  key -> {
-                    processDefinitionWriter.importProcessDefinitions(List.of(processDefinitionDto));
-                    readProcessInstanceJson(pathToProcessInstances, batchSize);
-                  },
-                  () -> log.error("Process definition data is invalid. Please check your json file.")
-                );
-            } else {
-              log.error("Could not read process definition json file in path: " + CUSTOMER_ONBOARDING_DEFINITION);
-            }
-          } else {
-            log.error("Process definition could not be loaded. Please validate your json file.");
+  private void importCustomerOnboardingData(final String processDefinition, final String pathToProcessInstances,
+                                            final int batchSize, OptimizeProfile optimizeProfile) {
+    DataSourceDto dataSource;
+    final boolean isC7mode = optimizeProfile.equals(OptimizeProfile.PLATFORM);
+    if (isC7mode) {
+      log.info("C8 Customer onboarding data enabled but running in Platform mode. Converting data to C7 test data");
+      dataSource = getC7DataSource();
+    } else {
+      // In C8 modes, the file is already generated with the "<default>" tenant and zeebe-record data source so these values
+      // don't need changing
+      dataSource = null;
+      log.info("C8 Customer onboarding data enabled, importing customer onboarding data");
+    }
+
+    try (InputStream customerOnboardingDefinition = this.getClass()
+      .getClassLoader()
+      .getResourceAsStream(processDefinition)) {
+      if (customerOnboardingDefinition != null) {
+        String result = new String(customerOnboardingDefinition.readAllBytes(), StandardCharsets.UTF_8);
+        ProcessDefinitionOptimizeDto processDefinitionDto = objectMapper.readValue(
+          result,
+          ProcessDefinitionOptimizeDto.class
+        );
+        if (processDefinitionDto != null) {
+          if (isC7mode) {
+            processDefinitionDto.setDataSource(dataSource);
+            processDefinitionDto.setTenantId(null);
           }
+          Optional.ofNullable(processDefinitionDto.getKey())
+            .ifPresentOrElse(
+              key -> {
+                processDefinitionWriter.importProcessDefinitions(List.of(processDefinitionDto));
+                readProcessInstanceJson(pathToProcessInstances, batchSize, dataSource);
+              },
+              () -> log.error("Process definition data is invalid. Please check your json file.")
+            );
+        } else {
+          log.error("Could not extract process definition from file in path: " + CUSTOMER_ONBOARDING_DEFINITION);
         }
       } else {
-        log.error("Process definition file cannot be null.");
+        log.error("Process definition could not be loaded. Please validate your json file.");
       }
     } catch (IOException e) {
       log.error("Unable to add a process definition to database", e);
     }
+    log.info("Customer onboarding data import complete");
   }
 
-  private void readProcessInstanceJson(final String pathToProcessInstances, final int batchSize) {
+  private DataSourceDto getC7DataSource() {
+    return configurationService.getConfiguredEngines().entrySet()
+      .stream()
+      .findFirst()
+      .map(engine -> new EngineDataSourceDto(engine.getKey()))
+      .orElseThrow(() -> new OptimizeConfigurationException("No C7 engines configured as data source"));
+  }
+
+  private void readProcessInstanceJson(final String pathToProcessInstances, final int batchSize, DataSourceDto dataSourceDto) {
     List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
     try {
       try (InputStream customerOnboardingProcessInstances = this.getClass()
@@ -123,6 +145,10 @@ public class CustomerOnboardingDataImportService {
               Optional<Long> processInstanceDuration = Optional.ofNullable(processInstance.getDuration());
               if (processInstance.getProcessDefinitionKey() != null && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
                 processInstanceDtos.add(processInstance);
+              }
+              if (dataSourceDto != null) {
+                processInstance.setDataSource(dataSourceDto);
+                processInstance.setTenantId(null);
               }
             } else {
               log.error("Process instance not loaded correctly. Please check your json file.");
