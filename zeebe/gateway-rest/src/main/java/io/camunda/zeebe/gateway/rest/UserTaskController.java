@@ -13,9 +13,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.util.Either;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -45,10 +43,8 @@ public class UserTaskController {
       @PathVariable final long userTaskKey,
       @RequestBody(required = false) final UserTaskCompletionRequest completionRequest) {
 
-    return fold(
-        RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey, context),
-        this::sendBrokerRequest,
-        UserTaskController::handleRequestMappingError);
+    return RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey, context)
+        .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
   }
 
   @PostMapping(
@@ -60,10 +56,8 @@ public class UserTaskController {
       @PathVariable final long userTaskKey,
       @RequestBody final UserTaskAssignmentRequest assignmentRequest) {
 
-    return fold(
-        RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey, context),
-        this::sendBrokerRequest,
-        UserTaskController::handleRequestMappingError);
+    return RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey, context)
+        .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
   }
 
   @PatchMapping(
@@ -75,10 +69,8 @@ public class UserTaskController {
       @PathVariable final long userTaskKey,
       @RequestBody(required = false) final UserTaskUpdateRequest updateRequest) {
 
-    return fold(
-        RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey, context),
-        this::sendBrokerRequest,
-        UserTaskController::handleRequestMappingError);
+    return RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey, context)
+        .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
   }
 
   private CompletableFuture<ResponseEntity<Object>> sendBrokerRequest(
@@ -117,11 +109,5 @@ public class UserTaskController {
               HttpStatus.INTERNAL_SERVER_ERROR, message, title);
         }
     };
-  }
-
-  private static <T, L, R> T fold(
-      final Either<L, R> either, final Function<R, T> rightFn, final Function<L, T> leftFn) {
-    final var responseOption = either.map(rightFn).mapLeft(leftFn);
-    return responseOption.isLeft() ? responseOption.getLeft() : responseOption.get();
   }
 }
