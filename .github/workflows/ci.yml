@@ -214,9 +214,9 @@ jobs:
         id: set-matrix
         run: |
           if echo "${{ toJSON(github.event.pull_request.labels.*.name) }}" | grep -q "opensearch"; then
-            echo "::set-output name=database::[\"opensearch\", \"elasticsearch\"]"
+            echo "database=[\"opensearch\", \"elasticsearch\"]" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=database::[\"elasticsearch\"]"
+            echo "database=[\"elasticsearch\"]" >> $GITHUB_OUTPUT
           fi
 
       - name: Show Database Output
