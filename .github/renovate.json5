@@ -124,7 +124,7 @@
     // Infra deps
     {
       addLabels: ["component:ci"],
-      managers: ["docker-compose", "dockerfile", "github-actions"],
+      managers: ["docker-compose", "github-actions"],
     },
     // Docker deps
     {
