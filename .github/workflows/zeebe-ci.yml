@@ -8,7 +8,13 @@ on:
       - release-*
       - trying
       - staging
-  pull_request: { }
+    paths-ignore:
+      - '.github/workflows/operate-*'
+      - 'operate/**'
+  pull_request:
+    paths-ignore:
+      - '.github/workflows/operate-*'
+      - 'operate/**'
   merge_group: { }
   workflow_dispatch: { }
   workflow_call: { }
