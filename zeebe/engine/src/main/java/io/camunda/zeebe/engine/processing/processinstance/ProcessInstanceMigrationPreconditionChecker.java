@@ -536,6 +536,41 @@ public final class ProcessInstanceMigrationPreconditionChecker {
     }
   }
 
+  /**
+   * Throws an exception if the element instance is already subscribed to the same message.
+   *
+   * <p>We cannot support re-subscribing to message catch events that we're already subscribed to.
+   * The user must provide a mapping instruction for such catch events to migrate them instead.
+   *
+   * @param existSubscriptionForMessageName whether the element instance is already subscribed to
+   *     the message, if true this method throws an exception
+   * @param elementInstance the element instance to check for subscriptions
+   * @param messageName the name of the message that the element should not be subscribed to
+   * @param targetCatchEventId the id of the catch event that would subscribe to this message
+   */
+  public static void requireNoSubscriptionForMessage(
+      final boolean existSubscriptionForMessageName,
+      final ElementInstance elementInstance,
+      final DirectBuffer messageName,
+      final String targetCatchEventId) {
+    if (existSubscriptionForMessageName) {
+      final long processInstanceKey = elementInstance.getValue().getProcessInstanceKey();
+      final String elementId = elementInstance.getValue().getElementId();
+      final String messageNameString = BufferUtil.bufferAsString(messageName);
+
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          """
+          Expected to migrate process instance '%s' but active element with id '%s' \
+          attempts to subscribe to a message it is already subscribed to with name '%s'. \
+          Migrating active elements that subscribe to a message they are already \
+          subscribed to is not possible yet. Please provide a mapping instruction to \
+          message catch event with id '%s' to migrate the respective message subscription.\
+          """
+              .formatted(processInstanceKey, elementId, messageNameString, targetCatchEventId),
+          RejectionType.INVALID_STATE);
+    }
+  }
+
   public static final class ProcessInstanceMigrationPreconditionFailedException
       extends RuntimeException {
     private final RejectionType rejectionType;

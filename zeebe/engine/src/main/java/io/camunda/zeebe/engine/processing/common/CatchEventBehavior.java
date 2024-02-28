@@ -133,7 +133,8 @@ public final class CatchEventBehavior {
       final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
 
     unsubscribeFromTimerEvents(elementInstanceKey, elementIdFilter);
-    unsubscribeFromMessageEvents(elementInstanceKey, elementIdFilter);
+    unsubscribeFromMessageEvents(
+        elementInstanceKey, sub -> elementIdFilter.test(sub.getRecord().getElementIdBuffer()));
     unsubscribeFromSignalEvents(elementInstanceKey, elementIdFilter);
   }
 
@@ -147,28 +148,32 @@ public final class CatchEventBehavior {
    */
   public Either<Failure, Void> subscribeToEvents(
       final BpmnElementContext context, final ExecutableCatchEventSupplier supplier) {
-    return subscribeToEvents(context, supplier, catchEventId -> true);
+    return subscribeToEvents(context, supplier, catchEvent -> true);
   }
 
   /**
    * Subscribes to all events of the given supplier that match the given catch event id filter.
    *
+   * <p>Note that the filter provides access to the catch event as well as the result of evaluating
+   * its expressions. This allows for more complex filters that depend on both the catch event and
+   * the result of evaluating its expressions.
+   *
    * @param context the context of the element instance that subscribes to events
    * @param supplier the supplier of catch events to subscribe to, typically the element of the
    *     element instance that subscribes to events
-   * @param catchEventIdFilter the filter for catch event ids to subscribe to, only events that
-   *     match the filter are subscribed to
+   * @param filter the filter for catch events to subscribe to, only events that match the filter
+   *     are subscribed to.
    * @return either a failure or nothing
    */
   public Either<Failure, Void> subscribeToEvents(
       final BpmnElementContext context,
       final ExecutableCatchEventSupplier supplier,
-      final Predicate<DirectBuffer> catchEventIdFilter) {
+      final Predicate<CatchEvent> filter) {
     final var evaluationResults =
         supplier.getEvents().stream()
-            .filter(event -> catchEventIdFilter.test(event.getId()))
             .filter(event -> event.isTimer() || event.isMessage() || event.isSignal())
             .map(event -> evalExpressions(expressionProcessor, event, context))
+            .filter(result -> result.map(CatchEvent::new).map(filter::test).getOrElse(true))
             .collect(Either.collectorFoldingLeft());
 
     evaluationResults.ifRight(
@@ -416,12 +421,11 @@ public final class CatchEventBehavior {
   }
 
   public void unsubscribeFromMessageEvents(
-      final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
+      final long elementInstanceKey, final Predicate<ProcessMessageSubscription> filter) {
     processMessageSubscriptionState.visitElementSubscriptions(
         elementInstanceKey,
         subscription -> {
-          final var elementId = subscription.getRecord().getElementIdBuffer();
-          if (elementIdFilter.test(elementId)) {
+          if (filter.test(subscription)) {
             unsubscribeFromMessageEvent(subscription);
           }
           return true;
@@ -473,6 +477,13 @@ public final class CatchEventBehavior {
         correlationKey,
         closeOnCorrelate,
         tenantId);
+  }
+
+  public record CatchEvent(ExecutableCatchEvent element, DirectBuffer messageName) {
+
+    private CatchEvent(final EvalResult result) {
+      this(result.event(), result.messageName());
+    }
   }
 
   /**
