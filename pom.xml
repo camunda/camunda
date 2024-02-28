@@ -61,6 +61,7 @@
     <module>zeebe/backup-stores/s3</module>
     <module>zeebe/backup-stores/gcs</module>
     <module>zeebe/backup-stores/azure</module>
+    <module>zeebe/backup-stores/common</module>
     <module>zeebe/restore</module>
     <module>zeebe/topology</module>
   </modules>

@@ -5,19 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.backup.gcs.manifest;
+package io.camunda.zeebe.backup.common;
 
-import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.COMPLETED;
-import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.FAILED;
-import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRESS;
+import static io.camunda.zeebe.backup.common.Manifest.StatusCode.COMPLETED;
+import static io.camunda.zeebe.backup.common.Manifest.StatusCode.FAILED;
+import static io.camunda.zeebe.backup.common.Manifest.StatusCode.IN_PROGRESS;
 
-import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
-import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.InvalidPersistedManifestState;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.common.BackupStoreException.InvalidPersistedManifestState;
+import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import java.time.Instant;
 
-record ManifestImpl(
+public record ManifestImpl(
     BackupIdentifierImpl id,
     BackupDescriptorImpl descriptor,
     StatusCode statusCode,
@@ -31,14 +29,14 @@ record ManifestImpl(
   public static final String ERROR_MSG_WRONG_STATE =
       "Expected a failed Manifest to set failureReason '%s', but was in state '%s'.";
 
-  ManifestImpl {
+  public ManifestImpl {
     if (failureReason != null && statusCode != FAILED) {
       throw new InvalidPersistedManifestState(
           ERROR_MSG_WRONG_STATE.formatted(failureReason, statusCode));
     }
   }
 
-  ManifestImpl(
+  public ManifestImpl(
       final BackupIdentifierImpl id,
       final BackupDescriptorImpl descriptor,
       final StatusCode statusCode,

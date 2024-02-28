@@ -9,7 +9,7 @@ package io.camunda.zeebe.backup.gcs;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
 import java.nio.file.NoSuchFileException;

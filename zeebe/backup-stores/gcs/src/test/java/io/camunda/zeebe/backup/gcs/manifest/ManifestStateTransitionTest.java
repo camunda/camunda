@@ -7,20 +7,21 @@
  */
 package io.camunda.zeebe.backup.gcs.manifest;
 
-import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.COMPLETED;
-import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.FAILED;
-import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRESS;
+import static io.camunda.zeebe.backup.common.Manifest.StatusCode.COMPLETED;
+import static io.camunda.zeebe.backup.common.Manifest.StatusCode.FAILED;
+import static io.camunda.zeebe.backup.common.Manifest.StatusCode.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.Manifest;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 final class ManifestStateTransitionTest {
   @Test
-  public void shouldStartInProgress() {
+  void shouldStartInProgress() {
     // given
 
     // when
@@ -34,13 +35,13 @@ final class ManifestStateTransitionTest {
 
     // then
     assertThat(manifest.statusCode()).isEqualTo(IN_PROGRESS);
-    assertThat(manifest.createdAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(manifest.modifiedAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(manifest.createdAt().getEpochSecond()).isPositive();
+    assertThat(manifest.modifiedAt().getEpochSecond()).isPositive();
     assertThat(manifest.createdAt()).isEqualTo(manifest.modifiedAt());
   }
 
   @Test
-  public void shouldUpdateManifestToCompleted() {
+  void shouldUpdateManifestToCompleted() {
     // given
     final var created =
         Manifest.createInProgress(
@@ -55,15 +56,15 @@ final class ManifestStateTransitionTest {
 
     // then
     assertThat(completed.statusCode()).isEqualTo(COMPLETED);
-    assertThat(completed.createdAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(completed.modifiedAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(completed.createdAt().getEpochSecond()).isPositive();
+    assertThat(completed.modifiedAt().getEpochSecond()).isPositive();
     assertThat(completed.createdAt()).isBefore(completed.modifiedAt());
     assertThat(completed.createdAt()).isEqualTo(created.modifiedAt());
     assertThat(completed.modifiedAt()).isNotEqualTo(created.modifiedAt());
   }
 
   @Test
-  public void shouldUpdateManifestToFailed() {
+  void shouldUpdateManifestToFailed() {
     // given
     final var created =
         Manifest.createInProgress(
@@ -78,8 +79,8 @@ final class ManifestStateTransitionTest {
 
     // then
     assertThat(failed.statusCode()).isEqualTo(FAILED);
-    assertThat(failed.createdAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(failed.modifiedAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(failed.createdAt().getEpochSecond()).isPositive();
+    assertThat(failed.modifiedAt().getEpochSecond()).isPositive();
     assertThat(failed.createdAt()).isBefore(failed.modifiedAt());
     assertThat(failed.createdAt()).isEqualTo(created.modifiedAt());
     assertThat(failed.modifiedAt()).isNotEqualTo(created.modifiedAt());
@@ -87,7 +88,7 @@ final class ManifestStateTransitionTest {
   }
 
   @Test
-  public void shouldUpdateManifestFromCompletedToFailed() {
+  void shouldUpdateManifestFromCompletedToFailed() {
     // given
     final var created =
         Manifest.createInProgress(
@@ -104,8 +105,8 @@ final class ManifestStateTransitionTest {
 
     // then
     assertThat(failed.statusCode()).isEqualTo(FAILED);
-    assertThat(failed.createdAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(failed.modifiedAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(failed.createdAt().getEpochSecond()).isPositive();
+    assertThat(failed.modifiedAt().getEpochSecond()).isPositive();
     assertThat(failed.createdAt()).isBefore(failed.modifiedAt());
     assertThat(failed.createdAt()).isEqualTo(created.modifiedAt());
     assertThat(failed.modifiedAt()).isNotEqualTo(created.modifiedAt());

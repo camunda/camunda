@@ -5,18 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.backup.azure.manifest;
+package io.camunda.zeebe.backup.common;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
-import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
-import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import java.time.Instant;
+import java.util.Optional;
 
-// This class is a copy from the manifest class in GCS, and eventually it will be refactored,
-// or the code will be reused here.
 @JsonSerialize(as = ManifestImpl.class)
 @JsonDeserialize(as = ManifestImpl.class)
 public sealed interface Manifest {
@@ -60,6 +59,35 @@ public sealed interface Manifest {
   CompletedManifest asCompleted();
 
   FailedManifest asFailed();
+
+  static BackupStatus toStatus(final Manifest manifest) {
+    return switch (manifest.statusCode()) {
+      case IN_PROGRESS ->
+          new BackupStatusImpl(
+              manifest.id(),
+              Optional.ofNullable(manifest.descriptor()),
+              BackupStatusCode.IN_PROGRESS,
+              Optional.empty(),
+              Optional.ofNullable(manifest.createdAt()),
+              Optional.ofNullable(manifest.modifiedAt()));
+      case COMPLETED ->
+          new BackupStatusImpl(
+              manifest.id(),
+              Optional.ofNullable(manifest.descriptor()),
+              BackupStatusCode.COMPLETED,
+              Optional.empty(),
+              Optional.ofNullable(manifest.createdAt()),
+              Optional.ofNullable(manifest.modifiedAt()));
+      case FAILED ->
+          new BackupStatusImpl(
+              manifest.id(),
+              Optional.ofNullable(manifest.descriptor()),
+              BackupStatusCode.FAILED,
+              Optional.ofNullable(manifest.asFailed().failureReason()),
+              Optional.ofNullable(manifest.createdAt()),
+              Optional.ofNullable(manifest.modifiedAt()));
+    };
+  }
 
   sealed interface InProgressManifest extends Manifest permits ManifestImpl {
 

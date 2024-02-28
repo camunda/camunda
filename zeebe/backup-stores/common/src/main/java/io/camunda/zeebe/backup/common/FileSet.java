@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.backup.gcs.manifest;
+package io.camunda.zeebe.backup.common;
 
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import java.util.List;
@@ -35,7 +35,7 @@ public record FileSet(List<NamedFile> files) {
     }
   }
 
-  static FileSet of(final NamedFileSet fileSet) {
+  public static FileSet of(final NamedFileSet fileSet) {
     if (fileSet == null) {
       return new FileSet(List.of());
     }

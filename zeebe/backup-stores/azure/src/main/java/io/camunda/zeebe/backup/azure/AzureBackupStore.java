@@ -17,13 +17,12 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
-import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.common.Manifest;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -102,7 +101,7 @@ public final class AzureBackupStore implements BackupStore {
           if (manifest == null) {
             return BackupStatusImpl.doesNotExist(id);
           }
-          return toStatus(manifest);
+          return Manifest.toStatus(manifest);
         },
         executor);
   }
@@ -110,10 +109,7 @@ public final class AzureBackupStore implements BackupStore {
   @Override
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
     return CompletableFuture.supplyAsync(
-        () ->
-            manifestManager.listManifests(wildcard).stream()
-                .map(AzureBackupStore::toStatus)
-                .toList(),
+        () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
         executor);
   }
 
@@ -195,34 +191,5 @@ public final class AzureBackupStore implements BackupStore {
     if (config.containerName() == null) {
       throw new IllegalArgumentException("Container name cannot be null.");
     }
-  }
-
-  private static BackupStatus toStatus(final Manifest manifest) {
-    return switch (manifest.statusCode()) {
-      case IN_PROGRESS ->
-          new BackupStatusImpl(
-              manifest.id(),
-              Optional.ofNullable(manifest.descriptor()),
-              BackupStatusCode.IN_PROGRESS,
-              Optional.empty(),
-              Optional.ofNullable(manifest.createdAt()),
-              Optional.ofNullable(manifest.modifiedAt()));
-      case COMPLETED ->
-          new BackupStatusImpl(
-              manifest.id(),
-              Optional.ofNullable(manifest.descriptor()),
-              BackupStatusCode.COMPLETED,
-              Optional.empty(),
-              Optional.ofNullable(manifest.createdAt()),
-              Optional.ofNullable(manifest.modifiedAt()));
-      case FAILED ->
-          new BackupStatusImpl(
-              manifest.id(),
-              Optional.ofNullable(manifest.descriptor()),
-              BackupStatusCode.FAILED,
-              Optional.ofNullable(manifest.asFailed().failureReason()),
-              Optional.ofNullable(manifest.createdAt()),
-              Optional.ofNullable(manifest.modifiedAt()));
-    };
   }
 }

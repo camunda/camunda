@@ -22,9 +22,9 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
-import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
-import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
+import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.FileNotFoundException;
@@ -97,7 +97,7 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
 
   @ParameterizedTest
   @ArgumentsSource(TestBackupProvider.class)
-  public void cannotDeleteUploadingBlock(final Backup backup) {
+  void cannotDeleteUploadingBlock(final Backup backup) {
 
     // given when
     uploadInProgressManifest(backup);
