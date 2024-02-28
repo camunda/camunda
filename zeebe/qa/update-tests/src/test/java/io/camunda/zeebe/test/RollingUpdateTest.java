@@ -270,7 +270,7 @@ final class RollingUpdateTest {
   }
 
   private void updateBroker(final ZeebeBrokerNode<?> broker, final String version) {
-    if (version.equals("CURRENT")) {
+    if ("CURRENT".equals(version)) {
       broker.setDockerImageName(
           ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
     } else {
