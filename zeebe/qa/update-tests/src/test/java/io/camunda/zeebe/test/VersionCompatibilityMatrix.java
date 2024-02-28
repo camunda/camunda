@@ -11,6 +11,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
+import io.github.resilience4j.core.IntervalFunction;
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryConfig;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -59,7 +62,7 @@ final class VersionCompatibilityMatrix {
         .map(version -> Arguments.of(version.toString(), "CURRENT"));
   }
 
-  private static Stream<Arguments> full() throws IOException, InterruptedException {
+  private static Stream<Arguments> full() {
     final var versions = discoverVersions().toList();
     return versions.stream()
         .filter(version -> version.minor() > 0)
@@ -72,31 +75,42 @@ final class VersionCompatibilityMatrix {
   }
 
   /**
-   * Discovers Zeebe versions that aren't pre-releases. Sourced from the GitHub API. Includes all
-   * versions since 8.0.
+   * Discovers Zeebe versions that aren't pre-releases. Sourced from the GitHub API and can fail on
+   * network issues. Includes all versions since 8.0.
    *
    * @see <a
    *     href="https://docs.github.com/en/rest/git/refs?apiVersion=2022-11-28#list-matching-references--parameters">GitHub
    *     API</a>
    */
-  private static Stream<SemanticVersion> discoverVersions()
-      throws IOException, InterruptedException {
+  private static Stream<SemanticVersion> discoverVersions() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     record Ref(String ref) {
       SemanticVersion toSemanticVersion() {
         return SemanticVersion.parse(ref.substring("refs/tags/".length())).orElse(null);
       }
     }
-
+    final var endpoint =
+        URI.create("https://api.github.com/repos/camunda/zeebe/git/matching-refs/tags/8.");
     try (final var httpClient = HttpClient.newHttpClient()) {
-      final var endpoint =
-          URI.create("https://api.github.com/repos/camunda/zeebe/git/matching-refs/tags/8.");
-      final var request = HttpRequest.newBuilder().GET().uri(endpoint).build();
-      final var response = httpClient.send(request, BodyHandlers.ofByteArray());
+      final var retry =
+          Retry.of(
+              "github-api",
+              RetryConfig.custom()
+                  .maxAttempts(10)
+                  .intervalFunction(IntervalFunction.ofExponentialBackoff())
+                  .build());
+      final var response =
+          retry.executeCallable(
+              () ->
+                  httpClient.send(
+                      HttpRequest.newBuilder().GET().uri(endpoint).build(),
+                      BodyHandlers.ofByteArray()));
       final var refs = new ObjectMapper().readValue(response.body(), Ref[].class);
       return Stream.of(refs)
           .map(Ref::toSemanticVersion)
           .filter(version -> version != null && version.preRelease() == null);
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
     }
   }
 }
