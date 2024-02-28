@@ -2,7 +2,7 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: [
     // Base configs for renovate
-    "config:base",
+    "config:recommended",
     // Pins github actions digests
     "helpers:pinGitHubActionDigests",
     // Enables Dependency Dashboard issue to control renovate
@@ -112,22 +112,22 @@
     // Frontend deps
     {
       addLabels: ["component:frontend"],
-      languages: ["js"],
+      matchCategories: ["js"],
     },
     // Backend deps
     {
       addLabels: ["component:backend"],
-      languages: ["java"],
+      matchCategories: ["java"],
     },
     // Infra deps
     {
       addLabels: ["component:ci"],
-      managers: ["docker-compose", "dockerfile", "github-actions"],
+      matchManagers: ["docker-compose", "dockerfile", "github-actions"],
     },
     // Docker deps
     {
       matchDatasources: ["docker"],
-      matchPackagePatterns: ["alpine", "docker.io/library/alpine"],
+      matchPackagePatterns: ["alpine"],
       // Group all docker updates into one PR
       groupName: "Alpine dependencies",
       separateMajorMinor: true,
@@ -146,9 +146,10 @@
       enabled: false,
     },
   ],
-  regexManagers: [
+  "customManagers": [    
     // These two regex managers are checking for alpine image versions in files other than Dockerfile
     {
+      customType: "regex",
       fileMatch: [
         ".github/scripts/build-docker-images.sh",
         ".github/scripts/build-release-docker-images.sh",
@@ -160,6 +161,7 @@
       datasourceTemplate: "docker",
     },
     {
+      customType: "regex",
       fileMatch: [
         "docker/test/verify.sh",
         "docker/test/docker-labels.golden.json",
