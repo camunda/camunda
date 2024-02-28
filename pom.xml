@@ -11,7 +11,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.2.2</version>
+    <version>3.2.3</version>
   </parent>
 
   <modules>
@@ -84,6 +84,7 @@
     <version.okio-jvm>3.4.0</version.okio-jvm>
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
+    <version.nimbus-jose-jwt>9.37.2</version.nimbus-jose-jwt>
 
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
     <version.checkstyle>10.13.0</version.checkstyle>
@@ -230,6 +231,12 @@
         <groupId>com.google.guava</groupId>
         <artifactId>guava-annotations</artifactId>
         <version>${version.guava.annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>nimbus-jose-jwt</artifactId>
+        <version>${version.nimbus-jose-jwt}</version>
       </dependency>
 
       <!-- Start AWS -->
