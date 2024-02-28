@@ -74,7 +74,7 @@ public interface CompensationSubscriptionRecordValue extends RecordValue {
   /**
    * @return the parent element key of the current element
    */
-  long getCompensableParentKey();
+  long getCompensableActivityInstanceKey();
 
   /**
    * @return the local variables of activity with compensation handler

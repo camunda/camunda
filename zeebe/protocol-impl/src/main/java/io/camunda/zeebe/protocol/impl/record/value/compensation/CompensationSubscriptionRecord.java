@@ -44,12 +44,12 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   private final LongProperty compensableActivityScopeKeyProperty =
       new LongProperty("compensableActivityScopeKey", -1);
 
-  private final LongProperty compensableParentKeyProperty =
-      new LongProperty("compensableParentKey", -1);
+  private final LongProperty compensableActivityInstanceKeyProperty =
+      new LongProperty("compensableActivityInstanceKey", -1);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public CompensationSubscriptionRecord() {
-    super(8);
+    super(11);
     declareProperty(tenantIdProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
@@ -59,7 +59,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(throwEventInstanceKeyProperty)
         .declareProperty(compensationHandlerIdProperty)
         .declareProperty(compensableActivityScopeKeyProperty)
-        .declareProperty(compensableParentKeyProperty)
+        .declareProperty(compensableActivityInstanceKeyProperty)
         .declareProperty(variablesProperty);
   }
 
@@ -73,7 +73,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     throwEventInstanceKeyProperty.setValue(record.getThrowEventInstanceKey());
     compensationHandlerIdProperty.setValue(record.getCompensationHandlerId());
     compensableActivityScopeKeyProperty.setValue(record.getCompensableActivityScopeKey());
-    compensableParentKeyProperty.setValue(record.getCompensableParentKey());
+    compensableActivityInstanceKeyProperty.setValue(record.getCompensableActivityInstanceKey());
     variablesProperty.setValue(record.getVariablesBuffer());
   }
 
@@ -138,8 +138,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getCompensableParentKey() {
-    return compensableParentKeyProperty.getValue();
+  public long getCompensableActivityInstanceKey() {
+    return compensableActivityInstanceKeyProperty.getValue();
   }
 
   @Override
@@ -152,8 +152,9 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public CompensationSubscriptionRecord setCompensableParentKey(final long compensableParentKey) {
-    compensableParentKeyProperty.setValue(compensableParentKey);
+  public CompensationSubscriptionRecord setCompensableActivityInstanceKey(
+      final long compensableActivityInstanceKey) {
+    compensableActivityInstanceKeyProperty.setValue(compensableActivityInstanceKey);
     return this;
   }
 

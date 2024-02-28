@@ -802,11 +802,11 @@ public class CompensationEventExecutionTest {
             tuple(
                 ValueType.COMPENSATION_SUBSCRIPTION,
                 CompensationSubscriptionIntent.DELETED,
-                "ActivityToCompensate"),
+                "embedded-subprocess"),
             tuple(
                 ValueType.COMPENSATION_SUBSCRIPTION,
                 CompensationSubscriptionIntent.DELETED,
-                "embedded-subprocess"));
+                "ActivityToCompensate"));
   }
 
   @Test

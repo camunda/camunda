@@ -131,6 +131,9 @@ public class BpmnCompensationSubscriptionBehaviour {
                     compensationSubscription ->
                         compensationSubscription.getRecord().getCompensableActivityScopeKey()));
 
+    // use recursions here
+    // starting from throw event level scope to bottom and triggering the handler
+
     final AtomicBoolean isCompensationTriggered = new AtomicBoolean(true);
 
     subscriptionsOfScopes.forEach(
@@ -209,10 +212,10 @@ public class BpmnCompensationSubscriptionBehaviour {
               .setCompensableActivityScopeId(
                   BufferUtil.bufferAsString(element.getFlowScope().getId()))
               .setCompensableActivityScopeKey(context.getElementInstanceKey())
-              .setCompensableParentKey(context.getFlowScopeKey());
+              .setCompensableActivityInstanceKey(context.getFlowScopeKey());
 
       if (BpmnElementType.MULTI_INSTANCE_BODY.equals(element.getFlowScope().getElementType())) {
-        compensation.setCompensableParentKey(context.getProcessInstanceKey());
+        compensation.setCompensableActivityInstanceKey(context.getProcessInstanceKey());
       }
       stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
     }
@@ -376,43 +379,64 @@ public class BpmnCompensationSubscriptionBehaviour {
   private void completeSubprocessSubscription(
       final String tenantId, final long processInstanceKey, final long scopeInstanceKey) {
 
-    final var compensations = compensationSubscriptionState
-        .findSubscriptionsByProcessInstanceKey(tenantId, processInstanceKey);
+    final var compensations =
+        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
+            tenantId, processInstanceKey);
 
-    final var isSubprocessCompletable = compensations.stream().noneMatch(compensationSubscription ->
-        scopeInstanceKey == compensationSubscription.getRecord().getCompensableActivityScopeKey()
-            && !compensationSubscription.getRecord().getCompensationHandlerId().isEmpty());
+    final var isSubprocessCompletable =
+        compensations.stream()
+            .noneMatch(
+                compensationSubscription ->
+                    scopeInstanceKey
+                            == compensationSubscription.getRecord().getCompensableActivityScopeKey()
+                        && !compensationSubscription
+                            .getRecord()
+                            .getCompensationHandlerId()
+                            .isEmpty());
 
     if (!isSubprocessCompletable) {
       return;
     }
 
-    final Optional<CompensationSubscription> completableSubscription = compensations.stream()
-        .filter(subscription -> scopeInstanceKey == subscription.getRecord().getCompensableActivityScopeKey())
-        .filter(subscription -> subscription.getRecord().getCompensationHandlerId().isEmpty())
-        .findFirst();
+    final Optional<CompensationSubscription> completableSubscription =
+        compensations.stream()
+            .filter(
+                subscription ->
+                    scopeInstanceKey == subscription.getRecord().getCompensableActivityScopeKey())
+            .filter(subscription -> subscription.getRecord().getCompensationHandlerId().isEmpty())
+            .findFirst();
 
-    completableSubscription.ifPresent(subscription ->
-        stateWriter.appendFollowUpEvent(subscription.getKey(),
-            CompensationSubscriptionIntent.COMPLETED, subscription.getRecord()));
+    completableSubscription.ifPresent(
+        subscription ->
+            stateWriter.appendFollowUpEvent(
+                subscription.getKey(),
+                CompensationSubscriptionIntent.COMPLETED,
+                subscription.getRecord()));
   }
 
   private boolean isSubprocessTriggerable(final CompensationSubscriptionRecord subscription) {
-    if (subscription.getProcessInstanceKey() == subscription.getCompensableParentKey()) {
+    if (subscription.getProcessInstanceKey() == subscription.getCompensableActivityInstanceKey()) {
       return true;
     }
 
-    final var subscriptions = compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(subscription.getTenantId(), subscription.getProcessInstanceKey())
-        .stream()
-        .map(CompensationSubscription::getRecord)
-        // filter out compensation handler subscription
-        .filter(sub -> sub.getCompensableParentKey() != -1)
-        .collect(Collectors.toSet());
+    final var subscriptions =
+        compensationSubscriptionState
+            .findSubscriptionsByProcessInstanceKey(
+                subscription.getTenantId(), subscription.getProcessInstanceKey())
+            .stream()
+            .map(CompensationSubscription::getRecord)
+            // filter out compensation handler subscription
+            .filter(sub -> sub.getCompensableActivityInstanceKey() != -1)
+            .collect(Collectors.toSet());
 
     if (subscriptions.isEmpty()) {
       return true;
     }
 
-    return subscriptions.stream().anyMatch(sub -> subscription.getCompensableParentKey() == sub.getCompensableActivityScopeKey());
+    return subscriptions.stream()
+        .anyMatch(
+            sub ->
+                subscription.getCompensableActivityInstanceKey()
+                    == sub.getCompensableActivityScopeKey());
   }
 }
