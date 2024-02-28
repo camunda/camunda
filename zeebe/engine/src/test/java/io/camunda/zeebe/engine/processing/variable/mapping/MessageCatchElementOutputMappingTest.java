@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.variable.mapping;
 
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -18,15 +20,14 @@ import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
-import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -44,6 +45,7 @@ public final class MessageCatchElementOutputMappingTest {
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final String MESSAGE_NAME = "message";
+  private static final String MESSAGE_NAME_2 = "message2";
   private static final String CORRELATION_VARIABLE = "key";
   private static final String MAPPING_ELEMENT_ID = "catch";
 
@@ -217,15 +219,17 @@ public final class MessageCatchElementOutputMappingTest {
     final long processInstanceKey = triggerProcessInstance(deploymentRecord);
 
     // then
-    final Record<VariableRecordValue> variableEvent =
-        RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withScopeKey(processInstanceKey)
-            .withName("foo")
-            .getFirst();
-
-    Assertions.assertThat(variableEvent.getValue())
-        .hasValue("\"bar\"")
-        .hasScopeKey(processInstanceKey);
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withScopeKey(processInstanceKey)
+                .filter(v -> v.getValue().getName().contains("foo"))
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getName(), v.getValue()))
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            tuple(processInstanceKey, "foo", "\"bar\""),
+            tuple(processInstanceKey, "_foo", "\"bar2\""));
   }
 
   @Test
@@ -237,36 +241,44 @@ public final class MessageCatchElementOutputMappingTest {
     final long processInstanceKey = triggerProcessInstance(deploymentRecord);
 
     // then
-    final Record<VariableRecordValue> variableEvent =
-        RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withScopeKey(processInstanceKey)
-            .withName("foo")
-            .getFirst();
-
-    Assertions.assertThat(variableEvent.getValue())
-        .hasValue("\"bar\"")
-        .hasScopeKey(processInstanceKey);
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withScopeKey(processInstanceKey)
+                .filter(v -> v.getValue().getName().contains("foo"))
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getName(), v.getValue()))
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            tuple(processInstanceKey, "foo", "\"bar\""),
+            tuple(processInstanceKey, "_foo", "\"bar2\""));
   }
 
   @Test
   public void shouldMapMessageVariablesIntoInstanceVariables() {
     // given
     final var deploymentRecord =
-        deployProcessWithMapping(e -> e.zeebeOutputExpression("foo", MESSAGE_NAME));
+        deployProcessWithMapping(
+            e -> {
+              e.zeebeOutputExpression("foo", MESSAGE_NAME);
+              e.zeebeOutputExpression("_foo", MESSAGE_NAME_2);
+            });
 
     // when
     final long processInstanceKey = triggerProcessInstance(deploymentRecord);
 
     // then
-    final Record<VariableRecordValue> variableEvent =
-        RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withName(MESSAGE_NAME)
-            .getFirst();
-
-    Assertions.assertThat(variableEvent.getValue())
-        .hasValue("\"bar\"")
-        .hasScopeKey(processInstanceKey);
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withScopeKey(processInstanceKey)
+                .filter(v -> v.getValue().getName().contains(MESSAGE_NAME))
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getName(), v.getValue()))
+        .hasSize(2)
+        .containsExactlyInAnyOrder(
+            tuple(processInstanceKey, MESSAGE_NAME, "\"bar\""),
+            tuple(processInstanceKey, MESSAGE_NAME_2, "\"bar2\""));
   }
 
   private Record<DeploymentRecordValue> deployProcessWithMapping(
@@ -295,7 +307,7 @@ public final class MessageCatchElementOutputMappingTest {
         .message()
         .withCorrelationKey(correlationKey)
         .withName(MESSAGE_NAME)
-        .withVariables(asMsgPack("foo", "bar"))
+        .withVariables(asMsgPack(Map.of("foo", "bar", "_foo", "bar2")))
         .publish();
 
     if (createInstance) {

@@ -59,7 +59,8 @@ class ZeebeExpressionValidatorTest {
           Arguments.of(" a,b "),
           Arguments.of(" a ,b "),
           Arguments.of(" a, b "),
-          Arguments.of(" a , b "));
+          Arguments.of(" a , b "),
+          Arguments.of("_variable"));
     }
 
     Stream<Arguments> notCsv() {

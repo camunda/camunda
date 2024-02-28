@@ -54,6 +54,7 @@ public final class JobInputMappingTest {
     return new Object[][] {
       {"{}", mapping(b -> {}), "{}"},
       {"{'x': 1, 'y': 2}", mapping(b -> {}), "{'x': 1, 'y': 2}"},
+      {"{'_x': 1, '_y': 2}", mapping(b -> {}), "{'_x': 1, '_y': 2}"},
       {"{'x': {'y': 2}}", mapping(b -> {}), "{'x': {'y': 2}}"},
       {"{'x': 1}", mapping(b -> b.zeebeInputExpression("x", "y")), "{'x': 1, 'y': 1}"},
       {

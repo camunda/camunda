@@ -52,6 +52,7 @@ public final class VariableInputMappingTransformerTest {
       // direct mapping
       {List.of(mapping("x", "x")), Map.of("x", asMsgPack("1")), "{'x':1}"},
       {List.of(mapping("x", "a")), Map.of("x", asMsgPack("1")), "{'a':1}"},
+      {List.of(mapping("_x", "_b")), Map.of("_x", asMsgPack("1")), "{'_b':1}"},
       {
         List.of(mapping("x", "a"), mapping("y", "b")),
         Map.of("x", asMsgPack("1"), "y", asMsgPack("2")),

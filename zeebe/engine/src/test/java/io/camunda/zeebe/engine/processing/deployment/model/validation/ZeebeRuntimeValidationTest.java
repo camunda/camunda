@@ -60,7 +60,7 @@ public final class ZeebeRuntimeValidationTest {
       "Expected path expression but not found.";
   private static final String INVALID_PATH_EXPRESSION = "a ? b";
   private static final String INVALID_PATH_EXPRESSION_MESSAGE =
-      "Expected path expression 'a ? b' but doesn't match the pattern '[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*'.";
+      "Expected path expression 'a ? b' but doesn't match the pattern '[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*'.";
   private static final String RESERVED_TASK_HEADER_KEY =
       Protocol.RESERVED_HEADER_NAME_PREFIX + "reserved-header-key";
   private static final String RESERVED_TASK_HEADER_MESSAGE =

@@ -76,6 +76,12 @@ public final class JobOutputMappingTest {
         scopeVariables(variable("y", "1"))
       },
       {
+        "{'_x': 1}",
+        mapping(b -> b.zeebeOutputExpression("_x", "_y")),
+        activityVariables(variable("_x", "1")),
+        scopeVariables(variable("_y", "1"))
+      },
+      {
         "{'x': 1, 'y': 2}",
         mapping(b -> b.zeebeOutputExpression("y", "z")),
         activityVariables(variable("x", "1"), variable("y", "2")),
