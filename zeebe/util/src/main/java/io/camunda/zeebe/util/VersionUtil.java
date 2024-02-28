@@ -9,6 +9,7 @@ package io.camunda.zeebe.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.Properties;
 import org.slf4j.Logger;
 
@@ -47,6 +48,13 @@ public final class VersionUtil {
     return version;
   }
 
+  /**
+   * @return the current version if it can be parsed as a semantic version, otherwise empty.
+   */
+  public static Optional<SemanticVersion> getSemanticVersion() {
+    return SemanticVersion.parse(getVersion());
+  }
+
   public static String getVersionLowerCase() {
     if (versionLowerCase == null) {
       versionLowerCase = getVersion().toLowerCase();
@@ -66,13 +74,13 @@ public final class VersionUtil {
   }
 
   private static String readProperty(final String property) {
-    try (InputStream lastVersionFileStream =
+    try (final InputStream lastVersionFileStream =
         VersionUtil.class.getResourceAsStream(VERSION_PROPERTIES_PATH)) {
       final Properties props = new Properties();
       props.load(lastVersionFileStream);
 
       return props.getProperty(property);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOG.error(String.format("Can't read version file: %s", VERSION_PROPERTIES_PATH), e);
     }
 
