@@ -2,4 +2,5 @@ zeebe:
   broker:
     exporters:
       elasticsearch:
+        skipRecords: 112233, 445566
         className: io.camunda.zeebe.exporter.ElasticsearchExporter
