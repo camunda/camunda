@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Exporter component configuration. To be expanded eventually to allow enabling/disabling
@@ -24,6 +25,8 @@ public final class ExporterCfg implements ConfigurationEntry {
 
   /** fully qualified class name pointing to the class implementing the exporter interface */
   private String className;
+
+  private Set<Long> skipRecords;
 
   /** map of arguments to use when instantiating the exporter */
   private Map<String, Object> args;
@@ -45,6 +48,14 @@ public final class ExporterCfg implements ConfigurationEntry {
 
   public void setJarPath(final String jarPath) {
     this.jarPath = jarPath;
+  }
+
+  public Set<Long> getSkipRecords() {
+    return skipRecords != null ? skipRecords : Set.of();
+  }
+
+  public void setSkipRecords(final Set<Long> skipRecords) {
+    this.skipRecords = skipRecords;
   }
 
   public String getClassName() {
