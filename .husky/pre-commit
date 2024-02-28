@@ -3,7 +3,7 @@
 
 if command -v yarn &> /dev/null
 then
-  yarn --cwd client lint-staged && yarn --cwd client coverage
+  yarn --cwd operate/client lint-staged && yarn --cwd operate/client coverage
 else
   echo "No yarn found. Skip web app linting"
 fi

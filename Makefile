@@ -5,14 +5,14 @@ env-up:
 	docker-compose up -d elasticsearch zeebe \
 	&& mvn install -DskipTests=true -Dskip.fe.build=true \
 	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
-	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
+	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
 
 env-os-up:
 	docker-compose up -d opensearch zeebe-opensearch \
 	&& mvn install -DskipTests=true -Dskip.fe.build=true \
 	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
 	&& CAMUNDA_OPERATE_DATABASE=opensearch \
-	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
+	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
 
 # Look up for users (bender/bender etc) in: https://github.com/rroemhild/docker-test-openldap
 .PHONY: env-ldap-up
@@ -25,7 +25,7 @@ env-ldap-up:
        CAMUNDA_OPERATE_LDAP_MANAGERDN=cn=admin,dc=planetexpress,dc=com \
        CAMUNDA_OPERATE_LDAP_MANAGERPASSWORD=GoodNewsEveryone \
        CAMUNDA_OPERATE_LDAP_USERSEARCHFILTER=uid={0} \
-	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,ldap-auth
+	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,ldap-auth
 
 # Set the env var CAMUNDA_OPERATE_AUTH0_CLIENTSECRET in your shell please, eg: export CAMUNDA_OPERATE_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
@@ -42,7 +42,7 @@ env-sso-up:
        CAMUNDA_OPERATE_AUTH0_ORGANIZATION=6ff582aa-a62e-4a28-aac7-4d2224d8c58a \
        CAMUNDA_OPERATE_AUTH0_ORGANIZATIONSKEY=https://camunda.com/orgs \
        CAMUNDA_OPERATE_CLOUD_CONSOLE_URL=https://console.cloud.ultrawombat.com/ \
-	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,sso-auth
+	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,sso-auth
 
 .PHONY: env-identity-up
 env-identity-up:
@@ -55,12 +55,12 @@ env-identity-up:
        CAMUNDA_IDENTITY_AUDIENCE=operate-api \
        CAMUNDA_OPERATE_PERSISTENT_SESSIONS_ENABLED=true \
        SERVER_PORT=8081 \
-	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,identity-auth
+	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,identity-auth
 
 .PHONY: env-down
 env-down:
 	@docker-compose down -v \
-	&& docker-compose -f ./config/docker-compose.identity.yml down -v \
+	&& docker-compose -f ./operate/config/docker-compose.identity.yml down -v \
 	&& mvn clean
 
 .PHONY: env-status
@@ -82,4 +82,4 @@ start-e2e:
 	CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX=e2eoperate \
 	CAMUNDA_OPERATE_IMPORTER_READERBACKOFF=0 \
 	CAMUNDA_OPERATE_IMPORTER_SCHEDULERBACKOFF=0 \
-	mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dserver.port=8081
+	mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dserver.port=8081

@@ -180,7 +180,7 @@ pipeline {
         container('maven') {
           configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
             // Generate Data
-            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/data-generator spring-boot:run')
+            sh('mvn -B -s $MAVEN_SETTINGS_XML -f operate/qa/data-generator spring-boot:run')
           }
         }
       }

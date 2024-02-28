@@ -9,7 +9,7 @@ target/
 .git/
 
 # Dockerignore files are not recursive :( - https://github.com/moby/moby/issues/20944
-client/build
-client/node_modules
-client/src/node_modules
-client/target
+operate/client/build
+operate/client/node_modules
+operate/client/src/node_modules
+operate/client/target

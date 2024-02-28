@@ -127,7 +127,7 @@ To run these locally you can follow the steps below:
 3. Inside the container, run `yarn start:visual-regression &`
 4. After that, run `yarn playwright visual`
 
-After the tests run, test report is saved locally in client/playwright-report. In case step 4 fails with `Failed to open browser on ...` , run the following command inside client folder to see the test results: `npx @playwright/test show-report playwright-report/`
+After the tests run, test report is saved locally in operate/client/playwright-report. In case step 4 fails with `Failed to open browser on ...` , run the following command inside client folder to see the test results: `npx @playwright/test show-report playwright-report/`
 
 #### Updating screenshots
 

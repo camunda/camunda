@@ -6,5 +6,5 @@ jobs:
   run-backup-restore-tests:
     uses: ./.github/workflows/run-tests.yml
     with:
-      command: mvn -B -f qa/backup-restore-tests -P -docker,-skipTests verify
+      command: mvn -B -f operate/qa/backup-restore-tests -P -docker,-skipTests verify
     secrets: inherit

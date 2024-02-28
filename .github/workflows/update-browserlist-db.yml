@@ -11,14 +11,14 @@ jobs:
       contents: write
     defaults:
       run:
-        working-directory: client
+        working-directory: operate/client
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "18"
           cache: "yarn"
-          cache-dependency-path: client/yarn.lock
+          cache-dependency-path: operate/client/yarn.lock
       - run: npx update-browserslist-db@latest --yes
         name: Update DB
       - uses: stefanzweifel/git-auto-commit-action@e8f94e4dd298db5a6a2aa2d42fe0bcef6f2c9660

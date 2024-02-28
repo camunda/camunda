@@ -54,18 +54,18 @@ jobs:
       - name: Setup yarn
         run: npm install -g yarn
       - name: Install node dependencies
-        working-directory: ./client
+        working-directory: ./operate/client
         run: yarn install
       - name: Add Yarn binaries to Path
-        working-directory: ./client
+        working-directory: ./operate/client
         run: |
           echo "$(yarn bin)" >> $GITHUB_PATH
           echo "$(yarn global bin)" >> $GITHUB_PATH
       - name: Install Playwright
         run: yarn exec playwright install -- --with-deps chromium
-        working-directory: ./client
+        working-directory: ./operate/client
       - name: Build frontend
-        working-directory: ./client
+        working-directory: ./operate/client
         run: yarn build
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -91,9 +91,9 @@ jobs:
       - name: Build backend
         run: mvn clean install -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: mvn -q -B spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true
+        run: mvn -q -B spring-boot:start -f operate/webapp/pom.xml -Dspring-boot.run.fork=true
       - name: Run tests
-        working-directory: ./client
+        working-directory: ./operate/client
         run: yarn run test:e2e:ci
         env:
           ZEEBE_GATEWAY_ADDRESS: localhost:26500
@@ -101,5 +101,5 @@ jobs:
         if: always()
         with:
           name: Playwright report
-          path: client/playwright-report/
+          path: operate/client/playwright-report/
           retention-days: 30

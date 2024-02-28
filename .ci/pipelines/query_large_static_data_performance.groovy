@@ -229,13 +229,13 @@ pipeline {
       steps {
         container('maven') {
           configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-            sh ('mvn -B -s $MAVEN_SETTINGS_XML -f qa/query-performance-tests -P -docker,-skipTests verify')
+            sh ('mvn -B -s $MAVEN_SETTINGS_XML -f operate/qa/query-performance-tests -P -docker,-skipTests verify')
           }
         }
       }
       post {
         always {
-          junit testResults: 'qa/query-performance-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+          junit testResults: 'operate/qa/query-performance-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
         }
       }
     }

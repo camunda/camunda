@@ -15,19 +15,19 @@
   </parent>
 
   <modules>
-    <module>client</module>
-    <module>common</module>
-    <module>schema</module>
-    <module>data-generator</module>
-    <module>importer-common</module>
-    <module>importer-8_4</module>
-    <module>importer-8_5</module>
-    <module>importer</module>
-    <module>archiver</module>
-    <module>webapp</module>
-    <module>qa</module>
     <module>distro</module>
-    <module>mvc-auth-commons</module>
+    <module>operate/client</module>
+    <module>operate/common</module>
+    <module>operate/schema</module>
+    <module>operate/data-generator</module>
+    <module>operate/importer-common</module>
+    <module>operate/importer-8_4</module>
+    <module>operate/importer-8_5</module>
+    <module>operate/importer</module>
+    <module>operate/archiver</module>
+    <module>operate/webapp</module>
+    <module>operate/qa</module>
+    <module>operate/mvc-auth-commons</module>
   </modules>
 
   <properties>
@@ -43,7 +43,7 @@
     <skip.fe.build>false</skip.fe.build>
 
     <plugin.version.license>4.3</plugin.version.license>
-    <license.header>${project.baseUri}/../license/license-header</license.header>
+    <license.header>${project.baseUri}/../../license/license-header</license.header>
 
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/*5IT.java</excludeITNames>

@@ -4,24 +4,24 @@ on:
     branches:
       - master
     paths:
-      - 'client/**'
+      - 'operate/client/**'
   pull_request:
     paths:
-      - 'client/**'
+      - 'operate/client/**'
 jobs:
   linting-and-testing:
     name: Linting & Testing
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: client
+        working-directory: operate/client
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'yarn'
-          cache-dependency-path: client/yarn.lock
+          cache-dependency-path: operate/client/yarn.lock
       - run: yarn install --frozen-lockfile
         name: Install dependencies
       - run: yarn ts-check
