@@ -36,8 +36,10 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
@@ -49,6 +51,7 @@ import org.testcontainers.utility.DockerImageName;
  * <p>The important part is that we should be aware whether rolling update is possible between
  * versions.
  */
+@Execution(ExecutionMode.CONCURRENT)
 final class RollingUpdateTest {
 
   private static final BpmnModelInstance PROCESS =
@@ -84,7 +87,7 @@ final class RollingUpdateTest {
   }
 
   @ParameterizedTest(name = "from {0} to {1}")
-  @ArgumentsSource(VersionCompatibilityMatrix.class)
+  @MethodSource("io.camunda.zeebe.test.VersionCompatibilityMatrix#auto")
   void shouldBeAbleToRestartContainerWithNewVersion(final String from, final String to) {
     // given
     updateAllBrokers(from);
@@ -114,7 +117,7 @@ final class RollingUpdateTest {
   }
 
   @ParameterizedTest(name = "from {0} to {1}")
-  @ArgumentsSource(VersionCompatibilityMatrix.class)
+  @MethodSource("io.camunda.zeebe.test.VersionCompatibilityMatrix#auto")
   void shouldReplicateSnapshotAcrossVersions(final String from, final String to) {
     // given
     updateAllBrokers(from);
@@ -180,7 +183,7 @@ final class RollingUpdateTest {
   }
 
   @ParameterizedTest(name = "from {0} to {1}")
-  @ArgumentsSource(VersionCompatibilityMatrix.class)
+  @MethodSource("io.camunda.zeebe.test.VersionCompatibilityMatrix#auto")
   void shouldPerformRollingUpdate(final String from, final String to) {
     // given
     updateAllBrokers(from);
