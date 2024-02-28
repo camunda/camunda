@@ -47,7 +47,7 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Import Secrets
         id: secrets
@@ -114,7 +114,7 @@ jobs:
 
       - name: Generate a GitHub token
         id: github-token
-        uses: tibdex/github-app-token@v2
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
         with:
           app_id: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
           private_key: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_KEY }}
@@ -218,7 +218,7 @@ jobs:
           date: ${{ env.DATE }}
           revision:  ${{ env.REVISION }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
           fetch-depth: 0
 

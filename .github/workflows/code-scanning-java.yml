@@ -23,7 +23,7 @@ jobs:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Import secrets
         id: secrets
@@ -40,7 +40,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@47b3d888fe66b639e431abf22ebca059152f1eea # v3
         with:
           languages: java
           queries: security-and-quality
@@ -51,4 +51,4 @@ jobs:
           parameters: compile -DskipTests -Dskip.docker
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@47b3d888fe66b639e431abf22ebca059152f1eea # v3

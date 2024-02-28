@@ -23,7 +23,7 @@ jobs:
           distribution: 'temurin'
       - name: Run PMD
         id: pmd
-        uses: pmd/pmd-github-action@v1.4.1
+        uses: pmd/pmd-github-action@d57c0463ebba262a33d1983a5c6ac6031bfde43b # v1.4.1
         with:
           version: '6.55.0'
           token: ${{ secrets.BACKPORT_ACTION_PAT }}
@@ -32,6 +32,6 @@ jobs:
           analyzeModifiedFilesOnly: true
       - name: Upload SARIF file
         if: steps.pmd.outputs.violations != 0
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@47b3d888fe66b639e431abf22ebca059152f1eea # v3
         with:
           sarif_file: pmd-report.sarif
