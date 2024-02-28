@@ -5,8 +5,6 @@
     "config:base",
     // Pins github actions digests
     "helpers:pinGitHubActionDigests",
-    // Pins docker digests
-    "docker:pinDigests",
     // Enables Dependency Dashboard issue to control renovate
     ":dependencyDashboard",
     // Sets the automerge type to 'pr'
@@ -124,7 +122,7 @@
     // Infra deps
     {
       addLabels: ["component:ci"],
-      managers: ["docker-compose", "github-actions"],
+      managers: ["docker-compose", "dockerfile", "github-actions"],
     },
     // Docker deps
     {
@@ -139,6 +137,7 @@
       // Group all docker updates into one PR
       groupName: "Alpine dependencies",
       separateMajorMinor: true,
+      pinDigests: true,
     },
     // Settings for patch versions update
     {
