@@ -5,8 +5,6 @@
     "config:recommended",
     // Pins github actions digests
     "helpers:pinGitHubActionDigests",
-    // Enables Dependency Dashboard issue to control renovate
-    ":dependencyDashboard",
     // Sets the automerge type to 'pr'
     ":automergePr",
     // Enables automerging for patch version updates
@@ -126,13 +124,11 @@
     },
     // Docker deps
     {
-      matchDatasources: ["docker"],
-      matchPackagePatterns: ["alpine"],
-      // Group all docker updates into one PR
-      groupName: "Alpine dependencies",
+      matchManagers: "dockerfile",
       separateMajorMinor: true,
+      separateMinorPatch: true,
       pinDigests: true,
-      prPriority: 100
+      prPriority: 100,
     },
     // Settings for patch versions update
     {
@@ -146,7 +142,7 @@
       enabled: false,
     },
   ],
-  "customManagers": [    
+  customManagers: [
     // These two regex managers are checking for alpine image versions in files other than Dockerfile
     {
       customType: "regex",
