@@ -618,6 +618,17 @@
         #   port = 8000
         #   limit = 1024
 
+      # Skip records Exporter ------------
+      #
+      # Enable the exporter to skip record position
+      #
+      # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_[exporter name]_SKIPRECORDS"
+      # Allows to skip certain records by their position. This is useful for debugging or skipping a record that is
+      # preventing processing or exporting to continue.
+      # Record positions defined to skip in one of the exporters will be skipped in all exporters.
+      # The value is a comma-separated list of records ids to skip. Whitespace is ignored.
+      # skipRecords:
+
       # Elasticsearch Exporter ----------
       # An example configuration for the elasticsearch exporter:
       #
