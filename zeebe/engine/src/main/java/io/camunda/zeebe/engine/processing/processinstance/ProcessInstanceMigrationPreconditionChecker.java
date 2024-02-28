@@ -444,10 +444,24 @@ public final class ProcessInstanceMigrationPreconditionChecker {
       final DeployedProcess sourceProcessDefinition,
       final ProcessInstanceRecord elementInstanceRecord,
       final EnumSet<BpmnEventType> allowedEventTypes) {
+    requireNoBoundaryEvent(
+        sourceProcessDefinition,
+        elementInstanceRecord,
+        elementInstanceRecord.getElementId(),
+        allowedEventTypes,
+        ERROR_ACTIVE_ELEMENT_WITH_BOUNDARY_EVENT);
+  }
+
+  private static void requireNoBoundaryEvent(
+      final DeployedProcess sourceProcessDefinition,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final String elementId,
+      final EnumSet<BpmnEventType> allowedEventTypes,
+      final String errorTemplate) {
     final List<ExecutableBoundaryEvent> boundaryEvents =
         sourceProcessDefinition
             .getProcess()
-            .getElementById(elementInstanceRecord.getElementId(), ExecutableActivity.class)
+            .getElementById(elementId, ExecutableActivity.class)
             .getBoundaryEvents();
 
     final var rejectedBoundaryEvents =
@@ -462,11 +476,8 @@ public final class ProcessInstanceMigrationPreconditionChecker {
               .map(BpmnEventType::name)
               .collect(Collectors.joining(","));
       final String reason =
-          String.format(
-              ERROR_ACTIVE_ELEMENT_WITH_BOUNDARY_EVENT,
-              elementInstanceRecord.getProcessInstanceKey(),
-              elementInstanceRecord.getElementId(),
-              rejectedEventTypes);
+          errorTemplate.formatted(
+              elementInstanceRecord.getProcessInstanceKey(), elementId, rejectedEventTypes);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
