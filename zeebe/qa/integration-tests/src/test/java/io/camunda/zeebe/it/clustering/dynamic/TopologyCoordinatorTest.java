@@ -69,10 +69,14 @@ final class TopologyCoordinatorTest {
 
     // when - then
     // No exception because the query will be forwarded to broker 1
-    ClusterActuatorAssert.assertThat(cluster)
-        .hasActiveBroker(1)
-        .hasActiveBroker(2)
-        .doesNotHaveBroker(0);
+    Awaitility.await("Query is forwarded to broker 1")
+        .timeout(Duration.ofSeconds(30)) // give enough time for topology to be gossiped
+        .untilAsserted(
+            () ->
+                ClusterActuatorAssert.assertThat(cluster)
+                    .hasActiveBroker(1)
+                    .hasActiveBroker(2)
+                    .doesNotHaveBroker(0));
     // can also start a new topology change
     assertChangeIsPlanned(actuator.scaleBrokers(List.of(1, 2, 3)));
   }
