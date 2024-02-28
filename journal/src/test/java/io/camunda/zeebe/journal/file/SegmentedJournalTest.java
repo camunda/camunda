@@ -32,6 +32,8 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -55,9 +57,11 @@ class SegmentedJournalTest {
   private @TempDir Path directory;
   private SegmentedJournal journal;
 
+  private final List<AutoCloseable> closeables = new ArrayList<>();
+
   @AfterEach
   void tearDown() {
-    CloseHelper.quietClose(journal);
+    closeables.forEach(CloseHelper::quietClose);
   }
 
   @Test
@@ -335,7 +339,7 @@ class SegmentedJournalTest {
   @Test
   void shouldAppendEntriesOfDifferentSizesOverSegmentSize() {
     // given
-    final SegmentedJournal journal = openJournal("1234567890", 1);
+    journal = openJournal("1234567890", 1);
     final JournalReader reader = journal.openReader();
 
     // when
@@ -852,6 +856,8 @@ class SegmentedJournalTest {
 
   private SegmentedJournal openJournal(final String data, final int entriesPerSegment) {
     journalFactory = new TestJournalFactory(data, entriesPerSegment);
-    return journalFactory.journal(journalFactory.segmentsManager(directory));
+    final var journal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    closeables.add(journal);
+    return journal;
   }
 }
