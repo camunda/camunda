@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.Topology;
 
-public interface TopologyRequestStep1 extends FinalCommandStep<Topology> {
+public interface TopologyRequestStep1
+    extends CommandWithCommunicationApiStep<TopologyRequestStep1>, FinalCommandStep<Topology> {
   // the place for new optional parameters
 }

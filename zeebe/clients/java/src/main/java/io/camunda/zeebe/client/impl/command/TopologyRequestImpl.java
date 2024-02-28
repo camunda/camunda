@@ -34,6 +34,7 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
   private final GatewayStub asyncStub;
   private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
+  private boolean useRest;
 
   public TopologyRequestImpl(
       final GatewayStub asyncStub,
@@ -42,6 +43,18 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
+    useRest = false;
+  }
+
+  @Override
+  public TopologyRequestStep1 useRest() {
+    return this;
+  }
+
+  @Override
+  public TopologyRequestStep1 useGrpc() {
+    useRest = false;
+    return this;
   }
 
   @Override
