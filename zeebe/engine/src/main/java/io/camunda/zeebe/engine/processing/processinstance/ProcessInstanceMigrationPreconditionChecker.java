@@ -482,20 +482,21 @@ public final class ProcessInstanceMigrationPreconditionChecker {
             .getElementById(elementInstanceRecord.getElementId(), ExecutableActivity.class)
             .getBoundaryEvents();
 
-    final List<String> disallowedBoundaryEventsInSource =
+    final var rejectedBoundaryEvents =
         boundaryEvents.stream()
-            .map(AbstractFlowElement::getEventType)
-            .filter(eventType -> !allowedEventTypes.contains(eventType))
-            .map(BpmnEventType::name)
+            .filter(event -> !allowedEventTypes.contains(event.getEventType()))
             .toList();
 
-    if (!disallowedBoundaryEventsInSource.isEmpty()) {
+    if (!rejectedBoundaryEvents.isEmpty()) {
       final String reason =
           String.format(
               ERROR_ACTIVE_ELEMENT_WITH_BOUNDARY_EVENT,
               elementInstanceRecord.getProcessInstanceKey(),
               elementInstanceRecord.getElementId(),
-              String.join(",", disallowedBoundaryEventsInSource));
+              rejectedBoundaryEvents.stream()
+                  .map(ExecutableBoundaryEvent::getEventType)
+                  .map(BpmnEventType::name)
+                  .collect(Collectors.joining(",")));
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
