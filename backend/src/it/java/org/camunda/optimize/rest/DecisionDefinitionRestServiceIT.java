@@ -97,7 +97,6 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDecisionDefinitionsWithXml() {
     // given
     final DecisionDefinitionOptimizeDto expectedDecisionDefinition = createDecisionDefinitionDto();
@@ -133,7 +132,6 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getLatestDecisionDefinitionXml() {
     // given
     final String key = "aKey";

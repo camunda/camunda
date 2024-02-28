@@ -419,8 +419,8 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
       );
   }
 
-  @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  @Test
   public void updateDefinitionScopeEntry_removeTenant_reportXmlNotAffected() {
     // given
     final String definitionXml = "someXml";
@@ -557,7 +557,6 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void forceRemoveScopeFailsIfEsFailsToRemoveReports() {
     // given
     String collectionId = collectionClient.createNewCollection();
@@ -756,7 +755,6 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void bulkDeleteOfScopesSkipsEntryIfEsFailsToRemoveAssociatedReports() {
     // given
     String collectionId = collectionClient.createNewCollection();

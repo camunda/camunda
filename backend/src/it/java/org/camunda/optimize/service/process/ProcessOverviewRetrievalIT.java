@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import org.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.util.BpmnModels;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -36,6 +37,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
@@ -44,6 +46,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.SPIDERMAN_USE
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+@Tag(OPENSEARCH_PASSING)
 public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
 
   private final String FIRST_PROCESS_DEFINITION_KEY = "firstDefKey";
@@ -192,6 +195,7 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("getDefinitionNameAndExpectedSortOrder")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getProcessOverview_processesGetOrderedByOwnerAndDefinitionNameWhenOwnerNameIsMissingFromSomeDefinitions(final SortOrder sortOrder,
                                                                                                                       final List<String> processDefinitionKeys) {
     // given

@@ -84,7 +84,8 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
     final AtomicBoolean definitionsUpdated = new AtomicBoolean(false);
     // We must partition this into batches to avoid the maximum OS boolQuery clause limit being reached
     // OS counts the clauses in a different way to ES: 300 is roughly equivalent to 1000 in ES
-    Lists.partition(importedDefinitions, 300)
+    // The issue was reproduced locally with 300 partition size so reduced to 100
+    Lists.partition(importedDefinitions, 100)
       .forEach(
         partition -> {
           final BoolQuery.Builder definitionsToDeleteQuery = new BoolQuery.Builder();

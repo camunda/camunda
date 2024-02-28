@@ -170,7 +170,6 @@ public class ProcessImportIT extends AbstractImportIT {
       .isEqualTo(key);
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void allProcessDefinitionFieldDataIsAvailable() {
     // given
@@ -346,7 +345,6 @@ public class ProcessImportIT extends AbstractImportIT {
       .satisfies(instance -> assertThat(instance.getTenantId()).isEqualTo(expectedTenantId));
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void failingJobDoesNotUpdateImportIndex() throws InterruptedException {
     // given
@@ -429,7 +427,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .allSatisfy(instance -> assertThat(instance.getState()).isEqualTo(EXTERNALLY_TERMINATED_STATE));
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   @Test
   public void runningProcessesIndexedAfterFinish() {
     // given
@@ -472,7 +470,6 @@ public class ProcessImportIT extends AbstractImportIT {
     );
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @MethodSource("engineErrors")
   public void definitionImportWorksEvenIfDeploymentRequestFails(ErrorResponseMock errorResponseMock) {

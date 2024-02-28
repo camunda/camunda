@@ -6,6 +6,7 @@
 package org.camunda.optimize.upgrade.service;
 
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -15,9 +16,11 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
 
+@Tag(OPENSEARCH_PASSING)
 public class UpgradeValidationServiceIT {
 
   private final UpgradeValidationService underTest = new UpgradeValidationService();

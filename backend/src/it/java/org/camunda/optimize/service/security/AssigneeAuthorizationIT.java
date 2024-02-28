@@ -12,17 +12,20 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
 import static org.camunda.optimize.util.BpmnModels.getUserTaskDiagramWithAssignee;
 
+@Tag(OPENSEARCH_PASSING)
 public class AssigneeAuthorizationIT extends AbstractPlatformIT {
 
   @Test
@@ -85,6 +88,7 @@ public class AssigneeAuthorizationIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void searchForAssignees_forReports_partialReportDefinitionAuth() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();

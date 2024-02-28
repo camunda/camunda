@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.alert;
 
+import jakarta.mail.internet.MimeMessage;
 import org.camunda.optimize.JettyConfig;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
@@ -13,20 +14,22 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.quartz.JobDetail;
 import org.quartz.Trigger;
 import org.quartz.TriggerKey;
 
-import jakarta.mail.internet.MimeMessage;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
 
+@Tag(OPENSEARCH_PASSING)
 public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
 
   @Test
@@ -87,6 +90,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(1);
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void createNewAlertDecisionReport() {
     // given
@@ -139,6 +143,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     assertThatTriggerIsInRange(trigger, secondsUntilItShouldFireNext);
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void testScheduleTriggers() throws Exception {
     // given
@@ -173,6 +178,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
       ));
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void testCompanyBrandingInSubjectAndBody() throws Exception {
 
@@ -201,6 +207,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     assertThat(content).contains(testBrandingName);
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void testAccessUrlInAlertNotification() throws Exception {
     // given
@@ -234,6 +241,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
       ));
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void testCustomContextPathInAlertNotification() throws Exception {
     // given

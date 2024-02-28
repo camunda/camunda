@@ -53,7 +53,6 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
 
   @Test
 //  @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void retrieveTelemetryData() {
     // when
     final TelemetryDataDto telemetryData =

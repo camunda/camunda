@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing;
 
 import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -16,9 +17,11 @@ import org.mockserver.model.MediaType;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
+@Tag(OPENSEARCH_PASSING)
 public class DecisionDefinitionImportIT extends AbstractImportIT {
 
   @Test

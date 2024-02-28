@@ -877,9 +877,9 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void forceDeleteReport_notDeletedIfEsFailsWhenRemovingFromDashboards(final ReportType reportType) {
     // given
     String reportId = addEmptyReportToOptimize(reportType);
@@ -916,7 +916,6 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingAlertsForReport(final ReportType reportType) {
     // given
     String collectionId = collectionClient.createNewCollection();
@@ -948,7 +947,6 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingSharesForReport(final ReportType reportType) {
     // given
     String reportId = addEmptyReportToOptimize(reportType);

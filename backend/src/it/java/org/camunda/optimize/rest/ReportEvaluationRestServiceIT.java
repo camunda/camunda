@@ -47,6 +47,7 @@ import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -66,6 +67,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
@@ -80,6 +82,7 @@ import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagramWithC
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
+@Tag(OPENSEARCH_PASSING)
 public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @Test
@@ -97,6 +100,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById(ReportType reportType) {
     // given
     final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
@@ -111,6 +115,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_additionalFiltersAreApplied() {
     // given
     BpmnModelInstance processModel = getSingleUserTaskDiagram();
@@ -238,6 +243,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_additionalAssigneeFiltersAreApplied() {
     // given
     final BpmnModelInstance userTaskModel = getDoubleUserTaskDiagramWithAssignees(DEFAULT_USERNAME, "otherUserId");
@@ -271,6 +277,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_additionalCandidateGroupFiltersAreApplied() {
     // given
     final String candidateGroupId = "candidateGroupId";
@@ -309,6 +316,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_additionalAssigneeFiltersAreCombinedWithIncompatibleReportFilter() {
     // given
     final String otherUserId = "otherUserId";
@@ -333,6 +341,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_additionalCandidateFiltersAreCombinedWithIncompatibleReportFilter() {
     // given
     final String candidateGroupId = "candidateGroupId";
@@ -359,6 +368,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportByIdWithAdditionalFilters_filtersCombinedWithAlreadyExistingFiltersOnReport() {
     // given a report with a running instances filter
     BpmnModelInstance processModel = getSingleUserTaskDiagram();
@@ -388,6 +398,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_emptyFiltersListDoesNotImpactExistingFilters() {
     // given a report with a running instances filter
     BpmnModelInstance processModel = getSingleUserTaskDiagram();
@@ -417,6 +428,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportByIdWithAdditionalFilters_filtersExistOnReportThatAreSameAsAdditional() {
     // given
     BpmnModelInstance processModel = getSingleUserTaskDiagram();
@@ -446,6 +458,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportByIdWithAdditionalFilters_filtersIgnoredIfDecisionReport() {
     // given
     final DmnModelInstance decisionModel = createSimpleDmnModel("someKey");
@@ -473,6 +486,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_variableFiltersWithNameThatDoesNotExistForReportAreIgnored() {
     // given
     BpmnModelInstance processModel = getSingleUserTaskDiagram();
@@ -542,6 +556,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById_variableFiltersWithTypeThatDoesNotExistForReportAreIgnored() {
     // given deployed instance with long type variable
     BpmnModelInstance processModel = getSingleUserTaskDiagram();
@@ -613,6 +628,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateUnsavedReport(ReportType reportType) {
     // given
     final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
@@ -628,6 +644,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateUnsavedReport_reflectOwnerAndModifierNames_ownerHasNoAuthSideEffects(ReportType reportType) {
     // given
     final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
@@ -663,6 +680,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateUnsavedReportWithoutVersionsAndTenantsDoesNotFail(ReportType reportType) {
     // given
     final SingleReportDataDto reportDataDto = createReportWithoutVersionsAndTenants(reportType);
@@ -815,6 +833,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @ValueSource(strings = {LATEST_VERSION, ALL_VERSIONS})
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateSavedHeatmapLatestOrAllVersionReportUpdatesXml(final String version) {
     // given
     final String processKey = "aProcess";

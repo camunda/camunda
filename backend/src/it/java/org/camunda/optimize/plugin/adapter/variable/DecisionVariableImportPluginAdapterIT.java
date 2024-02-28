@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -21,9 +22,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 
+@Tag(OPENSEARCH_PASSING)
 public class DecisionVariableImportPluginAdapterIT extends AbstractPlatformIT {
 
   private ConfigurationService configurationService;

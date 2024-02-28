@@ -23,6 +23,7 @@ import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
@@ -44,6 +46,7 @@ import static org.camunda.optimize.test.optimize.CollectionClient.PRIVATE_COLLEC
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+@Tag(OPENSEARCH_PASSING)
 public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   private static final String PROCESS_KEY = "aprocess";
@@ -112,6 +115,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @ParameterizedTest
   @MethodSource("definitionType")
   public void evaluateAllTenantsAuthorizedStoredReport(int definitionResourceType) {
@@ -395,6 +399,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     reportClient.createSingleProcessReportAsUser(reportDefinitionDto, KERMIT_USER, KERMIT_USER);
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void getUnauthorizedEventProcessReport() {
     // given
@@ -438,6 +443,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void evaluateUnauthorizedEventProcessReport() {
     // given
@@ -460,6 +466,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void evaluateEventProcessReport() {
     // given
@@ -476,6 +483,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     reportClient.evaluateNumberReportById(reportId);
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void updateUnauthorizedEventProcessReport() {
     // given
@@ -518,6 +526,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void deleteUnauthorizedEventProcessReport() {
     // given

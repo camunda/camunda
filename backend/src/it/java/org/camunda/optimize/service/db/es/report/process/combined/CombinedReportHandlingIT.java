@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
@@ -96,6 +97,7 @@ import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Tag(OPENSEARCH_PASSING)
 public class CombinedReportHandlingIT extends AbstractPlatformIT {
 
   private static final String TEST_REPORT_NAME = "My foo report";
@@ -106,7 +108,6 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void reportIsWrittenToDatabase() {
     // given
     String id = createNewCombinedReport();
@@ -124,6 +125,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("getUncombinableSingleReports")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void combineUncombinableSingleReports(List<SingleProcessReportDefinitionRequestDto> singleReports) {
     // given
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
@@ -521,6 +523,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void reportEvaluationReturnsMetaData() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -594,7 +597,6 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void deleteCombinedReport() {
     // given
     String reportId = createNewCombinedReport();
@@ -608,6 +610,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canSaveAndEvaluateCombinedReports() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -790,6 +793,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void combinedReportsCanBeEvaluatedWithAdditionalFiltersAppliedToContainedReportsWithExistingReportFilters() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -838,6 +842,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void combinedReportsCanBeEvaluatedWithAdditionalFilters_allDataFilteredOutWithMultipleFilters() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -1029,6 +1034,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canSaveAndEvaluateCombinedReportsWithUserTaskDurationReportsOfDifferentDurationViewProperties() {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
@@ -1059,6 +1065,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canSaveAndEvaluateCombinedReportsWithUserTaskDurationAndProcessDurationReports() {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
@@ -1089,6 +1096,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canSaveAndEvaluateCombinedReportsWithStartAndEndDateGroupedReports() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
@@ -1131,6 +1139,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void reportsThatCantBeEvaluatedAreIgnored() {
     // given
     deploySimpleServiceTaskProcessDefinition();
@@ -1420,6 +1429,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReport() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -1464,6 +1474,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithSingleNumberReports() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -1483,6 +1494,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithSingleMapReports() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -1502,6 +1514,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithProcessDurationNumberReports() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -1521,6 +1534,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithProcessDurationMapReports() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -1540,6 +1554,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithProcessUserTaskTotalDurationMapReports() {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
@@ -1560,6 +1575,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithProcessUserTaskTotalDurationAndUserTaskIdleDurationMapReports() {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
@@ -1580,6 +1596,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithProcessDurationMapReportAndUserTaskTotalDurationMapReport() {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
@@ -1600,6 +1617,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithGroupedByProcessInstanceStartAndEndDateReports() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
@@ -1640,6 +1658,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithGroupedByUserTaskStartAndEndDateReports() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
@@ -1694,6 +1713,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithGroupedByFlowNodeStartAndEndDateReports() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
@@ -1748,6 +1768,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithSingleNumberAndMapReport_firstWins() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -1767,6 +1788,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void canEvaluateUnsavedCombinedReportWithRawReport() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -1803,6 +1825,7 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void combinedReportWithHyperMapReportCanBeEvaluated() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
