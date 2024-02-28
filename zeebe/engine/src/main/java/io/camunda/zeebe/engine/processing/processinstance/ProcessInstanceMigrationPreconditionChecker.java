@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -475,12 +476,14 @@ public final class ProcessInstanceMigrationPreconditionChecker {
       final DeployedProcess sourceProcessDefinition,
       final ProcessInstanceRecord elementInstanceRecord,
       final EnumSet<BpmnEventType> allowedEventTypes) {
-    final List<String> disallowedBoundaryEventsInSource =
+    final List<ExecutableBoundaryEvent> boundaryEvents =
         sourceProcessDefinition
             .getProcess()
             .getElementById(elementInstanceRecord.getElementId(), ExecutableActivity.class)
-            .getBoundaryEvents()
-            .stream()
+            .getBoundaryEvents();
+
+    final List<String> disallowedBoundaryEventsInSource =
+        boundaryEvents.stream()
             .map(AbstractFlowElement::getEventType)
             .filter(eventType -> !allowedEventTypes.contains(eventType))
             .map(BpmnEventType::name)
