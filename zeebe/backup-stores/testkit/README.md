@@ -12,7 +12,7 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
-import io.camunda.zeebe.backup.common.BackupStore;
+import io.camunda.zeebe.backup.api.BackupStore;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
@@ -49,7 +49,7 @@ To test that this implementation behaves like Zeebe expects, we can add an integ
 that extends the testkit:
 
 ```java
-import io.camunda.zeebe.backup.common.BackupStore;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
 
 public final class GcsBackupStoreIntegrationTest implements BackupStoreTestKit {
@@ -66,7 +66,7 @@ The testkit requires a clean state for each test, so let's make sure that we use
 for every test:
 
 ```java
-import io.camunda.zeebe.backup.common.BackupStore;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
 import org.junit.jupiter.api.BeforeEach;
 
