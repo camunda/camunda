@@ -19,7 +19,8 @@ public enum IncidentIntent implements ProcessInstanceRelatedIntent {
   CREATED((short) 0),
 
   RESOLVE((short) 1, false),
-  RESOLVED((short) 2);
+  RESOLVED((short) 2),
+  MIGRATED((short) 3, false);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -45,6 +46,8 @@ public enum IncidentIntent implements ProcessInstanceRelatedIntent {
         return RESOLVE;
       case 2:
         return RESOLVED;
+      case 3:
+        return MIGRATED;
       default:
         return Intent.UNKNOWN;
     }
@@ -60,6 +63,7 @@ public enum IncidentIntent implements ProcessInstanceRelatedIntent {
     switch (this) {
       case CREATED:
       case RESOLVED:
+      case MIGRATED:
         return true;
       default:
         return false;
