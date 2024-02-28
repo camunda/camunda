@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Set;
 
 public final class ExporterDirectorContext {
 
@@ -26,6 +27,7 @@ public final class ExporterDirectorContext {
   private PartitionMessagingService partitionMessagingService;
   private ExporterMode exporterMode = ExporterMode.ACTIVE; // per default we export records
   private Duration distributionInterval = DEFAULT_DISTRIBUTION_INTERVAL;
+  private Set<Long> positionsToSkip;
 
   public int getId() {
     return id;
@@ -57,6 +59,10 @@ public final class ExporterDirectorContext {
 
   public Duration getDistributionInterval() {
     return distributionInterval;
+  }
+
+  public Set<Long> getPositionsToSkip() {
+    return positionsToSkip != null ? positionsToSkip : Set.of();
   }
 
   public ExporterDirectorContext id(final int id) {
@@ -97,6 +103,11 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext distributionInterval(final Duration distributionInterval) {
     this.distributionInterval = distributionInterval;
+    return this;
+  }
+
+  public ExporterDirectorContext positionsToSkip(final Set<Long> positionsToSkip) {
+    this.positionsToSkip = positionsToSkip;
     return this;
   }
 
