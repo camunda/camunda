@@ -25,6 +25,7 @@ import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -54,6 +55,7 @@ public final class ExporterRule implements TestRule {
   private PartitionMessagingService partitionMessagingService = new SimplePartitionMessageService();
   private ExporterDirector director;
   private Duration distributionInterval = Duration.ofSeconds(15);
+  private Set<Long> skipRecords;
 
   private ExporterRule(final ExporterMode exporterMode) {
     this.exporterMode = exporterMode;
@@ -83,6 +85,11 @@ public final class ExporterRule implements TestRule {
     return this;
   }
 
+  public ExporterRule withSkipRecords(final Set<Long> skipRecords) {
+    this.skipRecords = skipRecords;
+    return this;
+  }
+
   @Override
   public Statement apply(final Statement base, final Description description) {
     return chain.apply(base, description);
@@ -102,7 +109,8 @@ public final class ExporterRule implements TestRule {
             .exporterMode(exporterMode)
             .distributionInterval(distributionInterval)
             .partitionMessagingService(partitionMessagingService)
-            .descriptors(exporterDescriptors);
+            .descriptors(exporterDescriptors)
+            .positionsToSkip(skipRecords);
 
     director = new ExporterDirector(context, false);
     director.startAsync(actorSchedulerRule.get()).join();
