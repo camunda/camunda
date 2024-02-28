@@ -205,6 +205,7 @@ jobs:
       - name: Helm install
         run: >
           helm upgrade --install ${{ inputs.name }} zeebe-benchmark/zeebe-benchmark
+          --version 0.1.22
           --namespace ${{ inputs.name }}
           --create-namespace
           --set global.image.tag=${{ needs.build-benchmark-images.outputs.image-tag }}
