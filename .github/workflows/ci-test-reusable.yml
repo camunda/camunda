@@ -40,7 +40,7 @@ env:
 jobs:
   integration-tests:
     name: Test
-    runs-on: gcp-core-16-default
+    runs-on: gcp-core-32-default
     if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
 
     steps:
@@ -54,7 +54,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets  # important to refer to it in later steps
-        uses: hashicorp/vault-action@9f522b85981b491eab9a52c144d15aedbd0bf371
+        uses: hashicorp/vault-action@v3
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
