@@ -73,7 +73,10 @@ public class IdentityAuthorizationService {
       return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
     } else if (authentication instanceof TokenAuthentication) {
       accessToken = ((TokenAuthentication) authentication).getAccessToken();
-      return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
+      final var groups =
+          identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
+      logger.info("Groups retrieved from access token - {}", groups.toString());
+      return groups;
     } else if (authentication instanceof JwtAuthenticationToken) {
       tasklistProperties.getIdentity().setIssuerUrl(tasklistProperties.getAuth0().getDomain());
       accessToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
