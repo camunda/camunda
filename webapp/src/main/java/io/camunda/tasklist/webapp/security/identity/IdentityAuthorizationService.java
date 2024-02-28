@@ -75,7 +75,8 @@ public class IdentityAuthorizationService {
       accessToken = ((TokenAuthentication) authentication).getAccessToken();
       final var groups =
           identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
-      logger.info("Groups retrieved from access token - {}", groups.toString());
+      logger.info("Access Token - {}", accessToken);
+      logger.info("Groups retrieved from access token - {}", groups);
       return groups;
     } else if (authentication instanceof JwtAuthenticationToken) {
       tasklistProperties.getIdentity().setIssuerUrl(tasklistProperties.getAuth0().getDomain());
