@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.EnumSet;
@@ -95,8 +97,8 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   private static final String ERROR_ACTIVE_ELEMENT_WITH_BOUNDARY_EVENT =
       """
               Expected to migrate process instance '%s' \
-              but active element with id '%s' has a boundary event. \
-              Migrating active elements with boundary events is not possible yet.""";
+              but active element with id '%s' has one or more boundary events of types '%s'. \
+              Migrating active elements with boundary events of these types is not possible yet.""";
   private static final String ERROR_TARGET_ELEMENT_WITH_BOUNDARY_EVENT =
       """
               Expected to migrate process instance '%s' \
@@ -464,27 +466,39 @@ public final class ProcessInstanceMigrationPreconditionChecker {
 
   /**
    * Checks whether the given source process definition contains a boundary event. Throws an
-   * exception if the source process definition contains a boundary event.
+   * exception if the source process definition contains a boundary event that is not allowed.
    *
    * @param sourceProcessDefinition source process definition to do the check
    * @param elementInstanceRecord element instance to be logged
+   * @param allowedEventTypes allowed event types for the boundary event
    */
   public static void requireNoBoundaryEventInSource(
       final DeployedProcess sourceProcessDefinition,
-      final ProcessInstanceRecord elementInstanceRecord) {
-    final boolean hasBoundaryEventInSource =
-        !sourceProcessDefinition
+      final ProcessInstanceRecord elementInstanceRecord,
+      final EnumSet<BpmnEventType> allowedEventTypes) {
+    final List<ExecutableBoundaryEvent> boundaryEvents =
+        sourceProcessDefinition
             .getProcess()
             .getElementById(elementInstanceRecord.getElementId(), ExecutableActivity.class)
-            .getBoundaryEvents()
-            .isEmpty();
+            .getBoundaryEvents();
 
-    if (hasBoundaryEventInSource) {
+    final var rejectedBoundaryEvents =
+        boundaryEvents.stream()
+            .filter(event -> !allowedEventTypes.contains(event.getEventType()))
+            .toList();
+
+    if (!rejectedBoundaryEvents.isEmpty()) {
+      final String rejectedEventTypes =
+          rejectedBoundaryEvents.stream()
+              .map(ExecutableBoundaryEvent::getEventType)
+              .map(BpmnEventType::name)
+              .collect(Collectors.joining(","));
       final String reason =
           String.format(
               ERROR_ACTIVE_ELEMENT_WITH_BOUNDARY_EVENT,
               elementInstanceRecord.getProcessInstanceKey(),
-              elementInstanceRecord.getElementId());
+              elementInstanceRecord.getElementId(),
+              rejectedEventTypes);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
