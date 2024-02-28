@@ -182,7 +182,6 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     final String targetElementId = sourceElementIdToTargetElementId.get(elementId);
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
-    requireNoIncident(incidentState, elementInstance);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstanceRecord, processInstanceKey);
     requireSameUserTaskImplementation(
