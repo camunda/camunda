@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditionChecker.*;
+import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -222,6 +224,19 @@ public class ProcessInstanceMigrationMigrateProcessor
               .setElementId(targetElementId));
     }
 
+    final long processIncidentKey =
+        incidentState.getProcessInstanceIncidentKey(elementInstance.getKey());
+    if (processIncidentKey != MISSING_INCIDENT) {
+      appendIncidentMigratedEvent(
+          processIncidentKey, targetProcessDefinition, targetElementId, processInstanceKey);
+    }
+
+    final var jobIncidentKey = incidentState.getJobIncidentKey(elementInstance.getJobKey());
+    if (jobIncidentKey != MISSING_INCIDENT) {
+      appendIncidentMigratedEvent(
+          jobIncidentKey, targetProcessDefinition, targetElementId, processInstanceKey);
+    }
+
     if (elementInstance.getUserTaskKey() > 0) {
       final var userTask = userTaskState.getUserTask(elementInstance.getUserTaskKey());
       if (userTask == null) {
@@ -274,6 +289,30 @@ public class ProcessInstanceMigrationMigrateProcessor
           }
           return true;
         });
+  }
+
+  private void appendIncidentMigratedEvent(
+      final long incidentKey,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final long processInstanceKey) {
+    final var incidentRecord = incidentState.getIncidentRecord(incidentKey);
+    if (incidentRecord == null) {
+      throw new SafetyCheckFailedException(
+          String.format(
+              """
+              Expected to migrate a user task for process instance with key '%d', \
+              but could not find incident with key '%d'. \
+              Please report this as a bug""",
+              processInstanceKey, incidentKey));
+    }
+    stateWriter.appendFollowUpEvent(
+        incidentKey,
+        IncidentIntent.MIGRATED,
+        incidentRecord
+            .setProcessDefinitionKey(targetProcessDefinition.getKey())
+            .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+            .setElementId(BufferUtil.wrapString(targetElementId)));
   }
 
   /**
