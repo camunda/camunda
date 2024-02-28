@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -24,6 +25,8 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -1089,6 +1092,164 @@ public class MigrateProcessInstanceTest {
                 .exists())
         .describedAs("Expect that the message boundary event is unsubscribed")
         .isTrue();
+  }
+
+  @Test
+  public void shouldWriteMigratedEventWhenActiveElementHasAJobIncident() {
+    // given
+    final String sourceProcessId = "process";
+    final String targetProcessId = "process2";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("jobTypeA"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask("B", t -> t.zeebeJobType("jobTypeB"))
+                    .endEvent("target_process_end")
+                    .done())
+            .deploy();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    ENGINE.jobs().withType("jobTypeA").withMaxJobsToActivate(1).activate();
+    RecordingExporter.jobRecords(JobIntent.CREATED).withType("jobTypeA").await();
+
+    final Record<JobRecordValue> failedEvent =
+        ENGINE.job().withType("jobTypeA").ofInstance(processInstanceKey).withRetries(0).fail();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withJobKey(failedEvent.getKey())
+            .getFirst();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that element id changed due to mapping")
+        .hasElementId("B");
+
+    // after resolving the incident, job can be completed and the process should continue
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    // note that re-evaluation of the job type expression is not enabled for this migration
+    // so the jobType didn't change
+    ENGINE.job().ofInstance(processInstanceKey).withType("jobTypeA").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("target_process_end")
+                .findAny())
+        .describedAs("Expect that the process instance is continued in the target process")
+        .isPresent();
+  }
+
+  @Test
+  public void shouldWriteMigratedEventWhenActiveElementHasAProcessIncident() {
+    // given
+    final String sourceProcessId = "process";
+    final String targetProcessId = "process2";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "A",
+                        b ->
+                            b.zeebeJobType("jobTypeA")
+                                .zeebeInputExpression("assert(x, x != null)", "y"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask("B", t -> t.zeebeJobType("jobTypeB"))
+                    .endEvent("target_process_end")
+                    .done())
+            .deploy();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that element id changed due to mapping")
+        .hasElementId("B");
+
+    // after resolving the incident, the process should continue as expected
+    ENGINE.variables().ofScope(processInstanceKey).withDocument(Map.of("x", 1)).update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B") // target element id
+                .exists())
+        .describedAs("Expect that the job is created in the migrated process")
+        .isTrue();
+
+    // since the job wasn't created in the source process before the migration, a new job is created
+    // in the target process after resolving the incident
+    ENGINE.job().ofInstance(processInstanceKey).withType("jobTypeB").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("target_process_end")
+                .findAny())
+        .describedAs("Expect that the process instance is continued in the target process")
+        .isPresent();
   }
 
   private static long extractProcessDefinitionKeyByProcessId(
