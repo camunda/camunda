@@ -5,30 +5,29 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.elasticsearch.core.TimeValue.timeValueSeconds;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
-import org.camunda.optimize.service.db.reader.BusinessKeyReader;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.reader.BusinessKeyReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 
 @RequiredArgsConstructor
 @Component
@@ -48,12 +47,18 @@ public class BusinessKeyReaderES implements BusinessKeyReader {
       return Collections.emptyList();
     }
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.idsQuery().addIds(processInstanceIds.toArray(new String[0])))
-      .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(DatabaseConstants.BUSINESS_KEY_INDEX_NAME)
-      .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
+    SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(QueryBuilders.idsQuery().addIds(processInstanceIds.toArray(new String[0])))
+            .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest =
+        new SearchRequest(DatabaseConstants.BUSINESS_KEY_INDEX_NAME)
+            .source(searchSourceBuilder)
+            .scroll(
+                timeValueSeconds(
+                    configurationService
+                        .getElasticSearchConfiguration()
+                        .getScrollTimeoutInSeconds()));
 
     SearchResponse searchResponse;
     try {
@@ -63,12 +68,10 @@ public class BusinessKeyReaderES implements BusinessKeyReader {
       throw new OptimizeRuntimeException("Was not able to retrieve event business keys!", e);
     }
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
-      searchResponse,
-      BusinessKeyDto.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
-    );
+        searchResponse,
+        BusinessKeyDto.class,
+        objectMapper,
+        esClient,
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
   }
-
 }

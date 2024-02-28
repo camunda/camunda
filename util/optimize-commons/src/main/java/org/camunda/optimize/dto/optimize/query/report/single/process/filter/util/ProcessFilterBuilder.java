@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 
 public class ProcessFilterBuilder {
 

@@ -11,10 +11,10 @@ import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class EventProcessRoleResponseDto extends EventProcessRoleRequestDto<IdentityWithMetadataResponseDto> {
+public class EventProcessRoleResponseDto
+    extends EventProcessRoleRequestDto<IdentityWithMetadataResponseDto> {
 
   public EventProcessRoleResponseDto(final IdentityWithMetadataResponseDto identity) {
     super(identity);
   }
-
 }

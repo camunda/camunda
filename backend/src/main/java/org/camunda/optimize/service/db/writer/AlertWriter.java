@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.db.writer;
 
-import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 
 public interface AlertWriter {
 

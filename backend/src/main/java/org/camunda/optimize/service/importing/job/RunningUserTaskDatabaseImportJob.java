@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
@@ -12,17 +13,16 @@ import org.camunda.optimize.service.db.writer.usertask.RunningUserTaskInstanceWr
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.util.List;
-
 public class RunningUserTaskDatabaseImportJob extends DatabaseImportJob<FlowNodeInstanceDto> {
 
   private final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter;
   private final ConfigurationService configurationService;
 
-  public RunningUserTaskDatabaseImportJob(final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
-                                          final ConfigurationService configurationService,
-                                          final Runnable callback,
-                                          final DatabaseClient databaseClient) {
+  public RunningUserTaskDatabaseImportJob(
+      final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
+      final ConfigurationService configurationService,
+      final Runnable callback,
+      final DatabaseClient databaseClient) {
     super(callback, databaseClient);
     this.runningUserTaskInstanceWriter = runningUserTaskInstanceWriter;
     this.configurationService = configurationService;
@@ -30,14 +30,11 @@ public class RunningUserTaskDatabaseImportJob extends DatabaseImportJob<FlowNode
 
   @Override
   protected void persistEntities(List<FlowNodeInstanceDto> newOptimizeEntities) {
-    final List<ImportRequestDto> importRequests = runningUserTaskInstanceWriter.generateUserTaskImports(
-      newOptimizeEntities);
+    final List<ImportRequestDto> importRequests =
+        runningUserTaskInstanceWriter.generateUserTaskImports(newOptimizeEntities);
     databaseClient.executeImportRequestsAsBulk(
-      "Running user tasks",
-      importRequests,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        "Running user tasks",
+        importRequests,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
-
 }
-

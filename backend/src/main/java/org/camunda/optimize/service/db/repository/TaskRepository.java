@@ -8,7 +8,7 @@ package org.camunda.optimize.service.db.repository;
 import java.util.List;
 
 public interface TaskRepository {
-  record TaskProgressInfo(int progress, long totalCount, long processedCount){}
+  record TaskProgressInfo(int progress, long totalCount, long processedCount) {}
 
   List<TaskProgressInfo> tasksProgress(final String action);
 }

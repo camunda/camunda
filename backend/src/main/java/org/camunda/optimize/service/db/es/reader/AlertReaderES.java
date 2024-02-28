@@ -5,13 +5,20 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.elasticsearch.core.TimeValue.timeValueSeconds;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.reader.AlertReader;
 import org.camunda.optimize.service.db.schema.index.AlertIndex;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -25,14 +32,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 
 @RequiredArgsConstructor
 @Component
@@ -61,10 +60,14 @@ public class AlertReaderES implements AlertReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.matchAllQuery());
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME)
-      .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
-
+    SearchRequest searchRequest =
+        new SearchRequest(ALERT_INDEX_NAME)
+            .source(searchSourceBuilder)
+            .scroll(
+                timeValueSeconds(
+                    configurationService
+                        .getElasticSearchConfiguration()
+                        .getScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -75,12 +78,11 @@ public class AlertReaderES implements AlertReader {
     }
 
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
-      scrollResp,
-      AlertDefinitionDto.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
-    );
+        scrollResp,
+        AlertDefinitionDto.class,
+        objectMapper,
+        esClient,
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
   }
 
   @Override
@@ -104,7 +106,8 @@ public class AlertReaderES implements AlertReader {
     String responseAsString = getResponse.getSourceAsString();
 
     try {
-      return Optional.ofNullable(objectMapper.readValue(responseAsString, AlertDefinitionDto.class));
+      return Optional.ofNullable(
+          objectMapper.readValue(responseAsString, AlertDefinitionDto.class));
     } catch (IOException e) {
       logError(alertId);
       throw new OptimizeRuntimeException("Can't fetch alert");
@@ -125,12 +128,14 @@ public class AlertReaderES implements AlertReader {
     try {
       searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
-      String reason = String.format("Was not able to fetch alerts for report with id [%s]", reportId);
+      String reason =
+          String.format("Was not able to fetch alerts for report with id [%s]", reportId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(
+        searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
   }
 
   @Override
@@ -138,21 +143,22 @@ public class AlertReaderES implements AlertReader {
     log.debug("Fetching first {} alerts using reports with ids {}", LIST_FETCH_LIMIT, reportIds);
 
     final QueryBuilder query = QueryBuilders.termsQuery(AlertIndex.REPORT_ID, reportIds);
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .size(LIST_FETCH_LIMIT);
+    SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder().query(query).size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
-      String reason = String.format("Was not able to fetch alerts for reports with ids [%s]", reportIds);
+      String reason =
+          String.format("Was not able to fetch alerts for reports with ids [%s]", reportIds);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(
+        searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
   }
 
   private void logError(String alertId) {

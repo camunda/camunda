@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.dto.zeebe.variable;
 
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
-
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 @EqualsAndHashCode
 @Data

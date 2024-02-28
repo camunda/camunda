@@ -7,6 +7,16 @@ package org.camunda.optimize.upgrade.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.util.Optional;
+import javax.net.ssl.SSLContext;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -34,24 +44,14 @@ import org.elasticsearch.client.RestHighLevelClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLContext;
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.security.KeyStore;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.util.Optional;
-
 public class ElasticsearchHighLevelRestClientBuilder {
 
   private static final String HTTP = "http";
   private static final String HTTPS = "https";
   private static RequestOptions requestOptions;
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchHighLevelRestClientBuilder.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(ElasticsearchHighLevelRestClientBuilder.class);
 
   public static RestHighLevelClient build(final ConfigurationService configurationService) {
     requestOptions = getRequestOptions(configurationService);
@@ -61,21 +61,25 @@ public class ElasticsearchHighLevelRestClientBuilder {
     return buildHttpRestClient(configurationService);
   }
 
-  public static String getCurrentESVersion(final RestHighLevelClient esClient,
-                                           final RequestOptions requestOptions) throws IOException {
+  public static String getCurrentESVersion(
+      final RestHighLevelClient esClient, final RequestOptions requestOptions) throws IOException {
     final Request request = new Request(HttpGet.METHOD_NAME, "/");
     request.setOptions(requestOptions);
-    final String responseJson = EntityUtils.toString(esClient.getLowLevelClient().performRequest(request).getEntity());
+    final String responseJson =
+        EntityUtils.toString(esClient.getLowLevelClient().performRequest(request).getEntity());
     ObjectNode node = new ObjectMapper().readValue(responseJson, ObjectNode.class);
     return node.get("version").get("number").toString().replace("\"", "");
   }
 
-  private static RestHighLevelClient buildHttpRestClient(final ConfigurationService configurationService) {
+  private static RestHighLevelClient buildHttpRestClient(
+      final ConfigurationService configurationService) {
     logger.info("Setting up http rest client connection");
-    return getRestHighLevelClient(buildDefaultRestClient(configurationService, HTTP), requestOptions);
+    return getRestHighLevelClient(
+        buildDefaultRestClient(configurationService, HTTP), requestOptions);
   }
 
-  private static RestHighLevelClient buildHttpsRestClient(final ConfigurationService configurationService) {
+  private static RestHighLevelClient buildHttpsRestClient(
+      final ConfigurationService configurationService) {
     logger.info("Setting up https rest client connection");
     try {
       final RestClientBuilder builder = buildDefaultRestClient(configurationService, HTTPS);
@@ -85,15 +89,18 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
       if (truststore.size() > 0) {
         final TrustStrategy trustStrategy =
-          configurationService.getElasticSearchConfiguration().getSecuritySslSelfSigned() == Boolean.TRUE ?
-          new TrustSelfSignedStrategy() : null;
+            configurationService.getElasticSearchConfiguration().getSecuritySslSelfSigned()
+                    == Boolean.TRUE
+                ? new TrustSelfSignedStrategy()
+                : null;
         sslContext = SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
       } else {
         // default if custom truststore is empty
         sslContext = SSLContext.getDefault();
       }
 
-      builder.setHttpClientConfigCallback(createHttpClientConfigCallback(configurationService, sslContext));
+      builder.setHttpClientConfigCallback(
+          createHttpClientConfigCallback(configurationService, sslContext));
       return getRestHighLevelClient(builder, requestOptions);
     } catch (Exception e) {
       String message = "Could not build secured Elasticsearch client.";
@@ -102,24 +109,26 @@ public class ElasticsearchHighLevelRestClientBuilder {
   }
 
   private static RestClientBuilder.HttpClientConfigCallback createHttpClientConfigCallback(
-    final ConfigurationService configurationService) {
+      final ConfigurationService configurationService) {
     return createHttpClientConfigCallback(configurationService, null);
   }
 
   private static RestClientBuilder.HttpClientConfigCallback createHttpClientConfigCallback(
-    final ConfigurationService configurationService,
-    final SSLContext sslContext) {
+      final ConfigurationService configurationService, final SSLContext sslContext) {
     return httpClientBuilder -> {
       buildCredentialsProviderIfConfigured(configurationService)
-        .ifPresent(httpClientBuilder::setDefaultCredentialsProvider);
+          .ifPresent(httpClientBuilder::setDefaultCredentialsProvider);
 
       httpClientBuilder.setSSLContext(sslContext);
 
-      final ProxyConfiguration proxyConfig = configurationService.getElasticSearchConfiguration().getProxyConfig();
+      final ProxyConfiguration proxyConfig =
+          configurationService.getElasticSearchConfiguration().getProxyConfig();
       if (proxyConfig.isEnabled()) {
-        httpClientBuilder.setProxy(new HttpHost(
-          proxyConfig.getHost(), proxyConfig.getPort(), proxyConfig.isSslEnabled() ? HTTPS : HTTP
-        ));
+        httpClientBuilder.setProxy(
+            new HttpHost(
+                proxyConfig.getHost(),
+                proxyConfig.getPort(),
+                proxyConfig.isSslEnabled() ? HTTPS : HTTP));
       }
 
       if (configurationService.getElasticSearchConfiguration().getSkipHostnameVerification()) {
@@ -131,51 +140,51 @@ public class ElasticsearchHighLevelRestClientBuilder {
     };
   }
 
-  private static RestClientBuilder buildDefaultRestClient(ConfigurationService configurationService, String protocol) {
-    final RestClientBuilder restClientBuilder = RestClient.builder(
-        buildElasticsearchConnectionNodes(configurationService, protocol))
-      .setRequestConfigCallback(
-        requestConfigBuilder -> requestConfigBuilder
-          .setConnectTimeout(configurationService.getElasticSearchConfiguration().getConnectionTimeout())
-          .setSocketTimeout(0)
-      );
-    if (!StringUtils.isEmpty(configurationService.getElasticSearchConfiguration().getPathPrefix())) {
-      restClientBuilder.setPathPrefix(configurationService.getElasticSearchConfiguration().getPathPrefix());
+  private static RestClientBuilder buildDefaultRestClient(
+      ConfigurationService configurationService, String protocol) {
+    final RestClientBuilder restClientBuilder =
+        RestClient.builder(buildElasticsearchConnectionNodes(configurationService, protocol))
+            .setRequestConfigCallback(
+                requestConfigBuilder ->
+                    requestConfigBuilder
+                        .setConnectTimeout(
+                            configurationService
+                                .getElasticSearchConfiguration()
+                                .getConnectionTimeout())
+                        .setSocketTimeout(0));
+    if (!StringUtils.isEmpty(
+        configurationService.getElasticSearchConfiguration().getPathPrefix())) {
+      restClientBuilder.setPathPrefix(
+          configurationService.getElasticSearchConfiguration().getPathPrefix());
     }
 
-    restClientBuilder.setHttpClientConfigCallback(createHttpClientConfigCallback(configurationService));
+    restClientBuilder.setHttpClientConfigCallback(
+        createHttpClientConfigCallback(configurationService));
 
     return restClientBuilder;
   }
 
-  private static HttpHost[] buildElasticsearchConnectionNodes(ConfigurationService configurationService,
-                                                              String protocol) {
-    return configurationService.getElasticSearchConfiguration().getConnectionNodes()
-      .stream()
-      .map(conf -> new HttpHost(
-             conf.getHost(),
-             conf.getHttpPort(),
-             protocol
-           )
-      )
-      .toArray(HttpHost[]::new);
+  private static HttpHost[] buildElasticsearchConnectionNodes(
+      ConfigurationService configurationService, String protocol) {
+    return configurationService.getElasticSearchConfiguration().getConnectionNodes().stream()
+        .map(conf -> new HttpHost(conf.getHost(), conf.getHttpPort(), protocol))
+        .toArray(HttpHost[]::new);
   }
 
   private static Optional<CredentialsProvider> buildCredentialsProviderIfConfigured(
-    final ConfigurationService configurationService) {
+      final ConfigurationService configurationService) {
     CredentialsProvider credentialsProvider = null;
     if (configurationService.getElasticSearchConfiguration().getSecurityUsername() != null
-      && configurationService.getElasticSearchConfiguration().getSecurityPassword() != null) {
+        && configurationService.getElasticSearchConfiguration().getSecurityPassword() != null) {
       credentialsProvider = new BasicCredentialsProvider();
       credentialsProvider.setCredentials(
-        AuthScope.ANY,
-        new UsernamePasswordCredentials(
-          configurationService.getElasticSearchConfiguration().getSecurityUsername(),
-          configurationService.getElasticSearchConfiguration().getSecurityPassword()
-        )
-      );
+          AuthScope.ANY,
+          new UsernamePasswordCredentials(
+              configurationService.getElasticSearchConfiguration().getSecurityUsername(),
+              configurationService.getElasticSearchConfiguration().getSecurityPassword()));
     } else {
-      logger.debug("Elasticsearch username and password not provided, skipping connection credential setup.");
+      logger.debug(
+          "Elasticsearch username and password not provided, skipping connection credential setup.");
     }
     return Optional.ofNullable(credentialsProvider);
   }
@@ -186,39 +195,46 @@ public class ElasticsearchHighLevelRestClientBuilder {
       trustStore.load(null);
 
       // load custom es server certificate if configured
-      final String serverCertificate = configurationService.getElasticSearchConfiguration().getSecuritySSLCertificate();
+      final String serverCertificate =
+          configurationService.getElasticSearchConfiguration().getSecuritySSLCertificate();
       if (serverCertificate != null) {
         try {
           Certificate cert = loadCertificateFromPath(serverCertificate);
           trustStore.setCertificateEntry("elasticsearch-host", cert);
         } catch (Exception e) {
-          String message = "Could not load configured server certificate for the secured Elasticsearch Connection!";
+          String message =
+              "Could not load configured server certificate for the secured Elasticsearch Connection!";
           throw new OptimizeConfigurationException(message, e);
         }
       }
 
       // load trusted CA certificates
       int caCertificateCounter = 0;
-      for (String caCertificatePath : configurationService.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities()) {
+      for (String caCertificatePath :
+          configurationService
+              .getElasticSearchConfiguration()
+              .getSecuritySSLCertificateAuthorities()) {
         try {
           Certificate cert = loadCertificateFromPath(caCertificatePath);
           trustStore.setCertificateEntry("custom-elasticsearch-ca-" + caCertificateCounter, cert);
           caCertificateCounter++;
         } catch (Exception e) {
-          String message = "Could not load CA authority certificate for the secured Elasticsearch Connection!";
+          String message =
+              "Could not load CA authority certificate for the secured Elasticsearch Connection!";
           throw new OptimizeConfigurationException(message, e);
         }
       }
 
       return trustStore;
     } catch (Exception e) {
-      String message = "Could not create certificate trustStore for the secured Elasticsearch Connection!";
+      String message =
+          "Could not create certificate trustStore for the secured Elasticsearch Connection!";
       throw new OptimizeRuntimeException(message, e);
     }
   }
 
   private static Certificate loadCertificateFromPath(final String certificatePath)
-    throws IOException, CertificateException {
+      throws IOException, CertificateException {
     Certificate cert;
     final FileInputStream fileInputStream = new FileInputStream(certificatePath);
     try (BufferedInputStream bis = new BufferedInputStream(fileInputStream)) {
@@ -229,34 +245,35 @@ public class ElasticsearchHighLevelRestClientBuilder {
         logger.debug("Found certificate: {}", cert);
       } else {
         throw new OptimizeConfigurationException(
-          "Could not load certificate from file, file is empty. File: " + certificatePath
-        );
+            "Could not load certificate from file, file is empty. File: " + certificatePath);
       }
     }
     return cert;
   }
 
-  private static RestHighLevelClient getRestHighLevelClient(final RestClientBuilder builder,
-                                                            final RequestOptions requestOptions) {
-    RestHighLevelClient restHighLevelClient = new RestHighLevelClientBuilder(builder.build())
-      .build();
-      // we only need to turn on the compatibility mode when the server is ES8
-      final String esVersion = waitUntilElasticIsUpAndFetchVersion(restHighLevelClient, requestOptions);
-      // The string containing the ElasticSearch version has the format X.X.X, therefore if the first character is 8,
-      // we are dealing with ES8
-      if (esVersion.startsWith("8")) {
-        restHighLevelClient = new RestHighLevelClientBuilder(builder.build())
-          .setApiCompatibilityMode(true)
-          .build();
-        logger.info("The compatibility mode for ES8 has been enabled for the client.");
-      }
-      logger.info("Finished setting up HTTP rest client connection.");
-      return restHighLevelClient;
+  private static RestHighLevelClient getRestHighLevelClient(
+      final RestClientBuilder builder, final RequestOptions requestOptions) {
+    RestHighLevelClient restHighLevelClient =
+        new RestHighLevelClientBuilder(builder.build()).build();
+    // we only need to turn on the compatibility mode when the server is ES8
+    final String esVersion =
+        waitUntilElasticIsUpAndFetchVersion(restHighLevelClient, requestOptions);
+    // The string containing the ElasticSearch version has the format X.X.X, therefore if the first
+    // character is 8,
+    // we are dealing with ES8
+    if (esVersion.startsWith("8")) {
+      restHighLevelClient =
+          new RestHighLevelClientBuilder(builder.build()).setApiCompatibilityMode(true).build();
+      logger.info("The compatibility mode for ES8 has been enabled for the client.");
+    }
+    logger.info("Finished setting up HTTP rest client connection.");
+    return restHighLevelClient;
   }
 
-  private static String waitUntilElasticIsUpAndFetchVersion(final RestHighLevelClient restHighLevelClient,
-                                                            final RequestOptions requestOptions) {
-    // We keep trying until elasticsearch is up and running. If ES does not boot then we cannot run Optimize anyway,
+  private static String waitUntilElasticIsUpAndFetchVersion(
+      final RestHighLevelClient restHighLevelClient, final RequestOptions requestOptions) {
+    // We keep trying until elasticsearch is up and running. If ES does not boot then we cannot run
+    // Optimize anyway,
     // therefore we just stay in this infinite loop until it's up
     while (true) {
       try {
@@ -264,7 +281,8 @@ public class ElasticsearchHighLevelRestClientBuilder {
       } catch (ConnectException ex) {
         logger.error("Can't connect to any ES node right now. Retrying connection...");
         long sleepTime = 1000;
-        logger.info("No Elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
+        logger.info(
+            "No Elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
         try {
           Thread.sleep(sleepTime);
         } catch (final InterruptedException e) {
@@ -279,16 +297,12 @@ public class ElasticsearchHighLevelRestClientBuilder {
   }
 
   private static RequestOptions getRequestOptions(final ConfigurationService configurationService) {
-    ElasticsearchCustomHeaderProvider customHeaderProvider = new ElasticsearchCustomHeaderProvider(
-      configurationService,
-      new PluginJarFileLoader(configurationService)
-    );
+    ElasticsearchCustomHeaderProvider customHeaderProvider =
+        new ElasticsearchCustomHeaderProvider(
+            configurationService, new PluginJarFileLoader(configurationService));
     customHeaderProvider.initPlugins();
-    RequestOptionsProvider requestOptionsProvider = new RequestOptionsProvider(
-      customHeaderProvider.getPlugins(),
-      configurationService
-    );
+    RequestOptionsProvider requestOptionsProvider =
+        new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService);
     return requestOptionsProvider.getRequestOptions();
   }
-
 }

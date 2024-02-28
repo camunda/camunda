@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.upgrade.indices;
 
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
-
 import java.io.IOException;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 @AllArgsConstructor
 public class UserTestWithTemplateIndex extends DefaultIndexMappingCreator<XContentBuilder> {
@@ -37,22 +36,20 @@ public class UserTestWithTemplateIndex extends DefaultIndexMappingCreator<XConte
     return VERSION;
   }
 
-
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
-      .startObject("password")
-      .field("type", "keyword")
-      .endObject()
-      .startObject("username")
-      .field("type", "keyword")
-      .endObject();
+        .startObject("password")
+        .field("type", "keyword")
+        .endObject()
+        .startObject("username")
+        .field("type", "keyword")
+        .endObject();
   }
 
   @Override
-  public XContentBuilder addStaticSetting(final String key,
-                                          final int value,
-                                          final XContentBuilder contentBuilder) throws IOException {
+  public XContentBuilder addStaticSetting(
+      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
     return contentBuilder.field(key, value);
   }
 }

@@ -11,17 +11,17 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonTokenId;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.time.DateTimeException;
 import java.time.Instant;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class CustomCloudEventTimeDeserializer extends JsonDeserializer<Instant> {
 
   @Override
-  public Instant deserialize(final JsonParser p, final DeserializationContext ctxt) throws IOException {
+  public Instant deserialize(final JsonParser p, final DeserializationContext ctxt)
+      throws IOException {
     if (p.currentTokenId() == JsonTokenId.ID_STRING) {
       try {
         return ITU.parseDateTime(p.getText()).toInstant();
@@ -30,7 +30,8 @@ public class CustomCloudEventTimeDeserializer extends JsonDeserializer<Instant> 
       }
     }
     throw new JsonParseException(
-      p, "Could not create Instant from the time provided, it must be a string in valid RFC3339 format: " + p.getText()
-    );
+        p,
+        "Could not create Instant from the time provided, it must be a string in valid RFC3339 format: "
+            + p.getText());
   }
 }

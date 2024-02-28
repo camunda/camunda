@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.elasticsearch.snapshots.SnapshotState;
-
-import java.time.OffsetDateTime;
-import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor

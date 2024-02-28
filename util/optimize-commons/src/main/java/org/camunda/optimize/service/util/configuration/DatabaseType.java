@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_DATABASE_PROPERTY;
+
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_DATABASE_PROPERTY;
-
 @Getter
 @AllArgsConstructor
 public enum DatabaseType {
-
   ELASTICSEARCH(ELASTICSEARCH_DATABASE_PROPERTY),
   OPENSEARCH(OPENSEARCH_DATABASE_PROPERTY);
 

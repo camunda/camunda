@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.processoverview;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import jakarta.validation.constraints.NotNull;
 
 @Data
 @NoArgsConstructor
@@ -18,7 +17,5 @@ import jakarta.validation.constraints.NotNull;
 public class ProcessUpdateDto implements OptimizeDto {
 
   private String ownerId;
-  @NotNull
-  private ProcessDigestRequestDto processDigest;
-
+  @NotNull private ProcessDigestRequestDto processDigest;
 }

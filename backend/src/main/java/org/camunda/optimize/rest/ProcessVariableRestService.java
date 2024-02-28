@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.rest;
 
+import jakarta.validation.Valid;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
@@ -16,16 +25,6 @@ import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.variable.ProcessVariableLabelService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;
-
-import jakarta.validation.Valid;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
-import java.util.List;
 
 @AllArgsConstructor
 @Path(ProcessVariableRestService.PROCESS_VARIABLES_PATH)
@@ -42,8 +41,8 @@ public class ProcessVariableRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<ProcessVariableNameResponseDto> getVariableNames(
-    @Context final ContainerRequestContext requestContext,
-    @Valid final List<ProcessVariableNameRequestDto> variableRequestDtos) {
+      @Context final ContainerRequestContext requestContext,
+      @Valid final List<ProcessVariableNameRequestDto> variableRequestDtos) {
     return processVariableService.getVariableNames(variableRequestDtos);
   }
 
@@ -51,18 +50,21 @@ public class ProcessVariableRestService {
   @Path("/reports")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<ProcessVariableNameResponseDto> getVariableNamesForReports(@Context ContainerRequestContext requestContext,
-                                                                         GetVariableNamesForReportsRequestDto requestDto) {
+  public List<ProcessVariableNameResponseDto> getVariableNamesForReports(
+      @Context ContainerRequestContext requestContext,
+      GetVariableNamesForReportsRequestDto requestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return processVariableService.getVariableNamesForAuthorizedReports(userId, requestDto.getReportIds());
+    return processVariableService.getVariableNamesForAuthorizedReports(
+        userId, requestDto.getReportIds());
   }
 
   @POST
   @Path("/values")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<String> getVariableValues(@Context ContainerRequestContext requestContext,
-                                        ProcessVariableValueRequestDto variableValueRequestDto) {
+  public List<String> getVariableValues(
+      @Context ContainerRequestContext requestContext,
+      ProcessVariableValueRequestDto variableValueRequestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return processVariableService.getVariableValues(userId, variableValueRequestDto);
   }
@@ -71,8 +73,9 @@ public class ProcessVariableRestService {
   @Path("/values/reports")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<String> getVariableValuesForReports(@Context ContainerRequestContext requestContext,
-                                                  ProcessVariableReportValuesRequestDto requestDto) {
+  public List<String> getVariableValuesForReports(
+      @Context ContainerRequestContext requestContext,
+      ProcessVariableReportValuesRequestDto requestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return processVariableService.getVariableValuesForReports(userId, requestDto);
   }
@@ -80,9 +83,9 @@ public class ProcessVariableRestService {
   @POST
   @Path("/labels")
   @Consumes(MediaType.APPLICATION_JSON)
-  public void modifyVariableLabels(@Context ContainerRequestContext requestContext,
-                                   @Valid DefinitionVariableLabelsDto definitionVariableLabelsDto) {
+  public void modifyVariableLabels(
+      @Context ContainerRequestContext requestContext,
+      @Valid DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     processVariableLabelService.storeVariableLabels(definitionVariableLabelsDto);
   }
-
 }

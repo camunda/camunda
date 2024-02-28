@@ -6,26 +6,27 @@
 package org.camunda.optimize.dto.optimize.index;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.time.OffsetDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 
-import java.time.OffsetDateTime;
-
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
 @FieldNameConstants
-public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto> implements EngineImportIndexDto {
+public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto>
+    implements EngineImportIndexDto {
 
   protected String esTypeIndexRefersTo;
 
-  public TimestampBasedImportIndexDto(OffsetDateTime lastImportExecutionTimestamp,
-                                      OffsetDateTime timestampOfLastEntity,
-                                      final String esTypeIndexRefersTo,
-                                      final DataSourceDto dataSourceDto) {
+  public TimestampBasedImportIndexDto(
+      OffsetDateTime lastImportExecutionTimestamp,
+      OffsetDateTime timestampOfLastEntity,
+      final String esTypeIndexRefersTo,
+      final DataSourceDto dataSourceDto) {
     super(lastImportExecutionTimestamp, timestampOfLastEntity, dataSourceDto);
     this.esTypeIndexRefersTo = esTypeIndexRefersTo;
   }
@@ -35,5 +36,4 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto> 
   public String getEngine() {
     return dataSource.getName();
   }
-
 }

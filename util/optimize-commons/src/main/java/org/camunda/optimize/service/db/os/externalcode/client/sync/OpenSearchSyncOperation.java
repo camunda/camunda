@@ -5,15 +5,15 @@
  */
 package org.camunda.optimize.service.db.os.externalcode.client.sync;
 
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.os.externalcode.OpenSearchOperation;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
 public class OpenSearchSyncOperation extends OpenSearchOperation {
   protected OpenSearchClient openSearchClient;
 
-  public OpenSearchSyncOperation(OpenSearchClient openSearchClient,
-                                 final OptimizeIndexNameService indexNameService) {
+  public OpenSearchSyncOperation(
+      OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
     super(indexNameService);
     this.openSearchClient = openSearchClient;
   }

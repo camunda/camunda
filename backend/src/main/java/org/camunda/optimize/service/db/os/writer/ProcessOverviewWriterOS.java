@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.LastKpiEvaluationResultsDto;
@@ -15,8 +16,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -24,12 +23,14 @@ import java.util.Map;
 public class ProcessOverviewWriterOS implements ProcessOverviewWriter {
 
   @Override
-  public void updateProcessConfiguration(final String processDefinitionKey, final ProcessUpdateDto processUpdateDto) {
+  public void updateProcessConfiguration(
+      final String processDefinitionKey, final ProcessUpdateDto processUpdateDto) {
     log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
-  public void updateProcessDigestResults(final String processDefKey, final ProcessDigestDto processDigestDto) {
+  public void updateProcessDigestResults(
+      final String processDefKey, final ProcessDigestDto processDigestDto) {
     log.error("Functionality not implemented for OpenSearch");
   }
 
@@ -39,7 +40,8 @@ public class ProcessOverviewWriterOS implements ProcessOverviewWriter {
   }
 
   @Override
-  public void updateKpisForProcessDefinitions(final Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis) {
+  public void updateKpisForProcessDefinitions(
+      final Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis) {
     log.error("Functionality not implemented for OpenSearch");
   }
 
@@ -47,5 +49,4 @@ public class ProcessOverviewWriterOS implements ProcessOverviewWriter {
   public void deleteProcessOwnerEntry(final String processDefinitionKey) {
     log.error("Functionality not implemented for OpenSearch");
   }
-
 }

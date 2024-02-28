@@ -6,11 +6,9 @@
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-
 import java.time.temporal.ChronoUnit;
 
 public enum TargetValueUnit {
-
   MILLIS("millis"),
   SECONDS("seconds"),
   MINUTES("minutes"),

@@ -26,13 +26,15 @@ public class RelativeInstanceDateFilterBuilder {
   }
 
   static RelativeInstanceDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
-    RelativeInstanceDateFilterBuilder builder = new RelativeInstanceDateFilterBuilder(filterBuilder);
+    RelativeInstanceDateFilterBuilder builder =
+        new RelativeInstanceDateFilterBuilder(filterBuilder);
     builder.type = "startDate";
     return builder;
   }
 
   static RelativeInstanceDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
-    RelativeInstanceDateFilterBuilder builder = new RelativeInstanceDateFilterBuilder(filterBuilder);
+    RelativeInstanceDateFilterBuilder builder =
+        new RelativeInstanceDateFilterBuilder(filterBuilder);
     builder.type = "endDate";
     return builder;
   }
@@ -49,7 +51,7 @@ public class RelativeInstanceDateFilterBuilder {
 
   public ProcessFilterBuilder add() {
     ProcessFilterDto<DateFilterDataDto<?>> filterDto =
-      type.equals("endDate") ? new InstanceEndDateFilterDto() : new InstanceStartDateFilterDto();
+        type.equals("endDate") ? new InstanceEndDateFilterDto() : new InstanceStartDateFilterDto();
     filterDto.setData(new RelativeDateFilterDataDto(start));
     filterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filterDto);

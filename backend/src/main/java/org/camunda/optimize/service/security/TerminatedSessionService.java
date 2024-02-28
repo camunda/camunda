@@ -7,6 +7,8 @@ package org.camunda.optimize.service.security;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
@@ -18,9 +20,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
-
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 
 @RequiredArgsConstructor
 @Component
@@ -66,9 +65,9 @@ public class TerminatedSessionService extends AbstractScheduledService {
   public void cleanup() {
     log.debug("Cleaning up terminated user sessions.");
     terminatedUserSessionWriter.deleteTerminatedUserSessionsOlderThan(
-      LocalDateUtil.getCurrentDateTime()
-        .minus(configurationService.getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES)
-    );
+        LocalDateUtil.getCurrentDateTime()
+            .minus(
+                configurationService.getAuthConfiguration().getTokenLifeTimeMinutes(),
+                ChronoUnit.MINUTES));
   }
-
 }

@@ -6,11 +6,10 @@
 package org.camunda.optimize.dto.optimize.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.util.Collections;
 import java.util.Set;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -22,9 +21,11 @@ public class ImportedIndexMismatchResponseDto extends ErrorResponseDto {
     this(null, null, null, Collections.emptySet());
   }
 
-  public ImportedIndexMismatchResponseDto(final String errorCode, final String errorMessage,
-                                          final String detailedErrorMessage,
-                                          final Set<ImportIndexMismatchDto> mismatchingIndices) {
+  public ImportedIndexMismatchResponseDto(
+      final String errorCode,
+      final String errorMessage,
+      final String detailedErrorMessage,
+      final Set<ImportIndexMismatchDto> mismatchingIndices) {
     super(errorCode, errorMessage, detailedErrorMessage);
     this.mismatchingIndices = mismatchingIndices;
   }

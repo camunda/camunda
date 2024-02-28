@@ -32,5 +32,4 @@ public class NoIncidentFilterBuilder {
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
-
 }

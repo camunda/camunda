@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
+import java.io.Serializable;
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.io.Serializable;
-import java.time.OffsetDateTime;
 
 @NoArgsConstructor
 @AllArgsConstructor

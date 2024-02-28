@@ -19,5 +19,4 @@ public interface SharingWriter {
   void deleteReportShare(final String shareId);
 
   void deleteDashboardShare(final String shareId);
-
 }

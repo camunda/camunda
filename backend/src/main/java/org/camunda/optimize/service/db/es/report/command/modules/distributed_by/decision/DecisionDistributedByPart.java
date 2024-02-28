@@ -15,5 +15,4 @@ public abstract class DecisionDistributedByPart extends DistributedByPart<Decisi
   public boolean isKeyOfNumericType(final ExecutionContext<DecisionReportDataDto> context) {
     return false;
   }
-
 }

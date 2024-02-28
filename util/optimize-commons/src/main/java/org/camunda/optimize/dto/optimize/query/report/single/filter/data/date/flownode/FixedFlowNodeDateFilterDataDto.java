@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode;
 
-import lombok.EqualsAndHashCode;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 import java.time.OffsetDateTime;
 import java.util.List;
-
-import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
+import lombok.EqualsAndHashCode;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 
 @EqualsAndHashCode(callSuper = true)
 public class FixedFlowNodeDateFilterDataDto extends FlowNodeDateFilterDataDto<OffsetDateTime> {
@@ -21,8 +20,8 @@ public class FixedFlowNodeDateFilterDataDto extends FlowNodeDateFilterDataDto<Of
     this(null, null, null);
   }
 
-  public FixedFlowNodeDateFilterDataDto(final List<String> flowNodeIds, final OffsetDateTime start,
-                                        final OffsetDateTime end) {
+  public FixedFlowNodeDateFilterDataDto(
+      final List<String> flowNodeIds, final OffsetDateTime start, final OffsetDateTime end) {
     super(flowNodeIds, DateFilterType.FIXED, start, end);
   }
 }

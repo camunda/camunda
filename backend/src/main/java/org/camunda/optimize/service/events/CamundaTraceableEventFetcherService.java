@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.events;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.sequence.OrderedEventDto;
 import org.camunda.optimize.service.db.events.EventFetcherService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @AllArgsConstructor
 @Component
@@ -24,12 +23,13 @@ public class CamundaTraceableEventFetcherService implements EventFetcherService<
 
   @Override
   public List<OrderedEventDto> getEventsIngestedAfter(final Long eventTimestamp, final int limit) {
-    return camundaEventService.getTraceableCamundaEventsForDefinitionAfter(definitionKey, eventTimestamp, limit);
+    return camundaEventService.getTraceableCamundaEventsForDefinitionAfter(
+        definitionKey, eventTimestamp, limit);
   }
 
   @Override
   public List<OrderedEventDto> getEventsIngestedAt(final Long eventTimestamp) {
-    return camundaEventService.getTraceableCamundaEventsForDefinitionAt(definitionKey, eventTimestamp);
+    return camundaEventService.getTraceableCamundaEventsForDefinitionAt(
+        definitionKey, eventTimestamp);
   }
-
 }

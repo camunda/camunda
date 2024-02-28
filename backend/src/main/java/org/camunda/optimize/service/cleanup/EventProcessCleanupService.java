@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import java.time.OffsetDateTime;
+import java.util.Collection;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
@@ -16,9 +18,6 @@ import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfigurat
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
-import java.util.Collection;
 
 @AllArgsConstructor
 @Component
@@ -37,7 +36,7 @@ public class EventProcessCleanupService extends CleanupService {
   @Override
   public void doCleanup(final OffsetDateTime startTime) {
     final Collection<EventProcessPublishStateDto> publishedEventProcesses =
-      eventProcessPublishStateReader.getAllEventProcessPublishStates();
+        eventProcessPublishStateReader.getAllEventProcessPublishStates();
 
     int i = 1;
     for (EventProcessPublishStateDto currentEventProcess : publishedEventProcesses) {
@@ -47,17 +46,17 @@ public class EventProcessCleanupService extends CleanupService {
     }
   }
 
-  private void performCleanupForEventProcess(final OffsetDateTime startTime,
-                                             final EventProcessPublishStateDto eventProcess) {
-    final ProcessDefinitionCleanupConfiguration cleanupConfiguration = getCleanupConfiguration()
-      .getProcessDefinitionCleanupConfigurationForKey(eventProcess.getProcessKey());
+  private void performCleanupForEventProcess(
+      final OffsetDateTime startTime, final EventProcessPublishStateDto eventProcess) {
+    final ProcessDefinitionCleanupConfiguration cleanupConfiguration =
+        getCleanupConfiguration()
+            .getProcessDefinitionCleanupConfigurationForKey(eventProcess.getProcessKey());
     final CleanupMode cleanupMode = cleanupConfiguration.getCleanupMode();
     log.info(
-      "Performing cleanup on event process instances for processDefinitionKey: {} with ttl: {} and mode:{}",
-      eventProcess.getProcessKey(),
-      cleanupConfiguration.getTtl(),
-      cleanupMode
-    );
+        "Performing cleanup on event process instances for processDefinitionKey: {} with ttl: {} and mode:{}",
+        eventProcess.getProcessKey(),
+        cleanupConfiguration.getTtl(),
+        cleanupMode);
 
     final String index = new EventProcessInstanceIndexES(eventProcess.getId()).getIndexName();
     final OffsetDateTime endDate = startTime.minus(cleanupConfiguration.getTtl());
@@ -73,15 +72,13 @@ public class EventProcessCleanupService extends CleanupService {
     }
 
     log.info(
-      "Finished cleanup on event process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
-      eventProcess.getProcessKey(),
-      cleanupConfiguration.getTtl(),
-      cleanupMode
-    );
+        "Finished cleanup on event process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
+        eventProcess.getProcessKey(),
+        cleanupConfiguration.getTtl(),
+        cleanupMode);
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
     return this.configurationService.getCleanupServiceConfiguration();
   }
-
 }

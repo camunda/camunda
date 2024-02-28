@@ -13,8 +13,7 @@ public class PersistenceException extends Exception {
 
   private Integer failingRequestId;
 
-  public PersistenceException() {
-  }
+  public PersistenceException() {}
 
   public PersistenceException(String message) {
     super(message);

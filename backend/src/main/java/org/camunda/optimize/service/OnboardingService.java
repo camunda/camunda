@@ -6,6 +6,9 @@
 package org.camunda.optimize.service;
 
 import com.google.common.collect.ImmutableSet;
+import jakarta.ws.rs.NotFoundException;
+import java.util.Optional;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -13,10 +16,6 @@ import org.camunda.optimize.dto.optimize.OnboardingStateDto;
 import org.camunda.optimize.service.db.reader.OnboardingStateReader;
 import org.camunda.optimize.service.db.writer.OnboardingStateWriter;
 import org.springframework.stereotype.Component;
-
-import jakarta.ws.rs.NotFoundException;
-import java.util.Optional;
-import java.util.Set;
 
 @AllArgsConstructor
 @Component
@@ -28,16 +27,19 @@ public class OnboardingService {
   private final OnboardingStateReader onboardingStateReader;
   private final OnboardingStateWriter onboardingStateWriter;
 
-  public Optional<OnboardingStateDto> getStateByKeyAndUser(@NonNull final String key, @NonNull final String userId) {
+  public Optional<OnboardingStateDto> getStateByKeyAndUser(
+      @NonNull final String key, @NonNull final String userId) {
     final String normalizedKey = normalizeKey(key);
     validateKey(normalizedKey);
     return onboardingStateReader.getOnboardingStateByKeyAndUserId(normalizedKey, userId);
   }
 
-  public void setStateByKeyAndUser(@NonNull final String key, @NonNull final String userId, final boolean seen) {
+  public void setStateByKeyAndUser(
+      @NonNull final String key, @NonNull final String userId, final boolean seen) {
     final String normalizedKey = normalizeKey(key);
     validateKey(normalizedKey);
-    onboardingStateWriter.upsertOnboardingState(new OnboardingStateDto(normalizedKey, userId, seen));
+    onboardingStateWriter.upsertOnboardingState(
+        new OnboardingStateDto(normalizedKey, userId, seen));
   }
 
   private String normalizeKey(@NonNull final String key) {
@@ -46,9 +48,9 @@ public class OnboardingService {
 
   private void validateKey(final String key) {
     if (!VALID_KEYS.contains(key)) {
-      final String message = String.format(
-        "The provided key [%s] is not a valid key, valid keys are [%s]", key, VALID_KEYS
-      );
+      final String message =
+          String.format(
+              "The provided key [%s] is not a valid key, valid keys are [%s]", key, VALID_KEYS);
       log.error(message);
       throw new NotFoundException(message);
     }

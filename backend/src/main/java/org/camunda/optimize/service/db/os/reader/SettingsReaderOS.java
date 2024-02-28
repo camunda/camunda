@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
+
+import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
@@ -17,11 +21,6 @@ import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.Objects;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -36,11 +35,12 @@ public class SettingsReaderOS implements SettingsReader {
   public Optional<SettingsResponseDto> getSettings() {
     log.debug("Fetching Optimize Settings");
 
-    final GetRequest.Builder getReqBuilder = new GetRequest.Builder()
-      .index(SETTINGS_INDEX_NAME).id(SettingsIndex.ID);
+    final GetRequest.Builder getReqBuilder =
+        new GetRequest.Builder().index(SETTINGS_INDEX_NAME).id(SettingsIndex.ID);
 
     final String errorMessage = "There was an error while reading settings for OpenSearch";
-    final GetResponse<SettingsResponseDto> getResponse = osClient.get(getReqBuilder, SettingsResponseDto.class, errorMessage);
+    final GetResponse<SettingsResponseDto> getResponse =
+        osClient.get(getReqBuilder, SettingsResponseDto.class, errorMessage);
     if (getResponse.found()) {
       SettingsResponseDto result = getResponse.source();
       if (Objects.nonNull(result)) {
@@ -48,12 +48,12 @@ public class SettingsReaderOS implements SettingsReader {
           result.setSharingEnabled(configurationService.getSharingEnabled());
         }
         if (result.getMetadataTelemetryEnabled().isEmpty()) {
-          result.setMetadataTelemetryEnabled(configurationService.getTelemetryConfiguration().isInitializeTelemetry());
+          result.setMetadataTelemetryEnabled(
+              configurationService.getTelemetryConfiguration().isInitializeTelemetry());
         }
         return Optional.of(result);
       }
     }
     return Optional.empty();
   }
-
 }

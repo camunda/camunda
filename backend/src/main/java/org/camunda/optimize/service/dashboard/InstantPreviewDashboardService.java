@@ -5,7 +5,26 @@
  */
 package org.camunda.optimize.service.dashboard;
 
+import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
+
 import jakarta.ws.rs.NotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.CRC32;
+import java.util.zip.CheckedInputStream;
+import java.util.zip.Checksum;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -31,34 +50,15 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.zip.CRC32;
-import java.util.zip.CheckedInputStream;
-import java.util.zip.Checksum;
-
-import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
-
 @Slf4j
 @AllArgsConstructor
 @Component
 public class InstantPreviewDashboardService {
 
-  public static final String INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH = "instant_preview_dashboards/";
-  public static final String EXTERNAL_STATIC_RESOURCES_SUBPATH = EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH +
-    "/" + INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH;
+  public static final String INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH =
+      "instant_preview_dashboards/";
+  public static final String EXTERNAL_STATIC_RESOURCES_SUBPATH =
+      EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/" + INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH;
   public static final String SRC_FIELD = "src";
   public static final String ALTTEXT_FIELD = "altText";
   public static final String TYPE_FIELD = "type";
@@ -78,63 +78,79 @@ public class InstantPreviewDashboardService {
     void accept(T t, U u);
   }
 
-  public AuthorizedDashboardDefinitionResponseDto getInstantPreviewDashboard(final String processDefinitionKey,
-                                                                             final String dashboardJsonTemplate,
-                                                                             final String userId) {
-    String emptySafeDashboardTemplate = StringUtils.isEmpty(dashboardJsonTemplate)
-      ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : dashboardJsonTemplate;
+  public AuthorizedDashboardDefinitionResponseDto getInstantPreviewDashboard(
+      final String processDefinitionKey, final String dashboardJsonTemplate, final String userId) {
+    String emptySafeDashboardTemplate =
+        StringUtils.isEmpty(dashboardJsonTemplate)
+            ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE
+            : dashboardJsonTemplate;
     String processedTemplateName = emptySafeDashboardTemplate.replace(".", "");
-    Optional<String> dashboardId = instantDashboardMetadataReader.getInstantDashboardIdFor(
-      processDefinitionKey,
-      processedTemplateName
-    );
+    Optional<String> dashboardId =
+        instantDashboardMetadataReader.getInstantDashboardIdFor(
+            processDefinitionKey, processedTemplateName);
     if (dashboardId.isPresent()) {
       return dashboardService.getDashboardDefinition(dashboardId.get(), userId);
     } else {
-      log.info("Instant preview dashboard for process definition [{}] and template [{}} does not exist yet, creating " +
-                 "it!", processDefinitionKey, emptySafeDashboardTemplate);
+      log.info(
+          "Instant preview dashboard for process definition [{}] and template [{}} does not exist yet, creating "
+              + "it!",
+          processDefinitionKey,
+          emptySafeDashboardTemplate);
       return createInstantPreviewDashboard(processDefinitionKey, emptySafeDashboardTemplate)
-        .map(dashboard -> dashboardService.getDashboardDefinition(dashboard.getDashboardId(), userId))
-        .orElseThrow(() -> new NotFoundException(
-          String.format("Dashboard does not exist! Either the process definition [%s]" +
-                          " or the template [%s] does not exist", processDefinitionKey, emptySafeDashboardTemplate)));
+          .map(
+              dashboard ->
+                  dashboardService.getDashboardDefinition(dashboard.getDashboardId(), userId))
+          .orElseThrow(
+              () ->
+                  new NotFoundException(
+                      String.format(
+                          "Dashboard does not exist! Either the process definition [%s]"
+                              + " or the template [%s] does not exist",
+                          processDefinitionKey, emptySafeDashboardTemplate)));
     }
   }
 
-  public Optional<InstantDashboardDataDto> createInstantPreviewDashboard(final String processDefinitionKey,
-                                                                         final String dashboardJsonTemplate) {
-    String emptySafeDashboardTemplate = StringUtils.isEmpty(dashboardJsonTemplate)
-      ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : dashboardJsonTemplate;
+  public Optional<InstantDashboardDataDto> createInstantPreviewDashboard(
+      final String processDefinitionKey, final String dashboardJsonTemplate) {
+    String emptySafeDashboardTemplate =
+        StringUtils.isEmpty(dashboardJsonTemplate)
+            ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE
+            : dashboardJsonTemplate;
     final InstantDashboardDataDto instantDashboardDataDto = new InstantDashboardDataDto();
     instantDashboardDataDto.setTemplateName(emptySafeDashboardTemplate);
     instantDashboardDataDto.setProcessDefinitionKey(processDefinitionKey);
-    return setupInstantPreviewDashboard(instantDashboardDataDto.getTemplateName(), processDefinitionKey)
-      .map(dashboardId -> {
-        instantDashboardDataDto.setDashboardId(dashboardId);
-        instantDashboardDataDto.setTemplateHash(templateChecksums.get(emptySafeDashboardTemplate));
-        instantDashboardMetadataWriter.saveInstantDashboard(instantDashboardDataDto);
-        return instantDashboardDataDto;
-      });
+    return setupInstantPreviewDashboard(
+            instantDashboardDataDto.getTemplateName(), processDefinitionKey)
+        .map(
+            dashboardId -> {
+              instantDashboardDataDto.setDashboardId(dashboardId);
+              instantDashboardDataDto.setTemplateHash(
+                  templateChecksums.get(emptySafeDashboardTemplate));
+              instantDashboardMetadataWriter.saveInstantDashboard(instantDashboardDataDto);
+              return instantDashboardDataDto;
+            });
   }
 
   /**
-   * This method scans recursively through all the components of a Dashboard Tile of the type "text" and performs a
-   * conversion on the target sub-component passed under fieldType. The conversion itself is accomplished by the
-   * 'converter', which is the method reference passed under transformFunction. Moreover, the additionalParameter
-   * value is also passed onto the converter.
+   * This method scans recursively through all the components of a Dashboard Tile of the type "text"
+   * and performs a conversion on the target sub-component passed under fieldType. The conversion
+   * itself is accomplished by the 'converter', which is the method reference passed under
+   * transformFunction. Moreover, the additionalParameter value is also passed onto the converter.
    *
-   * @param node                     Node with which the recursion is started, in the beginning it is the root node of the
-   *                                 Dashboard tile
-   * @param fieldType                Which node type do we want to transform? E.g. "image", "text", etc
-   * @param transformFunction        Once a node of the type "fieldType" is found, this function performs the necessary
-   *                                 conversion
-   * @param additionalParameterValue An additional string that is used by the converter. In the case of an image node
-   *                                 this is e.g. the clusterId, in the case of a text node it is e.g. the locale
+   * @param node Node with which the recursion is started, in the beginning it is the root node of
+   *     the Dashboard tile
+   * @param fieldType Which node type do we want to transform? E.g. "image", "text", etc
+   * @param transformFunction Once a node of the type "fieldType" is found, this function performs
+   *     the necessary conversion
+   * @param additionalParameterValue An additional string that is used by the converter. In the case
+   *     of an image node this is e.g. the clusterId, in the case of a text node it is e.g. the
+   *     locale
    */
-  public static void findAndConvertTileContent(Object node,
-                                               String fieldType,
-                                               BiConsumerWithParameters<Map<String, Object>, String> transformFunction,
-                                               String additionalParameterValue) {
+  public static void findAndConvertTileContent(
+      Object node,
+      String fieldType,
+      BiConsumerWithParameters<Map<String, Object>, String> transformFunction,
+      String additionalParameterValue) {
     if (node instanceof HashMap) {
       HashMap<String, Object> tileConfigurationElement = (HashMap<String, Object>) node;
       if (fieldType.equals(tileConfigurationElement.getOrDefault(TYPE_FIELD, ""))) {
@@ -142,124 +158,149 @@ public class InstantPreviewDashboardService {
         transformFunction.accept(tileConfigurationElement, additionalParameterValue);
       } else {
         // Otherwise, recursively search again
-        tileConfigurationElement
-          .forEach((key, value) -> findAndConvertTileContent(value, fieldType, transformFunction, additionalParameterValue));
+        tileConfigurationElement.forEach(
+            (key, value) ->
+                findAndConvertTileContent(
+                    value, fieldType, transformFunction, additionalParameterValue));
       }
     } else if (node instanceof ArrayList) {
-      // A list typically happens when the "children" node is found. In this case, we want to perform the transformation in each
+      // A list typically happens when the "children" node is found. In this case, we want to
+      // perform the transformation in each
       // of the children nodes as well
       ArrayList<Object> list = (ArrayList<Object>) node;
-      list.forEach(item -> findAndConvertTileContent(item, fieldType, transformFunction, additionalParameterValue));
+      list.forEach(
+          item ->
+              findAndConvertTileContent(
+                  item, fieldType, transformFunction, additionalParameterValue));
     }
   }
 
-  private Optional<String> setupInstantPreviewDashboard(final String dashboardJsonTemplate,
-                                                        final String processDefinitionKey) {
-    Optional<Set<OptimizeEntityExportDto>> exportDtos = readAndProcessDashboardTemplate(dashboardJsonTemplate);
-    return exportDtos.flatMap(exportDtoSet -> createReportsAndAddToDashboard(exportDtoSet, processDefinitionKey));
+  private Optional<String> setupInstantPreviewDashboard(
+      final String dashboardJsonTemplate, final String processDefinitionKey) {
+    Optional<Set<OptimizeEntityExportDto>> exportDtos =
+        readAndProcessDashboardTemplate(dashboardJsonTemplate);
+    return exportDtos.flatMap(
+        exportDtoSet -> createReportsAndAddToDashboard(exportDtoSet, processDefinitionKey));
   }
 
-  private Optional<String> createReportsAndAddToDashboard(final Set<OptimizeEntityExportDto> exportDtos,
-                                                          final String processDefinitionKey) {
+  private Optional<String> createReportsAndAddToDashboard(
+      final Set<OptimizeEntityExportDto> exportDtos, final String processDefinitionKey) {
 
     final Optional<DefinitionWithTenantIdsDto> processDefinitionWithTenants =
-      definitionService.getProcessDefinitionWithTenants(processDefinitionKey);
+        definitionService.getProcessDefinitionWithTenants(processDefinitionKey);
 
-    processDefinitionWithTenants
-      .ifPresentOrElse(
+    processDefinitionWithTenants.ifPresentOrElse(
         processDefinition ->
-          exportDtos.stream()
-            .filter(SingleProcessReportDefinitionExportDto.class::isInstance)
-            .forEach(reportEntity -> {
-              SingleProcessReportDefinitionExportDto singleReport =
-                ((SingleProcessReportDefinitionExportDto) reportEntity);
-              singleReport.getData().setInstantPreviewReport(true);
-              singleReport.getData().setDefinitions(
-                List.of(new ReportDataDefinitionDto(
-                  processDefinitionKey, processDefinition.getName(), List.of(ALL_VERSIONS), processDefinition.getTenantIds()
-                )));
-            }),
-        () -> log.warn("Could not retrieve process definition data for {}", processDefinitionKey)
-      );
+            exportDtos.stream()
+                .filter(SingleProcessReportDefinitionExportDto.class::isInstance)
+                .forEach(
+                    reportEntity -> {
+                      SingleProcessReportDefinitionExportDto singleReport =
+                          ((SingleProcessReportDefinitionExportDto) reportEntity);
+                      singleReport.getData().setInstantPreviewReport(true);
+                      singleReport
+                          .getData()
+                          .setDefinitions(
+                              List.of(
+                                  new ReportDataDefinitionDto(
+                                      processDefinitionKey,
+                                      processDefinition.getName(),
+                                      List.of(ALL_VERSIONS),
+                                      processDefinition.getTenantIds())));
+                    }),
+        () -> log.warn("Could not retrieve process definition data for {}", processDefinitionKey));
 
     exportDtos.stream()
-      .filter(DashboardDefinitionExportDto.class::isInstance)
-      .forEach(dashboardEntity -> {
-        DashboardDefinitionExportDto dashboardData = ((DashboardDefinitionExportDto) dashboardEntity);
-        processAllImageUrlsInTiles(dashboardData.getTiles());
-        dashboardData.setInstantPreviewDashboard(true);
-      });
+        .filter(DashboardDefinitionExportDto.class::isInstance)
+        .forEach(
+            dashboardEntity -> {
+              DashboardDefinitionExportDto dashboardData =
+                  ((DashboardDefinitionExportDto) dashboardEntity);
+              processAllImageUrlsInTiles(dashboardData.getTiles());
+              dashboardData.setInstantPreviewDashboard(true);
+            });
 
     final List<EntityIdResponseDto> importedEntities =
-      entityImportService.importInstantPreviewEntities(
-        null,
-        exportDtos
-      );
-    return importedEntities
-      .stream()
-      .filter(entity -> entity.getEntityType() == EntityType.DASHBOARD)
-      .findFirst()
-      .map(EntityIdResponseDto::getId);
+        entityImportService.importInstantPreviewEntities(null, exportDtos);
+    return importedEntities.stream()
+        .filter(entity -> entity.getEntityType() == EntityType.DASHBOARD)
+        .findFirst()
+        .map(EntityIdResponseDto::getId);
   }
 
   public void processAllImageUrlsInTiles(final List<DashboardReportTileDto> tiles) {
-    tiles.forEach(tile -> {
-      if (tile.getType() == DashboardTileType.TEXT) {
-        final Map<String, Object> textTileConfiguration = (Map<String, Object>) tile.getConfiguration();
-        // The cluster ID is necessary to calculate the appropriate relative URL
-        String clusterId = configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId();
-        if (StringUtils.isNotEmpty(clusterId)) {
-          // If we have a clusterId, we need to add it to the URL with a leading slash
-          clusterId = "/" + clusterId;
-        }
-        findAndConvertTileContent(textTileConfiguration, TYPE_IMAGE_VALUE, this::convertAbsoluteUrlsToRelative, clusterId);
-      }
-    });
+    tiles.forEach(
+        tile -> {
+          if (tile.getType() == DashboardTileType.TEXT) {
+            final Map<String, Object> textTileConfiguration =
+                (Map<String, Object>) tile.getConfiguration();
+            // The cluster ID is necessary to calculate the appropriate relative URL
+            String clusterId =
+                configurationService
+                    .getAuthConfiguration()
+                    .getCloudAuthConfiguration()
+                    .getClusterId();
+            if (StringUtils.isNotEmpty(clusterId)) {
+              // If we have a clusterId, we need to add it to the URL with a leading slash
+              clusterId = "/" + clusterId;
+            }
+            findAndConvertTileContent(
+                textTileConfiguration,
+                TYPE_IMAGE_VALUE,
+                this::convertAbsoluteUrlsToRelative,
+                clusterId);
+          }
+        });
   }
 
-  private void convertAbsoluteUrlsToRelative(Map<String, Object> textTileConfigElement, String clusterId) {
-    // If working in cloud mode, the relative URL needs to include the cluster ID for it to work properly
+  private void convertAbsoluteUrlsToRelative(
+      Map<String, Object> textTileConfigElement, String clusterId) {
+    // If working in cloud mode, the relative URL needs to include the cluster ID for it to work
+    // properly
     String srcValue = (String) textTileConfigElement.get(SRC_FIELD);
     String altTextValue = (String) textTileConfigElement.get(ALTTEXT_FIELD);
-    // Extract the file name from the absolute path and put it at the end of the relative path. If working in
-    // cloud mode, the relative URL needs to include the cluster ID for it to work properly, since the instant preview
-    // dashboard image urls from the template are static and need to be transformed into a relative path that
+    // Extract the file name from the absolute path and put it at the end of the relative path. If
+    // working in
+    // cloud mode, the relative URL needs to include the cluster ID for it to work properly, since
+    // the instant preview
+    // dashboard image urls from the template are static and need to be transformed into a relative
+    // path that
     // includes the current cluster ID so that e.g. https://www.anyOldUrl.com/MyImage.png becomes
     // /<CLUSTER_ID>/external/static/instant_preview_dashboards/MyImage.png.
-    // If a custom context path is specified, we also need to include this in the created URL. If the context path is later
+    // If a custom context path is specified, we also need to include this in the created URL. If
+    // the context path is later
     // changed, these tiles may not work.
     String srcValueFileName = srcValue.substring((srcValue).lastIndexOf('/') + 1);
     textTileConfigElement.put(
-      SRC_FIELD,
-      createContextPathAwarePath(clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + srcValueFileName)
-    );
+        SRC_FIELD,
+        createContextPathAwarePath(
+            clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + srcValueFileName));
     String altTextValueFileName = altTextValue.substring((altTextValue).lastIndexOf('/') + 1);
     textTileConfigElement.put(
-      ALTTEXT_FIELD,
-      createContextPathAwarePath(clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + altTextValueFileName)
-    );
+        ALTTEXT_FIELD,
+        createContextPathAwarePath(
+            clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + altTextValueFileName));
   }
 
-  private Optional<Set<OptimizeEntityExportDto>> readAndProcessDashboardTemplate(final String dashboardJsonTemplateFilename) {
-    final String fullyQualifiedPath = INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplateFilename;
-    try (InputStream dashboardTemplate = this.getClass()
-      .getClassLoader()
-      .getResourceAsStream(fullyQualifiedPath)) {
+  private Optional<Set<OptimizeEntityExportDto>> readAndProcessDashboardTemplate(
+      final String dashboardJsonTemplateFilename) {
+    final String fullyQualifiedPath =
+        INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplateFilename;
+    try (InputStream dashboardTemplate =
+        this.getClass().getClassLoader().getResourceAsStream(fullyQualifiedPath)) {
       if (dashboardTemplate != null) {
-        String exportedDtoJson = new String(dashboardTemplate.readAllBytes(), StandardCharsets.UTF_8);
+        String exportedDtoJson =
+            new String(dashboardTemplate.readAllBytes(), StandardCharsets.UTF_8);
         Long checksum = getChecksumCRC32(exportedDtoJson);
-        final Set<OptimizeEntityExportDto> valueToBeReturned = entityImportService.readExportDtoOrFailIfInvalid(
-          exportedDtoJson);
+        final Set<OptimizeEntityExportDto> valueToBeReturned =
+            entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);
         templateChecksums.put(dashboardJsonTemplateFilename, checksum);
         return Optional.of(valueToBeReturned);
       } else {
         log.error("Could not read dashboard template from " + fullyQualifiedPath);
       }
     } catch (IOException e) {
-      log.error(
-        "Could not read dashboard template from " + fullyQualifiedPath,
-        e
-      );
+      log.error("Could not read dashboard template from " + fullyQualifiedPath, e);
     }
     return Optional.empty();
   }
@@ -269,10 +310,11 @@ public class InstantPreviewDashboardService {
     List<Long> templateFileChecksums = getCurrentFileChecksums();
     try {
       List<String> dashboardsToDelete =
-        instantDashboardMetadataWriter.deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(templateFileChecksums);
+          instantDashboardMetadataWriter.deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(
+              templateFileChecksums);
       for (String dashboardIdToDelete : dashboardsToDelete) {
         final DashboardDefinitionRestDto dashboardDefinition =
-          dashboardService.getDashboardDefinitionAsService(dashboardIdToDelete);
+            dashboardService.getDashboardDefinitionAsService(dashboardIdToDelete);
         if (dashboardDefinition.isInstantPreviewDashboard()) {
           final Set<String> reportsToDelete = dashboardDefinition.getTileIds();
           for (String reportId : reportsToDelete) {
@@ -282,20 +324,25 @@ public class InstantPreviewDashboardService {
         }
       }
     } catch (Exception e) {
-      // Whichever error occurred in the code above the details of it are contained in the exception message. Catching
-      // all possible exceptions here so that Optimize doesn't crash if anything goes wrong with the template checks,
+      // Whichever error occurred in the code above the details of it are contained in the exception
+      // message. Catching
+      // all possible exceptions here so that Optimize doesn't crash if anything goes wrong with the
+      // template checks,
       // since any error is not critical and would not hinder optimize in functioning properly
       log.error("There was an error deleting data from an outdated Instant preview dashboard", e);
     }
   }
 
   public List<Long> getCurrentFileChecksums() {
-    // Generate the hashes for the current templates deployed. We assume that the default template exists, and that all other
+    // Generate the hashes for the current templates deployed. We assume that the default template
+    // exists, and that all other
     // templates are named incrementally
     String currentTemplate = INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
     List<Long> fileChecksums = new ArrayList<>();
-    InputStream templateInputStream = getClass().getClassLoader()
-      .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
+    InputStream templateInputStream =
+        getClass()
+            .getClassLoader()
+            .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
     while (templateInputStream != null) {
       try {
         fileChecksums.add(getChecksumCRC32(templateInputStream, 8192));
@@ -303,8 +350,10 @@ public class InstantPreviewDashboardService {
         log.error("Could not generate checksum for template [{}]", currentTemplate);
       }
       currentTemplate = incrementFileName(currentTemplate);
-      templateInputStream = getClass().getClassLoader()
-        .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
+      templateInputStream =
+          getClass()
+              .getClassLoader()
+              .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + currentTemplate);
     }
     return fileChecksums;
   }
@@ -312,7 +361,8 @@ public class InstantPreviewDashboardService {
   public static long getChecksumCRC32(InputStream stream, int bufferSize) throws IOException {
     CheckedInputStream checkedInputStream = new CheckedInputStream(stream, new CRC32());
     byte[] buffer = new byte[bufferSize];
-    while (checkedInputStream.read(buffer, 0, buffer.length) >= 0) ;
+    while (checkedInputStream.read(buffer, 0, buffer.length) >= 0)
+      ;
     return checkedInputStream.getChecksum().getValue();
   }
 
@@ -342,9 +392,9 @@ public class InstantPreviewDashboardService {
   }
 
   private String createContextPathAwarePath(final String subPath) {
-    return configurationService.getContextPath()
-      .map(contextPath -> contextPath + subPath)
-      .orElse(subPath);
+    return configurationService
+        .getContextPath()
+        .map(contextPath -> contextPath + subPath)
+        .orElse(subPath);
   }
-
 }

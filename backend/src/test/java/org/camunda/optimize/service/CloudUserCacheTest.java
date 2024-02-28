@@ -5,6 +5,16 @@
  */
 package org.camunda.optimize.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.camunda.optimize.dto.optimize.cloud.CloudUserDto;
 import org.camunda.optimize.rest.cloud.AccountsUserAccessTokenProvider;
 import org.camunda.optimize.rest.cloud.CCSaaSUserClient;
@@ -17,26 +27,14 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class CloudUserCacheTest {
 
   public static final String ACCESS_TOKEN = "someToken";
 
-  @Mock
-  CCSaaSUserClient ccSaaSUserClient;
-  @Mock
-  AccountsUserAccessTokenProvider accessTokenProvider;
+  @Mock CCSaaSUserClient ccSaaSUserClient;
+  @Mock AccountsUserAccessTokenProvider accessTokenProvider;
+
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   ConfigurationService configurationService;
 
@@ -52,7 +50,8 @@ public class CloudUserCacheTest {
   @Test
   public void testCloudUserCacheIsUsedIfMostRecentRequestWasMoreRecentThanConfiguredInterval() {
     // given
-    when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()).thenReturn(600L);
+    when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds())
+        .thenReturn(600L);
     final CloudUserDto cloudUserDto = createCloudUserWithId("userId");
     when(ccSaaSUserClient.fetchAllCloudUsers(any())).thenReturn(List.of(cloudUserDto));
 
@@ -66,7 +65,8 @@ public class CloudUserCacheTest {
     // when we request for a second time
     allUsers = underTest.getAllUsers();
 
-    // then we get still get the fetched user but the client was not invoked again (so once in total)
+    // then we get still get the fetched user but the client was not invoked again (so once in
+    // total)
     assertThat(allUsers).containsExactly(cloudUserDto);
     verify(ccSaaSUserClient, times(1)).fetchAllCloudUsers(ACCESS_TOKEN);
   }
@@ -74,7 +74,8 @@ public class CloudUserCacheTest {
   @Test
   public void testCloudUserCacheIsInvalidatedWhenRenewed() {
     // given
-    when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()).thenReturn(600L);
+    when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds())
+        .thenReturn(600L);
     final CloudUserDto cloudUserDto = createCloudUserWithId("userId");
     when(ccSaaSUserClient.fetchAllCloudUsers(any())).thenReturn(List.of(cloudUserDto));
 
@@ -86,7 +87,8 @@ public class CloudUserCacheTest {
     verify(ccSaaSUserClient, times(1)).fetchAllCloudUsers(ACCESS_TOKEN);
 
     // when the fetch interval is elapsed
-    when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()).thenReturn(-1L);
+    when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds())
+        .thenReturn(-1L);
 
     // and the second retrieval of all users no longer contains the original user
     when(ccSaaSUserClient.fetchAllCloudUsers(any())).thenReturn(Collections.emptyList());
@@ -94,7 +96,8 @@ public class CloudUserCacheTest {
     // when we request for a second time
     allUsers = underTest.getAllUsers();
 
-    // then the user is not returned as the cache has been invalidated and the cloud client was invoked
+    // then the user is not returned as the cache has been invalidated and the cloud client was
+    // invoked
     assertThat(allUsers).isEmpty();
     verify(ccSaaSUserClient, times(2)).fetchAllCloudUsers(ACCESS_TOKEN);
   }
@@ -102,7 +105,8 @@ public class CloudUserCacheTest {
   @Test
   public void testCloudUserCacheIsUsedWhenFetchingIndividualUser() {
     // given
-    when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()).thenReturn(600L);
+    when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds())
+        .thenReturn(600L);
     final String userId = "userId";
     final CloudUserDto cloudUserDto = createCloudUserWithId(userId);
     when(ccSaaSUserClient.fetchAllCloudUsers(ACCESS_TOKEN)).thenReturn(List.of(cloudUserDto));
@@ -120,11 +124,16 @@ public class CloudUserCacheTest {
     // when we fetch a user not in the cache
     final String otherUserId = "someOtherId";
     final CloudUserDto otherCloudUser = createCloudUserWithId(otherUserId);
-    when(ccSaaSUserClient.getCloudUserById(otherUserId, ACCESS_TOKEN)).thenReturn(Optional.of(otherCloudUser));
+    when(ccSaaSUserClient.getCloudUserById(otherUserId, ACCESS_TOKEN))
+        .thenReturn(Optional.of(otherCloudUser));
     fetchedCloudUser = underTest.getUserById(otherUserId);
 
     // then the user is returned
-    assertThat(fetchedCloudUser).isPresent().get().extracting(user -> user).isEqualTo(otherCloudUser);
+    assertThat(fetchedCloudUser)
+        .isPresent()
+        .get()
+        .extracting(user -> user)
+        .isEqualTo(otherCloudUser);
     // and a request to fetch the user directly was made
     verify(ccSaaSUserClient, times(1)).getCloudUserById(otherUserId, ACCESS_TOKEN);
   }
@@ -137,5 +146,4 @@ public class CloudUserCacheTest {
     cloudUserDto.setRoles(Collections.emptyList());
     return cloudUserDto;
   }
-
 }

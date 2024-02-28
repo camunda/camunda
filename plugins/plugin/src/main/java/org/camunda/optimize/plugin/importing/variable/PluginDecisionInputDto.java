@@ -14,65 +14,46 @@ import lombok.NoArgsConstructor;
 @Data
 public class PluginDecisionInputDto {
 
-  /**
-   * Unique id of the decision input value.
-   */
+  /** Unique id of the decision input value. */
   private String id;
 
-  /**
-   * The id of the clause the input value belongs to.
-   */
+  /** The id of the clause the input value belongs to. */
   private String clauseId;
 
-  /**
-   * The name of the clause the input value belongs to.
-   */
+  /** The name of the clause the input value belongs to. */
   private String clauseName;
 
   /**
-   * The value type of the variable.
-   * Only simple variable types (i.e. Boolean, String, Date, Long, Short, Integer, Double) can be imported to optimize.
-   * Make sure to set the variable type to one of these values while adapting the inputs
+   * The value type of the variable. Only simple variable types (i.e. Boolean, String, Date, Long,
+   * Short, Integer, Double) can be imported to optimize. Make sure to set the variable type to one
+   * of these values while adapting the inputs
    *
-   * Note: This field is required in order to be imported to Optimize.
+   * <p>Note: This field is required in order to be imported to Optimize.
    */
   private String type;
 
-  /**
-   * The string representation of the input variable's value.
-   */
+  /** The string representation of the input variable's value. */
   private String value;
 
-  /**
-   * The key of the decision definition, current input corresponds to.
-   */
+  /** The key of the decision definition, current input corresponds to. */
   private String decisionDefinitionKey;
 
-  /**
-   * The version of the decision definition, current input corresponds to.
-   */
+  /** The version of the decision definition, current input corresponds to. */
   private String decisionDefinitionVersion;
 
-  /**
-   * The ID of the decision definition, current input corresponds to.
-   */
+  /** The ID of the decision definition, current input corresponds to. */
   private String decisionDefinitionId;
 
-  /**
-   * The ID of the decision instance, current input corresponds to.
-   */
+  /** The ID of the decision instance, current input corresponds to. */
   private String decisionInstanceId;
 
-  /**
-   * Alias of the engine, from which the current Decision Instance is imported.
-   */
+  /** Alias of the engine, from which the current Decision Instance is imported. */
   private String engineAlias;
 
   /**
    * The field states the tenant this variable instance belongs to.
-   * <p>
-   * Note: Might be null if no tenant is assigned.
+   *
+   * <p>Note: Might be null if no tenant is assigned.
    */
   private String tenantId;
-
 }

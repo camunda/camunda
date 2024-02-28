@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.rest.engine;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.util.configuration.condition.CamundaCloudCondition;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.util.configuration.condition.CamundaCloudCondition;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Component
@@ -44,5 +43,4 @@ public class CloudEngineContextFactory implements EngineContextFactory {
   public Collection<EngineContext> getConfiguredEngines() {
     return Collections.emptyList();
   }
-
 }

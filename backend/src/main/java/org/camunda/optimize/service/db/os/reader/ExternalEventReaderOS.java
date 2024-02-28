@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -17,10 +20,6 @@ import org.camunda.optimize.service.db.reader.ExternalEventReader;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Optional;
 
 @RequiredArgsConstructor
 @Component
@@ -35,7 +34,8 @@ public class ExternalEventReaderOS implements ExternalEventReader {
   }
 
   @Override
-  public List<EventDto> getEventsIngestedAfterForGroups(final Long ingestTimestamp, final int limit, final List<String> groups) {
+  public List<EventDto> getEventsIngestedAfterForGroups(
+      final Long ingestTimestamp, final int limit, final List<String> groups) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
@@ -47,7 +47,8 @@ public class ExternalEventReaderOS implements ExternalEventReader {
   }
 
   @Override
-  public List<EventDto> getEventsIngestedAtForGroups(final Long ingestTimestamp, final List<String> groups) {
+  public List<EventDto> getEventsIngestedAtForGroups(
+      final Long ingestTimestamp, final List<String> groups) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
@@ -59,13 +60,15 @@ public class ExternalEventReaderOS implements ExternalEventReader {
   }
 
   @Override
-  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForGroups(final List<String> groups) {
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
+      getMinAndMaxIngestedTimestampsForGroups(final List<String> groups) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
-  public Page<DeletableEventDto> getEventsForRequest(final EventSearchRequestDto eventSearchRequestDto) {
+  public Page<DeletableEventDto> getEventsForRequest(
+      final EventSearchRequestDto eventSearchRequestDto) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
@@ -75,5 +78,4 @@ public class ExternalEventReaderOS implements ExternalEventReader {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
-
 }

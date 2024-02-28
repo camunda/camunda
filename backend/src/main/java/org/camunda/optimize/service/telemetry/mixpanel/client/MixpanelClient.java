@@ -7,6 +7,13 @@ package org.camunda.optimize.service.telemetry.mixpanel.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -24,15 +31,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
 @Component
 @Conditional(CCSaaSCondition.class)
 @Slf4j
@@ -42,13 +40,15 @@ public class MixpanelClient {
   private final CloseableHttpClient httpClient;
 
   @Autowired
-  public MixpanelClient(final ConfigurationService configurationService, final ObjectMapper objectMapper) {
+  public MixpanelClient(
+      final ConfigurationService configurationService, final ObjectMapper objectMapper) {
     this(configurationService, objectMapper, HttpClients.createDefault());
   }
 
-  public MixpanelClient(final ConfigurationService configurationService,
-                        final ObjectMapper objectMapper,
-                        final CloseableHttpClient httpClient) {
+  public MixpanelClient(
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper,
+      final CloseableHttpClient httpClient) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.httpClient = httpClient;
@@ -61,17 +61,19 @@ public class MixpanelClient {
 
   public void importEvent(final MixpanelEvent event) {
     // see https://developer.mixpanel.com/reference/import-events
-    final HttpPost importRequest = new HttpPost(
-      // setting strict=1 to enable request validation by Mixpanel
-      getMixpanelConfiguration().getImportUrl() + "?strict=1&project_id=" + getMixpanelConfiguration().getProjectId()
-    );
+    final HttpPost importRequest =
+        new HttpPost(
+            // setting strict=1 to enable request validation by Mixpanel
+            getMixpanelConfiguration().getImportUrl()
+                + "?strict=1&project_id="
+                + getMixpanelConfiguration().getProjectId());
     importRequest.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
     importRequest.setHeader(HttpHeaders.AUTHORIZATION, getAuthHeader());
 
     try {
-      importRequest.setEntity(new StringEntity(
-        objectMapper.writeValueAsString(List.of(event)), ContentType.APPLICATION_JSON
-      ));
+      importRequest.setEntity(
+          new StringEntity(
+              objectMapper.writeValueAsString(List.of(event)), ContentType.APPLICATION_JSON));
     } catch (final JsonProcessingException e) {
       throw new OptimizeRuntimeException("Failed to serialize event for Mixpanel.", e);
     }
@@ -87,21 +89,18 @@ public class MixpanelClient {
     try {
       if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
         throw new OptimizeRuntimeException(
-          String.format(
-            "Unexpected response status on a mixpanel import: %s, response body: %s",
-            response.getStatusLine().getStatusCode(),
-            EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8)
-          )
-        );
+            String.format(
+                "Unexpected response status on a mixpanel import: %s, response body: %s",
+                response.getStatusLine().getStatusCode(),
+                EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8)));
       }
 
-      final MixpanelImportResponse mixpanelResponse = objectMapper.readValue(
-        response.getEntity().getContent(), MixpanelImportResponse.class
-      );
+      final MixpanelImportResponse mixpanelResponse =
+          objectMapper.readValue(response.getEntity().getContent(), MixpanelImportResponse.class);
       if (!mixpanelResponse.isSuccessful()) {
-        throw new OptimizeRuntimeException(String.format(
-          "Mixpanel import was not successful, error: %s", mixpanelResponse.getError()
-        ));
+        throw new OptimizeRuntimeException(
+            String.format(
+                "Mixpanel import was not successful, error: %s", mixpanelResponse.getError()));
       }
     } catch (final IOException e) {
       log.warn("Could not parse response from Mixpanel.", e);

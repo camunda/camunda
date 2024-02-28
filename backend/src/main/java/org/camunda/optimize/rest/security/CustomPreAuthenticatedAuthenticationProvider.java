@@ -17,8 +17,10 @@ import org.springframework.stereotype.Component;
 public class CustomPreAuthenticatedAuthenticationProvider implements AuthenticationProvider {
 
   @Override
-  public Authentication authenticate(final Authentication authentication) throws AuthenticationException {
-    if (authentication instanceof PreAuthenticatedAuthenticationToken token && authentication.getPrincipal() != null) {
+  public Authentication authenticate(final Authentication authentication)
+      throws AuthenticationException {
+    if (authentication instanceof PreAuthenticatedAuthenticationToken token
+        && authentication.getPrincipal() != null) {
       token.setAuthenticated(true);
       return token;
     }

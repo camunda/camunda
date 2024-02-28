@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.camunda.optimize.dto.engine.HistoricIncidentEngineDto;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedIncidentFetcher;
@@ -16,21 +18,20 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CompletedIncidentEngineImportMediator
-  extends TimestampBasedImportMediator<CompletedIncidentImportIndexHandler, HistoricIncidentEngineDto> {
+    extends TimestampBasedImportMediator<
+        CompletedIncidentImportIndexHandler, HistoricIncidentEngineDto> {
 
   private final CompletedIncidentFetcher engineEntityFetcher;
 
-  public CompletedIncidentEngineImportMediator(final CompletedIncidentImportIndexHandler importIndexHandler,
-                                               final CompletedIncidentFetcher engineEntityFetcher,
-                                               final CompletedIncidentImportService importService,
-                                               final ConfigurationService configurationService,
-                                               final BackoffCalculator idleBackoffCalculator) {
+  public CompletedIncidentEngineImportMediator(
+      final CompletedIncidentImportIndexHandler importIndexHandler,
+      final CompletedIncidentFetcher engineEntityFetcher,
+      final CompletedIncidentImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
   }
@@ -47,7 +48,8 @@ public class CompletedIncidentEngineImportMediator
 
   @Override
   protected List<HistoricIncidentEngineDto> getEntitiesLastTimestamp() {
-    return engineEntityFetcher.fetchCompletedIncidentsForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+    return engineEntityFetcher.fetchCompletedIncidentsForTimestamp(
+        importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override

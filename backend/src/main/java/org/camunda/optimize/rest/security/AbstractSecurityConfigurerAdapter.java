@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.rest.security;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -17,39 +19,44 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
-
 @RequiredArgsConstructor
 public abstract class AbstractSecurityConfigurerAdapter {
 
   protected static final String PUBLIC_API_PATH = createApiPath("/public/**");
 
   protected final ConfigurationService configurationService;
-  protected final CustomPreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider;
+  protected final CustomPreAuthenticatedAuthenticationProvider
+      preAuthenticatedAuthenticationProvider;
   protected final SessionService sessionService;
   protected final AuthCookieService authCookieService;
 
   @SneakyThrows
   protected SecurityFilterChain applyPublicApiOptions(HttpSecurity http) {
     return configureGenericSecurityOptions(http)
-      // everything requires authentication
-      .authorizeHttpRequests(httpRequests -> httpRequests.anyRequest().authenticated())
-      .oauth2ResourceServer(oauth2resourceServer ->
-                              oauth2resourceServer.jwt(jwtConfigurer -> jwtConfigurer.decoder(publicApiJwtDecoder())))
-      .build();
+        // everything requires authentication
+        .authorizeHttpRequests(httpRequests -> httpRequests.anyRequest().authenticated())
+        .oauth2ResourceServer(
+            oauth2resourceServer ->
+                oauth2resourceServer.jwt(
+                    jwtConfigurer -> jwtConfigurer.decoder(publicApiJwtDecoder())))
+        .build();
   }
 
   @SneakyThrows
   protected HttpSecurity configureGenericSecurityOptions(HttpSecurity http) {
     return http
-      // csrf is not used but the same-site property of the auth cookie, see AuthCookieService#createNewOptimizeAuthCookie
-      .csrf(AbstractHttpConfigurer::disable)
-      .httpBasic(AbstractHttpConfigurer::disable)
-      // disable frame options so embed links work, it's not a risk disabling this globally as clickjacking
-      // is prevented by the same-site flag being set to `strict` on the authentication cookie
-      .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-      // spring session management is not needed as we have stateless session handling using a JWT token stored as cookie
-      .sessionManagement(sessionMgmt -> sessionMgmt.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        // csrf is not used but the same-site property of the auth cookie, see
+        // AuthCookieService#createNewOptimizeAuthCookie
+        .csrf(AbstractHttpConfigurer::disable)
+        .httpBasic(AbstractHttpConfigurer::disable)
+        // disable frame options so embed links work, it's not a risk disabling this globally as
+        // clickjacking
+        // is prevented by the same-site flag being set to `strict` on the authentication cookie
+        .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
+        // spring session management is not needed as we have stateless session handling using a JWT
+        // token stored as cookie
+        .sessionManagement(
+            sessionMgmt -> sessionMgmt.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
   }
 
   protected abstract JwtDecoder publicApiJwtDecoder();
@@ -57,5 +64,4 @@ public abstract class AbstractSecurityConfigurerAdapter {
   protected static String createApiPath(final String... subPath) {
     return REST_API_PATH + String.join("", subPath);
   }
-
 }

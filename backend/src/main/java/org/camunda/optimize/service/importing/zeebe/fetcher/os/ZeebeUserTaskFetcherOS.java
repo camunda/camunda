@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.zeebe.fetcher.os;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
@@ -17,17 +19,18 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME;
-
 @Component
 @Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Conditional(OpenSearchCondition.class)
-public class ZeebeUserTaskFetcherOS
-  extends AbstractZeebeRecordFetcherOS<ZeebeUserTaskRecordDto> implements ZeebeUserTaskFetcher {
+public class ZeebeUserTaskFetcherOS extends AbstractZeebeRecordFetcherOS<ZeebeUserTaskRecordDto>
+    implements ZeebeUserTaskFetcher {
 
-  protected ZeebeUserTaskFetcherOS(final int partitionId, final OptimizeOpenSearchClient osClient,
-                                   final ObjectMapper objectMapper, final ConfigurationService configurationService) {
+  protected ZeebeUserTaskFetcherOS(
+      final int partitionId,
+      final OptimizeOpenSearchClient osClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
     super(partitionId, osClient, objectMapper, configurationService);
   }
 

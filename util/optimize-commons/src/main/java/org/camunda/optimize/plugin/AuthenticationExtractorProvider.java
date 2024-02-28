@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.plugin;
 
+import java.util.List;
 import org.camunda.optimize.plugin.security.authentication.AuthenticationExtractor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class AuthenticationExtractorProvider extends PluginProvider<AuthenticationExtractor> {
 
-  public AuthenticationExtractorProvider(final ConfigurationService configurationService,
-                                         final PluginJarFileLoader pluginJarLoader) {
+  public AuthenticationExtractorProvider(
+      final ConfigurationService configurationService, final PluginJarFileLoader pluginJarLoader) {
     super(configurationService, pluginJarLoader);
   }
 
@@ -28,5 +27,4 @@ public class AuthenticationExtractorProvider extends PluginProvider<Authenticati
   protected List<String> getBasePackages() {
     return configurationService.getAuthenticationExtractorPluginBasePackages();
   }
-
 }

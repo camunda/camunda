@@ -5,19 +5,19 @@
  */
 package org.camunda.optimize.service.db.schema.index.events;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.FIELDS;
+import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NGRAM;
+import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NORMALIZER;
+
+import java.io.IOException;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.FIELDS;
-import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NGRAM;
-import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NORMALIZER;
-
-public abstract class EventSequenceCountIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+public abstract class EventSequenceCountIndex<TBuilder>
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final String ID = EventSequenceCountDto.Fields.id;
   public static final String SOURCE_EVENT = EventSequenceCountDto.Fields.sourceEvent;
@@ -57,78 +57,76 @@ public abstract class EventSequenceCountIndex<TBuilder> extends DefaultIndexMapp
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(ID)
+        .startObject(ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(SOURCE_EVENT)
+        .endObject()
+        .startObject(SOURCE_EVENT)
         .field("type", "object")
         .startObject("properties")
-          .startObject(GROUP)
-            .field("type", "keyword")
-            .startObject(FIELDS)
-              .startObject(N_GRAM_FIELD)
-                .field("type", "text")
-                .field(ANALYZER, LOWERCASE_NGRAM)
-              .endObject()
-              .startObject(LOWERCASE)
-                .field("type", "keyword")
-                .field(NORMALIZER, LOWERCASE_NORMALIZER)
-              .endObject()
-            .endObject()
-          .endObject()
-          .startObject(SOURCE)
-            .field("type", "keyword")
-            .startObject(FIELDS)
-              .startObject(N_GRAM_FIELD)
-                .field("type", "text")
-                .field(ANALYZER, LOWERCASE_NGRAM)
-              .endObject()
-              .startObject(LOWERCASE)
-                .field("type", "keyword")
-                .field(NORMALIZER, LOWERCASE_NORMALIZER)
-              .endObject()
-            .endObject()
-          .endObject()
-          .startObject(EVENT_NAME)
-            .field("type", "keyword")
-            .startObject(FIELDS)
-              .startObject(N_GRAM_FIELD)
-                .field("type", "text")
-                .field(ANALYZER, LOWERCASE_NGRAM)
-              .endObject()
-              .startObject(LOWERCASE)
-                .field("type", "keyword")
-                .field(NORMALIZER, LOWERCASE_NORMALIZER)
-              .endObject()
-            .endObject()
-          .endObject()
-          .startObject(EVENT_LABEL)
-            .field("type", "keyword")
-          .endObject()
+        .startObject(GROUP)
+        .field("type", "keyword")
+        .startObject(FIELDS)
+        .startObject(N_GRAM_FIELD)
+        .field("type", "text")
+        .field(ANALYZER, LOWERCASE_NGRAM)
         .endObject()
-      .endObject()
-      .startObject(TARGET_EVENT)
+        .startObject(LOWERCASE)
+        .field("type", "keyword")
+        .field(NORMALIZER, LOWERCASE_NORMALIZER)
+        .endObject()
+        .endObject()
+        .endObject()
+        .startObject(SOURCE)
+        .field("type", "keyword")
+        .startObject(FIELDS)
+        .startObject(N_GRAM_FIELD)
+        .field("type", "text")
+        .field(ANALYZER, LOWERCASE_NGRAM)
+        .endObject()
+        .startObject(LOWERCASE)
+        .field("type", "keyword")
+        .field(NORMALIZER, LOWERCASE_NORMALIZER)
+        .endObject()
+        .endObject()
+        .endObject()
+        .startObject(EVENT_NAME)
+        .field("type", "keyword")
+        .startObject(FIELDS)
+        .startObject(N_GRAM_FIELD)
+        .field("type", "text")
+        .field(ANALYZER, LOWERCASE_NGRAM)
+        .endObject()
+        .startObject(LOWERCASE)
+        .field("type", "keyword")
+        .field(NORMALIZER, LOWERCASE_NORMALIZER)
+        .endObject()
+        .endObject()
+        .endObject()
+        .startObject(EVENT_LABEL)
+        .field("type", "keyword")
+        .endObject()
+        .endObject()
+        .endObject()
+        .startObject(TARGET_EVENT)
         .field("type", "object")
         .startObject("properties")
-          .startObject(GROUP)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(SOURCE)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(EVENT_NAME)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(EVENT_LABEL)
-            .field("type", "keyword")
-          .endObject()
+        .startObject(GROUP)
+        .field("type", "keyword")
         .endObject()
-      .endObject()
-      .startObject(COUNT)
+        .startObject(SOURCE)
+        .field("type", "keyword")
+        .endObject()
+        .startObject(EVENT_NAME)
+        .field("type", "keyword")
+        .endObject()
+        .startObject(EVENT_LABEL)
+        .field("type", "keyword")
+        .endObject()
+        .endObject()
+        .endObject()
+        .startObject(COUNT)
         .field("type", "long")
-      .endObject()
-      ;
+        .endObject();
     // @formatter:on
   }
-
 }

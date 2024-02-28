@@ -20,5 +20,4 @@ public class PanelNotificationMetaDataDto {
   private final String[] permissions;
   private final String href;
   private final String label;
-
 }

@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.autogeneration;
 
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
-import java.time.OffsetDateTime;
 
 @AllArgsConstructor
 @Data

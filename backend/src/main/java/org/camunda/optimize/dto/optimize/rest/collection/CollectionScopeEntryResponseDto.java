@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.rest.collection;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 @Accessors(chain = true)
@@ -33,13 +32,12 @@ public class CollectionScopeEntryResponseDto {
     return tenants.stream().map(TenantDto::getId).collect(Collectors.toList());
   }
 
-  public static CollectionScopeEntryResponseDto from(CollectionScopeEntryDto scope,
-                                                     List<TenantDto> authorizedTenantDtos) {
+  public static CollectionScopeEntryResponseDto from(
+      CollectionScopeEntryDto scope, List<TenantDto> authorizedTenantDtos) {
     return new CollectionScopeEntryResponseDto()
-      .setId(scope.getId())
-      .setDefinitionKey(scope.getDefinitionKey())
-      .setDefinitionType(scope.getDefinitionType())
-      .setTenants(authorizedTenantDtos);
+        .setId(scope.getId())
+        .setDefinitionKey(scope.getDefinitionKey())
+        .setDefinitionType(scope.getDefinitionType())
+        .setTenants(authorizedTenantDtos);
   }
 }
-

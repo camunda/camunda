@@ -14,5 +14,4 @@ public class ZeebeConfigDto implements SchedulerConfig {
 
   private String name;
   private int partitionCount;
-
 }

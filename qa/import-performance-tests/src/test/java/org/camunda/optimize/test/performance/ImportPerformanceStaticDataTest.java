@@ -5,9 +5,6 @@
  */
 package org.camunda.optimize.test.performance;
 
-import org.camunda.optimize.test.util.PropertyUtil;
-import org.junit.jupiter.api.Test;
-
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Properties;
@@ -16,6 +13,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.camunda.optimize.test.util.PropertyUtil;
+import org.junit.jupiter.api.Test;
 
 public class ImportPerformanceStaticDataTest extends AbstractImportTest {
 
@@ -46,22 +45,18 @@ public class ImportPerformanceStaticDataTest extends AbstractImportTest {
 
   private void importEngineData() throws InterruptedException, TimeoutException {
     final ExecutorService importExecutorService = Executors.newSingleThreadExecutor();
-    importExecutorService.execute(
-      () -> embeddedOptimizeExtension.importAllEngineData()
-    );
+    importExecutorService.execute(() -> embeddedOptimizeExtension.importAllEngineData());
 
     ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
     importExecutorService.shutdown();
-    boolean wasAbleToFinishImportInTime = importExecutorService.awaitTermination(
-      maxImportDurationInMin,
-      TimeUnit.MINUTES
-    );
+    boolean wasAbleToFinishImportInTime =
+        importExecutorService.awaitTermination(maxImportDurationInMin, TimeUnit.MINUTES);
     if (!wasAbleToFinishImportInTime) {
-      throw new TimeoutException("Import was not able to finish import in " + maxImportDurationInMin + " minutes!");
+      throw new TimeoutException(
+          "Import was not able to finish import in " + maxImportDurationInMin + " minutes!");
     }
     progressReporterExecutorService.shutdown();
 
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
-
 }

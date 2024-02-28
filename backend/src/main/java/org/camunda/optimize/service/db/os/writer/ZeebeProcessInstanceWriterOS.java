@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -13,17 +14,14 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class ZeebeProcessInstanceWriterOS implements ZeebeProcessInstanceWriter {
   @Override
-  public List<ImportRequestDto> generateProcessInstanceImports(final List<ProcessInstanceDto> processInstances,
-                                                               final String sourceExportIndex) {
+  public List<ImportRequestDto> generateProcessInstanceImports(
+      final List<ProcessInstanceDto> processInstances, final String sourceExportIndex) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
-
 }

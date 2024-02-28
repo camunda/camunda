@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.repository.os;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
@@ -13,8 +14,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.opensearch.client.opensearch.tasks.Status;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Slf4j
 @Component
@@ -25,15 +24,19 @@ public class TaskRepositoryOS implements TaskRepository {
 
   @Override
   public List<TaskProgressInfo> tasksProgress(final String action) {
-    return osClient.getRichOpenSearchClient()
-      .task()
-      .tasksWithActions(List.of(action))
-      .entrySet()
-      .stream()
-      .filter(taskInfo -> "bulk-by-scroll".equals(taskInfo.getValue().type()))
-      .map(taskInfo -> taskInfo.getValue().status())
-      .map(status -> new TaskProgressInfo(getProgress(status), status.total(), getProcessedTasksCount(status)))
-      .toList();
+    return osClient
+        .getRichOpenSearchClient()
+        .task()
+        .tasksWithActions(List.of(action))
+        .entrySet()
+        .stream()
+        .filter(taskInfo -> "bulk-by-scroll".equals(taskInfo.getValue().type()))
+        .map(taskInfo -> taskInfo.getValue().status())
+        .map(
+            status ->
+                new TaskProgressInfo(
+                    getProgress(status), status.total(), getProcessedTasksCount(status)))
+        .toList();
   }
 
   private static long getProcessedTasksCount(Status status) {
@@ -42,7 +45,8 @@ public class TaskRepositoryOS implements TaskRepository {
 
   private static int getProgress(Status status) {
     return status.total() > 0
-      ? Double.valueOf((double) getProcessedTasksCount(status) / status.total() * 100.0D).intValue()
-      : 0;
+        ? Double.valueOf((double) getProcessedTasksCount(status) / status.total() * 100.0D)
+            .intValue()
+        : 0;
   }
 }

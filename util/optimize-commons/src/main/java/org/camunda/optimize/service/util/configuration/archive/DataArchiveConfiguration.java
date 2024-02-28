@@ -12,5 +12,4 @@ public class DataArchiveConfiguration {
 
   private boolean enabled;
   private int archiveIntervalInMins;
-
 }

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value;
 
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
-
-import java.util.Objects;
 
 @Getter
 @Setter
@@ -32,9 +31,9 @@ public class CombinedReportDurationChartDto {
       return false;
     }
     CombinedReportDurationChartDto that = (CombinedReportDurationChartDto) o;
-    return unit == that.unit &&
-      Objects.equals(isBelow, that.isBelow) &&
-      Objects.equals(value, that.value);
+    return unit == that.unit
+        && Objects.equals(isBelow, that.isBelow)
+        && Objects.equals(value, that.value);
   }
 
   @Override

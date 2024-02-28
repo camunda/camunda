@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
@@ -15,11 +19,6 @@ import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfigurat
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
-
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import java.time.OffsetDateTime;
-import java.util.List;
 
 @RequiredArgsConstructor
 @Component
@@ -61,17 +60,23 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
     final OffsetDateTime startTime = LocalDateUtil.getCurrentDateTime();
 
     cleanupServices.stream()
-      .filter(CleanupService::isEnabled)
-      .forEach(optimizeCleanupService -> {
-        log.info("Running CleanupService {}", optimizeCleanupService.getClass().getSimpleName());
-        try {
-          optimizeCleanupService.doCleanup(startTime);
-        } catch (Exception e) {
-          log.error("Execution of cleanupService {} failed", optimizeCleanupService.getClass().getSimpleName(), e);
-        }
-      });
+        .filter(CleanupService::isEnabled)
+        .forEach(
+            optimizeCleanupService -> {
+              log.info(
+                  "Running CleanupService {}", optimizeCleanupService.getClass().getSimpleName());
+              try {
+                optimizeCleanupService.doCleanup(startTime);
+              } catch (Exception e) {
+                log.error(
+                    "Execution of cleanupService {} failed",
+                    optimizeCleanupService.getClass().getSimpleName(),
+                    e);
+              }
+            });
 
-    final long durationSeconds = OffsetDateTime.now().minusSeconds(startTime.toEpochSecond()).toEpochSecond();
+    final long durationSeconds =
+        OffsetDateTime.now().minusSeconds(startTime.toEpochSecond()).toEpochSecond();
     log.info("Finished optimize history cleanup in {}s", durationSeconds);
   }
 

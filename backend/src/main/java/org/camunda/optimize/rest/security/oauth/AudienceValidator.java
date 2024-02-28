@@ -21,15 +21,14 @@ public class AudienceValidator implements OAuth2TokenValidator<Jwt> {
         return OAuth2TokenValidatorResult.success();
       }
       return OAuth2TokenValidatorResult.failure(
-        new OAuth2Error("invalid_token", "The required audience is missing", null));
+          new OAuth2Error("invalid_token", "The required audience is missing", null));
     } else {
       return OAuth2TokenValidatorResult.failure(
-        new OAuth2Error("bad_configuration", "The configured audience is invalid", null));
+          new OAuth2Error("bad_configuration", "The configured audience is invalid", null));
     }
   }
 
   private boolean audienceIsValid() {
     return !(expectedAudience == null || expectedAudience.isEmpty());
   }
-
 }

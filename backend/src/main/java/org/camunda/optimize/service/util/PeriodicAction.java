@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.util;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import lombok.extern.slf4j.Slf4j;
+import static java.lang.String.format;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static java.lang.String.format;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class PeriodicAction {
@@ -23,9 +22,9 @@ public class PeriodicAction {
   public PeriodicAction(String actionName, final Runnable onSchedule) {
     this.actionName = actionName;
     this.onSchedule = onSchedule;
-    this.executorService = Executors.newSingleThreadScheduledExecutor(
-      new ThreadFactoryBuilder().setNameFormat(actionName + "-progress-%d").build()
-    );
+    this.executorService =
+        Executors.newSingleThreadScheduledExecutor(
+            new ThreadFactoryBuilder().setNameFormat(actionName + "-progress-%d").build());
   }
 
   public void start() {

@@ -24,7 +24,8 @@ public enum ExportEntityType {
   }
 
   // This is used by jersey on unmarshalling query/path parameters
-  // see https://docs.jboss.org/resteasy/docs/3.5.0.Final/userguide/html/StringConverter.html#d4e1541
+  // see
+  // https://docs.jboss.org/resteasy/docs/3.5.0.Final/userguide/html/StringConverter.html#d4e1541
   public static ExportEntityType fromString(final String name) {
     return valueOf(name.toUpperCase());
   }

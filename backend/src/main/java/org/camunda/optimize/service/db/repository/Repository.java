@@ -7,5 +7,6 @@ package org.camunda.optimize.service.db.repository;
 
 public interface Repository {
   String getDeleteByQueryActionName();
+
   String getUpdateByQueryActionName();
 }

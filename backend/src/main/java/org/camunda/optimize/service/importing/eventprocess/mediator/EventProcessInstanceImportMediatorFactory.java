@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.importing.eventprocess.mediator;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
@@ -26,12 +31,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
-
 @Component
 @RequiredArgsConstructor
 public class EventProcessInstanceImportMediatorFactory {
@@ -49,50 +48,54 @@ public class EventProcessInstanceImportMediatorFactory {
   private final DatabaseClient databaseClient;
 
   @SuppressWarnings(UNCHECKED_CAST)
-  public <T extends EventProcessEventDto> List<EventProcessInstanceImportMediator<T>> createEventProcessInstanceMediators(
-    final EventProcessPublishStateDto publishedStateDto) {
+  public <T extends EventProcessEventDto>
+      List<EventProcessInstanceImportMediator<T>> createEventProcessInstanceMediators(
+          final EventProcessPublishStateDto publishedStateDto) {
     return publishedStateDto.getEventImportSources().stream()
-      .map(importSource -> (EventProcessInstanceImportMediator<T>) beanFactory.getBean(
-        EventProcessInstanceImportMediator.class,
-        publishedStateDto.getId(),
-        new EventProcessInstanceImportSourceIndexHandler(configurationService, importSource),
-        eventFetcherFactory.createEventFetcherForEventImportSource(importSource),
-        createImportService(publishedStateDto, importSource),
-        configurationService,
-        new BackoffCalculator(configurationService)
-      ))
-      .collect(Collectors.toList());
+        .map(
+            importSource ->
+                (EventProcessInstanceImportMediator<T>)
+                    beanFactory.getBean(
+                        EventProcessInstanceImportMediator.class,
+                        publishedStateDto.getId(),
+                        new EventProcessInstanceImportSourceIndexHandler(
+                            configurationService, importSource),
+                        eventFetcherFactory.createEventFetcherForEventImportSource(importSource),
+                        createImportService(publishedStateDto, importSource),
+                        configurationService,
+                        new BackoffCalculator(configurationService)))
+        .collect(Collectors.toList());
   }
 
-  private ImportService<? extends EventProcessEventDto> createImportService(EventProcessPublishStateDto eventProcessPublishStateDto,
-                                                                            EventImportSourceDto eventSourceEntryDto) {
+  private ImportService<? extends EventProcessEventDto> createImportService(
+      EventProcessPublishStateDto eventProcessPublishStateDto,
+      EventImportSourceDto eventSourceEntryDto) {
     final EventProcessInstanceImportService eventProcessInstanceImportService =
-      createEventProcessInstanceImportService(eventProcessPublishStateDto);
+        createEventProcessInstanceImportService(eventProcessPublishStateDto);
     if (EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getEventImportSourceType())) {
       return eventProcessInstanceImportService;
     } else if (EventSourceType.CAMUNDA.equals(eventSourceEntryDto.getEventImportSourceType())) {
       return new CustomTracedEventProcessInstanceImportService(
-        (CamundaEventSourceConfigDto) eventSourceEntryDto.getEventSourceConfigurations().get(0),
-        new SimpleDateFormat(configurationService.getEngineDateFormat()),
-        eventProcessInstanceImportService,
-        processDefinitionReader,
-        variableUpdateInstanceReader,
-        businessKeyReader
-      );
+          (CamundaEventSourceConfigDto) eventSourceEntryDto.getEventSourceConfigurations().get(0),
+          new SimpleDateFormat(configurationService.getEngineDateFormat()),
+          eventProcessInstanceImportService,
+          processDefinitionReader,
+          variableUpdateInstanceReader,
+          businessKeyReader);
     } else {
-      throw new OptimizeRuntimeException(String.format(
-        "Cannot create mediator for Event Source Type: %s", eventSourceEntryDto.getEventImportSourceType()
-      ));
+      throw new OptimizeRuntimeException(
+          String.format(
+              "Cannot create mediator for Event Source Type: %s",
+              eventSourceEntryDto.getEventImportSourceType()));
     }
   }
 
-  private EventProcessInstanceImportService createEventProcessInstanceImportService(final EventProcessPublishStateDto eventProcessPublishStateDto) {
+  private EventProcessInstanceImportService createEventProcessInstanceImportService(
+      final EventProcessPublishStateDto eventProcessPublishStateDto) {
     return new EventProcessInstanceImportService(
-      configurationService,
-      eventProcessPublishStateDto,
-      eventProcessInstanceWriter,
-      databaseClient
-    );
+        configurationService,
+        eventProcessPublishStateDto,
+        eventProcessInstanceWriter,
+        databaseClient);
   }
-
 }

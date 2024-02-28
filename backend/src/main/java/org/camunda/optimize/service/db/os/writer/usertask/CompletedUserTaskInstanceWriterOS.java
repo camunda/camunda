@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.writer.usertask;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -16,14 +18,12 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Component
 @Slf4j
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
-public class CompletedUserTaskInstanceWriterOS extends AbstractUserTaskWriterOS implements CompletedUserTaskInstanceWriter {
+public class CompletedUserTaskInstanceWriterOS extends AbstractUserTaskWriterOS
+    implements CompletedUserTaskInstanceWriter {
   private final OptimizeOpenSearchClient osClient;
 
   @Override
@@ -33,15 +33,18 @@ public class CompletedUserTaskInstanceWriterOS extends AbstractUserTaskWriterOS 
   }
 
   @Override
-  public List<ImportRequestDto> generateUserTaskImports(final List<FlowNodeInstanceDto> userTaskInstances) {
-    return super.generateUserTaskImports("completed user task instances", osClient, userTaskInstances);
+  public List<ImportRequestDto> generateUserTaskImports(
+      final List<FlowNodeInstanceDto> userTaskInstances) {
+    return super.generateUserTaskImports(
+        "completed user task instances", osClient, userTaskInstances);
   }
 
   @Override
-  public List<ImportRequestDto> generateUserTaskImports(final String importItemName, final DatabaseClient databaseClient,
-                                                        final List<FlowNodeInstanceDto> userTaskInstances) {
+  public List<ImportRequestDto> generateUserTaskImports(
+      final String importItemName,
+      final DatabaseClient databaseClient,
+      final List<FlowNodeInstanceDto> userTaskInstances) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
-
 }

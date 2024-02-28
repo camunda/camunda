@@ -21,5 +21,4 @@ public class ZeebeConfiguration {
   private int maxImportPageSize;
   private boolean includeObjectVariableValue;
   private ZeebeImportConfiguration importConfig;
-
 }

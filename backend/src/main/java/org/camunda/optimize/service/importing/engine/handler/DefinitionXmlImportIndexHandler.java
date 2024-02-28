@@ -5,11 +5,13 @@
  */
 package org.camunda.optimize.service.importing.engine.handler;
 
+import jakarta.annotation.PostConstruct;
+import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.ImportIndexReader;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.util.DatabaseHelper;
@@ -18,24 +20,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import jakarta.annotation.PostConstruct;
-
-import java.util.Optional;
-import java.util.Set;
-
 @Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class DefinitionXmlImportIndexHandler
-  implements EngineImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
+    implements EngineImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
-  @Autowired
-  protected DatabaseClient databaseClient;
+  @Autowired protected DatabaseClient databaseClient;
 
-  @Autowired
-  protected ConfigurationService configurationService;
+  @Autowired protected ConfigurationService configurationService;
 
-  @Autowired
-  private ImportIndexReader importIndexReader;
+  @Autowired private ImportIndexReader importIndexReader;
 
   private Long importIndex = 0L;
 
@@ -82,10 +76,9 @@ public abstract class DefinitionXmlImportIndexHandler
 
   private void readIndexFromDatabase() {
     Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-      importIndexReader.getImportIndex(getDatabaseId());
+        importIndexReader.getImportIndex(getDatabaseId());
     storedIndex.ifPresent(
-      allEntitiesBasedImportIndexDto -> importIndex = allEntitiesBasedImportIndexDto.getImportIndex()
-    );
+        allEntitiesBasedImportIndexDto ->
+            importIndex = allEntitiesBasedImportIndexDto.getImportIndex());
   }
-
 }

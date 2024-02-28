@@ -5,25 +5,23 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
+import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
-import jakarta.validation.constraints.NotNull;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 public class ProcessVariableNameRequestDto {
-  @NotNull
-  private String processDefinitionKey;
+  @NotNull private String processDefinitionKey;
   private List<String> processDefinitionVersions = new ArrayList<>();
   private List<String> tenantIds = new ArrayList<>(DEFAULT_TENANT_IDS);
 

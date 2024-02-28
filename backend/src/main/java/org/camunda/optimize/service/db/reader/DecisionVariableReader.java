@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
-
-import java.util.List;
 
 public interface DecisionVariableReader {
 
@@ -17,16 +16,17 @@ public interface DecisionVariableReader {
   String VARIABLE_VALUE_NGRAM = "nGramField";
   String VARIABLE_VALUE_LOWERCASE = "lowercaseField";
 
-  List<DecisionVariableNameResponseDto> getInputVariableNames(final String decisionDefinitionKey,
-                                                              final List<String> decisionDefinitionVersions,
-                                                              final List<String> tenantIds);
+  List<DecisionVariableNameResponseDto> getInputVariableNames(
+      final String decisionDefinitionKey,
+      final List<String> decisionDefinitionVersions,
+      final List<String> tenantIds);
 
-  List<DecisionVariableNameResponseDto> getOutputVariableNames(final String decisionDefinitionKey,
-                                                               final List<String> decisionDefinitionVersions,
-                                                               final List<String> tenantIds);
+  List<DecisionVariableNameResponseDto> getOutputVariableNames(
+      final String decisionDefinitionKey,
+      final List<String> decisionDefinitionVersions,
+      final List<String> tenantIds);
 
   List<String> getInputVariableValues(final DecisionVariableValueRequestDto requestDto);
 
   List<String> getOutputVariableValues(final DecisionVariableValueRequestDto requestDto);
-
 }

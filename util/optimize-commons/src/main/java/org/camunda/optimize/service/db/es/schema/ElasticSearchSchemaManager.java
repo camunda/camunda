@@ -5,9 +5,21 @@
  */
 package org.camunda.optimize.service.db.es.schema;
 
+import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
+import static org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder.buildDynamicSettings;
+
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.index.AlertIndexES;
@@ -61,39 +73,33 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.StreamSupport;
-
-import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
-import static org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder.buildDynamicSettings;
-
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
-public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeElasticsearchClient, XContentBuilder> {
+public class ElasticSearchSchemaManager
+    extends DatabaseSchemaManager<OptimizeElasticsearchClient, XContentBuilder> {
   private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
   public static final int INDEX_EXIST_BATCH_SIZE = 10;
 
   protected final ElasticSearchMetadataService metadataService;
 
   @Autowired
-  public ElasticSearchSchemaManager(final ElasticSearchMetadataService metadataService,
-                                    final ConfigurationService configurationService,
-                                    final OptimizeIndexNameService indexNameService) {
-    this(metadataService, configurationService, indexNameService, new ArrayList<>(getAllNonDynamicMappings()));
+  public ElasticSearchSchemaManager(
+      final ElasticSearchMetadataService metadataService,
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService indexNameService) {
+    this(
+        metadataService,
+        configurationService,
+        indexNameService,
+        new ArrayList<>(getAllNonDynamicMappings()));
   }
 
-  public ElasticSearchSchemaManager(final ElasticSearchMetadataService metadataService,
-                                    final ConfigurationService configurationService,
-                                    final OptimizeIndexNameService indexNameService,
-                                    final List<IndexMappingCreator<XContentBuilder>> mappings) {
+  public ElasticSearchSchemaManager(
+      final ElasticSearchMetadataService metadataService,
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService indexNameService,
+      final List<IndexMappingCreator<XContentBuilder>> mappings) {
     super(configurationService, indexNameService, mappings);
     this.metadataService = metadataService;
   }
@@ -127,38 +133,37 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
   }
 
   @Override
-  public boolean indexExists(final OptimizeElasticsearchClient esClient,
-                             final IndexMappingCreator<XContentBuilder> mapping) {
+  public boolean indexExists(
+      final OptimizeElasticsearchClient esClient,
+      final IndexMappingCreator<XContentBuilder> mapping) {
     return indicesExist(esClient, Collections.singletonList(mapping));
   }
 
   @Override
-  public boolean indexExists(final OptimizeElasticsearchClient esClient,
-                             final String indexName) {
+  public boolean indexExists(final OptimizeElasticsearchClient esClient, final String indexName) {
     return indicesExistWithNames(esClient, Collections.singletonList(indexName));
   }
 
   @Override
-  public boolean indicesExist(final OptimizeElasticsearchClient esClient,
-                              final List<IndexMappingCreator<XContentBuilder>> mappings) {
+  public boolean indicesExist(
+      final OptimizeElasticsearchClient esClient,
+      final List<IndexMappingCreator<XContentBuilder>> mappings) {
     return indicesExistWithNames(
-      esClient,
-      mappings.stream()
-        .map(IndexMappingCreator::getIndexName)
-        .toList()
-    );
+        esClient, mappings.stream().map(IndexMappingCreator::getIndexName).toList());
   }
 
   @Override
-  public void createIndexIfMissing(final OptimizeElasticsearchClient esClient,
-                                   final IndexMappingCreator<XContentBuilder> indexMapping) {
+  public void createIndexIfMissing(
+      final OptimizeElasticsearchClient esClient,
+      final IndexMappingCreator<XContentBuilder> indexMapping) {
     createIndexIfMissing(esClient, indexMapping, Collections.emptySet());
   }
 
   @Override
-  public void createIndexIfMissing(final OptimizeElasticsearchClient esClient,
-                                   final IndexMappingCreator<XContentBuilder> indexMapping,
-                                   final Set<String> additionalReadOnlyAliases) {
+  public void createIndexIfMissing(
+      final OptimizeElasticsearchClient esClient,
+      final IndexMappingCreator<XContentBuilder> indexMapping,
+      final Set<String> additionalReadOnlyAliases) {
     try {
       final boolean indexAlreadyExists = indexExists(esClient, indexMapping);
       if (!indexAlreadyExists) {
@@ -171,33 +176,42 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
   }
 
   @Override
-  public void createOrUpdateOptimizeIndex(final OptimizeElasticsearchClient esClient,
-                                          final IndexMappingCreator<XContentBuilder> mapping,
-                                          final Set<String> readOnlyAliases) {
+  public void createOrUpdateOptimizeIndex(
+      final OptimizeElasticsearchClient esClient,
+      final IndexMappingCreator<XContentBuilder> mapping,
+      final Set<String> readOnlyAliases) {
     final Set<String> prefixedReadOnlyAliases =
-      readOnlyAliases.stream()
-        .map(indexNameService::getOptimizeIndexAliasForIndex)
-        .collect(toSet());
-    final String defaultAliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
+        readOnlyAliases.stream()
+            .map(indexNameService::getOptimizeIndexAliasForIndex)
+            .collect(toSet());
+    final String defaultAliasName =
+        indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
     final String suffixedIndexName = indexNameService.getOptimizeIndexNameWithVersion(mapping);
     final Settings indexSettings = createIndexSettings(mapping);
 
     try {
       if (mapping.isCreateFromTemplate()) {
-        // Creating template without alias and adding aliases manually to indices created from this template to
+        // Creating template without alias and adding aliases manually to indices created from this
+        // template to
         // ensure correct alias handling on rollover
         createOrUpdateTemplateWithAliases(
-          esClient, mapping, defaultAliasName, prefixedReadOnlyAliases, indexSettings
-        );
-        createOptimizeIndexWithWriteAliasFromTemplate(esClient, suffixedIndexName, defaultAliasName);
+            esClient, mapping, defaultAliasName, prefixedReadOnlyAliases, indexSettings);
+        createOptimizeIndexWithWriteAliasFromTemplate(
+            esClient, suffixedIndexName, defaultAliasName);
       } else {
         createOptimizeIndexFromRequest(
-          esClient, mapping, suffixedIndexName, defaultAliasName, prefixedReadOnlyAliases, indexSettings
-        );
+            esClient,
+            mapping,
+            suffixedIndexName,
+            defaultAliasName,
+            prefixedReadOnlyAliases,
+            indexSettings);
       }
     } catch (ElasticsearchStatusException e) {
-      if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
-        log.debug("index {} already exists, updating mapping and dynamic settings.", suffixedIndexName);
+      if (e.status() == RestStatus.BAD_REQUEST
+          && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
+        log.debug(
+            "index {} already exists, updating mapping and dynamic settings.", suffixedIndexName);
         updateDynamicSettingsAndMappings(esClient, mapping);
       } else {
         throw e;
@@ -210,8 +224,9 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
   }
 
   @Override
-  public void deleteOptimizeIndex(final OptimizeElasticsearchClient esClient,
-                                  final IndexMappingCreator<XContentBuilder> mapping) {
+  public void deleteOptimizeIndex(
+      final OptimizeElasticsearchClient esClient,
+      final IndexMappingCreator<XContentBuilder> mapping) {
     try {
       esClient.deleteIndex(mapping);
     } catch (ElasticsearchStatusException e) {
@@ -224,19 +239,23 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
   }
 
   @Override
-  public void createOrUpdateTemplateWithoutAliases(final OptimizeElasticsearchClient esClient,
-                                                   final IndexMappingCreator<XContentBuilder> mappingCreator) {
-    final String templateName = indexNameService.getOptimizeIndexTemplateNameWithVersion(mappingCreator);
+  public void createOrUpdateTemplateWithoutAliases(
+      final OptimizeElasticsearchClient esClient,
+      final IndexMappingCreator<XContentBuilder> mappingCreator) {
+    final String templateName =
+        indexNameService.getOptimizeIndexTemplateNameWithVersion(mappingCreator);
     final Settings indexSettings = createIndexSettings(mappingCreator);
 
     log.debug("Creating or updating template with name {}.", templateName);
-    PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(templateName)
-      .version(mappingCreator.getVersion())
-      .mapping(mappingCreator.getSource())
-      .settings(indexSettings)
-      .patterns(Collections.singletonList(
-        indexNameService.getOptimizeIndexNameWithVersionWithWildcardSuffix(mappingCreator)
-      ));
+    PutIndexTemplateRequest templateRequest =
+        new PutIndexTemplateRequest(templateName)
+            .version(mappingCreator.getVersion())
+            .mapping(mappingCreator.getSource())
+            .settings(indexSettings)
+            .patterns(
+                Collections.singletonList(
+                    indexNameService.getOptimizeIndexNameWithVersionWithWildcardSuffix(
+                        mappingCreator)));
     try {
       esClient.createTemplate(templateRequest);
     } catch (Exception e) {
@@ -246,55 +265,63 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
   }
 
   @Override
-  public void updateDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
-                                               IndexMappingCreator<XContentBuilder> indexMapping) {
+  public void updateDynamicSettingsAndMappings(
+      OptimizeElasticsearchClient esClient, IndexMappingCreator<XContentBuilder> indexMapping) {
     updateIndexDynamicSettingsAndMappings(esClient, indexMapping);
     if (indexMapping.isCreateFromTemplate()) {
       updateTemplateDynamicSettingsAndMappings(esClient, indexMapping);
     }
   }
 
-  private boolean indicesExistWithNames(final OptimizeElasticsearchClient esClient,
-                                        final List<String> indexNames) {
-    return StreamSupport.stream(Iterables.partition(indexNames, INDEX_EXIST_BATCH_SIZE).spliterator(), true)
-      .allMatch(indices -> {
-        final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));
-        try {
-          return esClient.exists(request);
-        } catch (IOException e) {
-          final String message = String.format(
-            "Could not check if [%s] index(es) already exist.", String.join(",", indices)
-          );
-          throw new OptimizeRuntimeException(message, e);
-        }
-      });
+  private boolean indicesExistWithNames(
+      final OptimizeElasticsearchClient esClient, final List<String> indexNames) {
+    return StreamSupport.stream(
+            Iterables.partition(indexNames, INDEX_EXIST_BATCH_SIZE).spliterator(), true)
+        .allMatch(
+            indices -> {
+              final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[] {}));
+              try {
+                return esClient.exists(request);
+              } catch (IOException e) {
+                final String message =
+                    String.format(
+                        "Could not check if [%s] index(es) already exist.",
+                        String.join(",", indices));
+                throw new OptimizeRuntimeException(message, e);
+              }
+            });
   }
 
-  private void createOptimizeIndexFromRequest(final OptimizeElasticsearchClient esClient,
-                                              final IndexMappingCreator<XContentBuilder> mapping,
-                                              final String indexName,
-                                              final String defaultAliasName,
-                                              final Set<String> additionalAliases,
-                                              final Settings indexSettings) throws IOException {
-    log.debug("Creating Optimize Index with name {}, default alias {} and additional aliases {}",
-              indexName, defaultAliasName, additionalAliases
-    );
+  private void createOptimizeIndexFromRequest(
+      final OptimizeElasticsearchClient esClient,
+      final IndexMappingCreator<XContentBuilder> mapping,
+      final String indexName,
+      final String defaultAliasName,
+      final Set<String> additionalAliases,
+      final Settings indexSettings)
+      throws IOException {
+    log.debug(
+        "Creating Optimize Index with name {}, default alias {} and additional aliases {}",
+        indexName,
+        defaultAliasName,
+        additionalAliases);
     final CreateIndexRequest request = new CreateIndexRequest(indexName);
     final Set<String> aliases = new HashSet<>(additionalAliases);
     aliases.add(defaultAliasName);
     aliases.forEach(
-      additionalAliasName -> request.alias(
-        new Alias(additionalAliasName).writeIndex(defaultAliasName.equals(additionalAliasName))
-      )
-    );
+        additionalAliasName ->
+            request.alias(
+                new Alias(additionalAliasName)
+                    .writeIndex(defaultAliasName.equals(additionalAliasName))));
     request.settings(indexSettings);
     request.mapping(mapping.getSource());
     esClient.createIndex(request);
   }
 
-  private void createOptimizeIndexWithWriteAliasFromTemplate(final OptimizeElasticsearchClient esClient,
-                                                             final String indexNameWithSuffix,
-                                                             final String aliasName) {
+  private void createOptimizeIndexWithWriteAliasFromTemplate(
+      final OptimizeElasticsearchClient esClient,
+      final String indexNameWithSuffix,
+      final String aliasName) {
     log.info("Creating index {} from template with write alias {}", indexNameWithSuffix, aliasName);
     final CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexNameWithSuffix);
     if (aliasName != null) {
@@ -303,34 +330,42 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
     try {
       esClient.createIndex(createIndexRequest);
     } catch (IOException e) {
-      String message = String.format("Could not create index %s from template.", indexNameWithSuffix);
+      String message =
+          String.format("Could not create index %s from template.", indexNameWithSuffix);
       log.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
   }
 
-  private void createOrUpdateTemplateWithAliases(final OptimizeElasticsearchClient esClient,
-                                                 final IndexMappingCreator<XContentBuilder> mappingCreator,
-                                                 final String defaultAliasName,
-                                                 final Set<String> additionalAliases,
-                                                 final Settings indexSettings) {
-    final String templateName = indexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
+  private void createOrUpdateTemplateWithAliases(
+      final OptimizeElasticsearchClient esClient,
+      final IndexMappingCreator<XContentBuilder> mappingCreator,
+      final String defaultAliasName,
+      final Set<String> additionalAliases,
+      final Settings indexSettings) {
+    final String templateName =
+        indexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
     log.info("Creating or updating template with name {}", templateName);
 
-    PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(templateName)
-      .version(mappingCreator.getVersion())
-      .mapping(mappingCreator.getSource())
-      .settings(indexSettings)
-      .patterns(Collections.singletonList(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(mappingCreator)));
+    PutIndexTemplateRequest templateRequest =
+        new PutIndexTemplateRequest(templateName)
+            .version(mappingCreator.getVersion())
+            .mapping(mappingCreator.getSource())
+            .settings(indexSettings)
+            .patterns(
+                Collections.singletonList(
+                    indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(
+                        mappingCreator)));
 
     additionalAliases.stream()
-      .filter(aliasName -> !aliasName.equals(defaultAliasName))
-      .map(aliasName -> {
-        final Alias alias = new Alias(aliasName);
-        alias.writeIndex(false);
-        return alias;
-      })
-      .forEach(templateRequest::alias);
+        .filter(aliasName -> !aliasName.equals(defaultAliasName))
+        .map(
+            aliasName -> {
+              final Alias alias = new Alias(aliasName);
+              alias.writeIndex(false);
+              return alias;
+            })
+        .forEach(templateRequest::alias);
 
     try {
       esClient.createTemplate(templateRequest);
@@ -348,7 +383,7 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
     }
 
     final List<IndexMappingCreator<?>> allDynamicMappings =
-      new MappingMetadataUtil(esClient).getAllDynamicMappings(indexNameService.getIndexPrefix());
+        new MappingMetadataUtil(esClient).getAllDynamicMappings(indexNameService.getIndexPrefix());
     for (IndexMappingCreator<?> mapping : allDynamicMappings) {
       updateDynamicSettingsAndMappings(esClient, (IndexMappingCreator<XContentBuilder>) mapping);
     }
@@ -359,8 +394,9 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
     final boolean indexBlocked;
     try {
       final GetSettingsResponse settingsResponse = esClient.getIndexSettings();
-      indexBlocked = Streams.stream(settingsResponse.getIndexToSettings().valuesIt())
-        .anyMatch(settings -> settings.getAsBoolean(INDEX_READ_ONLY_SETTING, false));
+      indexBlocked =
+          Streams.stream(settingsResponse.getIndexToSettings().valuesIt())
+              .anyMatch(settings -> settings.getAsBoolean(INDEX_READ_ONLY_SETTING, false));
     } catch (IOException e) {
       log.error("Could not retrieve index settings!", e);
       throw new OptimizeRuntimeException("Could not retrieve index settings!", e);
@@ -368,9 +404,8 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
 
     if (indexBlocked) {
       log.info("Unblocking Elasticsearch indices...");
-      final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(
-        indexNameService.getIndexPrefix() + "*"
-      );
+      final UpdateSettingsRequest updateSettingsRequest =
+          new UpdateSettingsRequest(indexNameService.getIndexPrefix() + "*");
       updateSettingsRequest.settings(Settings.builder().put(INDEX_READ_ONLY_SETTING, false));
       try {
         esClient.updateSettings(updateSettingsRequest);
@@ -380,18 +415,19 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
     }
   }
 
-  private void updateTemplateDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
-                                                        IndexMappingCreator<XContentBuilder> mappingCreator) {
-    final String defaultAliasName = indexNameService.getOptimizeIndexAliasForIndex(mappingCreator.getIndexName());
+  private void updateTemplateDynamicSettingsAndMappings(
+      OptimizeElasticsearchClient esClient, IndexMappingCreator<XContentBuilder> mappingCreator) {
+    final String defaultAliasName =
+        indexNameService.getOptimizeIndexAliasForIndex(mappingCreator.getIndexName());
     final Settings indexSettings = createIndexSettings(mappingCreator);
     createOrUpdateTemplateWithAliases(
-      esClient, mappingCreator, defaultAliasName, Sets.newHashSet(), indexSettings
-    );
+        esClient, mappingCreator, defaultAliasName, Sets.newHashSet(), indexSettings);
   }
 
-  private void updateIndexDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
-                                                     IndexMappingCreator<XContentBuilder> indexMapping) {
-    final String indexName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMapping);
+  private void updateIndexDynamicSettingsAndMappings(
+      OptimizeElasticsearchClient esClient, IndexMappingCreator<XContentBuilder> indexMapping) {
+    final String indexName =
+        indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMapping);
     try {
       final Settings indexSettings = buildDynamicSettings(configurationService);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
@@ -399,7 +435,9 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
       updateSettingsRequest.settings(indexSettings);
       esClient.updateSettings(updateSettingsRequest);
     } catch (IOException e) {
-      String message = String.format("Could not update index settings for index [%s].", indexMapping.getIndexName());
+      String message =
+          String.format(
+              "Could not update index settings for index [%s].", indexMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);
     }
 
@@ -408,15 +446,17 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
       putMappingRequest.source(indexMapping.getSource());
       esClient.createMapping(putMappingRequest);
     } catch (IOException e) {
-      String message = String.format("Could not update index mappings for index [%s].", indexMapping.getIndexName());
+      String message =
+          String.format(
+              "Could not update index mappings for index [%s].", indexMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);
     }
   }
 
   private Settings createIndexSettings(IndexMappingCreator<XContentBuilder> indexMappingCreator) {
     try {
-      return ElasticSearchIndexSettingsBuilder
-        .buildAllSettings(configurationService, indexMappingCreator);
+      return ElasticSearchIndexSettingsBuilder.buildAllSettings(
+          configurationService, indexMappingCreator);
     } catch (IOException e) {
       log.error("Could not create settings!", e);
       throw new OptimizeRuntimeException("Could not create index settings");
@@ -425,36 +465,34 @@ public class ElasticSearchSchemaManager extends DatabaseSchemaManager<OptimizeEl
 
   public static List<IndexMappingCreator<XContentBuilder>> getAllNonDynamicMappings() {
     return Arrays.asList(
-      new AlertIndexES(),
-      new BusinessKeyIndexES(),
-      new CollectionIndexES(),
-      new DashboardIndexES(),
-      new DashboardShareIndexES(),
-      new DecisionDefinitionIndexES(),
-      new LicenseIndexES(),
-      new MetadataIndexES(),
-      new OnboardingStateIndexES(),
-      new ProcessDefinitionIndexES(),
-      new ReportShareIndexES(),
-      new SettingsIndexES(),
-      new TenantIndexES(),
-      new TerminatedUserSessionIndexES(),
-      new VariableUpdateInstanceIndexES(),
-      new EventIndexES(),
-      new EventProcessDefinitionIndexES(),
-      new EventProcessMappingIndexES(),
-      new EventProcessPublishStateIndexES(),
-      new ImportIndexIndexES(),
-      new TimestampBasedImportIndexES(),
-      new PositionBasedImportIndexES(),
-      new CombinedReportIndexES(),
-      new SingleDecisionReportIndexES(),
-      new SingleProcessReportIndexES(),
-      new ExternalProcessVariableIndexES(),
-      new VariableLabelIndexES(),
-      new ProcessOverviewIndexES(),
-      new InstantPreviewDashboardMetadataIndexES()
-    );
+        new AlertIndexES(),
+        new BusinessKeyIndexES(),
+        new CollectionIndexES(),
+        new DashboardIndexES(),
+        new DashboardShareIndexES(),
+        new DecisionDefinitionIndexES(),
+        new LicenseIndexES(),
+        new MetadataIndexES(),
+        new OnboardingStateIndexES(),
+        new ProcessDefinitionIndexES(),
+        new ReportShareIndexES(),
+        new SettingsIndexES(),
+        new TenantIndexES(),
+        new TerminatedUserSessionIndexES(),
+        new VariableUpdateInstanceIndexES(),
+        new EventIndexES(),
+        new EventProcessDefinitionIndexES(),
+        new EventProcessMappingIndexES(),
+        new EventProcessPublishStateIndexES(),
+        new ImportIndexIndexES(),
+        new TimestampBasedImportIndexES(),
+        new PositionBasedImportIndexES(),
+        new CombinedReportIndexES(),
+        new SingleDecisionReportIndexES(),
+        new SingleProcessReportIndexES(),
+        new ExternalProcessVariableIndexES(),
+        new VariableLabelIndexES(),
+        new ProcessOverviewIndexES(),
+        new InstantPreviewDashboardMetadataIndexES());
   }
-
 }

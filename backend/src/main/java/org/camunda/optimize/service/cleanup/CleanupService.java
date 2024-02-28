@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.service.cleanup;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class CleanupService {
@@ -18,17 +17,18 @@ public abstract class CleanupService {
 
   public abstract void doCleanup(final OffsetDateTime startTime);
 
-  public void verifyConfiguredKeysAreKnownDefinitionKeys(final Set<String> knownDefinitionKeys,
-                                                         final Set<String> specificDefinitionConfigKeys) {
-    final Set<String> knownConfiguredKeys = specificDefinitionConfigKeys.stream()
-      .filter(knownDefinitionKeys::contains)
-      .collect(Collectors.toSet());
+  public void verifyConfiguredKeysAreKnownDefinitionKeys(
+      final Set<String> knownDefinitionKeys, final Set<String> specificDefinitionConfigKeys) {
+    final Set<String> knownConfiguredKeys =
+        specificDefinitionConfigKeys.stream()
+            .filter(knownDefinitionKeys::contains)
+            .collect(Collectors.toSet());
     specificDefinitionConfigKeys.removeAll(knownConfiguredKeys);
     if (!specificDefinitionConfigKeys.isEmpty()) {
-      log.warn("History Cleanup Configuration contains definition keys for which there is no "
-                 + "definition imported yet. The keys without a match in the database are: "
-                 + specificDefinitionConfigKeys);
+      log.warn(
+          "History Cleanup Configuration contains definition keys for which there is no "
+              + "definition imported yet. The keys without a match in the database are: "
+              + specificDefinitionConfigKeys);
     }
   }
-
 }

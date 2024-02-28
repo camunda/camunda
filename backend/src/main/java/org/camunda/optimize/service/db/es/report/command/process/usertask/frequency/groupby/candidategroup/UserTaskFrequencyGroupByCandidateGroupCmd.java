@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report.command.process.usertask.frequency.groupby.candidategroup;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.db.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.db.es.report.command.exec.ProcessReportCmdExecutionPlan;
@@ -14,8 +15,6 @@ import org.camunda.optimize.service.db.es.report.command.modules.group_by.proces
 import org.camunda.optimize.service.db.es.report.command.modules.view.process.frequency.ProcessViewUserTaskFrequency;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class UserTaskFrequencyGroupByCandidateGroupCmd extends ProcessCmd<List<MapResultEntryDto>> {
 
@@ -24,14 +23,15 @@ public class UserTaskFrequencyGroupByCandidateGroupCmd extends ProcessCmd<List<M
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .processCommand()
-      .view(ProcessViewUserTaskFrequency.class)
-      .groupBy(ProcessGroupByCandidateGroup.class)
-      .distributedBy(ProcessDistributedByNone.class)
-      .resultAsMap()
-      .build();
+  protected ProcessReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .processCommand()
+        .view(ProcessViewUserTaskFrequency.class)
+        .groupBy(ProcessGroupByCandidateGroup.class)
+        .distributedBy(ProcessDistributedByNone.class)
+        .resultAsMap()
+        .build();
   }
-
 }

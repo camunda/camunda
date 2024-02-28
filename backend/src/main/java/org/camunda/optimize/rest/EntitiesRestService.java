@@ -5,17 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
-import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
-import org.camunda.optimize.rest.mapper.EntityRestMapper;
-import org.camunda.optimize.service.entities.EntitiesService;
-import org.camunda.optimize.service.security.SessionService;
-import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestBody;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -29,8 +19,17 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-
-import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
+import org.camunda.optimize.rest.mapper.EntityRestMapper;
+import org.camunda.optimize.service.entities.EntitiesService;
+import org.camunda.optimize.service.security.SessionService;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @AllArgsConstructor
 @Path(EntitiesRestService.ENTITIES_PATH)
@@ -45,8 +44,8 @@ public class EntitiesRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<EntityResponseDto> getEntities(@Context ContainerRequestContext requestContext,
-                                             @BeanParam final EntitySorter entitySorter) {
+  public List<EntityResponseDto> getEntities(
+      @Context ContainerRequestContext requestContext, @BeanParam final EntitySorter entitySorter) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     List<EntityResponseDto> entities = entitiesService.getAllEntities(userId);
     entities.forEach(entityRestMapper::prepareRestResponse);
@@ -56,16 +55,18 @@ public class EntitiesRestService {
   @GET
   @Path("/names")
   @Produces(MediaType.APPLICATION_JSON)
-  public EntityNameResponseDto getEntityNames(@Context ContainerRequestContext requestContext,
-                                              @BeanParam EntityNameRequestDto requestDto) {
-    return entitiesService.getEntityNames(requestDto, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+  public EntityNameResponseDto getEntityNames(
+      @Context ContainerRequestContext requestContext, @BeanParam EntityNameRequestDto requestDto) {
+    return entitiesService.getEntityNames(
+        requestDto, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
   @POST
   @Path("/delete-conflicts")
   @Consumes(MediaType.APPLICATION_JSON)
-  public boolean entitiesHaveDeleteConflicts(@Context ContainerRequestContext requestContext,
-                                             @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
+  public boolean entitiesHaveDeleteConflicts(
+      @Context ContainerRequestContext requestContext,
+      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return entitiesService.entitiesHaveConflicts(entities, userId);
   }
@@ -73,10 +74,10 @@ public class EntitiesRestService {
   @POST
   @Path("/delete")
   @Consumes(MediaType.APPLICATION_JSON)
-  public void bulkDeleteEntities(@Context ContainerRequestContext requestContext,
-                                 @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
+  public void bulkDeleteEntities(
+      @Context ContainerRequestContext requestContext,
+      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     entitiesService.bulkDeleteEntities(entities, userId);
   }
-
 }

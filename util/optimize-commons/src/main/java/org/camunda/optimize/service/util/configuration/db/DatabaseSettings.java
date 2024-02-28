@@ -13,5 +13,4 @@ public class DatabaseSettings {
   private DatabaseIndex index;
 
   private Integer aggregationBucketLimit;
-
 }

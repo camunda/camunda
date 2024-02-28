@@ -5,18 +5,17 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_SESSION_INDEX_NAME;
+
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.service.db.reader.TerminatedUserSessionReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.reader.TerminatedUserSessionReader;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_SESSION_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -27,9 +26,9 @@ public class TerminatedUserSessionReaderES extends TerminatedUserSessionReader {
 
   @Override
   protected boolean sessionIdExists(final String sessionId) throws IOException {
-    final GetRequest sessionByIdRequest = new GetRequest(TERMINATED_USER_SESSION_INDEX_NAME).id(sessionId);
+    final GetRequest sessionByIdRequest =
+        new GetRequest(TERMINATED_USER_SESSION_INDEX_NAME).id(sessionId);
     sessionByIdRequest.fetchSourceContext(FetchSourceContext.DO_NOT_FETCH_SOURCE);
     return esClient.get(sessionByIdRequest).isExists();
   }
-
 }

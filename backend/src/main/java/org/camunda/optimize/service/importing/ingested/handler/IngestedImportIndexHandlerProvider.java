@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.importing.ingested.handler;
 
+import jakarta.annotation.PostConstruct;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.service.importing.ExternalVariableUpdateImportIndexHandler;
@@ -14,11 +18,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -27,16 +26,16 @@ public class IngestedImportIndexHandlerProvider {
   private final BeanFactory beanFactory;
 
   private Map<String, ImportIndexHandler<?, ?>> allHandlers;
-  @Getter
-  private ExternalVariableUpdateImportIndexHandler externalVariableUpdateImportIndexHandler;
+  @Getter private ExternalVariableUpdateImportIndexHandler externalVariableUpdateImportIndexHandler;
 
   @PostConstruct
   public void init() {
     allHandlers = new HashMap<>();
     final ExternalVariableUpdateImportIndexHandler importIndexHandlerInstance =
-      getImportIndexHandlerInstance(ExternalVariableUpdateImportIndexHandler.class);
+        getImportIndexHandlerInstance(ExternalVariableUpdateImportIndexHandler.class);
     externalVariableUpdateImportIndexHandler = importIndexHandlerInstance;
-    allHandlers.put(ExternalVariableUpdateImportIndexHandler.class.getSimpleName(), importIndexHandlerInstance);
+    allHandlers.put(
+        ExternalVariableUpdateImportIndexHandler.class.getSimpleName(), importIndexHandlerInstance);
   }
 
   public Collection<ImportIndexHandler<?, ?>> getAllHandlers() {
@@ -46,9 +45,7 @@ public class IngestedImportIndexHandlerProvider {
   private <R, C extends Class<R>> R getImportIndexHandlerInstance(C requiredType) {
     R result;
     if (isInstantiated(requiredType)) {
-      result = requiredType.cast(
-        allHandlers.get(requiredType.getSimpleName())
-      );
+      result = requiredType.cast(allHandlers.get(requiredType.getSimpleName()));
     } else {
       result = beanFactory.getBean(requiredType);
     }

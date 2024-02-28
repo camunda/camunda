@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.entities;
 
+import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
@@ -12,9 +14,6 @@ import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpo
 import org.camunda.optimize.service.entities.dashboard.DashboardExportService;
 import org.camunda.optimize.service.entities.report.ReportExportService;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Set;
 
 @AllArgsConstructor
 @Component
@@ -28,8 +27,8 @@ public class EntityExportService {
     return reportExportService.getReportExportDtos(reportIds);
   }
 
-  public List<ReportDefinitionExportDto> getReportExportDtosAsUser(final String userId,
-                                                                   final Set<String> reportIds) {
+  public List<ReportDefinitionExportDto> getReportExportDtosAsUser(
+      final String userId, final Set<String> reportIds) {
     return reportExportService.getReportExportDtosAsUser(userId, reportIds);
   }
 
@@ -37,9 +36,8 @@ public class EntityExportService {
     return dashboardExportService.getCompleteDashboardExport(dashboardIds);
   }
 
-  public List<OptimizeEntityExportDto> getCompleteDashboardExportAsUser(final String userId,
-                                                                        final String dashboardId) {
+  public List<OptimizeEntityExportDto> getCompleteDashboardExportAsUser(
+      final String userId, final String dashboardId) {
     return dashboardExportService.getCompleteDashboardExport(userId, dashboardId);
   }
-
 }

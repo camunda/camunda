@@ -6,36 +6,30 @@
 package org.camunda.optimize.plugin;
 
 import com.google.common.collect.Sets;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class PluginClassLoader extends URLClassLoader {
 
   private static final String JAVA_PACKAGE_PREFIX = "java.";
 
-  // these excluded package prefixes assure the interfaces in the Optimize plugin framework are loaded by Optimize
+  // these excluded package prefixes assure the interfaces in the Optimize plugin framework are
+  // loaded by Optimize
   // and need to be maintained in case new third-party libraries are added to the interfaces
-  private static final Set<String> EXCLUDED_PACKAGE_PREFIXES = Sets.newHashSet(
-    "org.camunda.optimize.plugin",
-    "jakarta.servlet",
-    "jakarta.ws.rs"
-  );
-
+  private static final Set<String> EXCLUDED_PACKAGE_PREFIXES =
+      Sets.newHashSet("org.camunda.optimize.plugin", "jakarta.servlet", "jakarta.ws.rs");
 
   public PluginClassLoader(URL jarFileUrl, ClassLoader parent) {
-    super(new URL[]{jarFileUrl}, parent);
+    super(new URL[] {jarFileUrl}, parent);
   }
 
-
   private boolean isInExcludedChildFirstPackagePrefixes(String className) {
-    return EXCLUDED_PACKAGE_PREFIXES.stream()
-      .anyMatch(className::startsWith);
+    return EXCLUDED_PACKAGE_PREFIXES.stream().anyMatch(className::startsWith);
   }
 
   @Override
@@ -45,9 +39,12 @@ public class PluginClassLoader extends URLClassLoader {
         return findSystemClass(className);
       }
 
-      // check if class is part of our excluded package set use standard ClassLoader (parent first delegation)
+      // check if class is part of our excluded package set use standard ClassLoader (parent first
+      // delegation)
       if (isInExcludedChildFirstPackagePrefixes(className)) {
-        log.trace("Class '{}' is from our plugin framework or an dependency. Delegating to parent.", className);
+        log.trace(
+            "Class '{}' is from our plugin framework or an dependency. Delegating to parent.",
+            className);
         return super.loadClass(className);
       }
 
@@ -74,7 +71,8 @@ public class PluginClassLoader extends URLClassLoader {
   }
 
   /**
-   * returns a plugin resource without taking parent classloaders or system classloaders into account
+   * returns a plugin resource without taking parent classloaders or system classloaders into
+   * account
    */
   public InputStream getPluginResourceAsStream(String name) throws IOException {
     final URL resource = findResource(name);
@@ -84,6 +82,4 @@ public class PluginClassLoader extends URLClassLoader {
     }
     return null;
   }
-
 }
-

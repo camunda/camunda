@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler.BEGINNING_OF_TIME;
+
+import jakarta.annotation.PostConstruct;
+import java.time.OffsetDateTime;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,18 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import jakarta.annotation.PostConstruct;
-import java.time.OffsetDateTime;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler.BEGINNING_OF_TIME;
-
 @Slf4j
 @Getter
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class PositionBasedImportIndexHandler
-  implements ZeebeImportIndexHandler<PositionBasedImportPage, PositionBasedImportIndexDto> {
+    implements ZeebeImportIndexHandler<PositionBasedImportPage, PositionBasedImportIndexDto> {
 
   private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
   private OffsetDateTime timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
@@ -38,8 +37,7 @@ public abstract class PositionBasedImportIndexHandler
   private boolean hasSeenSequenceField = false;
   protected ZeebeDataSourceDto dataSource;
 
-  @Autowired
-  private PositionBasedImportIndexReader positionBasedImportIndexReader;
+  @Autowired private PositionBasedImportIndexReader positionBasedImportIndexReader;
 
   @Override
   public PositionBasedImportIndexDto getIndexStateDto() {
@@ -56,18 +54,14 @@ public abstract class PositionBasedImportIndexHandler
 
   @PostConstruct
   protected void init() {
-    final Optional<PositionBasedImportIndexDto> dto = positionBasedImportIndexReader
-      .getImportIndex(getDatabaseDocID(), dataSource);
+    final Optional<PositionBasedImportIndexDto> dto =
+        positionBasedImportIndexReader.getImportIndex(getDatabaseDocID(), dataSource);
     if (dto.isPresent()) {
       PositionBasedImportIndexDto loadedImportIndex = dto.get();
       updateLastPersistedEntityPositionAndSequence(
-        loadedImportIndex.getPositionOfLastEntity(),
-        loadedImportIndex.getSequenceOfLastEntity()
-      );
+          loadedImportIndex.getPositionOfLastEntity(), loadedImportIndex.getSequenceOfLastEntity());
       updatePendingLastEntityPositionAndSequence(
-        loadedImportIndex.getPositionOfLastEntity(),
-        loadedImportIndex.getSequenceOfLastEntity()
-      );
+          loadedImportIndex.getPositionOfLastEntity(), loadedImportIndex.getSequenceOfLastEntity());
       updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
       updateTimestampOfLastPersistedEntity(loadedImportIndex.getTimestampOfLastEntity());
       this.hasSeenSequenceField = loadedImportIndex.isHasSeenSequenceField();
@@ -94,12 +88,11 @@ public abstract class PositionBasedImportIndexHandler
     return page;
   }
 
-  /**
-   * States the database document name where the index information should be stored.
-   */
+  /** States the database document name where the index information should be stored. */
   protected abstract String getDatabaseDocID();
 
-  public void updateLastPersistedEntityPositionAndSequence(final long position, final long sequence) {
+  public void updateLastPersistedEntityPositionAndSequence(
+      final long position, final long sequence) {
     this.persistedPositionOfLastEntity = position;
     this.persistedSequenceOfLastEntity = sequence;
     if (!hasSeenSequenceField && persistedSequenceOfLastEntity > 0) {
@@ -111,8 +104,10 @@ public abstract class PositionBasedImportIndexHandler
     this.pendingPositionOfLastEntity = position;
     this.pendingSequenceOfLastEntity = sequence;
     if (!hasSeenSequenceField && pendingSequenceOfLastEntity > 0) {
-      log.info("First Zeebe record with sequence field for import type {} has been imported." +
-                 " Zeebe records will now be fetched based on sequence.", getDatabaseDocID());
+      log.info(
+          "First Zeebe record with sequence field for import type {} has been imported."
+              + " Zeebe records will now be fetched based on sequence.",
+          getDatabaseDocID());
       hasSeenSequenceField = true;
     }
   }
@@ -124,5 +119,4 @@ public abstract class PositionBasedImportIndexHandler
   public void updateTimestampOfLastPersistedEntity(final OffsetDateTime timestamp) {
     this.timestampOfLastPersistedEntity = timestamp;
   }
-
 }

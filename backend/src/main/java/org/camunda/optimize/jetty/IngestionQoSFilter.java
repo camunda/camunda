@@ -5,13 +5,6 @@
  */
 package org.camunda.optimize.jetty;
 
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.springframework.http.HttpStatus;
-
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.AsyncListener;
@@ -31,10 +24,17 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.springframework.http.HttpStatus;
 
 /**
- * This quality of service filter applies to event ingestion, limiting the max number of requests that can be served at
- * a time. It is based heavily on Jetty's QoSFilter, with changes mainly in the response we give on rejected requests.
+ * This quality of service filter applies to event ingestion, limiting the max number of requests
+ * that can be served at a time. It is based heavily on Jetty's QoSFilter, with changes mainly in
+ * the response we give on rejected requests.
  * https://www.eclipse.org/jetty/javadoc/9.4.26.v20200117/org/eclipse/jetty/servlets/QoSFilter.html
  */
 @RequiredArgsConstructor
@@ -45,8 +45,10 @@ public class IngestionQoSFilter implements Filter {
   private static final String TOO_MANY_REQUESTS = "Too many requests";
   public static final String RETRY_AFTER_SECONDS = "5";
 
-  private final String suspended = "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".SUSPENDED";
-  private final String resumed = "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
+  private final String suspended =
+      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".SUSPENDED";
+  private final String resumed =
+      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
   private long waitMs = 50;
   private long suspendMs = 500;
   private int maxRequests = 10;
@@ -71,10 +73,10 @@ public class IngestionQoSFilter implements Filter {
 
   @SneakyThrows
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws
-                                                                                            IOException,
-                                                                                            ServletException {
-    // This is the only configurable property. It cannot be set during initialization so needs setting here instead
+  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+      throws IOException, ServletException {
+    // This is the only configurable property. It cannot be set during initialization so needs
+    // setting here instead
     if (getMaxRequests() != getMaxRequestsFromProvider()) {
       setMaxRequests(getMaxRequestsFromProvider());
     }
@@ -97,7 +99,8 @@ public class IngestionQoSFilter implements Filter {
           }
           asyncContext.addListener(listeners[priority]);
 
-          // Spring Security wraps the asyncContext into HttpServlet3RequestFactory$SecurityContextAsyncContext
+          // Spring Security wraps the asyncContext into
+          // HttpServlet3RequestFactory$SecurityContextAsyncContext
           // we need to unwrap it for the filter to work properly
           asyncContext = (AsyncContext) FieldUtils.readField(asyncContext, "asyncContext", true);
 
@@ -175,8 +178,7 @@ public class IngestionQoSFilter implements Filter {
   }
 
   @Override
-  public void destroy() {
-  }
+  public void destroy() {}
 
   private void setMaxRequests(int value) {
     log.info("setting the max number of ingestion requests to {}", value);
@@ -185,9 +187,11 @@ public class IngestionQoSFilter implements Filter {
   }
 
   protected void sendErrorResponse(ServletResponse servletResponse) throws IOException {
-    // We send a different error response than Jetty QoSFilter plus a required header in line with CloudEvent specification
+    // We send a different error response than Jetty QoSFilter plus a required header in line with
+    // CloudEvent specification
     ((HttpServletResponse) servletResponse).setHeader(HttpHeaders.RETRY_AFTER, RETRY_AFTER_SECONDS);
-    ((HttpServletResponse) servletResponse).sendError(HttpStatus.TOO_MANY_REQUESTS.value(), TOO_MANY_REQUESTS);
+    ((HttpServletResponse) servletResponse)
+        .sendError(HttpStatus.TOO_MANY_REQUESTS.value(), TOO_MANY_REQUESTS);
   }
 
   @SneakyThrows
@@ -203,12 +207,10 @@ public class IngestionQoSFilter implements Filter {
     }
 
     @Override
-    public void onStartAsync(AsyncEvent event) throws IOException {
-    }
+    public void onStartAsync(AsyncEvent event) throws IOException {}
 
     @Override
-    public void onComplete(AsyncEvent event) throws IOException {
-    }
+    public void onComplete(AsyncEvent event) throws IOException {}
 
     @Override
     public void onTimeout(AsyncEvent event) throws IOException {
@@ -221,8 +223,6 @@ public class IngestionQoSFilter implements Filter {
     }
 
     @Override
-    public void onError(AsyncEvent event) throws IOException {
-    }
+    public void onError(AsyncEvent event) throws IOException {}
   }
-
 }

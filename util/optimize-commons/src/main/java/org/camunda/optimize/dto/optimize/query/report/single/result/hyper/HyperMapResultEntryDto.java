@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.result.hyper;
 
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -12,8 +13,6 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
-
-import java.util.List;
 
 @EqualsAndHashCode
 @ToString
@@ -24,6 +23,7 @@ public class HyperMapResultEntryDto {
   @NonNull @Getter @Setter private String key;
   @Getter @Setter private List<MapResultEntryDto> value;
   @Setter private String label;
+
   // @formatter:on
 
   public HyperMapResultEntryDto(@NonNull final String key, final List<MapResultEntryDto> value) {
@@ -31,7 +31,8 @@ public class HyperMapResultEntryDto {
     this.value = value;
   }
 
-  public HyperMapResultEntryDto(@NonNull final String key, final List<MapResultEntryDto> value, String label) {
+  public HyperMapResultEntryDto(
+      @NonNull final String key, final List<MapResultEntryDto> value, String label) {
     this.key = key;
     setValue(value);
     this.label = label;

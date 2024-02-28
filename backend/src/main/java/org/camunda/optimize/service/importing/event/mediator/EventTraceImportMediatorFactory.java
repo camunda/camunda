@@ -8,9 +8,9 @@ package org.camunda.optimize.service.importing.event.mediator;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.events.EventTraceStateServiceFactory;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.events.CamundaTraceableEventFetcherService;
-import org.camunda.optimize.service.db.events.EventTraceStateServiceFactory;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.importing.event.handler.EventImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.event.service.EventTraceImportService;
@@ -32,34 +32,33 @@ public class EventTraceImportMediatorFactory {
   private final BackoffCalculator idleBackoffCalculator;
   private final DatabaseClient databaseClient;
 
-  public EventTraceImportMediator createCamundaEventTraceImportMediator(final String processDefinitionKey) {
+  public EventTraceImportMediator createCamundaEventTraceImportMediator(
+      final String processDefinitionKey) {
     return beanFactory.getBean(
-      EventTraceImportMediator.class,
-      beanFactory.getBean(CamundaTraceableEventFetcherService.class, camundaEventService, processDefinitionKey),
-      eventImportIndexHandlerRegistry.getCamundaEventTraceImportIndexHandler(processDefinitionKey),
-      new EventTraceImportService(
+        EventTraceImportMediator.class,
+        beanFactory.getBean(
+            CamundaTraceableEventFetcherService.class, camundaEventService, processDefinitionKey),
+        eventImportIndexHandlerRegistry.getCamundaEventTraceImportIndexHandler(
+            processDefinitionKey),
+        new EventTraceImportService(
+            configurationService,
+            eventTraceStateServiceFactory.createEventTraceStateService(processDefinitionKey),
+            databaseClient),
         configurationService,
-        eventTraceStateServiceFactory.createEventTraceStateService(processDefinitionKey),
-        databaseClient
-      ),
-      configurationService,
-      idleBackoffCalculator
-    );
+        idleBackoffCalculator);
   }
 
   public EventTraceImportMediator createExternalEventTraceImportMediator() {
     return beanFactory.getBean(
-      EventTraceImportMediator.class,
-      externalEventService,
-      eventImportIndexHandlerRegistry.getExternalEventTraceImportIndexHandler(),
-      new EventTraceImportService(
+        EventTraceImportMediator.class,
+        externalEventService,
+        eventImportIndexHandlerRegistry.getExternalEventTraceImportIndexHandler(),
+        new EventTraceImportService(
+            configurationService,
+            eventTraceStateServiceFactory.createEventTraceStateService(
+                DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX),
+            databaseClient),
         configurationService,
-        eventTraceStateServiceFactory.createEventTraceStateService(DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX),
-        databaseClient
-      ),
-      configurationService,
-      idleBackoffCalculator
-    );
+        idleBackoffCalculator);
   }
-
 }

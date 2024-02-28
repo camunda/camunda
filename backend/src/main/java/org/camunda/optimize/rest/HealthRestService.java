@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.service.status.StatusCheckingService;
-import org.springframework.stereotype.Component;
+import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
-
-import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.service.status.StatusCheckingService;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Component
@@ -27,10 +26,9 @@ public class HealthRestService {
   @GET
   public Response getImportStatus() {
     if (statusCheckingService.isConnectedToDatabase()
-      && statusCheckingService.isConnectedToAtLeastOnePlatformEngineOrCloud()) {
+        && statusCheckingService.isConnectedToAtLeastOnePlatformEngineOrCloud()) {
       return Response.ok().build();
     }
     return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();
   }
-
 }

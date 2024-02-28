@@ -14,6 +14,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 public class ElasticSearchCondition implements Condition {
   @Override
   public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-    return ConfigurationService.getDatabaseType(context.getEnvironment()) == DatabaseType.ELASTICSEARCH;
+    return ConfigurationService.getDatabaseType(context.getEnvironment())
+        == DatabaseType.ELASTICSEARCH;
   }
 }

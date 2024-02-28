@@ -5,20 +5,19 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
+import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
 @Component
@@ -29,29 +28,32 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
   private final OptimizeOpenSearchClient osClient;
 
   @Override
-  public void consumeAssigneesInBatches(@NonNull final String engineAlias,
-                                        @NonNull final Consumer<List<String>> assigneeBatchConsumer,
-                                        final int batchSize) {
+  public void consumeAssigneesInBatches(
+      @NonNull final String engineAlias,
+      @NonNull final Consumer<List<String>> assigneeBatchConsumer,
+      final int batchSize) {
     log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
-  public void consumeCandidateGroupsInBatches(@NonNull final String engineAlias,
-                                              @NonNull final Consumer<List<String>> candidateGroupBatchConsumer,
-                                              final int batchSize) {
+  public void consumeCandidateGroupsInBatches(
+      @NonNull final String engineAlias,
+      @NonNull final Consumer<List<String>> candidateGroupBatchConsumer,
+      final int batchSize) {
     log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
-  public Set<String> getAssigneeIdsForProcess(final Map<String, Set<String>> definitionKeyToTenantsMap) {
+  public Set<String> getAssigneeIdsForProcess(
+      final Map<String, Set<String>> definitionKeyToTenantsMap) {
     log.error("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
 
   @Override
-  public Set<String> getCandidateGroupIdsForProcess(final Map<String, Set<String>> definitionKeyToTenantsMap) {
+  public Set<String> getCandidateGroupIdsForProcess(
+      final Map<String, Set<String>> definitionKeyToTenantsMap) {
     log.error("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
-
 }

@@ -12,8 +12,10 @@ import lombok.Data;
 public class OptimizeApiConfiguration {
   @JsonProperty("accessToken")
   private String accessToken;
+
   @JsonProperty("jwtSetUri")
   private String jwtSetUri;
+
   @JsonProperty("audience")
   private String audience;
 }

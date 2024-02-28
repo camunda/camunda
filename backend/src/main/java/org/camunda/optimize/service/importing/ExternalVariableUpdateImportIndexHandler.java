@@ -5,21 +5,22 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.ENGINE_ALIAS_OPTIMIZE;
+
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.DatabaseConstants.ENGINE_ALIAS_OPTIMIZE;
-
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ExternalVariableUpdateImportIndexHandler
-  extends TimestampBasedDataSourceImportIndexHandler<IngestedDataSourceDto> {
+    extends TimestampBasedDataSourceImportIndexHandler<IngestedDataSourceDto> {
 
-  public static final String EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID = "externalVariableUpdateImportIndex";
+  public static final String EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID =
+      "externalVariableUpdateImportIndex";
 
   @Override
   public String getEngineAlias() {
@@ -35,5 +36,4 @@ public class ExternalVariableUpdateImportIndexHandler
   protected IngestedDataSourceDto getDataSource() {
     return new IngestedDataSourceDto(getEngineAlias());
   }
-
 }

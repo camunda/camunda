@@ -5,15 +5,6 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.DYNAMIC_PROPERTY_TYPE;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROPERTIES_PROPERTY_TYPE;
@@ -21,13 +12,23 @@ import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_BOOLEAN;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_OBJECT;
 
+import java.io.IOException;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
+
 public abstract class ProcessOverviewIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
   public static final int VERSION = 2;
 
-  public static final String PROCESS_DEFINITION_KEY = ProcessOverviewDto.Fields.processDefinitionKey;
+  public static final String PROCESS_DEFINITION_KEY =
+      ProcessOverviewDto.Fields.processDefinitionKey;
   public static final String OWNER = ProcessOverviewDto.Fields.owner;
   public static final String DIGEST = ProcessOverviewDto.Fields.digest;
-  public static final String LAST_KPI_EVALUATION = ProcessOverviewDto.Fields.lastKpiEvaluationResults;
+  public static final String LAST_KPI_EVALUATION =
+      ProcessOverviewDto.Fields.lastKpiEvaluationResults;
   public static final String ENABLED = ProcessDigestResponseDto.Fields.enabled;
   public static final String KPI_REPORT_RESULTS = ProcessDigestDto.Fields.kpiReportResults;
 
@@ -45,28 +46,28 @@ public abstract class ProcessOverviewIndex<TBuilder> extends DefaultIndexMapping
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(PROCESS_DEFINITION_KEY)
+        .startObject(PROCESS_DEFINITION_KEY)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(OWNER)
+        .endObject()
+        .startObject(OWNER)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(LAST_KPI_EVALUATION)
+        .endObject()
+        .startObject(LAST_KPI_EVALUATION)
         .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
         .field(DYNAMIC_PROPERTY_TYPE, true)
-      .endObject()
-      .startObject(DIGEST)
+        .endObject()
+        .startObject(DIGEST)
         .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
         .startObject(PROPERTIES_PROPERTY_TYPE)
-          .startObject(ENABLED)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-          .endObject()
-          .startObject(KPI_REPORT_RESULTS)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-            .field(DYNAMIC_PROPERTY_TYPE, true)
-          .endObject()
+        .startObject(ENABLED)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
         .endObject()
-      .endObject();
+        .startObject(KPI_REPORT_RESULTS)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+        .field(DYNAMIC_PROPERTY_TYPE, true)
+        .endObject()
+        .endObject()
+        .endObject();
     // @formatter:on
   }
 }

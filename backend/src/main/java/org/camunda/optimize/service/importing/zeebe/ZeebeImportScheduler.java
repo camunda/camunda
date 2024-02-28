@@ -5,19 +5,17 @@
  */
 package org.camunda.optimize.service.importing.zeebe;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ZeebeConfigDto;
 import org.camunda.optimize.service.importing.AbstractImportScheduler;
 import org.camunda.optimize.service.importing.ImportMediator;
 
-import java.util.List;
-
 @Slf4j
 public class ZeebeImportScheduler extends AbstractImportScheduler<ZeebeConfigDto> {
 
-  public ZeebeImportScheduler(final List<ImportMediator> importMediators,
-                              final ZeebeConfigDto dataImportSourceDto) {
+  public ZeebeImportScheduler(
+      final List<ImportMediator> importMediators, final ZeebeConfigDto dataImportSourceDto) {
     super(importMediators, dataImportSourceDto);
   }
-
 }

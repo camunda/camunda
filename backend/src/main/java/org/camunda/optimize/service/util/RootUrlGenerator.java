@@ -5,34 +5,35 @@
  */
 package org.camunda.optimize.service.util;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 
 @AllArgsConstructor
 @Component
 @Slf4j
 public class RootUrlGenerator {
 
-    private static final String HTTP_PREFIX = "http://";
-    private static final String HTTPS_PREFIX = "https://";
+  private static final String HTTP_PREFIX = "http://";
+  private static final String HTTPS_PREFIX = "https://";
 
-    private final ConfigurationService configurationService;
+  private final ConfigurationService configurationService;
 
-    public String getRootUrl() {
-        final Optional<String> containerAccessUrl = configurationService.getContainerAccessUrl();
-        if (containerAccessUrl.isPresent()) {
-            return containerAccessUrl.get();
-        } else {
-            Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
-            String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
-            Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-            return httpPrefix + configurationService.getContainerHost()
-                    + ":" + port + configurationService.getContextPath().orElse("");
-        }
+  public String getRootUrl() {
+    final Optional<String> containerAccessUrl = configurationService.getContainerAccessUrl();
+    if (containerAccessUrl.isPresent()) {
+      return containerAccessUrl.get();
+    } else {
+      Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
+      String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
+      Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
+      return httpPrefix
+          + configurationService.getContainerHost()
+          + ":"
+          + port
+          + configurationService.getContextPath().orElse("");
     }
-
+  }
 }

@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.plugin;
 
+import java.util.List;
 import org.camunda.optimize.plugin.importing.businesskey.BusinessKeyImportAdapter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class BusinessKeyImportAdapterProvider extends PluginProvider<BusinessKeyImportAdapter> {
 
-  public BusinessKeyImportAdapterProvider(final ConfigurationService configurationService,
-                                          final PluginJarFileLoader pluginJarLoader) {
+  public BusinessKeyImportAdapterProvider(
+      final ConfigurationService configurationService, final PluginJarFileLoader pluginJarLoader) {
     super(configurationService, pluginJarLoader);
   }
 
@@ -28,5 +27,4 @@ public class BusinessKeyImportAdapterProvider extends PluginProvider<BusinessKey
   protected List<String> getBasePackages() {
     return configurationService.getBusinessKeyImportPluginBasePackages();
   }
-
 }

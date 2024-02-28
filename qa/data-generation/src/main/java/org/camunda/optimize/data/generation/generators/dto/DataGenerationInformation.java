@@ -5,20 +5,17 @@
  */
 package org.camunda.optimize.data.generation.generators.dto;
 
+import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
-
-import java.util.Map;
 
 @Data
 @Builder
 public class DataGenerationInformation {
   private Long processInstanceCountToGenerate;
   private Long decisionInstanceCountToGenerate;
-  @Builder.Default
-  private String engineRestEndpoint = "http://localhost:8080/engine-rest";
+  @Builder.Default private String engineRestEndpoint = "http://localhost:8080/engine-rest";
   private boolean removeDeployments;
   private Map<String, Integer> processDefinitionsAndNumberOfVersions;
   private Map<String, Integer> decisionDefinitionsAndNumberOfVersions;
 }
-

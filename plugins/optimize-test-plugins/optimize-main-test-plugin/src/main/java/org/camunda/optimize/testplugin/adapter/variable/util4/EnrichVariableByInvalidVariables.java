@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.testplugin.adapter.variable.util4;
 
-import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
-import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
-
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
+import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 
 public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
 

@@ -5,14 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.decision;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import static org.camunda.optimize.dto.optimize.ReportConstants.BAR_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.HEAT_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LINE_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.PIE_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.TABLE_VISUALIZATION;
+
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum DecisionVisualization {
   NUMBER(SINGLE_NUMBER_VISUALIZATION),

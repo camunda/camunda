@@ -5,7 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.rest.export.dashboard;
 
+import static java.util.stream.Collectors.toSet;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -18,33 +24,23 @@ import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.service.db.schema.index.DashboardIndex;
 import org.camunda.optimize.service.util.IdGenerator;
 
-import jakarta.validation.constraints.NotNull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
-import static java.util.stream.Collectors.toSet;
-
 @NoArgsConstructor
 @FieldNameConstants
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
-  @NotNull
-  private List<DashboardReportTileDto> tiles = new ArrayList<>();
-  @NotNull
-  private List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
+  @NotNull private List<DashboardReportTileDto> tiles = new ArrayList<>();
+  @NotNull private List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   private String collectionId;
   private boolean isInstantPreviewDashboard = false;
 
   public DashboardDefinitionExportDto(final DashboardDefinitionRestDto dashboardDefinition) {
     super(
-      dashboardDefinition.getId(),
-      ExportEntityType.DASHBOARD,
-      dashboardDefinition.getName(),
-      dashboardDefinition.getDescription(),
-      DashboardIndex.VERSION
-    );
+        dashboardDefinition.getId(),
+        ExportEntityType.DASHBOARD,
+        dashboardDefinition.getName(),
+        dashboardDefinition.getDescription(),
+        DashboardIndex.VERSION);
     this.tiles = dashboardDefinition.getTiles();
     this.availableFilters = dashboardDefinition.getAvailableFilters();
     this.collectionId = dashboardDefinition.getCollectionId();
@@ -52,11 +48,17 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
 
   @JsonIgnore
   public Set<String> getTileIds() {
-    return tiles.stream().map(DashboardReportTileDto::getId).filter(IdGenerator::isValidId).collect(toSet());
+    return tiles.stream()
+        .map(DashboardReportTileDto::getId)
+        .filter(IdGenerator::isValidId)
+        .collect(toSet());
   }
 
   @JsonIgnore
   public Set<String> getExternalResourceUrls() {
-    return tiles.stream().map(DashboardReportTileDto::getId).filter(id -> !IdGenerator.isValidId(id)).collect(toSet());
+    return tiles.stream()
+        .map(DashboardReportTileDto::getId)
+        .filter(id -> !IdGenerator.isValidId(id))
+        .collect(toSet());
   }
 }

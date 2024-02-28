@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.filter;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
@@ -12,18 +13,17 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @RequiredArgsConstructor
 @Slf4j
 @Component
 public class ProcessVariableQueryFilter extends AbstractProcessVariableQueryFilter
-  implements QueryFilter<VariableFilterDataDto<?>> {
+    implements QueryFilter<VariableFilterDataDto<?>> {
 
   @Override
-  public void addFilters(final BoolQueryBuilder query,
-                         final List<VariableFilterDataDto<?>> variables,
-                         final FilterContext filterContext) {
+  public void addFilters(
+      final BoolQueryBuilder query,
+      final List<VariableFilterDataDto<?>> variables,
+      final FilterContext filterContext) {
     if (variables != null) {
       List<QueryBuilder> filters = query.filter();
       for (VariableFilterDataDto<?> variable : variables) {
@@ -31,5 +31,4 @@ public class ProcessVariableQueryFilter extends AbstractProcessVariableQueryFilt
       }
     }
   }
-
 }

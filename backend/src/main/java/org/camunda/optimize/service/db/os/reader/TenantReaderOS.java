@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.TenantDto;
@@ -21,13 +27,6 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -41,11 +40,17 @@ public class TenantReaderOS implements TenantReader {
   public Set<TenantDto> getTenants() {
     log.debug("Fetching all available tenants");
 
-    final SearchRequest.Builder searchRequest = new SearchRequest.Builder()
-      .index(TENANT_INDEX_NAME)
-      .size(LIST_FETCH_LIMIT)
-      .query(QueryDSL.matchAll())
-      .scroll(RequestDSL.time(String.valueOf(configurationService.getOpenSearchConfiguration().getScrollTimeoutInSeconds())));
+    final SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .index(TENANT_INDEX_NAME)
+            .size(LIST_FETCH_LIMIT)
+            .query(QueryDSL.matchAll())
+            .scroll(
+                RequestDSL.time(
+                    String.valueOf(
+                        configurationService
+                            .getOpenSearchConfiguration()
+                            .getScrollTimeoutInSeconds())));
 
     OpenSearchDocumentOperations.AggregatedResult<Hit<TenantDto>> scrollResp;
     try {
@@ -55,5 +60,4 @@ public class TenantReaderOS implements TenantReader {
     }
     return new HashSet<>(OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp));
   }
-
 }

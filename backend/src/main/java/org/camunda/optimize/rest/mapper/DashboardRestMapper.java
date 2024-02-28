@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.rest.mapper;
 
+import java.util.Map;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -14,9 +16,6 @@ import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @Component
@@ -28,70 +27,73 @@ public class DashboardRestMapper {
   private final AbstractIdentityService identityService;
   private final LocalizationService localizationService;
 
-  public void prepareRestResponse(final AuthorizedDashboardDefinitionResponseDto dashboardDefinitionDto, final String locale) {
+  public void prepareRestResponse(
+      final AuthorizedDashboardDefinitionResponseDto dashboardDefinitionDto, final String locale) {
     prepareRestResponse(dashboardDefinitionDto.getDefinitionDto(), locale);
   }
 
-  public void prepareRestResponse(final DashboardDefinitionRestDto dashboardDefinitionDto, final String locale) {
+  public void prepareRestResponse(
+      final DashboardDefinitionRestDto dashboardDefinitionDto, final String locale) {
     resolveOwnerAndModifierNames(dashboardDefinitionDto);
     localizeDashboard(dashboardDefinitionDto, locale);
   }
 
   private void resolveOwnerAndModifierNames(DashboardDefinitionRestDto dashboardDefinitionDto) {
     Optional.ofNullable(dashboardDefinitionDto.getOwner())
-      .flatMap(identityService::getIdentityNameById)
-      .ifPresent(dashboardDefinitionDto::setOwner);
+        .flatMap(identityService::getIdentityNameById)
+        .ifPresent(dashboardDefinitionDto::setOwner);
     Optional.ofNullable(dashboardDefinitionDto.getLastModifier())
-      .flatMap(identityService::getIdentityNameById)
-      .ifPresent(dashboardDefinitionDto::setLastModifier);
+        .flatMap(identityService::getIdentityNameById)
+        .ifPresent(dashboardDefinitionDto::setLastModifier);
   }
 
-  private void localizeDashboard(final DashboardDefinitionRestDto dashboardDefinition, final String locale) {
-    if (dashboardDefinition.isManagementDashboard() || dashboardDefinition.isInstantPreviewDashboard()) {
+  private void localizeDashboard(
+      final DashboardDefinitionRestDto dashboardDefinition, final String locale) {
+    if (dashboardDefinition.isManagementDashboard()
+        || dashboardDefinition.isInstantPreviewDashboard()) {
       final String validLocale = localizationService.validateAndReturnValidLocale(locale);
       if (dashboardDefinition.isManagementDashboard()) {
-        Optional.ofNullable(localizationService.getLocalizationForManagementDashboardCode(
-          validLocale,
-          dashboardDefinition.getName()
-        )).ifPresent(dashboardDefinition::setName);
-        Optional.ofNullable(localizationService.getLocalizationForManagementDashboardCode(
-          validLocale,
-          dashboardDefinition.getDescription()
-        )).ifPresent(dashboardDefinition::setDescription);
+        Optional.ofNullable(
+                localizationService.getLocalizationForManagementDashboardCode(
+                    validLocale, dashboardDefinition.getName()))
+            .ifPresent(dashboardDefinition::setName);
+        Optional.ofNullable(
+                localizationService.getLocalizationForManagementDashboardCode(
+                    validLocale, dashboardDefinition.getDescription()))
+            .ifPresent(dashboardDefinition::setDescription);
       } else {
-        Optional.ofNullable(localizationService.getLocalizationForInstantPreviewDashboardCode(
-          validLocale,
-          dashboardDefinition.getName()
-        )).ifPresent(dashboardDefinition::setName);
-        Optional.ofNullable(localizationService.getLocalizationForInstantPreviewDashboardCode(
-          validLocale,
-          dashboardDefinition.getDescription()
-        )).ifPresent(dashboardDefinition::setDescription);
+        Optional.ofNullable(
+                localizationService.getLocalizationForInstantPreviewDashboardCode(
+                    validLocale, dashboardDefinition.getName()))
+            .ifPresent(dashboardDefinition::setName);
+        Optional.ofNullable(
+                localizationService.getLocalizationForInstantPreviewDashboardCode(
+                    validLocale, dashboardDefinition.getDescription()))
+            .ifPresent(dashboardDefinition::setDescription);
         localizeTextsFromTextTiles(dashboardDefinition, validLocale);
       }
     }
   }
 
-  private void localizeTextsFromTextTiles(final DashboardDefinitionRestDto dashboardData, final String locale) {
-    dashboardData.getTiles().forEach(tile -> {
-      if (tile.getType() == DashboardTileType.TEXT) {
-        final Map<String, Object> textTileConfiguration = (Map<String, Object>) tile.getConfiguration();
-        InstantPreviewDashboardService.
-          findAndConvertTileContent(
-            textTileConfiguration,
-            TYPE_TEXT_VALUE,
-            this::localizeTextFromTile,
-            locale
-          );
-      }
-    });
+  private void localizeTextsFromTextTiles(
+      final DashboardDefinitionRestDto dashboardData, final String locale) {
+    dashboardData
+        .getTiles()
+        .forEach(
+            tile -> {
+              if (tile.getType() == DashboardTileType.TEXT) {
+                final Map<String, Object> textTileConfiguration =
+                    (Map<String, Object>) tile.getConfiguration();
+                InstantPreviewDashboardService.findAndConvertTileContent(
+                    textTileConfiguration, TYPE_TEXT_VALUE, this::localizeTextFromTile, locale);
+              }
+            });
   }
 
   private void localizeTextFromTile(Map<String, Object> textTileConfiguration, String locale) {
     String textContent = (String) textTileConfiguration.get(TEXT_FIELD);
-    Optional.ofNullable(localizationService.getLocalizationForInstantPreviewDashboardCode(
-      locale,
-      textContent
-    )).ifPresent(localizedText -> textTileConfiguration.put(TEXT_FIELD, localizedText));
+    Optional.ofNullable(
+            localizationService.getLocalizationForInstantPreviewDashboardCode(locale, textContent))
+        .ifPresent(localizedText -> textTileConfiguration.put(TEXT_FIELD, localizedText));
   }
 }

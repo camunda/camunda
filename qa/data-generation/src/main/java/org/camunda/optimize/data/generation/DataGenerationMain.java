@@ -8,6 +8,11 @@ package org.camunda.optimize.data.generation;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -17,27 +22,22 @@ import org.camunda.optimize.data.generation.generators.dto.DataGenerationInforma
 import org.camunda.optimize.data.generation.generators.impl.decision.DecisionDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.process.ProcessDataGenerator;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
 @Slf4j
 @RequiredArgsConstructor
 public class DataGenerationMain {
 
   private final DataGenerationInformation dataGenerationInformation;
 
-  private static final String DB_URL_H2_TEMPLATE = "jdbc:h2:tcp://localhost:9092/./camunda-h2-dbs/process-engine";
+  private static final String DB_URL_H2_TEMPLATE =
+      "jdbc:h2:tcp://localhost:9092/./camunda-h2-dbs/process-engine";
   private static final String JDBC_DRIVER = "org.h2.Driver";
   private static final String USER_H2 = "sa";
   private static final String PASS_H2 = "sa";
 
-
   public static void main(String[] args) throws ParseException {
     final Map<String, String> arguments = extractArguments(args);
-    DataGenerationInformation dataGenerationInformation = extractDataGenerationInformation(arguments);
+    DataGenerationInformation dataGenerationInformation =
+        extractDataGenerationInformation(arguments);
     DataGenerationMain main = new DataGenerationMain(dataGenerationInformation);
     validateProcessInstanceDateParameters(arguments);
     main.generateData();
@@ -46,38 +46,40 @@ public class DataGenerationMain {
 
   public void generateData() {
     DataGenerationExecutor dataGenerationExecutor =
-      new DataGenerationExecutor(dataGenerationInformation);
+        new DataGenerationExecutor(dataGenerationInformation);
     log.info("Start generating data...");
     dataGenerationExecutor.executeDataGeneration();
     dataGenerationExecutor.awaitDataGenerationTermination();
     log.info("Finished data generation!");
   }
 
-  private static void validateProcessInstanceDateParameters(final Map<String, String> arguments) throws ParseException {
+  private static void validateProcessInstanceDateParameters(final Map<String, String> arguments)
+      throws ParseException {
     if (Boolean.parseBoolean(arguments.get("adjustProcessInstanceDates"))) {
       checkDateSpectrum(arguments.get("startDate"), arguments.get("endDate"));
     }
   }
 
-  private static DataGenerationInformation extractDataGenerationInformation(Map<String, String> arguments) {
+  private static DataGenerationInformation extractDataGenerationInformation(
+      Map<String, String> arguments) {
     // argument is being adjusted
-    long processInstanceCountToGenerate =
-      Long.parseLong(arguments.get("numberOfProcessInstances"));
+    long processInstanceCountToGenerate = Long.parseLong(arguments.get("numberOfProcessInstances"));
     long decisionInstanceCountToGenerate =
-      Long.parseLong(arguments.get("numberOfDecisionInstances"));
+        Long.parseLong(arguments.get("numberOfDecisionInstances"));
     String engineRestEndpoint = arguments.get("engineRest");
     boolean removeDeployments = Boolean.parseBoolean(arguments.get("removeDeployments"));
     Map<String, Integer> processDefinitions = parseDefinitions(arguments.get("processDefinitions"));
-    Map<String, Integer> decisionDefinitions = parseDefinitions(arguments.get("decisionDefinitions"));
+    Map<String, Integer> decisionDefinitions =
+        parseDefinitions(arguments.get("decisionDefinitions"));
 
     return DataGenerationInformation.builder()
-      .processInstanceCountToGenerate(processInstanceCountToGenerate)
-      .decisionInstanceCountToGenerate(decisionInstanceCountToGenerate)
-      .engineRestEndpoint(engineRestEndpoint)
-      .processDefinitionsAndNumberOfVersions(processDefinitions)
-      .decisionDefinitionsAndNumberOfVersions(decisionDefinitions)
-      .removeDeployments(removeDeployments)
-      .build();
+        .processInstanceCountToGenerate(processInstanceCountToGenerate)
+        .decisionInstanceCountToGenerate(decisionInstanceCountToGenerate)
+        .engineRestEndpoint(engineRestEndpoint)
+        .processDefinitionsAndNumberOfVersions(processDefinitions)
+        .decisionDefinitionsAndNumberOfVersions(decisionDefinitions)
+        .removeDeployments(removeDeployments)
+        .build();
   }
 
   public static Map<String, Integer> parseDefinitions(String definitions) {
@@ -147,15 +149,17 @@ public class DataGenerationMain {
     arguments.put("decisionDefinitions", getDefaultDefinitionsOfClass(DecisionDataGenerator.class));
   }
 
-  public static String getDefaultDefinitionsOfClass(Class<? extends DataGenerator<?>> classToExtractDefinitionsFor) {
-    try (ScanResult scanResult = new ClassGraph()
-      .enableClassInfo()
-      .acceptPackages(DataGenerator.class.getPackage().getName())
-      .scan()) {
+  public static String getDefaultDefinitionsOfClass(
+      Class<? extends DataGenerator<?>> classToExtractDefinitionsFor) {
+    try (ScanResult scanResult =
+        new ClassGraph()
+            .enableClassInfo()
+            .acceptPackages(DataGenerator.class.getPackage().getName())
+            .scan()) {
       ClassInfoList subclasses = scanResult.getSubclasses(classToExtractDefinitionsFor.getName());
       return subclasses.stream()
-        .map(c -> c.getSimpleName().replace("DataGenerator", ""))
-        .reduce("", (a, b) -> a + b + ":,", (a, b) -> a + b);
+          .map(c -> c.getSimpleName().replace("DataGenerator", ""))
+          .reduce("", (a, b) -> a + b + ":,", (a, b) -> a + b);
     }
   }
 
@@ -170,12 +174,12 @@ public class DataGenerationMain {
 
   private static void updateProcessInstanceDatesIfRequired(final Map<String, String> arguments) {
     if (Boolean.parseBoolean(arguments.get("adjustProcessInstanceDates"))) {
-      DBConnector dbConnector = new DBConnector(
-        arguments.get("jdbcDriver"),
-        arguments.get("dbUrl"),
-        arguments.get("dbUser"),
-        arguments.get("dbPassword")
-      );
+      DBConnector dbConnector =
+          new DBConnector(
+              arguments.get("jdbcDriver"),
+              arguments.get("dbUrl"),
+              arguments.get("dbUser"),
+              arguments.get("dbPassword"));
       dbConnector.updateProcessInstances(arguments.get("startDate"), arguments.get("endDate"));
       log.info("Updated endDate and startDate of process instances in db!");
     } else {

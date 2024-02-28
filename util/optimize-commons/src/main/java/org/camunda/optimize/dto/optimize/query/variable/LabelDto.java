@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 @Data
 @AllArgsConstructor
@@ -20,8 +19,6 @@ import jakarta.validation.constraints.NotNull;
 @FieldNameConstants
 public class LabelDto implements OptimizeDto {
   private String variableLabel;
-  @NotBlank
-  private String variableName;
-  @NotNull
-  private VariableType variableType;
+  @NotBlank private String variableName;
+  @NotNull private VariableType variableType;
 }

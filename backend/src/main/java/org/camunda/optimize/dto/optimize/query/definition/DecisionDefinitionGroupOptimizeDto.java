@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.definition;
 
-import lombok.Data;
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import lombok.Data;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 
 @Data
 public class DecisionDefinitionGroupOptimizeDto {
@@ -20,9 +19,8 @@ public class DecisionDefinitionGroupOptimizeDto {
 
   public void sort() {
     versions.sort(
-      Comparator.comparing(
-        DecisionDefinitionOptimizeDto::getVersion, Comparator.comparing(Long::valueOf)
-      ).reversed()
-    );
+        Comparator.comparing(
+                DecisionDefinitionOptimizeDto::getVersion, Comparator.comparing(Long::valueOf))
+            .reversed());
   }
 }

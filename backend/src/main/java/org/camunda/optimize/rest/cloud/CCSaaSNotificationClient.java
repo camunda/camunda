@@ -5,10 +5,15 @@
  */
 package org.camunda.optimize.rest.cloud;
 
+import static org.camunda.optimize.service.util.PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -22,12 +27,6 @@ import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-
-import static org.camunda.optimize.service.util.PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT;
-
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
@@ -37,29 +36,33 @@ public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
   private Instant tokenExpires = Instant.now();
   private final CCSaaSM2MTokenProvider m2mTokenProvider;
 
-  public CCSaaSNotificationClient(final ObjectMapper objectMapper, final ConfigurationService configurationService,
-                                  final CCSaaSM2MTokenProvider m2mTokenProvider) {
+  public CCSaaSNotificationClient(
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService,
+      final CCSaaSM2MTokenProvider m2mTokenProvider) {
     super(objectMapper, configurationService);
     this.m2mTokenProvider = m2mTokenProvider;
   }
 
   public void sendPanelNotificationToOrg(final PanelNotificationRequestDto notificationRequestDto) {
-    log.info("Sending org notification [{}].", notificationRequestDto.getNotification().getUniqueId());
+    log.info(
+        "Sending org notification [{}].", notificationRequestDto.getNotification().getUniqueId());
     try {
-      final HttpPost request = new HttpPost(getSaaSNotificationApiUrl() + SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT);
-      final StringEntity notificationRequestBody = new StringEntity(
-        objectMapper.writeValueAsString(notificationRequestDto),
-        ContentType.APPLICATION_JSON
-      );
+      final HttpPost request =
+          new HttpPost(getSaaSNotificationApiUrl() + SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT);
+      final StringEntity notificationRequestBody =
+          new StringEntity(
+              objectMapper.writeValueAsString(notificationRequestDto),
+              ContentType.APPLICATION_JSON);
       request.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
       request.setEntity(notificationRequestBody);
 
       try (final CloseableHttpResponse response = performNotificationRequest(request)) {
-        final Response.Status statusCode = Response.Status.fromStatusCode(
-          response.getStatusLine().getStatusCode()
-        );
+        final Response.Status statusCode =
+            Response.Status.fromStatusCode(response.getStatusLine().getStatusCode());
         if (!Response.Status.OK.equals(statusCode)) {
-          throw new OptimizeRuntimeException("Unexpected response when sending notification: " + statusCode);
+          throw new OptimizeRuntimeException(
+              "Unexpected response when sending notification: " + statusCode);
         }
       }
     } catch (IOException e) {
@@ -69,13 +72,15 @@ public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
 
   public synchronized void refreshAccessTokenIfRequired() {
     if (Instant.now().plus(15, ChronoUnit.MINUTES).isAfter(tokenExpires)) {
-      accessToken = m2mTokenProvider.retrieveM2MToken(configurationService.getPanelNotificationConfiguration()
-                                                        .getM2mTokenAudience());
+      accessToken =
+          m2mTokenProvider.retrieveM2MToken(
+              configurationService.getPanelNotificationConfiguration().getM2mTokenAudience());
       tokenExpires = Instant.now().plusSeconds(accessToken.getExpiresIn());
     }
   }
 
-  private CloseableHttpResponse performNotificationRequest(final HttpPost notificationRequest) throws IOException {
+  private CloseableHttpResponse performNotificationRequest(final HttpPost notificationRequest)
+      throws IOException {
     refreshAccessTokenIfRequired();
     return performRequest(notificationRequest, accessToken.getAccessToken());
   }
@@ -83,5 +88,4 @@ public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
   private String getSaaSNotificationApiUrl() {
     return configurationService.getPanelNotificationConfiguration().getUrl();
   }
-
 }

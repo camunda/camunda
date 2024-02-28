@@ -5,15 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.schema.index;
 
+import java.io.IOException;
 import org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-import java.io.IOException;
-
 public class ProcessDefinitionIndexES extends ProcessDefinitionIndex<XContentBuilder> {
 
-    @Override
-    public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder) throws IOException {
-        return contentBuilder.field(key, value);
-    }
+  @Override
+  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
+      throws IOException {
+    return contentBuilder.field(key, value);
+  }
 }

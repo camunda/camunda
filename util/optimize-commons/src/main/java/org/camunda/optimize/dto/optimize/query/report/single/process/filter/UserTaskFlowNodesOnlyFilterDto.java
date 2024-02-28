@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.InstancesContainingUserTasksFilterDataDto;
-
 import java.util.Collections;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.InstancesContainingUserTasksFilterDataDto;
 
-public class UserTaskFlowNodesOnlyFilterDto extends ProcessFilterDto<InstancesContainingUserTasksFilterDataDto> {
+public class UserTaskFlowNodesOnlyFilterDto
+    extends ProcessFilterDto<InstancesContainingUserTasksFilterDataDto> {
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {
     return Collections.singletonList(FilterApplicationLevel.INSTANCE);

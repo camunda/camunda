@@ -7,15 +7,14 @@ package org.camunda.optimize.dto.optimize.query.event.process.source;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.util.Arrays;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
-
-import java.util.Arrays;
-import java.util.List;
 
 @SuperBuilder
 @NoArgsConstructor
@@ -29,7 +28,5 @@ import java.util.List;
 })
 public abstract class EventSourceConfigDto {
 
-  @Builder.Default
-  protected List<EventScopeType> eventScope = Arrays.asList(EventScopeType.ALL);
-
+  @Builder.Default protected List<EventScopeType> eventScope = Arrays.asList(EventScopeType.ALL);
 }

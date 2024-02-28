@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.view.process.duration;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_CREATE_TIME;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_DURATION_IN_MS;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -14,10 +18,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_CREATE_TIME;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_DURATION_IN_MS;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -36,7 +36,8 @@ public class ProcessViewIncidentDuration extends ProcessViewDuration {
   }
 
   @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
     ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.INCIDENT);
     view.setProperties(ViewProperty.DURATION);

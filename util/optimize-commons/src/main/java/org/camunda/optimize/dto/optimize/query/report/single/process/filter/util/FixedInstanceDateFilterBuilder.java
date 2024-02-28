@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import java.time.OffsetDateTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-
-import java.time.OffsetDateTime;
 
 public class FixedInstanceDateFilterBuilder {
 
@@ -59,11 +58,11 @@ public class FixedInstanceDateFilterBuilder {
 
   public ProcessFilterBuilder add() {
     ProcessFilterDto<DateFilterDataDto<?>> filterDto;
-    filterDto = type.equals("endDate") ? new InstanceEndDateFilterDto() : new InstanceStartDateFilterDto();
+    filterDto =
+        type.equals("endDate") ? new InstanceEndDateFilterDto() : new InstanceStartDateFilterDto();
     filterDto.setData(new FixedDateFilterDataDto(start, end));
     filterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filterDto);
     return filterBuilder;
   }
-
 }

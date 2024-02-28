@@ -5,14 +5,24 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.schema.index.DashboardIndex.COLLECTION_ID;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.service.db.schema.index.DashboardIndex;
-import org.camunda.optimize.service.db.reader.DashboardReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.reader.DashboardReader;
+import org.camunda.optimize.service.db.schema.index.DashboardIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.get.GetRequest;
@@ -26,17 +36,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import static org.camunda.optimize.service.db.schema.index.DashboardIndex.COLLECTION_ID;
-import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -48,10 +47,10 @@ public class DashboardReaderES implements DashboardReader {
 
   @Override
   public long getDashboardCount() {
-    final CountRequest countRequest = new CountRequest(
-      new String[]{DASHBOARD_INDEX_NAME},
-      termQuery(DashboardIndex.MANAGEMENT_DASHBOARD, false)
-    );
+    final CountRequest countRequest =
+        new CountRequest(
+            new String[] {DASHBOARD_INDEX_NAME},
+            termQuery(DashboardIndex.MANAGEMENT_DASHBOARD, false));
     try {
       return esClient.count(countRequest).getCount();
     } catch (IOException e) {
@@ -79,14 +78,14 @@ public class DashboardReaderES implements DashboardReader {
 
     String responseAsString = getResponse.getSourceAsString();
     try {
-      return Optional.ofNullable(objectMapper.readValue(responseAsString, DashboardDefinitionRestDto.class));
+      return Optional.ofNullable(
+          objectMapper.readValue(responseAsString, DashboardDefinitionRestDto.class));
     } catch (IOException e) {
       String reason = "Could not deserialize dashboard information for dashboard " + dashboardId;
       log.error(
-        "Was not able to retrieve dashboard with id [{}] from Elasticsearch. Reason: {}",
-        dashboardId,
-        reason
-      );
+          "Was not able to retrieve dashboard with id [{}] from Elasticsearch. Reason: {}",
+          dashboardId,
+          reason);
       throw new OptimizeRuntimeException(reason, e);
     }
   }
@@ -98,8 +97,8 @@ public class DashboardReaderES implements DashboardReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.idsQuery().addIds(dashboardIdsAsArray));
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(DASHBOARD_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest =
+        new SearchRequest(DASHBOARD_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -110,7 +109,8 @@ public class DashboardReaderES implements DashboardReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionRestDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(
+        searchResponse.getHits(), DashboardDefinitionRestDto.class, objectMapper);
   }
 
   @Override
@@ -120,48 +120,54 @@ public class DashboardReaderES implements DashboardReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.termQuery(COLLECTION_ID, collectionId));
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(DASHBOARD_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest =
+        new SearchRequest(DASHBOARD_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
-      String reason = String.format("Was not able to fetch dashboards for collection with id [%s]", collectionId);
+      String reason =
+          String.format(
+              "Was not able to fetch dashboards for collection with id [%s]", collectionId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionRestDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(
+        searchResponse.getHits(), DashboardDefinitionRestDto.class, objectMapper);
   }
 
   @Override
   public List<DashboardDefinitionRestDto> getDashboardsForReport(String reportId) {
     log.debug("Fetching dashboards using report with id {}", reportId);
 
-    final QueryBuilder getCombinedReportsBySimpleReportIdQuery = boolQuery()
-      .filter(QueryBuilders.nestedQuery(
-        DashboardIndex.TILES,
-        QueryBuilders.termQuery(DashboardIndex.TILES + "." + DashboardIndex.REPORT_ID, reportId),
-        ScoreMode.None
-      ));
+    final QueryBuilder getCombinedReportsBySimpleReportIdQuery =
+        boolQuery()
+            .filter(
+                QueryBuilders.nestedQuery(
+                    DashboardIndex.TILES,
+                    QueryBuilders.termQuery(
+                        DashboardIndex.TILES + "." + DashboardIndex.REPORT_ID, reportId),
+                    ScoreMode.None));
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(getCombinedReportsBySimpleReportIdQuery);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(DASHBOARD_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest =
+        new SearchRequest(DASHBOARD_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
-      String reason = String.format("Was not able to fetch dashboards for report with id [%s]", reportId);
+      String reason =
+          String.format("Was not able to fetch dashboards for report with id [%s]", reportId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionRestDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(
+        searchResponse.getHits(), DashboardDefinitionRestDto.class, objectMapper);
   }
-
 }

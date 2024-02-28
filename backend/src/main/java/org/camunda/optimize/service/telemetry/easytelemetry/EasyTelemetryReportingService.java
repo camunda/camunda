@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.telemetry.easytelemetry;
 
-
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.telemetry.TelemetryReportingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -25,13 +24,11 @@ public class EasyTelemetryReportingService implements TelemetryReportingService 
   @Override
   public void sendTelemetryData() {
     telemetrySendingService.sendTelemetryData(
-      telemetryDataService.getTelemetryData(),
-      getTelemetryConfiguration().getTelemetryEndpoint()
-    );
+        telemetryDataService.getTelemetryData(),
+        getTelemetryConfiguration().getTelemetryEndpoint());
   }
 
   private TelemetryConfiguration getTelemetryConfiguration() {
     return this.configurationService.getTelemetryConfiguration();
   }
-
 }

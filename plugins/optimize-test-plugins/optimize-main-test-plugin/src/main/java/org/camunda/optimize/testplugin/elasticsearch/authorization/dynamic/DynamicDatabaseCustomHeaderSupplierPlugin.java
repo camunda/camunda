@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic;
 
-
 import org.camunda.optimize.plugin.elasticsearch.CustomHeader;
 import org.camunda.optimize.plugin.elasticsearch.DatabaseCustomHeaderSupplier;
 
@@ -17,10 +16,10 @@ public class DynamicDatabaseCustomHeaderSupplierPlugin implements DatabaseCustom
   @Override
   public CustomHeader getElasticsearchCustomHeader() {
     synchronized (lock) {
-      final CustomHeader customHeader = new CustomHeader("Authorization", "Bearer dynamicToken_" + counter);
+      final CustomHeader customHeader =
+          new CustomHeader("Authorization", "Bearer dynamicToken_" + counter);
       counter += 1;
       return customHeader;
     }
   }
-
 }

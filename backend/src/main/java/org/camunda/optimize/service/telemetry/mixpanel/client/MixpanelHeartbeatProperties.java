@@ -14,21 +14,27 @@ import lombok.EqualsAndHashCode;
 public class MixpanelHeartbeatProperties extends MixpanelEventProperties {
   @JsonProperty("processReportCount")
   private long processReportCount;
+
   @JsonProperty("decisionReportCount")
   private long decisionReportCount;
+
   @JsonProperty("dashboardCount")
   private long dashboardCount;
+
   @JsonProperty("reportShareCount")
   private long reportShareCount;
+
   @JsonProperty("dashboardShareCount")
   private long dashboardShareCount;
+
   @JsonProperty("alertCount")
   private long alertCount;
 
-  public MixpanelHeartbeatProperties(final MixpanelHeartbeatMetrics mixpanelHeartbeatMetrics,
-                                     final String stage,
-                                     final String organizationId,
-                                     final String clusterId) {
+  public MixpanelHeartbeatProperties(
+      final MixpanelHeartbeatMetrics mixpanelHeartbeatMetrics,
+      final String stage,
+      final String organizationId,
+      final String clusterId) {
     super(stage, organizationId, clusterId);
     this.processReportCount = mixpanelHeartbeatMetrics.getProcessReportCount();
     this.decisionReportCount = mixpanelHeartbeatMetrics.getDecisionReportCount();

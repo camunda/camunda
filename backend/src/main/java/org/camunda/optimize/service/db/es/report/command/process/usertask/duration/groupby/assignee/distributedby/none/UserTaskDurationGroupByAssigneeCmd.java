@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report.command.process.usertask.duration.groupby.assignee.distributedby.none;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.db.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.db.es.report.command.exec.ProcessReportCmdExecutionPlan;
@@ -14,8 +15,6 @@ import org.camunda.optimize.service.db.es.report.command.modules.group_by.proces
 import org.camunda.optimize.service.db.es.report.command.modules.view.process.duration.ProcessViewUserTaskDuration;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class UserTaskDurationGroupByAssigneeCmd extends ProcessCmd<List<MapResultEntryDto>> {
 
@@ -24,14 +23,15 @@ public class UserTaskDurationGroupByAssigneeCmd extends ProcessCmd<List<MapResul
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .processCommand()
-      .view(ProcessViewUserTaskDuration.class)
-      .groupBy(ProcessGroupByAssignee.class)
-      .distributedBy(ProcessDistributedByNone.class)
-      .resultAsMap()
-      .build();
+  protected ProcessReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .processCommand()
+        .view(ProcessViewUserTaskDuration.class)
+        .groupBy(ProcessGroupByAssignee.class)
+        .distributedBy(ProcessDistributedByNone.class)
+        .resultAsMap()
+        .build();
   }
-
 }

@@ -5,24 +5,24 @@
  */
 package org.camunda.optimize.data.generation.generators.impl.process;
 
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.data.generation.UserAndGroupProvider;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 public class GroupElementsDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "/diagrams/process/group-elements.bpmn";
   private Random r = new Random();
-  private String[] firstGatewayOptions = new String[]{"a", "b"};
-  private String[] secondGatewayOptions = new String[]{"c", "d"};
+  private String[] firstGatewayOptions = new String[] {"a", "b"};
+  private String[] secondGatewayOptions = new String[] {"c", "d"};
 
-  public GroupElementsDataGenerator(final SimpleEngineClient engineClient,
-                                    final Integer nVersions,
-                                    final UserAndGroupProvider userAndGroupProvider) {
+  public GroupElementsDataGenerator(
+      final SimpleEngineClient engineClient,
+      final Integer nVersions,
+      final UserAndGroupProvider userAndGroupProvider) {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 

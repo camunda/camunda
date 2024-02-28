@@ -10,6 +10,11 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,12 +28,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -41,14 +40,16 @@ public abstract class StatusCheckingService {
 
   public abstract boolean isConnectedToDatabase();
 
-  private final LoadingCache<EngineContext, Boolean> engineConnectionCache = CacheBuilder.newBuilder()
-    .expireAfterWrite(1, TimeUnit.MINUTES)
-    .build(new CacheLoader<EngineContext, Boolean>() {
-      @Override
-      public Boolean load(@NonNull EngineContext engineContext) {
-        return isEngineVersionRequestSuccessful(engineContext);
-      }
-    });
+  private final LoadingCache<EngineContext, Boolean> engineConnectionCache =
+      CacheBuilder.newBuilder()
+          .expireAfterWrite(1, TimeUnit.MINUTES)
+          .build(
+              new CacheLoader<EngineContext, Boolean>() {
+                @Override
+                public Boolean load(@NonNull EngineContext engineContext) {
+                  return isEngineVersionRequestSuccessful(engineContext);
+                }
+              });
 
   public StatusResponseDto getStatusResponse() {
     return getStatusResponse(true);
@@ -62,10 +63,9 @@ public abstract class StatusCheckingService {
     final Collection<EngineContext> configuredEngines = engineContextFactory.getConfiguredEngines();
     // if there is no engine configured == cloud
     return configuredEngines.isEmpty()
-      // else there must be as least one connected Camunda Platform engine
-      || configuredEngines
-      .stream()
-      .anyMatch(engineContext -> isConnectedToEngine(engineContext, true));
+        // else there must be as least one connected Camunda Platform engine
+        || configuredEngines.stream()
+            .anyMatch(engineContext -> isConnectedToEngine(engineContext, true));
   }
 
   private StatusResponseDto getStatusResponse(final boolean skipCache) {
@@ -94,9 +94,8 @@ public abstract class StatusCheckingService {
         isConnected = engineConnectionCache.get(engineContext);
       } catch (ExecutionException ex) {
         log.warn(
-          "There was a problem checking the connection status of engine with alias {}",
-          engineContext.getEngineAlias()
-        );
+            "There was a problem checking the connection status of engine with alias {}",
+            engineContext.getEngineAlias());
       }
     }
     return isConnected;
@@ -105,10 +104,16 @@ public abstract class StatusCheckingService {
   private boolean isEngineVersionRequestSuccessful(EngineContext engineContext) {
     boolean isConnected = false;
     try {
-      final String engineEndpoint = configurationService
-        .getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()) + EngineConstants.VERSION_ENDPOINT;
-      try (final Response response = engineContext.getEngineClient()
-        .target(engineEndpoint).request(MediaType.APPLICATION_JSON).get()) {
+      final String engineEndpoint =
+          configurationService.getEngineRestApiEndpointOfCustomEngine(
+                  engineContext.getEngineAlias())
+              + EngineConstants.VERSION_ENDPOINT;
+      try (final Response response =
+          engineContext
+              .getEngineClient()
+              .target(engineEndpoint)
+              .request(MediaType.APPLICATION_JSON)
+              .get()) {
         isConnected = response.getStatus() == Response.Status.OK.getStatusCode();
       }
     } catch (Exception ignored) {
@@ -116,5 +121,4 @@ public abstract class StatusCheckingService {
     }
     return isConnected;
   }
-
 }

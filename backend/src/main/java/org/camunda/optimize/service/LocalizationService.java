@@ -10,6 +10,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.io.ByteStreams;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.Strings;
 import org.apache.commons.lang3.StringUtils;
@@ -21,13 +27,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
@@ -77,12 +76,12 @@ public class LocalizationService implements ConfigurationReloadable {
 
   public String getDefaultLocaleMessageForMissingAssigneeLabel() {
     try {
-      return getMessageForCode(configurationService.getFallbackLocale(), REPORT_FIELD, MISSING_ASSIGNEE_FIELD);
+      return getMessageForCode(
+          configurationService.getFallbackLocale(), REPORT_FIELD, MISSING_ASSIGNEE_FIELD);
     } catch (Exception e) {
       return String.format(
-        "Failed to localize label for missing assignee field with localization code: %s",
-        MISSING_ASSIGNEE_FIELD
-      );
+          "Failed to localize label for missing assignee field with localization code: %s",
+          MISSING_ASSIGNEE_FIELD);
     }
   }
 
@@ -90,19 +89,24 @@ public class LocalizationService implements ConfigurationReloadable {
     return getLocalizedMarkdownFile(LOCALIZATION_FILE_PREFIX_WHATSNEW, localeCode);
   }
 
-  public String getLocalizationForManagementDashboardCode(final String localeCode, final String dashboardCode) {
+  public String getLocalizationForManagementDashboardCode(
+      final String localeCode, final String dashboardCode) {
     return getMessageForCode(localeCode, MANAGEMENT_DASHBOARD_FIELD, dashboardCode);
   }
 
-  public String getLocalizationForInstantPreviewDashboardCode(final String localeCode, final String dashboardCode) {
+  public String getLocalizationForInstantPreviewDashboardCode(
+      final String localeCode, final String dashboardCode) {
     return getMessageForCode(localeCode, INSTANT_DASHBOARD_FIELD, dashboardCode);
   }
 
-  public String getLocalizationForManagementReportCode(final String localeCode, final String reportCode) {
-    return getNestedMessageForCode(localeCode, MANAGEMENT_DASHBOARD_FIELD, REPORT_FIELD, reportCode);
+  public String getLocalizationForManagementReportCode(
+      final String localeCode, final String reportCode) {
+    return getNestedMessageForCode(
+        localeCode, MANAGEMENT_DASHBOARD_FIELD, REPORT_FIELD, reportCode);
   }
 
-  public String getLocalizationForInstantPreviewReportCode(final String localeCode, final String reportCode) {
+  public String getLocalizationForInstantPreviewReportCode(
+      final String localeCode, final String reportCode) {
     return getNestedMessageForCode(localeCode, INSTANT_DASHBOARD_FIELD, REPORT_FIELD, reportCode);
   }
 
@@ -111,17 +115,18 @@ public class LocalizationService implements ConfigurationReloadable {
       return xLabelKey;
     }
     final Map<String, Map<String, String>> reportLocalistionMap =
-      getNestedLocalizationMap(validLocale, REPORT_FIELD);
+        getNestedLocalizationMap(validLocale, REPORT_FIELD);
     final Map<String, String> reportGroupByMap = reportLocalistionMap.get(REPORT_GROUPING_FIELD);
     return reportGroupByMap.get(xLabelKey);
   }
 
-  public String getLocalizedYLabel(final String validLocale, final String yLabel, final ViewProperty view) {
+  public String getLocalizedYLabel(
+      final String validLocale, final String yLabel, final ViewProperty view) {
     if (Strings.isEmpty(yLabel)) {
       return yLabel;
     }
     final Map<String, Map<String, String>> reportLocalistionMap =
-      getNestedLocalizationMap(validLocale, REPORT_FIELD);
+        getNestedLocalizationMap(validLocale, REPORT_FIELD);
     final Map<String, String> reportGroupByMap = reportLocalistionMap.get(REPORT_VIEW_FIELD);
     final String localizedReportView = reportGroupByMap.get(yLabel);
     if (view.equals(ViewProperty.FREQUENCY)) {
@@ -139,45 +144,53 @@ public class LocalizationService implements ConfigurationReloadable {
     } else {
       final String fallbackLocale = configurationService.getFallbackLocale();
       log.error(
-        "No valid localization files found for given locale [{}]. Defaulting to fallback locale [{}] instead.",
-        locale, fallbackLocale
-      );
+          "No valid localization files found for given locale [{}]. Defaulting to fallback locale [{}] instead.",
+          locale,
+          fallbackLocale);
       return fallbackLocale;
     }
   }
 
   private void validateLocalizationFiles() {
-    configurationService.getAvailableLocales()
-      .forEach(locale -> {
-        final String filePath = resolveFilePath(JSON_FILE_EXTENSION, locale);
-        validateFileExists(filePath);
-        validateJsonFile(filePath);
-      });
+    configurationService
+        .getAvailableLocales()
+        .forEach(
+            locale -> {
+              final String filePath = resolveFilePath(JSON_FILE_EXTENSION, locale);
+              validateFileExists(filePath);
+              validateJsonFile(filePath);
+            });
   }
 
   private void validateMarkdownFiles() {
-    configurationService.getAvailableLocales().forEach(locale -> {
-      final String filePath = resolveFilePath(LOCALIZATION_FILE_PREFIX_WHATSNEW, MARKDOWN_FILE_EXTENSION, locale);
-      validateFileExists(filePath);
-    });
+    configurationService
+        .getAvailableLocales()
+        .forEach(
+            locale -> {
+              final String filePath =
+                  resolveFilePath(
+                      LOCALIZATION_FILE_PREFIX_WHATSNEW, MARKDOWN_FILE_EXTENSION, locale);
+              validateFileExists(filePath);
+            });
   }
 
   private void validateFileExists(final String fileName) {
     final URL localizationFile = getClass().getClassLoader().getResource(fileName);
     if (localizationFile == null) {
       throw new OptimizeConfigurationException(
-        String.format("File for configured availableLocale is not available [%s].", fileName)
-      );
+          String.format("File for configured availableLocale is not available [%s].", fileName));
     }
   }
 
   private void validateFallbackLocale() {
-    if (!configurationService.getAvailableLocales().contains(configurationService.getFallbackLocale())) {
-      final String message = String.format(
-        "The configured fallbackLocale [%s] is not present in availableLocales %s.",
-        configurationService.getFallbackLocale(),
-        configurationService.getAvailableLocales().toString()
-      );
+    if (!configurationService
+        .getAvailableLocales()
+        .contains(configurationService.getFallbackLocale())) {
+      final String message =
+          String.format(
+              "The configured fallbackLocale [%s] is not present in availableLocales %s.",
+              configurationService.getFallbackLocale(),
+              configurationService.getAvailableLocales().toString());
       throw new OptimizeConfigurationException(message);
     }
   }
@@ -188,8 +201,9 @@ public class LocalizationService implements ConfigurationReloadable {
       objectMapper.readTree(localizationFile);
     } catch (IOException e) {
       throw new OptimizeConfigurationException(
-        String.format("File for configured availableLocale is not a valid JSON file [%s].", fileName), e
-      );
+          String.format(
+              "File for configured availableLocale is not a valid JSON file [%s].", fileName),
+          e);
     }
   }
 
@@ -201,10 +215,12 @@ public class LocalizationService implements ConfigurationReloadable {
     return getLocalizedFile(key, MARKDOWN_FILE_EXTENSION, localeCode);
   }
 
-  private byte[] getLocalizedFile(final String filePrefix, final String fileExtension, final String localeCode) {
-    final String resolvedLocaleCode = configurationService.getAvailableLocales().contains(localeCode)
-      ? localeCode
-      : configurationService.getFallbackLocale();
+  private byte[] getLocalizedFile(
+      final String filePrefix, final String fileExtension, final String localeCode) {
+    final String resolvedLocaleCode =
+        configurationService.getAvailableLocales().contains(localeCode)
+            ? localeCode
+            : configurationService.getFallbackLocale();
 
     return getFileBytes(resolveFilePath(filePrefix, fileExtension, resolvedLocaleCode));
   }
@@ -213,7 +229,8 @@ public class LocalizationService implements ConfigurationReloadable {
     return resolveFilePath(null, fileExtension, localeCode);
   }
 
-  private String resolveFilePath(final String filePrefix, final String fileExtension, final String localeCode) {
+  private String resolveFilePath(
+      final String filePrefix, final String fileExtension, final String localeCode) {
     final String prefix = StringUtils.isNotBlank(filePrefix) ? filePrefix + "_" : "";
     return LOCALIZATION_PATH + prefix + localeCode + "." + fileExtension;
   }
@@ -221,20 +238,25 @@ public class LocalizationService implements ConfigurationReloadable {
   private byte[] getFileBytes(final String localeFileName) {
     Optional<byte[]> result = Optional.empty();
 
-    try (final InputStream localeFileAsStream = getClass().getClassLoader().getResourceAsStream(localeFileName)) {
-      result = Optional.ofNullable(localeFileAsStream)
-        .flatMap(inputStream -> {
-          try {
-            return Optional.of(ByteStreams.toByteArray(inputStream));
-          } catch (final IOException e) {
-            log.error("Failed reading localization file {} from classpath", localeFileName, e);
-            return Optional.empty();
-          }
-        });
+    try (final InputStream localeFileAsStream =
+        getClass().getClassLoader().getResourceAsStream(localeFileName)) {
+      result =
+          Optional.ofNullable(localeFileAsStream)
+              .flatMap(
+                  inputStream -> {
+                    try {
+                      return Optional.of(ByteStreams.toByteArray(inputStream));
+                    } catch (final IOException e) {
+                      log.error(
+                          "Failed reading localization file {} from classpath", localeFileName, e);
+                      return Optional.empty();
+                    }
+                  });
     } catch (final IOException e) {
       log.debug("Failed closing stream of locale file {}.", localeFileName, e);
     }
-    return result.orElseThrow(() -> new OptimizeRuntimeException("Could not load localization file: " + localeFileName));
+    return result.orElseThrow(
+        () -> new OptimizeRuntimeException("Could not load localization file: " + localeFileName));
   }
 
   private String getMessageForApiErrorCode(final String localeCode, final String errorCode) {
@@ -242,33 +264,43 @@ public class LocalizationService implements ConfigurationReloadable {
   }
 
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  private String getMessageForCode(final String localeCode, final String categoryCode, final String messageCode) {
+  private String getMessageForCode(
+      final String localeCode, final String categoryCode, final String messageCode) {
     final Map<String, String> categoryMessageCodeMap =
-      (Map<String, String>) localeToLocalizationMapCache.get(localeCode).get(categoryCode);
+        (Map<String, String>) localeToLocalizationMapCache.get(localeCode).get(categoryCode);
     return categoryMessageCodeMap.get(messageCode);
   }
 
-  private String getNestedMessageForCode(final String localeCode, final String categoryCode,
-                                         final String subcategoryCode, final String messageCode) {
-    final Map<String, Map<String, String>> categoryMessageCodeMap = getNestedLocalizationMap(localeCode, categoryCode);
+  private String getNestedMessageForCode(
+      final String localeCode,
+      final String categoryCode,
+      final String subcategoryCode,
+      final String messageCode) {
+    final Map<String, Map<String, String>> categoryMessageCodeMap =
+        getNestedLocalizationMap(localeCode, categoryCode);
     return categoryMessageCodeMap.get(subcategoryCode).get(messageCode);
   }
 
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  private Map<String, Map<String, String>> getNestedLocalizationMap(final String localeCode, final String categoryCode) {
-    return (Map<String, Map<String, String>>) localeToLocalizationMapCache.get(localeCode).get(categoryCode);
+  private Map<String, Map<String, String>> getNestedLocalizationMap(
+      final String localeCode, final String categoryCode) {
+    return (Map<String, Map<String, String>>)
+        localeToLocalizationMapCache.get(localeCode).get(categoryCode);
   }
 
   private void validateLocalizationSetup() {
     validateLocalizationFiles();
     validateMarkdownFiles();
     validateFallbackLocale();
-    localeToLocalizationMapCache = Caffeine.newBuilder()
-      .maximumSize(5)
-      .expireAfterAccess(30, TimeUnit.MINUTES)
-      // @formatter:off
-      .build(localeCode -> objectMapper.readValue(getLocalizedJsonFile(localeCode), new TypeReference<>() {}));
+    localeToLocalizationMapCache =
+        Caffeine.newBuilder()
+            .maximumSize(5)
+            .expireAfterAccess(30, TimeUnit.MINUTES)
+            // @formatter:off
+            .build(
+                localeCode ->
+                    objectMapper.readValue(
+                        getLocalizedJsonFile(localeCode), new TypeReference<>() {}));
     // @formatter:on
   }
-
 }

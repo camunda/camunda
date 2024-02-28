@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
@@ -17,10 +20,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -28,21 +27,23 @@ import java.util.Map;
 public class ProcessVariableReaderOS implements ProcessVariableReader {
 
   @Override
-  public List<ProcessVariableNameResponseDto> getVariableNames(final ProcessVariableNameRequestDto requestDto) {
+  public List<ProcessVariableNameResponseDto> getVariableNames(
+      final ProcessVariableNameRequestDto requestDto) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
-  public List<ProcessVariableNameResponseDto> getVariableNames(final List<ProcessVariableNameRequestDto> variableNameRequests) {
+  public List<ProcessVariableNameResponseDto> getVariableNames(
+      final List<ProcessVariableNameRequestDto> variableNameRequests) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
-  public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(final BoolQueryBuilder baseQuery,
-                                                                                        final Map<String,
-                                                                                          DefinitionVariableLabelsDto> definitionLabelsDtos) {
+  public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(
+      final BoolQueryBuilder baseQuery,
+      final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
@@ -58,5 +59,4 @@ public class ProcessVariableReaderOS implements ProcessVariableReader {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
-
 }

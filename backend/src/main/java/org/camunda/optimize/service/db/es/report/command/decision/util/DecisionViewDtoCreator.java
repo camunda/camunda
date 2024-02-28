@@ -17,5 +17,4 @@ public class DecisionViewDtoCreator {
   public static DecisionViewDto createCountFrequencyView() {
     return new DecisionViewDto(ViewProperty.FREQUENCY);
   }
-
 }

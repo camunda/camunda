@@ -17,7 +17,8 @@ public class PaginationDto {
   protected Integer limit;
   protected Integer offset;
 
-  public static PaginationDto fromPaginationRequest(final PaginationRequestDto paginationRequestDto) {
+  public static PaginationDto fromPaginationRequest(
+      final PaginationRequestDto paginationRequestDto) {
     final PaginationDto paginationDto = new PaginationDto();
     paginationDto.setLimit(paginationRequestDto.getLimit());
     paginationDto.setOffset(paginationRequestDto.getOffset());

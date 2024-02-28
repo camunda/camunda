@@ -5,24 +5,24 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
+
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 
-import java.util.List;
-
-import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
-
 @EqualsAndHashCode(callSuper = true)
-public class RelativeFlowNodeDateFilterDataDto extends FlowNodeDateFilterDataDto<RelativeDateFilterStartDto> {
+public class RelativeFlowNodeDateFilterDataDto
+    extends FlowNodeDateFilterDataDto<RelativeDateFilterStartDto> {
 
   @SuppressWarnings(UNUSED)
   protected RelativeFlowNodeDateFilterDataDto() {
     this(null, null);
   }
 
-  public RelativeFlowNodeDateFilterDataDto(final List<String> flowNodeIds,
-                                           final RelativeDateFilterStartDto relativeDateFilterStartDto) {
+  public RelativeFlowNodeDateFilterDataDto(
+      final List<String> flowNodeIds, final RelativeDateFilterStartDto relativeDateFilterStartDto) {
     super(flowNodeIds, DateFilterType.RELATIVE, relativeDateFilterStartDto, null);
   }
 }

@@ -13,8 +13,6 @@ import org.quartz.JobKey;
 import org.quartz.JobListener;
 import org.quartz.SchedulerException;
 import org.quartz.TriggerKey;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Slf4j
 public class ReminderHandlingListener implements JobListener {
@@ -34,12 +32,12 @@ public class ReminderHandlingListener implements JobListener {
 
   @Override
   public void jobToBeExecuted(JobExecutionContext context) {
-    //do nothing
+    // do nothing
   }
 
   @Override
   public void jobExecutionVetoed(JobExecutionContext context) {
-    //do nothing
+    // do nothing
   }
 
   @Override
@@ -51,14 +49,16 @@ public class ReminderHandlingListener implements JobListener {
         log.debug("Creating reminder job for [{}]", result.getAlert().getId());
         JobDetail jobDetails = alertReminderJobFactory.createJobDetails(result.getAlert());
         try {
-          if (context.getScheduler().checkExists(jobDetails.getKey())){
-            log.debug("Skipping creating new job with key [{}] as it already exists", jobDetails.getKey());
+          if (context.getScheduler().checkExists(jobDetails.getKey())) {
+            log.debug(
+                "Skipping creating new job with key [{}] as it already exists",
+                jobDetails.getKey());
             return;
           }
-          context.getScheduler().scheduleJob(
-              jobDetails,
-              alertReminderJobFactory.createTrigger(result.getAlert(),jobDetails)
-          );
+          context
+              .getScheduler()
+              .scheduleJob(
+                  jobDetails, alertReminderJobFactory.createTrigger(result.getAlert(), jobDetails));
         } catch (Exception e) {
           log.error("can't schedule reminder for [{}]", result.getAlert().getId(), e);
         }
@@ -74,9 +74,6 @@ public class ReminderHandlingListener implements JobListener {
           log.error("can't remove reminders for alert [{}]", result.getAlert().getId());
         }
       }
-
     }
   }
-
-
 }

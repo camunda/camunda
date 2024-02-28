@@ -5,15 +5,26 @@
  */
 package org.camunda.optimize.service.db.es.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIED;
+import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIER;
+import static org.camunda.optimize.service.db.schema.index.SettingsIndex.METADATA_TELEMETRY_ENABLED;
+import static org.camunda.optimize.service.db.schema.index.SettingsIndex.SHARING_ENABLED;
+import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.BadRequestException;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.index.SettingsIndex;
 import org.camunda.optimize.service.db.writer.SettingsWriter;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -21,18 +32,6 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-
-import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIED;
-import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIER;
-import static org.camunda.optimize.service.db.schema.index.SettingsIndex.METADATA_TELEMETRY_ENABLED;
-import static org.camunda.optimize.service.db.schema.index.SettingsIndex.SHARING_ENABLED;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @AllArgsConstructor
 @Slf4j
@@ -58,7 +57,7 @@ public class SettingsWriterES implements SettingsWriter {
   }
 
   private UpdateRequest createSettingsUpsert(final SettingsResponseDto settingsDto)
-    throws JsonProcessingException {
+      throws JsonProcessingException {
     Set<String> fieldsToUpdate = new HashSet<>();
 
     if (settingsDto.getMetadataTelemetryEnabled().isPresent()) {
@@ -74,18 +73,15 @@ public class SettingsWriterES implements SettingsWriter {
       throw new BadRequestException("No settings can be updated, as no values are present!");
     }
 
-    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
-      fieldsToUpdate,
-      settingsDto,
-      objectMapper
-    );
+    final Script updateScript =
+        ElasticsearchWriterUtil.createFieldUpdateScript(fieldsToUpdate, settingsDto, objectMapper);
 
     return new UpdateRequest()
-      .index(SETTINGS_INDEX_NAME)
-      .id(SettingsIndex.ID)
-      .upsert(objectMapper.writeValueAsString(settingsDto), XContentType.JSON)
-      .script(updateScript)
-      .setRefreshPolicy(IMMEDIATE)
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+        .index(SETTINGS_INDEX_NAME)
+        .id(SettingsIndex.ID)
+        .upsert(objectMapper.writeValueAsString(settingsDto), XContentType.JSON)
+        .script(updateScript)
+        .setRefreshPolicy(IMMEDIATE)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
   }
 }

@@ -8,6 +8,4 @@ package org.camunda.optimize.service.db.es.report.command.modules.view.decision;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.service.db.es.report.command.modules.view.ViewPart;
 
-public abstract class DecisionViewPart extends ViewPart<DecisionReportDataDto> {
-
-}
+public abstract class DecisionViewPart extends ViewPart<DecisionReportDataDto> {}

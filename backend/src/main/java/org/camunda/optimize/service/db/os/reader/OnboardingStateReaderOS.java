@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.OnboardingStateDto;
@@ -13,8 +14,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -22,9 +21,9 @@ import java.util.Optional;
 public class OnboardingStateReaderOS implements OnboardingStateReader {
 
   @Override
-  public Optional<OnboardingStateDto> getOnboardingStateByKeyAndUserId(final String key, final String userId) {
+  public Optional<OnboardingStateDto> getOnboardingStateByKeyAndUserId(
+      final String key, final String userId) {
     log.error("Functionality not implemented for OpenSearch");
     return Optional.empty();
   }
-
 }

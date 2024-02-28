@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.es.filter;
 
+import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+
+import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.InstancesContainingUserTasksFilterDataDto;
@@ -12,21 +17,18 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-
 @Component
-public class InstancesContainingUserTasksFilter implements QueryFilter<InstancesContainingUserTasksFilterDataDto> {
+public class InstancesContainingUserTasksFilter
+    implements QueryFilter<InstancesContainingUserTasksFilterDataDto> {
   @Override
-  public void addFilters(final BoolQueryBuilder query,
-                         final List<InstancesContainingUserTasksFilterDataDto> instancesContainingUserTasksFilters,
-                         final FilterContext filterContext) {
+  public void addFilters(
+      final BoolQueryBuilder query,
+      final List<InstancesContainingUserTasksFilterDataDto> instancesContainingUserTasksFilters,
+      final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(instancesContainingUserTasksFilters)) {
       List<QueryBuilder> filters = query.filter();
-      filters.add(nestedQuery(FLOW_NODE_INSTANCES, createUserTaskFlowNodeTypeFilter(), ScoreMode.None));
+      filters.add(
+          nestedQuery(FLOW_NODE_INSTANCES, createUserTaskFlowNodeTypeFilter(), ScoreMode.None));
     }
   }
 }

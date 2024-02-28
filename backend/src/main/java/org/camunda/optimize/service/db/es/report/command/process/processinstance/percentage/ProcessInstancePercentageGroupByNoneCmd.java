@@ -20,14 +20,15 @@ public class ProcessInstancePercentageGroupByNoneCmd extends ProcessCmd<Double> 
     super(builder);
   }
 
-  protected ProcessReportCmdExecutionPlan<Double> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .processCommand()
-      .view(ProcessViewInstancePercentage.class)
-      .groupBy(ProcessGroupByNone.class)
-      .distributedBy(ProcessDistributedByNone.class)
-      .resultAsNumber()
-      .build();
+  protected ProcessReportCmdExecutionPlan<Double> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .processCommand()
+        .view(ProcessViewInstancePercentage.class)
+        .groupBy(ProcessGroupByNone.class)
+        .distributedBy(ProcessDistributedByNone.class)
+        .resultAsNumber()
+        .build();
   }
-
 }

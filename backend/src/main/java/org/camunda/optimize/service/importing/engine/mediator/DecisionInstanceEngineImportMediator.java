@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionInstanceFetcher;
@@ -16,27 +18,27 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionInstanceEngineImportMediator
-  extends TimestampBasedImportMediator<DecisionInstanceImportIndexHandler, HistoricDecisionInstanceDto> {
+    extends TimestampBasedImportMediator<
+        DecisionInstanceImportIndexHandler, HistoricDecisionInstanceDto> {
 
   private final DecisionInstanceFetcher decisionInstanceFetcher;
 
-  public DecisionInstanceEngineImportMediator(final DecisionInstanceImportIndexHandler importIndexHandler,
-                                              final DecisionInstanceFetcher decisionInstanceFetcher,
-                                              final DecisionInstanceImportService importService,
-                                              final ConfigurationService configurationService,
-                                              final BackoffCalculator idleBackoffCalculator) {
+  public DecisionInstanceEngineImportMediator(
+      final DecisionInstanceImportIndexHandler importIndexHandler,
+      final DecisionInstanceFetcher decisionInstanceFetcher,
+      final DecisionInstanceImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.decisionInstanceFetcher = decisionInstanceFetcher;
   }
 
   @Override
-  protected OffsetDateTime getTimestamp(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
+  protected OffsetDateTime getTimestamp(
+      final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
     return historicDecisionInstanceDto.getEvaluationTime();
   }
 
@@ -47,7 +49,8 @@ public class DecisionInstanceEngineImportMediator
 
   @Override
   protected List<HistoricDecisionInstanceDto> getEntitiesLastTimestamp() {
-    return decisionInstanceFetcher.fetchHistoricDecisionInstances(importIndexHandler.getTimestampOfLastEntity());
+    return decisionInstanceFetcher.fetchHistoricDecisionInstances(
+        importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override
@@ -59,5 +62,4 @@ public class DecisionInstanceEngineImportMediator
   public MediatorRank getRank() {
     return MediatorRank.INSTANCE;
   }
-
 }

@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.process.flownode;
 
+import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createModelElementAggregationFilter;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
+
+import java.util.Optional;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
@@ -14,13 +20,6 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createModelElementAggregationFilter;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 public abstract class AbstractGroupByFlowNode extends ProcessGroupByPart {
 
@@ -34,27 +33,25 @@ public abstract class AbstractGroupByFlowNode extends ProcessGroupByPart {
   }
 
   protected AggregationBuilder createFilteredFlowNodeAggregation(
-    final ExecutionContext<ProcessReportDataDto> context,
-    final AggregationBuilder subAggregation) {
+      final ExecutionContext<ProcessReportDataDto> context,
+      final AggregationBuilder subAggregation) {
     return nested(FLOW_NODES_AGGREGATION, FLOW_NODE_INSTANCES)
-      .subAggregation(
-        filter(
-          FILTERED_FLOW_NODES_AGGREGATION,
-          createModelElementAggregationFilter(context.getReportData(), context.getFilterContext(), definitionService)
-        )
-          .subAggregation(subAggregation)
-      );
+        .subAggregation(
+            filter(
+                    FILTERED_FLOW_NODES_AGGREGATION,
+                    createModelElementAggregationFilter(
+                        context.getReportData(), context.getFilterContext(), definitionService))
+                .subAggregation(subAggregation));
   }
 
   protected Optional<Filter> getFilteredFlowNodesAggregation(final SearchResponse response) {
     return getFlowNodesAggregation(response)
-      .map(SingleBucketAggregation::getAggregations)
-      .map(aggs -> aggs.get(FILTERED_FLOW_NODES_AGGREGATION));
+        .map(SingleBucketAggregation::getAggregations)
+        .map(aggs -> aggs.get(FILTERED_FLOW_NODES_AGGREGATION));
   }
 
   protected Optional<Nested> getFlowNodesAggregation(final SearchResponse response) {
     return Optional.ofNullable(response.getAggregations())
-      .map(aggs -> aggs.get(FLOW_NODES_AGGREGATION));
+        .map(aggs -> aggs.get(FLOW_NODES_AGGREGATION));
   }
-
 }

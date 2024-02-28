@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.decision.variable;
 
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.INPUTS;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableTypeField;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
+
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByInputVariableDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
@@ -20,21 +25,18 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.INPUTS;
-import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
-import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableTypeField;
-import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionGroupByInputVariable extends AbstractGroupByVariable<DecisionReportDataDto> {
 
-  public DecisionGroupByInputVariable(final VariableAggregationService variableAggregationService,
-                                      final DefinitionService definitionService) {
+  public DecisionGroupByInputVariable(
+      final VariableAggregationService variableAggregationService,
+      final DefinitionService definitionService) {
     super(variableAggregationService, definitionService);
   }
 
-  private DecisionGroupByVariableValueDto getVariableGroupByDto(final ExecutionContext<DecisionReportDataDto> context) {
+  private DecisionGroupByVariableValueDto getVariableGroupByDto(
+      final ExecutionContext<DecisionReportDataDto> context) {
     return ((DecisionGroupByInputVariableDto) context.getReportData().getGroupBy()).getValue();
   }
 
@@ -74,16 +76,15 @@ public class DecisionGroupByInputVariable extends AbstractGroupByVariable<Decisi
   }
 
   @Override
-  protected BoolQueryBuilder getVariableUndefinedOrNullQuery(final ExecutionContext<DecisionReportDataDto> context) {
+  protected BoolQueryBuilder getVariableUndefinedOrNullQuery(
+      final ExecutionContext<DecisionReportDataDto> context) {
     return DecisionVariableHelper.getVariableUndefinedOrNullQuery(
-      getVariableName(context),
-      getVariablePath(),
-      getVariableType(context)
-    );
+        getVariableName(context), getVariablePath(), getVariableType(context));
   }
 
   @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final DecisionReportDataDto dataForCommandKey) {
     dataForCommandKey.setGroupBy(new DecisionGroupByInputVariableDto());
   }
 }

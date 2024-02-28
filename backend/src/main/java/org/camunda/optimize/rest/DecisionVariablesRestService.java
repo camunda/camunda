@@ -5,14 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
-import org.camunda.optimize.service.security.SessionService;
-import org.camunda.optimize.service.variable.DecisionVariableService;
-import org.springframework.stereotype.Component;
-
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -22,6 +14,13 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
+import org.camunda.optimize.service.security.SessionService;
+import org.camunda.optimize.service.variable.DecisionVariableService;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Path(DecisionVariablesRestService.DECISION_VARIABLES_PATH)
@@ -40,7 +39,7 @@ public class DecisionVariablesRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<DecisionVariableNameResponseDto> getInputVariableNames(
-    @Valid final List<DecisionVariableNameRequestDto> variableRequestDto) {
+      @Valid final List<DecisionVariableNameRequestDto> variableRequestDto) {
     return decisionVariableService.getInputVariableNames(variableRequestDto);
   }
 
@@ -49,7 +48,7 @@ public class DecisionVariablesRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<DecisionVariableNameResponseDto> getOutputVariableNames(
-    @Valid final List<DecisionVariableNameRequestDto> variableRequestDto) {
+      @Valid final List<DecisionVariableNameRequestDto> variableRequestDto) {
     return decisionVariableService.getOutputVariableNames(variableRequestDto);
   }
 
@@ -57,8 +56,9 @@ public class DecisionVariablesRestService {
   @Path("/inputs/values")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<String> getInputValues(@Context final ContainerRequestContext requestContext,
-                                     final DecisionVariableValueRequestDto requestDto) {
+  public List<String> getInputValues(
+      @Context final ContainerRequestContext requestContext,
+      final DecisionVariableValueRequestDto requestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return decisionVariableService.getInputVariableValues(userId, requestDto);
   }
@@ -67,10 +67,10 @@ public class DecisionVariablesRestService {
   @Path("/outputs/values")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<String> getOutputValues(@Context final ContainerRequestContext requestContext,
-                                      final DecisionVariableValueRequestDto requestDto) {
+  public List<String> getOutputValues(
+      @Context final ContainerRequestContext requestContext,
+      final DecisionVariableValueRequestDto requestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return decisionVariableService.getOutputVariableValues(userId, requestDto);
   }
-
 }

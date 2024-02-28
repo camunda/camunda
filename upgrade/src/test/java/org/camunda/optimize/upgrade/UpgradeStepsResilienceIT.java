@@ -5,6 +5,16 @@
  */
 package org.camunda.optimize.upgrade;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
+import static org.mockserver.verify.VerificationTimes.exactly;
+
+import jakarta.ws.rs.core.Response;
+import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -20,17 +30,6 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
 import org.mockserver.model.MediaType;
 
-import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
-import static org.mockserver.verify.VerificationTimes.exactly;
-
 public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
   @SneakyThrows
@@ -39,12 +38,14 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // given
     UpgradePlan upgradePlan = createDeleteIndexPlan();
 
-    final String versionedIndexName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
+    final String versionedIndexName =
+        indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(versionedIndexName);
     dbMockServer
-      // respond with this error 2 times, afterwards the request will be forwarded to elastic again
-      .when(indexDeleteRequest, Times.exactly(2))
-      .respond(createSnapshotInProgressResponse(versionedIndexName));
+        // respond with this error 2 times, afterwards the request will be forwarded to elastic
+        // again
+        .when(indexDeleteRequest, Times.exactly(2))
+        .respond(createSnapshotInProgressResponse(versionedIndexName));
 
     // when the upgrade is executed
     final ScheduledExecutorService upgradeExecution = Executors.newSingleThreadScheduledExecutor();
@@ -66,15 +67,17 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // given
     UpgradePlan upgradePlan = createDeleteIndexPlan();
 
-    final String versionedIndexName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
+    final String versionedIndexName =
+        indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(versionedIndexName);
     dbMockServer
-      // respond with a different error
-      .when(indexDeleteRequest, Times.exactly(1))
-      .error(HttpError.error().withDropConnection(true));
+        // respond with a different error
+        .when(indexDeleteRequest, Times.exactly(1))
+        .error(HttpError.error().withDropConnection(true));
 
     // when the upgrade is executed it fails
-    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
+    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
+        .isInstanceOf(UpgradeRuntimeException.class);
 
     // and the mocked delete endpoint was called one time in total
     dbMockServer.verify(indexDeleteRequest, exactly(1));
@@ -88,12 +91,14 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // given
     UpgradePlan upgradePlan = createUpdateIndexPlan();
 
-    final String oldIndexToDeleteName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
+    final String oldIndexToDeleteName =
+        indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(oldIndexToDeleteName);
     dbMockServer
-      // respond with this error 2 times, afterwards the request will be forwarded to elastic again
-      .when(indexDeleteRequest, Times.exactly(2))
-      .respond(createSnapshotInProgressResponse(oldIndexToDeleteName));
+        // respond with this error 2 times, afterwards the request will be forwarded to elastic
+        // again
+        .when(indexDeleteRequest, Times.exactly(2))
+        .respond(createSnapshotInProgressResponse(oldIndexToDeleteName));
 
     // when the upgrade is executed
     final ScheduledExecutorService upgradeExecution = Executors.newSingleThreadScheduledExecutor();
@@ -116,15 +121,17 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // given
     UpgradePlan upgradePlan = createUpdateIndexPlan();
 
-    final String oldIndexToDeleteName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
+    final String oldIndexToDeleteName =
+        indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(oldIndexToDeleteName);
     dbMockServer
-      // respond with a different error
-      .when(indexDeleteRequest, Times.exactly(1))
-      .error(HttpError.error().withDropConnection(true));
+        // respond with a different error
+        .when(indexDeleteRequest, Times.exactly(1))
+        .error(HttpError.error().withDropConnection(true));
 
     // when the upgrade is executed it fails
-    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
+    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
+        .isInstanceOf(UpgradeRuntimeException.class);
 
     // and the mocked delete endpoint was called one time in total
     dbMockServer.verify(indexDeleteRequest, exactly(1));
@@ -136,48 +143,45 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
   private UpgradePlan createDeleteIndexPlan() {
     return UpgradePlanBuilder.createUpgradePlan()
-      .fromVersion(FROM_VERSION)
-      .toVersion(TO_VERSION)
-      .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
-      .addUpgradeStep(buildDeleteIndexStep(TEST_INDEX_V2))
-      .build();
+        .fromVersion(FROM_VERSION)
+        .toVersion(TO_VERSION)
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
+        .addUpgradeStep(buildDeleteIndexStep(TEST_INDEX_V2))
+        .build();
   }
 
   private UpgradePlan createUpdateIndexPlan() {
     return UpgradePlanBuilder.createUpgradePlan()
-      .fromVersion(FROM_VERSION)
-      .toVersion(TO_VERSION)
-      .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V1))
-      .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
-      .build();
+        .fromVersion(FROM_VERSION)
+        .toVersion(TO_VERSION)
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V1))
+        .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
+        .build();
   }
 
   private HttpResponse createSnapshotInProgressResponse(final String indexName) {
-    return HttpResponse.response().withStatusCode(Response.Status.BAD_REQUEST.getStatusCode()).withBody(
-      getSnapshotInProgressJson(indexName), MediaType.JSON_UTF_8
-    );
+    return HttpResponse.response()
+        .withStatusCode(Response.Status.BAD_REQUEST.getStatusCode())
+        .withBody(getSnapshotInProgressJson(indexName), MediaType.JSON_UTF_8);
   }
 
   private String getSnapshotInProgressJson(final String indexName) {
     return String.format(
-      "{\"error\":{\"root_cause\":[{\"type\":\"snapshot_in_progress_exception\"," +
-        "\"reason\":\"Cannot delete indices that are" +
-        " being snapshotted: [[%s/QlIEbxPkRoOdBHmxU8PPZA]]. Try again after snapshot finishes or " +
-        "cancel the currently running snapshot.\"}],\"type\":\"snapshot_in_progress_exception\"," +
-        "\"reason\":\"Cannot delete indices that are being snapshotted: [[%s/QlIEbxPkRoOdBHmxU8PPZA]]. Try again " +
-        "after snapshot finishes or cancel the currently running snapshot.\"},\"status\":400}",
-      indexName, indexName
-    );
+        "{\"error\":{\"root_cause\":[{\"type\":\"snapshot_in_progress_exception\","
+            + "\"reason\":\"Cannot delete indices that are"
+            + " being snapshotted: [[%s/QlIEbxPkRoOdBHmxU8PPZA]]. Try again after snapshot finishes or "
+            + "cancel the currently running snapshot.\"}],\"type\":\"snapshot_in_progress_exception\","
+            + "\"reason\":\"Cannot delete indices that are being snapshotted: [[%s/QlIEbxPkRoOdBHmxU8PPZA]]. Try again "
+            + "after snapshot finishes or cancel the currently running snapshot.\"},\"status\":400}",
+        indexName, indexName);
   }
 
   private UpdateIndexStep buildUpdateIndexStep(final IndexMappingCreator index) {
     return new UpdateIndexStep(index);
   }
 
-
   @SuppressWarnings(SAME_PARAM_VALUE)
   private DeleteIndexIfExistsStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
     return new DeleteIndexIfExistsStep(indexMapping);
   }
-
 }

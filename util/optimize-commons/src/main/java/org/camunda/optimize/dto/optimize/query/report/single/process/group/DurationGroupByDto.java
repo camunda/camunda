@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.group;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
-
 import java.util.Optional;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 
 public class DurationGroupByDto extends ProcessGroupByDto<DateGroupByValueDto> {
   public DurationGroupByDto() {
@@ -17,7 +16,6 @@ public class DurationGroupByDto extends ProcessGroupByDto<DateGroupByValueDto> {
   @Override
   public String toString() {
     return super.toString()
-      + Optional.ofNullable(this.getValue()).map(valueDto -> "_" + valueDto.getUnit()).orElse("");
+        + Optional.ofNullable(this.getValue()).map(valueDto -> "_" + valueDto.getUnit()).orElse("");
   }
-
 }

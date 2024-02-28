@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.view.process.percentage;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
+
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
@@ -22,12 +27,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessViewInstancePercentage extends ProcessViewPart {
@@ -38,30 +37,34 @@ public class ProcessViewInstancePercentage extends ProcessViewPart {
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
+  public List<AggregationBuilder> createAggregations(
+      final ExecutionContext<ProcessReportDataDto> context) {
     return Collections.singletonList(filter(FREQUENCY_AGGREGATION, QueryBuilders.matchAllQuery()));
   }
 
   @Override
-  public ViewResult retrieveResult(final SearchResponse response,
-                                   final Aggregations aggs,
-                                   final ExecutionContext<ProcessReportDataDto> context) {
+  public ViewResult retrieveResult(
+      final SearchResponse response,
+      final Aggregations aggs,
+      final ExecutionContext<ProcessReportDataDto> context) {
     final long unfilteredTotalInstanceCount = context.getUnfilteredTotalInstanceCount();
     if (unfilteredTotalInstanceCount == 0) {
       return createViewResult(null);
     }
     final Filter frequency = aggs.get(FREQUENCY_AGGREGATION);
-    return createViewResult(((double) frequency.getDocCount() / unfilteredTotalInstanceCount) * 100);
+    return createViewResult(
+        ((double) frequency.getDocCount() / unfilteredTotalInstanceCount) * 100);
   }
 
   public ViewResult createViewResult(final Double value) {
     return ViewResult.builder()
-      .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(value).build())
-      .build();
+        .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(value).build())
+        .build();
   }
 
   @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
     ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.PROCESS_INSTANCE);
     view.setProperties(ViewProperty.PERCENTAGE);

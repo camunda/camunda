@@ -13,5 +13,4 @@ public class AllEntitiesBasedImportIndexDto implements EngineImportIndexDto {
   private long importIndex;
   private String esTypeIndexRefersTo;
   private String engine;
-
 }

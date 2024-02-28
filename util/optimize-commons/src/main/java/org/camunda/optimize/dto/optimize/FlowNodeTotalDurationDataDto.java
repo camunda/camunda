@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FlowNodeTotalDurationDataDto {
-   String name;
-   long value;
+  String name;
+  long value;
 }

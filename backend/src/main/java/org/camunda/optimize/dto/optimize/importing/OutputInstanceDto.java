@@ -25,5 +25,4 @@ public class OutputInstanceDto {
   private String variableName;
   private VariableType type;
   private String value;
-
 }

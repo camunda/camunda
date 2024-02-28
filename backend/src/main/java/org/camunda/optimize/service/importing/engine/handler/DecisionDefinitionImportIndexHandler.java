@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDefinitionImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
 
-  public static final String DECISION_DEFINITION_IMPORT_INDEX_DOC_ID = "decisionDefinitionImportIndex";
+  public static final String DECISION_DEFINITION_IMPORT_INDEX_DOC_ID =
+      "decisionDefinitionImportIndex";
 
   private final EngineContext engineContext;
 

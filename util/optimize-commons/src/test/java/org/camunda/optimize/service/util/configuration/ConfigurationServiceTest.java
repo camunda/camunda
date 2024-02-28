@@ -5,8 +5,16 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
+
 import com.google.common.collect.ImmutableList;
 import com.jayway.jsonpath.spi.mapper.MappingException;
+import java.lang.reflect.Method;
+import java.time.Period;
+import java.util.Optional;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.CronNormalizerUtil;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
@@ -17,15 +25,6 @@ import org.camunda.optimize.service.util.configuration.extension.SystemPropertie
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.lang.reflect.Method;
-import java.time.Period;
-import java.util.Optional;
-
-import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 
 public class ConfigurationServiceTest {
 
@@ -45,7 +44,8 @@ public class ConfigurationServiceTest {
   private static final String CUSTOM_SECOND_ES_HOST = "otherHost";
   private static final int DEFAULT_SECOND_ES_PORT = 9200;
   private static final int CUSTOM_SECOND_ES_PORT = 9202;
-  // note: these are not valid package names but just serve the purpose of special character handling on parsing
+  // note: these are not valid package names but just serve the purpose of special character
+  // handling on parsing
   private static final String DEFAULT_PACKAGE_2 = "package:2";
   private static final String CUSTOM_PACKAGE_2 = "pack2";
   private static final String DEFAULT_PACKAGE_3 = "";
@@ -76,7 +76,8 @@ public class ConfigurationServiceTest {
 
   @RegisterExtension
   @Order(1)
-  public EnvironmentVariablesExtension environmentVariablesExtension = new EnvironmentVariablesExtension();
+  public EnvironmentVariablesExtension environmentVariablesExtension =
+      new EnvironmentVariablesExtension();
 
   @RegisterExtension
   @Order(2)
@@ -90,7 +91,9 @@ public class ConfigurationServiceTest {
 
   @Test
   public void testOverrideAliasOfEngine() {
-    String[] locations = {defaultConfigFile(), "environment-config.yaml", "override-engine-config.yaml"};
+    String[] locations = {
+      defaultConfigFile(), "environment-config.yaml", "override-engine-config.yaml"
+    };
     ConfigurationService underTest = createConfiguration(locations);
     assertThat(underTest.getConfiguredEngines()).hasSize(1);
     assertThat(underTest.getConfiguredEngines().get("myAwesomeEngine").getName()).isNotNull();
@@ -98,46 +101,58 @@ public class ConfigurationServiceTest {
 
   @Test
   public void certificateAuthorizationCanBeAList() {
-    String[] locations = {defaultConfigFile(), "config-samples/certificate-authorities/ca-auth-as-list.yaml"};
+    String[] locations = {
+      defaultConfigFile(), "config-samples/certificate-authorities/ca-auth-as-list.yaml"
+    };
     ConfigurationService underTest = createConfiguration(locations);
-    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities()).hasSize(2);
+    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities())
+        .hasSize(2);
   }
 
   @Test
   public void certificateAuthorizationStringIsConvertedToList() {
-    String[] locations = {defaultConfigFile(),
-      "config-samples/certificate-authorities/ca-auth-as-string-is-converted.yaml"};
+    String[] locations = {
+      defaultConfigFile(),
+      "config-samples/certificate-authorities/ca-auth-as-string-is-converted.yaml"
+    };
     ConfigurationService underTest = createConfiguration(locations);
-    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities()).hasSize(1);
+    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities())
+        .hasSize(1);
   }
 
   @Test
   public void wrongCaAuthFormatThrowsError() {
-    String[] locations = {defaultConfigFile(),
-      "config-samples/certificate-authorities/wrong-ca-auth-format-throws-error.yaml"};
+    String[] locations = {
+      defaultConfigFile(),
+      "config-samples/certificate-authorities/wrong-ca-auth-format-throws-error.yaml"
+    };
     ConfigurationService underTest = createConfiguration(locations);
-    assertThatThrownBy(() -> underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities()).isInstanceOf(
-      MappingException.class);
+    assertThatThrownBy(
+            () -> underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities())
+        .isInstanceOf(MappingException.class);
   }
 
   @Test
   public void wrongCaAuthListFormatThrowsError() {
-    String[] locations = {defaultConfigFile(),
-      "config-samples/certificate-authorities/wrong-ca-auth-list-format-throws-error.yaml"};
+    String[] locations = {
+      defaultConfigFile(),
+      "config-samples/certificate-authorities/wrong-ca-auth-list-format-throws-error.yaml"
+    };
     ConfigurationService underTest = createConfiguration(locations);
-    assertThatThrownBy(() -> underTest.getElasticSearchConfiguration()
-      .getSecuritySSLCertificateAuthorities()).isInstanceOf(MappingException.class);
+    assertThatThrownBy(
+            () -> underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities())
+        .isInstanceOf(MappingException.class);
   }
 
   @Test
   public void disableHttpPort() {
     String[] possibilitiesToDisableHttpPortConnection = {
-      "config-samples/port/empty-http-port.yaml",
-      "config-samples/port/null-http-port.yaml"
+      "config-samples/port/empty-http-port.yaml", "config-samples/port/null-http-port.yaml"
     };
     for (String configLocation : possibilitiesToDisableHttpPortConnection) {
       // given
-      ConfigurationService underTest = createConfiguration(new String[]{defaultConfigFile(), configLocation});
+      ConfigurationService underTest =
+          createConfiguration(new String[] {defaultConfigFile(), configLocation});
 
       // when
       Optional<Integer> containerHttpPort = underTest.getContainerHttpPort();
@@ -151,24 +166,30 @@ public class ConfigurationServiceTest {
   public void invalidHttpsPortThrowsError() {
     String[] locations = {defaultConfigFile(), "config-samples/port/invalid-https-port.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThatThrownBy(underTest::getContainerHttpsPort).isInstanceOf(OptimizeConfigurationException.class);
+    assertThatThrownBy(underTest::getContainerHttpsPort)
+        .isInstanceOf(OptimizeConfigurationException.class);
   }
 
   @Test
   public void invalidElasticsearchProxyConfigThrowsError() {
-    String[] locations = {defaultConfigFile(), "config-samples/config-invalid-elasticsearch-proxy-config.yaml"};
+    String[] locations = {
+      defaultConfigFile(), "config-samples/config-invalid-elasticsearch-proxy-config.yaml"
+    };
     ConfigurationService underTest = createConfiguration(locations);
-    assertThatThrownBy(() -> underTest.getElasticSearchConfiguration().getProxyConfig()).isInstanceOf(
-      OptimizeConfigurationException.class);
+    assertThatThrownBy(() -> underTest.getElasticSearchConfiguration().getProxyConfig())
+        .isInstanceOf(OptimizeConfigurationException.class);
   }
 
   @Test
   public void resolvePropertiesFromEnvironmentVariables() {
     // when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};
-    environmentVariablesExtension.set("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFE_MIN));
-    environmentVariablesExtension.set("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
-    environmentVariablesExtension.set("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
+    environmentVariablesExtension.set(
+        "AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFE_MIN));
+    environmentVariablesExtension.set(
+        "IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
+    environmentVariablesExtension.set(
+        "IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
     environmentVariablesExtension.set("ES_HOST_1", CUSTOM_FIRST_ES_HOST);
     environmentVariablesExtension.set("ES_PORT_1", String.valueOf(CUSTOM_FIRST_ES_PORT));
     environmentVariablesExtension.set("ES_HOST_2", CUSTOM_SECOND_ES_HOST);
@@ -177,52 +198,65 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("PACKAGE_3", CUSTOM_PACKAGE_3);
     environmentVariablesExtension.set("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     environmentVariablesExtension.set("ACCESS_URL", ACCESS_URL);
-    environmentVariablesExtension.set("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
+    environmentVariablesExtension.set(
+        "OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     environmentVariablesExtension.set("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
     environmentVariablesExtension.set(
-      "CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT",
-      String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT)
-    );
+        "CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
     environmentVariablesExtension.set(
-      "CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE",
-      String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE)
-    );
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
+        "CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE",
+        String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
     environmentVariablesExtension.set(
-      "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED",
-      String.valueOf(CUSTOM_ES_SSL_ENABLED)
-    );
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
+        "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
     environmentVariablesExtension.set(
-      "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
-      String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS)
-    );
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", CUSTOM_REPOSITORY_NAME);
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER", CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER);
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(CUSTOM_HISTORY_CLEANUP_TTL));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
+        "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
     environmentVariablesExtension.set(
-      "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
-      String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase()
-    );
+        "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
     environmentVariablesExtension.set(
-      "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE", String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
+        "CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
+        String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", CUSTOM_REPOSITORY_NAME);
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER", CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER);
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(CUSTOM_HISTORY_CLEANUP_TTL));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
+        String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase());
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
+        String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -249,39 +283,54 @@ public class ConfigurationServiceTest {
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
-    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
-    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
-    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
-    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE", String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE",
+        String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
     System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
     System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
-    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
-    System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
     System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
-    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
-    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
-    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
     System.setProperty(
-      "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
-      String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS)
-    );
+        "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
+        String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS));
     System.setProperty("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", CUSTOM_REPOSITORY_NAME);
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER", CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER);
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(CUSTOM_HISTORY_CLEANUP_TTL));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty(
-      "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
-      String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase()
-    );
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER", CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER);
     System.setProperty(
-      "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE", String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(CUSTOM_HISTORY_CLEANUP_TTL));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
+        String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase());
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
+        String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
 
     final ConfigurationService underTest = createConfiguration(locations);
@@ -306,40 +355,57 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("SECRET", "wrong");
     environmentVariablesExtension.set("ACCESS_URL", "wrong");
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(true));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(false));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(false));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", "wrong");
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(false));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_NAME", "wrong");
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT + 1));
     environmentVariablesExtension.set(
-      "CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE",
-      String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE + 1)
-    );
+        "CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT + 1));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE",
+        String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE + 1));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", "wrong");
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", "wrong");
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(!CUSTOM_ES_SSL_ENABLED));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(!CUSTOM_SHARING_ENABLED));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(!CUSTOM_UI_LOGOUT_HIDDEN));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(true));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(!CUSTOM_ES_SSL_ENABLED));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(!CUSTOM_SHARING_ENABLED));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(!CUSTOM_UI_LOGOUT_HIDDEN));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", "wrong");
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(1233));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION", "envVarKeystore.jks");
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", "envVarPassword");
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX", String.valueOf(15));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER", CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER);
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(Period.ofMonths(12)));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(false));
     environmentVariablesExtension.set(
-      "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE", String.valueOf(CleanupMode.ALL).toLowerCase());
+        "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(1233));
     environmentVariablesExtension.set(
-      "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE", String.valueOf(1000));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(false));
-    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(false));
+        "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION", "envVarKeystore.jks");
     environmentVariablesExtension.set(
-      "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(false));
+        "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", "envVarPassword");
     environmentVariablesExtension.set(
-            "CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(false));
+        "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX", String.valueOf(15));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER", CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER);
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(Period.ofMonths(12)));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(false));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
+        String.valueOf(CleanupMode.ALL).toLowerCase());
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE", String.valueOf(1000));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(false));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(false));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED",
+        String.valueOf(false));
+    environmentVariablesExtension.set(
+        "CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(false));
     System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFE_MIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
@@ -355,40 +421,55 @@ public class ConfigurationServiceTest {
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
-    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
-    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
-    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
-    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE", String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE",
+        String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
     System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
     System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
-    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
-    System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
     System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
     System.setProperty("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", CUSTOM_REPOSITORY_NAME);
-    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
-    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
-    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
     System.setProperty(
-      "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
-      String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS)
-    );
+        "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
+        String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS));
     System.setProperty("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", CUSTOM_REPOSITORY_NAME);
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER", CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER);
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(CUSTOM_HISTORY_CLEANUP_TTL));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty(
-      "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
-      String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase()
-    );
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER", CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER);
     System.setProperty(
-      "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE", String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(CUSTOM_HISTORY_CLEANUP_TTL));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
+        String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase());
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
+        String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
 
     final ConfigurationService underTest = createConfiguration(locations);
@@ -400,7 +481,9 @@ public class ConfigurationServiceTest {
   @Test
   public void resolvePlaceholderDefaultValues() {
     // when
-    final String[] locations = {defaultConfigFile(), "environment-variable-default-value-test-config.yaml"};
+    final String[] locations = {
+      defaultConfigFile(), "environment-variable-default-value-test-config.yaml"
+    };
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -410,7 +493,9 @@ public class ConfigurationServiceTest {
   @Test
   public void resolveSetPropertiesWinOverDefaultValue() {
     // when
-    final String[] locations = {defaultConfigFile(), "environment-variable-default-value-test-config.yaml"};
+    final String[] locations = {
+      defaultConfigFile(), "environment-variable-default-value-test-config.yaml"
+    };
     System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFE_MIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
@@ -425,40 +510,55 @@ public class ConfigurationServiceTest {
     System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
-    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
-    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
-    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
-    System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE", String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE",
+        String.valueOf(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE));
     System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME", CUSTOM_ES_USERNAME);
     System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD", CUSTOM_ES_PASSWORD);
-    System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
-    System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
     System.setProperty("CAMUNDA_OPTIMIZE_DATA_ARCHIVE_ENABLED", String.valueOf(false));
     System.setProperty("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", CUSTOM_REPOSITORY_NAME);
-    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
-    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
-    System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
     System.setProperty(
-      "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
-      String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS)
-    );
+        "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP", String.valueOf(CUSTOM_CONTAINER_HTTP_PORT));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS", String.valueOf(CUSTOM_CONTAINER_HTTPS_PORT));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD", CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX",
+        String.valueOf(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS));
     System.setProperty("CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME", CUSTOM_REPOSITORY_NAME);
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER", CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER);
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(CUSTOM_HISTORY_CLEANUP_TTL));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty(
-      "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
-      String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase()
-    );
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER", CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER);
     System.setProperty(
-      "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE", String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty("CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(CUSTOM_HISTORY_CLEANUP_TTL));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
+        String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase());
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
+        String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
+    System.setProperty(
+        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -478,19 +578,24 @@ public class ConfigurationServiceTest {
     }
     // then
     assertThat(configurationException).isNotNull();
-    assertThat(configurationException.getMessage()).contains("Could not resolve system/environment variable");
+    assertThat(configurationException.getMessage())
+        .contains("Could not resolve system/environment variable");
   }
 
   @Test
   public void testOverride() {
-    String[] locations = {defaultConfigFile(), "environment-config.yaml", "override-test-config.yaml"};
+    String[] locations = {
+      defaultConfigFile(), "environment-config.yaml", "override-test-config.yaml"
+    };
     ConfigurationService underTest = createConfiguration(locations);
     assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(10);
   }
 
   @Test
   public void testAllFieldsAreRead() throws Exception {
-    String[] locations = {defaultConfigFile(), "environment-config.yaml", "override-test-config.yaml"};
+    String[] locations = {
+      defaultConfigFile(), "environment-config.yaml", "override-test-config.yaml"
+    };
     ConfigurationService underTest = createConfiguration(locations);
 
     Method[] allMethods = ConfigurationService.class.getMethods();
@@ -498,7 +603,9 @@ public class ConfigurationServiceTest {
       boolean isGetter = method.getName().startsWith("get") || method.getName().startsWith("is");
       if (isGetter && method.getParameterCount() == 0) {
         Object invoke = method.invoke(underTest);
-        assertThat(invoke).withFailMessage("Method " + method.getName() + " returned null").isNotNull();
+        assertThat(invoke)
+            .withFailMessage("Method " + method.getName() + " returned null")
+            .isNotNull();
       }
     }
   }
@@ -511,7 +618,7 @@ public class ConfigurationServiceTest {
 
     // when
     String resultUrl =
-      underTest.getConfiguredEngines().get("myAwesomeEngine").getWebapps().getEndpoint();
+        underTest.getConfiguredEngines().get("myAwesomeEngine").getWebapps().getEndpoint();
 
     // then
     assertThat(resultUrl.endsWith("/")).isFalse();
@@ -519,8 +626,8 @@ public class ConfigurationServiceTest {
 
   private ConfigurationService createConfiguration(final String[] locations) {
     return ConfigurationServiceBuilder.createConfiguration()
-      .loadConfigurationFrom(locations)
-      .build();
+        .loadConfigurationFrom(locations)
+        .build();
   }
 
   private String defaultConfigFile() {
@@ -528,33 +635,44 @@ public class ConfigurationServiceTest {
   }
 
   private void assertThatPlaceholderDefaultValuesAreResolved(final ConfigurationService underTest) {
-    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(DEFAULT_AUTH_TOKEN_LIFE_MIN);
+    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes())
+        .isEqualTo(DEFAULT_AUTH_TOKEN_LIFE_MIN);
     assertThat(
-      underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()))
-      .contains(DEFAULT_FIRST_ENGINE_IMPORT_ENABLED, DEFAULT_SECOND_ENGINE_IMPORT_ENABLED);
+            underTest.getConfiguredEngines().values().stream()
+                .map(EngineConfiguration::isImportEnabled)
+                .collect(toList()))
+        .contains(DEFAULT_FIRST_ENGINE_IMPORT_ENABLED, DEFAULT_SECOND_ENGINE_IMPORT_ENABLED);
     assertThat(
-      underTest.getElasticSearchConfiguration().getConnectionNodes()
-        .stream()
-        .map(DatabaseConnectionNodeConfiguration::getHost)
-        .collect(toList()))
-      .contains(DEFAULT_FIRST_ES_HOST, DEFAULT_SECOND_ES_HOST);
+            underTest.getElasticSearchConfiguration().getConnectionNodes().stream()
+                .map(DatabaseConnectionNodeConfiguration::getHost)
+                .collect(toList()))
+        .contains(DEFAULT_FIRST_ES_HOST, DEFAULT_SECOND_ES_HOST);
     assertThat(
-      underTest.getElasticSearchConfiguration().getConnectionNodes()
-        .stream()
-        .map(DatabaseConnectionNodeConfiguration::getHttpPort)
-        .collect(toList()))
-      .contains(DEFAULT_FIRST_ES_PORT, DEFAULT_SECOND_ES_PORT);
-    assertThat(underTest.getVariableImportPluginBasePackages()).contains("1", DEFAULT_PACKAGE_2, DEFAULT_PACKAGE_3);
+            underTest.getElasticSearchConfiguration().getConnectionNodes().stream()
+                .map(DatabaseConnectionNodeConfiguration::getHttpPort)
+                .collect(toList()))
+        .contains(DEFAULT_FIRST_ES_PORT, DEFAULT_SECOND_ES_PORT);
+    assertThat(underTest.getVariableImportPluginBasePackages())
+        .contains("1", DEFAULT_PACKAGE_2, DEFAULT_PACKAGE_3);
     assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds()).isEmpty();
     assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedGroupIds()).isEmpty();
     assertThat(underTest.getOptimizeApiConfiguration().getAccessToken()).isNull();
     assertThat(underTest.getContainerAccessUrl()).isNotPresent();
     assertThat(underTest.getSecurityConfiguration().getLicense().isEnterprise()).isFalse();
-    assertThat(underTest.getSecurityConfiguration().getAuth().getCookieConfiguration().isSameSiteFlagEnabled())
-      .isTrue();
+    assertThat(
+            underTest
+                .getSecurityConfiguration()
+                .getAuth()
+                .getCookieConfiguration()
+                .isSameSiteFlagEnabled())
+        .isTrue();
     assertThat(underTest.getSecurityConfiguration().getAuth().getTokenSecret()).isEmpty();
-    assertThat(underTest.getSecurityConfiguration().getResponseHeaders().getHttpStrictTransportSecurityMaxAge())
-      .isEqualTo(63072000);
+    assertThat(
+            underTest
+                .getSecurityConfiguration()
+                .getResponseHeaders()
+                .getHttpStrictTransportSecurityMaxAge())
+        .isEqualTo(63072000);
     assertThat(underTest.getConfiguredZeebe().isEnabled()).isFalse();
     assertThat(underTest.getConfiguredZeebe().getName()).isEqualTo("zeebe-record");
     assertThat(underTest.getConfiguredZeebe().getPartitionCount()).isEqualTo(1);
@@ -562,86 +680,163 @@ public class ConfigurationServiceTest {
     assertThat(underTest.getElasticSearchConfiguration().getSecurityUsername()).isNull();
     assertThat(underTest.getElasticSearchConfiguration().getSecurityPassword()).isNull();
     assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificate()).isNull();
-    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities()).isEmpty();
+    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities())
+        .isEmpty();
     assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLEnabled()).isFalse();
     assertThat(underTest.getSharingEnabled()).isTrue();
     assertThat(underTest.getUiConfiguration().isLogoutHidden()).isFalse();
     assertThat(underTest.getCleanupServiceConfiguration().getCronTrigger())
-      .isEqualTo(CronNormalizerUtil.normalizeToSixParts("0 1 * * *"));
+        .isEqualTo(CronNormalizerUtil.normalizeToSixParts("0 1 * * *"));
     assertThat(underTest.getCleanupServiceConfiguration().getTtl()).isEqualTo(Period.parse("P2Y"));
-    assertThat(underTest.getCleanupServiceConfiguration().getProcessDataCleanupConfiguration().isEnabled()).isFalse();
-    assertThat(underTest.getCleanupServiceConfiguration().getProcessDataCleanupConfiguration().getCleanupMode())
-      .isEqualTo(CleanupMode.ALL);
-    assertThat(underTest.getCleanupServiceConfiguration().getProcessDataCleanupConfiguration().getBatchSize()).isEqualTo(10000);
-    assertThat(underTest.getCleanupServiceConfiguration().getDecisionCleanupConfiguration().isEnabled()).isFalse();
-    assertThat(underTest.getCleanupServiceConfiguration().getIngestedEventCleanupConfiguration().isEnabled()).isFalse();
-    assertThat(underTest.getCleanupServiceConfiguration().getExternalVariableCleanupConfiguration().isEnabled()).isFalse();
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getProcessDataCleanupConfiguration()
+                .isEnabled())
+        .isFalse();
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getProcessDataCleanupConfiguration()
+                .getCleanupMode())
+        .isEqualTo(CleanupMode.ALL);
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getProcessDataCleanupConfiguration()
+                .getBatchSize())
+        .isEqualTo(10000);
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getDecisionCleanupConfiguration()
+                .isEnabled())
+        .isFalse();
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getIngestedEventCleanupConfiguration()
+                .isEnabled())
+        .isFalse();
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getExternalVariableCleanupConfiguration()
+                .isEnabled())
+        .isFalse();
     assertThat(underTest.getContainerHttp2Enabled()).isFalse();
   }
 
   private void assertThatVariablePlaceHoldersAreResolved(final ConfigurationService underTest) {
-    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(CUSTOM_AUTH_TOKEN_LIFE_MIN);
+    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes())
+        .isEqualTo(CUSTOM_AUTH_TOKEN_LIFE_MIN);
     assertThat(
-      underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()))
-      .contains(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED, CUSTOM_SECOND_ENGINE_IMPORT_ENABLED);
+            underTest.getConfiguredEngines().values().stream()
+                .map(EngineConfiguration::isImportEnabled)
+                .collect(toList()))
+        .contains(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED, CUSTOM_SECOND_ENGINE_IMPORT_ENABLED);
     assertThat(
-      underTest.getElasticSearchConfiguration().getConnectionNodes()
-        .stream()
-        .map(DatabaseConnectionNodeConfiguration::getHost)
-        .collect(toList()))
-      .contains(CUSTOM_FIRST_ES_HOST, CUSTOM_SECOND_ES_HOST);
+            underTest.getElasticSearchConfiguration().getConnectionNodes().stream()
+                .map(DatabaseConnectionNodeConfiguration::getHost)
+                .collect(toList()))
+        .contains(CUSTOM_FIRST_ES_HOST, CUSTOM_SECOND_ES_HOST);
     assertThat(
-      underTest.getElasticSearchConfiguration().getConnectionNodes()
-        .stream()
-        .map(DatabaseConnectionNodeConfiguration::getHttpPort)
-        .collect(toList()))
-      .contains(CUSTOM_FIRST_ES_PORT, CUSTOM_SECOND_ES_PORT);
-    assertThat(
-      underTest.getVariableImportPluginBasePackages())
-      .contains("1", CUSTOM_PACKAGE_2, CUSTOM_PACKAGE_3);
-    assertThat(
-      underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds()).isEqualTo(ImmutableList.of("demo", "kermit"
-    ));
+            underTest.getElasticSearchConfiguration().getConnectionNodes().stream()
+                .map(DatabaseConnectionNodeConfiguration::getHttpPort)
+                .collect(toList()))
+        .contains(CUSTOM_FIRST_ES_PORT, CUSTOM_SECOND_ES_PORT);
+    assertThat(underTest.getVariableImportPluginBasePackages())
+        .contains("1", CUSTOM_PACKAGE_2, CUSTOM_PACKAGE_3);
+    assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds())
+        .isEqualTo(ImmutableList.of("demo", "kermit"));
     assertThat(underTest.getOptimizeApiConfiguration().getAccessToken()).isEqualTo(API_SECRET);
     assertThat(underTest.getContainerAccessUrl()).isPresent().get().isEqualTo(ACCESS_URL);
     assertThat(underTest.getAuthConfiguration().getSuperUserIds())
-      .isEqualTo(ImmutableList.of("demo", "kermit"));
-    assertThat(underTest.getSecurityConfiguration().getAuth().getCookieConfiguration().isSameSiteFlagEnabled())
-      .isTrue();
-    assertThat(underTest.getSecurityConfiguration().getAuth().getTokenSecret()).isPresent()
-      .get()
-      .isEqualTo(TOKEN_SECRET);
-    assertThat(underTest.getSecurityConfiguration().getResponseHeaders().getHttpStrictTransportSecurityMaxAge())
-      .isEqualTo(HSTS_MAX_AGE);
+        .isEqualTo(ImmutableList.of("demo", "kermit"));
+    assertThat(
+            underTest
+                .getSecurityConfiguration()
+                .getAuth()
+                .getCookieConfiguration()
+                .isSameSiteFlagEnabled())
+        .isTrue();
+    assertThat(underTest.getSecurityConfiguration().getAuth().getTokenSecret())
+        .isPresent()
+        .get()
+        .isEqualTo(TOKEN_SECRET);
+    assertThat(
+            underTest
+                .getSecurityConfiguration()
+                .getResponseHeaders()
+                .getHttpStrictTransportSecurityMaxAge())
+        .isEqualTo(HSTS_MAX_AGE);
     assertThat(underTest.getConfiguredZeebe().isEnabled()).isEqualTo(CUSTOM_ZEEBE_ENABLED);
     assertThat(underTest.getConfiguredZeebe().getName()).isEqualTo(CUSTOM_ZEEBE_RECORD_PREFIX);
-    assertThat(underTest.getConfiguredZeebe().getPartitionCount()).isEqualTo(CUSTOM_ZEEBE_PARTITION_COUNT);
-    assertThat(underTest.getConfiguredZeebe().getMaxImportPageSize()).isEqualTo(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE);
-    assertThat(underTest.getElasticSearchConfiguration().getSecurityUsername()).isEqualTo(CUSTOM_ES_USERNAME);
-    assertThat(underTest.getElasticSearchConfiguration().getSecurityPassword()).isEqualTo(CUSTOM_ES_PASSWORD);
-    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLEnabled()).isEqualTo(CUSTOM_ES_SSL_ENABLED);
+    assertThat(underTest.getConfiguredZeebe().getPartitionCount())
+        .isEqualTo(CUSTOM_ZEEBE_PARTITION_COUNT);
+    assertThat(underTest.getConfiguredZeebe().getMaxImportPageSize())
+        .isEqualTo(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE);
+    assertThat(underTest.getElasticSearchConfiguration().getSecurityUsername())
+        .isEqualTo(CUSTOM_ES_USERNAME);
+    assertThat(underTest.getElasticSearchConfiguration().getSecurityPassword())
+        .isEqualTo(CUSTOM_ES_PASSWORD);
+    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLEnabled())
+        .isEqualTo(CUSTOM_ES_SSL_ENABLED);
     assertThat(underTest.getSharingEnabled()).isEqualTo(CUSTOM_SHARING_ENABLED);
     assertThat(underTest.getUiConfiguration().isLogoutHidden()).isEqualTo(CUSTOM_UI_LOGOUT_HIDDEN);
     assertThat(underTest.getDataArchiveConfiguration().isEnabled()).isFalse();
 
-    assertThat(underTest.getContainerHttpPort()).isPresent().get().isEqualTo(CUSTOM_CONTAINER_HTTP_PORT);
+    assertThat(underTest.getContainerHttpPort())
+        .isPresent()
+        .get()
+        .isEqualTo(CUSTOM_CONTAINER_HTTP_PORT);
     assertThat(underTest.getContainerHttpsPort()).isEqualTo(CUSTOM_CONTAINER_HTTPS_PORT);
-    assertThat(underTest.getContainerKeystorePassword()).isEqualTo(CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
-    assertThat(underTest.getMaxStatusConnections()).isEqualTo(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS);
+    assertThat(underTest.getContainerKeystorePassword())
+        .isEqualTo(CUSTOM_CONTAINER_KEYSTORE_PASSWORD);
+    assertThat(underTest.getMaxStatusConnections())
+        .isEqualTo(CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS);
 
     assertThat(underTest.getCleanupServiceConfiguration().getCronTrigger())
-      .isEqualTo(CronNormalizerUtil.normalizeToSixParts(CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER));
-    assertThat(underTest.getCleanupServiceConfiguration().getTtl()).isEqualTo(CUSTOM_HISTORY_CLEANUP_TTL);
-    assertThat(underTest.getCleanupServiceConfiguration().getProcessDataCleanupConfiguration().isEnabled()).isTrue();
-    assertThat(underTest.getCleanupServiceConfiguration().getProcessDataCleanupConfiguration().getCleanupMode())
-      .isEqualTo(CUSTOM_HISTORY_CLEANUP_MODE);
-    assertThat(underTest.getCleanupServiceConfiguration().getProcessDataCleanupConfiguration().getBatchSize())
-      .isEqualTo(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE);
-    assertThat(underTest.getCleanupServiceConfiguration().getDecisionCleanupConfiguration().isEnabled()).isTrue();
-    assertThat(underTest.getCleanupServiceConfiguration().getIngestedEventCleanupConfiguration().isEnabled()).isTrue();
-    assertThat(underTest.getCleanupServiceConfiguration().getExternalVariableCleanupConfiguration().isEnabled()).isTrue();
+        .isEqualTo(CronNormalizerUtil.normalizeToSixParts(CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER));
+    assertThat(underTest.getCleanupServiceConfiguration().getTtl())
+        .isEqualTo(CUSTOM_HISTORY_CLEANUP_TTL);
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getProcessDataCleanupConfiguration()
+                .isEnabled())
+        .isTrue();
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getProcessDataCleanupConfiguration()
+                .getCleanupMode())
+        .isEqualTo(CUSTOM_HISTORY_CLEANUP_MODE);
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getProcessDataCleanupConfiguration()
+                .getBatchSize())
+        .isEqualTo(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE);
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getDecisionCleanupConfiguration()
+                .isEnabled())
+        .isTrue();
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getIngestedEventCleanupConfiguration()
+                .isEnabled())
+        .isTrue();
+    assertThat(
+            underTest
+                .getCleanupServiceConfiguration()
+                .getExternalVariableCleanupConfiguration()
+                .isEnabled())
+        .isTrue();
 
     assertThat(underTest.getContainerHttp2Enabled()).isTrue();
   }
-
 }

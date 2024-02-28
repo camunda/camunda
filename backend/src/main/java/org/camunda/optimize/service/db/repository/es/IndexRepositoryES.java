@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.repository.es;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -20,9 +22,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -35,14 +34,13 @@ public class IndexRepositoryES implements IndexRepository, ConfigurationReloadab
 
   @Override
   public void createMissingIndices(
-    final IndexMappingCreatorBuilder indexMappingCreatorBuilder,
-    final Set<String> readOnlyAliases,
-    final Set<String> keys
-  ) {
+      final IndexMappingCreatorBuilder indexMappingCreatorBuilder,
+      final Set<String> readOnlyAliases,
+      final Set<String> keys) {
     keys.stream()
-      .map(indexMappingCreatorBuilder.getElasticsearch())
-      .filter(indexMappingCreator -> !indexExists(getIndexName(indexMappingCreator)))
-      .forEach(indexMappingCreator -> createMissingIndex(indexMappingCreator, readOnlyAliases));
+        .map(indexMappingCreatorBuilder.getElasticsearch())
+        .filter(indexMappingCreator -> !indexExists(getIndexName(indexMappingCreator)))
+        .forEach(indexMappingCreator -> createMissingIndex(indexMappingCreator, readOnlyAliases));
   }
 
   @Override
@@ -51,7 +49,8 @@ public class IndexRepositoryES implements IndexRepository, ConfigurationReloadab
   }
 
   @Override
-  public boolean indexExists(final IndexMappingCreatorBuilder indexMappingCreatorBuilder, final String key) {
+  public boolean indexExists(
+      final IndexMappingCreatorBuilder indexMappingCreatorBuilder, final String key) {
     return indexExists(indexMappingCreatorBuilder.getElasticsearch().apply(key).getIndexName());
   }
 
@@ -59,14 +58,12 @@ public class IndexRepositoryES implements IndexRepository, ConfigurationReloadab
     return indexNameService.getOptimizeIndexNameWithVersion(indexMappingCreator);
   }
 
-  private void createMissingIndex(IndexMappingCreator<XContentBuilder> indexMappingCreator, final Set<String> readOnlyAliases) {
+  private void createMissingIndex(
+      IndexMappingCreator<XContentBuilder> indexMappingCreator, final Set<String> readOnlyAliases) {
     log.debug("Creating index {}.", getIndexName(indexMappingCreator));
 
     elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
-      esClient,
-      indexMappingCreator,
-      readOnlyAliases
-    );
+        esClient, indexMappingCreator, readOnlyAliases);
 
     String index = getIndexName(indexMappingCreator);
 

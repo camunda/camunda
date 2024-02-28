@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
-import org.camunda.optimize.service.UIConfigurationService;
-import org.springframework.stereotype.Component;
-
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
+import org.camunda.optimize.service.UIConfigurationService;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Path(UIConfigurationRestService.UI_CONFIGURATION_PATH)
@@ -29,5 +28,4 @@ public class UIConfigurationRestService {
   public UIConfigurationResponseDto getUIConfiguration() {
     return uiConfigurationService.getUIConfiguration();
   }
-
 }

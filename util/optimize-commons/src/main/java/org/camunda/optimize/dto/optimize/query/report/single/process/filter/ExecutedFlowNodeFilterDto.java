@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
-
 import java.util.Arrays;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 
 public class ExecutedFlowNodeFilterDto extends ProcessFilterDto<ExecutedFlowNodeFilterDataDto> {
   @Override

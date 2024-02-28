@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.service.importing.zeebe.db;
 
+import java.util.List;
 import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import org.camunda.optimize.service.importing.page.PositionBasedImportPage;
 
-import java.util.List;
-
 public interface ZeebeUserTaskFetcher extends ZeebeFetcher {
-  List<ZeebeUserTaskRecordDto> getZeebeRecordsForPrefixAndPartitionFrom(PositionBasedImportPage positionBasedImportPage);
+  List<ZeebeUserTaskRecordDto> getZeebeRecordsForPrefixAndPartitionFrom(
+      PositionBasedImportPage positionBasedImportPage);
 }

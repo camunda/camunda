@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.es.report.command.util;
 
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Optional;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
@@ -15,10 +18,6 @@ import org.camunda.optimize.service.db.es.filter.FilterContext;
 import org.camunda.optimize.service.db.es.report.MinMaxStatDto;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-
-import java.time.ZoneId;
-import java.util.List;
-import java.util.Optional;
 
 @Builder
 @Data
@@ -36,8 +35,7 @@ public class VariableAggregationContext {
   private final List<AggregationBuilder> subAggregations;
   private MinMaxStatDto variableRangeMinMaxStats;
   private final MinMaxStatDto combinedRangeMinMaxStats;
-  @NonNull
-  private final FilterContext filterContext;
+  @NonNull private final FilterContext filterContext;
 
   public Optional<MinMaxStatDto> getCombinedRangeMinMaxStats() {
     return Optional.ofNullable(combinedRangeMinMaxStats);

@@ -5,15 +5,15 @@
  */
 package org.camunda.optimize.service.db.writer;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 
-import java.util.List;
-
 public interface CamundaActivityEventWriter {
 
-   List<ImportRequestDto> generateImportRequests(List<CamundaActivityEventDto> camundaActivityEvents);
+  List<ImportRequestDto> generateImportRequests(
+      List<CamundaActivityEventDto> camundaActivityEvents);
 
-   void deleteByProcessInstanceIds(final String definitionKey, final List<String> processInstanceIds);
-
+  void deleteByProcessInstanceIds(
+      final String definitionKey, final List<String> processInstanceIds);
 }

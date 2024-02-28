@@ -5,23 +5,24 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
-public abstract class VariableUpdateInstanceIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+import java.io.IOException;
+import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
+
+public abstract class VariableUpdateInstanceIndex<TBuilder>
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final String INSTANCE_ID = VariableUpdateInstanceDto.Fields.instanceId;
   public static final String NAME = VariableUpdateInstanceDto.Fields.name;
   public static final String TYPE = VariableUpdateInstanceDto.Fields.type;
   public static final String VALUE = VariableUpdateInstanceDto.Fields.value;
-  public static final String PROCESS_INSTANCE_ID = VariableUpdateInstanceDto.Fields.processInstanceId;
+  public static final String PROCESS_INSTANCE_ID =
+      VariableUpdateInstanceDto.Fields.processInstanceId;
   public static final String TENANT_ID = VariableUpdateInstanceDto.Fields.tenantId;
   public static final String TIMESTAMP = VariableUpdateInstanceDto.Fields.timestamp;
 
@@ -51,29 +52,28 @@ public abstract class VariableUpdateInstanceIndex<TBuilder> extends DefaultIndex
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(INSTANCE_ID)
+        .startObject(INSTANCE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(NAME)
+        .endObject()
+        .startObject(NAME)
         .field("type", "keyword")
-      .endObject()
-      .startObject(TYPE)
+        .endObject()
+        .startObject(TYPE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(VALUE)
+        .endObject()
+        .startObject(VALUE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(PROCESS_INSTANCE_ID)
+        .endObject()
+        .startObject(PROCESS_INSTANCE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(TENANT_ID)
+        .endObject()
+        .startObject(TENANT_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(TIMESTAMP)
+        .endObject()
+        .startObject(TIMESTAMP)
         .field("type", "date")
-          .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject();
+        .field("format", OPTIMIZE_DATE_FORMAT)
+        .endObject();
     // @formatter:on
   }
-
 }

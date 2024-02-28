@@ -5,18 +5,20 @@
  */
 package org.camunda.optimize.service.security.util.tenant;
 
-import org.camunda.optimize.dto.optimize.IdentityType;
-
 import java.util.List;
+import org.camunda.optimize.dto.optimize.IdentityType;
 
 public interface DataSourceTenantAuthorizationService {
 
-  boolean isAuthorizedToSeeAllTenants(final String identityId, final IdentityType identityType,
-                                      final List<String> tenantIds);
+  boolean isAuthorizedToSeeAllTenants(
+      final String identityId, final IdentityType identityType, final List<String> tenantIds);
 
-  boolean isAuthorizedToSeeTenant(final String identityId, final IdentityType identityType, final String tenantId);
+  boolean isAuthorizedToSeeTenant(
+      final String identityId, final IdentityType identityType, final String tenantId);
 
-  boolean isAuthorizedToSeeTenant(final String identityId, final IdentityType identityType, final String tenantId,
-                                  final String dataSourceName);
-
+  boolean isAuthorizedToSeeTenant(
+      final String identityId,
+      final IdentityType identityType,
+      final String tenantId,
+      final String dataSourceName);
 }

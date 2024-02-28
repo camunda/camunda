@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.DecisionDefinitionWriter;
@@ -24,23 +26,22 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-
 @Component
-public class DecisionDefinitionEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+public class DecisionDefinitionEngineImportMediatorFactory
+    extends AbstractEngineImportMediatorFactory {
 
   private final DecisionDefinitionWriter decisionDefinitionWriter;
   private final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
 
-  public DecisionDefinitionEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                       final ConfigurationService configurationService,
-                                                       final DecisionDefinitionWriter decisionDefinitionWriter,
-                                                       final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,
-                                                       final DecisionDefinitionResolverService decisionDefinitionResolverService,
-                                                       final DatabaseClient databaseClient) {
+  public DecisionDefinitionEngineImportMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final DecisionDefinitionWriter decisionDefinitionWriter,
+      final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,
+      final DecisionDefinitionResolverService decisionDefinitionResolverService,
+      final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.decisionDefinitionWriter = decisionDefinitionWriter;
     this.decisionDefinitionXmlWriter = decisionDefinitionXmlWriter;
@@ -49,45 +50,43 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractEngin
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    return configurationService.isImportDmnDataEnabled() ?
-      ImmutableList.of(
-        createDecisionDefinitionEngineImportMediator(engineContext),
-        createDecisionDefinitionXmlEngineImportMediator(engineContext)
-      )
-      : Collections.emptyList();
+    return configurationService.isImportDmnDataEnabled()
+        ? ImmutableList.of(
+            createDecisionDefinitionEngineImportMediator(engineContext),
+            createDecisionDefinitionXmlEngineImportMediator(engineContext))
+        : Collections.emptyList();
   }
 
   public DecisionDefinitionEngineImportMediator createDecisionDefinitionEngineImportMediator(
-    EngineContext engineContext) {
+      EngineContext engineContext) {
     return new DecisionDefinitionEngineImportMediator(
-      importIndexHandlerRegistry.getDecisionDefinitionImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(DecisionDefinitionFetcher.class, engineContext),
-      new DecisionDefinitionImportService(
+        importIndexHandlerRegistry.getDecisionDefinitionImportIndexHandler(
+            engineContext.getEngineAlias()),
+        beanFactory.getBean(DecisionDefinitionFetcher.class, engineContext),
+        new DecisionDefinitionImportService(
+            configurationService,
+            engineContext,
+            decisionDefinitionWriter,
+            decisionDefinitionResolverService,
+            databaseClient),
         configurationService,
-        engineContext,
-        decisionDefinitionWriter,
-        decisionDefinitionResolverService,
-        databaseClient
-      ),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        new BackoffCalculator(configurationService));
   }
 
   public DecisionDefinitionXmlEngineImportMediator createDecisionDefinitionXmlEngineImportMediator(
-    EngineContext engineContext) {
+      EngineContext engineContext) {
     return new DecisionDefinitionXmlEngineImportMediator(
-      importIndexHandlerRegistry.getDecisionDefinitionXmlImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(DecisionDefinitionXmlFetcher.class, engineContext, decisionDefinitionWriter),
-      new DecisionDefinitionXmlImportService(
+        importIndexHandlerRegistry.getDecisionDefinitionXmlImportIndexHandler(
+            engineContext.getEngineAlias()),
+        beanFactory.getBean(
+            DecisionDefinitionXmlFetcher.class, engineContext, decisionDefinitionWriter),
+        new DecisionDefinitionXmlImportService(
+            configurationService,
+            engineContext,
+            decisionDefinitionXmlWriter,
+            decisionDefinitionResolverService,
+            databaseClient),
         configurationService,
-        engineContext,
-        decisionDefinitionXmlWriter,
-        decisionDefinitionResolverService,
-        databaseClient
-      ),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        new BackoffCalculator(configurationService));
   }
 }

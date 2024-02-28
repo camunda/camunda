@@ -7,21 +7,20 @@ package org.camunda.optimize.dto.optimize.query.report.single.decision.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @FieldNameConstants
-public class DecisionViewDto  {
+public class DecisionViewDto {
 
   protected List<ViewProperty> properties = new ArrayList<>();
 
@@ -42,5 +41,4 @@ public class DecisionViewDto  {
   public void setProperties(final ViewProperty... properties) {
     this.properties = Arrays.asList(properties);
   }
-
 }

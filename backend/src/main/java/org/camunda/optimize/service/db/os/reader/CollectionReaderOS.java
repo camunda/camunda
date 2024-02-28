@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
@@ -26,14 +33,6 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -46,20 +45,21 @@ public class CollectionReaderOS implements CollectionReader {
   @Override
   public Optional<CollectionDefinitionDto> getCollection(String collectionId) {
     log.debug("Fetching collection with id [{}]", collectionId);
-    GetRequest.Builder getRequest = new GetRequest.Builder()
-      .index(COLLECTION_INDEX_NAME)
-      .id(collectionId);
-    final String errorMessage = String.format("Could not fetch collection with id [%s]", collectionId);
-    GetResponse<CollectionDefinitionDto> getResponse = osClient.get(getRequest, CollectionDefinitionDto.class, errorMessage);
+    GetRequest.Builder getRequest =
+        new GetRequest.Builder().index(COLLECTION_INDEX_NAME).id(collectionId);
+    final String errorMessage =
+        String.format("Could not fetch collection with id [%s]", collectionId);
+    GetResponse<CollectionDefinitionDto> getResponse =
+        osClient.get(getRequest, CollectionDefinitionDto.class, errorMessage);
 
     if (getResponse.found()) {
       if (Objects.isNull(getResponse.source())) {
-        String reason = "Could not deserialize collection information for collection " + collectionId;
+        String reason =
+            "Could not deserialize collection information for collection " + collectionId;
         log.error(
-          "Was not able to retrieve collection with id [{}] from OpenSearch. Reason: {}",
-          collectionId,
-          reason
-        );
+            "Was not able to retrieve collection with id [{}] from OpenSearch. Reason: {}",
+            collectionId,
+            reason);
         throw new OptimizeRuntimeException(reason);
       } else {
         return Optional.of(getResponse.source());
@@ -72,18 +72,25 @@ public class CollectionReaderOS implements CollectionReader {
   public List<CollectionDefinitionDto> getAllCollections() {
     log.debug("Fetching all available collections");
 
-    SearchRequest.Builder searchRequest = new SearchRequest.Builder()
-      .index(COLLECTION_INDEX_NAME)
-      .query(QueryDSL.matchAll())
-      .sort(new SortOptions.Builder()
-              .field(new FieldSort.Builder()
-                       .order(SortOrder.Asc)
-                       .field(CollectionDefinitionDto.Fields.name.name())
-                       .build())
-              .build())
-      .size(LIST_FETCH_LIMIT)
-      .scroll(RequestDSL.time(String.valueOf(configurationService.getOpenSearchConfiguration()
-                                                                .getScrollTimeoutInSeconds())));
+    SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .index(COLLECTION_INDEX_NAME)
+            .query(QueryDSL.matchAll())
+            .sort(
+                new SortOptions.Builder()
+                    .field(
+                        new FieldSort.Builder()
+                            .order(SortOrder.Asc)
+                            .field(CollectionDefinitionDto.Fields.name.name())
+                            .build())
+                    .build())
+            .size(LIST_FETCH_LIMIT)
+            .scroll(
+                RequestDSL.time(
+                    String.valueOf(
+                        configurationService
+                            .getOpenSearchConfiguration()
+                            .getScrollTimeoutInSeconds())));
 
     OpenSearchDocumentOperations.AggregatedResult<Hit<CollectionDefinitionDto>> scrollResp;
     try {
@@ -95,5 +102,4 @@ public class CollectionReaderOS implements CollectionReader {
     }
     return OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp);
   }
-
 }

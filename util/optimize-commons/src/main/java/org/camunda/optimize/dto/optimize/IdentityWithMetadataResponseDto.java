@@ -15,8 +15,10 @@ import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
 @JsonTypeInfo(
-  use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true
-)
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type",
+    visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = UserDto.class, name = "user"),
   @JsonSubTypes.Type(value = GroupDto.class, name = "group"),
@@ -33,7 +35,8 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
     this(id, type, null);
   }
 
-  public IdentityWithMetadataResponseDto(final String id, final IdentityType type, final String name) {
+  public IdentityWithMetadataResponseDto(
+      final String id, final IdentityType type, final String name) {
     super(id, type);
     this.name = name;
   }

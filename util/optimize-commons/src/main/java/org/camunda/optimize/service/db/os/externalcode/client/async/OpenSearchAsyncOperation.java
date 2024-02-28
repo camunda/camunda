@@ -12,7 +12,8 @@ import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 public class OpenSearchAsyncOperation extends OpenSearchOperation {
   protected OpenSearchAsyncClient openSearchAsyncClient;
 
-  public OpenSearchAsyncOperation(OptimizeIndexNameService indexNameService, OpenSearchAsyncClient openSearchAsyncClient) {
+  public OpenSearchAsyncOperation(
+      OptimizeIndexNameService indexNameService, OpenSearchAsyncClient openSearchAsyncClient) {
     super(indexNameService);
     this.openSearchAsyncClient = openSearchAsyncClient;
   }

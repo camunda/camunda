@@ -5,9 +5,39 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
+import static org.camunda.optimize.service.db.schema.index.DashboardIndex.INSTANT_PREVIEW_DASHBOARD;
+import static org.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.OWNER;
+import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
+import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
+import static org.elasticsearch.core.TimeValue.timeValueSeconds;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import jakarta.ws.rs.BadRequestException;
+import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
@@ -44,37 +74,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
-import static org.camunda.optimize.service.db.schema.index.DashboardIndex.INSTANT_PREVIEW_DASHBOARD;
-import static org.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.OWNER;
-import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
-import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
-import static org.elasticsearch.core.TimeValue.timeValueSeconds;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -96,34 +95,45 @@ public class EntitiesReaderES implements EntitiesReader {
   public List<CollectionEntity> getAllPrivateEntitiesForOwnerId(final String ownerId) {
     log.debug("Fetching all available entities for user [{}]", ownerId);
 
-    final BoolQueryBuilder query = boolQuery()
-      .mustNot(existsQuery(COLLECTION_ID))
-      .must(boolQuery()
-              .minimumShouldMatch(1)
-              .should(termQuery(MANAGEMENT_DASHBOARD, false))
-              .should(termQuery(DATA + "." + MANAGEMENT_REPORT, false))
-              .should(boolQuery()
-                        .mustNot(existsQuery(MANAGEMENT_DASHBOARD))
-                        .mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT)))
-      )
-      .must(boolQuery()
-              .minimumShouldMatch(1)
-              .should(termQuery(INSTANT_PREVIEW_DASHBOARD, false))
-              .should(termQuery(DATA + "." + INSTANT_PREVIEW_REPORT, false))
-              .should(boolQuery()
-                        .mustNot(existsQuery(INSTANT_PREVIEW_DASHBOARD))
-                        .mustNot(existsQuery(DATA + "." + INSTANT_PREVIEW_REPORT)))
-      );
+    final BoolQueryBuilder query =
+        boolQuery()
+            .mustNot(existsQuery(COLLECTION_ID))
+            .must(
+                boolQuery()
+                    .minimumShouldMatch(1)
+                    .should(termQuery(MANAGEMENT_DASHBOARD, false))
+                    .should(termQuery(DATA + "." + MANAGEMENT_REPORT, false))
+                    .should(
+                        boolQuery()
+                            .mustNot(existsQuery(MANAGEMENT_DASHBOARD))
+                            .mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT))))
+            .must(
+                boolQuery()
+                    .minimumShouldMatch(1)
+                    .should(termQuery(INSTANT_PREVIEW_DASHBOARD, false))
+                    .should(termQuery(DATA + "." + INSTANT_PREVIEW_REPORT, false))
+                    .should(
+                        boolQuery()
+                            .mustNot(existsQuery(INSTANT_PREVIEW_DASHBOARD))
+                            .mustNot(existsQuery(DATA + "." + INSTANT_PREVIEW_REPORT))));
 
     if (ownerId != null) {
       query.must(termQuery(OWNER, ownerId));
     }
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
-      .size(LIST_FETCH_LIMIT)
-      .fetchSource(null, ENTITY_LIST_EXCLUDES);
-    SearchRequest searchRequest = createReportAndDashboardSearchRequest().source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
+    SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(query)
+            .size(LIST_FETCH_LIMIT)
+            .fetchSource(null, ENTITY_LIST_EXCLUDES);
+    SearchRequest searchRequest =
+        createReportAndDashboardSearchRequest()
+            .source(searchSourceBuilder)
+            .scroll(
+                timeValueSeconds(
+                    configurationService
+                        .getElasticSearchConfiguration()
+                        .getScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -134,59 +144,56 @@ public class EntitiesReaderES implements EntitiesReader {
     }
 
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
-      scrollResp,
-      CollectionEntity.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
-    );
+        scrollResp,
+        CollectionEntity.class,
+        objectMapper,
+        esClient,
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
   }
 
   @Override
-  public Map<String, Map<EntityType, Long>> countEntitiesForCollections(final List<? extends BaseCollectionDefinitionDto<?>> collections) {
+  public Map<String, Map<EntityType, Long>> countEntitiesForCollections(
+      final List<? extends BaseCollectionDefinitionDto<?>> collections) {
     log.debug(
-      "Counting all available entities for collection ids [{}]",
-      collections.stream().map(BaseCollectionDefinitionDto::getId).toList()
-    );
+        "Counting all available entities for collection ids [{}]",
+        collections.stream().map(BaseCollectionDefinitionDto::getId).toList());
 
     if (collections.isEmpty()) {
       return new HashMap<>();
     }
 
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(termsQuery(
-      COLLECTION_ID,
-      collections.stream()
-        .map(BaseCollectionDefinitionDto::getId)
-        .toList()
-    )).size(0);
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(
+                termsQuery(
+                    COLLECTION_ID,
+                    collections.stream().map(BaseCollectionDefinitionDto::getId).toList()))
+            .size(0);
 
-    collections.forEach(collection -> {
-      final String collectionId = collection.getId();
-      final FilterAggregationBuilder byCollectionIdFilterAggregation = filter(
-        collectionId,
-        boolQuery().filter(termQuery(
-          COLLECTION_ID,
-          collectionId
-        ))
-      );
-      searchSourceBuilder.aggregation(byCollectionIdFilterAggregation);
-      final TermsAggregationBuilder byIndexNameAggregation = terms(AGG_BY_INDEX_COUNT).field("_index");
-      byCollectionIdFilterAggregation.subAggregation(byIndexNameAggregation);
-    });
+    collections.forEach(
+        collection -> {
+          final String collectionId = collection.getId();
+          final FilterAggregationBuilder byCollectionIdFilterAggregation =
+              filter(collectionId, boolQuery().filter(termQuery(COLLECTION_ID, collectionId)));
+          searchSourceBuilder.aggregation(byCollectionIdFilterAggregation);
+          final TermsAggregationBuilder byIndexNameAggregation =
+              terms(AGG_BY_INDEX_COUNT).field("_index");
+          byCollectionIdFilterAggregation.subAggregation(byIndexNameAggregation);
+        });
 
-    final SearchRequest searchRequest = createReportAndDashboardSearchRequest().source(searchSourceBuilder);
+    final SearchRequest searchRequest =
+        createReportAndDashboardSearchRequest().source(searchSourceBuilder);
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest);
-      return searchResponse.getAggregations()
-        .asList()
-        .stream()
-        .map(Filter.class::cast)
-        .map(collectionFilterAggregation -> new AbstractMap.SimpleEntry<>(
-          collectionFilterAggregation.getName(),
-          extractEntityIndexCounts(collectionFilterAggregation)
-        ))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+      return searchResponse.getAggregations().asList().stream()
+          .map(Filter.class::cast)
+          .map(
+              collectionFilterAggregation ->
+                  new AbstractMap.SimpleEntry<>(
+                      collectionFilterAggregation.getName(),
+                      extractEntityIndexCounts(collectionFilterAggregation)))
+          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Was not able to count collection entities!", e);
     }
@@ -195,14 +202,18 @@ public class EntitiesReaderES implements EntitiesReader {
   @Override
   public List<CollectionEntity> getAllEntitiesForCollection(final String collectionId) {
     log.debug("Fetching all available entities for collection [{}]", collectionId);
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(termQuery(COLLECTION_ID, collectionId))
-      .size(LIST_FETCH_LIMIT);
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(termQuery(COLLECTION_ID, collectionId))
+            .size(LIST_FETCH_LIMIT);
     return runEntitiesSearchRequest(searchSourceBuilder);
   }
 
   @Override
-  public Optional<EntityNameResponseDto> getEntityNames(final EntityNameRequestDto requestDto, final String locale) {
-    log.debug(String.format("Performing get entity names search request %s", requestDto.toString()));
+  public Optional<EntityNameResponseDto> getEntityNames(
+      final EntityNameRequestDto requestDto, final String locale) {
+    log.debug(
+        String.format("Performing get entity names search request %s", requestDto.toString()));
     MultiGetResponse multiGetItemResponse = runGetEntityNamesRequest(requestDto);
 
     if (!atLeastOneResponseExistsForMultiGet(multiGetItemResponse)) {
@@ -220,7 +231,8 @@ public class EntitiesReaderES implements EntitiesReader {
         }
 
         if (entityId.equals(requestDto.getDashboardId())) {
-          result.setDashboardName(getLocalizedDashboardName((DashboardDefinitionRestDto) entity, locale));
+          result.setDashboardName(
+              getLocalizedDashboardName((DashboardDefinitionRestDto) entity, locale));
         } else if (entityId.equals(requestDto.getReportId())) {
           result.setReportName(getLocalizedReportName(localizationService, entity, locale));
         } else if (entityId.equals(requestDto.getEventBasedProcessId())) {
@@ -233,27 +245,33 @@ public class EntitiesReaderES implements EntitiesReader {
   }
 
   private Map<EntityType, Long> extractEntityIndexCounts(final Filter collectionFilterAggregation) {
-    final Terms byIndexNameTerms = collectionFilterAggregation.getAggregations().get(AGG_BY_INDEX_COUNT);
-    final long singleProcessReportCount = getDocCountForIndex(byIndexNameTerms, new SingleProcessReportIndexES());
-    final long combinedProcessReportCount = getDocCountForIndex(byIndexNameTerms, new CombinedReportIndexES());
-    final long singleDecisionReportCount = getDocCountForIndex(byIndexNameTerms, new SingleDecisionReportIndexES());
+    final Terms byIndexNameTerms =
+        collectionFilterAggregation.getAggregations().get(AGG_BY_INDEX_COUNT);
+    final long singleProcessReportCount =
+        getDocCountForIndex(byIndexNameTerms, new SingleProcessReportIndexES());
+    final long combinedProcessReportCount =
+        getDocCountForIndex(byIndexNameTerms, new CombinedReportIndexES());
+    final long singleDecisionReportCount =
+        getDocCountForIndex(byIndexNameTerms, new SingleDecisionReportIndexES());
     final long dashboardCount = getDocCountForIndex(byIndexNameTerms, new DashboardIndexES());
     return ImmutableMap.of(
-      EntityType.DASHBOARD,
-      dashboardCount,
-      EntityType.REPORT,
-      singleProcessReportCount + singleDecisionReportCount + combinedProcessReportCount
-    );
+        EntityType.DASHBOARD,
+        dashboardCount,
+        EntityType.REPORT,
+        singleProcessReportCount + singleDecisionReportCount + combinedProcessReportCount);
   }
 
-  private long getDocCountForIndex(final Terms byIndexNameTerms, final IndexMappingCreator<?> indexMapper) {
+  private long getDocCountForIndex(
+      final Terms byIndexNameTerms, final IndexMappingCreator<?> indexMapper) {
     if (indexMapper.isCreateFromTemplate()) {
-      throw new OptimizeRuntimeException("Cannot fetch the document count for indices created from template");
+      throw new OptimizeRuntimeException(
+          "Cannot fetch the document count for indices created from template");
     }
-    return Optional.ofNullable(byIndexNameTerms.getBucketByKey(
-        optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)))
-      .map(MultiBucketsAggregation.Bucket::getDocCount)
-      .orElse(0L);
+    return Optional.ofNullable(
+            byIndexNameTerms.getBucketByKey(
+                optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)))
+        .map(MultiBucketsAggregation.Bucket::getDocCount)
+        .orElse(0L);
   }
 
   private CollectionEntity readCollectionEntity(final GetResponse response, final String entityId) {
@@ -274,7 +292,8 @@ public class EntitiesReaderES implements EntitiesReader {
     addGetEntityToRequest(request, requestDto.getReportId(), COMBINED_REPORT_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getDashboardId(), DASHBOARD_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getCollectionId(), COLLECTION_INDEX_NAME);
-    addGetEntityToRequest(request, requestDto.getEventBasedProcessId(), EVENT_PROCESS_MAPPING_INDEX_NAME);
+    addGetEntityToRequest(
+        request, requestDto.getEventBasedProcessId(), EVENT_PROCESS_MAPPING_INDEX_NAME);
     if (request.getItems().isEmpty()) {
       throw new BadRequestException("No ids for entity name request provided");
     }
@@ -290,15 +309,23 @@ public class EntitiesReaderES implements EntitiesReader {
     return multiGetItemResponses;
   }
 
-  private void addGetEntityToRequest(final MultiGetRequest request, final String entityId, final String entityIndexName) {
+  private void addGetEntityToRequest(
+      final MultiGetRequest request, final String entityId, final String entityIndexName) {
     if (entityId != null) {
       request.add(new MultiGetRequest.Item(entityIndexName, entityId));
     }
   }
 
-  private List<CollectionEntity> runEntitiesSearchRequest(final SearchSourceBuilder searchSourceBuilder) {
-    SearchRequest searchRequest = createReportAndDashboardSearchRequest().source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
+  private List<CollectionEntity> runEntitiesSearchRequest(
+      final SearchSourceBuilder searchSourceBuilder) {
+    SearchRequest searchRequest =
+        createReportAndDashboardSearchRequest()
+            .source(searchSourceBuilder)
+            .scroll(
+                timeValueSeconds(
+                    configurationService
+                        .getElasticSearchConfiguration()
+                        .getScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -309,30 +336,30 @@ public class EntitiesReaderES implements EntitiesReader {
     }
 
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
-      scrollResp,
-      CollectionEntity.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
-    );
+        scrollResp,
+        CollectionEntity.class,
+        objectMapper,
+        esClient,
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
   }
 
   private SearchRequest createReportAndDashboardSearchRequest() {
     return new SearchRequest(
-      SINGLE_PROCESS_REPORT_INDEX_NAME,
-      SINGLE_DECISION_REPORT_INDEX_NAME,
-      COMBINED_REPORT_INDEX_NAME,
-      DASHBOARD_INDEX_NAME
-    );
+        SINGLE_PROCESS_REPORT_INDEX_NAME,
+        SINGLE_DECISION_REPORT_INDEX_NAME,
+        COMBINED_REPORT_INDEX_NAME,
+        DASHBOARD_INDEX_NAME);
   }
 
-  private String getLocalizedDashboardName(final DashboardDefinitionRestDto dashboardEntity, final String locale) {
+  private String getLocalizedDashboardName(
+      final DashboardDefinitionRestDto dashboardEntity, final String locale) {
     if (dashboardEntity.isInstantPreviewDashboard()) {
-      return localizationService.getLocalizationForInstantPreviewDashboardCode(locale, dashboardEntity.getName());
+      return localizationService.getLocalizationForInstantPreviewDashboardCode(
+          locale, dashboardEntity.getName());
     } else if (dashboardEntity.isManagementDashboard()) {
-      return localizationService.getLocalizationForManagementDashboardCode(locale, dashboardEntity.getName());
+      return localizationService.getLocalizationForManagementDashboardCode(
+          locale, dashboardEntity.getName());
     }
     return dashboardEntity.getName();
   }
-
 }

@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.service.db.writer;
 
-import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
-
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 
 public interface ExternalEventWriter {
 
@@ -17,5 +16,4 @@ public interface ExternalEventWriter {
   void deleteEventsOlderThan(final OffsetDateTime timestamp);
 
   void deleteEventsWithIdsIn(final List<String> eventIdsToDelete);
-
 }

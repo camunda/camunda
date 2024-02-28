@@ -6,19 +6,20 @@
 package org.camunda.optimize.test.importing.permutations;
 
 import com.google.common.collect.Collections2;
-import org.camunda.optimize.service.importing.ImportMediator;
-import org.camunda.optimize.service.importing.permutations.AbstractImportMediatorPermutationsIT;
-import org.slf4j.Logger;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
+import org.camunda.optimize.service.importing.ImportMediator;
+import org.camunda.optimize.service.importing.permutations.AbstractImportMediatorPermutationsIT;
+import org.slf4j.Logger;
 
-public abstract class AbstractExtendedImportMediatorPermutationsIT extends AbstractImportMediatorPermutationsIT {
+public abstract class AbstractExtendedImportMediatorPermutationsIT
+    extends AbstractImportMediatorPermutationsIT {
   private static final int MAX_MEDIATORS_TO_PERMUTATE = 8;
 
-  protected void logMediatorOrder(final Logger logger, List<Class<? extends ImportMediator>> mediatorOrder) {
+  protected void logMediatorOrder(
+      final Logger logger, List<Class<? extends ImportMediator>> mediatorOrder) {
     StringBuilder order = new StringBuilder();
     mediatorOrder.forEach(mediator -> order.append(mediator.getSimpleName()).append("\n"));
 
@@ -26,13 +27,16 @@ public abstract class AbstractExtendedImportMediatorPermutationsIT extends Abstr
   }
 
   protected static Stream<List<Class<? extends ImportMediator>>> getMediatorPermutationsStream(
-    final List<Class<? extends ImportMediator>> requiredMediatorClasses,
-    List<Class<? extends ImportMediator>> additionalMediatorClasses) {
+      final List<Class<? extends ImportMediator>> requiredMediatorClasses,
+      List<Class<? extends ImportMediator>> additionalMediatorClasses) {
 
     Collections.shuffle(additionalMediatorClasses);
-    additionalMediatorClasses = additionalMediatorClasses.subList(0, MAX_MEDIATORS_TO_PERMUTATE - requiredMediatorClasses.size());
+    additionalMediatorClasses =
+        additionalMediatorClasses.subList(
+            0, MAX_MEDIATORS_TO_PERMUTATE - requiredMediatorClasses.size());
 
-    List<Class<? extends ImportMediator>> importMediatorsToUse = new ArrayList<>(requiredMediatorClasses);
+    List<Class<? extends ImportMediator>> importMediatorsToUse =
+        new ArrayList<>(requiredMediatorClasses);
     importMediatorsToUse.addAll(additionalMediatorClasses);
 
     return Collections2.permutations(importMediatorsToUse).stream();

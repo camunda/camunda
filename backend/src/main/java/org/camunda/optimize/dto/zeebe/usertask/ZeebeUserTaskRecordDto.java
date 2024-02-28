@@ -8,5 +8,4 @@ package org.camunda.optimize.dto.zeebe.usertask;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 
-public class ZeebeUserTaskRecordDto extends ZeebeRecordDto<ZeebeUserTaskDataDto, UserTaskIntent> {
-}
+public class ZeebeUserTaskRecordDto extends ZeebeRecordDto<ZeebeUserTaskDataDto, UserTaskIntent> {}

@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.process.date;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
@@ -15,22 +18,21 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
-
 @Slf4j
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByUserTaskStartDate extends ProcessGroupByUserTaskDate {
 
-  public ProcessGroupByUserTaskStartDate(final DateAggregationService dateAggregationService,
-                                         final MinMaxStatsService minMaxStatsService,
-                                         final DefinitionService definitionService) {
+  public ProcessGroupByUserTaskStartDate(
+      final DateAggregationService dateAggregationService,
+      final MinMaxStatsService minMaxStatsService,
+      final DefinitionService definitionService) {
     super(dateAggregationService, minMaxStatsService, definitionService);
   }
 
   @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto reportData) {
     reportData.setGroupBy(new StartDateGroupByDto());
   }
 
@@ -38,5 +40,4 @@ public class ProcessGroupByUserTaskStartDate extends ProcessGroupByUserTaskDate 
   protected String getDateField() {
     return FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE;
   }
-
 }

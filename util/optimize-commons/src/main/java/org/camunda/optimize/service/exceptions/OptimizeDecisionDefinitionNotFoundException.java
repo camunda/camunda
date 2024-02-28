@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.service.exceptions;
 
-
-public class OptimizeDecisionDefinitionNotFoundException extends OptimizeDecisionDefinitionFetchException {
+public class OptimizeDecisionDefinitionNotFoundException
+    extends OptimizeDecisionDefinitionFetchException {
 
   public OptimizeDecisionDefinitionNotFoundException(String message) {
     super(message);
   }
-
 }

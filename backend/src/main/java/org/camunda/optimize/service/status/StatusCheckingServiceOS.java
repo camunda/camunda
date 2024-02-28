@@ -25,17 +25,17 @@ public class StatusCheckingServiceOS extends StatusCheckingService {
 
   private final OptimizeOpenSearchClient osClient;
 
-  public StatusCheckingServiceOS(final OptimizeOpenSearchClient osClient,
-                                 final ConfigurationService configurationService,
-                                 final EngineContextFactory engineContextFactory,
-                                 final ImportSchedulerManagerService importSchedulerManagerService,
-                                 final OptimizeIndexNameService optimizeIndexNameService) {
+  public StatusCheckingServiceOS(
+      final OptimizeOpenSearchClient osClient,
+      final ConfigurationService configurationService,
+      final EngineContextFactory engineContextFactory,
+      final ImportSchedulerManagerService importSchedulerManagerService,
+      final OptimizeIndexNameService optimizeIndexNameService) {
     super(
-      configurationService,
-      engineContextFactory,
-      importSchedulerManagerService,
-      optimizeIndexNameService
-    );
+        configurationService,
+        engineContextFactory,
+        importSchedulerManagerService,
+        optimizeIndexNameService);
     this.osClient = osClient;
   }
 
@@ -44,7 +44,7 @@ public class StatusCheckingServiceOS extends StatusCheckingService {
     boolean isConnected = false;
     try {
       final HealthResponse clusterHealthResponse =
-        osClient.getOpenSearchClient().cluster().health(new HealthRequest.Builder().build());
+          osClient.getOpenSearchClient().cluster().health(new HealthRequest.Builder().build());
       return clusterHealthResponse.status() != HealthStatus.Red;
     } catch (Exception ignored) {
       // do nothing

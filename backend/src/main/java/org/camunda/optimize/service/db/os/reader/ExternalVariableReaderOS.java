@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
@@ -13,9 +15,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -23,7 +22,8 @@ import java.util.List;
 public class ExternalVariableReaderOS implements ExternalVariableReader {
 
   @Override
-  public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(final Long ingestTimestamp, final int limit) {
+  public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
+      final Long ingestTimestamp, final int limit) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
@@ -33,5 +33,4 @@ public class ExternalVariableReaderOS implements ExternalVariableReader {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
-
 }

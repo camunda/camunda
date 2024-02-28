@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.processoverview;
 
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.util.Map;
 
 @Data
 @FieldNameConstants

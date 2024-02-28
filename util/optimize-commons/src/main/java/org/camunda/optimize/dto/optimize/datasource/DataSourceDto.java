@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.datasource;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,13 +15,14 @@ import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-import java.io.Serializable;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldNameConstants
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = EngineDataSourceDto.class, name = "engine"),
   @JsonSubTypes.Type(value = ZeebeDataSourceDto.class, name = "zeebe"),
@@ -31,5 +33,4 @@ public abstract class DataSourceDto implements OptimizeDto, Serializable {
 
   private DataImportSourceType type;
   private String name;
-
 }

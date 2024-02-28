@@ -5,29 +5,6 @@
  */
 package org.camunda.optimize.service.util;
 
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
-import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import static org.camunda.optimize.service.db.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByAssignee;
 import static org.camunda.optimize.service.db.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByCandidateGroup;
 import static org.camunda.optimize.service.db.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByEndDateDto;
@@ -47,8 +24,31 @@ import static org.camunda.optimize.service.db.es.report.command.process.util.Pro
 import static org.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByUserTasks;
 import static org.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByVariable;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+
 public class ProcessReportDataBuilderHelper {
-  private List<ReportDataDefinitionDto> definitions = Collections.singletonList(new ReportDataDefinitionDto());
+  private List<ReportDataDefinitionDto> definitions =
+      Collections.singletonList(new ReportDataDefinitionDto());
 
   private ProcessViewEntity viewEntity = null;
   private ViewProperty viewProperty = ViewProperty.RAW_DATA;
@@ -72,13 +72,14 @@ public class ProcessReportDataBuilderHelper {
       processPart = createProcessPart(processPartStart, processPartEnd);
     }
 
-    final ProcessReportDataDto reportData = ProcessReportDataDto.builder()
-      .definitions(definitions)
-      .visualization(visualization)
-      .view(view)
-      .groupBy(groupBy)
-      .distributedBy(distributedBy)
-      .build();
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(definitions)
+            .visualization(visualization)
+            .view(view)
+            .groupBy(groupBy)
+            .distributedBy(distributedBy)
+            .build();
     reportData.getConfiguration().setProcessPart(processPart);
     return reportData;
   }
@@ -135,7 +136,8 @@ public class ProcessReportDataBuilderHelper {
     }
   }
 
-  public ProcessReportDataBuilderHelper definitions(final List<ReportDataDefinitionDto> definitions) {
+  public ProcessReportDataBuilderHelper definitions(
+      final List<ReportDataDefinitionDto> definitions) {
     this.definitions = definitions;
     return this;
   }
@@ -145,12 +147,14 @@ public class ProcessReportDataBuilderHelper {
     return this;
   }
 
-  public ProcessReportDataBuilderHelper processDefinitionVersions(List<String> processDefinitionVersions) {
+  public ProcessReportDataBuilderHelper processDefinitionVersions(
+      List<String> processDefinitionVersions) {
     this.definitions.get(0).setVersions(processDefinitionVersions);
     return this;
   }
 
-  public ProcessReportDataBuilderHelper processDefinitionVersion(final String processDefinitionVersion) {
+  public ProcessReportDataBuilderHelper processDefinitionVersion(
+      final String processDefinitionVersion) {
     this.definitions.get(0).setVersion(processDefinitionVersion);
     return this;
   }
@@ -180,12 +184,14 @@ public class ProcessReportDataBuilderHelper {
     return this;
   }
 
-  public ProcessReportDataBuilderHelper groupByDateInterval(AggregateByDateUnit groupByDateInterval) {
+  public ProcessReportDataBuilderHelper groupByDateInterval(
+      AggregateByDateUnit groupByDateInterval) {
     this.groupByDateInterval = groupByDateInterval;
     return this;
   }
 
-  public ProcessReportDataBuilderHelper distributeByDateInterval(AggregateByDateUnit distributeByDateInterval) {
+  public ProcessReportDataBuilderHelper distributeByDateInterval(
+      AggregateByDateUnit distributeByDateInterval) {
     this.distributeByDateInterval = distributeByDateInterval;
     return this;
   }
@@ -213,8 +219,7 @@ public class ProcessReportDataBuilderHelper {
   public static CombinedReportDataDto createCombinedReportData(String... reportIds) {
     CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
     combinedReportDataDto.setReports(
-      Arrays.stream(reportIds).map(CombinedReportItemDto::new).collect(Collectors.toList())
-    );
+        Arrays.stream(reportIds).map(CombinedReportItemDto::new).collect(Collectors.toList()));
     return combinedReportDataDto;
   }
 
@@ -224,5 +229,4 @@ public class ProcessReportDataBuilderHelper {
     processPartDto.setEnd(end);
     return processPartDto;
   }
-
 }

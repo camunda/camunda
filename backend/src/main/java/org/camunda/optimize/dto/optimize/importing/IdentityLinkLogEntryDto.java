@@ -6,13 +6,12 @@
 package org.camunda.optimize.dto.optimize.importing;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.time.OffsetDateTime;
 
 @Accessors(chain = true)
 @AllArgsConstructor
@@ -22,12 +21,9 @@ public class IdentityLinkLogEntryDto implements OptimizeDto {
 
   private String id;
 
-  @JsonIgnore
-  private String processInstanceId;
-  @JsonIgnore
-  private String processDefinitionKey;
-  @JsonIgnore
-  private String engine;
+  @JsonIgnore private String processInstanceId;
+  @JsonIgnore private String processDefinitionKey;
+  @JsonIgnore private String engine;
 
   private IdentityLinkLogType type;
   private String userId;

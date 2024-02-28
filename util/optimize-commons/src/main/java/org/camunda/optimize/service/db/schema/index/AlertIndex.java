@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+
+import java.io.IOException;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 public abstract class AlertIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -54,73 +53,69 @@ public abstract class AlertIndex<TBuilder> extends DefaultIndexMappingCreator<TB
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(ID)
+        .startObject(ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(NAME)
+        .endObject()
+        .startObject(NAME)
         .field("type", "keyword")
-      .endObject()
-      .startObject(LAST_MODIFIED)
+        .endObject()
+        .startObject(LAST_MODIFIED)
         .field("type", "date")
-          .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(CREATED)
+        .field("format", OPTIMIZE_DATE_FORMAT)
+        .endObject()
+        .startObject(CREATED)
         .field("type", "date")
-          .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(OWNER)
+        .field("format", OPTIMIZE_DATE_FORMAT)
+        .endObject()
+        .startObject(OWNER)
         .field("type", "keyword")
-      .endObject()
-      .startObject(LAST_MODIFIER)
+        .endObject()
+        .startObject(LAST_MODIFIER)
         .field("type", "keyword")
-      .endObject()
-      .startObject(REPORT_ID)
+        .endObject()
+        .startObject(REPORT_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(EMAILS)
+        .endObject()
+        .startObject(EMAILS)
         .field("type", "keyword")
-      .endObject()
-      .startObject(WEBHOOK)
+        .endObject()
+        .startObject(WEBHOOK)
         .field("type", "keyword")
-      .endObject()
-      .startObject(THRESHOLD_OPERATOR)
+        .endObject()
+        .startObject(THRESHOLD_OPERATOR)
         .field("type", "keyword")
-      .endObject()
-      .startObject(FIX_NOTIFICATION)
+        .endObject()
+        .startObject(FIX_NOTIFICATION)
         .field("type", "boolean")
-      .endObject()
-      .startObject(THRESHOLD)
+        .endObject()
+        .startObject(THRESHOLD)
         .field("type", "double")
-      .endObject()
-
-      .startObject(TRIGGERED)
+        .endObject()
+        .startObject(TRIGGERED)
         .field("type", "boolean")
-      .endObject()
-
-      .startObject(CHECK_INTERVAL)
+        .endObject()
+        .startObject(CHECK_INTERVAL)
         .field("type", "nested")
         .startObject("properties")
-          .startObject(INTERVAL_VALUE)
-            .field("type", "integer")
-          .endObject()
-          .startObject(INTERVAL_UNIT)
-            .field("type", "keyword")
-          .endObject()
+        .startObject(INTERVAL_VALUE)
+        .field("type", "integer")
         .endObject()
-      .endObject()
-
-      .startObject(REMINDER_INTERVAL)
+        .startObject(INTERVAL_UNIT)
+        .field("type", "keyword")
+        .endObject()
+        .endObject()
+        .endObject()
+        .startObject(REMINDER_INTERVAL)
         .field("type", "nested")
         .startObject("properties")
-          .startObject(INTERVAL_VALUE)
-            .field("type", "integer")
-          .endObject()
-          .startObject(INTERVAL_UNIT)
-            .field("type", "keyword")
-          .endObject()
+        .startObject(INTERVAL_VALUE)
+        .field("type", "integer")
         .endObject()
-      .endObject();
+        .startObject(INTERVAL_UNIT)
+        .field("type", "keyword")
+        .endObject()
+        .endObject()
+        .endObject();
     // @formatter:on
   }
-
 }

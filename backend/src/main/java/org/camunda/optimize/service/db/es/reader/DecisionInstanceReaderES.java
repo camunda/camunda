@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.db.reader.DecisionInstanceReader;
 import org.camunda.optimize.service.db.reader.DefinitionInstanceReader;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.Set;
-
-import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 
 @AllArgsConstructor
 @Component
@@ -27,5 +26,4 @@ public class DecisionInstanceReaderES implements DecisionInstanceReader {
   public Set<String> getExistingDecisionDefinitionKeysFromInstances() {
     return definitionInstanceReader.getAllExistingDefinitionKeys(DECISION);
   }
-
 }

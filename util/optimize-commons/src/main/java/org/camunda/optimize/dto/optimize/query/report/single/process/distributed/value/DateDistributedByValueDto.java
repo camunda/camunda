@@ -12,5 +12,4 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDa
 public class DateDistributedByValueDto implements ProcessReportDistributedByValueDto {
 
   protected AggregateByDateUnit unit;
-
 }

@@ -5,7 +5,28 @@
  */
 package org.camunda.optimize.service.export;
 
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.COUNT_PREFIX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.FLOWNODE_DURATION_PREFIX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
+import static org.camunda.optimize.service.db.es.report.command.process.mapping.RawProcessDataResultDtoMapper.OBJECT_VARIABLE_VALUE_PLACEHOLDER;
+
 import com.opencsv.CSVWriter;
+import java.beans.IntrospectionException;
+import java.beans.PropertyDescriptor;
+import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,35 +41,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 
-import java.beans.IntrospectionException;
-import java.beans.PropertyDescriptor;
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStreamWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.COUNT_PREFIX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.FLOWNODE_DURATION_PREFIX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
-import static org.camunda.optimize.service.db.es.report.command.process.mapping.RawProcessDataResultDtoMapper.OBJECT_VARIABLE_VALUE_PLACEHOLDER;
-
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CSVUtils {
 
-  public static byte[] mapCsvLinesToCsvBytes(final List<String[]> csvStrings, final char csvDelimiter) {
+  public static byte[] mapCsvLinesToCsvBytes(
+      final List<String[]> csvStrings, final char csvDelimiter) {
     final ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream();
-    final BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(arrayOutputStream));
+    final BufferedWriter bufferedWriter =
+        new BufferedWriter(new OutputStreamWriter(arrayOutputStream));
     final CSVWriter csvWriter = new CSVWriter(bufferedWriter, csvDelimiter, '"', '"', "\r\n");
 
     byte[] bytes = null;
@@ -68,18 +69,19 @@ public class CSVUtils {
   public static <T extends IdResponseDto> List<String[]> mapIdList(final List<T> ids) {
     final List<String[]> result = new ArrayList<>();
 
-    result.add(new String[]{"processInstanceId"});
+    result.add(new String[] {"processInstanceId"});
 
-    ids.forEach(idDto -> result.add(new String[]{idDto.getId()}));
+    ids.forEach(idDto -> result.add(new String[] {idDto.getId()}));
 
     return result;
   }
 
-  public static List<String[]> mapRawProcessReportInstances(final List<RawDataProcessInstanceDto> rawData,
-                                                            final Integer limit,
-                                                            final Integer offset,
-                                                            final TableColumnDto tableColumns,
-                                                            final boolean includeNewVariables) {
+  public static List<String[]> mapRawProcessReportInstances(
+      final List<RawDataProcessInstanceDto> rawData,
+      final Integer limit,
+      final Integer offset,
+      final TableColumnDto tableColumns,
+      final boolean includeNewVariables) {
     final List<String[]> result = new ArrayList<>();
     final List<String> allCountKeys = extractAllPrefixedCountKeys();
     final List<String> allFlowNodeDurationKeys = extractAllPrefixedFlowNodeKeys(rawData);
@@ -97,7 +99,8 @@ public class CSVUtils {
     int currentPosition = 0;
     for (RawDataProcessInstanceDto instanceDto : rawData) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
-      if ((offset == null && limitNotExceeded) || (isOffsetPassed(offset, currentPosition) && limitNotExceeded)) {
+      if ((offset == null && limitNotExceeded)
+          || (isOffsetPassed(offset, currentPosition) && limitNotExceeded)) {
         final String[] dataLine = new String[allIncludedKeysInOrder.size()];
         for (int i = 0; i < dataLine.length; i++) {
           final String currentKey = allIncludedKeysInOrder.get(i);
@@ -110,7 +113,8 @@ public class CSVUtils {
           } else if (allCountKeys.contains(currentKey)) {
             columnValue = getCountValue(instanceDto, currentKey);
           } else {
-            columnValue = getDtoFieldValue(instanceDto, RawDataProcessInstanceDto.class, currentKey);
+            columnValue =
+                getDtoFieldValue(instanceDto, RawDataProcessInstanceDto.class, currentKey);
           }
           dataLine[i] = columnValue.orElse(null);
         }
@@ -121,10 +125,11 @@ public class CSVUtils {
     return result;
   }
 
-  public static List<String[]> mapRawDecisionReportInstances(final List<RawDataDecisionInstanceDto> rawData,
-                                                             final Integer limit,
-                                                             final Integer offset,
-                                                             final TableColumnDto tableColumns) {
+  public static List<String[]> mapRawDecisionReportInstances(
+      final List<RawDataDecisionInstanceDto> rawData,
+      final Integer limit,
+      final Integer offset,
+      final TableColumnDto tableColumns) {
     final List<String[]> result = new ArrayList<>();
     List<String> allVariableKeys = new ArrayList<>();
     final List<String> allInputVariableKeys = extractAllPrefixedDecisionInputKeys(rawData);
@@ -144,7 +149,8 @@ public class CSVUtils {
     int currentPosition = 0;
     for (RawDataDecisionInstanceDto instanceDto : rawData) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
-      if ((offset == null && limitNotExceeded) || (isOffsetPassed(offset, currentPosition) && limitNotExceeded)) {
+      if ((offset == null && limitNotExceeded)
+          || (isOffsetPassed(offset, currentPosition) && limitNotExceeded)) {
         final String[] dataLine = new String[allIncludedKeysInOrder.size()];
         for (int i = 0; i < dataLine.length; i++) {
           final String currentKey = allIncludedKeysInOrder.get(i);
@@ -154,7 +160,8 @@ public class CSVUtils {
           } else if (allOutputVariableKeys.contains(currentKey)) {
             optionalValue = getOutputVariableValue(instanceDto, currentKey);
           } else {
-            optionalValue = getDtoFieldValue(instanceDto, RawDataDecisionInstanceDto.class, currentKey);
+            optionalValue =
+                getDtoFieldValue(instanceDto, RawDataDecisionInstanceDto.class, currentKey);
           }
           dataLine[i] = optionalValue.orElse(null);
         }
@@ -203,57 +210,62 @@ public class CSVUtils {
 
   public static List<String> extractAllDecisionInstanceDtoFieldKeys() {
     return Arrays.stream(RawDataDecisionInstanceDto.Fields.values())
-      .map(RawDataDecisionInstanceDto.Fields::name)
-      .collect(toList());
+        .map(RawDataDecisionInstanceDto.Fields::name)
+        .collect(toList());
   }
 
   public static List<String> extractAllProcessInstanceDtoFieldKeys() {
     return Arrays.stream(RawDataProcessInstanceDto.Fields.values())
-      .map(RawDataProcessInstanceDto.Fields::name)
-      .collect(toList());
+        .map(RawDataProcessInstanceDto.Fields::name)
+        .collect(toList());
   }
 
   private static String stripOffPrefix(final String currentKey, final String prefix) {
     return currentKey.replace(prefix, "");
   }
 
-  private static List<String> extractAllPrefixedVariableKeys(List<RawDataProcessInstanceDto> rawData) {
+  private static List<String> extractAllPrefixedVariableKeys(
+      List<RawDataProcessInstanceDto> rawData) {
     Set<String> variableKeys = new HashSet<>();
     for (RawDataProcessInstanceDto pi : rawData) {
       final Map<String, Object> variables = pi.getVariables();
       if (variables != null) {
         variables.entrySet().stream()
-          .filter(entry -> !OBJECT_VARIABLE_VALUE_PLACEHOLDER.equals(entry.getValue()))
-          .map(Map.Entry::getKey)
-          .forEach(variableKeys::add);
+            .filter(entry -> !OBJECT_VARIABLE_VALUE_PLACEHOLDER.equals(entry.getValue()))
+            .map(Map.Entry::getKey)
+            .forEach(variableKeys::add);
       }
     }
     return variableKeys.stream().map(key -> VARIABLE_PREFIX + key).collect(toList());
   }
 
-  public static List<String> extractAllPrefixedFlowNodeKeys(List<RawDataProcessInstanceDto> rawData) {
+  public static List<String> extractAllPrefixedFlowNodeKeys(
+      List<RawDataProcessInstanceDto> rawData) {
     List<String> flowNodeKeys = new ArrayList<>();
     for (RawDataProcessInstanceDto currentInstanceDataDto : rawData) {
-      final Optional<Map<String, FlowNodeTotalDurationDataDto>> flowNodeDurations = Optional.ofNullable(
-        currentInstanceDataDto.getFlowNodeDurations());
-      flowNodeDurations.ifPresent(stringFlowNodeTotalDurationDataDtoMap -> stringFlowNodeTotalDurationDataDtoMap.keySet()
-        .stream()
-        // prefixing all flownode columns with "dur:"
-        .map(flowNodeTotalDurationDataDto -> FLOWNODE_DURATION_PREFIX + flowNodeTotalDurationDataDto)
-        .forEach(flowNodeKeys::add));
+      final Optional<Map<String, FlowNodeTotalDurationDataDto>> flowNodeDurations =
+          Optional.ofNullable(currentInstanceDataDto.getFlowNodeDurations());
+      flowNodeDurations.ifPresent(
+          stringFlowNodeTotalDurationDataDtoMap ->
+              stringFlowNodeTotalDurationDataDtoMap.keySet().stream()
+                  // prefixing all flownode columns with "dur:"
+                  .map(
+                      flowNodeTotalDurationDataDto ->
+                          FLOWNODE_DURATION_PREFIX + flowNodeTotalDurationDataDto)
+                  .forEach(flowNodeKeys::add));
     }
     return flowNodeKeys;
   }
 
   public static List<String> extractAllPrefixedCountKeys() {
     return List.of(
-      addCountPrefix(RawDataCountDto.Fields.incidents),
-      addCountPrefix(RawDataCountDto.Fields.openIncidents),
-      addCountPrefix(RawDataCountDto.Fields.userTasks)
-    );
+        addCountPrefix(RawDataCountDto.Fields.incidents),
+        addCountPrefix(RawDataCountDto.Fields.openIncidents),
+        addCountPrefix(RawDataCountDto.Fields.userTasks));
   }
 
-  private static List<String> extractAllPrefixedDecisionInputKeys(List<RawDataDecisionInstanceDto> rawData) {
+  private static List<String> extractAllPrefixedDecisionInputKeys(
+      List<RawDataDecisionInstanceDto> rawData) {
     Set<String> inputKeys = new HashSet<>();
     for (RawDataDecisionInstanceDto pi : rawData) {
       if (pi.getInputVariables() != null) {
@@ -263,7 +275,8 @@ public class CSVUtils {
     return inputKeys.stream().map(key -> INPUT_PREFIX + key).collect(toList());
   }
 
-  private static List<String> extractAllPrefixedDecisionOutputKeys(List<RawDataDecisionInstanceDto> rawData) {
+  private static List<String> extractAllPrefixedDecisionOutputKeys(
+      List<RawDataDecisionInstanceDto> rawData) {
     Set<String> outputKeys = new HashSet<>();
     for (RawDataDecisionInstanceDto di : rawData) {
       if (di.getOutputVariables() != null) {
@@ -273,49 +286,51 @@ public class CSVUtils {
     return outputKeys.stream().map(key -> OUTPUT_PREFIX + key).collect(toList());
   }
 
-  private static <T> Optional<String> getDtoFieldValue(final T instanceDto,
-                                                       final Class<T> instanceClass,
-                                                       final String fieldKey) {
+  private static <T> Optional<String> getDtoFieldValue(
+      final T instanceDto, final Class<T> instanceClass, final String fieldKey) {
     try {
       return Optional.of(new PropertyDescriptor(fieldKey, instanceClass))
-        .map(descriptor -> {
-          Optional<Object> value = Optional.empty();
-          try {
-            value = Optional.ofNullable(descriptor.getReadMethod().invoke(instanceDto));
-          } catch (Exception e) {
-            log.error("can't read value of field", e);
-          }
-          return value.map(Object::toString).orElse(null);
-        });
+          .map(
+              descriptor -> {
+                Optional<Object> value = Optional.empty();
+                try {
+                  value = Optional.ofNullable(descriptor.getReadMethod().invoke(instanceDto));
+                } catch (Exception e) {
+                  log.error("can't read value of field", e);
+                }
+                return value.map(Object::toString).orElse(null);
+              });
     } catch (IntrospectionException e) {
       // no field like that
       log.error(
-        "Tried to access RawDataInstanceDto field that did not exist {} on class {}",
-        fieldKey,
-        instanceClass
-      );
+          "Tried to access RawDataInstanceDto field that did not exist {} on class {}",
+          fieldKey,
+          instanceClass);
       return Optional.empty();
     }
   }
 
-  private static Optional<String> getVariableValue(final RawDataProcessInstanceDto instanceDto, String variableKey) {
+  private static Optional<String> getVariableValue(
+      final RawDataProcessInstanceDto instanceDto, String variableKey) {
     return Optional.ofNullable(instanceDto.getVariables())
-      .map(variables -> variables.get(stripOffPrefix(variableKey, VARIABLE_PREFIX)))
-      .filter(variable -> !OBJECT_VARIABLE_VALUE_PLACEHOLDER.equals(variable))
-      .map(Object::toString);
+        .map(variables -> variables.get(stripOffPrefix(variableKey, VARIABLE_PREFIX)))
+        .filter(variable -> !OBJECT_VARIABLE_VALUE_PLACEHOLDER.equals(variable))
+        .map(Object::toString);
   }
 
-  private static Optional<String> getFlowNodeDurationValue(final RawDataProcessInstanceDto instanceDto,
-                                                           String flowNodeKey) {
+  private static Optional<String> getFlowNodeDurationValue(
+      final RawDataProcessInstanceDto instanceDto, String flowNodeKey) {
     flowNodeKey = flowNodeKey.replace(FLOWNODE_DURATION_PREFIX, "");
     if (instanceDto.getFlowNodeDurations().containsKey(flowNodeKey)) {
-      return Optional.of((Long.toString(instanceDto.getFlowNodeDurations().get(flowNodeKey).getValue())));
+      return Optional.of(
+          (Long.toString(instanceDto.getFlowNodeDurations().get(flowNodeKey).getValue())));
     } else {
       return Optional.empty();
     }
   }
 
-  private static Optional<String> getCountValue(final RawDataProcessInstanceDto instanceDto, String flowNodeKey) {
+  private static Optional<String> getCountValue(
+      final RawDataProcessInstanceDto instanceDto, String flowNodeKey) {
     if (flowNodeKey.equals(addCountPrefix(RawDataCountDto.Fields.userTasks))) {
       return Optional.of(Long.toString(instanceDto.getCounts().getUserTasks()));
     } else if (flowNodeKey.equals(addCountPrefix(RawDataCountDto.Fields.incidents))) {
@@ -331,20 +346,20 @@ public class CSVUtils {
     return COUNT_PREFIX + openIncidents;
   }
 
-  private static Optional<String> getOutputVariableValue(final RawDataDecisionInstanceDto instanceDto,
-                                                         final String inputKey) {
+  private static Optional<String> getOutputVariableValue(
+      final RawDataDecisionInstanceDto instanceDto, final String inputKey) {
     return Optional.ofNullable(instanceDto.getOutputVariables())
-      .map(outputs -> outputs.get(stripOffPrefix(inputKey, OUTPUT_PREFIX)))
-      .map(OutputVariableEntry::getValues)
-      .map(values -> values.stream().map(Object::toString).collect(joining(",")));
+        .map(outputs -> outputs.get(stripOffPrefix(inputKey, OUTPUT_PREFIX)))
+        .map(OutputVariableEntry::getValues)
+        .map(values -> values.stream().map(Object::toString).collect(joining(",")));
   }
 
-  private static Optional<String> getInputVariableValue(final RawDataDecisionInstanceDto instanceDto,
-                                                        final String outputKey) {
+  private static Optional<String> getInputVariableValue(
+      final RawDataDecisionInstanceDto instanceDto, final String outputKey) {
     return Optional.ofNullable(instanceDto.getInputVariables())
-      .map(inputs -> inputs.get(stripOffPrefix(outputKey, INPUT_PREFIX)))
-      .map(InputVariableEntry::getValue)
-      .map(Object::toString);
+        .map(inputs -> inputs.get(stripOffPrefix(outputKey, INPUT_PREFIX)))
+        .map(InputVariableEntry::getValue)
+        .map(Object::toString);
   }
 
   private static boolean isOffsetPassed(Integer offset, int currentPosition) {
@@ -354,5 +369,4 @@ public class CSVUtils {
   private static boolean isLimitNotExceeded(Integer limit, List<String[]> result) {
     return limit == null || result.size() <= limit;
   }
-
 }

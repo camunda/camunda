@@ -5,40 +5,46 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
+import java.time.OffsetDateTime;
+import java.util.Map;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 
-import java.time.OffsetDateTime;
-import java.util.Map;
-
 /**
- * This class is using the dto from the plugin system,
- * in order to enable to enrich the variable import.
- * <p>
- * Note: This class is still needed, because it implements
- * the optimize dto opposed to the plugin dto.
+ * This class is using the dto from the plugin system, in order to enable to enrich the variable
+ * import.
+ *
+ * <p>Note: This class is still needed, because it implements the optimize dto opposed to the plugin
+ * dto.
  */
 @NoArgsConstructor
 public class ProcessVariableUpdateDto extends PluginVariableDto implements OptimizeDto {
-  public ProcessVariableUpdateDto(final String id, final String name, final String type, final String value,
-                                  final OffsetDateTime timestamp, final Map<String, Object> valueInfo,
-                                  final String processDefinitionKey, final String processDefinitionId,
-                                  final String processInstanceId, final Long version, final String engineAlias,
-                                  final String tenantId) {
+  public ProcessVariableUpdateDto(
+      final String id,
+      final String name,
+      final String type,
+      final String value,
+      final OffsetDateTime timestamp,
+      final Map<String, Object> valueInfo,
+      final String processDefinitionKey,
+      final String processDefinitionId,
+      final String processInstanceId,
+      final Long version,
+      final String engineAlias,
+      final String tenantId) {
     super(
-      id,
-      name,
-      type,
-      value,
-      timestamp,
-      valueInfo,
-      processDefinitionKey,
-      processDefinitionId,
-      processInstanceId,
-      version,
-      engineAlias,
-      tenantId
-    );
+        id,
+        name,
+        type,
+        value,
+        timestamp,
+        valueInfo,
+        processDefinitionKey,
+        processDefinitionId,
+        processInstanceId,
+        version,
+        engineAlias,
+        tenantId);
   }
 }

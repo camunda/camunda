@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.service.db.reader.EventProcessDefinitionReader;
 import org.camunda.optimize.service.db.writer.EventProcessDefinitionWriter;
 import org.springframework.stereotype.Component;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 
 @AllArgsConstructor
 @Component
@@ -24,7 +23,8 @@ public class EventProcessDefinitionService {
   private final EventProcessDefinitionReader eventProcessDefinitionReader;
   private final EventProcessDefinitionWriter eventProcessDefinitionWriter;
 
-  public void importEventProcessDefinitions(final List<EventProcessDefinitionDto> definitionOptimizeDtos) {
+  public void importEventProcessDefinitions(
+      final List<EventProcessDefinitionDto> definitionOptimizeDtos) {
     eventProcessDefinitionWriter.importEventProcessDefinitions(definitionOptimizeDtos);
   }
 
@@ -32,12 +32,12 @@ public class EventProcessDefinitionService {
     return eventProcessDefinitionReader.getAllEventProcessDefinitionsOmitXml();
   }
 
-  public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKey(final String definitionKey) {
+  public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKey(
+      final String definitionKey) {
     return eventProcessDefinitionReader.getEventProcessDefinitionByKeyOmitXml(definitionKey);
   }
 
   public void deleteEventProcessDefinitions(final Collection<String> definitionIds) {
     eventProcessDefinitionWriter.deleteEventProcessDefinitions(definitionIds);
   }
-
 }

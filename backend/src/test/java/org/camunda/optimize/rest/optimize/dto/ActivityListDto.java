@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.rest.optimize.dto;
 
+import java.io.Serializable;
+import java.util.Date;
 import lombok.Getter;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.io.Serializable;
-import java.util.Date;
 
 @Getter
 @Setter

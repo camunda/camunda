@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
@@ -16,28 +18,27 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionEngineImportMediator
-  extends TimestampBasedImportMediator<ProcessDefinitionImportIndexHandler, ProcessDefinitionEngineDto> {
+    extends TimestampBasedImportMediator<
+        ProcessDefinitionImportIndexHandler, ProcessDefinitionEngineDto> {
 
   private final ProcessDefinitionFetcher engineEntityFetcher;
 
-
-  public ProcessDefinitionEngineImportMediator(final ProcessDefinitionImportIndexHandler importIndexHandler,
-                                               final ProcessDefinitionFetcher engineEntityFetcher,
-                                               final ProcessDefinitionImportService importService,
-                                               final ConfigurationService configurationService,
-                                               final BackoffCalculator idleBackoffCalculator) {
+  public ProcessDefinitionEngineImportMediator(
+      final ProcessDefinitionImportIndexHandler importIndexHandler,
+      final ProcessDefinitionFetcher engineEntityFetcher,
+      final ProcessDefinitionImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
   }
 
   @Override
-  protected OffsetDateTime getTimestamp(final ProcessDefinitionEngineDto processDefinitionEngineDto) {
+  protected OffsetDateTime getTimestamp(
+      final ProcessDefinitionEngineDto processDefinitionEngineDto) {
     return processDefinitionEngineDto.getDeploymentTime();
   }
 
@@ -48,7 +49,8 @@ public class ProcessDefinitionEngineImportMediator
 
   @Override
   protected List<ProcessDefinitionEngineDto> getEntitiesLastTimestamp() {
-    return engineEntityFetcher.fetchDefinitionsForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+    return engineEntityFetcher.fetchDefinitionsForTimestamp(
+        importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override
@@ -60,5 +62,4 @@ public class ProcessDefinitionEngineImportMediator
   public MediatorRank getRank() {
     return MediatorRank.DEFINITION;
   }
-
 }

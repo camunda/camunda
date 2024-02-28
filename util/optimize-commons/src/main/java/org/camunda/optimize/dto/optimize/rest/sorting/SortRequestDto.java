@@ -6,12 +6,11 @@
 package org.camunda.optimize.dto.optimize.rest.sorting;
 
 import jakarta.ws.rs.QueryParam;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-
-import java.util.Optional;
 
 @Data
 @NoArgsConstructor
@@ -23,6 +22,7 @@ public class SortRequestDto {
 
   @QueryParam(SORT_BY)
   private String sortBy;
+
   @QueryParam(SORT_ORDER)
   private SortOrder sortOrder;
 
@@ -33,5 +33,4 @@ public class SortRequestDto {
   public Optional<SortOrder> getSortOrder() {
     return Optional.ofNullable(sortOrder);
   }
-
 }

@@ -7,6 +7,12 @@ package org.camunda.optimize.service.importing.event;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -19,13 +25,6 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 @AllArgsConstructor
 @Slf4j
 @Component
@@ -33,8 +32,7 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
   private final ConfigurationService configurationService;
 
   private final EventTraceImportMediatorManager eventTraceImportMediatorManager;
-  @Getter
-  private final PersistEventIndexHandlerStateMediator eventProcessingProgressMediator;
+  @Getter private final PersistEventIndexHandlerStateMediator eventProcessingProgressMediator;
 
   @PostConstruct
   public void init() {
@@ -49,24 +47,23 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
 
   public Future<Void> runImportRound(final boolean forceImport) {
     final List<ImportMediator> allImportMediators = getImportMediators();
-    final List<ImportMediator> currentImportRound = allImportMediators
-      .stream()
-      .filter(mediator -> forceImport || mediator.canImport())
-      .collect(Collectors.toList());
+    final List<ImportMediator> currentImportRound =
+        allImportMediators.stream()
+            .filter(mediator -> forceImport || mediator.canImport())
+            .collect(Collectors.toList());
 
     if (log.isDebugEnabled()) {
       log.debug(
-        "Scheduling import round for {}",
-        currentImportRound.stream()
-          .map(mediator1 -> mediator1.getClass().getSimpleName())
-          .collect(Collectors.joining(","))
-      );
+          "Scheduling import round for {}",
+          currentImportRound.stream()
+              .map(mediator1 -> mediator1.getClass().getSimpleName())
+              .collect(Collectors.joining(",")));
     }
 
-    final CompletableFuture<?>[] importTaskFutures = currentImportRound
-      .stream()
-      .map(ImportMediator::runImport)
-      .toArray(CompletableFuture[]::new);
+    final CompletableFuture<?>[] importTaskFutures =
+        currentImportRound.stream()
+            .map(ImportMediator::runImport)
+            .toArray(CompletableFuture[]::new);
 
     if (importTaskFutures.length == 0 && !forceImport) {
       doBackoff(allImportMediators);
@@ -77,9 +74,9 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
 
   public List<ImportMediator> getImportMediators() {
     return Stream.concat(
-      Stream.of(eventProcessingProgressMediator),
-      eventTraceImportMediatorManager.getEventTraceImportMediators().stream()
-    ).collect(Collectors.toList());
+            Stream.of(eventProcessingProgressMediator),
+            eventTraceImportMediatorManager.getEventTraceImportMediators().stream())
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -108,11 +105,8 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
   }
 
   private void doBackoff(final List<ImportMediator> mediators) {
-    long timeToSleep = mediators
-      .stream()
-      .map(ImportMediator::getBackoffTimeInMs)
-      .min(Long::compare)
-      .orElse(5000L);
+    long timeToSleep =
+        mediators.stream().map(ImportMediator::getBackoffTimeInMs).min(Long::compare).orElse(5000L);
     try {
       log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
       Thread.sleep(timeToSleep);
@@ -125,5 +119,4 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
   private EventBasedProcessConfiguration getEventBasedProcessConfiguration() {
     return configurationService.getEventBasedProcessConfiguration();
   }
-
 }

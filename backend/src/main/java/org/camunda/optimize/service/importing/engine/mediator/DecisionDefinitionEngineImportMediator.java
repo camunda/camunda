@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
@@ -16,23 +18,20 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDefinitionEngineImportMediator
-  extends TimestampBasedImportMediator<DecisionDefinitionImportIndexHandler, DecisionDefinitionEngineDto> {
+    extends TimestampBasedImportMediator<
+        DecisionDefinitionImportIndexHandler, DecisionDefinitionEngineDto> {
 
   private final DecisionDefinitionFetcher engineEntityFetcher;
 
-
-  public DecisionDefinitionEngineImportMediator(final DecisionDefinitionImportIndexHandler importIndexHandler,
-                                                final DecisionDefinitionFetcher engineEntityFetcher,
-                                                final DecisionDefinitionImportService importService,
-                                                final ConfigurationService configurationService,
-                                                final BackoffCalculator idleBackoffCalculator) {
+  public DecisionDefinitionEngineImportMediator(
+      final DecisionDefinitionImportIndexHandler importIndexHandler,
+      final DecisionDefinitionFetcher engineEntityFetcher,
+      final DecisionDefinitionImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
   }
@@ -49,7 +48,8 @@ public class DecisionDefinitionEngineImportMediator
 
   @Override
   protected List<DecisionDefinitionEngineDto> getEntitiesLastTimestamp() {
-    return engineEntityFetcher.fetchDefinitionsForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+    return engineEntityFetcher.fetchDefinitionsForTimestamp(
+        importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override
@@ -61,5 +61,4 @@ public class DecisionDefinitionEngineImportMediator
   public MediatorRank getRank() {
     return MediatorRank.DEFINITION;
   }
-
 }

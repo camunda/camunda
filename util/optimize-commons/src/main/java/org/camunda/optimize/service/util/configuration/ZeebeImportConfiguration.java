@@ -17,5 +17,4 @@ public class ZeebeImportConfiguration {
 
   private int dynamicBatchSuccessAttempts;
   private int maxEmptyPagesToImport;
-
 }

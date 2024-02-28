@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import static org.camunda.optimize.dto.optimize.ReportConstants.AVERAGE_AGGREGATION_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MAX_AGGREGATION_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MIN_AGGREGATION_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.PERCENTILE_AGGREGATION_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.SUM_AGGREGATION_TYPE;
 
-public enum AggregationType {
+import com.fasterxml.jackson.annotation.JsonValue;
 
+public enum AggregationType {
   AVERAGE(AVERAGE_AGGREGATION_TYPE),
   MIN(MIN_AGGREGATION_TYPE),
   MAX(MAX_AGGREGATION_TYPE),
@@ -36,5 +35,4 @@ public enum AggregationType {
   public String toString() {
     return getId();
   }
-
 }

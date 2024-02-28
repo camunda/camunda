@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process;
 
+import static org.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
+
+import java.util.List;
+import java.util.stream.Collectors;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.db.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 
 public abstract class ProcessDistributedByPart extends DistributedByPart<ProcessReportDataDto> {
 
@@ -23,14 +22,13 @@ public abstract class ProcessDistributedByPart extends DistributedByPart<Process
   }
 
   @Override
-  public List<CompositeCommandResult.DistributedByResult> createEmptyResult(final ExecutionContext<ProcessReportDataDto> context) {
-    return context.getAllDistributedByKeysAndLabels()
-      .entrySet()
-      .stream()
-      .map(entry -> createDistributedByResult(
-        entry.getKey(), entry.getValue(), this.viewPart.createEmptyResult(context)
-      ))
-      .collect(Collectors.toList());
+  public List<CompositeCommandResult.DistributedByResult> createEmptyResult(
+      final ExecutionContext<ProcessReportDataDto> context) {
+    return context.getAllDistributedByKeysAndLabels().entrySet().stream()
+        .map(
+            entry ->
+                createDistributedByResult(
+                    entry.getKey(), entry.getValue(), this.viewPart.createEmptyResult(context)))
+        .collect(Collectors.toList());
   }
-
 }

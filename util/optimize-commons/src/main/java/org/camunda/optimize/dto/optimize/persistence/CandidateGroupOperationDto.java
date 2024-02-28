@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.persistence;
 
+import java.io.Serializable;
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.io.Serializable;
-import java.time.OffsetDateTime;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,8 +21,7 @@ import java.time.OffsetDateTime;
 @FieldNameConstants
 public class CandidateGroupOperationDto implements OptimizeDto, Serializable {
 
-  @EqualsAndHashCode.Include
-  private String id;
+  @EqualsAndHashCode.Include private String id;
 
   private String groupId;
   private String operationType;

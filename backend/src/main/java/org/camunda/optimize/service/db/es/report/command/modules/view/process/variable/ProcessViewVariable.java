@@ -5,7 +5,20 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.view.process.variable;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
+
 import jakarta.ws.rs.BadRequestException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -29,20 +42,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
-
 @Slf4j
 @RequiredArgsConstructor
 @Component
@@ -59,62 +58,76 @@ public class ProcessViewVariable extends ProcessViewMultiAggregation {
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
+  public List<AggregationBuilder> createAggregations(
+      final ExecutionContext<ProcessReportDataDto> context) {
     final VariableViewPropertyDto variableViewDto = getVariableViewDto(context);
     final VariableType variableType = variableViewDto.getType();
     if (!VariableType.getNumericTypes().contains(variableType)) {
       throw new BadRequestException(
-        "Only numeric variable types are supported for reports with view on variables!"
-      );
+          "Only numeric variable types are supported for reports with view on variables!");
     }
 
-    final FilterAggregationBuilder filteredVariablesAggregation = filter(
-      FILTERED_VARIABLES_AGGREGATION,
-      boolQuery()
-        .must(termQuery(getNestedVariableNameField(), variableViewDto.getName()))
-        .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
-        .must(existsQuery(getNestedVariableValueFieldForType(variableType)))
-    );
+    final FilterAggregationBuilder filteredVariablesAggregation =
+        filter(
+            FILTERED_VARIABLES_AGGREGATION,
+            boolQuery()
+                .must(termQuery(getNestedVariableNameField(), variableViewDto.getName()))
+                .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
+                .must(existsQuery(getNestedVariableValueFieldForType(variableType))));
     getAggregationStrategies(context.getReportData()).stream()
-      .map(strategy -> strategy.createAggregationBuilder().field(getNestedVariableValueFieldForType(variableType)))
-      .forEach(filteredVariablesAggregation::subAggregation);
+        .map(
+            strategy ->
+                strategy
+                    .createAggregationBuilder()
+                    .field(getNestedVariableValueFieldForType(variableType)))
+        .forEach(filteredVariablesAggregation::subAggregation);
 
     return Collections.singletonList(
-      nested(NESTED_VARIABLE_AGGREGATION, VARIABLES).subAggregation(filteredVariablesAggregation)
-    );
+        nested(NESTED_VARIABLE_AGGREGATION, VARIABLES)
+            .subAggregation(filteredVariablesAggregation));
   }
 
   @Override
-  public ViewResult retrieveResult(final SearchResponse response,
-                                   final Aggregations aggs,
-                                   final ExecutionContext<ProcessReportDataDto> context) {
+  public ViewResult retrieveResult(
+      final SearchResponse response,
+      final Aggregations aggs,
+      final ExecutionContext<ProcessReportDataDto> context) {
     final Nested nested = response.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
     final Filter filterVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
 
     final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
-    getAggregationStrategies(context.getReportData()).forEach(aggregationStrategy -> {
-      final Double measureResult = aggregationStrategy.getValue(filterVariables.getAggregations());
-      viewResultBuilder.viewMeasure(
-        ViewMeasure.builder().aggregationType(aggregationStrategy.getAggregationType()).value(measureResult).build()
-      );
-    });
+    getAggregationStrategies(context.getReportData())
+        .forEach(
+            aggregationStrategy -> {
+              final Double measureResult =
+                  aggregationStrategy.getValue(filterVariables.getAggregations());
+              viewResultBuilder.viewMeasure(
+                  ViewMeasure.builder()
+                      .aggregationType(aggregationStrategy.getAggregationType())
+                      .value(measureResult)
+                      .build());
+            });
     return viewResultBuilder.build();
   }
 
   @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setView(new ProcessViewDto(ProcessViewEntity.VARIABLE, ViewProperty.VARIABLE(null, null)));
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
+    dataForCommandKey.setView(
+        new ProcessViewDto(ProcessViewEntity.VARIABLE, ViewProperty.VARIABLE(null, null)));
   }
 
-  private VariableViewPropertyDto getVariableViewDto(final ExecutionContext<ProcessReportDataDto> context) {
-    return context.getReportData().getView().getProperties()
-      .stream()
-      .map(property -> property.getViewPropertyDtoIfOfType(VariableViewPropertyDto.class))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      // we take the first as only one variable view property is supported
-      .findFirst()
-      .orElseThrow(() -> new OptimizeRuntimeException("No variable view property found in report configuration"));
+  private VariableViewPropertyDto getVariableViewDto(
+      final ExecutionContext<ProcessReportDataDto> context) {
+    return context.getReportData().getView().getProperties().stream()
+        .map(property -> property.getViewPropertyDtoIfOfType(VariableViewPropertyDto.class))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        // we take the first as only one variable view property is supported
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new OptimizeRuntimeException(
+                    "No variable view property found in report configuration"));
   }
-
 }

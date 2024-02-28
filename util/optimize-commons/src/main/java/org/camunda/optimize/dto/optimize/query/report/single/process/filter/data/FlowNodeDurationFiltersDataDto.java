@@ -5,16 +5,16 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.data;
 
+import java.util.HashMap;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class FlowNodeDurationFiltersDataDto extends HashMap<String, DurationFilterDataDto> implements FilterDataDto {
+public class FlowNodeDurationFiltersDataDto extends HashMap<String, DurationFilterDataDto>
+    implements FilterDataDto {
   public FlowNodeDurationFiltersDataDto() {
     super();
   }

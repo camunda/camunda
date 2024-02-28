@@ -15,8 +15,7 @@ public class ConflictedItemDto {
   private ConflictedItemType type;
   private String name;
 
-  public ConflictedItemDto() {
-  }
+  public ConflictedItemDto() {}
 
   public ConflictedItemDto(String id, ConflictedItemType type, String name) {
     this.id = id;

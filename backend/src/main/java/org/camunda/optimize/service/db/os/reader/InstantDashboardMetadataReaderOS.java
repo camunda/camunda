@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import static java.lang.String.format;
+import static org.camunda.optimize.service.db.DatabaseConstants.INSTANT_DASHBOARD_INDEX_NAME;
+
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
@@ -16,11 +20,6 @@ import org.opensearch.client.opensearch.core.GetResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
-import static java.lang.String.format;
-import static org.camunda.optimize.service.db.DatabaseConstants.INSTANT_DASHBOARD_INDEX_NAME;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -29,9 +28,12 @@ public class InstantDashboardMetadataReaderOS implements InstantDashboardMetadat
   private final OptimizeOpenSearchClient osClient;
 
   @Override
-  public Optional<String> getInstantDashboardIdFor(final String processDefinitionKey, final String template) throws
-                                                                                                             OptimizeRuntimeException {
-    log.debug("Fetching Instant preview dashboard ID for [{}] with template [{}] ", processDefinitionKey, template);
+  public Optional<String> getInstantDashboardIdFor(
+      final String processDefinitionKey, final String template) throws OptimizeRuntimeException {
+    log.debug(
+        "Fetching Instant preview dashboard ID for [{}] with template [{}] ",
+        processDefinitionKey,
+        template);
 
     InstantDashboardDataDto dashboardDataDto = new InstantDashboardDataDto();
     dashboardDataDto.setTemplateName(template);
@@ -39,20 +41,20 @@ public class InstantDashboardMetadataReaderOS implements InstantDashboardMetadat
 
     final String instantDashboardKey = dashboardDataDto.getInstantDashboardId();
 
-    GetResponse<InstantDashboardDataDto> getResponse = osClient.get(
-      INSTANT_DASHBOARD_INDEX_NAME,
-      instantDashboardKey,
-      InstantDashboardDataDto.class,
-      format("Could not fetch Instant preview dashboard with key [%s]", instantDashboardKey)
-    );
+    GetResponse<InstantDashboardDataDto> getResponse =
+        osClient.get(
+            INSTANT_DASHBOARD_INDEX_NAME,
+            instantDashboardKey,
+            InstantDashboardDataDto.class,
+            format("Could not fetch Instant preview dashboard with key [%s]", instantDashboardKey));
 
     if (getResponse.found()) {
       return Optional.of(getResponse.source().getDashboardId());
     } else {
-      String reason = "Could not find dashboard data for key [" + instantDashboardKey + "] in Opensearch.";
+      String reason =
+          "Could not find dashboard data for key [" + instantDashboardKey + "] in Opensearch.";
       log.error(reason);
       return Optional.empty();
     }
   }
-
 }

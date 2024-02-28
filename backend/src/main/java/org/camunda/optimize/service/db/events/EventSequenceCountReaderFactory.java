@@ -10,5 +10,4 @@ import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
 public interface EventSequenceCountReaderFactory {
 
   EventSequenceCountReader createEventSequenceCountReader(final String eventSuffix);
-
 }

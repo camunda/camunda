@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
-
+import java.time.OffsetDateTime;
+import java.util.List;
 import org.camunda.optimize.dto.engine.HistoricUserOperationLogDto;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogFetcher;
@@ -17,27 +18,27 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class UserOperationLogEngineImportMediator
-  extends TimestampBasedImportMediator<UserOperationLogImportIndexHandler, HistoricUserOperationLogDto> {
+    extends TimestampBasedImportMediator<
+        UserOperationLogImportIndexHandler, HistoricUserOperationLogDto> {
 
   private final UserOperationLogFetcher engineEntityFetcher;
 
-  public UserOperationLogEngineImportMediator(final UserOperationLogImportIndexHandler importIndexHandler,
-                                              final UserOperationLogFetcher engineEntityFetcher,
-                                              final UserOperationLogImportService importService,
-                                              final ConfigurationService configurationService,
-                                              final BackoffCalculator idleBackoffCalculator) {
+  public UserOperationLogEngineImportMediator(
+      final UserOperationLogImportIndexHandler importIndexHandler,
+      final UserOperationLogFetcher engineEntityFetcher,
+      final UserOperationLogImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
   }
 
   @Override
-  protected OffsetDateTime getTimestamp(final HistoricUserOperationLogDto historicUserOperationsLogDto) {
+  protected OffsetDateTime getTimestamp(
+      final HistoricUserOperationLogDto historicUserOperationsLogDto) {
     return historicUserOperationsLogDto.getTimestamp();
   }
 
@@ -48,7 +49,8 @@ public class UserOperationLogEngineImportMediator
 
   @Override
   protected List<HistoricUserOperationLogDto> getEntitiesLastTimestamp() {
-    return engineEntityFetcher.fetchUserOperationLogsForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+    return engineEntityFetcher.fetchUserOperationLogsForTimestamp(
+        importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override
@@ -60,5 +62,4 @@ public class UserOperationLogEngineImportMediator
   public MediatorRank getRank() {
     return MediatorRank.INSTANCE_SUB_ENTITIES;
   }
-
 }

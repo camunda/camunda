@@ -5,17 +5,17 @@
  */
 package org.camunda.optimize.plugin;
 
+import java.util.List;
 import org.camunda.optimize.plugin.elasticsearch.DatabaseCustomHeaderSupplier;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class ElasticsearchCustomHeaderProvider extends PluginProvider<DatabaseCustomHeaderSupplier> {
+public class ElasticsearchCustomHeaderProvider
+    extends PluginProvider<DatabaseCustomHeaderSupplier> {
 
-  public ElasticsearchCustomHeaderProvider(final ConfigurationService configurationService,
-                                           final PluginJarFileLoader pluginJarLoader) {
+  public ElasticsearchCustomHeaderProvider(
+      final ConfigurationService configurationService, final PluginJarFileLoader pluginJarLoader) {
     super(configurationService, pluginJarLoader);
   }
 
@@ -28,5 +28,4 @@ public class ElasticsearchCustomHeaderProvider extends PluginProvider<DatabaseCu
   protected List<String> getBasePackages() {
     return configurationService.getElasticsearchCustomHeaderPluginBasePackages();
   }
-
 }

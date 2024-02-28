@@ -25,8 +25,8 @@ public class MinMaxStatDto {
     this.maxAsString = Double.toString(max);
   }
 
-  public MinMaxStatDto(final double min, final double max,
-                       final String minAsString, final String maxAsString) {
+  public MinMaxStatDto(
+      final double min, final double max, final String minAsString, final String maxAsString) {
     this.min = min;
     this.max = max;
     this.minAsString = minAsString;
@@ -46,15 +46,11 @@ public class MinMaxStatDto {
   }
 
   public boolean isValidRange() {
-    return isMinValid()
-      && isMaxValid()
-      && min != max;
+    return isMinValid() && isMaxValid() && min != max;
   }
 
   public boolean isEmpty() {
     // occurs when there is no data to be evaluated for min and max fields
-    return !isMinValid()
-      && !isMaxValid();
+    return !isMinValid() && !isMaxValid();
   }
-
 }

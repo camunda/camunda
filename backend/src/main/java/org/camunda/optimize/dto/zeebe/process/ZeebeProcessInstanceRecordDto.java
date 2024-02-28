@@ -10,5 +10,5 @@ import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 
 @EqualsAndHashCode(callSuper = true)
-public class ZeebeProcessInstanceRecordDto extends ZeebeRecordDto<ZeebeProcessInstanceDataDto, ProcessInstanceIntent> {
-}
+public class ZeebeProcessInstanceRecordDto
+    extends ZeebeRecordDto<ZeebeProcessInstanceDataDto, ProcessInstanceIntent> {}

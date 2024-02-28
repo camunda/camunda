@@ -18,10 +18,13 @@ public class PanelNotificationConstants {
   public static final String ORG_TYPE = "org";
 
   // Notification content
-  public static final String INITIAL_VISIT_TO_INSTANT_DASHBOARD_ID = "initialVisitToInstantDashboard";
-  public static final String INITIAL_VISIT_TO_INSTANT_DASHBOARD_TITLE = "See how your process is doing";
+  public static final String INITIAL_VISIT_TO_INSTANT_DASHBOARD_ID =
+      "initialVisitToInstantDashboard";
+  public static final String INITIAL_VISIT_TO_INSTANT_DASHBOARD_TITLE =
+      "See how your process is doing";
   public static final String INITIAL_VISIT_TO_INSTANT_DASHBOARD_CONTENT =
-    "Your first process of %s was started successfully. Track the status in the instant preview dashboard.";
-  public static final String INITIAL_VISIT_TO_INSTANT_DASHBOARD_LINK_LABEL = "View instant preview dashboard";
-  public static final String[] OPTIMIZE_USER_PERMISSIONS = new String[]{"cluster:optimize:read"};
+      "Your first process of %s was started successfully. Track the status in the instant preview dashboard.";
+  public static final String INITIAL_VISIT_TO_INSTANT_DASHBOARD_LINK_LABEL =
+      "View instant preview dashboard";
+  public static final String[] OPTIMIZE_USER_PERMISSIONS = new String[] {"cluster:optimize:read"};
 }

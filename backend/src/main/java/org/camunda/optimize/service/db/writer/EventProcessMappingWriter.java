@@ -5,11 +5,9 @@
  */
 package org.camunda.optimize.service.db.writer;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-
-import java.util.List;
-
 
 public interface EventProcessMappingWriter {
 
@@ -22,5 +20,4 @@ public interface EventProcessMappingWriter {
   boolean deleteEventProcessMapping(final String eventProcessMappingId);
 
   void deleteEventProcessMappings(final List<String> eventProcessMappingIds);
-
 }

@@ -8,6 +8,10 @@ package org.camunda.optimize.service.tenant;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.db.reader.TenantReader;
@@ -19,11 +23,6 @@ import org.camunda.optimize.service.util.configuration.condition.CamundaPlatform
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 @Component
 @Conditional(CamundaPlatformCondition.class)
@@ -37,9 +36,10 @@ public class CamundaPlatformTenantService implements TenantService, Configuratio
   private final LoadingCache<String, List<TenantDto>> tenantsReadCache;
   private List<TenantDto> configuredDefaultTenants;
 
-  public CamundaPlatformTenantService(final TenantReader tenantReader,
-                                      final DataSourceTenantAuthorizationService tenantAuthorizationService,
-                                      final ConfigurationService configurationService) {
+  public CamundaPlatformTenantService(
+      final TenantReader tenantReader,
+      final DataSourceTenantAuthorizationService tenantAuthorizationService,
+      final ConfigurationService configurationService) {
     this.tenantReader = tenantReader;
     this.tenantAuthorizationService = tenantAuthorizationService;
     this.configurationService = configurationService;
@@ -48,14 +48,17 @@ public class CamundaPlatformTenantService implements TenantService, Configuratio
 
     // this cache serves the purpose to reduce the frequency an actual read is triggered
     // as the tenant data is not changing very frequently the caching is a tradeoff to
-    // reduce the latency of processing requests where multiple authorization checks are done in a short amount of time
+    // reduce the latency of processing requests where multiple authorization checks are done in a
+    // short amount of time
     // (mostly listing endpoints for reports and process/decision definitions)
-    final CacheConfiguration tenantCacheConfiguration = configurationService.getCaches().getTenants();
-    tenantsReadCache = Caffeine.newBuilder()
-      // as the cache holds only one entry being the global list of all tenants
-      .maximumSize(1)
-      .expireAfterWrite(tenantCacheConfiguration.getDefaultTtlMillis(), TimeUnit.MILLISECONDS)
-      .build(key -> fetchTenants());
+    final CacheConfiguration tenantCacheConfiguration =
+        configurationService.getCaches().getTenants();
+    tenantsReadCache =
+        Caffeine.newBuilder()
+            // as the cache holds only one entry being the global list of all tenants
+            .maximumSize(1)
+            .expireAfterWrite(tenantCacheConfiguration.getDefaultTtlMillis(), TimeUnit.MILLISECONDS)
+            .build(key -> fetchTenants());
   }
 
   @Override
@@ -71,19 +74,19 @@ public class CamundaPlatformTenantService implements TenantService, Configuratio
   @Override
   public List<TenantDto> getTenantsForUser(final String userId) {
     return getAvailableTenants().stream()
-      .filter(tenantDto -> tenantAuthorizationService.isAuthorizedToSeeTenant(
-        userId,
-        IdentityType.USER,
-        tenantDto.getId(),
-        tenantDto.getEngine()
-      ))
-      .toList();
+        .filter(
+            tenantDto ->
+                tenantAuthorizationService.isAuthorizedToSeeTenant(
+                    userId, IdentityType.USER, tenantDto.getId(), tenantDto.getEngine()))
+        .toList();
   }
 
   public List<TenantDto> getTenantsByEngine(final String engineAlias) {
     return getAvailableTenants().stream()
-      .filter(tenantDto -> tenantDto.equals(TENANT_NOT_DEFINED) || tenantDto.getEngine().equals(engineAlias))
-      .toList();
+        .filter(
+            tenantDto ->
+                tenantDto.equals(TENANT_NOT_DEFINED) || tenantDto.getEngine().equals(engineAlias))
+        .toList();
   }
 
   public List<TenantDto> getAvailableTenants() {
@@ -97,15 +100,20 @@ public class CamundaPlatformTenantService implements TenantService, Configuratio
   }
 
   private void initDefaultTenants() {
-    this.configuredDefaultTenants = Stream.concat(
-      Stream.of(TENANT_NOT_DEFINED),
-      configurationService.getConfiguredEngines().entrySet().stream()
-        .filter(entry -> entry.getValue().getDefaultTenantId().isPresent())
-        .map(entry -> {
-          final String tenantId = entry.getValue().getDefaultTenantId().get();
-          return new TenantDto(tenantId, entry.getValue().getDefaultTenantName().orElse(tenantId), entry.getKey());
-        })
-    ).collect(ImmutableList.toImmutableList());
+    this.configuredDefaultTenants =
+        Stream.concat(
+                Stream.of(TENANT_NOT_DEFINED),
+                configurationService.getConfiguredEngines().entrySet().stream()
+                    .filter(entry -> entry.getValue().getDefaultTenantId().isPresent())
+                    .map(
+                        entry -> {
+                          final String tenantId = entry.getValue().getDefaultTenantId().get();
+                          return new TenantDto(
+                              tenantId,
+                              entry.getValue().getDefaultTenantName().orElse(tenantId),
+                              entry.getKey());
+                        }))
+            .collect(ImmutableList.toImmutableList());
   }
 
   @Override
@@ -114,4 +122,3 @@ public class CamundaPlatformTenantService implements TenantService, Configuratio
     tenantsReadCache.invalidateAll();
   }
 }
-

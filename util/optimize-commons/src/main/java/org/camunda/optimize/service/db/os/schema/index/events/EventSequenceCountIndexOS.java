@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.schema.index.events;
 
-import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchUtil;
+import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
 public class EventSequenceCountIndexOS extends EventSequenceCountIndex<IndexSettings.Builder> {
@@ -16,9 +16,8 @@ public class EventSequenceCountIndexOS extends EventSequenceCountIndex<IndexSett
   }
 
   @Override
-  public IndexSettings.Builder addStaticSetting(final String key,
-                                                final int value,
-                                                final IndexSettings.Builder contentBuilder) {
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder contentBuilder) {
     return OptimizeOpenSearchUtil.addStaticSetting(key, value, contentBuilder);
   }
 }

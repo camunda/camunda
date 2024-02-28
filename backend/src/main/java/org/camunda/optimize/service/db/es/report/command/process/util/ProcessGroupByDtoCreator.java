@@ -34,7 +34,6 @@ public class ProcessGroupByDtoCreator {
     return groupByDto;
   }
 
-
   public static EndDateGroupByDto createGroupByEndDateDto(AggregateByDateUnit dateInterval) {
     EndDateGroupByDto groupByDto = new EndDateGroupByDto();
     DateGroupByValueDto valueDto = new DateGroupByValueDto();
@@ -48,7 +47,8 @@ public class ProcessGroupByDtoCreator {
     return createGroupByEndDateDto(null);
   }
 
-  public static RunningDateGroupByDto createGroupByRunningDateDto(AggregateByDateUnit dateInterval) {
+  public static RunningDateGroupByDto createGroupByRunningDateDto(
+      AggregateByDateUnit dateInterval) {
     RunningDateGroupByDto groupByDto = new RunningDateGroupByDto();
     DateGroupByValueDto valueDto = new DateGroupByValueDto();
     valueDto.setUnit(dateInterval);
@@ -85,7 +85,8 @@ public class ProcessGroupByDtoCreator {
     return new NoneGroupByDto();
   }
 
-  public static VariableGroupByDto createGroupByVariable(String variableName, VariableType variableType) {
+  public static VariableGroupByDto createGroupByVariable(
+      String variableName, VariableType variableType) {
     VariableGroupByValueDto groupByValueDto = new VariableGroupByValueDto();
     groupByValueDto.setName(variableName);
     groupByValueDto.setType(variableType);

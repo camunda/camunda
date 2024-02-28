@@ -5,7 +5,11 @@
  */
 package org.camunda.optimize.service.db.es.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -17,11 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
 
-import java.util.Map;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public abstract class AbstractProcessDefinitionWriterES {
@@ -32,18 +31,18 @@ public abstract class AbstractProcessDefinitionWriterES {
 
   abstract Script createUpdateScript(ProcessDefinitionOptimizeDto processDefinitionDtos);
 
-  public void addImportProcessDefinitionToRequest(final BulkRequest bulkRequest,
-                                                  final ProcessDefinitionOptimizeDto processDefinitionDto) {
+  public void addImportProcessDefinitionToRequest(
+      final BulkRequest bulkRequest, final ProcessDefinitionOptimizeDto processDefinitionDto) {
     final Script updateScript = createUpdateScript(processDefinitionDto);
 
-    final UpdateRequest updateRequest = new UpdateRequest()
-      .index(PROCESS_DEFINITION_INDEX_NAME)
-      .id(processDefinitionDto.getId())
-      .script(updateScript)
-      .upsert(objectMapper.convertValue(processDefinitionDto, Map.class))
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    final UpdateRequest updateRequest =
+        new UpdateRequest()
+            .index(PROCESS_DEFINITION_INDEX_NAME)
+            .id(processDefinitionDto.getId())
+            .script(updateScript)
+            .upsert(objectMapper.convertValue(processDefinitionDto, Map.class))
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     bulkRequest.add(updateRequest);
   }
-
 }

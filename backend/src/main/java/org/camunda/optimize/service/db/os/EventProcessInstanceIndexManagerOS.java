@@ -22,10 +22,11 @@ public class EventProcessInstanceIndexManagerOS extends EventProcessInstanceInde
   private final OptimizeOpenSearchClient optimizeOpenSearchClient;
   private final OpenSearchSchemaManager openSearchSchemaManager;
 
-  public EventProcessInstanceIndexManagerOS(final OptimizeOpenSearchClient optimizeOpenSearchClient,
-                                            final OpenSearchSchemaManager openSearchSchemaManager,
-                                            final EventProcessPublishStateReader eventProcessPublishStateReader,
-                                            final OptimizeIndexNameService indexNameService) {
+  public EventProcessInstanceIndexManagerOS(
+      final OptimizeOpenSearchClient optimizeOpenSearchClient,
+      final OpenSearchSchemaManager openSearchSchemaManager,
+      final EventProcessPublishStateReader eventProcessPublishStateReader,
+      final OptimizeIndexNameService indexNameService) {
     super(eventProcessPublishStateReader, indexNameService);
     this.optimizeOpenSearchClient = optimizeOpenSearchClient;
     this.openSearchSchemaManager = openSearchSchemaManager;
@@ -35,5 +36,4 @@ public class EventProcessInstanceIndexManagerOS extends EventProcessInstanceInde
   public void syncAvailableIndices() {
     log.error("Functionality not implemented for OpenSearch");
   }
-
 }

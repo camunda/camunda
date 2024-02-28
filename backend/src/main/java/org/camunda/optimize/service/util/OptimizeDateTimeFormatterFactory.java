@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.util;
 
-import org.springframework.beans.factory.FactoryBean;
-import org.springframework.stereotype.Component;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 import java.time.format.DateTimeFormatter;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import org.springframework.beans.factory.FactoryBean;
+import org.springframework.stereotype.Component;
 
 @Component
 public class OptimizeDateTimeFormatterFactory implements FactoryBean<DateTimeFormatter> {

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.db.writer;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.db.repository.ImportRepository;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @AllArgsConstructor
 @Component

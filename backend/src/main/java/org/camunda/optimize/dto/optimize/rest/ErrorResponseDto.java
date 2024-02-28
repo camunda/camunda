@@ -16,11 +16,13 @@ public class ErrorResponseDto {
   private String detailedMessage;
   private AuthorizedReportDefinitionResponseDto reportDefinition;
 
-  public ErrorResponseDto() {
-  }
+  public ErrorResponseDto() {}
 
-  public ErrorResponseDto(String errorCode, String errorMessage, String detailedMessage,
-                          AuthorizedReportDefinitionResponseDto reportDefinition) {
+  public ErrorResponseDto(
+      String errorCode,
+      String errorMessage,
+      String detailedMessage,
+      AuthorizedReportDefinitionResponseDto reportDefinition) {
     this.errorCode = errorCode;
     this.errorMessage = errorMessage;
     this.detailedMessage = detailedMessage;

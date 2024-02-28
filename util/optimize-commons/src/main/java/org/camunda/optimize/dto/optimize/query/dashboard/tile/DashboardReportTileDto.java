@@ -22,8 +22,6 @@ public class DashboardReportTileDto {
   protected String id;
   protected PositionDto position;
   protected DimensionDto dimensions;
-  @NotNull
-  protected DashboardTileType type;
+  @NotNull protected DashboardTileType type;
   protected Object configuration;
-
 }

@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.writer.variable;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
@@ -13,23 +15,20 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
-public class ProcessVariableUpdateWriterOS
-  implements ProcessVariableUpdateWriter {
+public class ProcessVariableUpdateWriterOS implements ProcessVariableUpdateWriter {
   @Override
-  public List<ImportRequestDto> generateVariableUpdateImports(final List<ProcessVariableDto> variables) {
+  public List<ImportRequestDto> generateVariableUpdateImports(
+      final List<ProcessVariableDto> variables) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
-  public void deleteVariableDataByProcessInstanceIds(final String processDefinitionKey, final List<String> processInstanceIds) {
+  public void deleteVariableDataByProcessInstanceIds(
+      final String processDefinitionKey, final List<String> processInstanceIds) {
     log.error("Functionality not implemented for OpenSearch");
   }
-
 }

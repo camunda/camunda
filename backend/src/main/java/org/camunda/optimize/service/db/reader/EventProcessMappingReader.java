@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import java.util.List;
+import java.util.Optional;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-
-import java.util.List;
-import java.util.Optional;
 
 public interface EventProcessMappingReader {
 
@@ -18,6 +17,6 @@ public interface EventProcessMappingReader {
 
   List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml();
 
-  List<EventProcessRoleRequestDto<IdentityDto>> getEventProcessRoles(final String eventProcessMappingId);
-
+  List<EventProcessRoleRequestDto<IdentityDto>> getEventProcessRoles(
+      final String eventProcessMappingId);
 }

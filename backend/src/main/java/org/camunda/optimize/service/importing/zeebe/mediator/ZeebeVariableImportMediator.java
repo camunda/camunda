@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.importing.zeebe.mediator;
 
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
+import static org.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
+
+import java.util.List;
 import org.camunda.optimize.OptimizeMetrics;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import org.camunda.optimize.service.importing.PositionBasedImportMediator;
@@ -15,21 +19,17 @@ import org.camunda.optimize.service.importing.zeebe.handler.ZeebeVariableImportI
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.util.List;
-
-import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
-import static org.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
-
 public class ZeebeVariableImportMediator
-  extends PositionBasedImportMediator<ZeebeVariableImportIndexHandler, ZeebeVariableRecordDto> {
+    extends PositionBasedImportMediator<ZeebeVariableImportIndexHandler, ZeebeVariableRecordDto> {
 
   private final ZeebeVariableFetcher zeebeVariableFetcher;
 
-  public ZeebeVariableImportMediator(final ZeebeVariableImportIndexHandler importIndexHandler,
-                                     final ZeebeVariableFetcher zeebeVariableFetcher,
-                                     final ZeebeVariableImportService importService,
-                                     final ConfigurationService configurationService,
-                                     final BackoffCalculator idleBackoffCalculator) {
+  public ZeebeVariableImportMediator(
+      final ZeebeVariableImportIndexHandler importIndexHandler,
+      final ZeebeVariableFetcher zeebeVariableFetcher,
+      final ZeebeVariableImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.zeebeVariableFetcher = zeebeVariableFetcher;
     this.importService = importService;
@@ -59,7 +59,9 @@ public class ZeebeVariableImportMediator
 
   private List<ZeebeVariableRecordDto> getVariables() {
     return OptimizeMetrics.getTimer(NEW_PAGE_FETCH_TIME_METRIC, getRecordType(), getPartitionId())
-      .record(() -> zeebeVariableFetcher.getZeebeRecordsForPrefixAndPartitionFrom(importIndexHandler.getNextPage()));
+        .record(
+            () ->
+                zeebeVariableFetcher.getZeebeRecordsForPrefixAndPartitionFrom(
+                    importIndexHandler.getNextPage()));
   }
-
 }

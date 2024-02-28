@@ -5,23 +5,22 @@
  */
 package org.camunda.optimize.rest.engine;
 
+import static jakarta.ws.rs.Priorities.AUTHENTICATION;
+
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-
-import static jakarta.ws.rs.Priorities.AUTHENTICATION;
 
 @Priority(AUTHENTICATION)
 public class BasicAccessAuthenticationFilter implements ClientRequestFilter {
   private String defaultEngineAuthenticationUser;
   private String defaultEngineAuthenticationPassword;
 
-  public BasicAccessAuthenticationFilter(String defaultEngineAuthenticationUser,
-                                         String defaultEngineAuthenticationPassword) {
+  public BasicAccessAuthenticationFilter(
+      String defaultEngineAuthenticationUser, String defaultEngineAuthenticationPassword) {
     this.defaultEngineAuthenticationUser = defaultEngineAuthenticationUser;
     this.defaultEngineAuthenticationPassword = defaultEngineAuthenticationPassword;
   }
@@ -37,4 +36,3 @@ public class BasicAccessAuthenticationFilter implements ClientRequestFilter {
     return "Basic " + Base64.getEncoder().encodeToString(token.getBytes(StandardCharsets.UTF_8));
   }
 }
-

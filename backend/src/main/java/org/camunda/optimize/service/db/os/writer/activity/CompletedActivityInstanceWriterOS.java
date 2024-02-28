@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.writer.activity;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
@@ -14,17 +16,15 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class CompletedActivityInstanceWriterOS extends AbstractActivityInstanceWriterOS
-  implements CompletedActivityInstanceWriter {
+    implements CompletedActivityInstanceWriter {
 
   @Override
-  public List<ImportRequestDto> generateActivityInstanceImports(final List<FlowNodeEventDto> activityInstances) {
+  public List<ImportRequestDto> generateActivityInstanceImports(
+      final List<FlowNodeEventDto> activityInstances) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
@@ -37,10 +37,10 @@ public class CompletedActivityInstanceWriterOS extends AbstractActivityInstanceW
 
   @Override
   protected String createInlineUpdateScript() {
-    // new import flowNodeInstances should win over already imported flowNodeInstances, since those might be running
+    // new import flowNodeInstances should win over already imported flowNodeInstances, since those
+    // might be running
     // instances.
     log.error("Functionality not implemented for OpenSearch");
     return "";
   }
-
 }

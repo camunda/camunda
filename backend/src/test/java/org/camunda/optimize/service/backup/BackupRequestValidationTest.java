@@ -5,26 +5,26 @@
  */
 package org.camunda.optimize.service.backup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
+
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.camunda.optimize.dto.optimize.rest.BackupRequestDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Set;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
-
 public class BackupRequestValidationTest {
 
   @ParameterizedTest
   @MethodSource("invalidBackupIds")
-  public void triggerBackupWithInvalidBackupId(final Long invalidBackupId, final String expectedErrorMsg) {
+  public void triggerBackupWithInvalidBackupId(
+      final Long invalidBackupId, final String expectedErrorMsg) {
     // when
     ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     Validator validator = factory.getValidator();
@@ -32,14 +32,16 @@ public class BackupRequestValidationTest {
     Set<ConstraintViolation<BackupRequestDto>> violations = validator.validate(backupRequestDto);
 
     // then
-    assertThat(violations).singleElement().extracting(ConstraintViolation::getMessage).isEqualTo(expectedErrorMsg);
+    assertThat(violations)
+        .singleElement()
+        .extracting(ConstraintViolation::getMessage)
+        .isEqualTo(expectedErrorMsg);
   }
 
   @SuppressWarnings(UNUSED)
   private static Stream<Arguments> invalidBackupIds() {
     return Stream.of(
-      Arguments.of(null, "must not be null"),
-      Arguments.of(-1L, "must be greater than or equal to 0")
-    );
+        Arguments.of(null, "must not be null"),
+        Arguments.of(-1L, "must be greater than or equal to 0"));
   }
 }

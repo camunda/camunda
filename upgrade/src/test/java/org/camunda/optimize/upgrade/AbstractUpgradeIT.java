@@ -5,7 +5,22 @@
  */
 package org.camunda.optimize.upgrade;
 
+import static jakarta.ws.rs.HttpMethod.DELETE;
+import static jakarta.ws.rs.HttpMethod.POST;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
+import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.mockserver.model.HttpRequest.request;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
@@ -13,13 +28,13 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
-import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
@@ -64,22 +79,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static jakarta.ws.rs.HttpMethod.DELETE;
-import static jakarta.ws.rs.HttpMethod.POST;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
-import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
-import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
-import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.mockserver.model.HttpRequest.request;
-
 public abstract class AbstractUpgradeIT {
 
   protected static final MetadataIndexES METADATA_INDEX = new MetadataIndexES();
@@ -90,10 +89,12 @@ public abstract class AbstractUpgradeIT {
 
   protected static final IndexMappingCreator TEST_INDEX_V1 = new UserTestIndex(1);
   protected static final IndexMappingCreator TEST_INDEX_V2 = new UserTestIndex(2);
-  protected static final IndexMappingCreator TEST_INDEX_WITH_UPDATED_MAPPING_V2 = new UserTestUpdatedMappingIndex();
-  protected static final IndexMappingCreator TEST_INDEX_WITH_TEMPLATE_V1 = new UserTestWithTemplateIndex();
+  protected static final IndexMappingCreator TEST_INDEX_WITH_UPDATED_MAPPING_V2 =
+      new UserTestUpdatedMappingIndex();
+  protected static final IndexMappingCreator TEST_INDEX_WITH_TEMPLATE_V1 =
+      new UserTestWithTemplateIndex();
   protected static final IndexMappingCreator TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2 =
-    new UserTestWithTemplateUpdatedMappingIndex();
+      new UserTestWithTemplateUpdatedMappingIndex();
 
   protected ClientAndServer dbMockServer;
   protected ObjectMapper objectMapper;
@@ -108,7 +109,7 @@ public abstract class AbstractUpgradeIT {
   protected void setUp() throws Exception {
     this.configurationService = createDefaultConfiguration();
     final DatabaseConnectionNodeConfiguration elasticConfig =
-      this.configurationService.getElasticSearchConfiguration().getFirstConnectionNode();
+        this.configurationService.getElasticSearchConfiguration().getFirstConnectionNode();
 
     this.dbMockServer = createElasticMock(elasticConfig);
     elasticConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
@@ -123,19 +124,20 @@ public abstract class AbstractUpgradeIT {
     prefixAwareClient.setSnapshotInProgressRetryDelaySeconds(1);
   }
 
-  protected void setUpUpgradeDependenciesWithConfiguration(ConfigurationService configurationService) {
+  protected void setUpUpgradeDependenciesWithConfiguration(
+      ConfigurationService configurationService) {
     this.upgradeDependencies =
-      UpgradeUtil.createUpgradeDependenciesWithAConfigurationService(configurationService);
+        UpgradeUtil.createUpgradeDependenciesWithAConfigurationService(configurationService);
     this.objectMapper = upgradeDependencies.getObjectMapper();
     this.prefixAwareClient = upgradeDependencies.getEsClient();
     this.indexNameService = upgradeDependencies.getIndexNameService();
     this.metadataService = upgradeDependencies.getMetadataService();
-    this.upgradeProcedure = new UpgradeProcedure(
-      prefixAwareClient,
-      new UpgradeValidationService(),
-      createSchemaUpgradeClient(upgradeDependencies),
-      new UpgradeStepLogService()
-    );
+    this.upgradeProcedure =
+        new UpgradeProcedure(
+            prefixAwareClient,
+            new UpgradeValidationService(),
+            createSchemaUpgradeClient(upgradeDependencies),
+            new UpgradeStepLogService());
   }
 
   @AfterEach
@@ -146,9 +148,9 @@ public abstract class AbstractUpgradeIT {
   }
 
   protected void initSchema(List<IndexMappingCreator<XContentBuilder>> mappingCreators) {
-    final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
-      metadataService, createDefaultConfiguration(), indexNameService, mappingCreators
-    );
+    final ElasticSearchSchemaManager elasticSearchSchemaManager =
+        new ElasticSearchSchemaManager(
+            metadataService, createDefaultConfiguration(), indexNameService, mappingCreators);
     elasticSearchSchemaManager.initializeSchema(prefixAwareClient);
   }
 
@@ -157,13 +159,17 @@ public abstract class AbstractUpgradeIT {
   }
 
   protected String getMetadataVersion() {
-    return metadataService.getSchemaVersion(prefixAwareClient)
-      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not obtain current schema version!"));
+    return metadataService
+        .getSchemaVersion(prefixAwareClient)
+        .orElseThrow(
+            () -> new OptimizeIntegrationTestException("Could not obtain current schema version!"));
   }
 
   @SneakyThrows
-  protected void createOptimizeIndexWithTypeAndVersion(DefaultIndexMappingCreator indexMapping, int version) {
-    final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
+  protected void createOptimizeIndexWithTypeAndVersion(
+      DefaultIndexMappingCreator indexMapping, int version) {
+    final String aliasName =
+        indexNameService.getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
     final String indexName = getVersionedIndexName(indexMapping.getIndexName(), version);
     final Settings indexSettings = createIndexSettings(indexMapping);
 
@@ -172,16 +178,18 @@ public abstract class AbstractUpgradeIT {
     request.settings(indexSettings);
     request.mapping(indexMapping.getSource());
     indexMapping.setDynamic("false");
-    prefixAwareClient.getHighLevelClient().indices().create(request, prefixAwareClient.requestOptions());
+    prefixAwareClient
+        .getHighLevelClient()
+        .indices()
+        .create(request, prefixAwareClient.requestOptions());
   }
 
   @SneakyThrows
   protected void executeBulk(final String bulkPayload) {
     final Request request = new Request(HttpPost.METHOD_NAME, "/_bulk");
-    final HttpEntity entity = new NStringEntity(
-      UpgradeUtil.readClasspathFileAsString(bulkPayload),
-      ContentType.APPLICATION_JSON
-    );
+    final HttpEntity entity =
+        new NStringEntity(
+            UpgradeUtil.readClasspathFileAsString(bulkPayload), ContentType.APPLICATION_JSON);
     request.setEntity(entity);
     prefixAwareClient.getLowLevelClient().performRequest(request);
     prefixAwareClient.refresh(new RefreshRequest("*"));
@@ -193,8 +201,7 @@ public abstract class AbstractUpgradeIT {
 
   protected String getVersionedIndexName(final String indexName, final int version) {
     return OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
-      indexNameService.getOptimizeIndexAliasForIndex(indexName), String.valueOf(version)
-    );
+        indexNameService.getOptimizeIndexAliasForIndex(indexName), String.valueOf(version));
   }
 
   protected void cleanAllDataFromElasticsearch() {
@@ -203,65 +210,73 @@ public abstract class AbstractUpgradeIT {
 
   @SneakyThrows
   protected GetIndexResponse getIndicesForMapping(final IndexMappingCreator mapping) {
-    return prefixAwareClient.getHighLevelClient().indices().get(
-      new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(mapping)),
-      prefixAwareClient.requestOptions()
-    );
+    return prefixAwareClient
+        .getHighLevelClient()
+        .indices()
+        .get(
+            new GetIndexRequest(
+                indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(mapping)),
+            prefixAwareClient.requestOptions());
   }
 
   @SneakyThrows
-  protected <T> Optional<T> getDocumentOfIndexByIdAs(final String indexName,
-                                                     final String id,
-                                                     final Class<T> valueType) {
+  protected <T> Optional<T> getDocumentOfIndexByIdAs(
+      final String indexName, final String id, final Class<T> valueType) {
     final GetResponse getResponse = prefixAwareClient.get(new GetRequest(indexName, id));
     return getResponse.isSourceEmpty()
-      ? Optional.empty()
-      : Optional.ofNullable(objectMapper.readValue(getResponse.getSourceAsString(), valueType));
+        ? Optional.empty()
+        : Optional.ofNullable(objectMapper.readValue(getResponse.getSourceAsString(), valueType));
   }
 
   protected <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> valueType) {
     prefixAwareClient.refresh(new RefreshRequest(indexName));
     final SearchHit[] searchHits = getAllDocumentsOfIndex(indexName);
-    return Arrays
-      .stream(searchHits)
-      .map(doc -> {
-        try {
-          return objectMapper.readValue(
-            doc.getSourceAsString(), valueType
-          );
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      })
-      .toList();
+    return Arrays.stream(searchHits)
+        .map(
+            doc -> {
+              try {
+                return objectMapper.readValue(doc.getSourceAsString(), valueType);
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            })
+        .toList();
   }
 
   @SneakyThrows
   protected SearchHit[] getAllDocumentsOfIndex(final String... indexNames) {
     final SearchResponse searchResponse =
-      prefixAwareClient.search(new SearchRequest(indexNames).source(new SearchSourceBuilder().size(10000)));
+        prefixAwareClient.search(
+            new SearchRequest(indexNames).source(new SearchSourceBuilder().size(10000)));
     return searchResponse.getHits().getHits();
   }
 
   protected HttpRequest createUpdateLogUpsertRequest(final UpgradeStep upgradeStep) {
-    final String indexNameWithVersion = indexNameService.getOptimizeIndexNameWithVersion(upgradeStep.getIndex());
+    final String indexNameWithVersion =
+        indexNameService.getOptimizeIndexNameWithVersion(upgradeStep.getIndex());
     return request()
-      .withPath(
-        "/" + getLogIndexAlias() + "/_update/" + TO_VERSION + "_" + upgradeStep.getType() + "_" + indexNameWithVersion
-      )
-      .withMethod(POST);
+        .withPath(
+            "/"
+                + getLogIndexAlias()
+                + "/_update/"
+                + TO_VERSION
+                + "_"
+                + upgradeStep.getType()
+                + "_"
+                + indexNameWithVersion)
+        .withMethod(POST);
   }
 
   protected HttpRequest createIndexDeleteRequest(final String versionedIndexName) {
     return request().withPath("/" + versionedIndexName).withMethod(DELETE);
   }
 
-  protected ClientAndServer createElasticMock(final DatabaseConnectionNodeConfiguration elasticConfig) {
+  protected ClientAndServer createElasticMock(
+      final DatabaseConnectionNodeConfiguration elasticConfig) {
     return MockServerUtil.createProxyMockServer(
-      elasticConfig.getHost(),
-      elasticConfig.getHttpPort(),
-      IntegrationTestConfigurationUtil.getDatabaseMockServerPort()
-    );
+        elasticConfig.getHost(),
+        elasticConfig.getHttpPort(),
+        IntegrationTestConfigurationUtil.getDatabaseMockServerPort());
   }
 
   private String getLogIndexAlias() {
@@ -270,14 +285,16 @@ public abstract class AbstractUpgradeIT {
 
   private Settings createIndexSettings(IndexMappingCreator indexMappingCreator) {
     try {
-      return ElasticSearchIndexSettingsBuilder.buildAllSettings(configurationService, indexMappingCreator);
+      return ElasticSearchIndexSettingsBuilder.buildAllSettings(
+          configurationService, indexMappingCreator);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not create index settings");
     }
   }
 
   protected static InsertDataStep buildInsertTestIndexDataStep(final IndexMappingCreator index) {
-    return new InsertDataStep(index, UpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json"));
+    return new InsertDataStep(
+        index, UpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json"));
   }
 
   protected static UpgradeStep buildDeleteTestIndexDataStep(final IndexMappingCreator index) {
@@ -286,8 +303,9 @@ public abstract class AbstractUpgradeIT {
 
   protected static UpdateDataStep buildUpdateTestIndexDataStep(final IndexMappingCreator index) {
     return new UpdateDataStep(
-      index, termQuery("username", "admin"), "ctx._source.password = ctx._source.password + \"1\""
-    );
+        index,
+        termQuery("username", "admin"),
+        "ctx._source.password = ctx._source.password + \"1\"");
   }
 
   protected void insertTestDocuments(final int amount) throws IOException {
@@ -295,28 +313,29 @@ public abstract class AbstractUpgradeIT {
     final BulkRequest bulkRequest = new BulkRequest();
     for (int i = 0; i < amount; i++) {
       bulkRequest.add(
-        new IndexRequest(indexName)
-          .source(String.format("{\"password\" : \"admin\",\"username\" : \"admin%d\"}", i), XContentType.JSON)
-      );
+          new IndexRequest(indexName)
+              .source(
+                  String.format("{\"password\" : \"admin\",\"username\" : \"admin%d\"}", i),
+                  XContentType.JSON));
     }
     prefixAwareClient.bulk(bulkRequest);
     prefixAwareClient.refresh(new RefreshRequest(indexName));
   }
 
   public void deleteAllDocsInIndex(final IndexMappingCreator index) {
-    final DeleteByQueryRequest request = new DeleteByQueryRequest(indexNameService.getOptimizeIndexAliasForIndex(index))
-      .setQuery(matchAllQuery())
-      .setRefresh(true);
+    final DeleteByQueryRequest request =
+        new DeleteByQueryRequest(indexNameService.getOptimizeIndexAliasForIndex(index))
+            .setQuery(matchAllQuery())
+            .setRefresh(true);
 
     try {
-      prefixAwareClient.getHighLevelClient().deleteByQuery(request, prefixAwareClient.requestOptions());
+      prefixAwareClient
+          .getHighLevelClient()
+          .deleteByQuery(request, prefixAwareClient.requestOptions());
     } catch (IOException | ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
-        "Could not delete data in index " + indexNameService.getOptimizeIndexAliasForIndex(index),
-        e
-      );
+          "Could not delete data in index " + indexNameService.getOptimizeIndexAliasForIndex(index),
+          e);
     }
   }
-
-
 }

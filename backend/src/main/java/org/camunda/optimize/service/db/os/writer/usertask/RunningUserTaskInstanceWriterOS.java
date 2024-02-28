@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.os.writer.usertask;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -15,18 +16,19 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 @Slf4j
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
-public class RunningUserTaskInstanceWriterOS extends AbstractUserTaskWriterOS implements RunningUserTaskInstanceWriter {
+public class RunningUserTaskInstanceWriterOS extends AbstractUserTaskWriterOS
+    implements RunningUserTaskInstanceWriter {
   private final OptimizeOpenSearchClient osClient;
 
   @Override
-  public List<ImportRequestDto> generateUserTaskImports(final List<FlowNodeInstanceDto> userTaskInstances) {
-    return super.generateUserTaskImports("running user task instances", osClient, userTaskInstances);
+  public List<ImportRequestDto> generateUserTaskImports(
+      final List<FlowNodeInstanceDto> userTaskInstances) {
+    return super.generateUserTaskImports(
+        "running user task instances", osClient, userTaskInstances);
   }
 
   @Override
@@ -34,5 +36,4 @@ public class RunningUserTaskInstanceWriterOS extends AbstractUserTaskWriterOS im
     log.error("Functionality not implemented for OpenSearch");
     return "";
   }
-
 }

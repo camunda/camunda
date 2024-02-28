@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -19,10 +22,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @AllArgsConstructor
 @Slf4j
@@ -40,7 +39,8 @@ public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
       if (newIdentityCache.getSize() > 0) {
         final List<CollectionDefinitionDto> allCollections = collectionReader.getAllCollections();
         for (final CollectionDefinitionDto collection : allCollections) {
-          final Set<String> roleIdsToRemove = collectNonExistingIdentityRoleIds(newIdentityCache, collection);
+          final Set<String> roleIdsToRemove =
+              collectNonExistingIdentityRoleIds(newIdentityCache, collection);
           if (!roleIdsToRemove.isEmpty()) {
             removeRolesFromCollections(collection.getId(), roleIdsToRemove);
           }
@@ -53,8 +53,8 @@ public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
     }
   }
 
-  private Set<String> collectNonExistingIdentityRoleIds(final SearchableIdentityCache newIdentityCache,
-                                                        final CollectionDefinitionDto collection) {
+  private Set<String> collectNonExistingIdentityRoleIds(
+      final SearchableIdentityCache newIdentityCache, final CollectionDefinitionDto collection) {
     final Set<String> invalidIdentities = new HashSet<>();
     final CollectionDataDto collectionData = collection.getData();
     for (CollectionRoleRequestDto role : collectionData.getRoles()) {
@@ -71,19 +71,24 @@ public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
           }
           break;
         default:
-          throw new OptimizeRuntimeException("Unsupported identity type: " + roleIdentity.getType());
+          throw new OptimizeRuntimeException(
+              "Unsupported identity type: " + roleIdentity.getType());
       }
     }
     return invalidIdentities;
   }
 
-  private void removeRolesFromCollections(final String collectionId, final Set<String> roleIdsToRemove) {
+  private void removeRolesFromCollections(
+      final String collectionId, final Set<String> roleIdsToRemove) {
     for (final String roleId : roleIdsToRemove) {
       try {
         log.info("Removing role with ID [{}] from collection with ID [{}].", roleId, collectionId);
         collectionWriter.removeRoleFromCollection(collectionId, roleId);
       } catch (Exception ex) {
-        log.error("Could not remove role with ID [{}] from collection with ID [{}]", roleId, collectionId);
+        log.error(
+            "Could not remove role with ID [{}] from collection with ID [{}]",
+            roleId,
+            collectionId);
       }
     }
   }

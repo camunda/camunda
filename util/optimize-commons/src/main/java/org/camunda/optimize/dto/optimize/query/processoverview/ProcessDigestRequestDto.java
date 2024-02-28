@@ -17,5 +17,4 @@ public class ProcessDigestRequestDto {
 
   @JsonProperty("enabled")
   private boolean enabled;
-
 }

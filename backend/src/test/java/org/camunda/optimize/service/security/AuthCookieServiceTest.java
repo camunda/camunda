@@ -5,9 +5,21 @@
  */
 package org.camunda.optimize.service.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_SERVICE_TOKEN;
+import static org.mockito.Mockito.when;
+
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.container.ContainerRequestContext;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import org.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
@@ -22,36 +34,23 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_SERVICE_TOKEN;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class AuthCookieServiceTest {
 
-  @Mock
-  ConfigurationService configurationService;
+  @Mock ConfigurationService configurationService;
 
-  @Mock
-  OAuth2AccessToken oAuth2AccessToken;
+  @Mock OAuth2AccessToken oAuth2AccessToken;
 
   @Test
   public void getTokenFromContainerRequestContext() {
     // given
     String authorizationHeader = String.format("Bearer %s", "test");
     jakarta.ws.rs.core.Cookie cookie =
-      new jakarta.ws.rs.core.Cookie.Builder(OPTIMIZE_AUTHORIZATION)
-        .value(authorizationHeader).build();
-    Map<String, jakarta.ws.rs.core.Cookie> cookies = Collections.singletonMap(OPTIMIZE_AUTHORIZATION, cookie);
+        new jakarta.ws.rs.core.Cookie.Builder(OPTIMIZE_AUTHORIZATION)
+            .value(authorizationHeader)
+            .build();
+    Map<String, jakarta.ws.rs.core.Cookie> cookies =
+        Collections.singletonMap(OPTIMIZE_AUTHORIZATION, cookie);
     ContainerRequestContext requestMock = Mockito.mock(ContainerRequestContext.class);
     when(requestMock.getCookies()).thenReturn(cookies);
 
@@ -72,7 +71,7 @@ public class AuthCookieServiceTest {
   public void getTokenFromHttpServletRequest() {
     // given
     String authorizationHeader = String.format("Bearer %s", "test");
-    Cookie[] cookies = new Cookie[]{new Cookie(OPTIMIZE_AUTHORIZATION, authorizationHeader)};
+    Cookie[] cookies = new Cookie[] {new Cookie(OPTIMIZE_AUTHORIZATION, authorizationHeader)};
     HttpServletRequest servletRequestMock = Mockito.mock(HttpServletRequest.class);
     when(servletRequestMock.getCookies()).thenReturn(cookies);
 
@@ -91,7 +90,8 @@ public class AuthCookieServiceTest {
 
   @ParameterizedTest
   @MethodSource("tokenAndExpectedCookieValues")
-  public void createServiceTokenCookies(final String serviceTokenValue, List<String> expectedCookieValues) {
+  public void createServiceTokenCookies(
+      final String serviceTokenValue, List<String> expectedCookieValues) {
     // given
     CookieConfiguration cookieConfig = new CookieConfiguration();
     cookieConfig.setMaxSize(2);
@@ -105,30 +105,33 @@ public class AuthCookieServiceTest {
     final AuthCookieService authCookieService = new AuthCookieService(configurationService);
 
     // when
-    final List<jakarta.servlet.http.Cookie> cookies = authCookieService.createOptimizeServiceTokenCookies(
-      oAuth2AccessToken,
-      Instant.now(),
-      "http"
-    );
+    final List<jakarta.servlet.http.Cookie> cookies =
+        authCookieService.createOptimizeServiceTokenCookies(
+            oAuth2AccessToken, Instant.now(), "http");
 
     // then the correct cookies are created
-    assertThat(cookies).extracting(jakarta.servlet.http.Cookie::getValue)
-      .containsExactlyElementsOf(expectedCookieValues);
+    assertThat(cookies)
+        .extracting(jakarta.servlet.http.Cookie::getValue)
+        .containsExactlyElementsOf(expectedCookieValues);
   }
 
   @ParameterizedTest
   @MethodSource("tokenAndExpectedCookieValues")
-  public void extractServiceTokenFromCookies(final String expectedServiceTokenValue, List<String> cookieValues) {
+  public void extractServiceTokenFromCookies(
+      final String expectedServiceTokenValue, List<String> cookieValues) {
     // given
     List<jakarta.servlet.http.Cookie> cookies = new ArrayList<>();
     for (int i = 0; i < cookieValues.size(); i++) {
-      cookies.add(new jakarta.servlet.http.Cookie(OPTIMIZE_SERVICE_TOKEN + "_" + i, cookieValues.get(i)));
+      cookies.add(
+          new jakarta.servlet.http.Cookie(OPTIMIZE_SERVICE_TOKEN + "_" + i, cookieValues.get(i)));
     }
     HttpServletRequest servletRequestMock = Mockito.mock(HttpServletRequest.class);
-    when(servletRequestMock.getCookies()).thenReturn(cookies.toArray(jakarta.servlet.http.Cookie[]::new));
+    when(servletRequestMock.getCookies())
+        .thenReturn(cookies.toArray(jakarta.servlet.http.Cookie[]::new));
 
     // when
-    final Optional<String> serviceAccessToken = AuthCookieService.getServiceAccessToken(servletRequestMock);
+    final Optional<String> serviceAccessToken =
+        AuthCookieService.getServiceAccessToken(servletRequestMock);
 
     // then the correct service token value can be extracted
     assertThat(serviceAccessToken).isPresent().get().isEqualTo(expectedServiceTokenValue);
@@ -136,11 +139,9 @@ public class AuthCookieServiceTest {
 
   private static Stream<Arguments> tokenAndExpectedCookieValues() {
     return Stream.of(
-      Arguments.of("a", List.of("a")),
-      Arguments.of("bc", List.of("bc")),
-      Arguments.of("def", List.of("de", "f")),
-      Arguments.of("ghij", List.of("gh", "ij"))
-    );
+        Arguments.of("a", List.of("a")),
+        Arguments.of("bc", List.of("bc")),
+        Arguments.of("def", List.of("de", "f")),
+        Arguments.of("ghij", List.of("gh", "ij")));
   }
-
 }

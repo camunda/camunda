@@ -23,5 +23,4 @@ public class OnboardingStateWriterOS implements OnboardingStateWriter {
   public void upsertOnboardingState(final OnboardingStateDto onboardingStateDto) {
     log.error("Functionality not implemented for OpenSearch");
   }
-
 }

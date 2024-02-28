@@ -5,11 +5,7 @@
  */
 package org.camunda.optimize.data.generation.generators;
 
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomUtils;
-import org.camunda.optimize.data.generation.UserAndGroupProvider;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
-import org.camunda.optimize.test.util.client.dto.TaskDto;
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -21,17 +17,19 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.concurrent.CompletableFuture.runAsync;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
+import org.camunda.optimize.test.util.client.dto.TaskDto;
 
 @Slf4j
 public class UserTaskCompleter {
 
   private static final int TASKS_TO_FETCH = 1000;
   private static final int BACKOFF_SECONDS = 1;
-  private static final OffsetDateTime OFFSET_DATE_TIME_OF_EPOCH = OffsetDateTime.from(
-    Instant.EPOCH.atZone(ZoneId.of("UTC"))
-  );
+  private static final OffsetDateTime OFFSET_DATE_TIME_OF_EPOCH =
+      OffsetDateTime.from(Instant.EPOCH.atZone(ZoneId.of("UTC")));
   private static final int OUTLIER_DELAY = 5000;
 
   private final String processDefinitionId;
@@ -42,9 +40,10 @@ public class UserTaskCompleter {
   private CountDownLatch finished = new CountDownLatch(0);
   private OffsetDateTime currentCreationDateFilter = OFFSET_DATE_TIME_OF_EPOCH;
 
-  public UserTaskCompleter(final String processDefinitionId,
-                           final SimpleEngineClient engineClient,
-                           final UserAndGroupProvider userAndGroupProvider) {
+  public UserTaskCompleter(
+      final String processDefinitionId,
+      final SimpleEngineClient engineClient,
+      final UserAndGroupProvider userAndGroupProvider) {
     this.processDefinitionId = processDefinitionId;
     this.engineClient = engineClient;
     this.userAndGroupProvider = userAndGroupProvider;
@@ -56,55 +55,64 @@ public class UserTaskCompleter {
       finished = new CountDownLatch(1);
       taskExecutorService = Executors.newFixedThreadPool(50);
 
-      final Thread completerThread = new Thread(() -> {
-        boolean allUserTasksHandled = false;
-        do {
-          if (isDateFilterInBackOffWindow()) {
-            // we back off from tip of time to ensure to not miss pending writes and to batch up while data is generated
-            log.info("[process-definition-id:{}] In backoff window, sleeping for {} seconds.",
-                     processDefinitionId, BACKOFF_SECONDS
-            );
-            try {
-              Thread.sleep(BACKOFF_SECONDS * 1000);
-            } catch (InterruptedException e) {
-              log.debug("[process-definition-id:{}] Was Interrupted while sleeping", processDefinitionId);
-              Thread.currentThread().interrupt();
-            }
-          }
+      final Thread completerThread =
+          new Thread(
+              () -> {
+                boolean allUserTasksHandled = false;
+                do {
+                  if (isDateFilterInBackOffWindow()) {
+                    // we back off from tip of time to ensure to not miss pending writes and to
+                    // batch up while data is generated
+                    log.info(
+                        "[process-definition-id:{}] In backoff window, sleeping for {} seconds.",
+                        processDefinitionId,
+                        BACKOFF_SECONDS);
+                    try {
+                      Thread.sleep(BACKOFF_SECONDS * 1000);
+                    } catch (InterruptedException e) {
+                      log.debug(
+                          "[process-definition-id:{}] Was Interrupted while sleeping",
+                          processDefinitionId);
+                      Thread.currentThread().interrupt();
+                    }
+                  }
 
-          final OffsetDateTime previousCreationDateFilter = currentCreationDateFilter;
-          try {
-            final List<TaskDto> lastTimestampTasks =
-              engineClient.getActiveTasksCreatedOn(processDefinitionId, currentCreationDateFilter);
-            handleTasksInParallel(lastTimestampTasks);
+                  final OffsetDateTime previousCreationDateFilter = currentCreationDateFilter;
+                  try {
+                    final List<TaskDto> lastTimestampTasks =
+                        engineClient.getActiveTasksCreatedOn(
+                            processDefinitionId, currentCreationDateFilter);
+                    handleTasksInParallel(lastTimestampTasks);
 
-            final List<TaskDto> currentTasksPage =
-              engineClient.getActiveTasksCreatedAfter(processDefinitionId, currentCreationDateFilter, TASKS_TO_FETCH);
-            allUserTasksHandled = currentTasksPage.size() == 0;
-            if (!allUserTasksHandled) {
-              currentCreationDateFilter = currentTasksPage.get(currentTasksPage.size() - 1).getCreated();
-              handleTasksInParallel(currentTasksPage);
+                    final List<TaskDto> currentTasksPage =
+                        engineClient.getActiveTasksCreatedAfter(
+                            processDefinitionId, currentCreationDateFilter, TASKS_TO_FETCH);
+                    allUserTasksHandled = currentTasksPage.size() == 0;
+                    if (!allUserTasksHandled) {
+                      currentCreationDateFilter =
+                          currentTasksPage.get(currentTasksPage.size() - 1).getCreated();
+                      handleTasksInParallel(currentTasksPage);
 
-              log.info(
-                "[process-definition-id:{}] Handled page of {} tasks.",
-                processDefinitionId,
-                currentTasksPage.size()
-              );
-            }
-          } catch (Exception e) {
-            log.error(
-              "[process-definition-id:{}] User Task batch failed with [{}], will be retried.",
-              processDefinitionId, e.getMessage(), e
-            );
+                      log.info(
+                          "[process-definition-id:{}] Handled page of {} tasks.",
+                          processDefinitionId,
+                          currentTasksPage.size());
+                    }
+                  } catch (Exception e) {
+                    log.error(
+                        "[process-definition-id:{}] User Task batch failed with [{}], will be retried.",
+                        processDefinitionId,
+                        e.getMessage(),
+                        e);
 
-            currentCreationDateFilter = previousCreationDateFilter;
-          }
-        } while (!allUserTasksHandled || !shouldShutdown);
+                    currentCreationDateFilter = previousCreationDateFilter;
+                  }
+                } while (!allUserTasksHandled || !shouldShutdown);
 
-        taskExecutorService.shutdown();
+                taskExecutorService.shutdown();
 
-        finished.countDown();
-      });
+                finished.countDown();
+              });
       completerThread.start();
     }
   }
@@ -113,30 +121,34 @@ public class UserTaskCompleter {
     this.shouldShutdown = true;
   }
 
-  public synchronized boolean awaitUserTaskCompletion(long timeout, TimeUnit unit) throws InterruptedException {
+  public synchronized boolean awaitUserTaskCompletion(long timeout, TimeUnit unit)
+      throws InterruptedException {
     return this.finished.await(timeout, unit);
   }
 
   private boolean isDateFilterInBackOffWindow() {
-    return currentCreationDateFilter.compareTo(OffsetDateTime.now().minusSeconds(BACKOFF_SECONDS)) > 0;
+    return currentCreationDateFilter.compareTo(OffsetDateTime.now().minusSeconds(BACKOFF_SECONDS))
+        > 0;
   }
 
-  private void handleTasksInParallel(final List<TaskDto> nextTasksPage) throws
-                                                                        InterruptedException,
-                                                                        ExecutionException {
-    final CompletableFuture<?>[] taskFutures = nextTasksPage.stream()
-      .map(taskDto -> runAsync(() -> claimAndCompleteUserTask(taskDto), taskExecutorService))
-      .toArray(CompletableFuture[]::new);
+  private void handleTasksInParallel(final List<TaskDto> nextTasksPage)
+      throws InterruptedException, ExecutionException {
+    final CompletableFuture<?>[] taskFutures =
+        nextTasksPage.stream()
+            .map(taskDto -> runAsync(() -> claimAndCompleteUserTask(taskDto), taskExecutorService))
+            .toArray(CompletableFuture[]::new);
 
     CompletableFuture.allOf(taskFutures).get();
   }
 
   private void claimAndCompleteUserTask(final TaskDto task) {
     if (userAndGroupProvider == null) {
-      throw new IllegalStateException("Trying to claim/complete user task but no userAndGroupProvider is set.");
+      throw new IllegalStateException(
+          "Trying to claim/complete user task but no userAndGroupProvider is set.");
     }
     try {
-      engineClient.addOrRemoveCandidateGroupIdentityLinks(task, userAndGroupProvider.getRandomGroupId());
+      engineClient.addOrRemoveCandidateGroupIdentityLinks(
+          task, userAndGroupProvider.getRandomGroupId());
 
       if (randomDouble() > 0.95) {
         // no assignee
@@ -144,9 +156,10 @@ public class UserTaskCompleter {
       } else {
         engineClient.setAssignee(task, userAndGroupProvider.getRandomUserId());
         if (randomDouble() < 0.97) {
-          boolean executionDelayed = engineClient
-            .getProcessInstanceDelayVariable(task.getProcessInstanceId())
-            .orElse(false);
+          boolean executionDelayed =
+              engineClient
+                  .getProcessInstanceDelayVariable(task.getProcessInstanceId())
+                  .orElse(false);
           if (executionDelayed) {
             waitForOutlierDelay();
           }
@@ -171,5 +184,4 @@ public class UserTaskCompleter {
       Thread.currentThread().interrupt();
     }
   }
-
 }

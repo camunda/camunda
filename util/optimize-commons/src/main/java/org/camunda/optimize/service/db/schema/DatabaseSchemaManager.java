@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.db.schema;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 
 @Component
 @Slf4j
@@ -22,12 +21,12 @@ public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILD
   protected final ConfigurationService configurationService;
   protected final OptimizeIndexNameService indexNameService;
 
-  @Getter
-  protected final List<IndexMappingCreator<BUILDER>> mappings;
+  @Getter protected final List<IndexMappingCreator<BUILDER>> mappings;
 
-  protected DatabaseSchemaManager(final ConfigurationService configurationService,
-                                  final OptimizeIndexNameService indexNameService,
-                                  final List<IndexMappingCreator<BUILDER>> mappings) {
+  protected DatabaseSchemaManager(
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService indexNameService,
+      final List<IndexMappingCreator<BUILDER>> mappings) {
     this.configurationService = configurationService;
     this.indexNameService = indexNameService;
     this.mappings = mappings;
@@ -39,27 +38,35 @@ public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILD
 
   public abstract boolean schemaExists(CLIENT dbClient);
 
-  public abstract boolean indexExists(final CLIENT dbClient, final IndexMappingCreator<BUILDER> mapping);
+  public abstract boolean indexExists(
+      final CLIENT dbClient, final IndexMappingCreator<BUILDER> mapping);
 
   public abstract boolean indexExists(final CLIENT dbClient, final String indexName);
 
-  public abstract boolean indicesExist(final CLIENT dbClient, final List<IndexMappingCreator<BUILDER>> mappings);
+  public abstract boolean indicesExist(
+      final CLIENT dbClient, final List<IndexMappingCreator<BUILDER>> mappings);
 
-  public abstract void createIndexIfMissing(final CLIENT dbClient, final IndexMappingCreator<BUILDER> indexMapping);
+  public abstract void createIndexIfMissing(
+      final CLIENT dbClient, final IndexMappingCreator<BUILDER> indexMapping);
 
-  public abstract void createIndexIfMissing(final CLIENT dbClient, final IndexMappingCreator<BUILDER> indexMapping,
-                                            final Set<String> additionalReadOnlyAliases);
+  public abstract void createIndexIfMissing(
+      final CLIENT dbClient,
+      final IndexMappingCreator<BUILDER> indexMapping,
+      final Set<String> additionalReadOnlyAliases);
 
-  public abstract void createOrUpdateOptimizeIndex(final CLIENT dbClient,
-                                                   final IndexMappingCreator<BUILDER> mapping,
-                                                   final Set<String> readOnlyAliases);
+  public abstract void createOrUpdateOptimizeIndex(
+      final CLIENT dbClient,
+      final IndexMappingCreator<BUILDER> mapping,
+      final Set<String> readOnlyAliases);
 
-  public abstract void deleteOptimizeIndex(final CLIENT dbClient, final IndexMappingCreator<BUILDER> mapping);
+  public abstract void deleteOptimizeIndex(
+      final CLIENT dbClient, final IndexMappingCreator<BUILDER> mapping);
 
-  public abstract void createOrUpdateTemplateWithoutAliases(final CLIENT dbClient,
-                                                            final IndexMappingCreator<BUILDER> mappingCreator);
+  public abstract void createOrUpdateTemplateWithoutAliases(
+      final CLIENT dbClient, final IndexMappingCreator<BUILDER> mappingCreator);
 
-  public abstract void updateDynamicSettingsAndMappings(CLIENT dbClient, IndexMappingCreator<BUILDER> indexMapping);
+  public abstract void updateDynamicSettingsAndMappings(
+      CLIENT dbClient, IndexMappingCreator<BUILDER> indexMapping);
 
   public void addMapping(final IndexMappingCreator<BUILDER> mapping) {
     mappings.add(mapping);
@@ -71,9 +78,8 @@ public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILD
     }
   }
 
-  public void createOrUpdateOptimizeIndex(final CLIENT dbClient,
-                                          final IndexMappingCreator<BUILDER> mapping) {
+  public void createOrUpdateOptimizeIndex(
+      final CLIENT dbClient, final IndexMappingCreator<BUILDER> mapping) {
     createOrUpdateOptimizeIndex(dbClient, mapping, Collections.emptySet());
   }
-
 }

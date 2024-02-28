@@ -5,21 +5,21 @@
  */
 package org.camunda.optimize.data.generation.generators.impl.process;
 
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.data.generation.UserAndGroupProvider;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 public class InvoiceWithAlternativeCorrelationVariableDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "/diagrams/process/invoice.bpmn";
 
-  public InvoiceWithAlternativeCorrelationVariableDataGenerator(final SimpleEngineClient engineClient,
-                                                                final Integer nVersions,
-                                                                final UserAndGroupProvider userAndGroupProvider) {
+  public InvoiceWithAlternativeCorrelationVariableDataGenerator(
+      final SimpleEngineClient engineClient,
+      final Integer nVersions,
+      final UserAndGroupProvider userAndGroupProvider) {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
@@ -33,16 +33,14 @@ public class InvoiceWithAlternativeCorrelationVariableDataGenerator extends Proc
 
   @Override
   protected Map<String, Object> createVariables() {
-    String[] invoiceType = new String[]{"day-to-day expense", "budget", "exceptional"};
-    String[] invoiceCategory = new String[]{"Misc", "Travel Expenses", "Software License Costs"};
+    String[] invoiceType = new String[] {"day-to-day expense", "budget", "exceptional"};
+    String[] invoiceCategory = new String[] {"Misc", "Travel Expenses", "Software License Costs"};
     HashMap<String, Object> variables = new HashMap<>();
     variables.put("invoiceClassification", invoiceType[ThreadLocalRandom.current().nextInt(0, 3)]);
     variables.put("amount", ThreadLocalRandom.current().nextDouble(0, 2000));
     variables.put(
-      "invoiceCategory",
-      invoiceCategory[ThreadLocalRandom.current().nextInt(0, invoiceCategory.length)]
-    );
+        "invoiceCategory",
+        invoiceCategory[ThreadLocalRandom.current().nextInt(0, invoiceCategory.length)]);
     return variables;
   }
-
 }

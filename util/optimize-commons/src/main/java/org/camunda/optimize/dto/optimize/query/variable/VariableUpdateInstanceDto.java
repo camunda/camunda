@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,9 +14,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.time.OffsetDateTime;
-import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,5 +30,4 @@ public class VariableUpdateInstanceDto implements OptimizeDto {
   private String processInstanceId;
   private String tenantId;
   private OffsetDateTime timestamp;
-
 }

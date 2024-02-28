@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
+
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.utils.StringUtils;
 import org.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
@@ -18,30 +21,32 @@ import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 
-import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
-
 @Slf4j
 public class Upgrade312To313PlanFactory implements UpgradePlanFactory {
 
   @Override
   public UpgradePlan createUpgradePlan(UpgradeExecutionDependencies upgradeExecutionDependencies) {
     return UpgradePlanBuilder.createUpgradePlan()
-      .fromVersion("3.12")
-      .toVersion("3.13.0")
-      .addUpgradeStep(addOptimizeProfileFieldToMetadataIndex(upgradeExecutionDependencies))
-      .build();
+        .fromVersion("3.12")
+        .toVersion("3.13.0")
+        .addUpgradeStep(addOptimizeProfileFieldToMetadataIndex(upgradeExecutionDependencies))
+        .build();
   }
 
-  private UpgradeStep addOptimizeProfileFieldToMetadataIndex(UpgradeExecutionDependencies upgradeExecutionDependencies) {
+  private UpgradeStep addOptimizeProfileFieldToMetadataIndex(
+      UpgradeExecutionDependencies upgradeExecutionDependencies) {
     OptimizeProfile optimizeProfile;
     if (isC8Instance(upgradeExecutionDependencies)) {
-      if (StringUtils.isBlank(upgradeExecutionDependencies.getConfigurationService().getOnboarding().getProperties().getClusterId())) {
+      if (StringUtils.isBlank(
+          upgradeExecutionDependencies
+              .getConfigurationService()
+              .getOnboarding()
+              .getProperties()
+              .getClusterId())) {
         // self managed
         optimizeProfile = OptimizeProfile.CCSM;
       } else {
-        //saas
+        // saas
         optimizeProfile = OptimizeProfile.CLOUD;
       }
     } else {
@@ -58,10 +63,11 @@ public class Upgrade312To313PlanFactory implements UpgradePlanFactory {
 
   private boolean isC8Instance(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
     return upgradeExecutionDependencies.getConfigurationService().getConfiguredZeebe().isEnabled()
-      || isC8ImportDataPresent(upgradeExecutionDependencies);
+        || isC8ImportDataPresent(upgradeExecutionDependencies);
   }
 
-  private boolean isC8ImportDataPresent(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
+  private boolean isC8ImportDataPresent(
+      final UpgradeExecutionDependencies upgradeExecutionDependencies) {
     CountRequest countRequest = new CountRequest().indices(POSITION_BASED_IMPORT_INDEX_NAME);
 
     CountResponse countResponse;
@@ -74,5 +80,4 @@ public class Upgrade312To313PlanFactory implements UpgradePlanFactory {
     }
     return countResponse.getCount() > 0;
   }
-
 }

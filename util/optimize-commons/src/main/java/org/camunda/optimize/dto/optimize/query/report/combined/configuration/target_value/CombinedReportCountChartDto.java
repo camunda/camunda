@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value;
 
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.Objects;
 
 @Getter
 @Setter
@@ -30,8 +29,7 @@ public class CombinedReportCountChartDto {
       return false;
     }
     CombinedReportCountChartDto that = (CombinedReportCountChartDto) o;
-    return Objects.equals(isBelow, that.isBelow) &&
-      Objects.equals(value, that.value);
+    return Objects.equals(isBelow, that.isBelow) && Objects.equals(value, that.value);
   }
 
   @Override

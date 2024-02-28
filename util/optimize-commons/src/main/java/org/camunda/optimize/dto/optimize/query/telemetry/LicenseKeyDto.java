@@ -6,13 +6,12 @@
 package org.camunda.optimize.dto.optimize.query.telemetry;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import java.util.Map;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode
@@ -21,8 +20,10 @@ import java.util.Map;
 public class LicenseKeyDto {
   private final String customer;
   private final String type;
+
   @JsonProperty("valid-until")
   private final String validUntil;
+
   private final boolean unlimited;
   private final Map<String, String> features;
   private final String raw;

@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
-
 import java.io.IOException;
+import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class BusinessKeyIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -33,13 +32,12 @@ public abstract class BusinessKeyIndex<TBuilder> extends DefaultIndexMappingCrea
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(PROCESS_INSTANCE_ID)
+        .startObject(PROCESS_INSTANCE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(BUSINESS_KEY)
+        .endObject()
+        .startObject(BUSINESS_KEY)
         .field("type", "keyword")
-      .endObject();
+        .endObject();
     // @formatter:on
   }
-
 }

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service;
 
+import jakarta.ws.rs.ForbiddenException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
@@ -14,8 +15,6 @@ import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
-
-import jakarta.ws.rs.ForbiddenException;
 
 @AllArgsConstructor
 @Component
@@ -28,13 +27,14 @@ public class SettingsService {
   private final ConfigurationService configurationService;
 
   public SettingsResponseDto getSettings() {
-    return settingsReader.getSettings()
-      .orElse(
-        SettingsResponseDto.builder()
-          .metadataTelemetryEnabled(configurationService.getTelemetryConfiguration().isInitializeTelemetry())
-          .sharingEnabled(configurationService.getSharingEnabled())
-          .build()
-      );
+    return settingsReader
+        .getSettings()
+        .orElse(
+            SettingsResponseDto.builder()
+                .metadataTelemetryEnabled(
+                    configurationService.getTelemetryConfiguration().isInitializeTelemetry())
+                .sharingEnabled(configurationService.getSharingEnabled())
+                .build());
   }
 
   public void setSettings(final String userId, final SettingsResponseDto settingsDto) {
@@ -54,9 +54,7 @@ public class SettingsService {
   private void validateUserAuthorizedToConfigureSettingsOrFail(final String userId) {
     if (!identityService.isSuperUserIdentity(userId)) {
       throw new ForbiddenException(
-        String.format("User [%s] is not authorized to configure settings.", userId)
-      );
+          String.format("User [%s] is not authorized to configure settings.", userId));
     }
   }
-
 }

@@ -5,28 +5,27 @@
  */
 package org.camunda.optimize.dto.optimize.query.report;
 
+import java.time.ZoneId;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 
-import java.time.ZoneId;
-import java.util.List;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 public abstract class ReportEvaluationResult {
 
-  @NonNull
-  protected ReportDefinitionDto<?> reportDefinition;
+  @NonNull protected ReportDefinitionDto<?> reportDefinition;
 
   public String getId() {
     return reportDefinition.getId();
   }
 
-  public abstract List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone);
+  public abstract List<String[]> getResultAsCsv(
+      final Integer limit, final Integer offset, final ZoneId timezone);
 
   public abstract PaginatedDataExportDto getResult();
 }

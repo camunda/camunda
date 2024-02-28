@@ -5,20 +5,21 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.PositionBasedImportIndexWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
-import java.util.List;
-
-public class StorePositionBasedIndexDatabaseImportJob extends DatabaseImportJob<PositionBasedImportIndexDto> {
+public class StorePositionBasedIndexDatabaseImportJob
+    extends DatabaseImportJob<PositionBasedImportIndexDto> {
 
   private final PositionBasedImportIndexWriter positionBasedImportIndexWriter;
 
-  public StorePositionBasedIndexDatabaseImportJob(final PositionBasedImportIndexWriter positionBasedImportIndexWriter,
-                                                  final Runnable importCompleteCallback,
-                                                  final DatabaseClient databaseClient) {
+  public StorePositionBasedIndexDatabaseImportJob(
+      final PositionBasedImportIndexWriter positionBasedImportIndexWriter,
+      final Runnable importCompleteCallback,
+      final DatabaseClient databaseClient) {
     super(importCompleteCallback, databaseClient);
     this.positionBasedImportIndexWriter = positionBasedImportIndexWriter;
   }
@@ -27,5 +28,4 @@ public class StorePositionBasedIndexDatabaseImportJob extends DatabaseImportJob<
   protected void persistEntities(List<PositionBasedImportIndexDto> importIndices) {
     positionBasedImportIndexWriter.importIndexes(importIndices);
   }
-
 }

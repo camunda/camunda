@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.plugin;
 
+import java.util.List;
 import org.camunda.optimize.plugin.engine.rest.EngineRestFilter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class EngineRestFilterProvider extends PluginProvider<EngineRestFilter> {
 
-  public EngineRestFilterProvider(final ConfigurationService configurationService,
-                                  final PluginJarFileLoader pluginJarLoader) {
+  public EngineRestFilterProvider(
+      final ConfigurationService configurationService, final PluginJarFileLoader pluginJarLoader) {
     super(configurationService, pluginJarLoader);
   }
 
@@ -28,5 +27,4 @@ public class EngineRestFilterProvider extends PluginProvider<EngineRestFilter> {
   protected List<String> getBasePackages() {
     return configurationService.getEngineRestFilterPluginBasePackages();
   }
-
 }

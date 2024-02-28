@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.exceptions.conflict;
 
-import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 
 public class OptimizeNonDefinitionScopeCompliantException extends OptimizeConflictException {
 
@@ -15,10 +14,9 @@ public class OptimizeNonDefinitionScopeCompliantException extends OptimizeConfli
 
   public OptimizeNonDefinitionScopeCompliantException(Set<ConflictedItemDto> conflictedItems) {
     super(
-      "Could not apply action due to conflicts with the collection data source. The report definition is not defined " +
-        "in the data source.",
-      conflictedItems
-    );
+        "Could not apply action due to conflicts with the collection data source. The report definition is not defined "
+            + "in the data source.",
+        conflictedItems);
   }
 
   @Override

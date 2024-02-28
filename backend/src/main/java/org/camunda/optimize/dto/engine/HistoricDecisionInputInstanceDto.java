@@ -6,9 +6,8 @@
 package org.camunda.optimize.dto.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
-
 import java.util.Date;
+import lombok.Data;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
@@ -24,6 +23,5 @@ public class HistoricDecisionInputInstanceDto implements EngineDto {
   private Date removalTime;
   private String rootProcessInstanceId;
 
-  public HistoricDecisionInputInstanceDto() {
-  }
+  public HistoricDecisionInputInstanceDto() {}
 }

@@ -12,5 +12,4 @@ public interface VariableLabelWriter {
   void createVariableLabelUpsertRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto);
 
   void deleteVariableLabelsForDefinition(final String processDefinitionKey);
-
 }

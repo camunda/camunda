@@ -6,6 +6,13 @@
 package org.camunda.optimize.service.entities.report;
 
 import com.google.common.collect.Sets;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -18,14 +25,6 @@ import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotFoundException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -37,33 +36,38 @@ public class ReportExportService {
 
   public List<ReportDefinitionExportDto> getReportExportDtos(final Set<String> reportIds) {
     log.debug("Exporting all reports with IDs {} for export via API.", reportIds);
-    final List<ReportDefinitionDto<?>> reportDefinitions = retrieveReportDefinitionsOrFailIfMissing(reportIds);
-    return reportDefinitions.stream().map(ReportDefinitionExportDto::mapReportDefinitionToExportDto).toList();
+    final List<ReportDefinitionDto<?>> reportDefinitions =
+        retrieveReportDefinitionsOrFailIfMissing(reportIds);
+    return reportDefinitions.stream()
+        .map(ReportDefinitionExportDto::mapReportDefinitionToExportDto)
+        .toList();
   }
 
-  public List<ReportDefinitionExportDto> getReportExportDtosAsUser(final String userId,
-                                                                   final Set<String> reportIds) {
+  public List<ReportDefinitionExportDto> getReportExportDtosAsUser(
+      final String userId, final Set<String> reportIds) {
     log.debug("Exporting all reports with IDs {} as user {}.", reportIds, userId);
-    final List<ReportDefinitionDto<?>> reportDefinitions = retrieveReportDefinitionsOrFailIfMissing(reportIds);
+    final List<ReportDefinitionDto<?>> reportDefinitions =
+        retrieveReportDefinitionsOrFailIfMissing(reportIds);
     validateReportAuthorizationsOrFail(userId, reportDefinitions);
-    return reportDefinitions.stream().map(ReportDefinitionExportDto::mapReportDefinitionToExportDto).toList();
+    return reportDefinitions.stream()
+        .map(ReportDefinitionExportDto::mapReportDefinitionToExportDto)
+        .toList();
   }
 
-  public List<ReportDefinitionDto<?>> retrieveReportDefinitionsOrFailIfMissing(final Set<String> reportIds) {
+  public List<ReportDefinitionDto<?>> retrieveReportDefinitionsOrFailIfMissing(
+      final Set<String> reportIds) {
     final Set<String> notFoundReportIds = Sets.newHashSet();
     final Set<String> exportedReportIds = Sets.newHashSet();
     final List<ReportDefinitionDto<?>> reportDefinitions = new ArrayList<>();
 
     reportIds.forEach(
-      reportId -> {
-        reportDefinitions.addAll(
-          retrieveRelevantReportDefinitionsOrFailIfMissing(reportId, exportedReportIds)
-        );
-        if (!exportedReportIds.contains(reportId)) {
-          notFoundReportIds.add(reportId);
-        }
-      }
-    );
+        reportId -> {
+          reportDefinitions.addAll(
+              retrieveRelevantReportDefinitionsOrFailIfMissing(reportId, exportedReportIds));
+          if (!exportedReportIds.contains(reportId)) {
+            notFoundReportIds.add(reportId);
+          }
+        });
 
     if (!notFoundReportIds.isEmpty()) {
       throw new NotFoundException("Could not find reports with IDs " + reportIds);
@@ -72,28 +76,30 @@ public class ReportExportService {
     return reportDefinitions;
   }
 
-  private List<ReportDefinitionDto<?>> retrieveRelevantReportDefinitionsOrFailIfMissing(final String reportIdToExport,
-                                                                                        final Set<String> alreadyExportedIds) {
+  private List<ReportDefinitionDto<?>> retrieveRelevantReportDefinitionsOrFailIfMissing(
+      final String reportIdToExport, final Set<String> alreadyExportedIds) {
     if (alreadyExportedIds.contains(reportIdToExport)) {
       return Collections.emptyList();
     }
 
     final List<ReportDefinitionDto<?>> reportDefinitions = new ArrayList<>();
-    final Optional<ReportDefinitionDto> optionalReportDef = reportReader.getReport(reportIdToExport);
+    final Optional<ReportDefinitionDto> optionalReportDef =
+        reportReader.getReport(reportIdToExport);
 
     if (optionalReportDef.isPresent()) {
       final ReportDefinitionDto<?> reportDef = optionalReportDef.get();
       reportDefinitions.add(reportDef);
       alreadyExportedIds.add(reportDef.getId());
       if (reportDef.isCombined()) {
-        final List<String> singleReportIds = ((CombinedReportDefinitionRequestDto) reportDef).getData().getReportIds();
+        final List<String> singleReportIds =
+            ((CombinedReportDefinitionRequestDto) reportDef).getData().getReportIds();
         singleReportIds.removeAll(alreadyExportedIds);
         final List<SingleProcessReportDefinitionRequestDto> singleReportDefs =
-          reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds);
+            reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds);
         if (singleReportDefs.size() != singleReportIds.size()) {
           throw new OptimizeRuntimeException(
-            "Could not retrieve some reports required by combined report with ID " + reportIdToExport
-          );
+              "Could not retrieve some reports required by combined report with ID "
+                  + reportIdToExport);
         }
         reportDefinitions.addAll(singleReportDefs);
         alreadyExportedIds.addAll(singleReportIds);
@@ -103,30 +109,27 @@ public class ReportExportService {
     return reportDefinitions;
   }
 
-  public void validateReportAuthorizationsOrFail(final String userId,
-                                                 final List<ReportDefinitionDto<?>> reportDefinitions) {
+  public void validateReportAuthorizationsOrFail(
+      final String userId, final List<ReportDefinitionDto<?>> reportDefinitions) {
     List<String> notAuthorizedReportIds = new ArrayList<>();
 
-    reportDefinitions.forEach(reportDef -> {
-      if (!reportAuthorizationService.isAuthorizedToReport(userId, reportDef)) {
-        notAuthorizedReportIds.add(reportDef.getId());
-      }
-      Optional.ofNullable(reportDef.getCollectionId())
-        .ifPresent(collectionId -> authorizedCollectionService.verifyUserAuthorizedToEditCollectionResources(
-          userId,
-          collectionId
-        ));
-    });
+    reportDefinitions.forEach(
+        reportDef -> {
+          if (!reportAuthorizationService.isAuthorizedToReport(userId, reportDef)) {
+            notAuthorizedReportIds.add(reportDef.getId());
+          }
+          Optional.ofNullable(reportDef.getCollectionId())
+              .ifPresent(
+                  collectionId ->
+                      authorizedCollectionService.verifyUserAuthorizedToEditCollectionResources(
+                          userId, collectionId));
+        });
 
     if (!notAuthorizedReportIds.isEmpty()) {
       throw new ForbiddenException(
-        String.format(
-          "User with ID [%s] is not authorized to access reports with IDs [%s]",
-          userId,
-          notAuthorizedReportIds
-        )
-      );
+          String.format(
+              "User with ID [%s] is not authorized to access reports with IDs [%s]",
+              userId, notAuthorizedReportIds));
     }
   }
-
 }

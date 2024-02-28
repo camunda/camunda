@@ -5,6 +5,17 @@
  */
 package org.camunda.optimize.service.importing.eventprocess;
 
+import static org.camunda.optimize.dto.optimize.query.event.process.EventProcessState.PUBLISH_PENDING;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
@@ -20,19 +31,6 @@ import org.camunda.optimize.service.util.configuration.EventBasedProcessConfigur
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
-
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-
-import java.time.Duration;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.dto.optimize.query.event.process.EventProcessState.PUBLISH_PENDING;
 
 @AllArgsConstructor
 @Slf4j
@@ -73,37 +71,39 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     publishStateUpdateService.updateEventProcessPublishStates();
     eventProcessDefinitionImportService.syncPublishedEventProcessDefinitions();
 
-    final Collection<EventProcessInstanceImportMediator<EventProcessEventDto>> allInstanceMediators =
-      instanceImportMediatorManager.getActiveMediators();
-    final List<EventProcessInstanceImportMediator> currentImportRound = allInstanceMediators
-      .stream()
-      .filter(mediator -> forceImport || mediator.canImport())
-      .collect(Collectors.toList());
+    final Collection<EventProcessInstanceImportMediator<EventProcessEventDto>>
+        allInstanceMediators = instanceImportMediatorManager.getActiveMediators();
+    final List<EventProcessInstanceImportMediator> currentImportRound =
+        allInstanceMediators.stream()
+            .filter(mediator -> forceImport || mediator.canImport())
+            .collect(Collectors.toList());
 
     if (log.isDebugEnabled()) {
       log.debug(
-        "Scheduling import round for {}",
-        currentImportRound.stream()
-          .map(mediator -> mediator.getClass().getSimpleName())
-          .collect(Collectors.joining(","))
-      );
+          "Scheduling import round for {}",
+          currentImportRound.stream()
+              .map(mediator -> mediator.getClass().getSimpleName())
+              .collect(Collectors.joining(",")));
     }
 
-    final CompletableFuture<?>[] importTaskFutures = currentImportRound
-      .stream()
-      .map(mediator -> {
-        final CompletableFuture<Void> indexUsageFinishedFuture = eventBasedProcessIndexManager
-          .registerIndexUsageAndReturnFinishedHandler(mediator.getPublishedProcessStateId());
-        final CompletableFuture<Void> importCompleteFuture = mediator.runImport();
-        importCompleteFuture.whenComplete((aVoid, throwable) -> indexUsageFinishedFuture.complete(null));
-        return importCompleteFuture;
-      })
-      .toArray(CompletableFuture[]::new);
+    final CompletableFuture<?>[] importTaskFutures =
+        currentImportRound.stream()
+            .map(
+                mediator -> {
+                  final CompletableFuture<Void> indexUsageFinishedFuture =
+                      eventBasedProcessIndexManager.registerIndexUsageAndReturnFinishedHandler(
+                          mediator.getPublishedProcessStateId());
+                  final CompletableFuture<Void> importCompleteFuture = mediator.runImport();
+                  importCompleteFuture.whenComplete(
+                      (aVoid, throwable) -> indexUsageFinishedFuture.complete(null));
+                  return importCompleteFuture;
+                })
+            .toArray(CompletableFuture[]::new);
 
-    Optional<EventProcessPublishStateDto> pendingPublish = eventBasedProcessIndexManager.getPublishedInstanceStates()
-      .stream()
-      .filter(s -> s.getState().equals(PUBLISH_PENDING))
-      .findFirst();
+    Optional<EventProcessPublishStateDto> pendingPublish =
+        eventBasedProcessIndexManager.getPublishedInstanceStates().stream()
+            .filter(s -> s.getState().equals(PUBLISH_PENDING))
+            .findFirst();
 
     if (importTaskFutures.length == 0 && !forceImport && !pendingPublish.isPresent()) {
       doBackoff(allInstanceMediators);
@@ -125,11 +125,8 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
   }
 
   private void doBackoff(final Collection<? extends ImportMediator> mediators) {
-    long timeToSleep = mediators
-      .stream()
-      .map(ImportMediator::getBackoffTimeInMs)
-      .min(Long::compare)
-      .orElse(5000L);
+    long timeToSleep =
+        mediators.stream().map(ImportMediator::getBackoffTimeInMs).min(Long::compare).orElse(5000L);
     try {
       log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
       Thread.sleep(timeToSleep);
@@ -142,5 +139,4 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
   private EventBasedProcessConfiguration getEventBasedProcessConfiguration() {
     return configurationService.getEventBasedProcessConfiguration();
   }
-
 }

@@ -9,8 +9,7 @@ import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.service.importing.page.ImportPage;
 
 public interface ZeebeImportIndexHandler<PAGE extends ImportPage, INDEX_DTO>
-  extends ImportIndexHandler<PAGE, INDEX_DTO> {
+    extends ImportIndexHandler<PAGE, INDEX_DTO> {
 
   ZeebeDataSourceDto getDataSource();
-
 }

@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.decision;
 
+import static org.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.MATCHED_RULES;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByMatchedRuleDto;
@@ -22,13 +28,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static org.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
-import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.MATCHED_RULES;
-
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -39,36 +38,38 @@ public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
   private static final String MATCHED_RULES_AGGREGATION = "matchedRules";
 
   @Override
-  public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ExecutionContext<DecisionReportDataDto> context) {
-    final TermsAggregationBuilder byMatchedRuleAggregation = AggregationBuilders
-      .terms(MATCHED_RULES_AGGREGATION)
-      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
-      .field(MATCHED_RULES);
+  public List<AggregationBuilder> createAggregation(
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<DecisionReportDataDto> context) {
+    final TermsAggregationBuilder byMatchedRuleAggregation =
+        AggregationBuilders.terms(MATCHED_RULES_AGGREGATION)
+            .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
+            .field(MATCHED_RULES);
     distributedByPart.createAggregations(context).forEach(byMatchedRuleAggregation::subAggregation);
     return Collections.singletonList(byMatchedRuleAggregation);
   }
 
   @Override
-  public void addQueryResult(final CompositeCommandResult compositeCommandResult,
-                             final SearchResponse response,
-                             final ExecutionContext<DecisionReportDataDto> context) {
+  public void addQueryResult(
+      final CompositeCommandResult compositeCommandResult,
+      final SearchResponse response,
+      final ExecutionContext<DecisionReportDataDto> context) {
 
     final Terms matchedRuleTerms = response.getAggregations().get(MATCHED_RULES_AGGREGATION);
     final List<GroupByResult> matchedRules = new ArrayList<>();
     for (Terms.Bucket matchedRuleBucket : matchedRuleTerms.getBuckets()) {
       final List<DistributedByResult> distributions =
-        distributedByPart.retrieveResult(response, matchedRuleBucket.getAggregations(), context);
-      matchedRules.add(GroupByResult.createGroupByResult(matchedRuleBucket.getKeyAsString(), distributions));
+          distributedByPart.retrieveResult(response, matchedRuleBucket.getAggregations(), context);
+      matchedRules.add(
+          GroupByResult.createGroupByResult(matchedRuleBucket.getKeyAsString(), distributions));
     }
 
     compositeCommandResult.setGroups(matchedRules);
   }
 
-
   @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto reportData) {
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final DecisionReportDataDto reportData) {
     reportData.setGroupBy(new DecisionGroupByMatchedRuleDto());
   }
-
 }

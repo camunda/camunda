@@ -5,20 +5,19 @@
  */
 package org.camunda.optimize.service.util.configuration.cleanup;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.HISTORY_CLEANUP_PROCESS_DATA;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.util.SuppressionConstants;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.HISTORY_CLEANUP_PROCESS_DATA;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.util.SuppressionConstants;
 
 @Data
 @NoArgsConstructor
@@ -26,26 +25,30 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 public class ProcessCleanupConfiguration {
   @JsonProperty("enabled")
   private boolean enabled;
+
   @JsonProperty("cleanupMode")
   private CleanupMode cleanupMode = CleanupMode.ALL;
+
   @JsonProperty("batchSize")
   private int batchSize;
+
   @JsonProperty("perProcessDefinitionConfig")
-  private Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration = new HashMap<>();
+  private Map<String, ProcessDefinitionCleanupConfiguration>
+      processDefinitionSpecificConfiguration = new HashMap<>();
 
   public ProcessCleanupConfiguration(final boolean enabled) {
     this.enabled = enabled;
   }
 
-  public ProcessCleanupConfiguration(final boolean enabled,
-                                     final CleanupMode cleanupMode) {
+  public ProcessCleanupConfiguration(final boolean enabled, final CleanupMode cleanupMode) {
     this.enabled = enabled;
     this.cleanupMode = cleanupMode;
   }
 
   public void validate() {
     if (cleanupMode == null) {
-      throw new OptimizeConfigurationException(HISTORY_CLEANUP_PROCESS_DATA + ".cleanupMode must be set");
+      throw new OptimizeConfigurationException(
+          HISTORY_CLEANUP_PROCESS_DATA + ".cleanupMode must be set");
     }
   }
 
@@ -55,9 +58,8 @@ public class ProcessCleanupConfiguration {
 
   @SuppressWarnings(SuppressionConstants.UNUSED)
   public void setProcessDefinitionSpecificConfiguration(
-    Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration) {
-    this.processDefinitionSpecificConfiguration = Optional.ofNullable(processDefinitionSpecificConfiguration)
-      .orElse(new HashMap<>());
+      Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration) {
+    this.processDefinitionSpecificConfiguration =
+        Optional.ofNullable(processDefinitionSpecificConfiguration).orElse(new HashMap<>());
   }
-
 }

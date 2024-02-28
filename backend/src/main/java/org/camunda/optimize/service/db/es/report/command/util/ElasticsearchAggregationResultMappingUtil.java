@@ -12,7 +12,8 @@ import org.elasticsearch.search.aggregations.metrics.ParsedTDigestPercentiles;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchAggregationResultMappingUtil {
 
-  public static Double mapToDoubleOrNull(final ParsedTDigestPercentiles aggregation, final double percentileValue) {
+  public static Double mapToDoubleOrNull(
+      final ParsedTDigestPercentiles aggregation, final double percentileValue) {
     double percentile = aggregation.percentile(percentileValue);
     if (Double.isNaN(percentile) || Double.isInfinite(percentile)) {
       return null;
@@ -28,5 +29,4 @@ public class ElasticsearchAggregationResultMappingUtil {
       return value;
     }
   }
-
 }

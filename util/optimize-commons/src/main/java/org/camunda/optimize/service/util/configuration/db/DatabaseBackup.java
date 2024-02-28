@@ -13,5 +13,4 @@ public class DatabaseBackup {
 
   @JsonProperty("repositoryName")
   private String snapshotRepositoryName;
-
 }

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
@@ -24,21 +25,21 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class ProcessDefinitionEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+public class ProcessDefinitionEngineImportMediatorFactory
+    extends AbstractEngineImportMediatorFactory {
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessDefinitionXmlWriter processDefinitionXmlWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
 
-  public ProcessDefinitionEngineImportMediatorFactory(final ProcessDefinitionWriter processDefinitionWriter,
-                                                      final BeanFactory beanFactory,
-                                                      final ConfigurationService configurationService,
-                                                      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                      final ProcessDefinitionXmlWriter processDefinitionXmlWriter,
-                                                      final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                      final DatabaseClient databaseClient) {
+  public ProcessDefinitionEngineImportMediatorFactory(
+      final ProcessDefinitionWriter processDefinitionWriter,
+      final BeanFactory beanFactory,
+      final ConfigurationService configurationService,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ProcessDefinitionXmlWriter processDefinitionXmlWriter,
+      final ProcessDefinitionResolverService processDefinitionResolverService,
+      final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.processDefinitionWriter = processDefinitionWriter;
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
@@ -48,31 +49,36 @@ public class ProcessDefinitionEngineImportMediatorFactory extends AbstractEngine
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return ImmutableList.of(
-      createProcessDefinitionEngineImportMediator(engineContext),
-      createProcessDefinitionXmlEngineImportMediator(engineContext)
-    );
+        createProcessDefinitionEngineImportMediator(engineContext),
+        createProcessDefinitionXmlEngineImportMediator(engineContext));
   }
 
   private ProcessDefinitionEngineImportMediator createProcessDefinitionEngineImportMediator(
-    EngineContext engineContext) {
+      EngineContext engineContext) {
     return new ProcessDefinitionEngineImportMediator(
-      importIndexHandlerRegistry.getProcessDefinitionImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(ProcessDefinitionFetcher.class, engineContext),
-      new ProcessDefinitionImportService(
-        configurationService, engineContext, processDefinitionWriter, processDefinitionResolverService, databaseClient
-      ),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        importIndexHandlerRegistry.getProcessDefinitionImportIndexHandler(
+            engineContext.getEngineAlias()),
+        beanFactory.getBean(ProcessDefinitionFetcher.class, engineContext),
+        new ProcessDefinitionImportService(
+            configurationService,
+            engineContext,
+            processDefinitionWriter,
+            processDefinitionResolverService,
+            databaseClient),
+        configurationService,
+        new BackoffCalculator(configurationService));
   }
 
-  private ProcessDefinitionXmlEngineImportMediator createProcessDefinitionXmlEngineImportMediator(EngineContext engineContext) {
+  private ProcessDefinitionXmlEngineImportMediator createProcessDefinitionXmlEngineImportMediator(
+      EngineContext engineContext) {
     return new ProcessDefinitionXmlEngineImportMediator(
-      importIndexHandlerRegistry.getProcessDefinitionXmlImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(ProcessDefinitionXmlFetcher.class, engineContext, processDefinitionWriter),
-      new ProcessDefinitionXmlImportService(configurationService, engineContext, processDefinitionXmlWriter, databaseClient),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        importIndexHandlerRegistry.getProcessDefinitionXmlImportIndexHandler(
+            engineContext.getEngineAlias()),
+        beanFactory.getBean(
+            ProcessDefinitionXmlFetcher.class, engineContext, processDefinitionWriter),
+        new ProcessDefinitionXmlImportService(
+            configurationService, engineContext, processDefinitionXmlWriter, databaseClient),
+        configurationService,
+        new BackoffCalculator(configurationService));
   }
 }

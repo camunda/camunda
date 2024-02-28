@@ -20,5 +20,4 @@ public class CCSMTelemetryReportingService implements TelemetryReportingService 
   public void sendTelemetryData() {
     // do nothing
   }
-
 }

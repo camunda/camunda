@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.autogeneration;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @NoArgsConstructor
 @Data

@@ -5,16 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Stream;
-
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_TYPE;
@@ -25,6 +15,15 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.LONG_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.OBJECT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.SHORT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
+
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 
 public enum VariableType {
   STRING(STRING_TYPE),
@@ -37,11 +36,11 @@ public enum VariableType {
   OBJECT(OBJECT_TYPE),
   JSON(JSON_TYPE);
 
-  private static final Set<VariableType> NUMERIC_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-    INTEGER, SHORT, LONG, DOUBLE
-  )));
-  private static final Map<String, VariableType> BY_LOWER_CASE_ID_MAP = Stream.of(VariableType.values())
-    .collect(toMap(type -> type.getId().toLowerCase(), type -> type));
+  private static final Set<VariableType> NUMERIC_TYPES =
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(INTEGER, SHORT, LONG, DOUBLE)));
+  private static final Map<String, VariableType> BY_LOWER_CASE_ID_MAP =
+      Stream.of(VariableType.values())
+          .collect(toMap(type -> type.getId().toLowerCase(), type -> type));
 
   private final String id;
 
@@ -55,7 +54,10 @@ public enum VariableType {
   }
 
   public static VariableType getTypeForId(String id) {
-    return Optional.ofNullable(id).map(String::toLowerCase).map(BY_LOWER_CASE_ID_MAP::get).orElse(null);
+    return Optional.ofNullable(id)
+        .map(String::toLowerCase)
+        .map(BY_LOWER_CASE_ID_MAP::get)
+        .orElse(null);
   }
 
   public static Set<VariableType> getNumericTypes() {

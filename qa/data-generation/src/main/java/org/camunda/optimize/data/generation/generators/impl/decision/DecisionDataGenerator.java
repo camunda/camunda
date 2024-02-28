@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.data.generation.generators.impl.decision;
 
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
-
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
 
 public abstract class DecisionDataGenerator extends DataGenerator<DmnModelInstance> {
 

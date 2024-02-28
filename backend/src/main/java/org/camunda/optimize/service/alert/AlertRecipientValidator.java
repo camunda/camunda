@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.alert;
 
-import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-
 import java.util.List;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
 public interface AlertRecipientValidator {
 
-  void validateAlertRecipientEmailAddresses(List<String> emailAddresses) throws OptimizeValidationException;
-
+  void validateAlertRecipientEmailAddresses(List<String> emailAddresses)
+      throws OptimizeValidationException;
 }

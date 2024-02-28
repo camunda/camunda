@@ -20,5 +20,4 @@ public class UpgradeExecutionDependencies {
   protected final OptimizeElasticsearchClient esClient;
   protected final ObjectMapper objectMapper;
   protected final ElasticSearchMetadataService metadataService;
-
 }

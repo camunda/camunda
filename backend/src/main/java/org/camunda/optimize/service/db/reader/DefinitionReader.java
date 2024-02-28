@@ -5,22 +5,6 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
-import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
-import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Supplier;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -31,6 +15,21 @@ import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionInde
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
+import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 public interface DefinitionReader {
   String VERSION_AGGREGATION = "versions";
@@ -44,34 +43,38 @@ public interface DefinitionReader {
   String DEFINITION_KEY_AND_TYPE_AGGREGATION = "definitionKeyAndType";
   String DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION = "definitionKeyAndTypeAndTenant";
   String NAME_AGGREGATION = "definitionName";
-  String[] ALL_DEFINITION_INDEXES =
-    {PROCESS_DEFINITION_INDEX_NAME, DECISION_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
+  String[] ALL_DEFINITION_INDEXES = {
+    PROCESS_DEFINITION_INDEX_NAME,
+    DECISION_DEFINITION_INDEX_NAME,
+    EVENT_PROCESS_DEFINITION_INDEX_NAME
+  };
   String TENANT_NOT_DEFINED_VALUE = "null";
 
-  Optional<DefinitionWithTenantIdsDto> getDefinitionWithAvailableTenants(final DefinitionType type,
-                                                                         final String key);
+  Optional<DefinitionWithTenantIdsDto> getDefinitionWithAvailableTenants(
+      final DefinitionType type, final String key);
 
-  Optional<DefinitionWithTenantIdsDto> getDefinitionWithAvailableTenants(final DefinitionType type,
-                                                                         final String key,
-                                                                         final List<String> versions,
-                                                                         final Supplier<String> latestVersionSupplier);
+  Optional<DefinitionWithTenantIdsDto> getDefinitionWithAvailableTenants(
+      final DefinitionType type,
+      final String key,
+      final List<String> versions,
+      final Supplier<String> latestVersionSupplier);
 
-  List<DefinitionWithTenantIdsDto> getFullyImportedDefinitionsWithTenantIds(final DefinitionType type,
-                                                                            final Set<String> keys,
-                                                                            final Set<String> tenantIds);
+  List<DefinitionWithTenantIdsDto> getFullyImportedDefinitionsWithTenantIds(
+      final DefinitionType type, final Set<String> keys, final Set<String> tenantIds);
 
-  <T extends DefinitionOptimizeResponseDto> List<T> getFullyImportedDefinitions(final DefinitionType type,
-                                                                                final boolean withXml);
+  <T extends DefinitionOptimizeResponseDto> List<T> getFullyImportedDefinitions(
+      final DefinitionType type, final boolean withXml);
 
-  <T extends DefinitionOptimizeResponseDto> Optional<T> getFirstFullyImportedDefinitionFromTenantsIfAvailable(
-    final DefinitionType type,
-    final String definitionKey,
-    final List<String> definitionVersions,
-    final List<String> tenantIds);
+  <T extends DefinitionOptimizeResponseDto>
+      Optional<T> getFirstFullyImportedDefinitionFromTenantsIfAvailable(
+          final DefinitionType type,
+          final String definitionKey,
+          final List<String> definitionVersions,
+          final List<String> tenantIds);
 
-  <T extends DefinitionOptimizeResponseDto> List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
-    final DefinitionType type,
-    final String definitionKey);
+  <T extends DefinitionOptimizeResponseDto>
+      List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+          final DefinitionType type, final String definitionKey);
 
   Set<String> getDefinitionEngines(final DefinitionType type, final String definitionKey);
 
@@ -79,20 +82,21 @@ public interface DefinitionReader {
 
   String getLatestVersionToKey(final DefinitionType type, final String key);
 
-  List<DefinitionVersionResponseDto> getDefinitionVersions(final DefinitionType type,
-                                                           final String key,
-                                                           final Set<String> tenantIds);
+  List<DefinitionVersionResponseDto> getDefinitionVersions(
+      final DefinitionType type, final String key, final Set<String> tenantIds);
 
-  <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
-                                                                   final boolean fullyImported,
-                                                                   final boolean withXml,
-                                                                   final boolean includeDeleted);
+  <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
+      final DefinitionType type,
+      final boolean fullyImported,
+      final boolean withXml,
+      final boolean includeDeleted);
 
-  <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
-                                                                   final Set<String> definitionKeys,
-                                                                   final boolean fullyImported,
-                                                                   final boolean withXml,
-                                                                   final boolean includeDeleted);
+  <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
+      final DefinitionType type,
+      final Set<String> definitionKeys,
+      final boolean fullyImported,
+      final boolean withXml,
+      final boolean includeDeleted);
 
   default String[] resolveIndexNameForType(final DefinitionType type) {
     if (type == null) {
@@ -100,8 +104,9 @@ public interface DefinitionReader {
     }
 
     return switch (type) {
-      case PROCESS -> new String[]{PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
-      case DECISION -> new String[]{DECISION_DEFINITION_INDEX_NAME};
+      case PROCESS ->
+          new String[] {PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
+      case DECISION -> new String[] {DECISION_DEFINITION_INDEX_NAME};
       default -> throw new OptimizeRuntimeException("Unsupported definition type:" + type);
     };
   }
@@ -131,7 +136,8 @@ public interface DefinitionReader {
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
-  default <T extends DefinitionOptimizeResponseDto> Class<T> resolveDefinitionClassFromType(final DefinitionType type) {
+  default <T extends DefinitionOptimizeResponseDto> Class<T> resolveDefinitionClassFromType(
+      final DefinitionType type) {
     if (Objects.isNull(type)) {
       return (Class<T>) DefinitionOptimizeResponseDto.class;
     }
@@ -141,5 +147,4 @@ public interface DefinitionReader {
       default -> throw new IllegalStateException("Unknown DefinitionType:" + type);
     };
   }
-
 }

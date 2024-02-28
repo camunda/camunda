@@ -15,5 +15,4 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
   @JsonSubTypes.Type(value = RawDataProcessInstanceDto.class),
   @JsonSubTypes.Type(value = RawDataDecisionInstanceDto.class),
 })
-public interface RawDataInstanceDto {
-}
+public interface RawDataInstanceDto {}

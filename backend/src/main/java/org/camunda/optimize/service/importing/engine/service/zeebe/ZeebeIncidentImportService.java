@@ -5,7 +5,19 @@
  */
 package org.camunda.optimize.service.importing.engine.service.zeebe;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
+
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
@@ -18,95 +30,89 @@ import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
-
 @Slf4j
-public class ZeebeIncidentImportService extends ZeebeProcessInstanceSubEntityImportService<ZeebeIncidentRecordDto> {
+public class ZeebeIncidentImportService
+    extends ZeebeProcessInstanceSubEntityImportService<ZeebeIncidentRecordDto> {
 
-  private static final Set<IncidentIntent> INTENTS_TO_IMPORT = Set.of(
-    IncidentIntent.CREATED,
-    IncidentIntent.RESOLVED
-  );
+  private static final Set<IncidentIntent> INTENTS_TO_IMPORT =
+      Set.of(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
 
-  public ZeebeIncidentImportService(final ConfigurationService configurationService,
-                                    final ZeebeProcessInstanceWriter processInstanceWriter,
-                                    final int partitionId,
-                                    final ProcessDefinitionReader processDefinitionReader,
-                                    final DatabaseClient databaseClient) {
+  public ZeebeIncidentImportService(
+      final ConfigurationService configurationService,
+      final ZeebeProcessInstanceWriter processInstanceWriter,
+      final int partitionId,
+      final ProcessDefinitionReader processDefinitionReader,
+      final DatabaseClient databaseClient) {
     super(
-      configurationService,
-      processInstanceWriter,
-      partitionId,
-      processDefinitionReader,
-      databaseClient,
-      ZEEBE_INCIDENT_INDEX_NAME
-    );
+        configurationService,
+        processInstanceWriter,
+        partitionId,
+        processDefinitionReader,
+        databaseClient,
+        ZEEBE_INCIDENT_INDEX_NAME);
   }
 
   @Override
   protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
-    List<ZeebeIncidentRecordDto> zeebeRecords) {
-    final List<ProcessInstanceDto> optimizeDtos = zeebeRecords.stream()
-      .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
-      .collect(Collectors.groupingBy(zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey()))
-      .values().stream()
-      .map(this::createProcessInstanceForData)
-      .collect(Collectors.toList());
+      List<ZeebeIncidentRecordDto> zeebeRecords) {
+    final List<ProcessInstanceDto> optimizeDtos =
+        zeebeRecords.stream()
+            .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
+            .collect(
+                Collectors.groupingBy(
+                    zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey()))
+            .values()
+            .stream()
+            .map(this::createProcessInstanceForData)
+            .collect(Collectors.toList());
     log.debug(
-      "Processing {} fetched zeebe incident records, of which {} are relevant to Optimize and will be imported.",
-      zeebeRecords.size(),
-      optimizeDtos.size()
-    );
+        "Processing {} fetched zeebe incident records, of which {} are relevant to Optimize and will be imported.",
+        zeebeRecords.size(),
+        optimizeDtos.size());
     return optimizeDtos;
   }
 
-  private ProcessInstanceDto createProcessInstanceForData(final List<ZeebeIncidentRecordDto> recordsForInstance) {
+  private ProcessInstanceDto createProcessInstanceForData(
+      final List<ZeebeIncidentRecordDto> recordsForInstance) {
     final ZeebeIncidentDataDto firstRecordValue = recordsForInstance.get(0).getValue();
-    final ProcessInstanceDto instanceToAdd = createSkeletonProcessInstance(
-      firstRecordValue.getBpmnProcessId(),
-      firstRecordValue.getProcessInstanceKey(),
-      firstRecordValue.getProcessDefinitionKey(),
-      firstRecordValue.getTenantId()
-    );
+    final ProcessInstanceDto instanceToAdd =
+        createSkeletonProcessInstance(
+            firstRecordValue.getBpmnProcessId(),
+            firstRecordValue.getProcessInstanceKey(),
+            firstRecordValue.getProcessDefinitionKey(),
+            firstRecordValue.getTenantId());
     return updateIncidents(instanceToAdd, recordsForInstance);
   }
 
-  private ProcessInstanceDto updateIncidents(final ProcessInstanceDto instanceToAdd,
-                                             List<ZeebeIncidentRecordDto> recordsForInstance) {
+  private ProcessInstanceDto updateIncidents(
+      final ProcessInstanceDto instanceToAdd, List<ZeebeIncidentRecordDto> recordsForInstance) {
     Map<Long, IncidentDto> incidentsByRecordKey = new HashMap<>();
-    recordsForInstance
-      .forEach(incident -> {
-        final long recordKey = incident.getKey();
-        IncidentDto incidentForKey = incidentsByRecordKey.getOrDefault(
-          recordKey, createSkeletonIncident(incident));
-        if (incident.getIntent() == IncidentIntent.CREATED && incidentForKey.getIncidentStatus() != IncidentStatus.RESOLVED) {
-          incidentForKey.setIncidentStatus(IncidentStatus.OPEN);
-          incidentForKey.setCreateTime(dateForTimestamp(incident));
-        } else if (incident.getIntent() == IncidentIntent.RESOLVED) {
-          incidentForKey.setIncidentStatus(IncidentStatus.RESOLVED);
-          incidentForKey.setEndTime(dateForTimestamp(incident));
-        }
-        updateDurationIfMissing(incidentForKey);
-        incidentsByRecordKey.put(recordKey, incidentForKey);
-      });
+    recordsForInstance.forEach(
+        incident -> {
+          final long recordKey = incident.getKey();
+          IncidentDto incidentForKey =
+              incidentsByRecordKey.getOrDefault(recordKey, createSkeletonIncident(incident));
+          if (incident.getIntent() == IncidentIntent.CREATED
+              && incidentForKey.getIncidentStatus() != IncidentStatus.RESOLVED) {
+            incidentForKey.setIncidentStatus(IncidentStatus.OPEN);
+            incidentForKey.setCreateTime(dateForTimestamp(incident));
+          } else if (incident.getIntent() == IncidentIntent.RESOLVED) {
+            incidentForKey.setIncidentStatus(IncidentStatus.RESOLVED);
+            incidentForKey.setEndTime(dateForTimestamp(incident));
+          }
+          updateDurationIfMissing(incidentForKey);
+          incidentsByRecordKey.put(recordKey, incidentForKey);
+        });
     instanceToAdd.setIncidents(new ArrayList<>(incidentsByRecordKey.values()));
     return instanceToAdd;
   }
 
   private void updateDurationIfMissing(final IncidentDto incidentDto) {
-    if (incidentDto.getDurationInMs() == null && incidentDto.getCreateTime() != null && incidentDto.getEndTime() != null) {
-      incidentDto.setDurationInMs(incidentDto.getCreateTime().until(incidentDto.getEndTime(), ChronoUnit.MILLIS));
+    if (incidentDto.getDurationInMs() == null
+        && incidentDto.getCreateTime() != null
+        && incidentDto.getEndTime() != null) {
+      incidentDto.setDurationInMs(
+          incidentDto.getCreateTime().until(incidentDto.getEndTime(), ChronoUnit.MILLIS));
     }
   }
 
@@ -123,7 +129,7 @@ public class ZeebeIncidentImportService extends ZeebeProcessInstanceSubEntityImp
   }
 
   private OffsetDateTime dateForTimestamp(final ZeebeIncidentRecordDto zeebeRecord) {
-    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(zeebeRecord.getTimestamp()), ZoneId.systemDefault());
+    return OffsetDateTime.ofInstant(
+        Instant.ofEpochMilli(zeebeRecord.getTimestamp()), ZoneId.systemDefault());
   }
-
 }

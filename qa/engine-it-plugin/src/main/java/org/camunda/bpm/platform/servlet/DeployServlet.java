@@ -5,37 +5,40 @@
  */
 package org.camunda.bpm.platform.servlet;
 
-import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.ProcessEngines;
-import org.camunda.bpm.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration;
-import org.camunda.bpm.engine.impl.persistence.StrongUuidGenerator;
-import org.camunda.spin.plugin.impl.SpinProcessEnginePlugin;
+import static org.camunda.bpm.engine.ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE;
+import static org.camunda.bpm.engine.ProcessEngineConfiguration.HISTORY_FULL;
 
+import java.io.IOException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
+import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.ProcessEngines;
+import org.camunda.bpm.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration;
+import org.camunda.bpm.engine.impl.persistence.StrongUuidGenerator;
+import org.camunda.spin.plugin.impl.SpinProcessEnginePlugin;
 
-import static org.camunda.bpm.engine.ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE;
-import static org.camunda.bpm.engine.ProcessEngineConfiguration.HISTORY_FULL;
-
-@WebServlet(name = "DeployEngineServlet", urlPatterns = {"/deploy"})
+@WebServlet(
+    name = "DeployEngineServlet",
+    urlPatterns = {"/deploy"})
 public class DeployServlet extends HttpServlet {
 
   @Override
-  protected void doPost(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
+  protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
+      throws IOException {
     final String engineName = req.getParameter("name");
-    final boolean engineWithNameExistsAlready = ProcessEngines.getProcessEngines()
-      .values()
-      .stream()
-      .map(ProcessEngine::getName)
-      .anyMatch(engineName::equals);
+    final boolean engineWithNameExistsAlready =
+        ProcessEngines.getProcessEngines().values().stream()
+            .map(ProcessEngine::getName)
+            .anyMatch(engineName::equals);
 
     if (engineWithNameExistsAlready) {
-      resp.getWriter().println(String.format("{\"error\":\"Engine with name %s already exists.\"}", engineName));
+      resp.getWriter()
+          .println(
+              String.format("{\"error\":\"Engine with name %s already exists.\"}", engineName));
       resp.setStatus(Response.Status.CONFLICT.getStatusCode());
     } else {
       final ProcessEngine processEngine = createProcessEngine(engineName);
@@ -48,7 +51,8 @@ public class DeployServlet extends HttpServlet {
   }
 
   private ProcessEngine createProcessEngine(final String name) {
-    final StandaloneInMemProcessEngineConfiguration configuration = new StandaloneInMemProcessEngineConfiguration();
+    final StandaloneInMemProcessEngineConfiguration configuration =
+        new StandaloneInMemProcessEngineConfiguration();
     configuration.setProcessEngineName(name);
     configuration.setJdbcUrl("jdbc:h2:mem:" + name + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
     configuration.setHistory(HISTORY_FULL);

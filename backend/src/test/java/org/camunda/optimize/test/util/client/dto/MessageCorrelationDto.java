@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.test.util.client.dto;
 
-import lombok.Data;
-
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Data;
 
 @Data
 public class MessageCorrelationDto {
@@ -16,5 +15,4 @@ public class MessageCorrelationDto {
   private String messageName;
   private boolean all;
   Map<String, VariableValueDto> processVariables = new HashMap<>();
-
 }

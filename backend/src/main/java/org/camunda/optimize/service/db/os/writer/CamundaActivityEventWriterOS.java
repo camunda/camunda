@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -14,9 +16,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -24,14 +23,15 @@ import java.util.List;
 public class CamundaActivityEventWriterOS implements CamundaActivityEventWriter {
 
   @Override
-  public List<ImportRequestDto> generateImportRequests(final List<CamundaActivityEventDto> camundaActivityEvents) {
+  public List<ImportRequestDto> generateImportRequests(
+      final List<CamundaActivityEventDto> camundaActivityEvents) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
-  public void deleteByProcessInstanceIds(final String definitionKey, final List<String> processInstanceIds) {
+  public void deleteByProcessInstanceIds(
+      final String definitionKey, final List<String> processInstanceIds) {
     log.error("Functionality not implemented for OpenSearch");
   }
-
 }

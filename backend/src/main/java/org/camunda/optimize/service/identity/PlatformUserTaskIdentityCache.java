@@ -5,19 +5,7 @@
  */
 package org.camunda.optimize.service.identity;
 
-import org.camunda.optimize.dto.optimize.GroupDto;
-import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.exceptions.MaxEntryLimitHitException;
-import org.camunda.optimize.service.SearchableIdentityCache;
-import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
-import org.camunda.optimize.service.util.BackoffCalculator;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
+import static java.util.stream.Collectors.groupingBy;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -25,19 +13,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.groupingBy;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.SearchableIdentityCache;
+import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
+import org.camunda.optimize.service.exceptions.MaxEntryLimitHitException;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.stereotype.Component;
 
 @Component
 public class PlatformUserTaskIdentityCache extends AbstractPlatformIdentityCache {
   private final EngineContextFactory engineContextFactory;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
 
-  public PlatformUserTaskIdentityCache(final ConfigurationService configurationService,
-                                       final EngineContextFactory engineContextFactory,
-                                       final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader,
-                                       final BackoffCalculator backoffCalculator) {
-    super(configurationService::getUserTaskIdentityCacheConfiguration, Collections.emptyList(), backoffCalculator);
+  public PlatformUserTaskIdentityCache(
+      final ConfigurationService configurationService,
+      final EngineContextFactory engineContextFactory,
+      final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader,
+      final BackoffCalculator backoffCalculator) {
+    super(
+        configurationService::getUserTaskIdentityCacheConfiguration,
+        Collections.emptyList(),
+        backoffCalculator);
     this.engineContextFactory = engineContextFactory;
     this.assigneeAndCandidateGroupsReader = assigneeAndCandidateGroupsReader;
   }
@@ -49,25 +49,31 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformIdentityCache
 
   @Override
   protected void populateCache(final SearchableIdentityCache newIdentityCache) {
-    engineContextFactory.getConfiguredEngines()
-      .forEach(engineContext -> {
-        try {
-          assigneeAndCandidateGroupsReader.consumeAssigneesInBatches(
-            engineContext.getEngineAlias(),
-            assigneeIds -> newIdentityCache.addIdentities(fetchUsersById(engineContext, assigneeIds)),
-            getCacheConfiguration().getMaxPageSize()
-          );
-          assigneeAndCandidateGroupsReader.consumeCandidateGroupsInBatches(
-            engineContext.getEngineAlias(),
-            groupIds -> newIdentityCache.addIdentities(fetchGroupsById(engineContext, groupIds)),
-            getCacheConfiguration().getMaxPageSize()
-          );
-        } catch (MaxEntryLimitHitException e) {
-          throw e;
-        } catch (Exception e) {
-          log.error("Failed to sync {} identities from engine {}", getCacheLabel(), engineContext.getEngineAlias(), e);
-        }
-      });
+    engineContextFactory
+        .getConfiguredEngines()
+        .forEach(
+            engineContext -> {
+              try {
+                assigneeAndCandidateGroupsReader.consumeAssigneesInBatches(
+                    engineContext.getEngineAlias(),
+                    assigneeIds ->
+                        newIdentityCache.addIdentities(fetchUsersById(engineContext, assigneeIds)),
+                    getCacheConfiguration().getMaxPageSize());
+                assigneeAndCandidateGroupsReader.consumeCandidateGroupsInBatches(
+                    engineContext.getEngineAlias(),
+                    groupIds ->
+                        newIdentityCache.addIdentities(fetchGroupsById(engineContext, groupIds)),
+                    getCacheConfiguration().getMaxPageSize());
+              } catch (MaxEntryLimitHitException e) {
+                throw e;
+              } catch (Exception e) {
+                log.error(
+                    "Failed to sync {} identities from engine {}",
+                    getCacheLabel(),
+                    engineContext.getEngineAlias(),
+                    e);
+              }
+            });
   }
 
   public List<UserDto> getAssigneesByIds(final Collection<String> assigneeIds) {
@@ -79,26 +85,33 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformIdentityCache
       return;
     }
 
-    final Map<IdentityType, Set<String>> identitiesByType = identities.stream().collect(groupingBy(
-      IdentityDto::getType, Collectors.mapping(IdentityDto::getId, Collectors.toSet())
-    ));
-    final Set<String> userIds = identitiesByType.getOrDefault(IdentityType.USER, Collections.emptySet());
-    final Set<String> groupIds = identitiesByType.getOrDefault(IdentityType.GROUP, Collections.emptySet());
+    final Map<IdentityType, Set<String>> identitiesByType =
+        identities.stream()
+            .collect(
+                groupingBy(
+                    IdentityDto::getType,
+                    Collectors.mapping(IdentityDto::getId, Collectors.toSet())));
+    final Set<String> userIds =
+        identitiesByType.getOrDefault(IdentityType.USER, Collections.emptySet());
+    final Set<String> groupIds =
+        identitiesByType.getOrDefault(IdentityType.GROUP, Collections.emptySet());
 
-    engineContextFactory.getConfiguredEngines()
-      .forEach(engineContext -> {
-        try {
-          getActiveIdentityCache().addIdentities(fetchUsersById(engineContext, userIds));
-          getActiveIdentityCache().addIdentities(fetchGroupsById(engineContext, groupIds));
-        } catch (MaxEntryLimitHitException e) {
-          throw e;
-        } catch (Exception e) {
-          log.error(
-            "Failed to resolve and add {} identities from engine {}", getCacheLabel(), engineContext.getEngineAlias(), e
-          );
-        }
-      });
-
-
+    engineContextFactory
+        .getConfiguredEngines()
+        .forEach(
+            engineContext -> {
+              try {
+                getActiveIdentityCache().addIdentities(fetchUsersById(engineContext, userIds));
+                getActiveIdentityCache().addIdentities(fetchGroupsById(engineContext, groupIds));
+              } catch (MaxEntryLimitHitException e) {
+                throw e;
+              } catch (Exception e) {
+                log.error(
+                    "Failed to resolve and add {} identities from engine {}",
+                    getCacheLabel(),
+                    engineContext.getEngineAlias(),
+                    e);
+              }
+            });
   }
 }

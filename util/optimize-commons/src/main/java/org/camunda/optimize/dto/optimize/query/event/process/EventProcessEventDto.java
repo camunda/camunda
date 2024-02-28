@@ -5,5 +5,4 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process;
 
-public interface EventProcessEventDto {
-}
+public interface EventProcessEventDto {}

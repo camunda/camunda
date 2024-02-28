@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
+
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.EndDateDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.DateDistributedByValueDto;
@@ -15,15 +17,14 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDistributedByInstanceEndDate extends AbstractProcessDistributedByInstanceDate {
 
-  public ProcessDistributedByInstanceEndDate(final DateAggregationService dateAggregationService,
-                                             final MinMaxStatsService minMaxStatsService,
-                                             final ProcessQueryFilterEnhancer queryFilterEnhancer) {
+  public ProcessDistributedByInstanceEndDate(
+      final DateAggregationService dateAggregationService,
+      final MinMaxStatsService minMaxStatsService,
+      final ProcessQueryFilterEnhancer queryFilterEnhancer) {
     super(dateAggregationService, minMaxStatsService, queryFilterEnhancer);
   }
 

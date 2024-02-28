@@ -5,22 +5,22 @@
  */
 package org.camunda.optimize.data.generation.generators.impl.process;
 
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.data.generation.UserAndGroupProvider;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
+import static org.camunda.optimize.test.util.client.SimpleEngineClient.DELAY_VARIABLE_NAME;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static org.camunda.optimize.test.util.client.SimpleEngineClient.DELAY_VARIABLE_NAME;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.data.generation.UserAndGroupProvider;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 public class AnalysisTestingDataGenerator extends ProcessDataGenerator {
   private static final String DIAGRAM = "/diagrams/process/analysis-testing.bpmn";
 
-  public AnalysisTestingDataGenerator(final SimpleEngineClient engineClient,
-                                      final Integer nVersions,
-                                      final UserAndGroupProvider userAndGroupProvider) {
+  public AnalysisTestingDataGenerator(
+      final SimpleEngineClient engineClient,
+      final Integer nVersions,
+      final UserAndGroupProvider userAndGroupProvider) {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 

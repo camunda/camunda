@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import java.io.Serializable;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-
-import java.io.Serializable;
-import java.util.List;
 
 @Getter
 @Builder

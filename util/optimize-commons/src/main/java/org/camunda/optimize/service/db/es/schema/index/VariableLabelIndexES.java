@@ -5,15 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.schema.index;
 
+import java.io.IOException;
 import org.camunda.optimize.service.db.schema.index.VariableLabelIndex;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-import java.io.IOException;
-
 public class VariableLabelIndexES extends VariableLabelIndex<XContentBuilder> {
 
-    @Override
-    public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder) throws IOException {
-        return contentBuilder.field(key, value);
-    }
+  @Override
+  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
+      throws IOException {
+    return contentBuilder.field(key, value);
+  }
 }

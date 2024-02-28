@@ -5,24 +5,23 @@
  */
 package org.camunda.optimize.rest.providers;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.glassfish.jersey.jackson.internal.jackson.jaxrs.cfg.EndpointConfigBase;
-import org.glassfish.jersey.jackson.internal.jackson.jaxrs.cfg.ObjectWriterInjector;
-import org.glassfish.jersey.jackson.internal.jackson.jaxrs.cfg.ObjectWriterModifier;
-import org.springframework.stereotype.Component;
-
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.Provider;
 import java.time.ZoneId;
-
-import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
-import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.glassfish.jersey.jackson.internal.jackson.jaxrs.cfg.EndpointConfigBase;
+import org.glassfish.jersey.jackson.internal.jackson.jaxrs.cfg.ObjectWriterInjector;
+import org.glassfish.jersey.jackson.internal.jackson.jaxrs.cfg.ObjectWriterModifier;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @AllArgsConstructor
@@ -31,7 +30,9 @@ import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 public class ResponseTimezoneFilter implements ContainerResponseFilter {
 
   @Override
-  public void filter(final ContainerRequestContext requestContext, final ContainerResponseContext responseContext) {
+  public void filter(
+      final ContainerRequestContext requestContext,
+      final ContainerResponseContext responseContext) {
     ObjectWriterInjector.set(new DateMod(extractTimezone(requestContext)));
   }
 
@@ -44,13 +45,13 @@ public class ResponseTimezoneFilter implements ContainerResponseFilter {
     }
 
     @Override
-    public ObjectWriter modify(final EndpointConfigBase<?> endpointConfigBase,
-                               final MultivaluedMap<String, Object> multivaluedMap,
-                               final Object o,
-                               final ObjectWriter objectWriter,
-                               final JsonGenerator jsonGenerator) {
-      return objectWriter
-        .withAttribute(X_OPTIMIZE_CLIENT_TIMEZONE, timezone.getId());
+    public ObjectWriter modify(
+        final EndpointConfigBase<?> endpointConfigBase,
+        final MultivaluedMap<String, Object> multivaluedMap,
+        final Object o,
+        final ObjectWriter objectWriter,
+        final JsonGenerator jsonGenerator) {
+      return objectWriter.withAttribute(X_OPTIMIZE_CLIENT_TIMEZONE, timezone.getId());
     }
   }
 }

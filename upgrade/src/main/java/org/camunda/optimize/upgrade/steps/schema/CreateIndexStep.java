@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.upgrade.steps.schema;
 
+import java.util.HashSet;
+import java.util.Set;
 import lombok.EqualsAndHashCode;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.UpgradeStepType;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
 public class CreateIndexStep extends UpgradeStep {

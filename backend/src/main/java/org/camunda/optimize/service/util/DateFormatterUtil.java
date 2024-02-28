@@ -5,21 +5,21 @@
  */
 package org.camunda.optimize.service.util;
 
-import com.github.sisyphsu.dateparser.DateParserUtils;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
+import com.github.sisyphsu.dateparser.DateParserUtils;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFormatterUtil {
 
-  private static final DateTimeFormatter OPTIMIZE_FORMATTER = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+  private static final DateTimeFormatter OPTIMIZE_FORMATTER =
+      DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   public static boolean isValidOptimizeDateFormat(final String value) {
     try {
@@ -38,5 +38,4 @@ public class DateFormatterUtil {
       return Optional.empty();
     }
   }
-
 }

@@ -6,16 +6,14 @@
 package org.camunda.optimize.dto.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
-
 import java.time.OffsetDateTime;
 import java.util.Optional;
-
+import lombok.Data;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class HistoricIdentityLinkLogDto implements TenantSpecificEngineDto {
-  
+
   private String id;
   private OffsetDateTime time;
   private String type;

@@ -5,20 +5,21 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
-import java.util.List;
-
-public class ProcessDefinitionXmlDatabaseImportJob extends DatabaseImportJob<ProcessDefinitionOptimizeDto> {
+public class ProcessDefinitionXmlDatabaseImportJob
+    extends DatabaseImportJob<ProcessDefinitionOptimizeDto> {
 
   private final ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
-  public ProcessDefinitionXmlDatabaseImportJob(final ProcessDefinitionXmlWriter processDefinitionXmlWriter,
-                                               final Runnable importCompleteCallback,
-                                               final DatabaseClient databaseClient) {
+  public ProcessDefinitionXmlDatabaseImportJob(
+      final ProcessDefinitionXmlWriter processDefinitionXmlWriter,
+      final Runnable importCompleteCallback,
+      final DatabaseClient databaseClient) {
     super(importCompleteCallback, databaseClient);
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
   }
@@ -27,5 +28,4 @@ public class ProcessDefinitionXmlDatabaseImportJob extends DatabaseImportJob<Pro
   protected void persistEntities(List<ProcessDefinitionOptimizeDto> newOptimizeEntities) {
     processDefinitionXmlWriter.importProcessDefinitionXmls(newOptimizeEntities);
   }
-
 }

@@ -5,9 +5,6 @@
  */
 package org.camunda.optimize.data.generation.generators;
 
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -26,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DBConnector {
@@ -33,11 +32,13 @@ public class DBConnector {
   private static final int BATCH_SIZE = 10000;
   private static final String PROCESS_INSTANCE_TABLE = "ACT_HI_PROCINST";
 
-  public DBConnector(final String driver, final String dbUrl, final String dbUser, final String dbUserPassword) {
+  public DBConnector(
+      final String driver, final String dbUrl, final String dbUser, final String dbUserPassword) {
     initDatabaseConnection(driver, dbUrl, dbUser, dbUserPassword);
   }
 
-  private void initDatabaseConnection(String jdbcDriver, String dbUrl, String dbUser, String dbPassword) {
+  private void initDatabaseConnection(
+      String jdbcDriver, String dbUrl, String dbUser, String dbPassword) {
     try {
       Class.forName(jdbcDriver);
       log.debug("Connecting to a selected " + dbUrl + " database...");
@@ -55,8 +56,9 @@ public class DBConnector {
   @SneakyThrows
   public void updateProcessInstances(String startDate, String endDate) {
     Map<String, String> ids = new HashMap<>();
-    //get ids of first batch
-    String sql = "SELECT ID_, END_TIME_ FROM " + PROCESS_INSTANCE_TABLE + " ORDER BY ID_ LIMIT ? OFFSET ?";
+    // get ids of first batch
+    String sql =
+        "SELECT ID_, END_TIME_ FROM " + PROCESS_INSTANCE_TABLE + " ORDER BY ID_ LIMIT ? OFFSET ?";
     try (final PreparedStatement statement = connection.prepareStatement(sql)) {
       int currentOffset = 0;
       while (true) {
@@ -68,7 +70,7 @@ public class DBConnector {
 
         while (rs.next()) {
           currentBatchRowCount++;
-          ids.put(rs.getString(1), rs.getString( 2));
+          ids.put(rs.getString(1), rs.getString(2));
         }
         OffsetDateTime[] startDates = new OffsetDateTime[currentBatchRowCount];
         OffsetDateTime[] endDates = new OffsetDateTime[currentBatchRowCount];
@@ -79,13 +81,12 @@ public class DBConnector {
           OffsetDateTime startDateTime = OffsetDateTime.of(dates.get(0), ZoneOffset.UTC);
           OffsetDateTime endDateTime = OffsetDateTime.of(dates.get(1), ZoneOffset.UTC);
           startDates[i] = startDateTime;
-          //Only set the new end date in case an end date already existed (process is not done)
-          if(ids.get(instanceIds[i]) != null) {
+          // Only set the new end date in case an end date already existed (process is not done)
+          if (ids.get(instanceIds[i]) != null) {
             endDates[i] = endDateTime;
           } else {
             endDates[i] = null;
           }
-
         }
         changeProcessInstanceStartAndEndDateInBatches(startDates, endDates, instanceIds);
         ids.clear();
@@ -100,16 +101,18 @@ public class DBConnector {
   }
 
   @SneakyThrows
-  public void changeProcessInstanceStartAndEndDateInBatches(OffsetDateTime[] startDateTime,
-                                                            OffsetDateTime[] endDateTime, String[] processInstanceId) {
-    String sql = "UPDATE " + PROCESS_INSTANCE_TABLE +
-      " SET START_TIME_ = ? , END_TIME_ = ?" +
-      "WHERE ID_ = ?";
+  public void changeProcessInstanceStartAndEndDateInBatches(
+      OffsetDateTime[] startDateTime, OffsetDateTime[] endDateTime, String[] processInstanceId) {
+    String sql =
+        "UPDATE "
+            + PROCESS_INSTANCE_TABLE
+            + " SET START_TIME_ = ? , END_TIME_ = ?"
+            + "WHERE ID_ = ?";
     try (final PreparedStatement statement = connection.prepareStatement(sql)) {
       for (int i = 0; i < processInstanceId.length; i++) {
         statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDateTime[i]));
-        //Only add the end date to the SQL statement if there is an end date to set
-        if(endDateTime[i] != null) {
+        // Only add the end date to the SQL statement if there is an end date to set
+        if (endDateTime[i] != null) {
           statement.setTimestamp(2, toLocalTimestampWithoutNanos(endDateTime[i]));
         } else {
           statement.setNull(2, java.sql.Types.TIMESTAMP);
@@ -130,8 +133,10 @@ public class DBConnector {
     int[] startDateComponets = getDateComponents(startDate);
     int[] endDateComponets = getDateComponents(endDate);
 
-    LocalDateTime from = LocalDateTime.of(startDateComponets[2], startDateComponets[1], startDateComponets[0], 1, 1);
-    LocalDateTime to = LocalDateTime.of(endDateComponets[2], endDateComponets[1], endDateComponets[0], 1, 1);
+    LocalDateTime from =
+        LocalDateTime.of(startDateComponets[2], startDateComponets[1], startDateComponets[0], 1, 1);
+    LocalDateTime to =
+        LocalDateTime.of(endDateComponets[2], endDateComponets[1], endDateComponets[0], 1, 1);
 
     long days = from.until(to, ChronoUnit.DAYS);
     long randomDays = ThreadLocalRandom.current().nextLong(days + 1);
@@ -155,12 +160,12 @@ public class DBConnector {
     // this introduces system specific increased precision when creating new date instances
     //
     // when using timestamps with the data base we have to limit the precision to millis
-    // otherwise date equals queries like finishedAt queries won't work as expected with modified timestamps
+    // otherwise date equals queries like finishedAt queries won't work as expected with modified
+    // timestamps
     // due to the added precision that is not available on the engines REST-API
     return Timestamp.valueOf(
-      offsetDateTime
-        .atZoneSameInstant(ZoneId.systemDefault())
-        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"))
-    );
+        offsetDateTime
+            .atZoneSameInstant(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")));
   }
 }

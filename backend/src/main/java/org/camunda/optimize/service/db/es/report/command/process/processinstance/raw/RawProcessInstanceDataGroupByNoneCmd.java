@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.db.es.report.command.process.processinstance.raw;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
+
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -19,13 +23,9 @@ import org.camunda.optimize.service.db.es.report.command.modules.view.process.Pr
 import org.camunda.optimize.service.export.CSVUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
-import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
-
 @Component
-public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<List<RawDataProcessInstanceDto>> {
+public class RawProcessInstanceDataGroupByNoneCmd
+    extends ProcessCmd<List<RawDataProcessInstanceDto>> {
 
   public RawProcessInstanceDataGroupByNoneCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
@@ -33,42 +33,49 @@ public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<List<RawDat
 
   @Override
   protected ProcessReportCmdExecutionPlan<List<RawDataProcessInstanceDto>> buildExecutionPlan(
-    final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .processCommand()
-      .view(ProcessViewRawData.class)
-      .groupBy(ProcessGroupByNone.class)
-      .distributedBy(ProcessDistributedByNone.class)
-      .<RawDataProcessInstanceDto>resultAsRawData()
-      .build();
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .processCommand()
+        .view(ProcessViewRawData.class)
+        .groupBy(ProcessGroupByNone.class)
+        .distributedBy(ProcessDistributedByNone.class)
+        .<RawDataProcessInstanceDto>resultAsRawData()
+        .build();
   }
 
   @Override
   public CommandEvaluationResult<List<RawDataProcessInstanceDto>> evaluate(
-    final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> reportEvaluationContext) {
-    final CommandEvaluationResult<List<RawDataProcessInstanceDto>> commandResult = super.evaluate(
-      reportEvaluationContext);
+      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
+          reportEvaluationContext) {
+    final CommandEvaluationResult<List<RawDataProcessInstanceDto>> commandResult =
+        super.evaluate(reportEvaluationContext);
     addNewVariablesAndDtoFieldsToTableColumnConfig(reportEvaluationContext, commandResult);
     return commandResult;
   }
 
   private void addNewVariablesAndDtoFieldsToTableColumnConfig(
-    final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> reportEvaluationContext,
-    final CommandEvaluationResult<List<RawDataProcessInstanceDto>> result) {
-    final List<String> variableNames = result.getFirstMeasureData()
-      .stream()
-      .flatMap(rawDataProcessInstanceDto -> rawDataProcessInstanceDto.getVariables().keySet().stream())
-      .map(varKey -> VARIABLE_PREFIX + varKey)
-      .toList();
+      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
+          reportEvaluationContext,
+      final CommandEvaluationResult<List<RawDataProcessInstanceDto>> result) {
+    final List<String> variableNames =
+        result.getFirstMeasureData().stream()
+            .flatMap(
+                rawDataProcessInstanceDto ->
+                    rawDataProcessInstanceDto.getVariables().keySet().stream())
+            .map(varKey -> VARIABLE_PREFIX + varKey)
+            .toList();
 
-    TableColumnDto tableColumns = reportEvaluationContext.getReportDefinition()
-      .getData()
-      .getConfiguration()
-      .getTableColumns();
+    TableColumnDto tableColumns =
+        reportEvaluationContext
+            .getReportDefinition()
+            .getData()
+            .getConfiguration()
+            .getTableColumns();
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
-    tableColumns.addNewAndRemoveUnexpectedFlowNodeDurationColumns(CSVUtils.extractAllPrefixedFlowNodeKeys(result.getFirstMeasureData()));
+    tableColumns.addNewAndRemoveUnexpectedFlowNodeDurationColumns(
+        CSVUtils.extractAllPrefixedFlowNodeKeys(result.getFirstMeasureData()));
     tableColumns.addCountColumns(CSVUtils.extractAllPrefixedCountKeys());
     tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
   }
-
 }

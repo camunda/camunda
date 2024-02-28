@@ -16,8 +16,7 @@ public enum UpgradeStepType {
   SCHEMA_UPDATE_MAPPING,
   SCHEMA_DELETE_INDEX,
   REINDEX,
-  ADD_ALIAS
-  ;
+  ADD_ALIAS;
 
   @JsonValue
   public String getId() {
@@ -28,5 +27,4 @@ public enum UpgradeStepType {
   public String toString() {
     return getId();
   }
-
 }

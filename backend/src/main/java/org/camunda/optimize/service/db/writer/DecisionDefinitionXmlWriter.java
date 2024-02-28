@@ -5,17 +5,15 @@
  */
 package org.camunda.optimize.service.db.writer;
 
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.*;
 
 import java.util.List;
 import java.util.Set;
-
-import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.*;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 
 public interface DecisionDefinitionXmlWriter {
   Set<String> FIELDS_TO_UPDATE =
-    Set.of(DECISION_DEFINITION_XML, INPUT_VARIABLE_NAMES, OUTPUT_VARIABLE_NAMES);
+      Set.of(DECISION_DEFINITION_XML, INPUT_VARIABLE_NAMES, OUTPUT_VARIABLE_NAMES);
 
   void importDecisionDefinitionXmls(final List<DecisionDefinitionOptimizeDto> decisionDefinitions);
-
 }

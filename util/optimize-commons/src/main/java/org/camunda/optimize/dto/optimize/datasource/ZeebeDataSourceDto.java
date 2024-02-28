@@ -25,5 +25,4 @@ public class ZeebeDataSourceDto extends DataSourceDto {
     super(DataImportSourceType.ZEEBE, name);
     this.partitionId = partitionId;
   }
-
 }

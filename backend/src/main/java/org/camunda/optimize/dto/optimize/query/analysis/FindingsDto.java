@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.analysis;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Optional;
 
 @Data
 public class FindingsDto {
@@ -38,7 +37,7 @@ public class FindingsDto {
 
   public Long getOutlierCount() {
     return Optional.ofNullable(lowerOutlier).map(Finding::getCount).orElse(0L)
-      + Optional.ofNullable(higherOutlier).map(Finding::getCount).orElse(0L);
+        + Optional.ofNullable(higherOutlier).map(Finding::getCount).orElse(0L);
   }
 
   @Data
@@ -51,4 +50,3 @@ public class FindingsDto {
     private Long count = 0L;
   }
 }
-

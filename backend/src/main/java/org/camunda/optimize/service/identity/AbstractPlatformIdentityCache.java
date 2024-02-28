@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.service.identity;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -13,8 +22,8 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.AbstractScheduledService;
-import org.camunda.optimize.service.exceptions.MaxEntryLimitHitException;
 import org.camunda.optimize.service.SearchableIdentityCache;
+import org.camunda.optimize.service.exceptions.MaxEntryLimitHitException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -27,17 +36,8 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.scheduling.support.CronTrigger;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-public abstract class AbstractPlatformIdentityCache extends AbstractScheduledService implements ConfigurationReloadable {
+public abstract class AbstractPlatformIdentityCache extends AbstractScheduledService
+    implements ConfigurationReloadable {
   protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
   private final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier;
@@ -46,13 +46,15 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
   private SearchableIdentityCache activeIdentityCache;
   private CronExpression cronExpression;
 
-  protected AbstractPlatformIdentityCache(final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier,
-                                          final List<IdentityCacheSyncListener> identityCacheSyncListeners,
-                                          final BackoffCalculator backoffCalculator) {
+  protected AbstractPlatformIdentityCache(
+      final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier,
+      final List<IdentityCacheSyncListener> identityCacheSyncListeners,
+      final BackoffCalculator backoffCalculator) {
     this.cacheConfigurationSupplier = cacheConfigurationSupplier;
     this.identityCacheSyncListeners = identityCacheSyncListeners;
     this.backoffCalculator = backoffCalculator;
-    this.activeIdentityCache = new SearchableIdentityCache(() -> this.getCacheConfiguration().getMaxEntryLimit());
+    this.activeIdentityCache =
+        new SearchableIdentityCache(() -> this.getCacheConfiguration().getMaxEntryLimit());
   }
 
   protected abstract void populateCache(final SearchableIdentityCache newIdentityCache);
@@ -106,10 +108,11 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
 
   public void syncIdentitiesWithRetry() {
     synchronized (this) {
-      final OffsetDateTime stopRetryingTime = Optional
-        .ofNullable(cronExpression.next(LocalDateUtil.getCurrentDateTime()))
-        .orElseThrow(() -> new OptimizeRuntimeException("Could not calculate next cron temporal."))
-        .minusSeconds(backoffCalculator.getMaximumBackoffMilliseconds());
+      final OffsetDateTime stopRetryingTime =
+          Optional.ofNullable(cronExpression.next(LocalDateUtil.getCurrentDateTime()))
+              .orElseThrow(
+                  () -> new OptimizeRuntimeException("Could not calculate next cron temporal."))
+              .minusSeconds(backoffCalculator.getMaximumBackoffMilliseconds());
       boolean shouldRetry = true;
       while (shouldRetry) {
         try {
@@ -119,16 +122,17 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
         } catch (final Exception e) {
           if (LocalDateUtil.getCurrentDateTime().isAfter(stopRetryingTime)) {
             log.error(
-              "Could not sync {} identities. Will stop retrying as next scheduled sync is approaching",
-              getCacheLabel(), e
-            );
+                "Could not sync {} identities. Will stop retrying as next scheduled sync is approaching",
+                getCacheLabel(),
+                e);
             shouldRetry = false;
           } else {
             long timeToSleep = backoffCalculator.calculateSleepTime();
             log.error(
-              "Error while syncing {} identities. Will retry in {} millis",
-              getCacheLabel(), timeToSleep, e
-            );
+                "Error while syncing {} identities. Will retry in {} millis",
+                getCacheLabel(),
+                timeToSleep,
+                e);
             try {
               this.wait(timeToSleep);
             } catch (InterruptedException ex) {
@@ -144,19 +148,17 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
 
   public synchronized void synchronizeIdentities() {
     try {
-      final SearchableIdentityCache newIdentityCache = new SearchableIdentityCache(
-        () -> getCacheConfiguration().getMaxEntryLimit()
-      );
+      final SearchableIdentityCache newIdentityCache =
+          new SearchableIdentityCache(() -> getCacheConfiguration().getMaxEntryLimit());
       populateCache(newIdentityCache);
       replaceActiveCache(newIdentityCache);
       notifyCacheListeners(newIdentityCache);
     } catch (MaxEntryLimitHitException e) {
       log.error(
-        "Could not synchronize {} identity cache as the limit of {} records was reached on refresh.\n {}",
-        getCacheLabel(),
-        IdentityCacheConfiguration.Fields.maxEntryLimit,
-        createIncreaseCacheLimitErrorMessage()
-      );
+          "Could not synchronize {} identity cache as the limit of {} records was reached on refresh.\n {}",
+          getCacheLabel(),
+          IdentityCacheConfiguration.Fields.maxEntryLimit,
+          createIncreaseCacheLimitErrorMessage());
       throw e;
     }
   }
@@ -166,16 +168,16 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
       activeIdentityCache.addIdentity(identity);
     } catch (MaxEntryLimitHitException e) {
       log.warn(
-        "Identity [{}] could not be added to active {} identity cache as the limit of {} records was reached.\n {}",
-        identity,
-        getCacheLabel(),
-        getCacheConfiguration().getMaxEntryLimit(),
-        createIncreaseCacheLimitErrorMessage()
-      );
+          "Identity [{}] could not be added to active {} identity cache as the limit of {} records was reached.\n {}",
+          identity,
+          getCacheLabel(),
+          getCacheConfiguration().getMaxEntryLimit(),
+          createIncreaseCacheLimitErrorMessage());
     }
   }
 
-  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(final String id, final IdentityType type) {
+  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
+      final String id, final IdentityType type) {
     return activeIdentityCache.getIdentityByIdAndType(id, type);
   }
 
@@ -185,11 +187,14 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
 
   public List<UserDto> getUserIdentitiesById(final Collection<String> ids) {
     return activeIdentityCache
-      .getIdentities(ids.stream().map(id -> new IdentityDto(id, IdentityType.USER)).collect(Collectors.toSet()))
-      .stream()
-      .filter(UserDto.class::isInstance)
-      .map(UserDto.class::cast)
-      .toList();
+        .getIdentities(
+            ids.stream()
+                .map(id -> new IdentityDto(id, IdentityType.USER))
+                .collect(Collectors.toSet()))
+        .stream()
+        .filter(UserDto.class::isInstance)
+        .map(UserDto.class::cast)
+        .toList();
   }
 
   public Optional<GroupDto> getGroupIdentityById(final String id) {
@@ -198,39 +203,47 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
 
   public List<GroupDto> getCandidateGroupIdentitiesById(final Collection<String> ids) {
     return activeIdentityCache
-      .getIdentities(ids.stream().map(id -> new IdentityDto(id, IdentityType.GROUP)).collect(Collectors.toSet()))
-      .stream()
-      .filter(GroupDto.class::isInstance)
-      .map(GroupDto.class::cast)
-      .toList();
+        .getIdentities(
+            ids.stream()
+                .map(id -> new IdentityDto(id, IdentityType.GROUP))
+                .collect(Collectors.toSet()))
+        .stream()
+        .filter(GroupDto.class::isInstance)
+        .map(GroupDto.class::cast)
+        .toList();
   }
 
-  public List<IdentityWithMetadataResponseDto> getIdentities(final Collection<IdentityDto> identities) {
+  public List<IdentityWithMetadataResponseDto> getIdentities(
+      final Collection<IdentityDto> identities) {
     return activeIdentityCache.getIdentities(identities);
   }
 
-  public IdentitySearchResultResponseDto searchIdentities(final String terms, final int resultLimit) {
+  public IdentitySearchResultResponseDto searchIdentities(
+      final String terms, final int resultLimit) {
     return activeIdentityCache.searchIdentities(terms, resultLimit);
   }
 
-  public IdentitySearchResultResponseDto searchIdentities(final String terms,
-                                                          final IdentityType[] identityTypes,
-                                                          final int resultLimit) {
+  public IdentitySearchResultResponseDto searchIdentities(
+      final String terms, final IdentityType[] identityTypes, final int resultLimit) {
     return activeIdentityCache.searchIdentities(terms, identityTypes, resultLimit);
   }
 
-  public IdentitySearchResultResponseDto searchIdentitiesAfter(final String terms,
-                                                               final IdentityType[] identityTypes,
-                                                               final int resultLimit,
-                                                               final IdentitySearchResultResponseDto searchAfter) {
-    return activeIdentityCache.searchIdentitiesAfter(terms, identityTypes, resultLimit, searchAfter);
+  public IdentitySearchResultResponseDto searchIdentitiesAfter(
+      final String terms,
+      final IdentityType[] identityTypes,
+      final int resultLimit,
+      final IdentitySearchResultResponseDto searchAfter) {
+    return activeIdentityCache.searchIdentitiesAfter(
+        terms, identityTypes, resultLimit, searchAfter);
   }
 
-  public IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(final String terms,
-                                                                      final Collection<String> identityIds,
-                                                                      final IdentityType[] identityTypes,
-                                                                      final int resultLimit) {
-    return activeIdentityCache.searchAmongIdentitiesWithIds(terms, identityIds, identityTypes, resultLimit);
+  public IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(
+      final String terms,
+      final Collection<String> identityIds,
+      final IdentityType[] identityTypes,
+      final int resultLimit) {
+    return activeIdentityCache.searchAmongIdentitiesWithIds(
+        terms, identityIds, identityTypes, resultLimit);
   }
 
   private synchronized void replaceActiveCache(final SearchableIdentityCache newIdentityCache) {
@@ -242,7 +255,8 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
   public synchronized void resetCache() {
     if (activeIdentityCache != null) {
       activeIdentityCache.close();
-      activeIdentityCache = new SearchableIdentityCache(() -> getCacheConfiguration().getMaxEntryLimit());
+      activeIdentityCache =
+          new SearchableIdentityCache(() -> getCacheConfiguration().getMaxEntryLimit());
     }
   }
 
@@ -255,11 +269,13 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
     return new CronTrigger(this.cronExpression.toString());
   }
 
-  protected List<UserDto> fetchUsersById(final EngineContext engineContext, final Collection<String> userIdBatch) {
+  protected List<UserDto> fetchUsersById(
+      final EngineContext engineContext, final Collection<String> userIdBatch) {
     if (getCacheConfiguration().isIncludeUserMetaData()) {
       List<UserDto> users = engineContext.getUsersById(userIdBatch);
       List<String> usersNotInEngine = new ArrayList<>(userIdBatch);
-      usersNotInEngine.removeIf(userId -> users.stream().anyMatch(user -> user.getId().equals(userId)));
+      usersNotInEngine.removeIf(
+          userId -> users.stream().anyMatch(user -> user.getId().equals(userId)));
       users.addAll(usersNotInEngine.stream().map(UserDto::new).toList());
       return users;
     } else {
@@ -267,10 +283,12 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
     }
   }
 
-  protected List<GroupDto> fetchGroupsById(final EngineContext engineContext, final Collection<String> groupIdBatch) {
+  protected List<GroupDto> fetchGroupsById(
+      final EngineContext engineContext, final Collection<String> groupIdBatch) {
     List<GroupDto> groups = engineContext.getGroupsById(groupIdBatch);
     List<String> groupsNotInEngine = new ArrayList<>(groupIdBatch);
-    groupsNotInEngine.removeIf(groupId -> groups.stream().anyMatch(group -> group.getId().equals(groupId)));
+    groupsNotInEngine.removeIf(
+        groupId -> groups.stream().anyMatch(group -> group.getId().equals(groupId)));
     groups.addAll(groupsNotInEngine.stream().map(GroupDto::new).toList());
     return groups;
   }
@@ -281,18 +299,15 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
         identityCacheSyncListener.onFinishIdentitySync(newIdentityCache);
       } catch (Exception e) {
         log.error(
-          "Error while calling listener {} after identitySync.", identityCacheSyncListener.getClass().getSimpleName()
-        );
+            "Error while calling listener {} after identitySync.",
+            identityCacheSyncListener.getClass().getSimpleName());
       }
     }
   }
 
   private String createIncreaseCacheLimitErrorMessage() {
     return String.format(
-      "Please increase %s.%s in the configuration.",
-      getCacheConfiguration().getConfigName(),
-      IdentityCacheConfiguration.Fields.maxEntryLimit
-    );
+        "Please increase %s.%s in the configuration.",
+        getCacheConfiguration().getConfigName(), IdentityCacheConfiguration.Fields.maxEntryLimit);
   }
-
 }

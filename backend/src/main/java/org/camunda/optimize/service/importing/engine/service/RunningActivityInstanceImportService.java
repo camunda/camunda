@@ -5,25 +5,25 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWriter;
-import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.importing.job.RunningActivityInstanceDatabaseImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.importing.job.RunningActivityInstanceDatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-public class RunningActivityInstanceImportService implements ImportService<HistoricActivityInstanceEngineDto> {
+public class RunningActivityInstanceImportService
+    implements ImportService<HistoricActivityInstanceEngineDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -35,15 +35,15 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   private final ConfigurationService configurationService;
   private final DatabaseClient databaseClient;
 
-  public RunningActivityInstanceImportService(final RunningActivityInstanceWriter runningActivityInstanceWriter,
-                                              final CamundaEventImportService camundaEventService,
-                                              final EngineContext engineContext,
-                                              final ConfigurationService configurationService,
-                                              final ProcessDefinitionResolverService processDefinitionResolverService,
-                                              final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
-      getClass().getSimpleName(), configurationService
-    );
+  public RunningActivityInstanceImportService(
+      final RunningActivityInstanceWriter runningActivityInstanceWriter,
+      final CamundaEventImportService camundaEventService,
+      final EngineContext engineContext,
+      final ConfigurationService configurationService,
+      final ProcessDefinitionResolverService processDefinitionResolverService,
+      final DatabaseClient databaseClient) {
+    this.databaseImportJobExecutor =
+        new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
     this.camundaEventService = camundaEventService;
@@ -53,15 +53,17 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   }
 
   @Override
-  public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities,
-                            Runnable importCompleteCallback) {
+  public void executeImport(
+      List<HistoricActivityInstanceEngineDto> pageOfEngineEntities,
+      Runnable importCompleteCallback) {
     logger.trace("Importing running activity instances from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<FlowNodeEventDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
+      List<FlowNodeEventDto> newOptimizeEntities =
+          mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       DatabaseImportJob<FlowNodeEventDto> databaseImportJob =
-        createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+          createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
       addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
@@ -75,58 +77,62 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
     databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
-  private List<FlowNodeEventDto> mapEngineEntitiesToOptimizeEntities(List<HistoricActivityInstanceEngineDto> engineEntities) {
-    return engineEntities
-      .stream()
-      .map(activity -> processDefinitionResolverService.enrichEngineDtoWithDefinitionKey(
-        engineContext,
-        activity,
-        HistoricActivityInstanceEngineDto::getProcessDefinitionKey,
-        HistoricActivityInstanceEngineDto::getProcessDefinitionId,
-        HistoricActivityInstanceEngineDto::setProcessDefinitionKey
-      ))
-      .filter(activity -> activity.getProcessDefinitionKey() != null)
-      .map(this::mapEngineEntityToOptimizeEntity)
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .collect(Collectors.toList());
+  private List<FlowNodeEventDto> mapEngineEntitiesToOptimizeEntities(
+      List<HistoricActivityInstanceEngineDto> engineEntities) {
+    return engineEntities.stream()
+        .map(
+            activity ->
+                processDefinitionResolverService.enrichEngineDtoWithDefinitionKey(
+                    engineContext,
+                    activity,
+                    HistoricActivityInstanceEngineDto::getProcessDefinitionKey,
+                    HistoricActivityInstanceEngineDto::getProcessDefinitionId,
+                    HistoricActivityInstanceEngineDto::setProcessDefinitionKey))
+        .filter(activity -> activity.getProcessDefinitionKey() != null)
+        .map(this::mapEngineEntityToOptimizeEntity)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toList());
   }
 
-  private DatabaseImportJob<FlowNodeEventDto> createDatabaseImportJob(List<FlowNodeEventDto> events,
-                                                                           Runnable callback) {
+  private DatabaseImportJob<FlowNodeEventDto> createDatabaseImportJob(
+      List<FlowNodeEventDto> events, Runnable callback) {
     RunningActivityInstanceDatabaseImportJob activityImportJob =
-      new RunningActivityInstanceDatabaseImportJob(
-        runningActivityInstanceWriter,
-        camundaEventService,
-        configurationService,
-        callback,
-        databaseClient
-      );
+        new RunningActivityInstanceDatabaseImportJob(
+            runningActivityInstanceWriter,
+            camundaEventService,
+            configurationService,
+            callback,
+            databaseClient);
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;
   }
 
-  private Optional<FlowNodeEventDto> mapEngineEntityToOptimizeEntity(HistoricActivityInstanceEngineDto engineEntity) {
-    return processDefinitionResolverService.getDefinition(engineEntity.getProcessDefinitionId(), engineContext)
-      .map(definition -> new FlowNodeEventDto(
-        engineEntity.getId(),
-        engineEntity.getActivityId(),
-        engineEntity.getActivityType(),
-        engineEntity.getActivityName(),
-        engineEntity.getStartTime(),
-        definition.getId(),
-        definition.getKey(),
-        definition.getVersion(),
-        engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)),
-        engineContext.getEngineAlias(),
-        engineEntity.getProcessInstanceId(),
-        engineEntity.getStartTime(),
-        null,
-        null,
-        engineEntity.getSequenceCounter(),
-        engineEntity.getCanceled(),
-        engineEntity.getTaskId()
-      ));
+  private Optional<FlowNodeEventDto> mapEngineEntityToOptimizeEntity(
+      HistoricActivityInstanceEngineDto engineEntity) {
+    return processDefinitionResolverService
+        .getDefinition(engineEntity.getProcessDefinitionId(), engineContext)
+        .map(
+            definition ->
+                new FlowNodeEventDto(
+                    engineEntity.getId(),
+                    engineEntity.getActivityId(),
+                    engineEntity.getActivityType(),
+                    engineEntity.getActivityName(),
+                    engineEntity.getStartTime(),
+                    definition.getId(),
+                    definition.getKey(),
+                    definition.getVersion(),
+                    engineEntity
+                        .getTenantId()
+                        .orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)),
+                    engineContext.getEngineAlias(),
+                    engineEntity.getProcessInstanceId(),
+                    engineEntity.getStartTime(),
+                    null,
+                    null,
+                    engineEntity.getSequenceCounter(),
+                    engineEntity.getCanceled(),
+                    engineEntity.getTaskId()));
   }
-
 }

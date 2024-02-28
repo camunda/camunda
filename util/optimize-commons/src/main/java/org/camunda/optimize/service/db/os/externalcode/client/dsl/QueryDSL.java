@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.db.os.externalcode.client.dsl;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
@@ -30,27 +37,20 @@ import org.opensearch.client.opensearch._types.query_dsl.TermsQueryField;
 import org.opensearch.client.opensearch._types.query_dsl.WildcardQuery;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-
 public interface QueryDSL {
   String DEFAULT_SCRIPT_LANG = "painless";
 
   private static <A> List<A> nonNull(A[] items) {
     return nonNull(Arrays.asList(items));
   }
+
   private static <A> List<A> nonNull(Collection<A> items) {
     return items.stream().filter(Objects::nonNull).toList();
   }
 
   private static Map<String, JsonData> jsonParams(Map<String, Object> params) {
-    return params.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
+    return params.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
   }
 
   static Query and(Query... queries) {
@@ -78,7 +78,8 @@ public interface QueryDSL {
   }
 
   static Query hasChildQuery(String type, Query query) {
-    return HasChildQuery.of(q -> q.query(query).type(type).scoreMode(ChildScoreMode.None))._toQuery();
+    return HasChildQuery.of(q -> q.query(query).type(type).scoreMode(ChildScoreMode.None))
+        ._toQuery();
   }
 
   static Query ids(List<String> ids) {
@@ -107,10 +108,8 @@ public interface QueryDSL {
 
   static <A> Query terms(String field, Collection<A> values, Function<A, FieldValue> toFieldValue) {
     final List<FieldValue> fieldValues = values.stream().map(toFieldValue).toList();
-    return TermsQuery.of(q -> q
-      .field(field)
-      .terms(TermsQueryField.of(f -> f.value(fieldValues)))
-    )._toQuery();
+    return TermsQuery.of(q -> q.field(field).terms(TermsQueryField.of(f -> f.value(fieldValues))))
+        ._toQuery();
   }
 
   static <A> Query lt(String field, A lt) {
@@ -121,8 +120,14 @@ public interface QueryDSL {
     return RangeQuery.of(q -> q.field(field).lte(json(lte)))._toQuery();
   }
 
-  static <A> Query match(String field, A value, Operator operator, Function<A, FieldValue> toFieldValue) {
-    return new MatchQuery.Builder().field(field).query(toFieldValue.apply(value)).operator(operator) .build()._toQuery();
+  static <A> Query match(
+      String field, A value, Operator operator, Function<A, FieldValue> toFieldValue) {
+    return new MatchQuery.Builder()
+        .field(field)
+        .query(toFieldValue.apply(value))
+        .operator(operator)
+        .build()
+        ._toQuery();
   }
 
   static Query match(String field, String value, Operator operator) {
@@ -162,11 +167,9 @@ public interface QueryDSL {
   }
 
   static Script scriptFromJsonData(String script, Map<String, JsonData> params) {
-    return new Script.Builder().inline(b -> b
-      .source(script)
-      .params(params)
-      .lang(DEFAULT_SCRIPT_LANG)
-    ).build();
+    return new Script.Builder()
+        .inline(b -> b.source(script).params(params).lang(DEFAULT_SCRIPT_LANG))
+        .build();
   }
 
   static SortOptions sortOptions(String field, SortOrder sortOrder) {
@@ -174,7 +177,9 @@ public interface QueryDSL {
   }
 
   static SortOptions sortOptions(String field, SortOrder sortOrder, String missing) {
-    return SortOptions.of(so -> so.field(sf -> sf.field(field).order(sortOrder).missing(m -> m.stringValue(missing))));
+    return SortOptions.of(
+        so ->
+            so.field(sf -> sf.field(field).order(sortOrder).missing(m -> m.stringValue(missing))));
   }
 
   static SourceConfig sourceInclude(String... fields) {

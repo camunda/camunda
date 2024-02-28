@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.es.report.command.exec.builder;
 
+import java.util.List;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
@@ -20,9 +22,6 @@ import org.camunda.optimize.service.db.es.report.command.modules.view.decision.D
 import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.function.Function;
 
 @RequiredArgsConstructor
 @Component
@@ -52,7 +51,8 @@ public class DecisionExecutionPlanBuilder {
       this.viewPartClass = viewPartClass;
     }
 
-    public AddDistributedByBuilder groupBy(Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass) {
+    public AddDistributedByBuilder groupBy(
+        Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass) {
       return new AddDistributedByBuilder(viewPartClass, groupByPartClass);
     }
   }
@@ -62,13 +62,15 @@ public class DecisionExecutionPlanBuilder {
     private final Class<? extends DecisionViewPart> viewPartClass;
     private final Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass;
 
-    public AddDistributedByBuilder(final Class<? extends DecisionViewPart> viewPartClass,
-                                   final Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass) {
+    public AddDistributedByBuilder(
+        final Class<? extends DecisionViewPart> viewPartClass,
+        final Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass) {
       this.viewPartClass = viewPartClass;
       this.groupByPartClass = groupByPartClass;
     }
 
-    public ReportResultTypeBuilder distributedBy(Class<? extends DecisionDistributedByPart> distributedByPartClass) {
+    public ReportResultTypeBuilder distributedBy(
+        Class<? extends DecisionDistributedByPart> distributedByPartClass) {
       return new ReportResultTypeBuilder(viewPartClass, groupByPartClass, distributedByPartClass);
     }
   }
@@ -79,9 +81,10 @@ public class DecisionExecutionPlanBuilder {
     private final Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass;
     private final Class<? extends DecisionDistributedByPart> distributedByPartClass;
 
-    public ReportResultTypeBuilder(final Class<? extends DecisionViewPart> viewPartClass,
-                                   final Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass,
-                                   final Class<? extends DecisionDistributedByPart> distributedByPartClass) {
+    public ReportResultTypeBuilder(
+        final Class<? extends DecisionViewPart> viewPartClass,
+        final Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass,
+        final Class<? extends DecisionDistributedByPart> distributedByPartClass) {
       this.viewPartClass = viewPartClass;
       this.groupByPartClass = groupByPartClass;
       this.distributedByPartClass = distributedByPartClass;
@@ -89,29 +92,26 @@ public class DecisionExecutionPlanBuilder {
 
     public <T extends RawDataInstanceDto> ExecuteBuildBuilder<List<T>> resultAsRawData() {
       return new ExecuteBuildBuilder<>(
-        viewPartClass,
-        groupByPartClass,
-        distributedByPartClass,
-        CompositeCommandResult::transformToRawData
-      );
+          viewPartClass,
+          groupByPartClass,
+          distributedByPartClass,
+          CompositeCommandResult::transformToRawData);
     }
 
     public ExecuteBuildBuilder<Double> resultAsNumber() {
       return new ExecuteBuildBuilder<>(
-        viewPartClass,
-        groupByPartClass,
-        distributedByPartClass,
-        CompositeCommandResult::transformToNumber
-      );
+          viewPartClass,
+          groupByPartClass,
+          distributedByPartClass,
+          CompositeCommandResult::transformToNumber);
     }
 
     public ExecuteBuildBuilder<List<MapResultEntryDto>> resultAsMap() {
       return new ExecuteBuildBuilder<>(
-        viewPartClass,
-        groupByPartClass,
-        distributedByPartClass,
-        CompositeCommandResult::transformToMap
-      );
+          viewPartClass,
+          groupByPartClass,
+          distributedByPartClass,
+          CompositeCommandResult::transformToMap);
     }
   }
 
@@ -122,10 +122,11 @@ public class DecisionExecutionPlanBuilder {
     private final Class<? extends DecisionDistributedByPart> distributedByPartClass;
     private final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult;
 
-    public ExecuteBuildBuilder(final Class<? extends DecisionViewPart> viewPartClass,
-                               final Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass,
-                               final Class<? extends DecisionDistributedByPart> distributedByPartClass,
-                               final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult) {
+    public ExecuteBuildBuilder(
+        final Class<? extends DecisionViewPart> viewPartClass,
+        final Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass,
+        final Class<? extends DecisionDistributedByPart> distributedByPartClass,
+        final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult) {
       this.viewPartClass = viewPartClass;
       this.groupByPartClass = groupByPartClass;
       this.distributedByPartClass = distributedByPartClass;
@@ -135,17 +136,16 @@ public class DecisionExecutionPlanBuilder {
     public DecisionReportCmdExecutionPlan<T> build() {
       final DecisionViewPart viewPart = context.getBean(this.viewPartClass);
       final GroupByPart<DecisionReportDataDto> groupByPart = context.getBean(this.groupByPartClass);
-      final DecisionDistributedByPart distributedByPart = context.getBean(this.distributedByPartClass);
+      final DecisionDistributedByPart distributedByPart =
+          context.getBean(this.distributedByPartClass);
       return new DecisionReportCmdExecutionPlan<>(
-        viewPart,
-        groupByPart,
-        distributedByPart,
-        mapToReportResult,
-        databaseClient,
-        decisionDefinitionReader,
-        decisionQueryFilterEnhancer
-      );
+          viewPart,
+          groupByPart,
+          distributedByPart,
+          mapToReportResult,
+          databaseClient,
+          decisionDefinitionReader,
+          decisionQueryFilterEnhancer);
     }
   }
-
 }

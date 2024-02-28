@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.service.db.repository;
 
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
-
 import java.util.Map;
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 
 public interface ProcessRepository {
   Map<String, ProcessOverviewDto> getProcessOverviewsByKey(Set<String> processDefinitionKeys);

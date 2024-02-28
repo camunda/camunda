@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.os.externalcode;
 
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -12,12 +17,6 @@ import org.camunda.optimize.service.exceptions.ExceptionSupplier;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.util.ObjectBuilderBase;
-
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
 
 @AllArgsConstructor
 @Slf4j
@@ -31,23 +30,30 @@ public class OpenSearchOperation {
       Field indexField = request.getClass().getDeclaredField(INDEX_FIELD);
       indexField.setAccessible(true);
       Object indexFieldContent = indexField.get(request);
-      if(Objects.isNull(indexFieldContent)) return request;
+      if (Objects.isNull(indexFieldContent)) return request;
       if (indexFieldContent instanceof final String currentIndex) {
         indexField.set(request, getIndexAliasFor(currentIndex));
       } else if (indexFieldContent instanceof List<?> currentIndexes) {
-        List<String> fullyQualifiedIndexNames = currentIndexes.stream()
-          .map(currentIndex -> indexNameService.getOptimizeIndexAliasForIndex((String) currentIndex))
-          .toList();
+        List<String> fullyQualifiedIndexNames =
+            currentIndexes.stream()
+                .map(
+                    currentIndex ->
+                        indexNameService.getOptimizeIndexAliasForIndex((String) currentIndex))
+                .toList();
         indexField.set(request, fullyQualifiedIndexNames);
       } else {
-        throw new IllegalArgumentException(String.format("Cannot apply index prefix to request. It contains an " +
-                                                           "unsupported type: %s ", indexFieldContent.getClass().getName()));
+        throw new IllegalArgumentException(
+            String.format(
+                "Cannot apply index prefix to request. It contains an " + "unsupported type: %s ",
+                indexFieldContent.getClass().getName()));
       }
       return request;
     } catch (NoSuchFieldException e) {
-      throw new OptimizeRuntimeException("Could not apply prefix to index of type " + request.getClass());
+      throw new OptimizeRuntimeException(
+          "Could not apply prefix to index of type " + request.getClass());
     } catch (IllegalAccessException e) {
-      throw new OptimizeRuntimeException(String.format("Failed to set value for the %s field.", INDEX_FIELD));
+      throw new OptimizeRuntimeException(
+          String.format("Failed to set value for the %s field.", INDEX_FIELD));
     }
   }
 
@@ -64,13 +70,15 @@ public class OpenSearchOperation {
   }
 
   protected String getIndex(ObjectBuilderBase builder) {
-    //todo will be refactored in the OPT-7352
+    // todo will be refactored in the OPT-7352
     try {
       Field indexField = builder.getClass().getDeclaredField(INDEX_FIELD);
       indexField.setAccessible(true);
       return indexField.get(builder).toString();
     } catch (Exception e) {
-      log.error(String.format("Failed to get the method %s from %s", INDEX_FIELD, builder.getClass().getName()));
+      log.error(
+          String.format(
+              "Failed to get the method %s from %s", INDEX_FIELD, builder.getClass().getName()));
       return "FAILED_INDEX";
     }
   }
@@ -79,7 +87,8 @@ public class OpenSearchOperation {
     try {
       return supplier.get();
     } catch (OpenSearchException e) {
-      final String message = "An exception has occurred when trying to execute an OpenSearch operation";
+      final String message =
+          "An exception has occurred when trying to execute an OpenSearch operation";
       log.error(message, e);
       throw e;
     } catch (Exception e) {
@@ -88,5 +97,4 @@ public class OpenSearchOperation {
       throw new OptimizeRuntimeException(message, e);
     }
   }
-
 }

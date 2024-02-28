@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.db.es.schema;
 
-import org.elasticsearch.xcontent.XContentBuilder;
-
 import java.io.IOException;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public interface PropertiesAppender {
 

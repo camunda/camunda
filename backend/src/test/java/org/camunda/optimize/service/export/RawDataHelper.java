@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.export;
 
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
@@ -12,22 +17,17 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public class RawDataHelper {
   private static final String FIXED_TIME = "2018-02-23T14:31:08.048+01:00";
   private static final String FIXED_TIME_VARIABLE = "2018-02-23T12:31:08.048+01:00";
-  // Process Columns: processDefinitionKey, processDefinitionId, processInstanceId, startDate, endDate, flowNodeDurations, durationInMs,
+  // Process Columns: processDefinitionKey, processDefinitionId, processInstanceId, startDate,
+  // endDate, flowNodeDurations, durationInMs,
   // engineName, tenantId. Count, variable and flow node duration fields are excluded by default
   public static final int NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS = 9;
-  // Decision Columns: decisionDefinitionKey, decisionDefinitionId, decisionInstanceId, evaluationDateTime,
+  // Decision Columns: decisionDefinitionKey, decisionDefinitionId, decisionInstanceId,
+  // evaluationDateTime,
   // engineName, tenantId. Input/output fields are excluded by default
   public static final int NUMBER_OF_RAW_DECISION_REPORT_COLUMNS = 7;
-
 
   public static List<RawDataProcessInstanceDto> getRawDataProcessInstanceDtos() {
     final List<RawDataProcessInstanceDto> toMap = new ArrayList<>();
@@ -68,7 +68,7 @@ public class RawDataHelper {
   }
 
   public static List<RawDataProcessInstanceDto> getRawDataProcessInstanceDtoWithVariables(
-    final Map<String, Object> variables) {
+      final Map<String, Object> variables) {
     final List<RawDataProcessInstanceDto> toMap = new ArrayList<>();
 
     final RawDataProcessInstanceDto instance = new RawDataProcessInstanceDto();
@@ -113,7 +113,10 @@ public class RawDataHelper {
     outputs.put("1", new OutputVariableEntry("1", "1", VariableType.BOOLEAN, "true"));
     outputs.put("2", new OutputVariableEntry("2", "2", VariableType.BOOLEAN, "true", "false"));
     outputs.put("3", new OutputVariableEntry("3", "3", VariableType.DATE, FIXED_TIME_VARIABLE));
-    outputs.put("4", new OutputVariableEntry("4", "4", VariableType.DATE, FIXED_TIME_VARIABLE, FIXED_TIME_VARIABLE));
+    outputs.put(
+        "4",
+        new OutputVariableEntry(
+            "4", "4", VariableType.DATE, FIXED_TIME_VARIABLE, FIXED_TIME_VARIABLE));
     outputs.put("5", new OutputVariableEntry("5", "5", VariableType.DOUBLE, "3.3"));
     outputs.put("6", new OutputVariableEntry("6", "6", VariableType.DOUBLE, "3.3", "4.4"));
     outputs.put("7", new OutputVariableEntry("7", "7", VariableType.INTEGER, "1"));

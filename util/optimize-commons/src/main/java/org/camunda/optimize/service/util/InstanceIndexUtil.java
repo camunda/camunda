@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.service.util;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_NOT_FOUND_EXCEPTION_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+
+import java.util.Arrays;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -16,26 +25,18 @@ import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
 
-import java.util.Arrays;
-
-import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
-import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_NOT_FOUND_EXCEPTION_TYPE;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class InstanceIndexUtil {
 
-  public static String[] getDecisionInstanceIndexAliasName(final DecisionReportDataDto reportDataDto) {
+  public static String[] getDecisionInstanceIndexAliasName(
+      final DecisionReportDataDto reportDataDto) {
     // for decision reports only one (the first) definition is supported
-    return reportDataDto.getDefinitions().stream().findFirst()
-      .map(ReportDataDefinitionDto::getKey)
-      .map(InstanceIndexUtil::getDecisionInstanceIndexAliasName)
-      .map(value -> new String[]{value})
-      .orElse(new String[]{DECISION_INSTANCE_MULTI_ALIAS});
+    return reportDataDto.getDefinitions().stream()
+        .findFirst()
+        .map(ReportDataDefinitionDto::getKey)
+        .map(InstanceIndexUtil::getDecisionInstanceIndexAliasName)
+        .map(value -> new String[] {value})
+        .orElse(new String[] {DECISION_INSTANCE_MULTI_ALIAS});
   }
 
   public static String getDecisionInstanceIndexAliasName(final String decisionDefinitionKey) {
@@ -46,16 +47,17 @@ public class InstanceIndexUtil {
     }
   }
 
-  public static String[] getProcessInstanceIndexAliasNames(final ProcessReportDataDto reportDataDto) {
+  public static String[] getProcessInstanceIndexAliasNames(
+      final ProcessReportDataDto reportDataDto) {
     if (reportDataDto.isManagementReport()) {
-      return new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
+      return new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
     }
     return !reportDataDto.getDefinitions().isEmpty()
-      ? reportDataDto.getDefinitions().stream()
-      .map(ReportDataDefinitionDto::getKey)
-      .map(InstanceIndexUtil::getProcessInstanceIndexAliasName)
-      .toArray(String[]::new)
-      : new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
+        ? reportDataDto.getDefinitions().stream()
+            .map(ReportDataDefinitionDto::getKey)
+            .map(InstanceIndexUtil::getProcessInstanceIndexAliasName)
+            .toArray(String[]::new)
+        : new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
   }
 
   public static String getProcessInstanceIndexAliasName(final String processDefinitionKey) {
@@ -68,25 +70,33 @@ public class InstanceIndexUtil {
 
   public static boolean isInstanceIndexNotFoundException(final ElasticsearchStatusException e) {
     return Arrays.stream(e.getSuppressed())
-      .map(Throwable::getMessage)
-      .anyMatch(msg -> msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE)
-        && (containsInstanceIndexAliasOrPrefix(PROCESS, msg) || containsInstanceIndexAliasOrPrefix(DECISION, msg)));
+        .map(Throwable::getMessage)
+        .anyMatch(
+            msg ->
+                msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE)
+                    && (containsInstanceIndexAliasOrPrefix(PROCESS, msg)
+                        || containsInstanceIndexAliasOrPrefix(DECISION, msg)));
   }
 
-  public static boolean isInstanceIndexNotFoundException(final DefinitionType type,
-                                                         final ElasticsearchStatusException e) {
+  public static boolean isInstanceIndexNotFoundException(
+      final DefinitionType type, final ElasticsearchStatusException e) {
     return Arrays.stream(e.getSuppressed())
-      .map(Throwable::getMessage)
-      .anyMatch(msg -> msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE) && containsInstanceIndexAliasOrPrefix(type, msg));
+        .map(Throwable::getMessage)
+        .anyMatch(
+            msg ->
+                msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE)
+                    && containsInstanceIndexAliasOrPrefix(type, msg));
   }
 
-  private static boolean containsInstanceIndexAliasOrPrefix(final DefinitionType type,
-                                                            final String message) {
+  private static boolean containsInstanceIndexAliasOrPrefix(
+      final DefinitionType type, final String message) {
     switch (type) {
       case PROCESS:
-        return message.contains(PROCESS_INSTANCE_INDEX_PREFIX) || message.contains(PROCESS_INSTANCE_MULTI_ALIAS);
+        return message.contains(PROCESS_INSTANCE_INDEX_PREFIX)
+            || message.contains(PROCESS_INSTANCE_MULTI_ALIAS);
       case DECISION:
-        return message.contains(DECISION_INSTANCE_INDEX_PREFIX) || message.contains(DECISION_INSTANCE_MULTI_ALIAS);
+        return message.contains(DECISION_INSTANCE_INDEX_PREFIX)
+            || message.contains(DECISION_INSTANCE_MULTI_ALIAS);
       default:
         throw new OptimizeRuntimeException("Unsupported definition type:" + type);
     }

@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.reader.BackupReader;
@@ -12,10 +15,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @RequiredArgsConstructor
 @Component
@@ -50,5 +49,4 @@ public class BackupReaderOS implements BackupReader {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
-
 }

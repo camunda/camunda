@@ -5,13 +5,11 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-
 import java.util.Optional;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 public interface InstantDashboardMetadataReader {
 
   Optional<String> getInstantDashboardIdFor(String processDefinitionKey, String template)
-    throws OptimizeRuntimeException;
-
+      throws OptimizeRuntimeException;
 }

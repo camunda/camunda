@@ -5,25 +5,24 @@
  */
 package org.camunda.optimize.testplugin.adapter.variable.util7;
 
-import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
-import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
-
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
+import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 
 public class InvalidDateFormatVariableReplacer implements VariableImportAdapter {
 
-  private static final List<String> INVALID_DATE_FORMATS = Arrays.asList(
-    "10/12/2020",
-    "10-11-2020",
-    "2020-07-01",
-    "10/12/2020+03:00",
-    "2020-07-16T10:14:22.761421",
-    "2019-06-15T12:00:00.000+02:00",
-    "2019-06-16T12:00:00.000+0200"
-  );
+  private static final List<String> INVALID_DATE_FORMATS =
+      Arrays.asList(
+          "10/12/2020",
+          "10-11-2020",
+          "2020-07-01",
+          "10/12/2020+03:00",
+          "2020-07-16T10:14:22.761421",
+          "2019-06-15T12:00:00.000+02:00",
+          "2019-06-16T12:00:00.000+0200");
 
   @Override
   public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
@@ -35,5 +34,4 @@ public class InvalidDateFormatVariableReplacer implements VariableImportAdapter 
     }
     return adaptedVariables;
   }
-
 }

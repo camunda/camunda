@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.rest.definition;
 
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
-
-import java.util.List;
 
 @AllArgsConstructor
 @Data

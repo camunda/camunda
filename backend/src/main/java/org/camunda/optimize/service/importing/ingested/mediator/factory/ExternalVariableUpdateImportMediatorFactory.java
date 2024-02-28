@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.ingested.mediator.factory;
 
+import java.util.List;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -18,21 +19,21 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class ExternalVariableUpdateImportMediatorFactory extends AbstractIngestedImportMediatorFactory {
+public class ExternalVariableUpdateImportMediatorFactory
+    extends AbstractIngestedImportMediatorFactory {
 
   private final ProcessVariableUpdateWriter variableWriter;
   private final ObjectVariableService objectVariableService;
   private final DatabaseClient databaseClient;
 
-  public ExternalVariableUpdateImportMediatorFactory(final BeanFactory beanFactory,
-                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                     final ConfigurationService configurationService,
-                                                     final ProcessVariableUpdateWriter variableWriter,
-                                                     final ObjectVariableService objectVariableService,
-                                                     final DatabaseClient databaseClient) {
+  public ExternalVariableUpdateImportMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final ProcessVariableUpdateWriter variableWriter,
+      final ObjectVariableService objectVariableService,
+      final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.variableWriter = variableWriter;
     this.objectVariableService = objectVariableService;
@@ -46,12 +47,11 @@ public class ExternalVariableUpdateImportMediatorFactory extends AbstractIngeste
 
   public ExternalVariableUpdateEngineImportMediator createVariableUpdateEngineImportMediator() {
     return new ExternalVariableUpdateEngineImportMediator(
-      importIndexHandlerRegistry.getExternalVariableUpdateImportIndexHandler(),
-      beanFactory.getBean(ExternalVariableUpdateInstanceFetcher.class),
-      new ExternalVariableUpdateImportService(configurationService, variableWriter, objectVariableService, databaseClient),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        importIndexHandlerRegistry.getExternalVariableUpdateImportIndexHandler(),
+        beanFactory.getBean(ExternalVariableUpdateInstanceFetcher.class),
+        new ExternalVariableUpdateImportService(
+            configurationService, variableWriter, objectVariableService, databaseClient),
+        configurationService,
+        new BackoffCalculator(configurationService));
   }
-
 }

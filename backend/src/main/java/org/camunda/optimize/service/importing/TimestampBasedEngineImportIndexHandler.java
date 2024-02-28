@@ -13,10 +13,9 @@ import org.springframework.context.annotation.Scope;
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class TimestampBasedEngineImportIndexHandler
-  extends TimestampBasedDataSourceImportIndexHandler<EngineDataSourceDto> {
+    extends TimestampBasedDataSourceImportIndexHandler<EngineDataSourceDto> {
 
   protected EngineDataSourceDto getDataSource() {
     return new EngineDataSourceDto(getEngineAlias());
   }
-
 }

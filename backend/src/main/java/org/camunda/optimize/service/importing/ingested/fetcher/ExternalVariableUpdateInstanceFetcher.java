@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.ingested.fetcher;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
@@ -15,9 +17,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-
 @AllArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -27,15 +26,19 @@ public class ExternalVariableUpdateInstanceFetcher {
   private final ExternalVariableReader variableReader;
   private final ConfigurationService configurationService;
 
-  public List<ExternalProcessVariableDto> fetchVariableInstanceUpdates(final TimestampBasedImportPage page) {
+  public List<ExternalProcessVariableDto> fetchVariableInstanceUpdates(
+      final TimestampBasedImportPage page) {
     return variableReader.getVariableUpdatesIngestedAfter(
-      page.getTimestampOfLastEntity().toInstant().toEpochMilli(),
-      configurationService.getExternalVariableConfiguration().getImportConfiguration().getMaxPageSize()
-    );
+        page.getTimestampOfLastEntity().toInstant().toEpochMilli(),
+        configurationService
+            .getExternalVariableConfiguration()
+            .getImportConfiguration()
+            .getMaxPageSize());
   }
 
-  public List<ExternalProcessVariableDto> fetchVariableInstanceUpdates(final OffsetDateTime endTimeOfLastInstance) {
-    return variableReader.getVariableUpdatesIngestedAt(endTimeOfLastInstance.toInstant().toEpochMilli());
+  public List<ExternalProcessVariableDto> fetchVariableInstanceUpdates(
+      final OffsetDateTime endTimeOfLastInstance) {
+    return variableReader.getVariableUpdatesIngestedAt(
+        endTimeOfLastInstance.toInstant().toEpochMilli());
   }
-
 }

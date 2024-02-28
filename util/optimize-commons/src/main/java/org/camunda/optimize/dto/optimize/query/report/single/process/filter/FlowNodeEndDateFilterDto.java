@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
+import java.util.List;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode.FlowNodeDateFilterDataDto;
-
-import java.util.List;
 
 @NoArgsConstructor
 public class FlowNodeEndDateFilterDto extends ProcessFilterDto<FlowNodeDateFilterDataDto<?>> {

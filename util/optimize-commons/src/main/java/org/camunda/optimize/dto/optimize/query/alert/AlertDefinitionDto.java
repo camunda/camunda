@@ -5,20 +5,17 @@
  */
 package org.camunda.optimize.dto.optimize.query.alert;
 
+import java.time.OffsetDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
-
-import java.time.OffsetDateTime;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @FieldNameConstants
 public class AlertDefinitionDto extends AlertCreationRequestDto {
 
-  /**
-   * Needed to inherit field name constants from {@link AlertCreationRequestDto}
-   */
+  /** Needed to inherit field name constants from {@link AlertCreationRequestDto} */
   public static class Fields extends AlertCreationRequestDto.Fields {}
 
   protected String id;

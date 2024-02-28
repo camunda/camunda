@@ -6,9 +6,8 @@
 package org.camunda.optimize.test.util.client.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
-
 import java.time.OffsetDateTime;
+import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)

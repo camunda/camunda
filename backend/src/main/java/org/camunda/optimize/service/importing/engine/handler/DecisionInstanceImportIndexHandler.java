@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.importing.engine.handler;
 
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -31,5 +31,4 @@ public class DecisionInstanceImportIndexHandler extends TimestampBasedEngineImpo
   protected String getDatabaseDocID() {
     return DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
   }
-
 }

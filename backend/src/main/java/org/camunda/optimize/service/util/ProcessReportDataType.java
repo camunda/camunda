@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public enum ProcessReportDataType {
-
   RAW_DATA,
 
   PROC_INST_DUR_GROUP_BY_NONE,
@@ -134,27 +133,23 @@ public enum ProcessReportDataType {
   INCIDENT_DUR_GROUP_BY_FLOW_NODE;
 
   public static List<ProcessReportDataType> allDateReports() {
-    return Arrays.stream(
-      ProcessReportDataType.values())
-      .filter(type -> type.name().toLowerCase().endsWith("start_date") ||
-        type.name().toLowerCase().endsWith("end_date"))
-      .collect(Collectors.toList()
-      );
+    return Arrays.stream(ProcessReportDataType.values())
+        .filter(
+            type ->
+                type.name().toLowerCase().endsWith("start_date")
+                    || type.name().toLowerCase().endsWith("end_date"))
+        .collect(Collectors.toList());
   }
 
   public static List<ProcessReportDataType> allVariableReports() {
-    return Arrays.stream(
-      ProcessReportDataType.values())
-      .filter(type -> type.name().toLowerCase().contains("_variable"))
-      .collect(Collectors.toList()
-      );
+    return Arrays.stream(ProcessReportDataType.values())
+        .filter(type -> type.name().toLowerCase().contains("_variable"))
+        .collect(Collectors.toList());
   }
 
   public static List<ProcessReportDataType> allViewUserTaskReports() {
-    return Arrays.stream(
-      ProcessReportDataType.values())
-      .filter(type -> type.name().toLowerCase().startsWith("user_task_"))
-      .collect(Collectors.toList()
-      );
+    return Arrays.stream(ProcessReportDataType.values())
+        .filter(type -> type.name().toLowerCase().startsWith("user_task_"))
+        .collect(Collectors.toList());
   }
 }

@@ -10,14 +10,15 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublish
 
 public interface EventProcessPublishStateWriter {
 
-  IdResponseDto createEventProcessPublishState(final EventProcessPublishStateDto eventProcessPublishStateDto);
+  IdResponseDto createEventProcessPublishState(
+      final EventProcessPublishStateDto eventProcessPublishStateDto);
 
-  void updateEventProcessPublishState(final EventProcessPublishStateDto eventProcessPublishStateDto);
+  void updateEventProcessPublishState(
+      final EventProcessPublishStateDto eventProcessPublishStateDto);
 
-  boolean markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(final String eventProcessMappingId);
+  boolean markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(
+      final String eventProcessMappingId);
 
   void markAsDeletedPublishStatesForEventProcessMappingIdExcludingPublishStateId(
-    final String eventProcessMappingId,
-    final String publishStateIdToExclude);
-
+      final String eventProcessMappingId, final String publishStateIdToExclude);
 }

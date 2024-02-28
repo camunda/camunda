@@ -5,16 +5,14 @@
  */
 package org.camunda.optimize.service.db.repository;
 
-import org.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
-
 import java.util.Set;
+import org.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
 
 public interface IndexRepository {
   void createMissingIndices(
-    final IndexMappingCreatorBuilder indexMappingCreatorBuilder,
-    final Set<String> readOnlyAliases,
-    final Set<String> keys
-  );
+      final IndexMappingCreatorBuilder indexMappingCreatorBuilder,
+      final Set<String> readOnlyAliases,
+      final Set<String> keys);
 
   boolean indexExists(IndexMappingCreatorBuilder indexMappingCreatorBuilder, String key);
 }

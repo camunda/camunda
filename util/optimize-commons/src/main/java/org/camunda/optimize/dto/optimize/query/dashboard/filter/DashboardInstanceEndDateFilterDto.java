@@ -7,6 +7,5 @@ package org.camunda.optimize.dto.optimize.query.dashboard.filter;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
 
-public class DashboardInstanceEndDateFilterDto extends DashboardFilterDto<DashboardDateFilterDataDto> {
-
-}
+public class DashboardInstanceEndDateFilterDto
+    extends DashboardFilterDto<DashboardDateFilterDataDto> {}

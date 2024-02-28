@@ -5,12 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
-import org.camunda.optimize.service.SettingsService;
-import org.camunda.optimize.service.security.SessionService;
-import org.springframework.stereotype.Component;
-
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
@@ -19,6 +13,11 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.service.SettingsService;
+import org.camunda.optimize.service.security.SessionService;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Path("/settings")
@@ -36,10 +35,10 @@ public class SettingsRestService {
 
   @PUT
   @Produces(MediaType.APPLICATION_JSON)
-  public void setSettings(@Context final ContainerRequestContext requestContext,
-                          @NotNull final SettingsResponseDto settingsDto) {
+  public void setSettings(
+      @Context final ContainerRequestContext requestContext,
+      @NotNull final SettingsResponseDto settingsDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     settingsService.setSettings(userId, settingsDto);
   }
-
 }

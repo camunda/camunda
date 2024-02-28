@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.elasticsearch.snapshots.SnapshotInfo;
-
 import java.util.List;
 import java.util.Map;
+import org.elasticsearch.snapshots.SnapshotInfo;
 
 public interface BackupReader {
 
@@ -21,5 +20,4 @@ public interface BackupReader {
   List<SnapshotInfo> getAllOptimizeSnapshots();
 
   List<SnapshotInfo> getOptimizeSnapshotsForBackupId(final Long backupId);
-
 }

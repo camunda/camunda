@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.report;
 
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,10 +20,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
-
 @AllArgsConstructor
 @RequiredArgsConstructor
 @NoArgsConstructor
@@ -29,23 +28,21 @@ public abstract class CommandEvaluationResult<T> {
 
   protected long instanceCount;
   protected long instanceCountWithoutFilters;
-  @NonNull
-  protected List<MeasureDto<T>> measures = new ArrayList<>();
-  @NonNull
-  protected ReportDataDto reportData;
-  @NonNull
-  protected PaginationDto pagination = new PaginationDto(null, null);
+  @NonNull protected List<MeasureDto<T>> measures = new ArrayList<>();
+  @NonNull protected ReportDataDto reportData;
+  @NonNull protected PaginationDto pagination = new PaginationDto(null, null);
 
-  protected CommandEvaluationResult(@NonNull final List<MeasureDto<T>> measures,
-                                    @NonNull final ReportDataDto reportData) {
+  protected CommandEvaluationResult(
+      @NonNull final List<MeasureDto<T>> measures, @NonNull final ReportDataDto reportData) {
     this.measures = measures;
     this.reportData = reportData;
   }
 
-  protected CommandEvaluationResult(final long instanceCount,
-                                    final long instanceCountWithoutFilters,
-                                    @NonNull final List<MeasureDto<T>> measures,
-                                    @NonNull final ReportDataDto reportData) {
+  protected CommandEvaluationResult(
+      final long instanceCount,
+      final long instanceCountWithoutFilters,
+      @NonNull final List<MeasureDto<T>> measures,
+      @NonNull final ReportDataDto reportData) {
     this.instanceCount = instanceCount;
     this.instanceCountWithoutFilters = instanceCountWithoutFilters;
     this.measures = measures;
@@ -64,12 +61,14 @@ public abstract class CommandEvaluationResult<T> {
     this.measures.add(measureDto);
   }
 
-  public abstract List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone);
+  public abstract List<String[]> getResultAsCsv(
+      final Integer limit, final Integer offset, final ZoneId timezone);
 
   public abstract ResultType getType();
 
-  public T getResult(){
-    return getFirstMeasureData(); //This will be elaborated once we support the export of other types of reports
+  public T getResult() {
+    return getFirstMeasureData(); // This will be elaborated once we support the export of other
+    // types of reports
   }
 
   protected String getGroupByIdentifier(final SingleReportDataDto reportData) {
@@ -87,5 +86,4 @@ public abstract class CommandEvaluationResult<T> {
       return ((DecisionReportDataDto) reportData).getView().createCommandKey().replace("-", "_");
     }
   }
-
 }

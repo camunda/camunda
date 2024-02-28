@@ -16,19 +16,21 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessInstanceDurationOnProcessPartGroupByNoneCmd extends ProcessCmd<Double> {
 
-  public ProcessInstanceDurationOnProcessPartGroupByNoneCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public ProcessInstanceDurationOnProcessPartGroupByNoneCmd(
+      final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<Double> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .processCommand()
-      .view(ProcessViewInstanceDurationOnProcessPart.class)
-      .groupBy(ProcessGroupByNone.class)
-      .distributedBy(ProcessDistributedByNone.class)
-      .resultAsNumber()
-      .build();
+  protected ProcessReportCmdExecutionPlan<Double> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .processCommand()
+        .view(ProcessViewInstanceDurationOnProcessPart.class)
+        .groupBy(ProcessGroupByNone.class)
+        .distributedBy(ProcessDistributedByNone.class)
+        .resultAsNumber()
+        .build();
   }
-
 }

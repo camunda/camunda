@@ -13,7 +13,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class CompletedActivityInstanceImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
+public class CompletedActivityInstanceImportIndexHandler
+    extends TimestampBasedEngineImportIndexHandler {
 
   private static final String ACTIVITY_IMPORT_INDEX_DOC_ID = "activityImportIndex";
 
@@ -32,5 +33,4 @@ public class CompletedActivityInstanceImportIndexHandler extends TimestampBasedE
   protected String getDatabaseDocID() {
     return ACTIVITY_IMPORT_INDEX_DOC_ID;
   }
-
 }

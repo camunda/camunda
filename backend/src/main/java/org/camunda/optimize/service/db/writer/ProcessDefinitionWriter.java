@@ -5,11 +5,6 @@
  */
 package org.camunda.optimize.service.db.writer;
 
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-
-import java.util.List;
-import java.util.Set;
-
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_NAME;
@@ -17,23 +12,27 @@ import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionInde
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION_TAG;
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.TENANT_ID;
 
+import java.util.List;
+import java.util.Set;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+
 public interface ProcessDefinitionWriter {
 
-  Set<String> FIELDS_TO_UPDATE = Set.of(
-    PROCESS_DEFINITION_KEY,
-    PROCESS_DEFINITION_VERSION,
-    PROCESS_DEFINITION_VERSION_TAG,
-    PROCESS_DEFINITION_NAME,
-    DATA_SOURCE,
-    TENANT_ID
-  );
+  Set<String> FIELDS_TO_UPDATE =
+      Set.of(
+          PROCESS_DEFINITION_KEY,
+          PROCESS_DEFINITION_VERSION,
+          PROCESS_DEFINITION_VERSION_TAG,
+          PROCESS_DEFINITION_NAME,
+          DATA_SOURCE,
+          TENANT_ID);
 
   void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs);
 
   void markDefinitionAsDeleted(final String definitionId);
 
-  boolean markRedeployedDefinitionsAsDeleted(final List<ProcessDefinitionOptimizeDto> importedDefinitions);
+  boolean markRedeployedDefinitionsAsDeleted(
+      final List<ProcessDefinitionOptimizeDto> importedDefinitions);
 
   void markDefinitionKeysAsOnboarded(final Set<String> definitionKeys);
-
 }

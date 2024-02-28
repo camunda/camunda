@@ -20,5 +20,4 @@ public class ExternalEventSourceConfigDto extends EventSourceConfigDto {
 
   private String group;
   private boolean includeAllGroups;
-
 }

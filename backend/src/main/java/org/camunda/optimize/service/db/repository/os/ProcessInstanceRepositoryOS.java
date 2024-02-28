@@ -5,34 +5,6 @@
  */
 package org.camunda.optimize.service.db.repository.os;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.ImportRequestDto;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.repository.ProcessInstanceRepository;
-import org.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import org.opensearch.client.json.JsonData;
-import org.opensearch.client.opensearch._types.Script;
-import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
-import org.opensearch.client.opensearch.core.BulkRequest;
-import org.opensearch.client.opensearch.core.bulk.BulkOperation;
-import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-
 import static java.lang.String.format;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
@@ -55,6 +27,33 @@ import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.repository.ProcessInstanceRepository;
+import org.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
+
 @Component
 @RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
@@ -67,169 +66,166 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
 
   @Override
   public void updateProcessInstanceStateForProcessDefinitionId(
-    final String importItemName,
-    final String definitionKey,
-    final String processDefinitionId,
-    final String state
-  ) {
+      final String importItemName,
+      final String definitionKey,
+      final String processDefinitionId,
+      final String state) {
     osClient.updateByQueryTask(
-      format("%s with %s: %s", importItemName, ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
-      createUpdateStateScript(state),
-      term(ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
-      aliasForProcessDefinitionKey(definitionKey)
-    );
+        format(
+            "%s with %s: %s",
+            importItemName, ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
+        createUpdateStateScript(state),
+        term(ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
+        aliasForProcessDefinitionKey(definitionKey));
   }
 
   @Override
   public void updateAllProcessInstancesStates(
-    final String importItemName,
-    final String definitionKey,
-    final String state
-  ) {
+      final String importItemName, final String definitionKey, final String state) {
     osClient.updateByQueryTask(
-      format("%s with %s: %s", importItemName, ProcessInstanceDto.Fields.processDefinitionKey, definitionKey),
-      createUpdateStateScript(state),
-      matchAll(),
-      aliasForProcessDefinitionKey(definitionKey)
-    );
+        format(
+            "%s with %s: %s",
+            importItemName, ProcessInstanceDto.Fields.processDefinitionKey, definitionKey),
+        createUpdateStateScript(state),
+        matchAll(),
+        aliasForProcessDefinitionKey(definitionKey));
   }
 
   @Override
-  public void bulkImportProcessInstances(final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
+  public void bulkImportProcessInstances(
+      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
     osClient.doImportBulkRequestWithList(
-      importItemName,
-      processInstanceDtos,
-      dto -> UpdateOperation.<ProcessInstanceDto>of(
-        operation -> operation
-          .index(aliasForProcessDefinitionKey(dto.getProcessDefinitionKey()))
-          .id(dto.getProcessInstanceId())
-          .script(createUpdateStateScript(dto.getState()))
-          .upsert(dto)
-          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-      )._toBulkOperation(),
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        importItemName,
+        processInstanceDtos,
+        dto ->
+            UpdateOperation.<ProcessInstanceDto>of(
+                    operation ->
+                        operation
+                            .index(aliasForProcessDefinitionKey(dto.getProcessDefinitionKey()))
+                            .id(dto.getProcessInstanceId())
+                            .script(createUpdateStateScript(dto.getState()))
+                            .upsert(dto)
+                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
+                ._toBulkOperation(),
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
   @Override
-  public void deleteByIds(final String index, String itemName, final List<String> processInstanceIds) {
-    List<BulkOperation> bulkOperations = processInstanceIds.stream()
-      .map(
-        id -> BulkOperation.of(
-          op -> op.delete(
-            d -> d
-              .index(indexNameService.getOptimizeIndexAliasForIndex(index))
-              .id(id)
-          )
-        )
-      )
-      .toList();
+  public void deleteByIds(
+      final String index, String itemName, final List<String> processInstanceIds) {
+    List<BulkOperation> bulkOperations =
+        processInstanceIds.stream()
+            .map(
+                id ->
+                    BulkOperation.of(
+                        op ->
+                            op.delete(
+                                d ->
+                                    d.index(indexNameService.getOptimizeIndexAliasForIndex(index))
+                                        .id(id))))
+            .toList();
 
     osClient.doBulkRequest(new BulkRequest.Builder(), bulkOperations, itemName, false);
   }
 
   @Override
-  public void bulkImport(final String bulkRequestName, final List<ImportRequestDto> importRequests) {
+  public void bulkImport(
+      final String bulkRequestName, final List<ImportRequestDto> importRequests) {
     osClient.executeImportRequestsAsBulk(
-      bulkRequestName,
-      importRequests,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        bulkRequestName,
+        importRequests,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
   @Override
   public void bulkImportEvents(
-    final String index,
-    final String importItemName,
-    final List<EventProcessInstanceDto> processInstanceDtos,
-    final List<EventProcessGatewayDto> gatewayLookup
-  ) {
-    final List<Map> gatewayLookupMaps = gatewayLookup.stream()
-      .map(gateway -> objectMapper.convertValue(gateway, new TypeReference<Map>() {
-      })).toList();
-    final Function<EventProcessInstanceDto, Script> scriptBuilder = dto -> {
-      final Map<String, JsonData> params = Map.of(
-        "processInstance", json(dto),
-        "gatewayLookup", json(gatewayLookupMaps),
-        "dateFormatPattern", json(OPTIMIZE_DATE_FORMAT)
-      );
-      return createDefaultScriptWithPrimitiveParams(ProcessInstanceScriptFactory.createEventInlineUpdateScript(), params);
-    };
+      final String index,
+      final String importItemName,
+      final List<EventProcessInstanceDto> processInstanceDtos,
+      final List<EventProcessGatewayDto> gatewayLookup) {
+    final List<Map> gatewayLookupMaps =
+        gatewayLookup.stream()
+            .map(gateway -> objectMapper.convertValue(gateway, new TypeReference<Map>() {}))
+            .toList();
+    final Function<EventProcessInstanceDto, Script> scriptBuilder =
+        dto -> {
+          final Map<String, JsonData> params =
+              Map.of(
+                  "processInstance", json(dto),
+                  "gatewayLookup", json(gatewayLookupMaps),
+                  "dateFormatPattern", json(OPTIMIZE_DATE_FORMAT));
+          return createDefaultScriptWithPrimitiveParams(
+              ProcessInstanceScriptFactory.createEventInlineUpdateScript(), params);
+        };
 
     osClient.doImportBulkRequestWithList(
-      importItemName,
-      processInstanceDtos,
-      dto -> UpdateOperation.<ProcessInstanceDto>of(
-        operation -> operation
-          .index(indexNameService.getOptimizeIndexAliasForIndex(index))
-          .id(dto.getProcessInstanceId())
-          .script(scriptBuilder.apply(dto))
-          .upsert(dto)
-          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-      )._toBulkOperation(),
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        importItemName,
+        processInstanceDtos,
+        dto ->
+            UpdateOperation.<ProcessInstanceDto>of(
+                    operation ->
+                        operation
+                            .index(indexNameService.getOptimizeIndexAliasForIndex(index))
+                            .id(dto.getProcessInstanceId())
+                            .script(scriptBuilder.apply(dto))
+                            .upsert(dto)
+                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
+                ._toBulkOperation(),
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
   @Override
-  public void deleteEndedBefore(final String index, final OffsetDateTime endDate, final String deletedItemIdentifier) {
+  public void deleteEndedBefore(
+      final String index, final OffsetDateTime endDate, final String deletedItemIdentifier) {
     osClient.deleteByQueryTask(
-      deletedItemIdentifier,
-      lt(END_DATE, dateTimeFormatter.format(endDate)),
-      false,
-      indexNameService.getOptimizeIndexAliasForIndex(index)
-    );
+        deletedItemIdentifier,
+        lt(END_DATE, dateTimeFormatter.format(endDate)),
+        false,
+        indexNameService.getOptimizeIndexAliasForIndex(index));
   }
 
   @Override
   public void deleteVariablesOfInstancesThatEndedBefore(
-    final String index,
-    final OffsetDateTime endDate,
-    final String updateItem
-  ) {
+      final String index, final OffsetDateTime endDate, final String updateItem) {
     osClient.updateByQueryTask(
-      updateItem,
-      script(ProcessInstanceScriptFactory.createVariableClearScript(), Map.of()),
-      and(
-        lt(END_DATE, dateTimeFormatter.format(endDate)),
-        nested(VARIABLES, exists(VARIABLES + "." + VARIABLE_ID), ChildScoreMode.None)
-      ),
-      indexNameService.getOptimizeIndexAliasForIndex(index)
-    );
+        updateItem,
+        script(ProcessInstanceScriptFactory.createVariableClearScript(), Map.of()),
+        and(
+            lt(END_DATE, dateTimeFormatter.format(endDate)),
+            nested(VARIABLES, exists(VARIABLES + "." + VARIABLE_ID), ChildScoreMode.None)),
+        indexNameService.getOptimizeIndexAliasForIndex(index));
   }
 
   @Override
   public void deleteEventsWithIdsInFromAllInstances(
-    final String index,
-    final List<String> eventIdsToDelete,
-    final String updateItem
-  ) {
+      final String index, final List<String> eventIdsToDelete, final String updateItem) {
     osClient.updateByQueryTask(
-      updateItem,
-      script(ProcessInstanceScriptFactory.createDeleteEventsWithIdsInScript(), Map.of("eventIdsToDelete", eventIdsToDelete)),
-      nested(
-        FLOW_NODE_INSTANCES,
-        stringTerms(FLOW_NODE_INSTANCES + "." + FLOW_NODE_INSTANCE_ID, eventIdsToDelete),
-        ChildScoreMode.None
-      ),
-      indexNameService.getOptimizeIndexAliasForIndex(index)
-    );
+        updateItem,
+        script(
+            ProcessInstanceScriptFactory.createDeleteEventsWithIdsInScript(),
+            Map.of("eventIdsToDelete", eventIdsToDelete)),
+        nested(
+            FLOW_NODE_INSTANCES,
+            stringTerms(FLOW_NODE_INSTANCES + "." + FLOW_NODE_INSTANCE_ID, eventIdsToDelete),
+            ChildScoreMode.None),
+        indexNameService.getOptimizeIndexAliasForIndex(index));
   }
 
   private Script createUpdateStateScript(final String newState) {
     final Map<String, JsonData> scriptParameters = createUpdateStateScriptParamsMap(newState);
-    return createDefaultScriptWithPrimitiveParams(ProcessInstanceScriptFactory.createInlineUpdateScript(), scriptParameters);
+    return createDefaultScriptWithPrimitiveParams(
+        ProcessInstanceScriptFactory.createInlineUpdateScript(), scriptParameters);
   }
 
   private Map<String, JsonData> createUpdateStateScriptParamsMap(final String newState) {
     return Map.of(
-      "activeState", json(ACTIVE_STATE),
-      "suspendedState", json(SUSPENDED_STATE),
-      "newState", json(newState)
-    );
+        "activeState", json(ACTIVE_STATE),
+        "suspendedState", json(SUSPENDED_STATE),
+        "newState", json(newState));
   }
 
   private String aliasForProcessDefinitionKey(String processDefinitionKey) {
-    return indexNameService.getOptimizeIndexAliasForIndex(getProcessInstanceIndexAliasName(processDefinitionKey));
+    return indexNameService.getOptimizeIndexAliasForIndex(
+        getProcessInstanceIndexAliasName(processDefinitionKey));
   }
 }

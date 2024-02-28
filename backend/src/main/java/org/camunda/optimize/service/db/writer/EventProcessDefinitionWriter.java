@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.service.db.writer;
 
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
-
 import java.util.Collection;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 
 public interface EventProcessDefinitionWriter {
 

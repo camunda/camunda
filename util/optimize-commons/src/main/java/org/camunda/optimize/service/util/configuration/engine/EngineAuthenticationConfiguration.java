@@ -20,5 +20,4 @@ public class EngineAuthenticationConfiguration {
   private boolean enabled;
   private String password;
   private String user;
-
 }

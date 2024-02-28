@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.plugin;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Optional;
+import java.util.Properties;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Optional;
-import java.util.Properties;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -28,18 +27,25 @@ public class PluginVersionChecker {
       throw new IllegalArgumentException("The plugin classloader cannot be null.");
     }
 
-    String pluginVersion = extractOptimizeVersion(pluginClassLoader)
-      .orElseThrow(() -> new OptimizeRuntimeException(buildMissingPluginVersionMessage(Version.VERSION)));
+    String pluginVersion =
+        extractOptimizeVersion(pluginClassLoader)
+            .orElseThrow(
+                () ->
+                    new OptimizeRuntimeException(
+                        buildMissingPluginVersionMessage(Version.VERSION)));
 
     if (!isValidPluginVersion(pluginVersion)) {
-      throw new OptimizeRuntimeException(buildUnsupportedPluginVersionMessage(pluginVersion, Version.VERSION));
+      throw new OptimizeRuntimeException(
+          buildUnsupportedPluginVersionMessage(pluginVersion, Version.VERSION));
     }
   }
 
-  private static Optional<String> extractOptimizeVersion(final PluginClassLoader pluginClassLoader) {
+  private static Optional<String> extractOptimizeVersion(
+      final PluginClassLoader pluginClassLoader) {
     Properties property = new Properties();
 
-    try (InputStream resourceAsStream = pluginClassLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME)) {
+    try (InputStream resourceAsStream =
+        pluginClassLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME)) {
       if (resourceAsStream != null) {
         property.load(resourceAsStream);
       }
@@ -49,7 +55,6 @@ public class PluginVersionChecker {
 
     return Optional.ofNullable(property.getProperty(OPTIMIZE_VERSION_KEY));
   }
-
 
   private static boolean isValidPluginVersion(String pluginVersion) {
     if (pluginVersion == null) {
@@ -63,16 +68,21 @@ public class PluginVersionChecker {
     StringBuilder message = new StringBuilder();
     message.append("There is a plugin with a missing Optimize version. ");
     message.append(
-      "This either means that the plugin was built with an old Optimize version, or not built as a fat jar! ");
+        "This either means that the plugin was built with an old Optimize version, or not built as a fat jar! ");
     message.append(getPluginNotSupportedMessage(optimizeVersion));
-    message.append("Please upgrade your plugin to the used Optimize version and build it as a fat jar!");
+    message.append(
+        "Please upgrade your plugin to the used Optimize version and build it as a fat jar!");
 
     return message.toString();
   }
 
-  public static String buildUnsupportedPluginVersionMessage(String pluginVersion, String optimizeVersion) {
+  public static String buildUnsupportedPluginVersionMessage(
+      String pluginVersion, String optimizeVersion) {
     StringBuilder message = new StringBuilder();
-    message.append("There is a plugin that was built with Optimize version ").append(pluginVersion).append(". ");
+    message
+        .append("There is a plugin that was built with Optimize version ")
+        .append(pluginVersion)
+        .append(". ");
     message.append(getPluginNotSupportedMessage(optimizeVersion));
     message.append("Please upgrade your plugin to the used Optimize version!");
     return message.toString();
@@ -81,5 +91,4 @@ public class PluginVersionChecker {
   private static String getPluginNotSupportedMessage(final String optimizeVersion) {
     return String.format("This plugin is not supported by Optimize version %s. ", optimizeVersion);
   }
-
 }

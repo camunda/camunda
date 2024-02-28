@@ -5,6 +5,16 @@
  */
 package org.camunda.optimize.test.util.decision;
 
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByEvaluationDateTime;
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByInputVariable;
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByNone;
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByOutputVariable;
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionViewDtoCreator.createCountFrequencyView;
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionViewDtoCreator.createDecisionRawDataView;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
@@ -13,22 +23,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByEvaluationDateTime;
-import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByInputVariable;
-import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByNone;
-import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByOutputVariable;
-import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionViewDtoCreator.createCountFrequencyView;
-import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionViewDtoCreator.createDecisionRawDataView;
-
 public class DecisionReportDataBuilder {
 
   private DecisionReportDataType reportDataType;
 
-  private List<ReportDataDefinitionDto> definitions = Collections.singletonList(new ReportDataDefinitionDto());
+  private List<ReportDataDefinitionDto> definitions =
+      Collections.singletonList(new ReportDataDefinitionDto());
   private String variableId;
   private String variableName;
   private VariableType variableType;
@@ -50,19 +50,17 @@ public class DecisionReportDataBuilder {
         reportData = createCountFrequencyReportGroupByNone(definitions);
         break;
       case COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME:
-        reportData = createCountFrequencyReportGroupByEvaluationDate(
-          definitions, dateInterval
-        );
+        reportData = createCountFrequencyReportGroupByEvaluationDate(definitions, dateInterval);
         break;
       case COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE:
-        reportData = createCountFrequencyReportGroupByInputVariable(
-          definitions, variableId, variableName, variableType
-        );
+        reportData =
+            createCountFrequencyReportGroupByInputVariable(
+                definitions, variableId, variableName, variableType);
         break;
       case COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE:
-        reportData = createCountFrequencyReportGroupByOutputVariable(
-          definitions, variableId, variableName, variableType
-        );
+        reportData =
+            createCountFrequencyReportGroupByOutputVariable(
+                definitions, variableId, variableName, variableType);
         break;
       case COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE:
         reportData = createCountFrequencyReportGroupByMatchedRule(definitions);
@@ -94,7 +92,8 @@ public class DecisionReportDataBuilder {
     return this;
   }
 
-  public DecisionReportDataBuilder setDecisionDefinitionVersions(List<String> decisionDefinitionVersions) {
+  public DecisionReportDataBuilder setDecisionDefinitionVersions(
+      List<String> decisionDefinitionVersions) {
     this.definitions.get(0).setVersions(decisionDefinitionVersions);
     return this;
   }
@@ -138,7 +137,8 @@ public class DecisionReportDataBuilder {
     return this;
   }
 
-  public static DecisionReportDataDto createDecisionReportDataViewRawAsTable(List<ReportDataDefinitionDto> definitions) {
+  public static DecisionReportDataDto createDecisionReportDataViewRawAsTable(
+      List<ReportDataDefinitionDto> definitions) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
@@ -147,7 +147,8 @@ public class DecisionReportDataBuilder {
     return decisionReportDataDto;
   }
 
-  private static DecisionReportDataDto createCountFrequencyReportGroupByNone(List<ReportDataDefinitionDto> definitions) {
+  private static DecisionReportDataDto createCountFrequencyReportGroupByNone(
+      List<ReportDataDefinitionDto> definitions) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.NUMBER);
@@ -156,8 +157,8 @@ public class DecisionReportDataBuilder {
     return decisionReportDataDto;
   }
 
-  private static DecisionReportDataDto createCountFrequencyReportGroupByEvaluationDate(List<ReportDataDefinitionDto> definitions,
-                                                                                       AggregateByDateUnit groupByDateUnit) {
+  private static DecisionReportDataDto createCountFrequencyReportGroupByEvaluationDate(
+      List<ReportDataDefinitionDto> definitions, AggregateByDateUnit groupByDateUnit) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
@@ -166,31 +167,36 @@ public class DecisionReportDataBuilder {
     return decisionReportDataDto;
   }
 
-  private static DecisionReportDataDto createCountFrequencyReportGroupByInputVariable(List<ReportDataDefinitionDto> definitions,
-                                                                                      String variableId,
-                                                                                      String variableName,
-                                                                                      VariableType variableType) {
+  private static DecisionReportDataDto createCountFrequencyReportGroupByInputVariable(
+      List<ReportDataDefinitionDto> definitions,
+      String variableId,
+      String variableName,
+      VariableType variableType) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
     decisionReportDataDto.setView(createCountFrequencyView());
-    decisionReportDataDto.setGroupBy(createGroupDecisionByInputVariable(variableId, variableName, variableType));
+    decisionReportDataDto.setGroupBy(
+        createGroupDecisionByInputVariable(variableId, variableName, variableType));
     return decisionReportDataDto;
   }
 
-  private static DecisionReportDataDto createCountFrequencyReportGroupByOutputVariable(List<ReportDataDefinitionDto> definitions,
-                                                                                       String variableId,
-                                                                                       String variableName,
-                                                                                       VariableType variableType) {
+  private static DecisionReportDataDto createCountFrequencyReportGroupByOutputVariable(
+      List<ReportDataDefinitionDto> definitions,
+      String variableId,
+      String variableName,
+      VariableType variableType) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
     decisionReportDataDto.setView(createCountFrequencyView());
-    decisionReportDataDto.setGroupBy(createGroupDecisionByOutputVariable(variableId, variableName, variableType));
+    decisionReportDataDto.setGroupBy(
+        createGroupDecisionByOutputVariable(variableId, variableName, variableType));
     return decisionReportDataDto;
   }
 
-  private static DecisionReportDataDto createCountFrequencyReportGroupByMatchedRule(List<ReportDataDefinitionDto> definitions) {
+  private static DecisionReportDataDto createCountFrequencyReportGroupByMatchedRule(
+      List<ReportDataDefinitionDto> definitions) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
@@ -198,5 +204,4 @@ public class DecisionReportDataBuilder {
     decisionReportDataDto.setGroupBy(new DecisionGroupByMatchedRuleDto());
     return decisionReportDataDto;
   }
-
 }

@@ -16,5 +16,4 @@ public class DataUtil {
     Objects.requireNonNull(elements);
     return new HashSet(Arrays.asList(elements));
   }
-
 }

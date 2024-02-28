@@ -5,29 +5,30 @@
  */
 package org.camunda.optimize.service.db.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.NonSuspendedInstancesOnlyFilterDataDto;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.springframework.stereotype.Component;
-
-import java.util.List;
-
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.STATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import java.util.List;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.NonSuspendedInstancesOnlyFilterDataDto;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.springframework.stereotype.Component;
+
 @Component
-public class NonSuspendedInstancesOnlyQueryFilter implements QueryFilter<NonSuspendedInstancesOnlyFilterDataDto> {
+public class NonSuspendedInstancesOnlyQueryFilter
+    implements QueryFilter<NonSuspendedInstancesOnlyFilterDataDto> {
   @Override
-  public void addFilters(final BoolQueryBuilder query,
-                         final List<NonSuspendedInstancesOnlyFilterDataDto> nonSuspendedInstancesOnlyFilters,
-                         final FilterContext filterContext) {
+  public void addFilters(
+      final BoolQueryBuilder query,
+      final List<NonSuspendedInstancesOnlyFilterDataDto> nonSuspendedInstancesOnlyFilters,
+      final FilterContext filterContext) {
     if (nonSuspendedInstancesOnlyFilters != null && !nonSuspendedInstancesOnlyFilters.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
 
       BoolQueryBuilder onlyNonSuspendedInstancesQuery =
-        boolQuery().mustNot(termQuery(STATE, SUSPENDED_STATE));
+          boolQuery().mustNot(termQuery(STATE, SUSPENDED_STATE));
 
       filters.add(onlyNonSuspendedInstancesQuery);
     }

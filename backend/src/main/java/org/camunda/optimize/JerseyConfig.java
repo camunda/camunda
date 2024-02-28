@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize;
 
+import jakarta.ws.rs.ApplicationPath;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
 import org.springframework.context.annotation.Configuration;
-
-import jakarta.ws.rs.ApplicationPath;
 
 @Configuration
 @ApplicationPath("api")

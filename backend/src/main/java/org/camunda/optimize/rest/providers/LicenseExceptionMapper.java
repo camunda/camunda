@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.rest.providers;
 
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.exceptions.license.OptimizeLicenseException;
-
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.exceptions.license.OptimizeLicenseException;
 
 @Provider
 @Slf4j
@@ -29,11 +28,10 @@ public class LicenseExceptionMapper implements ExceptionMapper<OptimizeLicenseEx
   @Override
   public Response toResponse(OptimizeLicenseException e) {
     log.debug("Mapping OptimizeLicenseException.");
-    return Response
-      .status(Response.Status.BAD_REQUEST)
-      .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(getErrorResponseDto(e))
-      .build();
+    return Response.status(Response.Status.BAD_REQUEST)
+        .type(MediaType.APPLICATION_JSON_TYPE)
+        .entity(getErrorResponseDto(e))
+        .build();
   }
 
   private ErrorResponseDto getErrorResponseDto(OptimizeLicenseException exception) {
@@ -43,5 +41,4 @@ public class LicenseExceptionMapper implements ExceptionMapper<OptimizeLicenseEx
 
     return new ErrorResponseDto(errorCode, errorMessage, detailedErrorMessage);
   }
-
 }

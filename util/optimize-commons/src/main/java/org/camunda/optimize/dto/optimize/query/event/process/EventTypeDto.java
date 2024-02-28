@@ -28,8 +28,6 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 public class EventTypeDto implements OptimizeDto {
   private String group;
   private String source;
-  @NotBlank
-  private String eventName;
-  @EqualsAndHashCode.Exclude
-  private String eventLabel;
+  @NotBlank private String eventName;
+  @EqualsAndHashCode.Exclude private String eventLabel;
 }

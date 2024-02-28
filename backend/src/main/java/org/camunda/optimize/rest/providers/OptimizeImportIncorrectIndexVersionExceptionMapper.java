@@ -5,26 +5,26 @@
  */
 package org.camunda.optimize.rest.providers;
 
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
-import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
-
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
+import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
 
 @Provider
 @Slf4j
 public class OptimizeImportIncorrectIndexVersionExceptionMapper
-  implements ExceptionMapper<OptimizeImportIncorrectIndexVersionException> {
+    implements ExceptionMapper<OptimizeImportIncorrectIndexVersionException> {
   public static final String ERROR_CODE = "importIndexVersionMismatch";
 
   private final LocalizationService localizationService;
 
-  public OptimizeImportIncorrectIndexVersionExceptionMapper(@Context final LocalizationService localizationService) {
+  public OptimizeImportIncorrectIndexVersionExceptionMapper(
+      @Context final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
@@ -32,22 +32,18 @@ public class OptimizeImportIncorrectIndexVersionExceptionMapper
   public Response toResponse(final OptimizeImportIncorrectIndexVersionException exception) {
     log.info("Mapping OptimizeImportIncorrectIndexVersionException");
 
-    return Response
-      .status(Response.Status.BAD_REQUEST)
-      .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(getIndexMismatchResponseDto(exception))
-      .build();
+    return Response.status(Response.Status.BAD_REQUEST)
+        .type(MediaType.APPLICATION_JSON_TYPE)
+        .entity(getIndexMismatchResponseDto(exception))
+        .build();
   }
 
-  private ImportedIndexMismatchResponseDto getIndexMismatchResponseDto(OptimizeImportIncorrectIndexVersionException exception) {
+  private ImportedIndexMismatchResponseDto getIndexMismatchResponseDto(
+      OptimizeImportIncorrectIndexVersionException exception) {
     String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(ERROR_CODE);
     String detailedErrorMessage = exception.getMessage();
 
     return new ImportedIndexMismatchResponseDto(
-      ERROR_CODE,
-      errorMessage,
-      detailedErrorMessage,
-      exception.getMismatchingIndices()
-    );
+        ERROR_CODE, errorMessage, detailedErrorMessage, exception.getMismatchingIndices());
   }
 }

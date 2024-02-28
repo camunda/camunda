@@ -5,7 +5,18 @@
  */
 package org.camunda.optimize.test.performance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.sql.SQLException;
+import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
@@ -17,18 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.sql.SQLException;
-import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public abstract class AbstractImportTest {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
@@ -38,10 +37,13 @@ public abstract class AbstractImportTest {
   @RegisterExtension
   @Order(1)
   public DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
-    new DatabaseIntegrationTestExtension();
+      new DatabaseIntegrationTestExtension();
+
   @RegisterExtension
   @Order(2)
-  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  public static EmbeddedOptimizeExtension embeddedOptimizeExtension =
+      new EmbeddedOptimizeExtension();
+
   @RegisterExtension
   @Order(3)
   public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(properties);
@@ -53,71 +55,69 @@ public abstract class AbstractImportTest {
 
   @BeforeEach
   public void setUp() {
-    maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.min", "240"));
+    maxImportDurationInMin =
+        Long.parseLong(properties.getProperty("import.test.max.duration.in.min", "240"));
     databaseIntegrationTestExtension.disableCleanup();
     configurationService = embeddedOptimizeExtension.getConfigurationService();
-    configurationService.getCleanupServiceConfiguration().getProcessDataCleanupConfiguration().setEnabled(false);
+    configurationService
+        .getCleanupServiceConfiguration()
+        .getProcessDataCleanupConfiguration()
+        .setEnabled(false);
   }
 
   protected void logStats() {
     try {
       logger.info(
-        "The Camunda Platform contains {} process definitions. Optimize: {}",
-        (engineDatabaseExtension.countProcessDefinitions()),
-        databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME)
-      );
+          "The Camunda Platform contains {} process definitions. Optimize: {}",
+          (engineDatabaseExtension.countProcessDefinitions()),
+          databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME));
       logger.info(
-        "The Camunda Platform contains {} historic process instances. Optimize: {}",
-        engineDatabaseExtension.countHistoricProcessInstances(),
-        databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS)
-      );
+          "The Camunda Platform contains {} historic process instances. Optimize: {}",
+          engineDatabaseExtension.countHistoricProcessInstances(),
+          databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS));
       logger.info(
-        "The Camunda Platform contains {} historic variable instances. Optimize: {}",
-        engineDatabaseExtension.countHistoricVariableInstances(),
-        databaseIntegrationTestExtension.getVariableInstanceCountForAllProcessInstances()
-      );
+          "The Camunda Platform contains {} historic variable instances. Optimize: {}",
+          engineDatabaseExtension.countHistoricVariableInstances(),
+          databaseIntegrationTestExtension.getVariableInstanceCountForAllProcessInstances());
       logger.info(
-        "The Camunda Platform contains {} historic activity instances. Optimize: {}",
-        engineDatabaseExtension.countHistoricActivityInstances(),
-        databaseIntegrationTestExtension.getActivityCountForAllProcessInstances()
-      );
+          "The Camunda Platform contains {} historic activity instances. Optimize: {}",
+          engineDatabaseExtension.countHistoricActivityInstances(),
+          databaseIntegrationTestExtension.getActivityCountForAllProcessInstances());
 
       logger.info(
-        "The Camunda Platform contains {} decision definitions. Optimize: {}",
-        engineDatabaseExtension.countDecisionDefinitions(),
-        databaseIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME)
-      );
+          "The Camunda Platform contains {} decision definitions. Optimize: {}",
+          engineDatabaseExtension.countDecisionDefinitions(),
+          databaseIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME));
       logger.info(
-        "The Camunda Platform contains {} historic decision instances. Optimize: {}",
-        engineDatabaseExtension.countHistoricDecisionInstances(),
-        databaseIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS)
-      );
+          "The Camunda Platform contains {} historic decision instances. Optimize: {}",
+          engineDatabaseExtension.countHistoricDecisionInstances(),
+          databaseIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS));
     } catch (SQLException e) {
       logger.error("Failed producing stats", e);
     }
   }
 
   protected ScheduledExecutorService reportImportProgress() {
-    final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(
-      new ThreadFactoryBuilder().setNameFormat(getClass().getSimpleName()).build()
-    );
+    final ScheduledExecutorService exec =
+        Executors.newSingleThreadScheduledExecutor(
+            new ThreadFactoryBuilder().setNameFormat(getClass().getSimpleName()).build());
     exec.scheduleAtFixedRate(
-      () -> logger.info("Progress of engine import: {}%", computeImportProgress()),
-      0,
-      5,
-      TimeUnit.SECONDS
-    );
+        () -> logger.info("Progress of engine import: {}%", computeImportProgress()),
+        0,
+        5,
+        TimeUnit.SECONDS);
     return exec;
   }
 
   private long computeImportProgress() {
     // assumption: we know how many process instances have been generated
     Integer processInstancesImported =
-      databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS);
+        databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS);
     Long totalInstances;
     try {
       totalInstances = Math.max(engineDatabaseExtension.countHistoricProcessInstances(), 1L);
-      return Math.round(processInstancesImported.doubleValue() / totalInstances.doubleValue() * 100);
+      return Math.round(
+          processInstancesImported.doubleValue() / totalInstances.doubleValue() * 100);
     } catch (SQLException e) {
       e.printStackTrace();
       return 0L;
@@ -126,16 +126,22 @@ public abstract class AbstractImportTest {
 
   protected void assertThatEngineAndElasticDataMatch() throws SQLException {
     assertThat(databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME))
-      .as("processDefinitionsCount").isEqualTo(engineDatabaseExtension.countProcessDefinitions());
+        .as("processDefinitionsCount")
+        .isEqualTo(engineDatabaseExtension.countProcessDefinitions());
     assertThat(databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS))
-      .as("processInstanceTypeCount").isEqualTo(engineDatabaseExtension.countHistoricProcessInstances());
+        .as("processInstanceTypeCount")
+        .isEqualTo(engineDatabaseExtension.countHistoricProcessInstances());
     assertThat(databaseIntegrationTestExtension.getVariableInstanceCountForAllProcessInstances())
-      .as("variableInstanceCount").isGreaterThanOrEqualTo(engineDatabaseExtension.countHistoricVariableInstances());
+        .as("variableInstanceCount")
+        .isGreaterThanOrEqualTo(engineDatabaseExtension.countHistoricVariableInstances());
     assertThat(databaseIntegrationTestExtension.getActivityCountForAllProcessInstances())
-      .as("historicActivityInstanceCount").isEqualTo(engineDatabaseExtension.countHistoricActivityInstances());
+        .as("historicActivityInstanceCount")
+        .isEqualTo(engineDatabaseExtension.countHistoricActivityInstances());
     assertThat(databaseIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME))
-      .as("decisionDefinitionsCount").isEqualTo(engineDatabaseExtension.countDecisionDefinitions());
+        .as("decisionDefinitionsCount")
+        .isEqualTo(engineDatabaseExtension.countDecisionDefinitions());
     assertThat(databaseIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS))
-      .as("decisionInstancesCount").isEqualTo(engineDatabaseExtension.countHistoricDecisionInstances());
+        .as("decisionInstancesCount")
+        .isEqualTo(engineDatabaseExtension.countHistoricDecisionInstances());
   }
 }

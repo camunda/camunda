@@ -6,9 +6,8 @@
 package org.camunda.optimize.upgrade.plan;
 
 import com.vdurmont.semver4j.Semver;
-import org.camunda.optimize.upgrade.steps.UpgradeStep;
-
 import java.util.List;
+import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
 public class UpgradePlanBuilder {
 
@@ -70,6 +69,5 @@ public class UpgradePlanBuilder {
     public UpgradePlan build() {
       return upgradePlan;
     }
-
   }
 }

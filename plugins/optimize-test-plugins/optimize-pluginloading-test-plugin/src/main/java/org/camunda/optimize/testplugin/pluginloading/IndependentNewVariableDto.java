@@ -9,9 +9,7 @@ import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 
 public class IndependentNewVariableDto extends PluginVariableDto {
 
-
   public String anotherNewMethodThatOnlyThisPluginClassHas() {
     return "I am strong and independent!";
   }
-
 }

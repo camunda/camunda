@@ -5,23 +5,24 @@
  */
 package org.camunda.optimize.service.db.es.filter;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CompletedInstancesOnlyFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-
 @Component
-public class CompletedInstancesOnlyQueryFilter implements QueryFilter<CompletedInstancesOnlyFilterDataDto> {
+public class CompletedInstancesOnlyQueryFilter
+    implements QueryFilter<CompletedInstancesOnlyFilterDataDto> {
 
-  public void addFilters(final BoolQueryBuilder query,
-                         final List<CompletedInstancesOnlyFilterDataDto> completedInstancesData,
-                         final FilterContext filterContext) {
+  public void addFilters(
+      final BoolQueryBuilder query,
+      final List<CompletedInstancesOnlyFilterDataDto> completedInstancesData,
+      final FilterContext filterContext) {
     if (completedInstancesData != null && !completedInstancesData.isEmpty()) {
       final List<QueryBuilder> filters = query.filter();
 
@@ -30,5 +31,4 @@ public class CompletedInstancesOnlyQueryFilter implements QueryFilter<CompletedI
       filters.add(onlyCompletedQuery);
     }
   }
-
 }

@@ -8,7 +8,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.distribute
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.AssigneeDistributedByValueDto;
 
-public class AssigneeDistributedByDto extends ProcessReportDistributedByDto<AssigneeDistributedByValueDto> {
+public class AssigneeDistributedByDto
+    extends ProcessReportDistributedByDto<AssigneeDistributedByValueDto> {
 
   public AssigneeDistributedByDto() {
     this.type = DistributedByType.ASSIGNEE;

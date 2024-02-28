@@ -8,10 +8,10 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.distribute
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.ProcessDistributedByValueDto;
 
-public class ProcessDistributedByDto extends ProcessReportDistributedByDto<ProcessDistributedByValueDto> {
+public class ProcessDistributedByDto
+    extends ProcessReportDistributedByDto<ProcessDistributedByValueDto> {
 
   public ProcessDistributedByDto() {
     this.type = DistributedByType.PROCESS;
   }
-
 }

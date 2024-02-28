@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.plugin;
 
+import java.util.List;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class VariableImportAdapterProvider extends PluginProvider<VariableImportAdapter> {
 
-  public VariableImportAdapterProvider(final ConfigurationService configurationService,
-                                       final PluginJarFileLoader pluginJarLoader) {
+  public VariableImportAdapterProvider(
+      final ConfigurationService configurationService, final PluginJarFileLoader pluginJarLoader) {
     super(configurationService, pluginJarLoader);
   }
 
@@ -28,5 +27,4 @@ public class VariableImportAdapterProvider extends PluginProvider<VariableImport
   protected List<String> getBasePackages() {
     return configurationService.getVariableImportPluginBasePackages();
   }
-
 }

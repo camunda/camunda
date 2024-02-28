@@ -14,12 +14,13 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class RunningProcessInstanceImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
+public class RunningProcessInstanceImportIndexHandler
+    extends TimestampBasedEngineImportIndexHandler {
 
-  public static final String RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID = "runningProcessInstanceImportIndex";
+  public static final String RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID =
+      "runningProcessInstanceImportIndex";
 
-  @Getter
-  private final EngineContext engineContext;
+  @Getter private final EngineContext engineContext;
 
   public RunningProcessInstanceImportIndexHandler(final EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -34,5 +35,4 @@ public class RunningProcessInstanceImportIndexHandler extends TimestampBasedEngi
   protected String getDatabaseDocID() {
     return RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID;
   }
-
 }

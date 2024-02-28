@@ -5,24 +5,24 @@
  */
 package org.camunda.optimize.service.importing.engine.handler;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
+
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
-import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
-
 @Slf4j
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDefinitionXmlImportIndexHandler extends DefinitionXmlImportIndexHandler {
 
-  private static final String DECISION_DEFINITION_XML_IMPORT_INDEX_DOC_ID = "decisionDefinitionXmlImportIndex";
+  private static final String DECISION_DEFINITION_XML_IMPORT_INDEX_DOC_ID =
+      "decisionDefinitionXmlImportIndex";
 
   private final EngineContext engineContext;
 
@@ -38,17 +38,15 @@ public class DecisionDefinitionXmlImportIndexHandler extends DefinitionXmlImport
   @Override
   protected Set<String> performSearchQuery() {
     return databaseClient.performSearchDefinitionQuery(
-      DECISION_DEFINITION_INDEX_NAME,
-      DECISION_DEFINITION_XML,
-      DECISION_DEFINITION_ID,
-      configurationService.getEngineImportDecisionDefinitionXmlMaxPageSize(),
-      getEngineAlias()
-    );
+        DECISION_DEFINITION_INDEX_NAME,
+        DECISION_DEFINITION_XML,
+        DECISION_DEFINITION_ID,
+        configurationService.getEngineImportDecisionDefinitionXmlMaxPageSize(),
+        getEngineAlias());
   }
 
   @Override
   protected String getDatabaseTypeForStoring() {
     return DECISION_DEFINITION_XML_IMPORT_INDEX_DOC_ID;
   }
-
 }

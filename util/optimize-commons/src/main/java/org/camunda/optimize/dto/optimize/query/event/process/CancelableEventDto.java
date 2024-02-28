@@ -16,7 +16,5 @@ import lombok.experimental.SuperBuilder;
 @ToString(callSuper = true)
 public class CancelableEventDto extends EventDto {
 
-  @ToString.Include
-  private boolean canceled;
-
+  @ToString.Include private boolean canceled;
 }

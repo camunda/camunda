@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.util;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
@@ -44,14 +51,6 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponse
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ValidationHelper {
 
@@ -82,17 +81,20 @@ public class ValidationHelper {
     }
   }
 
-  public static void validateCombinedReportDefinition(final CombinedReportDefinitionRequestDto combinedReportDefinitionDto,
-                                                      final RoleType currentUserRole) {
+  public static void validateCombinedReportDefinition(
+      final CombinedReportDefinitionRequestDto combinedReportDefinitionDto,
+      final RoleType currentUserRole) {
     AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
-      new AuthorizedReportDefinitionResponseDto(combinedReportDefinitionDto, currentUserRole);
+        new AuthorizedReportDefinitionResponseDto(combinedReportDefinitionDto, currentUserRole);
     if (combinedReportDefinitionDto.getData() == null) {
       OptimizeValidationException ex =
-        new OptimizeValidationException("Report data for a combined report is not allowed to be null!");
+          new OptimizeValidationException(
+              "Report data for a combined report is not allowed to be null!");
       throw new ReportEvaluationException(authorizedReportDefinitionDto, ex);
     } else if (combinedReportDefinitionDto.getData().getReportIds() == null) {
       OptimizeValidationException ex =
-        new OptimizeValidationException("Reports list for a combined report is not allowed to be null!");
+          new OptimizeValidationException(
+              "Reports list for a combined report is not allowed to be null!");
       throw new ReportEvaluationException(authorizedReportDefinitionDto, ex);
     }
   }
@@ -100,8 +102,10 @@ public class ValidationHelper {
   private static void validateDefinitionData(ReportDataDto data) {
     if (data instanceof SingleReportDataDto) {
       SingleReportDataDto singleReportData = (SingleReportDataDto) data;
-      if (data instanceof ProcessReportDataDto && !((ProcessReportDataDto) data).isManagementReport()) {
-        // it is valid for management reports to not have a key if the user has no authorization for any processes
+      if (data instanceof ProcessReportDataDto
+          && !((ProcessReportDataDto) data).isManagementReport()) {
+        // it is valid for management reports to not have a key if the user has no authorization for
+        // any processes
         ensureNotNull("definitionKey", singleReportData.getDefinitionKey());
       }
       ensureNotNull("definitionVersions", singleReportData.getDefinitionVersions());
@@ -137,13 +141,18 @@ public class ValidationHelper {
       for (ProcessFilterDto<?> filterDto : filters) {
         if (!filterDto.validApplicationLevels().contains(filterDto.getFilterLevel())) {
           throw new OptimizeValidationException(
-            String.format("%s is not a valid application level for this filter type", filterDto.getFilterLevel()));
+              String.format(
+                  "%s is not a valid application level for this filter type",
+                  filterDto.getFilterLevel()));
         }
         if (filterDto instanceof InstanceStartDateFilterDto) {
-          InstanceStartDateFilterDto instanceStartDateFilterDto = (InstanceStartDateFilterDto) filterDto;
+          InstanceStartDateFilterDto instanceStartDateFilterDto =
+              (InstanceStartDateFilterDto) filterDto;
           DateFilterDataDto<?> startDateFilterDataDto = instanceStartDateFilterDto.getData();
           ensureAtLeastOneNotNull(
-            "start date filter ", startDateFilterDataDto.getStart(), startDateFilterDataDto.getEnd());
+              "start date filter ",
+              startDateFilterDataDto.getStart(),
+              startDateFilterDataDto.getEnd());
         } else if (filterDto instanceof VariableFilterDto) {
           VariableFilterDto variableFilterDto = (VariableFilterDto) filterDto;
           VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();
@@ -151,22 +160,26 @@ public class ValidationHelper {
           ensureNotEmpty("name", variableFilterData.getName());
           ensureNotEmpty("type", variableFilterData.getType());
         } else if (filterDto instanceof ExecutedFlowNodeFilterDto) {
-          ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = (ExecutedFlowNodeFilterDto) filterDto;
+          ExecutedFlowNodeFilterDto executedFlowNodeFilterDto =
+              (ExecutedFlowNodeFilterDto) filterDto;
           ExecutedFlowNodeFilterDataDto flowNodeFilterData = executedFlowNodeFilterDto.getData();
           ensureNotEmpty("operator", flowNodeFilterData.getOperator());
           ensureNotEmpty("values", flowNodeFilterData.getValues());
         } else if (filterDto instanceof ExecutingFlowNodeFilterDto) {
-          ExecutingFlowNodeFilterDto executingFlowNodeFilterDto = (ExecutingFlowNodeFilterDto) filterDto;
+          ExecutingFlowNodeFilterDto executingFlowNodeFilterDto =
+              (ExecutingFlowNodeFilterDto) filterDto;
           ExecutingFlowNodeFilterDataDto flowNodeFilterData = executingFlowNodeFilterDto.getData();
           ensureNotEmpty("values", flowNodeFilterData.getValues());
         } else if (filterDto instanceof CanceledFlowNodeFilterDto) {
-          CanceledFlowNodeFilterDto executingFlowNodeFilterDto = (CanceledFlowNodeFilterDto) filterDto;
+          CanceledFlowNodeFilterDto executingFlowNodeFilterDto =
+              (CanceledFlowNodeFilterDto) filterDto;
           CanceledFlowNodeFilterDataDto flowNodeFilterData = executingFlowNodeFilterDto.getData();
           ensureNotEmpty("values", flowNodeFilterData.getValues());
-        } else if (filterDto instanceof FlowNodeStartDateFilterDto || filterDto instanceof FlowNodeEndDateFilterDto) {
+        } else if (filterDto instanceof FlowNodeStartDateFilterDto
+            || filterDto instanceof FlowNodeEndDateFilterDto) {
           @SuppressWarnings(UNCHECKED_CAST)
           ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilterDto =
-            (ProcessFilterDto<FlowNodeDateFilterDataDto<?>>) filterDto;
+              (ProcessFilterDto<FlowNodeDateFilterDataDto<?>>) filterDto;
           validateFlowNodeDateFilter(flowNodeDateFilterDto);
         }
       }
@@ -175,53 +188,50 @@ public class ValidationHelper {
 
   public static void validateAggregationTypes(Set<AggregationDto> aggregationDtos) {
     if (aggregationDtos != null) {
-      aggregationDtos
-        .forEach(aggType -> {
-          final Double aggValue = aggType.getValue();
-          if (aggType.getType() == AggregationType.PERCENTILE) {
-            if (aggValue == null || aggValue < 0.0 || aggValue > 100.0) {
-              throw new OptimizeValidationException("Percentile aggregation values be between 0 and 100");
+      aggregationDtos.forEach(
+          aggType -> {
+            final Double aggValue = aggType.getValue();
+            if (aggType.getType() == AggregationType.PERCENTILE) {
+              if (aggValue == null || aggValue < 0.0 || aggValue > 100.0) {
+                throw new OptimizeValidationException(
+                    "Percentile aggregation values be between 0 and 100");
+              }
+            } else if (aggValue != null) {
+              throw new OptimizeValidationException(
+                  "Aggregation values can only be supplied for percentile " + "aggregations");
             }
-          } else if (aggValue != null) {
-            throw new OptimizeValidationException("Aggregation values can only be supplied for percentile " +
-                                                    "aggregations");
-          }
-        });
+          });
     }
   }
 
-  private static void validateFlowNodeDateFilter(final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilter) {
+  private static void validateFlowNodeDateFilter(
+      final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilter) {
     FlowNodeDateFilterDataDto<?> flowNodeDateFilterDataDto = flowNodeDateFilter.getData();
     if (DateFilterType.FIXED.equals(flowNodeDateFilterDataDto.getType())) {
       ensureAtLeastOneNotNull(
-        "flowNode date filter start or end field",
-        flowNodeDateFilterDataDto.getStart(),
-        flowNodeDateFilterDataDto.getEnd()
-      );
+          "flowNode date filter start or end field",
+          flowNodeDateFilterDataDto.getStart(),
+          flowNodeDateFilterDataDto.getEnd());
     } else {
       ensureNotNull(DateFilterDataDto.Fields.start, flowNodeDateFilterDataDto.getStart());
     }
     if (flowNodeDateFilterDataDto.getStart() instanceof RollingDateFilterStartDto) {
       final RollingDateFilterStartDto rollingStartDto =
-        (RollingDateFilterStartDto) flowNodeDateFilterDataDto.getStart();
+          (RollingDateFilterStartDto) flowNodeDateFilterDataDto.getStart();
       ensureNotNull(RollingDateFilterStartDto.Fields.unit, rollingStartDto.getUnit());
       ensureNotNull(RollingDateFilterStartDto.Fields.value, rollingStartDto.getValue());
     } else if (flowNodeDateFilterDataDto.getStart() instanceof RelativeDateFilterStartDto) {
       final RelativeDateFilterStartDto relativeStartDto =
-        (RelativeDateFilterStartDto) flowNodeDateFilterDataDto.getStart();
+          (RelativeDateFilterStartDto) flowNodeDateFilterDataDto.getStart();
       ensureNotNull(RelativeDateFilterStartDto.Fields.unit, relativeStartDto.getUnit());
       ensureNotNull(RelativeDateFilterStartDto.Fields.value, relativeStartDto.getValue());
     }
     if (FilterApplicationLevel.INSTANCE.equals(flowNodeDateFilter.getFilterLevel())) {
       ensureCollectionNotEmpty(
-        FlowNodeDateFilterDataDto.Fields.flowNodeIds,
-        flowNodeDateFilterDataDto.getFlowNodeIds()
-      );
+          FlowNodeDateFilterDataDto.Fields.flowNodeIds, flowNodeDateFilterDataDto.getFlowNodeIds());
     } else {
       ensureNull(
-        FlowNodeDateFilterDataDto.Fields.flowNodeIds,
-        flowNodeDateFilterDataDto.getFlowNodeIds()
-      );
+          FlowNodeDateFilterDataDto.Fields.flowNodeIds, flowNodeDateFilterDataDto.getFlowNodeIds());
     }
   }
 
@@ -233,10 +243,9 @@ public class ValidationHelper {
           DateFilterDataDto<?> evaluationDateFilterDataDto = evaluationDateFilterDto.getData();
 
           ensureAtLeastOneNotNull(
-            "evaluation date filter ",
-            evaluationDateFilterDataDto.getStart(),
-            evaluationDateFilterDataDto.getEnd()
-          );
+              "evaluation date filter ",
+              evaluationDateFilterDataDto.getStart(),
+              evaluationDateFilterDataDto.getEnd());
         } else if (filterDto instanceof InputVariableFilterDto) {
           InputVariableFilterDto variableFilterDto = (InputVariableFilterDto) filterDto;
           VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();
@@ -257,7 +266,8 @@ public class ValidationHelper {
   private static void ensureAtLeastOneNotNull(String fieldName, Object... objects) {
     boolean oneNotNull = Arrays.stream(objects).anyMatch(Objects::nonNull);
     if (!oneNotNull) {
-      throw new OptimizeValidationException(fieldName + " at least one sub field not allowed to be empty or null");
+      throw new OptimizeValidationException(
+          fieldName + " at least one sub field not allowed to be empty or null");
     }
   }
 
@@ -266,5 +276,4 @@ public class ValidationHelper {
       throw new OptimizeValidationException(fieldName + " has to be null");
     }
   }
-
 }

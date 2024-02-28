@@ -23,5 +23,4 @@ public enum RoleType {
   public String toString() {
     return getId();
   }
-
 }

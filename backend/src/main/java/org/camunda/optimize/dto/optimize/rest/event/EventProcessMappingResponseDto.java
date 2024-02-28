@@ -5,8 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.rest.event;
 
-
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,13 +23,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMapping
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -32,10 +30,8 @@ import java.util.Map;
 @FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EventProcessMappingResponseDto {
-  @EqualsAndHashCode.Include
-  private String id;
-  @NotBlank
-  private String name;
+  @EqualsAndHashCode.Include private String id;
+  @NotBlank private String name;
 
   private String lastModifier;
 
@@ -52,22 +48,22 @@ public class EventProcessMappingResponseDto {
 
   private Double publishingProgress;
 
-  @Builder.Default
-  private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
+  @Builder.Default private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 
-  public static EventProcessMappingResponseDto from(final EventProcessMappingDto dto,
-                                                    String lastModifierName,
-                                                    List<EventSourceEntryDto<?>> eventSourcesDtos) {
+  public static EventProcessMappingResponseDto from(
+      final EventProcessMappingDto dto,
+      String lastModifierName,
+      List<EventSourceEntryDto<?>> eventSourcesDtos) {
     return EventProcessMappingResponseDto.builder()
-      .id(dto.getId())
-      .lastModified(dto.getLastModified())
-      .lastModifier(lastModifierName)
-      .mappings(dto.getMappings())
-      .name(dto.getName())
-      .state(dto.getState())
-      .publishingProgress(dto.getPublishingProgress())
-      .xml(dto.getXml())
-      .eventSources(eventSourcesDtos)
-      .build();
+        .id(dto.getId())
+        .lastModified(dto.getLastModified())
+        .lastModifier(lastModifierName)
+        .mappings(dto.getMappings())
+        .name(dto.getName())
+        .state(dto.getState())
+        .publishingProgress(dto.getPublishingProgress())
+        .xml(dto.getXml())
+        .eventSources(eventSourcesDtos)
+        .build();
   }
 }

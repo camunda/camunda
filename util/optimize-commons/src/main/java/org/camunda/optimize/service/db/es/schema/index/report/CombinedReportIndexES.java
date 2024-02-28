@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.db.es.schema.index.report;
 
+import java.io.IOException;
 import org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-import java.io.IOException;
-
 public class CombinedReportIndexES extends CombinedReportIndex<XContentBuilder> {
 
-    @Override
-    public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder) throws IOException {
-        return contentBuilder.field(key, value);
-    }
-
+  @Override
+  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
+      throws IOException {
+    return contentBuilder.field(key, value);
+  }
 }

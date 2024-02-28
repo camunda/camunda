@@ -6,6 +6,8 @@
 package org.camunda.optimize.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Map;
 import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
@@ -13,9 +15,6 @@ import org.camunda.optimize.service.status.StatusCheckingService;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Map;
 
 public class StatusNotifier implements ImportObserver {
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -26,7 +25,8 @@ public class StatusNotifier implements ImportObserver {
 
   private final Map<String, EngineStatusDto> engineStatusMap;
 
-  public StatusNotifier(StatusCheckingService statusCheckingService, ObjectMapper objectMapper, Session session) {
+  public StatusNotifier(
+      StatusCheckingService statusCheckingService, ObjectMapper objectMapper, Session session) {
     this.statusCheckingService = statusCheckingService;
     this.objectMapper = objectMapper;
     this.session = session;
@@ -74,7 +74,8 @@ public class StatusNotifier implements ImportObserver {
       if (session.isOpen()) {
         session.getRemote().sendString(objectMapper.writeValueAsString(result));
       } else {
-        logger.debug("Could not write to websocket session [{}], because it already seems closed.", session);
+        logger.debug(
+            "Could not write to websocket session [{}], because it already seems closed.", session);
       }
     } catch (IOException e) {
       logger.warn("can't write status to web socket");

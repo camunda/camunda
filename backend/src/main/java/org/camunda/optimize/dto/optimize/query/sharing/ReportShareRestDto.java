@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.sharing;
 
+import java.io.Serializable;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
-
-import java.io.Serializable;
 
 @Data
 @FieldNameConstants

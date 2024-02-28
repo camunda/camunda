@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.service.exceptions;
 
-import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
-
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 
 public class OptimizeImportDefinitionDoesNotExistException extends OptimizeValidationException {
   public static final String ERROR_CODE = "importDefinitionDoesNotExist";
 
   private final Set<DefinitionExceptionItemDto> missingDefinitions;
 
-  public OptimizeImportDefinitionDoesNotExistException(final String message,
-                                                       final Set<DefinitionExceptionItemDto> missingDefinitions) {
+  public OptimizeImportDefinitionDoesNotExistException(
+      final String message, final Set<DefinitionExceptionItemDto> missingDefinitions) {
     super(message);
     this.missingDefinitions = missingDefinitions;
   }

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-
 import java.util.List;
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 
 public interface VariableUpdateInstanceReader {
 
-  List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(Set<String> processInstanceIds);
-
+  List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
+      Set<String> processInstanceIds);
 }

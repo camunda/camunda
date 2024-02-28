@@ -5,12 +5,17 @@
  */
 package org.camunda.optimize.service.db.es.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.service.db.writer.DecisionDefinitionXmlWriter;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.writer.DecisionDefinitionXmlWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.camunda.optimize.util.SuppressionConstants;
@@ -19,12 +24,6 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 @AllArgsConstructor
 @Component
@@ -37,32 +36,30 @@ public class DecisionDefinitionXmlWriterES implements DecisionDefinitionXmlWrite
   private final ObjectMapper objectMapper;
 
   @Override
-  public void importDecisionDefinitionXmls(final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
+  public void importDecisionDefinitionXmls(
+      final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
     String importItemName = "decision definition XML information";
     log.debug("Writing [{}] {} to ES.", decisionDefinitions.size(), importItemName);
     esClient.doImportBulkRequestWithList(
-      importItemName,
-      decisionDefinitions,
-      this::addImportDecisionDefinitionXmlRequest,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        importItemName,
+        decisionDefinitions,
+        this::addImportDecisionDefinitionXmlRequest,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  private void addImportDecisionDefinitionXmlRequest(final BulkRequest bulkRequest,
-                                                     final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
-    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
-      FIELDS_TO_UPDATE,
-      decisionDefinitionDto,
-      objectMapper
-    );
+  private void addImportDecisionDefinitionXmlRequest(
+      final BulkRequest bulkRequest, final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
+    final Script updateScript =
+        ElasticsearchWriterUtil.createFieldUpdateScript(
+            FIELDS_TO_UPDATE, decisionDefinitionDto, objectMapper);
     UpdateRequest updateRequest =
-      new UpdateRequest()
-        .index(DECISION_DEFINITION_INDEX_NAME)
-        .id(decisionDefinitionDto.getId())
-        .script(updateScript)
-        .upsert(objectMapper.convertValue(decisionDefinitionDto, Map.class))
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+        new UpdateRequest()
+            .index(DECISION_DEFINITION_INDEX_NAME)
+            .id(decisionDefinitionDto.getId())
+            .script(updateScript)
+            .upsert(objectMapper.convertValue(decisionDefinitionDto, Map.class))
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     bulkRequest.add(updateRequest);
   }

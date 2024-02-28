@@ -5,8 +5,17 @@
  */
 package org.camunda.optimize.service;
 
+import static org.camunda.optimize.service.util.configuration.OptimizeProfile.CCSM;
+import static org.camunda.optimize.service.util.configuration.OptimizeProfile.CLOUD;
+import static org.camunda.optimize.service.util.configuration.OptimizeProfile.PLATFORM;
+
 import com.google.common.collect.Lists;
 import io.camunda.identity.sdk.Identity;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
@@ -23,16 +32,6 @@ import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.util.configuration.OptimizeProfile.CCSM;
-import static org.camunda.optimize.service.util.configuration.OptimizeProfile.CLOUD;
-import static org.camunda.optimize.service.util.configuration.OptimizeProfile.PLATFORM;
 
 @Component
 @Slf4j
@@ -52,7 +51,8 @@ public class UIConfigurationService {
     final UIConfigurationResponseDto uiConfigurationDto = new UIConfigurationResponseDto();
     uiConfigurationDto.setLogoutHidden(configurationService.getUiConfiguration().isLogoutHidden());
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
-    uiConfigurationDto.setSharingEnabled(settingService.getSettings().getSharingEnabled().orElse(false));
+    uiConfigurationDto.setSharingEnabled(
+        settingService.getSettings().getSharingEnabled().orElse(false));
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     uiConfigurationDto.setOptimizeDocsVersion(versionService.getDocsVersion());
@@ -62,20 +62,25 @@ public class UIConfigurationService {
     uiConfigurationDto.setOptimizeProfile(optimizeProfile.getId());
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
-    uiConfigurationDto.setExportCsvLimit(configurationService.getCsvConfiguration().getExportCsvLimit());
+    uiConfigurationDto.setExportCsvLimit(
+        configurationService.getCsvConfiguration().getExportCsvLimit());
 
     final SettingsResponseDto settings = settingService.getSettings();
-    uiConfigurationDto.setMetadataTelemetryEnabled(settings.getMetadataTelemetryEnabled().orElse(true));
+    uiConfigurationDto.setMetadataTelemetryEnabled(
+        settings.getMetadataTelemetryEnabled().orElse(true));
     uiConfigurationDto.setSettingsManuallyConfirmed(settings.isTelemetryManuallyConfirmed());
 
     final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
     mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());
     mixpanel.setApiHost(configurationService.getAnalytics().getMixpanel().getApiHost());
     mixpanel.setToken(configurationService.getAnalytics().getMixpanel().getToken());
-    mixpanel.setOrganizationId(configurationService.getAnalytics().getMixpanel().getProperties().getOrganizationId());
-    mixpanel.setOsanoScriptUrl(configurationService.getAnalytics().getOsano().getScriptUrl().orElse(null));
+    mixpanel.setOrganizationId(
+        configurationService.getAnalytics().getMixpanel().getProperties().getOrganizationId());
+    mixpanel.setOsanoScriptUrl(
+        configurationService.getAnalytics().getOsano().getScriptUrl().orElse(null));
     mixpanel.setStage(configurationService.getAnalytics().getMixpanel().getProperties().getStage());
-    mixpanel.setClusterId(configurationService.getAnalytics().getMixpanel().getProperties().getClusterId());
+    mixpanel.setClusterId(
+        configurationService.getAnalytics().getMixpanel().getProperties().getClusterId());
 
     final OnboardingResponseDto onboarding = uiConfigurationDto.getOnboarding();
     onboarding.setEnabled(configurationService.getOnboarding().isEnabled());
@@ -83,11 +88,15 @@ public class UIConfigurationService {
     onboarding.setOrgId(configurationService.getOnboarding().getProperties().getOrganizationId());
     onboarding.setClusterId(configurationService.getOnboarding().getProperties().getClusterId());
 
-    cloudSaasMetaInfoService.flatMap(CloudSaasMetaInfoService::getSalesPlanType).ifPresent(onboarding::setSalesPlanType);
-    cloudSaasMetaInfoService.ifPresent(service -> {
-      uiConfigurationDto.setWebappsLinks(service.getWebappsLinks());
-      uiConfigurationDto.setNotificationsUrl(configurationService.getPanelNotificationConfiguration().getUrl());
-    });
+    cloudSaasMetaInfoService
+        .flatMap(CloudSaasMetaInfoService::getSalesPlanType)
+        .ifPresent(onboarding::setSalesPlanType);
+    cloudSaasMetaInfoService.ifPresent(
+        service -> {
+          uiConfigurationDto.setWebappsLinks(service.getWebappsLinks());
+          uiConfigurationDto.setNotificationsUrl(
+              configurationService.getPanelNotificationConfiguration().getUrl());
+        });
 
     return uiConfigurationDto;
   }
@@ -98,12 +107,14 @@ public class UIConfigurationService {
     } else if (optimizeProfile.equals(CCSM)) {
       return configurationService.getSecurityConfiguration().getLicense().isEnterprise();
     }
-    throw new OptimizeConfigurationException("Could not determine whether Optimize is running in enterprise mode");
+    throw new OptimizeConfigurationException(
+        "Could not determine whether Optimize is running in enterprise mode");
   }
 
   private Map<String, WebappsEndpointDto> getCamundaWebappsEndpoints() {
     Map<String, WebappsEndpointDto> engineNameToEndpoints = new HashMap<>();
-    for (Map.Entry<String, EngineConfiguration> entry : configurationService.getConfiguredEngines().entrySet()) {
+    for (Map.Entry<String, EngineConfiguration> entry :
+        configurationService.getConfiguredEngines().entrySet()) {
       EngineConfiguration engineConfiguration = entry.getValue();
       WebappsEndpointDto webappsEndpoint = new WebappsEndpointDto();
       String endpointAsString = "";
@@ -118,7 +129,8 @@ public class UIConfigurationService {
   }
 
   private List<String> getConfiguredWebhooks() {
-    List<String> sortedWebhooksList = Lists.newArrayList(configurationService.getConfiguredWebhooks().keySet());
+    List<String> sortedWebhooksList =
+        Lists.newArrayList(configurationService.getConfiguredWebhooks().keySet());
     sortedWebhooksList.sort(String.CASE_INSENSITIVE_ORDER);
     return sortedWebhooksList;
   }
@@ -126,5 +138,4 @@ public class UIConfigurationService {
   private boolean isUserSearchAvailable(final OptimizeProfile optimizeProfile) {
     return !CCSM.equals(optimizeProfile) || identity.users().isAvailable();
   }
-
 }

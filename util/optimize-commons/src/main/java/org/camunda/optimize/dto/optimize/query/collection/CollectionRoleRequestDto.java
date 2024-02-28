@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,8 +13,6 @@ import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
-
-import java.util.Optional;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -23,6 +22,7 @@ public class CollectionRoleRequestDto {
 
   @Setter(value = AccessLevel.PROTECTED)
   private String id;
+
   private IdentityDto identity;
   private RoleType role;
 
@@ -42,7 +42,7 @@ public class CollectionRoleRequestDto {
 
   private String convertIdentityToRoleId(final IdentityDto identity) {
     return identity.getType() == null
-      ? "UNKNOWN" + ID_SEGMENT_SEPARATOR + identity.getId()
-      : identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
+        ? "UNKNOWN" + ID_SEGMENT_SEPARATOR + identity.getId()
+        : identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
   }
 }

@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.ui_configuration;
 
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Map;
 
 @Data
 @AllArgsConstructor
@@ -35,7 +34,8 @@ public class UIConfigurationResponseDto {
   // mirrors SettingsDto
   private boolean metadataTelemetryEnabled;
 
-  // true if settingsDto flags are confirmed by superuser. If false, settings reflect initial config flags only
+  // true if settingsDto flags are confirmed by superuser. If false, settings reflect initial config
+  // flags only
   private boolean settingsManuallyConfirmed;
 
   private MixpanelConfigResponseDto mixpanel = new MixpanelConfigResponseDto();

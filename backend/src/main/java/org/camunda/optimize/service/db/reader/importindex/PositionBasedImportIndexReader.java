@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.reader.importindex;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
+
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
@@ -12,26 +15,20 @@ import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.db.repository.ImportRepository;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
-
 @Component
 @Slf4j
 @AllArgsConstructor
-public class PositionBasedImportIndexReader implements ImportIndexReader<PositionBasedImportIndexDto, ZeebeDataSourceDto> {
+public class PositionBasedImportIndexReader
+    implements ImportIndexReader<PositionBasedImportIndexDto, ZeebeDataSourceDto> {
   private final ImportRepository importRepository;
 
   public Optional<PositionBasedImportIndexDto> getImportIndex(
-    final String typeIndexComesFrom,
-    final ZeebeDataSourceDto dataSourceDto
-  ) {
+      final String typeIndexComesFrom, final ZeebeDataSourceDto dataSourceDto) {
     return importRepository.getImportIndex(
-      POSITION_BASED_IMPORT_INDEX_NAME,
-      "position based",
-      PositionBasedImportIndexDto.class,
-      typeIndexComesFrom,
-      dataSourceDto
-    );
+        POSITION_BASED_IMPORT_INDEX_NAME,
+        "position based",
+        PositionBasedImportIndexDto.class,
+        typeIndexComesFrom,
+        dataSourceDto);
   }
 }

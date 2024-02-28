@@ -5,8 +5,15 @@
  */
 package org.camunda.optimize.service;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
@@ -17,14 +24,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
-
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 
 @AllArgsConstructor
 @Component
@@ -60,11 +59,11 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
   @Override
   protected void run() {
     log.debug("Scheduling KPI evaluation tasks for all existing processes.");
-    final List<String> processDefinitionKeys = definitionService.getAllDefinitionsWithTenants(PROCESS)
-      .stream()
-      .filter(def -> !def.getIsEventProcess())
-      .map(SimpleDefinitionDto::getKey)
-      .collect(Collectors.toList());
+    final List<String> processDefinitionKeys =
+        definitionService.getAllDefinitionsWithTenants(PROCESS).stream()
+            .filter(def -> !def.getIsEventProcess())
+            .map(SimpleDefinitionDto::getKey)
+            .collect(Collectors.toList());
 
     Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis = new HashMap<>();
     for (String processDefinitionKey : processDefinitionKeys) {
@@ -73,7 +72,8 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
       for (KpiResultDto kpi : kpiResultDtos) {
         reportIdToKpiValue.put(kpi.getReportId(), kpi.getValue());
       }
-      LastKpiEvaluationResultsDto lastKpiEvaluationResultsDto = new LastKpiEvaluationResultsDto(reportIdToKpiValue);
+      LastKpiEvaluationResultsDto lastKpiEvaluationResultsDto =
+          new LastKpiEvaluationResultsDto(reportIdToKpiValue);
       definitionKeyToKpis.put(processDefinitionKey, lastKpiEvaluationResultsDto);
     }
     processOverviewWriter.updateKpisForProcessDefinitions(definitionKeyToKpis);
@@ -81,7 +81,7 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(Duration.ofSeconds(configurationService.getEntityConfiguration().getKpiRefreshInterval()));
+    return new PeriodicTrigger(
+        Duration.ofSeconds(configurationService.getEntityConfiguration().getKpiRefreshInterval()));
   }
-
 }

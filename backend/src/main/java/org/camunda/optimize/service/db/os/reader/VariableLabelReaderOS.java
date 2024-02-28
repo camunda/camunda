@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
@@ -13,10 +16,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -24,9 +23,9 @@ import java.util.Map;
 public class VariableLabelReaderOS implements VariableLabelReader {
 
   @Override
-  public Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(final List<String> processDefinitionKeys) {
+  public Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
+      final List<String> processDefinitionKeys) {
     log.error("Functionality not implemented for OpenSearch");
     return new HashMap<>();
   }
-
 }

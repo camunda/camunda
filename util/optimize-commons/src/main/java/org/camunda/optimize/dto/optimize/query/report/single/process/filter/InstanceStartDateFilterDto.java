@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
-
 import java.util.Collections;
 import java.util.List;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 
 @NoArgsConstructor
 public class InstanceStartDateFilterDto extends ProcessFilterDto<DateFilterDataDto<?>> {

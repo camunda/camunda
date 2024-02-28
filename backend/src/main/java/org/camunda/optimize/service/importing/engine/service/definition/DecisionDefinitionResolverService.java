@@ -15,20 +15,19 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class DecisionDefinitionResolverService extends AbstractDefinitionResolverService<DecisionDefinitionOptimizeDto> {
+public class DecisionDefinitionResolverService
+    extends AbstractDefinitionResolverService<DecisionDefinitionOptimizeDto> {
 
   private final DecisionDefinitionReader decisionDefinitionReader;
 
   @Override
-  protected DecisionDefinitionOptimizeDto fetchFromEngine(final String definitionId,
-                                                          final EngineContext engineContext) {
+  protected DecisionDefinitionOptimizeDto fetchFromEngine(
+      final String definitionId, final EngineContext engineContext) {
     return engineContext.fetchDecisionDefinition(definitionId);
   }
 
   @Override
   protected void syncCache() {
-    decisionDefinitionReader.getAllDecisionDefinitions()
-      .forEach(this::addToCacheIfNotNull);
+    decisionDefinitionReader.getAllDecisionDefinitions().forEach(this::addToCacheIfNotNull);
   }
-
 }

@@ -20,7 +20,8 @@ import org.springframework.stereotype.Component;
 public class VariableLabelWriterOS implements VariableLabelWriter {
 
   @Override
-  public void createVariableLabelUpsertRequest(final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
+  public void createVariableLabelUpsertRequest(
+      final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     log.error("Functionality not implemented for OpenSearch");
   }
 
@@ -28,5 +29,4 @@ public class VariableLabelWriterOS implements VariableLabelWriter {
   public void deleteVariableLabelsForDefinition(final String processDefinitionKey) {
     log.error("Functionality not implemented for OpenSearch");
   }
-
 }

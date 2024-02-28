@@ -6,13 +6,12 @@
 package org.camunda.optimize.rest.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
-
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.ext.ContextResolver;
 import jakarta.ws.rs.ext.Provider;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
@@ -20,12 +19,12 @@ import jakarta.ws.rs.ext.Provider;
 public class EngineObjectMapperContextResolver implements ContextResolver<ObjectMapper> {
   private final ObjectMapper engineObjectMapper;
 
-  public EngineObjectMapperContextResolver(@Qualifier("engineMapper") final ObjectMapper objectMapper) {
+  public EngineObjectMapperContextResolver(
+      @Qualifier("engineMapper") final ObjectMapper objectMapper) {
     this.engineObjectMapper = objectMapper;
   }
 
   public ObjectMapper getContext(Class<?> type) {
     return engineObjectMapper;
   }
-
 }

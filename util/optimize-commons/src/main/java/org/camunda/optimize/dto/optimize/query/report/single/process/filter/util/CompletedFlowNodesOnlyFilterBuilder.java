@@ -32,5 +32,4 @@ public class CompletedFlowNodesOnlyFilterBuilder {
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
-
 }

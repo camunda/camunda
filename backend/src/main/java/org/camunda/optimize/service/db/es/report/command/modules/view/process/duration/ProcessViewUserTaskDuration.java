@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.view.process.duration;
 
+import static org.camunda.optimize.service.db.es.report.command.util.DurationScriptUtil.getUserTaskDurationScript;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Precision;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -26,12 +31,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.db.es.report.command.util.DurationScriptUtil.getUserTaskDurationScript;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Primary
@@ -43,58 +42,76 @@ public class ProcessViewUserTaskDuration extends ProcessViewMultiAggregation {
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
+  public List<AggregationBuilder> createAggregations(
+      final ExecutionContext<ProcessReportDataDto> context) {
     return context.getReportData().getConfiguration().getUserTaskDurationTimes().stream()
-      .flatMap(userTaskDurationTime -> getAggregationStrategies(context.getReportData()).stream()
-        .map(strategy -> strategy.createAggregationBuilder(userTaskDurationTime.getId())
-          .script(getScriptedAggregationField(userTaskDurationTime)))
-      )
-      .collect(Collectors.toList());
+        .flatMap(
+            userTaskDurationTime ->
+                getAggregationStrategies(context.getReportData()).stream()
+                    .map(
+                        strategy ->
+                            strategy
+                                .createAggregationBuilder(userTaskDurationTime.getId())
+                                .script(getScriptedAggregationField(userTaskDurationTime))))
+        .collect(Collectors.toList());
   }
 
   @Override
-  public ViewResult retrieveResult(final SearchResponse response,
-                                   final Aggregations aggs,
-                                   final ExecutionContext<ProcessReportDataDto> context) {
+  public ViewResult retrieveResult(
+      final SearchResponse response,
+      final Aggregations aggs,
+      final ExecutionContext<ProcessReportDataDto> context) {
     final ViewResultBuilder viewResultBuilder = ViewResult.builder();
-    context.getReportData().getConfiguration().getUserTaskDurationTimes()
-      .forEach(userTaskDurationTime -> getAggregationStrategies(context.getReportData())
-        .forEach(aggregationStrategy -> {
-          Double measureResult = aggregationStrategy.getValue(userTaskDurationTime.getId(), aggs);
-          if (measureResult != null) {
-            // rounding to closest integer since the lowest precision
-            // for duration in the data is milliseconds anyway for data types.
-            measureResult = Precision.round(measureResult, 0);
-          }
-          viewResultBuilder.viewMeasure(
-            ViewMeasure.builder()
-              .aggregationType(aggregationStrategy.getAggregationType())
-              .userTaskDurationTime(userTaskDurationTime)
-              .value(measureResult)
-              .build()
-          );
-        })
-      );
+    context
+        .getReportData()
+        .getConfiguration()
+        .getUserTaskDurationTimes()
+        .forEach(
+            userTaskDurationTime ->
+                getAggregationStrategies(context.getReportData())
+                    .forEach(
+                        aggregationStrategy -> {
+                          Double measureResult =
+                              aggregationStrategy.getValue(userTaskDurationTime.getId(), aggs);
+                          if (measureResult != null) {
+                            // rounding to closest integer since the lowest precision
+                            // for duration in the data is milliseconds anyway for data types.
+                            measureResult = Precision.round(measureResult, 0);
+                          }
+                          viewResultBuilder.viewMeasure(
+                              ViewMeasure.builder()
+                                  .aggregationType(aggregationStrategy.getAggregationType())
+                                  .userTaskDurationTime(userTaskDurationTime)
+                                  .value(measureResult)
+                                  .build());
+                        }));
     return viewResultBuilder.build();
   }
 
   @Override
   public ViewResult createEmptyResult(final ExecutionContext<ProcessReportDataDto> context) {
     final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
-    context.getReportData().getConfiguration().getUserTaskDurationTimes()
-      .forEach(userTaskDurationTime -> getAggregationStrategies(context.getReportData())
-        .forEach(aggregationStrategy -> viewResultBuilder.viewMeasure(
-          ViewMeasure.builder()
-            .aggregationType(aggregationStrategy.getAggregationType())
-            .userTaskDurationTime(userTaskDurationTime)
-            .value(null).build()
-        ))
-      );
+    context
+        .getReportData()
+        .getConfiguration()
+        .getUserTaskDurationTimes()
+        .forEach(
+            userTaskDurationTime ->
+                getAggregationStrategies(context.getReportData())
+                    .forEach(
+                        aggregationStrategy ->
+                            viewResultBuilder.viewMeasure(
+                                ViewMeasure.builder()
+                                    .aggregationType(aggregationStrategy.getAggregationType())
+                                    .userTaskDurationTime(userTaskDurationTime)
+                                    .value(null)
+                                    .build())));
     return viewResultBuilder.build();
   }
 
   @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
     ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.USER_TASK);
     view.setProperties(ViewProperty.DURATION);
@@ -103,9 +120,8 @@ public class ProcessViewUserTaskDuration extends ProcessViewMultiAggregation {
 
   private Script getScriptedAggregationField(final UserTaskDurationTime userTaskDurationTime) {
     return getUserTaskDurationScript(
-      LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      getDurationFieldName(userTaskDurationTime)
-    );
+        LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+        getDurationFieldName(userTaskDurationTime));
   }
 
   private String getDurationFieldName(final UserTaskDurationTime userTaskDurationTime) {

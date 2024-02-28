@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
-import lombok.Data;
-import org.camunda.optimize.service.util.TenantListHandlingUtil;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import lombok.Data;
+import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 @Data
 public class DecisionVariableValueRequestDto {

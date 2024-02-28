@@ -10,5 +10,4 @@ public interface BackupWriter {
   void triggerSnapshotCreation(final Long backupId);
 
   void deleteOptimizeSnapshots(final Long backupId);
-
 }

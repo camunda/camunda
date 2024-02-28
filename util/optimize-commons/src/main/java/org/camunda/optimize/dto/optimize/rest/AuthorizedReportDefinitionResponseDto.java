@@ -20,10 +20,10 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 @EqualsAndHashCode(callSuper = true)
 @FieldNameConstants
 public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
-  @JsonUnwrapped
-  private ReportDefinitionDto definitionDto;
+  @JsonUnwrapped private ReportDefinitionDto definitionDto;
 
-  public AuthorizedReportDefinitionResponseDto(final ReportDefinitionDto definitionDto, final RoleType currentUserRole) {
+  public AuthorizedReportDefinitionResponseDto(
+      final ReportDefinitionDto definitionDto, final RoleType currentUserRole) {
     super(currentUserRole);
     this.definitionDto = definitionDto;
   }

@@ -5,21 +5,21 @@
  */
 package org.camunda.optimize.data.generation.generators.impl.process;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class BranchAnalysisDataGenerator extends ProcessDataGenerator {
 
   private static final String CALLER_DIAGRAM = "/diagrams/process/call-branch-analysis.bpmn";
   private static final String CALLEE_DIAGRAM = "/diagrams/process/branch_analysis_process.bpmn";
 
-  public BranchAnalysisDataGenerator(final SimpleEngineClient engineClient,
-                                     final Integer nVersions,
-                                     final UserAndGroupProvider userAndGroupProvider) {
+  public BranchAnalysisDataGenerator(
+      final SimpleEngineClient engineClient,
+      final Integer nVersions,
+      final UserAndGroupProvider userAndGroupProvider) {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
@@ -35,8 +35,7 @@ public class BranchAnalysisDataGenerator extends ProcessDataGenerator {
   @Override
   protected void deployAdditionalDiagrams() {
     super.deployAdditionalDiagrams();
-    BpmnModelInstance bpmnModelInstance =
-      readProcessDiagramAsInstance(CALLEE_DIAGRAM);
+    BpmnModelInstance bpmnModelInstance = readProcessDiagramAsInstance(CALLEE_DIAGRAM);
     engineClient.deployProcesses(bpmnModelInstance, 1, tenants);
   }
 

@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
 
-  private static final String PROCESS_DEFINITION_IMPORT_INDEX_DOC_ID = "processDefinitionImportIndex";
+  private static final String PROCESS_DEFINITION_IMPORT_INDEX_DOC_ID =
+      "processDefinitionImportIndex";
 
   private final EngineContext engineContext;
 
@@ -32,5 +33,4 @@ public class ProcessDefinitionImportIndexHandler extends TimestampBasedEngineImp
   protected String getDatabaseDocID() {
     return PROCESS_DEFINITION_IMPORT_INDEX_DOC_ID;
   }
-
 }

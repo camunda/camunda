@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.Test;
 
 public class LocalizationFileTest {
 
@@ -28,40 +27,37 @@ public class LocalizationFileTest {
     String deLocale = "de";
 
     // when
-    List<String> enKeys = buildQualifiedKeyList(
-      getJsonTreeMapFromLocalizationFile(enLocale),
-      Lists.newArrayList(),
-      null
-    );
-    List<String> deKeys = buildQualifiedKeyList(
-      getJsonTreeMapFromLocalizationFile(deLocale),
-      Lists.newArrayList(),
-      null
-    );
+    List<String> enKeys =
+        buildQualifiedKeyList(
+            getJsonTreeMapFromLocalizationFile(enLocale), Lists.newArrayList(), null);
+    List<String> deKeys =
+        buildQualifiedKeyList(
+            getJsonTreeMapFromLocalizationFile(deLocale), Lists.newArrayList(), null);
 
     // then
     assertThat(enKeys).containsExactlyInAnyOrderElementsOf(deKeys);
   }
 
-  private List<String> buildQualifiedKeyList(Map<String, Object> jsonMap, List<String> keys, String parentKeyPath) {
-    jsonMap.forEach((key, value) -> {
-      String qualifiedKeyPath = Optional.ofNullable(parentKeyPath).orElse("") + "/" + key;
-      if (value instanceof LinkedHashMap) {
-        Map<String, Object> map = (LinkedHashMap) value;
-        buildQualifiedKeyList(map, keys, qualifiedKeyPath);
-      }
-      keys.add(qualifiedKeyPath);
-    });
+  private List<String> buildQualifiedKeyList(
+      Map<String, Object> jsonMap, List<String> keys, String parentKeyPath) {
+    jsonMap.forEach(
+        (key, value) -> {
+          String qualifiedKeyPath = Optional.ofNullable(parentKeyPath).orElse("") + "/" + key;
+          if (value instanceof LinkedHashMap) {
+            Map<String, Object> map = (LinkedHashMap) value;
+            buildQualifiedKeyList(map, keys, qualifiedKeyPath);
+          }
+          keys.add(qualifiedKeyPath);
+        });
     return keys;
   }
 
   @SneakyThrows
   private Map<String, Object> getJsonTreeMapFromLocalizationFile(final String locale) {
     return OBJECT_MAPPER.readValue(
-      getClass().getClassLoader()
-        .getResourceAsStream(LocalizationService.LOCALIZATION_PATH + locale + ".json"),
-      Map.class
-    );
+        getClass()
+            .getClassLoader()
+            .getResourceAsStream(LocalizationService.LOCALIZATION_PATH + locale + ".json"),
+        Map.class);
   }
-
 }

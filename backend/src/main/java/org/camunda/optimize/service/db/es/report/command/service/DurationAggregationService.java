@@ -5,6 +5,24 @@
  */
 package org.camunda.optimize.service.db.es.report.command.service;
 
+import static org.camunda.optimize.es.aggregations.NumberHistogramAggregationUtil.generateHistogramFromScript;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.DURATION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
+import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
+import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.BiFunction;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -36,131 +54,120 @@ import org.elasticsearch.search.aggregations.bucket.histogram.HistogramAggregati
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.BiFunction;
-
-import static org.camunda.optimize.es.aggregations.NumberHistogramAggregationUtil.generateHistogramFromScript;
-import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
-import static org.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.DURATION;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
-import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
-import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-
-
 @Component
 @AllArgsConstructor
 public class DurationAggregationService {
   private static final String DURATION_HISTOGRAM_AGGREGATION = "durationHistogram";
-  private static final int AUTOMATIC_BUCKET_LIMIT = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+  private static final int AUTOMATIC_BUCKET_LIMIT =
+      NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
   private static final BucketUnit DEFAULT_UNIT = BucketUnit.MILLISECOND;
   private static final DurationUnit FILTER_UNIT = DurationUnit.MILLIS;
 
   private final MinMaxStatsService minMaxStatsService;
 
   public Optional<AggregationBuilder> createLimitedGroupByScriptedDurationAggregation(
-    final SearchSourceBuilder searchSourceBuilder,
-    final ExecutionContext<ProcessReportDataDto> context,
-    final DistributedByPart<ProcessReportDataDto> distributedByPart,
-    final Script durationCalculationScript) {
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<ProcessReportDataDto> context,
+      final DistributedByPart<ProcessReportDataDto> distributedByPart,
+      final Script durationCalculationScript) {
 
-    final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForScriptedField(
-      context,
-      searchSourceBuilder.query(),
-      getIndexNames(context),
-      durationCalculationScript
-    );
+    final MinMaxStatDto minMaxStats =
+        minMaxStatsService.getMinMaxNumberRangeForScriptedField(
+            context,
+            searchSourceBuilder.query(),
+            getIndexNames(context),
+            durationCalculationScript);
     return createLimitedGroupByScriptedDurationAggregation(
-      context, distributedByPart, durationCalculationScript, minMaxStats, this::createProcessInstanceLimitingFilterQuery
-    );
+        context,
+        distributedByPart,
+        durationCalculationScript,
+        minMaxStats,
+        this::createProcessInstanceLimitingFilterQuery);
   }
 
   public Optional<AggregationBuilder> createLimitedGroupByScriptedEventDurationAggregation(
-    final SearchSourceBuilder searchSourceBuilder,
-    final ExecutionContext<ProcessReportDataDto> context,
-    final DistributedByPart<ProcessReportDataDto> distributedByPart,
-    final Script durationCalculationScript) {
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<ProcessReportDataDto> context,
+      final DistributedByPart<ProcessReportDataDto> distributedByPart,
+      final Script durationCalculationScript) {
 
-    final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
-      context, searchSourceBuilder.query(), getIndexNames(context), FLOW_NODE_INSTANCES, durationCalculationScript
-    );
+    final MinMaxStatDto minMaxStats =
+        minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
+            context,
+            searchSourceBuilder.query(),
+            getIndexNames(context),
+            FLOW_NODE_INSTANCES,
+            durationCalculationScript);
     return createLimitedGroupByScriptedDurationAggregation(
-      context, distributedByPart, durationCalculationScript, minMaxStats, this::createEventLimitingFilterQuery
-    );
+        context,
+        distributedByPart,
+        durationCalculationScript,
+        minMaxStats,
+        this::createEventLimitingFilterQuery);
   }
 
   public Optional<AggregationBuilder> createLimitedGroupByScriptedUserTaskDurationAggregation(
-    final SearchSourceBuilder searchSourceBuilder,
-    final ExecutionContext<ProcessReportDataDto> context,
-    final DistributedByPart<ProcessReportDataDto> distributedByPart,
-    final Script durationCalculationScript,
-    final UserTaskDurationTime userTaskDurationTime) {
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<ProcessReportDataDto> context,
+      final DistributedByPart<ProcessReportDataDto> distributedByPart,
+      final Script durationCalculationScript,
+      final UserTaskDurationTime userTaskDurationTime) {
 
-    final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
-      context,
-      searchSourceBuilder.query(),
-      getIndexNames(context),
-      FLOW_NODE_INSTANCES,
-      durationCalculationScript,
-      createUserTaskFlowNodeTypeFilter()
-    );
+    final MinMaxStatDto minMaxStats =
+        minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
+            context,
+            searchSourceBuilder.query(),
+            getIndexNames(context),
+            FLOW_NODE_INSTANCES,
+            durationCalculationScript,
+            createUserTaskFlowNodeTypeFilter());
     return createLimitedGroupByScriptedDurationAggregation(
-      context,
-      distributedByPart,
-      durationCalculationScript,
-      minMaxStats,
-      (filterOperator, filterValueInMillis) -> createUserTaskLimitingFilterQuery(
-        filterOperator, userTaskDurationTime, filterValueInMillis
-      )
-    );
+        context,
+        distributedByPart,
+        durationCalculationScript,
+        minMaxStats,
+        (filterOperator, filterValueInMillis) ->
+            createUserTaskLimitingFilterQuery(
+                filterOperator, userTaskDurationTime, filterValueInMillis));
   }
 
   public List<CompositeCommandResult.GroupByResult> mapGroupByDurationResults(
-    final SearchResponse response,
-    final Aggregations parentSubAggregations,
-    final ExecutionContext<ProcessReportDataDto> context,
-    final DistributedByPart<ProcessReportDataDto> distributedByPart) {
+      final SearchResponse response,
+      final Aggregations parentSubAggregations,
+      final ExecutionContext<ProcessReportDataDto> context,
+      final DistributedByPart<ProcessReportDataDto> distributedByPart) {
     final List<CompositeCommandResult.GroupByResult> durationHistogramData = new ArrayList<>();
-    final Optional<Histogram> histogramAggregationResult = Optional.ofNullable(parentSubAggregations)
-      .flatMap(FilterLimitedAggregationUtil::unwrapFilterLimitedAggregations)
-      .map(aggregations -> aggregations.get(DURATION_HISTOGRAM_AGGREGATION));
+    final Optional<Histogram> histogramAggregationResult =
+        Optional.ofNullable(parentSubAggregations)
+            .flatMap(FilterLimitedAggregationUtil::unwrapFilterLimitedAggregations)
+            .map(aggregations -> aggregations.get(DURATION_HISTOGRAM_AGGREGATION));
 
     if (histogramAggregationResult.isPresent()) {
-      for (MultiBucketsAggregation.Bucket durationBucket : histogramAggregationResult.get().getBuckets()) {
-        final List<CompositeCommandResult.DistributedByResult> distributions = distributedByPart.retrieveResult(
-          response,
-          durationBucket.getAggregations(),
-          context
-        );
-        durationHistogramData.add(CompositeCommandResult.GroupByResult.createGroupByResult(
-          durationBucket.getKeyAsString(),
-          distributions
-        ));
+      for (MultiBucketsAggregation.Bucket durationBucket :
+          histogramAggregationResult.get().getBuckets()) {
+        final List<CompositeCommandResult.DistributedByResult> distributions =
+            distributedByPart.retrieveResult(response, durationBucket.getAggregations(), context);
+        durationHistogramData.add(
+            CompositeCommandResult.GroupByResult.createGroupByResult(
+                durationBucket.getKeyAsString(), distributions));
       }
     }
     return durationHistogramData;
   }
 
   private Optional<AggregationBuilder> createLimitedGroupByScriptedDurationAggregation(
-    final ExecutionContext<ProcessReportDataDto> context,
-    final DistributedByPart<ProcessReportDataDto> distributedByPart,
-    final Script durationCalculationScript,
-    final MinMaxStatDto minMaxStats,
-    final BiFunction<ComparisonOperator, Double, QueryBuilder> limitingFilterCreator) {
+      final ExecutionContext<ProcessReportDataDto> context,
+      final DistributedByPart<ProcessReportDataDto> distributedByPart,
+      final Script durationCalculationScript,
+      final MinMaxStatDto minMaxStats,
+      final BiFunction<ComparisonOperator, Double, QueryBuilder> limitingFilterCreator) {
 
     if (minMaxStats.isEmpty()) {
       return Optional.empty();
     }
 
-    final SingleReportConfigurationDto reportConfigurationDto = context.getReportData().getConfiguration();
+    final SingleReportConfigurationDto reportConfigurationDto =
+        context.getReportData().getConfiguration();
 
     final CustomBucketDto customBucketDto = reportConfigurationDto.getCustomBucket();
     final double minValueInMillis = getMinValueInMillis(minMaxStats, customBucketDto);
@@ -169,26 +176,32 @@ public class DurationAggregationService {
       return Optional.empty();
     }
 
-    final double intervalInMillis = getIntervalInMillis(minValueInMillis, maxValueInMillis, customBucketDto);
+    final double intervalInMillis =
+        getIntervalInMillis(minValueInMillis, maxValueInMillis, customBucketDto);
 
-    final BoolQueryBuilder limitingFilter = boolQuery()
-      .filter(limitingFilterCreator.apply(ComparisonOperator.GREATER_THAN_EQUALS, minValueInMillis));
+    final BoolQueryBuilder limitingFilter =
+        boolQuery()
+            .filter(
+                limitingFilterCreator.apply(
+                    ComparisonOperator.GREATER_THAN_EQUALS, minValueInMillis));
 
-    final HistogramAggregationBuilder histogramAggregation = generateHistogramFromScript(
-      DURATION_HISTOGRAM_AGGREGATION,
-      intervalInMillis,
-      minValueInMillis,
-      durationCalculationScript,
-      maxValueInMillis,
-      distributedByPart.createAggregations(context)
-    );
+    final HistogramAggregationBuilder histogramAggregation =
+        generateHistogramFromScript(
+            DURATION_HISTOGRAM_AGGREGATION,
+            intervalInMillis,
+            minValueInMillis,
+            durationCalculationScript,
+            maxValueInMillis,
+            distributedByPart.createAggregations(context));
 
-    return Optional.of(wrapWithFilterLimitedParentAggregation(limitingFilter, histogramAggregation));
+    return Optional.of(
+        wrapWithFilterLimitedParentAggregation(limitingFilter, histogramAggregation));
   }
 
-  private double getIntervalInMillis(final double minValueInMillis,
-                                     final double maxValueInMillis,
-                                     final CustomBucketDto customBucketDto) {
+  private double getIntervalInMillis(
+      final double minValueInMillis,
+      final double maxValueInMillis,
+      final CustomBucketDto customBucketDto) {
     final double distance = maxValueInMillis - minValueInMillis;
     final double interval;
     if (customBucketDto.isActive()) {
@@ -204,7 +217,8 @@ public class DurationAggregationService {
     return interval;
   }
 
-  private double getMinValueInMillis(final MinMaxStatDto minMaxStats, final CustomBucketDto customBucketDto) {
+  private double getMinValueInMillis(
+      final MinMaxStatDto minMaxStats, final CustomBucketDto customBucketDto) {
     if (customBucketDto.isActive()) {
       return customBucketDto.getBaselineInUnit(DEFAULT_UNIT).orElse(0.0D);
     } else {
@@ -212,53 +226,53 @@ public class DurationAggregationService {
     }
   }
 
-  private ScriptQueryBuilder createUserTaskLimitingFilterQuery(final ComparisonOperator filterOperator,
-                                                               final UserTaskDurationTime userTaskDurationTime,
-                                                               final double filterValueInMillis) {
+  private ScriptQueryBuilder createUserTaskLimitingFilterQuery(
+      final ComparisonOperator filterOperator,
+      final UserTaskDurationTime userTaskDurationTime,
+      final double filterValueInMillis) {
     return createLimitingFilterQuery(
-      filterOperator,
-      (long) filterValueInMillis,
-      FLOW_NODE_INSTANCES + "." + userTaskDurationTime.getDurationFieldName(),
-      FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE,
-      // user task duration calculations can be null (e.g. work time if the userTask hasn't been claimed)
-      true
-    );
+        filterOperator,
+        (long) filterValueInMillis,
+        FLOW_NODE_INSTANCES + "." + userTaskDurationTime.getDurationFieldName(),
+        FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE,
+        // user task duration calculations can be null (e.g. work time if the userTask hasn't been
+        // claimed)
+        true);
   }
 
-  private ScriptQueryBuilder createEventLimitingFilterQuery(final ComparisonOperator filterOperator,
-                                                            final double filterValueInMillis) {
+  private ScriptQueryBuilder createEventLimitingFilterQuery(
+      final ComparisonOperator filterOperator, final double filterValueInMillis) {
     return createLimitingFilterQuery(
-      filterOperator,
-      (long) filterValueInMillis,
-      FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION,
-      FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE,
-      false
-    );
+        filterOperator,
+        (long) filterValueInMillis,
+        FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION,
+        FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE,
+        false);
   }
 
-  private ScriptQueryBuilder createProcessInstanceLimitingFilterQuery(final ComparisonOperator filterOperator,
-                                                                      final double filterValueInMillis) {
-    return createLimitingFilterQuery(filterOperator, (long) filterValueInMillis, DURATION, START_DATE, false);
+  private ScriptQueryBuilder createProcessInstanceLimitingFilterQuery(
+      final ComparisonOperator filterOperator, final double filterValueInMillis) {
+    return createLimitingFilterQuery(
+        filterOperator, (long) filterValueInMillis, DURATION, START_DATE, false);
   }
 
-  private ScriptQueryBuilder createLimitingFilterQuery(final ComparisonOperator filterOperator,
-                                                       final long filterValueInMillis,
-                                                       final String durationFieldName,
-                                                       final String referenceDateFieldName,
-                                                       final boolean includeNull) {
+  private ScriptQueryBuilder createLimitingFilterQuery(
+      final ComparisonOperator filterOperator,
+      final long filterValueInMillis,
+      final String durationFieldName,
+      final String referenceDateFieldName,
+      final boolean includeNull) {
     return QueryBuilders.scriptQuery(
-      DurationScriptUtil.getDurationFilterScript(
-        LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-        durationFieldName,
-        referenceDateFieldName,
-        DurationFilterDataDto.builder()
-          .operator(filterOperator)
-          .unit(FILTER_UNIT)
-          .value(filterValueInMillis)
-          .includeNull(includeNull)
-          .build()
-      )
-    );
+        DurationScriptUtil.getDurationFilterScript(
+            LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+            durationFieldName,
+            referenceDateFieldName,
+            DurationFilterDataDto.builder()
+                .operator(filterOperator)
+                .unit(FILTER_UNIT)
+                .value(filterValueInMillis)
+                .includeNull(includeNull)
+                .build()));
   }
 
   private String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {

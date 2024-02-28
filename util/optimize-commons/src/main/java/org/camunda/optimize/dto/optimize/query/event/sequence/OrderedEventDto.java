@@ -16,5 +16,4 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 public class OrderedEventDto extends EventDto {
 
   private Long orderCounter;
-
 }

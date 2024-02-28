@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.data;
 
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
-
-import java.util.List;
 
 @AllArgsConstructor
 @Data
@@ -21,5 +20,4 @@ public class IdentityLinkFilterDataDto implements FilterDataDto {
 
   protected MembershipFilterOperator operator;
   protected List<String> values;
-
 }

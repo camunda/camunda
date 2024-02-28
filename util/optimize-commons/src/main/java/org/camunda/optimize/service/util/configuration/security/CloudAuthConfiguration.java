@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.util.configuration.security;
 
-import lombok.Data;
-
 import java.util.Optional;
+import lombok.Data;
 
 @Data
 public class CloudAuthConfiguration {

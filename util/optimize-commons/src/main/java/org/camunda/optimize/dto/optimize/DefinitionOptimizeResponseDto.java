@@ -6,14 +6,13 @@
 package org.camunda.optimize.dto.optimize;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.io.Serializable;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
-
-import java.io.Serializable;
 
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -28,8 +27,7 @@ public abstract class DefinitionOptimizeResponseDto implements Serializable, Opt
   private DataSourceDto dataSource;
   private String tenantId;
   private boolean deleted;
-  @JsonIgnore
-  private DefinitionType type;
+  @JsonIgnore private DefinitionType type;
 
   protected DefinitionOptimizeResponseDto(final String id, final DataSourceDto dataSource) {
     this.id = id;

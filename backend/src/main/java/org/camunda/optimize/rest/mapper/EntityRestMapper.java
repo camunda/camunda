@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.rest.mapper;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 
 @Component
 @AllArgsConstructor
@@ -20,11 +19,10 @@ public class EntityRestMapper {
 
   public void prepareRestResponse(final EntityResponseDto entityDto) {
     Optional.ofNullable(entityDto.getOwner())
-      .flatMap(identityService::getIdentityNameById)
-      .ifPresent(entityDto::setOwner);
+        .flatMap(identityService::getIdentityNameById)
+        .ifPresent(entityDto::setOwner);
     Optional.ofNullable(entityDto.getLastModifier())
-      .flatMap(identityService::getIdentityNameById)
-      .ifPresent(entityDto::setLastModifier);
+        .flatMap(identityService::getIdentityNameById)
+        .ifPresent(entityDto::setLastModifier);
   }
-
 }

@@ -5,7 +5,21 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.github.netmikey.logunit.api.LogCapturer;
+import java.time.OffsetDateTime;
+import java.time.Period;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.IntStream;
 import org.apache.commons.collections4.SetUtils;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
@@ -22,28 +36,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.OffsetDateTime;
-import java.time.Period;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.IntStream;
-
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class OptimizeDecisionCleanupServiceTest {
 
-  @Mock
-  private DecisionDefinitionReader decisionDefinitionReader;
-  @Mock
-  private DecisionInstanceWriter decisionInstanceWriter;
+  @Mock private DecisionDefinitionReader decisionDefinitionReader;
+  @Mock private DecisionInstanceWriter decisionInstanceWriter;
 
   private ConfigurationService configurationService;
 
@@ -66,7 +63,8 @@ public class OptimizeDecisionCleanupServiceTest {
     doCleanup(underTest);
 
     // then
-    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfiguration().getTtl());
+    assertDeleteDecisionInstancesExecutedFor(
+        decisionDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
   @Test
@@ -90,16 +88,18 @@ public class OptimizeDecisionCleanupServiceTest {
     // given
     final Period customTtl = Period.parse("P2M");
     final Set<String> decisionDefinitionKeysWithSpecificTtl = generateRandomDefinitionsKeys(3);
-    final Map<String, DecisionDefinitionCleanupConfiguration> decisionDefinitionSpecificConfiguration =
-      getCleanupConfiguration().getDecisionCleanupConfiguration().getDecisionDefinitionSpecificConfiguration();
-    decisionDefinitionKeysWithSpecificTtl.forEach(decisionDefinitionKey -> decisionDefinitionSpecificConfiguration.put(
-      decisionDefinitionKey, new DecisionDefinitionCleanupConfiguration(customTtl)
-    ));
+    final Map<String, DecisionDefinitionCleanupConfiguration>
+        decisionDefinitionSpecificConfiguration =
+            getCleanupConfiguration()
+                .getDecisionCleanupConfiguration()
+                .getDecisionDefinitionSpecificConfiguration();
+    decisionDefinitionKeysWithSpecificTtl.forEach(
+        decisionDefinitionKey ->
+            decisionDefinitionSpecificConfiguration.put(
+                decisionDefinitionKey, new DecisionDefinitionCleanupConfiguration(customTtl)));
     final Set<String> decisionDefinitionKeysWithDefaultTtl = generateRandomDefinitionsKeys(3);
-    final Set<String> allDecisionDefinitionKeys = SetUtils.union(
-      decisionDefinitionKeysWithSpecificTtl,
-      decisionDefinitionKeysWithDefaultTtl
-    );
+    final Set<String> allDecisionDefinitionKeys =
+        SetUtils.union(decisionDefinitionKeysWithSpecificTtl, decisionDefinitionKeysWithDefaultTtl);
 
     // when
     mockDecisionDefinitions(allDecisionDefinitionKeys);
@@ -107,20 +107,22 @@ public class OptimizeDecisionCleanupServiceTest {
     doCleanup(underTest);
 
     // then
-    Map<String, OffsetDateTime> capturedArguments = verifyDeleteDecisionInstanceExecutionReturnCapturedArguments(
-      allDecisionDefinitionKeys
-    );
-    assertKeysWereCalledWithExpectedTtl(capturedArguments, decisionDefinitionKeysWithSpecificTtl, customTtl);
+    Map<String, OffsetDateTime> capturedArguments =
+        verifyDeleteDecisionInstanceExecutionReturnCapturedArguments(allDecisionDefinitionKeys);
     assertKeysWereCalledWithExpectedTtl(
-      capturedArguments, decisionDefinitionKeysWithDefaultTtl, getCleanupConfiguration().getTtl()
-    );
+        capturedArguments, decisionDefinitionKeysWithSpecificTtl, customTtl);
+    assertKeysWereCalledWithExpectedTtl(
+        capturedArguments,
+        decisionDefinitionKeysWithDefaultTtl,
+        getCleanupConfiguration().getTtl());
   }
 
   @Test
   public void testCleanupRunOnceForEveryDecisionDefinitionKey() {
     // given
     final Set<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
-    // mock returns keys twice (in reality they have different versions but that doesn't matter for the test)
+    // mock returns keys twice (in reality they have different versions but that doesn't matter for
+    // the test)
     mockDecisionDefinitions(SetUtils.union(decisionDefinitionKeys, decisionDefinitionKeys));
 
     // when
@@ -128,7 +130,8 @@ public class OptimizeDecisionCleanupServiceTest {
     doCleanup(underTest);
 
     // then
-    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfiguration().getTtl());
+    assertDeleteDecisionInstancesExecutedFor(
+        decisionDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
   @Test
@@ -136,12 +139,9 @@ public class OptimizeDecisionCleanupServiceTest {
     // given I have a key specific config
     final String misconfiguredKey = "myMistypedKey";
     getCleanupConfiguration()
-      .getDecisionCleanupConfiguration()
-      .getDecisionDefinitionSpecificConfiguration()
-      .put(
-        misconfiguredKey,
-        new DecisionDefinitionCleanupConfiguration(Period.parse("P2M"))
-      );
+        .getDecisionCleanupConfiguration()
+        .getDecisionDefinitionSpecificConfiguration()
+        .put(misconfiguredKey, new DecisionDefinitionCleanupConfiguration(Period.parse("P2M")));
     // and this key is not present in the known decision definition keys
     final Set<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
     mockDecisionDefinitions(decisionDefinitionKeys);
@@ -151,12 +151,15 @@ public class OptimizeDecisionCleanupServiceTest {
     doCleanup(underTest);
 
     // then
-    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfiguration().getTtl());
+    assertDeleteDecisionInstancesExecutedFor(
+        decisionDefinitionKeys, getCleanupConfiguration().getTtl());
 
     // and it warns on misconfigured keys
-    logCapturer.assertContains(String.format(
-      "History Cleanup Configuration contains definition keys for which there is no "
-        + "definition imported yet. The keys without a match in the database are: [%s]", misconfiguredKey));
+    logCapturer.assertContains(
+        String.format(
+            "History Cleanup Configuration contains definition keys for which there is no "
+                + "definition imported yet. The keys without a match in the database are: [%s]",
+            misconfiguredKey));
   }
 
   private void doCleanup(final CleanupService underTest) {
@@ -167,46 +170,47 @@ public class OptimizeDecisionCleanupServiceTest {
     return configurationService.getCleanupServiceConfiguration();
   }
 
-  private void assertKeysWereCalledWithExpectedTtl(Map<String, OffsetDateTime> capturedInvocationArguments,
-                                                   Set<String> expectedDefinitionKeys,
-                                                   Period expectedTtl) {
-    final Map<String, OffsetDateTime> filteredInvocationArguments = capturedInvocationArguments.entrySet().stream()
-      .filter(entry -> expectedDefinitionKeys.contains(entry.getKey()))
-      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+  private void assertKeysWereCalledWithExpectedTtl(
+      Map<String, OffsetDateTime> capturedInvocationArguments,
+      Set<String> expectedDefinitionKeys,
+      Period expectedTtl) {
+    final Map<String, OffsetDateTime> filteredInvocationArguments =
+        capturedInvocationArguments.entrySet().stream()
+            .filter(entry -> expectedDefinitionKeys.contains(entry.getKey()))
+            .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     assertThat(filteredInvocationArguments).hasSameSizeAs(expectedDefinitionKeys);
 
-    final OffsetDateTime dateFilterValue = filteredInvocationArguments.values().toArray(new OffsetDateTime[]{})[0];
+    final OffsetDateTime dateFilterValue =
+        filteredInvocationArguments.values().toArray(new OffsetDateTime[] {})[0];
     assertThat(dateFilterValue).isBeforeOrEqualTo(OffsetDateTime.now().minus(expectedTtl));
-    filteredInvocationArguments.values().forEach(instant -> assertThat(instant).isEqualTo(dateFilterValue));
+    filteredInvocationArguments
+        .values()
+        .forEach(instant -> assertThat(instant).isEqualTo(dateFilterValue));
   }
 
-  private void assertDeleteDecisionInstancesExecutedFor(Set<String> expectedDecisionDefinitionKeys,
-                                                        Period expectedTtl) {
+  private void assertDeleteDecisionInstancesExecutedFor(
+      Set<String> expectedDecisionDefinitionKeys, Period expectedTtl) {
     final Map<String, OffsetDateTime> decisionInstanceKeysWithDateFilter =
-      verifyDeleteDecisionInstanceExecutionReturnCapturedArguments(expectedDecisionDefinitionKeys);
+        verifyDeleteDecisionInstanceExecutionReturnCapturedArguments(
+            expectedDecisionDefinitionKeys);
 
     assertKeysWereCalledWithExpectedTtl(
-      decisionInstanceKeysWithDateFilter,
-      expectedDecisionDefinitionKeys,
-      expectedTtl
-    );
+        decisionInstanceKeysWithDateFilter, expectedDecisionDefinitionKeys, expectedTtl);
   }
 
   private Map<String, OffsetDateTime> verifyDeleteDecisionInstanceExecutionReturnCapturedArguments(
-    Set<String> expectedDecisionDefinitionKeys) {
+      Set<String> expectedDecisionDefinitionKeys) {
     ArgumentCaptor<String> decisionInstanceCaptor = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<OffsetDateTime> evaluationDateFilterCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
-    verify(
-      decisionInstanceWriter,
-      atLeast(expectedDecisionDefinitionKeys.size())
-    ).deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(
-      decisionInstanceCaptor.capture(),
-      evaluationDateFilterCaptor.capture()
-    );
+    ArgumentCaptor<OffsetDateTime> evaluationDateFilterCaptor =
+        ArgumentCaptor.forClass(OffsetDateTime.class);
+    verify(decisionInstanceWriter, atLeast(expectedDecisionDefinitionKeys.size()))
+        .deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(
+            decisionInstanceCaptor.capture(), evaluationDateFilterCaptor.capture());
     int i = 0;
     final Map<String, OffsetDateTime> filteredDecisionInstancesWithDateFilter = new HashMap<>();
     for (String key : decisionInstanceCaptor.getAllValues()) {
-      filteredDecisionInstancesWithDateFilter.put(key, evaluationDateFilterCaptor.getAllValues().get(i));
+      filteredDecisionInstancesWithDateFilter.put(
+          key, evaluationDateFilterCaptor.getAllValues().get(i));
       i++;
     }
     return filteredDecisionInstancesWithDateFilter;
@@ -214,26 +218,23 @@ public class OptimizeDecisionCleanupServiceTest {
 
   private void mockDecisionDefinitions(Set<String> decisionDefinitionKeys) {
     when(decisionDefinitionReader.getAllDecisionDefinitions())
-      .thenReturn(
-        decisionDefinitionKeys.stream().map(defKeys -> {
-          final DecisionDefinitionOptimizeDto def = new DecisionDefinitionOptimizeDto();
-          def.setKey(defKeys);
-          return def;
-        }).toList()
-      );
+        .thenReturn(
+            decisionDefinitionKeys.stream()
+                .map(
+                    defKeys -> {
+                      final DecisionDefinitionOptimizeDto def = new DecisionDefinitionOptimizeDto();
+                      def.setKey(defKeys);
+                      return def;
+                    })
+                .toList());
   }
 
   private Set<String> generateRandomDefinitionsKeys(Integer amount) {
-    return IntStream.range(0, amount)
-      .mapToObj(i -> UUID.randomUUID().toString())
-      .collect(toSet());
+    return IntStream.range(0, amount).mapToObj(i -> UUID.randomUUID().toString()).collect(toSet());
   }
 
   private EngineDataDecisionCleanupService createOptimizeCleanupServiceToTest() {
     return new EngineDataDecisionCleanupService(
-      configurationService,
-      decisionDefinitionReader,
-      decisionInstanceWriter
-    );
+        configurationService, decisionDefinitionReader, decisionInstanceWriter);
   }
 }

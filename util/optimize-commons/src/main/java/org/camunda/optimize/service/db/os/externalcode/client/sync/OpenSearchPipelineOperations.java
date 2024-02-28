@@ -10,24 +10,24 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
 public class OpenSearchPipelineOperations extends OpenSearchRetryOperation {
-  public OpenSearchPipelineOperations(OpenSearchClient openSearchClient,
-                                      final OptimizeIndexNameService indexNameService) {
+  public OpenSearchPipelineOperations(
+      OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
     super(openSearchClient, indexNameService);
   }
 
   public boolean addPipelineWithRetries(String name, String definition) {
     return executeWithRetries(
-      "AddPipeline " + name,
-      () ->
-        openSearchClient
-          .ingest()
-          .putPipeline(i -> i.id(name).meta(name, JsonData.of(definition)))
-          .acknowledged());
+        "AddPipeline " + name,
+        () ->
+            openSearchClient
+                .ingest()
+                .putPipeline(i -> i.id(name).meta(name, JsonData.of(definition)))
+                .acknowledged());
   }
 
   public boolean removePipelineWithRetries(String name) {
     return executeWithRetries(
-      "RemovePipeline " + name,
-      () -> openSearchClient.ingest().deletePipeline(dp -> dp.id(name)).acknowledged());
+        "RemovePipeline " + name,
+        () -> openSearchClient.ingest().deletePipeline(dp -> dp.id(name)).acknowledged());
   }
 }

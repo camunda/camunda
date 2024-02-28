@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.relations;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
-
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 
 @Component
 public class ReportRelationService {
@@ -25,19 +24,23 @@ public class ReportRelationService {
     this.referencingServices = referencingServices;
   }
 
-  public Set<ConflictedItemDto> getConflictedItemsForDeleteReport(ReportDefinitionDto reportDefinition) {
+  public Set<ConflictedItemDto> getConflictedItemsForDeleteReport(
+      ReportDefinitionDto reportDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
     for (ReportReferencingService referencingService : referencingServices) {
-      conflictedItems.addAll(referencingService.getConflictedItemsForReportDelete(reportDefinition));
+      conflictedItems.addAll(
+          referencingService.getConflictedItemsForReportDelete(reportDefinition));
     }
     return conflictedItems;
   }
 
-  public Set<ConflictedItemDto> getConflictedItemsForUpdatedReport(ReportDefinitionDto currentDefinition,
-                                                                   ReportDefinitionDto updateDefinition) {
+  public Set<ConflictedItemDto> getConflictedItemsForUpdatedReport(
+      ReportDefinitionDto currentDefinition, ReportDefinitionDto updateDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
     for (ReportReferencingService referencingService : referencingServices) {
-      conflictedItems.addAll(referencingService.getConflictedItemsForReportUpdate(currentDefinition, updateDefinition));
+      conflictedItems.addAll(
+          referencingService.getConflictedItemsForReportUpdate(
+              currentDefinition, updateDefinition));
     }
     return conflictedItems;
   }
@@ -48,11 +51,9 @@ public class ReportRelationService {
     }
   }
 
-  public void handleUpdated(final String reportId,
-                            final ReportDefinitionDto updateDefinition) {
+  public void handleUpdated(final String reportId, final ReportDefinitionDto updateDefinition) {
     for (ReportReferencingService referencingService : referencingServices) {
       referencingService.handleReportUpdated(reportId, updateDefinition);
     }
   }
-
 }

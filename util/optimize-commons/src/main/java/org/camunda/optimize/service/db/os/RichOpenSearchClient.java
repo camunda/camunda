@@ -23,8 +23,10 @@ public class RichOpenSearchClient {
   public static class AsyncOperations {
     final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
 
-    public AsyncOperations(OpenSearchAsyncClient openSearchAsyncClient, OptimizeIndexNameService indexNameService) {
-      this.openSearchAsyncDocumentOperations = new OpenSearchAsyncDocumentOperations(indexNameService, openSearchAsyncClient);
+    public AsyncOperations(
+        OpenSearchAsyncClient openSearchAsyncClient, OptimizeIndexNameService indexNameService) {
+      this.openSearchAsyncDocumentOperations =
+          new OpenSearchAsyncDocumentOperations(indexNameService, openSearchAsyncClient);
     }
 
     public OpenSearchAsyncDocumentOperations doc() {
@@ -32,8 +34,7 @@ public class RichOpenSearchClient {
     }
   }
 
-  @Getter
-  private final OptimizeIndexNameService indexNameService;
+  @Getter private final OptimizeIndexNameService indexNameService;
 
   // TODO slash unused operations with OPT-7352
   private final OpenSearchClusterOperations openSearchClusterOperations;
@@ -46,16 +47,21 @@ public class RichOpenSearchClient {
   private final AsyncOperations asyncOperations;
 
   public RichOpenSearchClient(
-    OpenSearchClient openSearchClient, OpenSearchAsyncClient openSearchAsyncClient, OptimizeIndexNameService indexNameService
-  ) {
+      OpenSearchClient openSearchClient,
+      OpenSearchAsyncClient openSearchAsyncClient,
+      OptimizeIndexNameService indexNameService) {
     this.indexNameService = indexNameService;
     asyncOperations = new AsyncOperations(openSearchAsyncClient, indexNameService);
-    openSearchClusterOperations = new OpenSearchClusterOperations(openSearchClient, indexNameService);
-    openSearchDocumentOperations = new OpenSearchDocumentOperations(openSearchClient, indexNameService);
+    openSearchClusterOperations =
+        new OpenSearchClusterOperations(openSearchClient, indexNameService);
+    openSearchDocumentOperations =
+        new OpenSearchDocumentOperations(openSearchClient, indexNameService);
     openSearchIndexOperations = new OpenSearchIndexOperations(openSearchClient, indexNameService);
-    openSearchPipelineOperations = new OpenSearchPipelineOperations(openSearchClient, indexNameService);
+    openSearchPipelineOperations =
+        new OpenSearchPipelineOperations(openSearchClient, indexNameService);
     openSearchTaskOperations = new OpenSearchTaskOperations(openSearchClient, indexNameService);
-    openSearchTemplateOperations = new OpenSearchTemplateOperations(openSearchClient, indexNameService);
+    openSearchTemplateOperations =
+        new OpenSearchTemplateOperations(openSearchClient, indexNameService);
   }
 
   public AsyncOperations async() {
@@ -89,5 +95,4 @@ public class RichOpenSearchClient {
   public String getIndexAliasFor(String indexName) {
     return indexNameService.getOptimizeIndexAliasForIndex(indexName);
   }
-
 }

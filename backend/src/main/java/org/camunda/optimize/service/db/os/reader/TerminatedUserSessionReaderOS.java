@@ -5,18 +5,17 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_SESSION_INDEX_NAME;
+
+import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
-import org.camunda.optimize.service.db.reader.TerminatedUserSessionReader;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.reader.TerminatedUserSessionReader;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_SESSION_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -27,14 +26,15 @@ public class TerminatedUserSessionReaderOS extends TerminatedUserSessionReader {
 
   @Override
   protected boolean sessionIdExists(final String sessionId) {
-    GetRequest.Builder requestBuilder = new GetRequest.Builder()
-      .index(TERMINATED_USER_SESSION_INDEX_NAME)
-      .id(sessionId)
-      .sourceIncludes(Collections.emptyList());
+    GetRequest.Builder requestBuilder =
+        new GetRequest.Builder()
+            .index(TERMINATED_USER_SESSION_INDEX_NAME)
+            .id(sessionId)
+            .sourceIncludes(Collections.emptyList());
 
-    String errorMessage = String.format("Was not able to fetch user session for ID [%s]", sessionId);
+    String errorMessage =
+        String.format("Was not able to fetch user session for ID [%s]", sessionId);
 
     return osClient.get(requestBuilder, TerminatedUserSessionDto.class, errorMessage).found();
   }
-
 }

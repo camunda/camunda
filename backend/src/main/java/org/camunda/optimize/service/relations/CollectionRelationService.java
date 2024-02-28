@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.relations;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
-
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 
 @Component
 public class CollectionRelationService {

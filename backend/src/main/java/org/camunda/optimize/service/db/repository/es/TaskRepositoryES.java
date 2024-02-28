@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.repository.es;
 
+import static org.camunda.optimize.service.exceptions.ExceptionHelper.safe;
+
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -15,10 +18,6 @@ import org.elasticsearch.index.reindex.BulkByScrollTask;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-import static org.camunda.optimize.service.exceptions.ExceptionHelper.safe;
-
 @Slf4j
 @Component
 @AllArgsConstructor
@@ -28,20 +27,19 @@ public class TaskRepositoryES implements TaskRepository {
 
   @Override
   public List<TaskRepository.TaskProgressInfo> tasksProgress(final String action) {
-    ListTasksRequest request = new ListTasksRequest()
-      .setActions(action)
-      .setDetailed(true);
+    ListTasksRequest request = new ListTasksRequest().setActions(action).setDetailed(true);
     return safe(
-      () -> esClient.getTaskList(request)
-        .getTasks()
-        .stream()
-        .filter(taskInfo -> taskInfo.getStatus() instanceof BulkByScrollTask.Status)
-        .map(taskInfo -> (BulkByScrollTask.Status) taskInfo.getStatus())
-        .map(status -> new TaskProgressInfo(getProgress(status), status.getTotal(), getProcessedTasksCount(status)))
-        .toList(),
-      e -> "Failed to fetch task progress from Elasticsearch!",
-      log
-    );
+        () ->
+            esClient.getTaskList(request).getTasks().stream()
+                .filter(taskInfo -> taskInfo.getStatus() instanceof BulkByScrollTask.Status)
+                .map(taskInfo -> (BulkByScrollTask.Status) taskInfo.getStatus())
+                .map(
+                    status ->
+                        new TaskProgressInfo(
+                            getProgress(status), status.getTotal(), getProcessedTasksCount(status)))
+                .toList(),
+        e -> "Failed to fetch task progress from Elasticsearch!",
+        log);
   }
 
   private static long getProcessedTasksCount(BulkByScrollTask.Status status) {
@@ -50,7 +48,8 @@ public class TaskRepositoryES implements TaskRepository {
 
   private static int getProgress(BulkByScrollTask.Status status) {
     return status.getTotal() > 0
-      ? Double.valueOf((double) getProcessedTasksCount(status) / status.getTotal() * 100.0D).intValue()
-      : 0;
+        ? Double.valueOf((double) getProcessedTasksCount(status) / status.getTotal() * 100.0D)
+            .intValue()
+        : 0;
   }
 }

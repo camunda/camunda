@@ -5,20 +5,19 @@
  */
 package org.camunda.optimize.service.util;
 
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.service.DefinitionService;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-
-import java.util.List;
-
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+
+import java.util.List;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.service.DefinitionService;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 
 @AllArgsConstructor
 public class NestedDefinitionQueryBuilder {
@@ -28,18 +27,20 @@ public class NestedDefinitionQueryBuilder {
   private final String versionField;
   private final String tenantIdField;
 
-  public QueryBuilder createNestedDocDefinitionQuery(final String definitionKey,
-                                                     final List<String> definitionVersions,
-                                                     final List<String> tenantIds,
-                                                     final DefinitionService definitionService) {
+  public QueryBuilder createNestedDocDefinitionQuery(
+      final String definitionKey,
+      final List<String> definitionVersions,
+      final List<String> tenantIds,
+      final DefinitionService definitionService) {
     final BoolQueryBuilder query = boolQuery();
-    query.filter(DefinitionQueryUtil.createTenantIdQuery(nestedFieldReference(tenantIdField), tenantIds));
+    query.filter(
+        DefinitionQueryUtil.createTenantIdQuery(nestedFieldReference(tenantIdField), tenantIds));
     query.filter(termQuery(nestedFieldReference(definitionKeyField), definitionKey));
     if (isDefinitionVersionSetToLatest(definitionVersions)) {
-      query.filter(termsQuery(
-        nestedFieldReference(versionField),
-        definitionService.getLatestVersionToKey(DefinitionType.PROCESS, definitionKey)
-      ));
+      query.filter(
+          termsQuery(
+              nestedFieldReference(versionField),
+              definitionService.getLatestVersionToKey(DefinitionType.PROCESS, definitionKey)));
     } else if (!isDefinitionVersionSetToAll(definitionVersions)) {
       query.filter(termsQuery(nestedFieldReference(versionField), definitionVersions));
     } else if (definitionVersions.isEmpty()) {
@@ -52,5 +53,4 @@ public class NestedDefinitionQueryBuilder {
   private String nestedFieldReference(final String fieldName) {
     return nestedField + "." + fieldName;
   }
-
 }

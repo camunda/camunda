@@ -5,8 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.FIXED_DATE_FILTER;
+import static org.camunda.optimize.dto.optimize.ReportConstants.RELATIVE_DATE_FILTER;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ROLLING_DATE_FILTER;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.time.OffsetDateTime;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,17 +22,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.in
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 
-import java.time.OffsetDateTime;
-
-import static org.camunda.optimize.dto.optimize.ReportConstants.FIXED_DATE_FILTER;
-import static org.camunda.optimize.dto.optimize.ReportConstants.RELATIVE_DATE_FILTER;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ROLLING_DATE_FILTER;
-
 /**
- * Abstract class that contains a hidden "type" field to distinguish which
- * filter type the jackson object mapper should transform the object to.
+ * Abstract class that contains a hidden "type" field to distinguish which filter type the jackson
+ * object mapper should transform the object to.
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = FixedDateFilterDataDto.class, name = FIXED_DATE_FILTER),
   @JsonSubTypes.Type(value = RollingDateFilterDataDto.class, name = ROLLING_DATE_FILTER),
@@ -48,7 +50,8 @@ public abstract class DateFilterDataDto<START> implements FilterDataDto {
   protected boolean includeUndefined;
   protected boolean excludeUndefined;
 
-  protected DateFilterDataDto(final DateFilterType type, final START start, final OffsetDateTime end) {
+  protected DateFilterDataDto(
+      final DateFilterType type, final START start, final OffsetDateTime end) {
     this.type = type;
     this.start = start;
     this.end = end;

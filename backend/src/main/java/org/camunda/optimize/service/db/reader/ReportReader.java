@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
+
+import java.util.List;
+import java.util.Optional;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
@@ -13,29 +20,26 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 
-import java.util.List;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
-import static org.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
-
 public interface ReportReader {
 
-  String REPORT_DATA_XML_PROPERTY = String.join(
-    ".",
-    DATA, SingleReportDataDto.Fields.configuration, SingleReportConfigurationDto.Fields.xml
-  );
+  String REPORT_DATA_XML_PROPERTY =
+      String.join(
+          ".",
+          DATA,
+          SingleReportDataDto.Fields.configuration,
+          SingleReportConfigurationDto.Fields.xml);
   String[] REPORT_LIST_EXCLUDES = {REPORT_DATA_XML_PROPERTY};
-  String[] ALL_REPORT_INDICES = {SINGLE_PROCESS_REPORT_INDEX_NAME,
-    SINGLE_DECISION_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME};
+  String[] ALL_REPORT_INDICES = {
+    SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME
+  };
 
   Optional<ReportDefinitionDto> getReport(String reportId);
 
-  Optional<SingleProcessReportDefinitionRequestDto> getSingleProcessReportOmitXml(final String reportId);
+  Optional<SingleProcessReportDefinitionRequestDto> getSingleProcessReportOmitXml(
+      final String reportId);
 
-  Optional<SingleDecisionReportDefinitionRequestDto> getSingleDecisionReportOmitXml(final String reportId);
+  Optional<SingleDecisionReportDefinitionRequestDto> getSingleDecisionReportOmitXml(
+      final String reportId);
 
   List<ReportDefinitionDto> getAllReportsForIdsOmitXml(final List<String> reportIds);
 
@@ -45,12 +49,12 @@ public interface ReportReader {
 
   List<ReportDefinitionDto> getReportsForCollectionIncludingXml(final String collectionId);
 
-  List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(final List<String> reportIds);
+  List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(
+      final List<String> reportIds);
 
   List<ReportDefinitionDto> getReportsForCollectionOmitXml(String collectionId);
 
   List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReport(String simpleReportId);
 
   long getReportCount(final ReportType reportType);
-
 }

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
+import java.util.List;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ImportIndexWriter;
@@ -16,30 +17,29 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class StoreEngineImportProgressMediatorFactory extends AbstractEngineImportMediatorFactory {
 
   private final ImportIndexWriter importIndexWriter;
 
-  public StoreEngineImportProgressMediatorFactory(final BeanFactory beanFactory,
-                                                  final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                  final ConfigurationService configurationService,
-                                                  final ImportIndexWriter importIndexWriter,
-                                                  final DatabaseClient databaseClient) {
+  public StoreEngineImportProgressMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final ImportIndexWriter importIndexWriter,
+      final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.importIndexWriter = importIndexWriter;
   }
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    return List.of(new StoreEngineImportProgressMediator(
-      importIndexHandlerRegistry,
-      new StoreIndexesEngineImportService(configurationService, importIndexWriter, databaseClient),
-      engineContext,
-      configurationService
-    ));
+    return List.of(
+        new StoreEngineImportProgressMediator(
+            importIndexHandlerRegistry,
+            new StoreIndexesEngineImportService(
+                configurationService, importIndexWriter, databaseClient),
+            engineContext,
+            configurationService));
   }
-
 }

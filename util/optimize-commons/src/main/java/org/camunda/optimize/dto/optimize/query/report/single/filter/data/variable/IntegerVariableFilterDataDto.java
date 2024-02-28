@@ -5,20 +5,18 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-
-import java.util.List;
 
 public class IntegerVariableFilterDataDto extends OperatorMultipleValuesVariableFilterDataDto {
   protected IntegerVariableFilterDataDto() {
     this(null, null, null);
   }
 
-  public IntegerVariableFilterDataDto(final String name,
-                                      final FilterOperator operator,
-                                      final List<String> values) {
+  public IntegerVariableFilterDataDto(
+      final String name, final FilterOperator operator, final List<String> values) {
     super(name, VariableType.INTEGER, new OperatorMultipleValuesFilterDataDto(operator, values));
   }
 }

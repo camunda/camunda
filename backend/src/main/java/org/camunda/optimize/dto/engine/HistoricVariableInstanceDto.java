@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.dto.engine;
 
-import lombok.Data;
-
 import java.util.Optional;
+import lombok.Data;
 
 @Data
 public class HistoricVariableInstanceDto implements TenantSpecificEngineDto {

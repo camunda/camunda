@@ -5,7 +5,13 @@
  */
 package org.camunda.optimize.service.db.os.externalcode.client.sync;
 
+import static org.camunda.optimize.service.exceptions.ExceptionHelper.withIOException;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
@@ -17,14 +23,6 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.Info;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-
-import static org.camunda.optimize.service.exceptions.ExceptionHelper.withIOException;
-
 @Slf4j
 public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
@@ -32,8 +30,8 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
   public static final int DEFAULT_NUMBER_OF_EXECUTIONS = 5; // 5 attempts * 2s backoff = 10s maximum
   private final int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
 
-  protected OpenSearchRetryOperation(OpenSearchClient openSearchClient,
-                                  final OptimizeIndexNameService indexNameService) {
+  protected OpenSearchRetryOperation(
+      OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
     super(openSearchClient, indexNameService);
   }
 
@@ -46,44 +44,43 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
   }
 
   protected <T> T executeWithRetries(
-    String operationName, CheckedSupplier<T> supplier, Predicate<T> retryPredicate) {
-    return executeWithGivenRetries(DEFAULT_NUMBER_OF_EXECUTIONS, operationName, supplier, retryPredicate);
+      String operationName, CheckedSupplier<T> supplier, Predicate<T> retryPredicate) {
+    return executeWithGivenRetries(
+        DEFAULT_NUMBER_OF_EXECUTIONS, operationName, supplier, retryPredicate);
   }
 
   protected <T> T executeWithGivenRetries(
-    int retries, String operationName, CheckedSupplier<T> operation, Predicate<T> predicate) {
+      int retries, String operationName, CheckedSupplier<T> operation, Predicate<T> predicate) {
     try {
       final RetryPolicy<T> retryPolicy =
-        new RetryPolicy<T>()
-          .handle(IOException.class, OpenSearchException.class)
-          .withDelay(Duration.ofSeconds(delayIntervalInSeconds))
-          .withMaxAttempts(retries)
-          .onRetry(
-            e ->
-              log.info(
-                "Retrying #{} {} due to {}",
-                e.getAttemptCount(),
-                operationName,
-                e.getLastFailure()))
-          .onAbort(e -> log.error("Abort {} by {}", operationName, e.getFailure()))
-          .onRetriesExceeded(
-            e ->
-              log.error(
-                "Retries {} exceeded for {}", e.getAttemptCount(), operationName));
+          new RetryPolicy<T>()
+              .handle(IOException.class, OpenSearchException.class)
+              .withDelay(Duration.ofSeconds(delayIntervalInSeconds))
+              .withMaxAttempts(retries)
+              .onRetry(
+                  e ->
+                      log.info(
+                          "Retrying #{} {} due to {}",
+                          e.getAttemptCount(),
+                          operationName,
+                          e.getLastFailure()))
+              .onAbort(e -> log.error("Abort {} by {}", operationName, e.getFailure()))
+              .onRetriesExceeded(
+                  e -> log.error("Retries {} exceeded for {}", e.getAttemptCount(), operationName));
       if (predicate != null) {
         retryPolicy.handleResultIf(predicate);
       }
       return Failsafe.with(retryPolicy).get(operation);
     } catch (Exception e) {
       throw new OptimizeRuntimeException(
-        "Couldn't execute operation "
-          + operationName
-          + " on opensearch for "
-          + retries
-          + " attempts with "
-          + delayIntervalInSeconds
-          + " seconds waiting.",
-        e);
+          "Couldn't execute operation "
+              + operationName
+              + " on opensearch for "
+              + retries
+              + " attempts with "
+              + delayIntervalInSeconds
+              + " seconds waiting.",
+          e);
     }
   }
 
@@ -100,14 +97,13 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
     final String nodeId = taskIdParts[0];
     final long id = Long.parseLong(taskIdParts[1]);
     return executeWithGivenRetries(
-      Integer.MAX_VALUE,
-      "GetTaskInfo{" + nodeId + "},{" + id + "}",
-      () -> {
-        checkTaskErrorsOrFailures(nodeId, (int) id);
-        return task(taskId);
-      },
-      this::needsToPollAgain
-    );
+        Integer.MAX_VALUE,
+        "GetTaskInfo{" + nodeId + "},{" + id + "}",
+        () -> {
+          checkTaskErrorsOrFailures(nodeId, (int) id);
+          return task(taskId);
+        },
+        this::needsToPollAgain);
   }
 
   private void checkTaskErrorsOrFailures(final String node, final Integer id) throws IOException {

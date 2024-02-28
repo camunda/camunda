@@ -8,26 +8,24 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.view;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.google.common.collect.ImmutableSet;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.query.report.Combinable;
-import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.query.report.Combinable;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 
 @NoArgsConstructor
 @Data
 @FieldNameConstants
 public class ProcessViewDto implements Combinable {
-  private static final Set<ProcessViewEntity> FLOW_NODE_ENTITIES = ImmutableSet.of(
-    ProcessViewEntity.FLOW_NODE, ProcessViewEntity.USER_TASK
-  );
+  private static final Set<ProcessViewEntity> FLOW_NODE_ENTITIES =
+      ImmutableSet.of(ProcessViewEntity.FLOW_NODE, ProcessViewEntity.USER_TASK);
   private static final String COMMAND_KEY_SEPARATOR = "-";
 
   protected ProcessViewEntity entity;
@@ -37,14 +35,12 @@ public class ProcessViewDto implements Combinable {
     this(null, property);
   }
 
-  public ProcessViewDto(final ProcessViewEntity entity,
-                        final ViewProperty property) {
+  public ProcessViewDto(final ProcessViewEntity entity, final ViewProperty property) {
     this.entity = entity;
     this.properties.add(property);
   }
 
-  public ProcessViewDto(final ProcessViewEntity entity,
-                        final List<ViewProperty> properties) {
+  public ProcessViewDto(final ProcessViewEntity entity, final List<ViewProperty> properties) {
     this.entity = entity;
     this.properties = properties;
   }
@@ -67,9 +63,9 @@ public class ProcessViewDto implements Combinable {
 
   public List<String> createCommandKeys() {
     return properties.stream()
-      .distinct()
-      .map(property -> entity + COMMAND_KEY_SEPARATOR + property)
-      .collect(Collectors.toList());
+        .distinct()
+        .map(property -> entity + COMMAND_KEY_SEPARATOR + property)
+        .collect(Collectors.toList());
   }
 
   @JsonIgnore
@@ -94,7 +90,7 @@ public class ProcessViewDto implements Combinable {
   private boolean isEntityCombinable(final ProcessViewDto viewDto) {
     // note: user tasks are combinable with flow nodes as they are a subset of flow nodes
     return Objects.equals(entity, viewDto.entity)
-      || (FLOW_NODE_ENTITIES.contains(entity) && FLOW_NODE_ENTITIES.contains(viewDto.entity));
+        || (FLOW_NODE_ENTITIES.contains(entity) && FLOW_NODE_ENTITIES.contains(viewDto.entity));
   }
 
   private boolean isPropertyCombinable(final ProcessViewDto viewDto) {

@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.service.exceptions;
 
-import lombok.Getter;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import lombok.Getter;
 
 @Getter
 public class OptimizeConfigurationException extends OptimizeRuntimeException {
@@ -23,10 +22,10 @@ public class OptimizeConfigurationException extends OptimizeRuntimeException {
     super(message, e);
   }
 
-  public OptimizeConfigurationException(String message, Map<String, String> deletedKeysAndDocumentationLink) {
+  public OptimizeConfigurationException(
+      String message, Map<String, String> deletedKeysAndDocumentationLink) {
     super(message);
-    this.deletedKeysAndDocumentationLink = Optional.ofNullable(deletedKeysAndDocumentationLink)
-      .orElse(Collections.emptyMap());
+    this.deletedKeysAndDocumentationLink =
+        Optional.ofNullable(deletedKeysAndDocumentationLink).orElse(Collections.emptyMap());
   }
-
 }

@@ -5,7 +5,17 @@
  */
 package org.camunda.optimize.rest.engine;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Priority;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.plugin.EngineRestFilterProvider;
@@ -16,18 +26,6 @@ import org.camunda.optimize.service.util.configuration.engine.EngineConfiguratio
 import org.glassfish.jersey.client.ClientProperties;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.ClientRequestContext;
-import jakarta.ws.rs.client.ClientRequestFilter;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 @AllArgsConstructor
 @Component
@@ -45,7 +43,8 @@ public class PlatformEngineContextFactory implements EngineContextFactory {
   @PostConstruct
   public void init() {
     this.configuredEngines = new HashMap<>();
-    for (Map.Entry<String, EngineConfiguration> config : configurationService.getConfiguredEngines().entrySet()) {
+    for (Map.Entry<String, EngineConfiguration> config :
+        configurationService.getConfiguredEngines().entrySet()) {
       EngineContext engineContext = constructEngineContext(config);
       configuredEngines.put(engineContext.getEngineAlias(), engineContext);
     }
@@ -76,21 +75,22 @@ public class PlatformEngineContextFactory implements EngineContextFactory {
 
   private Client constructClient(Map.Entry<String, EngineConfiguration> config) {
     Client client = ClientBuilder.newClient();
-    client.property(ClientProperties.CONNECT_TIMEOUT, configurationService.getEngineConnectTimeout());
+    client.property(
+        ClientProperties.CONNECT_TIMEOUT, configurationService.getEngineConnectTimeout());
     client.property(ClientProperties.READ_TIMEOUT, configurationService.getEngineReadTimeout());
     client.register(new LoggingFilter());
     if (config.getValue().getAuthentication().isEnabled()) {
       client.register(
-        new BasicAccessAuthenticationFilter(
-          configurationService.getDefaultEngineAuthenticationUser(config.getKey()),
-          configurationService.getDefaultEngineAuthenticationPassword(config.getKey())
-        )
-      );
+          new BasicAccessAuthenticationFilter(
+              configurationService.getDefaultEngineAuthenticationUser(config.getKey()),
+              configurationService.getDefaultEngineAuthenticationPassword(config.getKey())));
     }
     for (EngineRestFilter engineRestFilter : engineRestFilterProvider.getPlugins()) {
-      client.register((ClientRequestFilter) requestContext -> engineRestFilter.filter(
-        requestContext, config.getKey(), config.getValue().getName()
-      ));
+      client.register(
+          (ClientRequestFilter)
+              requestContext ->
+                  engineRestFilter.filter(
+                      requestContext, config.getKey(), config.getValue().getName()));
     }
     client.register(engineObjectMapperContextResolver);
     return client;
@@ -106,5 +106,4 @@ public class PlatformEngineContextFactory implements EngineContextFactory {
       }
     }
   }
-
 }

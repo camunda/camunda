@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process;
 
+import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,8 +13,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.time.OffsetDateTime;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -36,5 +35,4 @@ public class CamundaActivityEventDto implements OptimizeDto, EventProcessEventDt
   private OffsetDateTime timestamp;
   private Long orderCounter;
   private boolean canceled;
-
 }

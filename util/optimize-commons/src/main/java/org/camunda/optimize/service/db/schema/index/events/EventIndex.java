@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.service.db.schema.index.events;
 
-import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.FIELDS;
 import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NGRAM;
 import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NORMALIZER;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
+
+import java.io.IOException;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class EventIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -55,72 +54,70 @@ public abstract class EventIndex<TBuilder> extends DefaultIndexMappingCreator<TB
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(ID)
+        .startObject(ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(EVENT_NAME)
+        .endObject()
+        .startObject(EVENT_NAME)
         .field("type", "keyword")
         .startObject(FIELDS)
-          .startObject(N_GRAM_FIELD)
-            .field("type", "text")
-            .field(ANALYZER, LOWERCASE_NGRAM)
-          .endObject()
-          .startObject(LOWERCASE)
-            .field("type", "keyword")
-            .field(NORMALIZER, LOWERCASE_NORMALIZER)
-          .endObject()
+        .startObject(N_GRAM_FIELD)
+        .field("type", "text")
+        .field(ANALYZER, LOWERCASE_NGRAM)
         .endObject()
-      .endObject()
-      .startObject(TRACE_ID)
+        .startObject(LOWERCASE)
+        .field("type", "keyword")
+        .field(NORMALIZER, LOWERCASE_NORMALIZER)
+        .endObject()
+        .endObject()
+        .endObject()
+        .startObject(TRACE_ID)
         .field("type", "keyword")
         .startObject(FIELDS)
-          .startObject(N_GRAM_FIELD)
-            .field("type", "text")
-            .field(ANALYZER, LOWERCASE_NGRAM)
-          .endObject()
-          .startObject(LOWERCASE)
-            .field("type", "keyword")
-            .field(NORMALIZER, LOWERCASE_NORMALIZER)
-          .endObject()
+        .startObject(N_GRAM_FIELD)
+        .field("type", "text")
+        .field(ANALYZER, LOWERCASE_NGRAM)
         .endObject()
-      .endObject()
-      .startObject(TIMESTAMP)
+        .startObject(LOWERCASE)
+        .field("type", "keyword")
+        .field(NORMALIZER, LOWERCASE_NORMALIZER)
+        .endObject()
+        .endObject()
+        .endObject()
+        .startObject(TIMESTAMP)
         .field("type", "date")
-      .endObject()
-      .startObject(INGESTION_TIMESTAMP)
+        .endObject()
+        .startObject(INGESTION_TIMESTAMP)
         .field("type", "date")
-      .endObject()
-      .startObject(GROUP)
+        .endObject()
+        .startObject(GROUP)
         .field("type", "keyword")
         .startObject(FIELDS)
-          .startObject(N_GRAM_FIELD)
-            .field("type", "text")
-            .field(ANALYZER, LOWERCASE_NGRAM)
-          .endObject()
-          .startObject(LOWERCASE)
-            .field("type", "keyword")
-            .field(NORMALIZER, LOWERCASE_NORMALIZER)
-          .endObject()
+        .startObject(N_GRAM_FIELD)
+        .field("type", "text")
+        .field(ANALYZER, LOWERCASE_NGRAM)
         .endObject()
-      .endObject()
-      .startObject(SOURCE)
+        .startObject(LOWERCASE)
+        .field("type", "keyword")
+        .field(NORMALIZER, LOWERCASE_NORMALIZER)
+        .endObject()
+        .endObject()
+        .endObject()
+        .startObject(SOURCE)
         .field("type", "keyword")
         .startObject(FIELDS)
-          .startObject(N_GRAM_FIELD)
-            .field("type", "text")
-            .field(ANALYZER, LOWERCASE_NGRAM)
-          .endObject()
-          .startObject(LOWERCASE)
-            .field("type", "keyword")
-            .field(NORMALIZER, LOWERCASE_NORMALIZER)
-          .endObject()
+        .startObject(N_GRAM_FIELD)
+        .field("type", "text")
+        .field(ANALYZER, LOWERCASE_NGRAM)
         .endObject()
-      .endObject()
-      .startObject(DATA)
+        .startObject(LOWERCASE)
+        .field("type", "keyword")
+        .field(NORMALIZER, LOWERCASE_NORMALIZER)
+        .endObject()
+        .endObject()
+        .endObject()
+        .startObject(DATA)
         .field(MAPPING_ENABLED_SETTING, false)
-      .endObject()
-      ;
+        .endObject();
     // @formatter:on
   }
-
 }

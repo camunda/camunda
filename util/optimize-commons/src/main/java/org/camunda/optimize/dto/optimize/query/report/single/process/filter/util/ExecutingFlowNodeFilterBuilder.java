@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutingFlowNodeFilterDataDto;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutingFlowNodeFilterDataDto;
 
 public class ExecutingFlowNodeFilterBuilder {
 
@@ -23,7 +22,8 @@ public class ExecutingFlowNodeFilterBuilder {
     filterBuilder = processFilterBuilder;
   }
 
-  public static ExecutingFlowNodeFilterBuilder construct(ProcessFilterBuilder processFilterBuilder) {
+  public static ExecutingFlowNodeFilterBuilder construct(
+      ProcessFilterBuilder processFilterBuilder) {
     return new ExecutingFlowNodeFilterBuilder(processFilterBuilder);
   }
 

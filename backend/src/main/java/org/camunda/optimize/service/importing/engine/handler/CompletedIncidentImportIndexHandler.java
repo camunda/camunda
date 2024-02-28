@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CompletedIncidentImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
 
-  private static final String COMPLETED_INCIDENT_IMPORT_INDEX_DOC_ID = "completedIncidentImportIndex";
+  private static final String COMPLETED_INCIDENT_IMPORT_INDEX_DOC_ID =
+      "completedIncidentImportIndex";
 
   private final EngineContext engineContext;
 
@@ -32,5 +33,4 @@ public class CompletedIncidentImportIndexHandler extends TimestampBasedEngineImp
   protected String getDatabaseDocID() {
     return COMPLETED_INCIDENT_IMPORT_INDEX_DOC_ID;
   }
-
 }

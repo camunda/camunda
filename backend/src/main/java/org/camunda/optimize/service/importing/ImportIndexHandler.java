@@ -9,24 +9,20 @@ import org.camunda.optimize.service.importing.page.ImportPage;
 
 public interface ImportIndexHandler<PAGE extends ImportPage, INDEX_DTO> {
 
-  /**
-   * Retrieves all information of the next page to import.
-   */
+  /** Retrieves all information of the next page to import. */
   default PAGE getNextPage() {
     return null;
   }
 
   /**
-   * Creates a data transfer object (DTO) of the current index state.
-   * On every restart of Optimize this information can be used to continue the import where it stopped the last time.
+   * Creates a data transfer object (DTO) of the current index state. On every restart of Optimize
+   * this information can be used to continue the import where it stopped the last time.
    */
   INDEX_DTO getIndexStateDto();
 
   /**
-   * Resets the import index such that it can start the import
-   * all over again. E.g., that can be helpful to import
-   * entities that were missed during the first round.
+   * Resets the import index such that it can start the import all over again. E.g., that can be
+   * helpful to import entities that were missed during the first round.
    */
   void resetImportIndex();
-
 }

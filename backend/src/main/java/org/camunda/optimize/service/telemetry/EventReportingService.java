@@ -10,5 +10,4 @@ import org.camunda.optimize.service.telemetry.mixpanel.client.EventReportingEven
 public interface EventReportingService {
 
   void sendEntityEvent(EventReportingEvent event, String entityId);
-
 }

@@ -6,6 +6,10 @@
 package org.camunda.optimize.dto.optimize.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,11 +18,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
-
-import jakarta.validation.Valid;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -36,7 +35,5 @@ public class EventProcessMappingRequestDto {
   @Valid
   private Map<String, EventMappingDto> mappings;
 
-  @Builder.Default
-  @Valid
-  private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
+  @Builder.Default @Valid private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 }

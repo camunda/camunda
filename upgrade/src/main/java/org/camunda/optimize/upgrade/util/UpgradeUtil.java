@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.upgrade.util;
 
+import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,16 +25,7 @@ import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
-import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
-
-/**
- * Bunch of utility methods that might be required during upgrade
- * operation.
- */
+/** Bunch of utility methods that might be required during upgrade operation. */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public class UpgradeUtil {
@@ -39,42 +35,42 @@ public class UpgradeUtil {
   }
 
   public static UpgradeExecutionDependencies createUpgradeDependenciesWithAdditionalConfigLocation(
-    final String... configLocations) {
+      final String... configLocations) {
     ConfigurationService configurationService;
     if (configLocations == null || configLocations.length == 0) {
       configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     } else {
-      configurationService = ConfigurationServiceBuilder
-        .createConfigurationWithDefaultAndAdditionalLocations(configLocations);
+      configurationService =
+          ConfigurationServiceBuilder.createConfigurationWithDefaultAndAdditionalLocations(
+              configLocations);
     }
     return createUpgradeDependenciesWithAConfigurationService(configurationService);
   }
 
   public static UpgradeExecutionDependencies createUpgradeDependenciesWithAConfigurationService(
-    final ConfigurationService configurationService) {
-    OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH);
-    ElasticsearchCustomHeaderProvider customHeaderProvider = new ElasticsearchCustomHeaderProvider(
-      configurationService, new PluginJarFileLoader(configurationService));
+      final ConfigurationService configurationService) {
+    OptimizeIndexNameService indexNameService =
+        new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH);
+    ElasticsearchCustomHeaderProvider customHeaderProvider =
+        new ElasticsearchCustomHeaderProvider(
+            configurationService, new PluginJarFileLoader(configurationService));
     customHeaderProvider.initPlugins();
-    OptimizeElasticsearchClient esClient = new OptimizeElasticsearchClient(
-      ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      indexNameService,
-      new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService),
-      OPTIMIZE_MAPPER
-    );
-    ElasticSearchMetadataService metadataService = new ElasticSearchMetadataService(OPTIMIZE_MAPPER);
+    OptimizeElasticsearchClient esClient =
+        new OptimizeElasticsearchClient(
+            ElasticsearchHighLevelRestClientBuilder.build(configurationService),
+            indexNameService,
+            new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService),
+            OPTIMIZE_MAPPER);
+    ElasticSearchMetadataService metadataService =
+        new ElasticSearchMetadataService(OPTIMIZE_MAPPER);
     return new UpgradeExecutionDependencies(
-      configurationService,
-      indexNameService,
-      esClient,
-      OPTIMIZE_MAPPER,
-      metadataService
-    );
+        configurationService, indexNameService, esClient, OPTIMIZE_MAPPER, metadataService);
   }
 
   public static String readClasspathFileAsString(String filePath) {
     String data = null;
-    try (InputStream inputStream = UpgradeUtil.class.getClassLoader().getResourceAsStream(filePath)) {
+    try (InputStream inputStream =
+        UpgradeUtil.class.getClassLoader().getResourceAsStream(filePath)) {
       data = readFromInputStream(inputStream);
     } catch (IOException e) {
       log.error("can't read [{}] from classpath", filePath, e);

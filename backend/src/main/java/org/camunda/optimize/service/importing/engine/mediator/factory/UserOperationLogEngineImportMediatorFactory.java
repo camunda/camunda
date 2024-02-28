@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
@@ -21,22 +22,22 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class UserOperationLogEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+public class UserOperationLogEngineImportMediatorFactory
+    extends AbstractEngineImportMediatorFactory {
 
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ProcessInstanceResolverService processInstanceResolverService;
 
-  public UserOperationLogEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                     final ConfigurationService configurationService,
-                                                     final RunningProcessInstanceWriter runningProcessInstanceWriter,
-                                                     final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                     final ProcessInstanceResolverService processInstanceResolverService,
-                                                     final DatabaseClient databaseClient) {
+  public UserOperationLogEngineImportMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final RunningProcessInstanceWriter runningProcessInstanceWriter,
+      final ProcessDefinitionResolverService processDefinitionResolverService,
+      final ProcessInstanceResolverService processInstanceResolverService,
+      final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
@@ -45,26 +46,24 @@ public class UserOperationLogEngineImportMediatorFactory extends AbstractEngineI
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    return ImmutableList.of(
-      createUserOperationLogEngineImportMediator(engineContext)
-    );
+    return ImmutableList.of(createUserOperationLogEngineImportMediator(engineContext));
   }
 
   public UserOperationLogEngineImportMediator createUserOperationLogEngineImportMediator(
-    final EngineContext engineContext) {
+      final EngineContext engineContext) {
     return new UserOperationLogEngineImportMediator(
-      importIndexHandlerRegistry.getUserOperationsLogImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(UserOperationLogFetcher.class, engineContext),
-      new UserOperationLogImportService(
+        importIndexHandlerRegistry.getUserOperationsLogImportIndexHandler(
+            engineContext.getEngineAlias()),
+        beanFactory.getBean(UserOperationLogFetcher.class, engineContext),
+        new UserOperationLogImportService(
+            configurationService,
+            runningProcessInstanceWriter,
+            importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(
+                engineContext.getEngineAlias()),
+            processDefinitionResolverService,
+            processInstanceResolverService,
+            databaseClient),
         configurationService,
-        runningProcessInstanceWriter,
-        importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias()),
-        processDefinitionResolverService,
-        processInstanceResolverService,
-        databaseClient
-      ),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        new BackoffCalculator(configurationService));
   }
 }

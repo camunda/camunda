@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
@@ -13,10 +16,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -24,7 +23,8 @@ import java.util.Optional;
 public class EventProcessDefinitionReaderOS implements EventProcessDefinitionReader {
 
   @Override
-  public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(final String eventProcessDefinitionKey) {
+  public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(
+      final String eventProcessDefinitionKey) {
     log.error("Functionality not implemented for OpenSearch");
     return Optional.empty();
   }
@@ -34,5 +34,4 @@ public class EventProcessDefinitionReaderOS implements EventProcessDefinitionRea
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
-
 }

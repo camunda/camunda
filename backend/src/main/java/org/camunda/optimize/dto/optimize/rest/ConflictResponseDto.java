@@ -6,11 +6,10 @@
 package org.camunda.optimize.dto.optimize.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.util.Collections;
 import java.util.Set;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -26,12 +25,16 @@ public class ConflictResponseDto extends ErrorResponseDto {
     this(null, null, null, conflictedItems);
   }
 
-  public ConflictResponseDto(final String errorCode, final String errorMessage, final String detailedErrorMessage) {
+  public ConflictResponseDto(
+      final String errorCode, final String errorMessage, final String detailedErrorMessage) {
     this(errorCode, errorMessage, detailedErrorMessage, Collections.emptySet());
   }
 
-  public ConflictResponseDto(final String errorCode, final String errorMessage, final String detailedErrorMessage,
-                             final Set<ConflictedItemDto> conflictedItems) {
+  public ConflictResponseDto(
+      final String errorCode,
+      final String errorMessage,
+      final String detailedErrorMessage,
+      final Set<ConflictedItemDto> conflictedItems) {
     super(errorCode, errorMessage, detailedErrorMessage);
     this.conflictedItems = conflictedItems;
   }

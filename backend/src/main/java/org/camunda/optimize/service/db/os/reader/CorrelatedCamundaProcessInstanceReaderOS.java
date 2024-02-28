@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableProcessInstanceDto;
@@ -14,25 +16,24 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
-public class CorrelatedCamundaProcessInstanceReaderOS implements CorrelatedCamundaProcessInstanceReader {
+public class CorrelatedCamundaProcessInstanceReaderOS
+    implements CorrelatedCamundaProcessInstanceReader {
 
   @Override
-  public List<String> getCorrelationValueSampleForEventSources(final List<CamundaEventSourceEntryDto> eventSources) {
+  public List<String> getCorrelationValueSampleForEventSources(
+      final List<CamundaEventSourceEntryDto> eventSources) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
-  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(final List<CamundaEventSourceEntryDto> camundaSources, final List<String> correlationValues) {
+  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
+      final List<CamundaEventSourceEntryDto> camundaSources, final List<String> correlationValues) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
-
 }

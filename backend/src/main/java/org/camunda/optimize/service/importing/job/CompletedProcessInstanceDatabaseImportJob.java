@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.CamundaEventImportService;
@@ -13,20 +15,19 @@ import org.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class CompletedProcessInstanceDatabaseImportJob extends DatabaseImportJob<ProcessInstanceDto> {
+public class CompletedProcessInstanceDatabaseImportJob
+    extends DatabaseImportJob<ProcessInstanceDto> {
 
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final CamundaEventImportService camundaEventService;
   private final ProcessInstanceRepository processInstanceRepository;
 
-  public CompletedProcessInstanceDatabaseImportJob(final CompletedProcessInstanceWriter completedProcessInstanceWriter,
-                                                   final CamundaEventImportService camundaEventService,
-                                                   final Runnable importCompleteCallback,
-                                                   final DatabaseClient databaseClient,
-                                                   final ProcessInstanceRepository processInstanceRepository) {
+  public CompletedProcessInstanceDatabaseImportJob(
+      final CompletedProcessInstanceWriter completedProcessInstanceWriter,
+      final CamundaEventImportService camundaEventService,
+      final Runnable importCompleteCallback,
+      final DatabaseClient databaseClient,
+      final ProcessInstanceRepository processInstanceRepository) {
     super(importCompleteCallback, databaseClient);
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
@@ -36,9 +37,10 @@ public class CompletedProcessInstanceDatabaseImportJob extends DatabaseImportJob
   @Override
   protected void persistEntities(List<ProcessInstanceDto> completedProcessInstances) {
     List<ImportRequestDto> imports = new ArrayList<>();
-    imports.addAll(completedProcessInstanceWriter.generateProcessInstanceImports(completedProcessInstances));
-    imports.addAll(camundaEventService.generateCompletedProcessInstanceImports(completedProcessInstances));
+    imports.addAll(
+        completedProcessInstanceWriter.generateProcessInstanceImports(completedProcessInstances));
+    imports.addAll(
+        camundaEventService.generateCompletedProcessInstanceImports(completedProcessInstances));
     processInstanceRepository.bulkImport("Completed process instances", imports);
   }
-
 }

@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Objects;
 
 @Getter
 @Setter
@@ -26,8 +25,7 @@ public class SingleReportCountChartDto {
       return false;
     }
     SingleReportCountChartDto that = (SingleReportCountChartDto) o;
-    return Objects.equals(isBelow, that.isBelow) &&
-      Objects.equals(value, that.value);
+    return Objects.equals(isBelow, that.isBelow) && Objects.equals(value, that.value);
   }
 
   @Override

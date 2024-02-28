@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.process.date;
 
+import static org.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -31,15 +39,6 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-
 @RequiredArgsConstructor
 public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessGroupByPart {
 
@@ -49,10 +48,11 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
   protected final ProcessQueryFilterEnhancer queryFilterEnhancer;
 
   @Override
-  public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
-                                                final BoolQueryBuilder baseQuery) {
+  public Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
     if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
-      final DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
+      final DateGroupByValueDto groupByDate =
+          (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
       if (AggregateByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         return Optional.of(getMinMaxDateStats(context, baseQuery));
       }
@@ -61,9 +61,10 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
   }
 
   @Override
-  public void adjustSearchRequest(final SearchRequest searchRequest,
-                                  final BoolQueryBuilder baseQuery,
-                                  final ExecutionContext<ProcessReportDataDto> context) {
+  public void adjustSearchRequest(
+      final SearchRequest searchRequest,
+      final BoolQueryBuilder baseQuery,
+      final ExecutionContext<ProcessReportDataDto> context) {
     super.adjustSearchRequest(searchRequest, baseQuery, context);
     baseQuery.must(existsQuery(getDateField()));
   }
@@ -73,81 +74,87 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
   public abstract String getDateField();
 
   @Override
-  public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ExecutionContext<ProcessReportDataDto> context) {
+  public List<AggregationBuilder> createAggregation(
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<ProcessReportDataDto> context) {
     final AggregateByDateUnit unit = getGroupByDateUnit(context.getReportData());
     return createAggregation(searchSourceBuilder, context, unit);
   }
 
-  public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ExecutionContext<ProcessReportDataDto> context,
-                                                    final AggregateByDateUnit unit) {
+  public List<AggregationBuilder> createAggregation(
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<ProcessReportDataDto> context,
+      final AggregateByDateUnit unit) {
     // set baseQuery in context for distribution by variable minMaxStat calculation
     context.setDistributedByMinMaxBaseQuery(searchSourceBuilder.query());
 
     final MinMaxStatDto stats = getMinMaxDateStats(context, searchSourceBuilder.query());
 
-    final DateAggregationContext dateAggContext = DateAggregationContext.builder()
-      .aggregateByDateUnit(unit)
-      .dateField(getDateField())
-      .minMaxStats(stats)
-      .timezone(context.getTimezone())
-      .subAggregations(distributedByPart.createAggregations(context))
-      .processGroupByType(getGroupByType().getType())
-      .processFilters(context.getReportData().getFilter())
-      .processQueryFilterEnhancer(queryFilterEnhancer)
-      .filterContext(context.getFilterContext())
-      .build();
+    final DateAggregationContext dateAggContext =
+        DateAggregationContext.builder()
+            .aggregateByDateUnit(unit)
+            .dateField(getDateField())
+            .minMaxStats(stats)
+            .timezone(context.getTimezone())
+            .subAggregations(distributedByPart.createAggregations(context))
+            .processGroupByType(getGroupByType().getType())
+            .processFilters(context.getReportData().getFilter())
+            .processQueryFilterEnhancer(queryFilterEnhancer)
+            .filterContext(context.getFilterContext())
+            .build();
 
-    return dateAggregationService.createProcessInstanceDateAggregation(dateAggContext)
-      .map(agg -> addSiblingAggregationIfRequired(context, agg))
-      .map(Collections::singletonList)
-      .orElse(Collections.emptyList());
+    return dateAggregationService
+        .createProcessInstanceDateAggregation(dateAggContext)
+        .map(agg -> addSiblingAggregationIfRequired(context, agg))
+        .map(Collections::singletonList)
+        .orElse(Collections.emptyList());
   }
 
-  private MinMaxStatDto getMinMaxDateStats(final ExecutionContext<ProcessReportDataDto> context,
-                                           final QueryBuilder baseQuery) {
-    return minMaxStatsService.getMinMaxDateRange(context, baseQuery, getIndexNames(context), getDateField());
+  private MinMaxStatDto getMinMaxDateStats(
+      final ExecutionContext<ProcessReportDataDto> context, final QueryBuilder baseQuery) {
+    return minMaxStatsService.getMinMaxDateRange(
+        context, baseQuery, getIndexNames(context), getDateField());
   }
 
   @Override
-  public void addQueryResult(final CompositeCommandResult result,
-                             final SearchResponse response,
-                             final ExecutionContext<ProcessReportDataDto> context) {
+  public void addQueryResult(
+      final CompositeCommandResult result,
+      final SearchResponse response,
+      final ExecutionContext<ProcessReportDataDto> context) {
     result.setGroups(processAggregations(response, response.getAggregations(), context));
     result.setGroupBySorting(
-      context.getReportConfiguration()
-        .getSorting()
-        .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC))
-    );
+        context
+            .getReportConfiguration()
+            .getSorting()
+            .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC)));
     result.setGroupByKeyOfNumericType(false);
     result.setDistributedByKeyOfNumericType(distributedByPart.isKeyOfNumericType(context));
     ProcessReportDataDto reportData = context.getReportData();
     // We sort by label for management report because keys change on every request
-    if(reportData.isManagementReport()) {
-      result.setDistributedBySorting(new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC));
+    if (reportData.isManagementReport()) {
+      result.setDistributedBySorting(
+          new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC));
     }
   }
 
-  private List<GroupByResult> processAggregations(final SearchResponse response,
-                                                  final Aggregations aggregations,
-                                                  final ExecutionContext<ProcessReportDataDto> context) {
+  private List<GroupByResult> processAggregations(
+      final SearchResponse response,
+      final Aggregations aggregations,
+      final ExecutionContext<ProcessReportDataDto> context) {
     if (aggregations == null) {
       // aggregations are null when there are no instances in the report
       return Collections.emptyList();
     }
 
-    final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
+    final Optional<Aggregations> unwrappedLimitedAggregations =
+        unwrapFilterLimitedAggregations(aggregations);
     if (unwrappedLimitedAggregations.isPresent()) {
-      Map<String, Aggregations> keyToAggregationMap = dateAggregationService.mapDateAggregationsToKeyAggregationMap(
-        unwrappedLimitedAggregations.get(),
-        context.getTimezone()
-      );
+      Map<String, Aggregations> keyToAggregationMap =
+          dateAggregationService.mapDateAggregationsToKeyAggregationMap(
+              unwrappedLimitedAggregations.get(), context.getTimezone());
       // enrich context with complete set of distributed by keys
       distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
-        context,
-        unwrappedLimitedAggregations.get()
-      );
+          context, unwrappedLimitedAggregations.get());
       return mapKeyToAggMapToGroupByResults(keyToAggregationMap, response, context);
     } else {
       return Collections.emptyList();
@@ -155,21 +162,23 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
   }
 
   @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto reportData) {
     reportData.setGroupBy(getGroupByType());
   }
 
-  private List<GroupByResult> mapKeyToAggMapToGroupByResults(final Map<String, Aggregations> keyToAggregationMap,
-                                                             final SearchResponse response,
-                                                             final ExecutionContext<ProcessReportDataDto> context) {
-    return keyToAggregationMap
-      .entrySet()
-      .stream()
-      .map(stringBucketEntry -> GroupByResult.createGroupByResult(
-        stringBucketEntry.getKey(),
-        distributedByPart.retrieveResult(response, stringBucketEntry.getValue(), context)
-      ))
-      .collect(Collectors.toList());
+  private List<GroupByResult> mapKeyToAggMapToGroupByResults(
+      final Map<String, Aggregations> keyToAggregationMap,
+      final SearchResponse response,
+      final ExecutionContext<ProcessReportDataDto> context) {
+    return keyToAggregationMap.entrySet().stream()
+        .map(
+            stringBucketEntry ->
+                GroupByResult.createGroupByResult(
+                    stringBucketEntry.getKey(),
+                    distributedByPart.retrieveResult(
+                        response, stringBucketEntry.getValue(), context)))
+        .collect(Collectors.toList());
   }
 
   private AggregateByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
@@ -180,8 +189,9 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
     return processReportDataDto.getDistributedBy().getType();
   }
 
-  private AggregationBuilder addSiblingAggregationIfRequired(final ExecutionContext<ProcessReportDataDto> context,
-                                                             final AggregationBuilder aggregationBuilder) {
+  private AggregationBuilder addSiblingAggregationIfRequired(
+      final ExecutionContext<ProcessReportDataDto> context,
+      final AggregationBuilder aggregationBuilder) {
     // add sibling distributedBy aggregation to enrich context with all distributed by keys,
     // required for variable distribution
     if (DistributedByType.VARIABLE.equals(getDistributedByType(context.getReportData()))) {
@@ -189,5 +199,4 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
     }
     return aggregationBuilder;
   }
-
 }

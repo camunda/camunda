@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.service.exceptions.conflict;
 
+import java.util.Set;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-
-import java.util.Set;
 
 public class OptimizeConflictException extends OptimizeRuntimeException {
   public static final String ERROR_CODE = "conflict";
@@ -19,7 +18,8 @@ public class OptimizeConflictException extends OptimizeRuntimeException {
     super(message);
   }
 
-  public OptimizeConflictException(String detailedErrorMessage, Set<ConflictedItemDto> conflictedItems) {
+  public OptimizeConflictException(
+      String detailedErrorMessage, Set<ConflictedItemDto> conflictedItems) {
     super(detailedErrorMessage);
     this.conflictedItems = conflictedItems;
   }

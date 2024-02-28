@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.db.repository.os;
 
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.lt;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
+
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
@@ -19,13 +25,6 @@ import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-
-import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.lt;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
-
 @Slf4j
 @Component
 @AllArgsConstructor
@@ -36,46 +35,44 @@ public class DecisionInstanceRepositoryOS implements DecisionInstanceRepository 
   private final OptimizeIndexNameService indexNameService;
   private final DateTimeFormatter dateTimeFormatter;
 
-
   @Override
-  public void importDecisionInstances(final String importItemName, List<DecisionInstanceDto> decisionInstanceDtos) {
+  public void importDecisionInstances(
+      final String importItemName, List<DecisionInstanceDto> decisionInstanceDtos) {
     osClient.doImportBulkRequestWithList(
-      importItemName,
-      decisionInstanceDtos,
-      this::addImportDecisionInstanceRequest,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        importItemName,
+        decisionInstanceDtos,
+        this::addImportDecisionInstanceRequest,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
   @Override
   public void deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(
-    final String decisionDefinitionKey,
-    final OffsetDateTime evaluationDate
-  ) {
-    final String deleteItemIdentifier = String.format(
-      "decision instances with definitionKey %s and evaluationDate past %s",
-      decisionDefinitionKey,
-      evaluationDate
-    );
+      final String decisionDefinitionKey, final OffsetDateTime evaluationDate) {
+    final String deleteItemIdentifier =
+        String.format(
+            "decision instances with definitionKey %s and evaluationDate past %s",
+            decisionDefinitionKey, evaluationDate);
     osClient.deleteByQueryTask(
-      deleteItemIdentifier,
-      lt(DecisionInstanceIndex.EVALUATION_DATE_TIME, dateTimeFormatter.format(evaluationDate)),
-      true,
-      aliasForDecisionDefinitionKey(decisionDefinitionKey)
-    );
+        deleteItemIdentifier,
+        lt(DecisionInstanceIndex.EVALUATION_DATE_TIME, dateTimeFormatter.format(evaluationDate)),
+        true,
+        aliasForDecisionDefinitionKey(decisionDefinitionKey));
   }
 
-  private BulkOperation addImportDecisionInstanceRequest(final DecisionInstanceDto decisionInstanceDto) {
+  private BulkOperation addImportDecisionInstanceRequest(
+      final DecisionInstanceDto decisionInstanceDto) {
     final String decisionInstanceId = decisionInstanceDto.getDecisionInstanceId();
-    final IndexOperation<DecisionInstanceDto> indexOperation = new IndexOperation.Builder<DecisionInstanceDto>()
-      .index(aliasForDecisionDefinitionKey(decisionInstanceDto.getDecisionDefinitionKey()))
-      .id(decisionInstanceId)
-      .document(decisionInstanceDto)
-      .build();
+    final IndexOperation<DecisionInstanceDto> indexOperation =
+        new IndexOperation.Builder<DecisionInstanceDto>()
+            .index(aliasForDecisionDefinitionKey(decisionInstanceDto.getDecisionDefinitionKey()))
+            .id(decisionInstanceId)
+            .document(decisionInstanceDto)
+            .build();
     return new BulkOperation.Builder().index(indexOperation).build();
   }
 
   private String aliasForDecisionDefinitionKey(String decisionDefinitionKey) {
-    return indexNameService.getOptimizeIndexAliasForIndex(getDecisionInstanceIndexAliasName(decisionDefinitionKey));
+    return indexNameService.getOptimizeIndexAliasForIndex(
+        getDecisionInstanceIndexAliasName(decisionDefinitionKey));
   }
 }

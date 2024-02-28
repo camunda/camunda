@@ -10,5 +10,4 @@ import org.camunda.optimize.service.events.EventTraceStateService;
 public interface EventTraceStateServiceFactory {
 
   EventTraceStateService createEventTraceStateService(final String eventSuffix);
-
 }

@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.service.CamundaEventImportService;
@@ -13,20 +15,19 @@ import org.camunda.optimize.service.db.writer.activity.CompletedActivityInstance
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class CompletedActivityInstanceDatabaseImportJob extends DatabaseImportJob<FlowNodeEventDto> {
+public class CompletedActivityInstanceDatabaseImportJob
+    extends DatabaseImportJob<FlowNodeEventDto> {
 
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final CamundaEventImportService camundaEventImportService;
   private final ConfigurationService configurationService;
 
-  public CompletedActivityInstanceDatabaseImportJob(final CompletedActivityInstanceWriter completedActivityInstanceWriter,
-                                                    final CamundaEventImportService camundaEventImportService,
-                                                    final ConfigurationService configurationService,
-                                                    final Runnable callback,
-                                                    final DatabaseClient databaseClient) {
+  public CompletedActivityInstanceDatabaseImportJob(
+      final CompletedActivityInstanceWriter completedActivityInstanceWriter,
+      final CamundaEventImportService camundaEventImportService,
+      final ConfigurationService configurationService,
+      final Runnable callback,
+      final DatabaseClient databaseClient) {
     super(callback, databaseClient);
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.camundaEventImportService = camundaEventImportService;
@@ -36,13 +37,14 @@ public class CompletedActivityInstanceDatabaseImportJob extends DatabaseImportJo
   @Override
   protected void persistEntities(List<FlowNodeEventDto> newOptimizeEntities) {
     final List<ImportRequestDto> importRequests = new ArrayList<>();
-    importRequests.addAll(completedActivityInstanceWriter.generateActivityInstanceImports(newOptimizeEntities));
-    importRequests.addAll(camundaEventImportService.generateCompletedCamundaActivityEventsImports(newOptimizeEntities));
+    importRequests.addAll(
+        completedActivityInstanceWriter.generateActivityInstanceImports(newOptimizeEntities));
+    importRequests.addAll(
+        camundaEventImportService.generateCompletedCamundaActivityEventsImports(
+            newOptimizeEntities));
     databaseClient.executeImportRequestsAsBulk(
-      "Completed activity instances",
-      importRequests,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        "Completed activity instances",
+        importRequests,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
-
 }

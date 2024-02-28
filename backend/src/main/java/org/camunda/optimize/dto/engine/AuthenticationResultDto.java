@@ -21,5 +21,4 @@ public class AuthenticationResultDto {
   private boolean isAuthenticated;
   private String engineAlias;
   private String errorMessage;
-
 }

@@ -23,11 +23,11 @@ public class InstantDashboardDataDto {
   public static final String INSTANT_DASHBOARD_DEFAULT_TEMPLATE = "template1.json";
 
   public String getInstantDashboardId() {
-    return processDefinitionKey + "_" + templateName.replace(".","");
+    return processDefinitionKey + "_" + templateName.replace(".", "");
   }
 
   public void setTemplateName(String templateName) {
-    this.templateName = StringUtils.isEmpty(templateName)
-      ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : templateName;
+    this.templateName =
+        StringUtils.isEmpty(templateName) ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : templateName;
   }
 }

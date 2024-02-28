@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.autogeneration;
 
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-
-import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -27,21 +26,22 @@ public class CorrelatableProcessInstanceDto extends CorrelatableInstanceDto {
   }
 
   @Override
-  public String getCorrelationValueForEventSource(final EventSourceEntryDto<?> eventSourceEntryDto) {
+  public String getCorrelationValueForEventSource(
+      final EventSourceEntryDto<?> eventSourceEntryDto) {
     if (eventSourceEntryDto instanceof CamundaEventSourceEntryDto) {
-      final CamundaEventSourceEntryDto camundaSource = (CamundaEventSourceEntryDto) eventSourceEntryDto;
+      final CamundaEventSourceEntryDto camundaSource =
+          (CamundaEventSourceEntryDto) eventSourceEntryDto;
       if (camundaSource.getConfiguration().isTracedByBusinessKey()) {
         return businessKey;
       } else {
         final String traceVariableName = camundaSource.getConfiguration().getTraceVariable();
-        return variables
-          .stream()
-          .filter(var -> var.getName().equals(traceVariableName))
-          .map(simpleVar -> simpleVar.getValue().stream().findFirst().orElse(null))
-          .findFirst().orElse(null);
+        return variables.stream()
+            .filter(var -> var.getName().equals(traceVariableName))
+            .map(simpleVar -> simpleVar.getValue().stream().findFirst().orElse(null))
+            .findFirst()
+            .orElse(null);
       }
     }
     throw new IllegalArgumentException("Cannot get correlation value from non-Camunda sources");
   }
-
 }

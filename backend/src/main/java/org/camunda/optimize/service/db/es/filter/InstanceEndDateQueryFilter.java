@@ -5,24 +5,24 @@
  */
 package org.camunda.optimize.service.db.es.filter;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
+
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.service.db.es.filter.util.DateFilterQueryUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
-
 @RequiredArgsConstructor
 @Component
 public class InstanceEndDateQueryFilter implements QueryFilter<DateFilterDataDto<?>> {
 
   @Override
-  public void addFilters(final BoolQueryBuilder query,
-                         final List<DateFilterDataDto<?>> filters,
-                         final FilterContext filterContext) {
+  public void addFilters(
+      final BoolQueryBuilder query,
+      final List<DateFilterDataDto<?>> filters,
+      final FilterContext filterContext) {
     DateFilterQueryUtil.addFilters(query, filters, END_DATE, filterContext.getTimezone());
   }
 }

@@ -5,12 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
-import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
-import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
+import static org.camunda.optimize.service.util.importing.EngineConstants.DECISION_INSTANCE_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RESULTS_TO_RETURN;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.ws.rs.core.GenericType;
@@ -18,9 +14,12 @@ import jakarta.ws.rs.core.MediaType;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-import static org.camunda.optimize.service.util.importing.EngineConstants.DECISION_INSTANCE_ENDPOINT;
-import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RESULTS_TO_RETURN;
+import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -39,26 +38,26 @@ public class DecisionInstanceFetcher extends RetryBackoffEngineEntityFetcher {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
   }
 
-  public List<HistoricDecisionInstanceDto> fetchHistoricDecisionInstances(final TimestampBasedImportPage page) {
+  public List<HistoricDecisionInstanceDto> fetchHistoricDecisionInstances(
+      final TimestampBasedImportPage page) {
     return fetchHistoricDecisionInstances(
-      page.getTimestampOfLastEntity(),
-      configurationService.getEngineImportDecisionInstanceMaxPageSize()
-    );
+        page.getTimestampOfLastEntity(),
+        configurationService.getEngineImportDecisionInstanceMaxPageSize());
   }
 
-  public List<HistoricDecisionInstanceDto> fetchHistoricDecisionInstances(final OffsetDateTime endTimeOfLastInstance) {
+  public List<HistoricDecisionInstanceDto> fetchHistoricDecisionInstances(
+      final OffsetDateTime endTimeOfLastInstance) {
     logger.debug("Fetching historic decision instances...");
 
     final long requestStart = System.currentTimeMillis();
     final List<HistoricDecisionInstanceDto> secondEntries =
-      fetchWithRetry(() -> performGetHistoricDecisionInstancesRequest(endTimeOfLastInstance));
+        fetchWithRetry(() -> performGetHistoricDecisionInstancesRequest(endTimeOfLastInstance));
     final long requestEnd = System.currentTimeMillis();
 
     logger.debug(
-      "Fetched [{}] historic decision instances for set end time within [{}] ms",
-      secondEntries.size(),
-      requestEnd - requestStart
-    );
+        "Fetched [{}] historic decision instances for set end time within [{}] ms",
+        secondEntries.size(),
+        requestEnd - requestStart);
     return secondEntries;
   }
 
@@ -70,47 +69,45 @@ public class DecisionInstanceFetcher extends RetryBackoffEngineEntityFetcher {
     this.dateTimeFormatter = dateTimeFormatter;
   }
 
-  private List<HistoricDecisionInstanceDto> fetchHistoricDecisionInstances(final OffsetDateTime timeStamp,
-                                                                           final long pageSize) {
+  private List<HistoricDecisionInstanceDto> fetchHistoricDecisionInstances(
+      final OffsetDateTime timeStamp, final long pageSize) {
     logger.debug("Fetching historic decision instances...");
     final long requestStart = System.currentTimeMillis();
-    final List<HistoricDecisionInstanceDto> entries = fetchWithRetry(
-      () -> performGetHistoricDecisionInstancesRequest(timeStamp, pageSize)
-    );
+    final List<HistoricDecisionInstanceDto> entries =
+        fetchWithRetry(() -> performGetHistoricDecisionInstancesRequest(timeStamp, pageSize));
     final long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] historic decision instances which ended after set timestamp with page size [{}] within [{}] ms",
-      entries.size(),
-      pageSize,
-      requestEnd - requestStart
-    );
+        "Fetched [{}] historic decision instances which ended after set timestamp with page size [{}] within [{}] ms",
+        entries.size(),
+        pageSize,
+        requestEnd - requestStart);
     return entries;
   }
 
-  private List<HistoricDecisionInstanceDto> performGetHistoricDecisionInstancesRequest(final OffsetDateTime timeStamp,
-                                                                                       final long pageSize) {
+  private List<HistoricDecisionInstanceDto> performGetHistoricDecisionInstancesRequest(
+      final OffsetDateTime timeStamp, final long pageSize) {
     // @formatter:off
     return getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(DECISION_INSTANCE_ENDPOINT)
-      .queryParam(EVALUATED_AFTER, dateTimeFormatter.format(timeStamp))
-      .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
-      .request(MediaType.APPLICATION_JSON)
-      .acceptEncoding(UTF8)
-      .get(new GenericType<>() {});
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(DECISION_INSTANCE_ENDPOINT)
+        .queryParam(EVALUATED_AFTER, dateTimeFormatter.format(timeStamp))
+        .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get(new GenericType<>() {});
     // @formatter:on
   }
 
   private List<HistoricDecisionInstanceDto> performGetHistoricDecisionInstancesRequest(
-    final OffsetDateTime endTimeOfLastInstance) {
+      final OffsetDateTime endTimeOfLastInstance) {
     // @formatter:off
     return getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(DECISION_INSTANCE_ENDPOINT)
-      .queryParam(EVALUATED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
-      .request(MediaType.APPLICATION_JSON)
-      .acceptEncoding(UTF8)
-      .get(new GenericType<>() {});
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(DECISION_INSTANCE_ENDPOINT)
+        .queryParam(EVALUATED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get(new GenericType<>() {});
     // @formatter:on
   }
 }

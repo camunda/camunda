@@ -30,5 +30,4 @@ public class DeleteDataStep extends UpgradeStep {
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
     schemaUpgradeClient.deleteDataByIndexName(index, query);
   }
-
 }

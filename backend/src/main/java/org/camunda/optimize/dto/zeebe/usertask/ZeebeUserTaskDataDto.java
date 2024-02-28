@@ -6,16 +6,15 @@
 package org.camunda.optimize.dto.zeebe.usertask;
 
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.experimental.FieldNameConstants;
-import net.minidev.json.annotate.JsonIgnore;
-
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldNameConstants;
+import net.minidev.json.annotate.JsonIgnore;
 
 @EqualsAndHashCode
 @Data
@@ -43,8 +42,7 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   @JsonIgnore
   public OffsetDateTime getDateForDueDate() {
     return Objects.equals(dueDate, "")
-      ? null
-      : Optional.ofNullable(dueDate).map(OffsetDateTime::parse).orElse(null);
+        ? null
+        : Optional.ofNullable(dueDate).map(OffsetDateTime::parse).orElse(null);
   }
-
 }

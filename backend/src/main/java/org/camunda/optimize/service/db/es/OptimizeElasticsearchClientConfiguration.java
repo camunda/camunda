@@ -30,16 +30,19 @@ public class OptimizeElasticsearchClientConfiguration {
   private final ElasticsearchCustomHeaderProvider elasticsearchCustomHeaderProvider;
 
   @Bean(destroyMethod = "close")
-  public OptimizeElasticsearchClient optimizeElasticsearchClient(final BackoffCalculator backoffCalculator) {
+  public OptimizeElasticsearchClient optimizeElasticsearchClient(
+      final BackoffCalculator backoffCalculator) {
     return createOptimizeElasticsearchClient(backoffCalculator);
   }
 
   @SneakyThrows
-  public OptimizeElasticsearchClient createOptimizeElasticsearchClient(final BackoffCalculator backoffCalculator) {
+  public OptimizeElasticsearchClient createOptimizeElasticsearchClient(
+      final BackoffCalculator backoffCalculator) {
     return OptimizeElasticsearchClientFactory.create(
-      configurationService, optimizeIndexNameService, elasticSearchSchemaManager,
-      elasticsearchCustomHeaderProvider, backoffCalculator
-    );
+        configurationService,
+        optimizeIndexNameService,
+        elasticSearchSchemaManager,
+        elasticsearchCustomHeaderProvider,
+        backoffCalculator);
   }
-
 }

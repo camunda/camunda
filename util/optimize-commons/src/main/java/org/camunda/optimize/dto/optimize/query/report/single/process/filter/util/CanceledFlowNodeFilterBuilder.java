@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodeFilterDataDto;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodeFilterDataDto;
 
 public class CanceledFlowNodeFilterBuilder {
 

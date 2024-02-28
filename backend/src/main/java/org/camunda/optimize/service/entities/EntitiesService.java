@@ -5,8 +5,14 @@
  */
 package org.camunda.optimize.service.entities;
 
-import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.NotFoundException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -16,7 +22,6 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.collection.CollectionService;
@@ -28,16 +33,6 @@ import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.springframework.stereotype.Component;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
 
 @AllArgsConstructor
 @Component
@@ -54,52 +49,61 @@ public class EntitiesService {
 
   public List<EntityResponseDto> getAllEntities(final String userId) {
     final List<AuthorizedCollectionDefinitionDto> collectionDefinitions =
-      collectionService.getAllCollectionDefinitions(userId);
-    final Map<String, Map<EntityType, Long>> collectionEntityCounts = entitiesReader.countEntitiesForCollections(
-      collectionDefinitions.stream()
-        .map(AuthorizedCollectionDefinitionDto::getDefinitionDto)
-        .collect(Collectors.toList())
-    );
-    final List<EntityResponseDto> privateEntities = authorizedEntitiesService.getAuthorizedPrivateEntities(userId);
+        collectionService.getAllCollectionDefinitions(userId);
+    final Map<String, Map<EntityType, Long>> collectionEntityCounts =
+        entitiesReader.countEntitiesForCollections(
+            collectionDefinitions.stream()
+                .map(AuthorizedCollectionDefinitionDto::getDefinitionDto)
+                .collect(Collectors.toList()));
+    final List<EntityResponseDto> privateEntities =
+        authorizedEntitiesService.getAuthorizedPrivateEntities(userId);
 
     return Stream.concat(
-        collectionDefinitions.stream()
-          .map(AuthorizedCollectionDefinitionDto::toEntityDto)
-          .peek(entityDto -> entityDto.getData().setSubEntityCounts(collectionEntityCounts.get(entityDto.getId()))),
-        privateEntities.stream()
-      )
-      .sorted(
-        Comparator.comparing(EntityResponseDto::getEntityType)
-          .thenComparing(EntityResponseDto::getLastModified, Comparator.reverseOrder())
-      ).collect(Collectors.toList());
+            collectionDefinitions.stream()
+                .map(AuthorizedCollectionDefinitionDto::toEntityDto)
+                .peek(
+                    entityDto ->
+                        entityDto
+                            .getData()
+                            .setSubEntityCounts(collectionEntityCounts.get(entityDto.getId()))),
+            privateEntities.stream())
+        .sorted(
+            Comparator.comparing(EntityResponseDto::getEntityType)
+                .thenComparing(EntityResponseDto::getLastModified, Comparator.reverseOrder()))
+        .collect(Collectors.toList());
   }
 
-  public EntityNameResponseDto getEntityNames(final EntityNameRequestDto requestDto, final String locale) {
+  public EntityNameResponseDto getEntityNames(
+      final EntityNameRequestDto requestDto, final String locale) {
     Optional<EntityNameResponseDto> entityNames = entitiesReader.getEntityNames(requestDto, locale);
 
-    return entityNames.orElseThrow(() -> {
-      String reason = String.format("Could not get entity names search request %s", requestDto);
-      return new NotFoundException(reason);
-    });
+    return entityNames.orElseThrow(
+        () -> {
+          String reason = String.format("Could not get entity names search request %s", requestDto);
+          return new NotFoundException(reason);
+        });
   }
 
-  // For dashboards and collections, we only check for authorization. For reports, we also check for conflicts
+  // For dashboards and collections, we only check for authorization. For reports, we also check for
+  // conflicts
   public boolean entitiesHaveConflicts(EntitiesDeleteRequestDto entities, String userId) {
-    entities.getDashboards().forEach(dashboardId -> {
-      DashboardDefinitionRestDto dashboardDefinitionRestDto = dashboardService.getDashboardDefinitionAsService(
-        dashboardId);
-      if (dashboardDefinitionRestDto.getCollectionId() != null) {
-        dashboardService.verifyUserHasAccessToDashboardCollection(
-          userId,
-          dashboardService.getDashboardDefinitionAsService(dashboardId)
-        );
-      }
-    });
-    entities.getCollections()
-      .forEach(collectionId -> authorizedCollectionService.verifyUserAuthorizedToEditCollectionResources(
-        userId,
-        collectionId
-      ));
+    entities
+        .getDashboards()
+        .forEach(
+            dashboardId -> {
+              DashboardDefinitionRestDto dashboardDefinitionRestDto =
+                  dashboardService.getDashboardDefinitionAsService(dashboardId);
+              if (dashboardDefinitionRestDto.getCollectionId() != null) {
+                dashboardService.verifyUserHasAccessToDashboardCollection(
+                    userId, dashboardService.getDashboardDefinitionAsService(dashboardId));
+              }
+            });
+    entities
+        .getCollections()
+        .forEach(
+            collectionId ->
+                authorizedCollectionService.verifyUserAuthorizedToEditCollectionResources(
+                    userId, collectionId));
     return reportsHaveConflicts(entities, userId);
   }
 
@@ -129,28 +133,32 @@ public class EntitiesService {
     }
   }
 
-  private boolean conflictingItemIsUndeletedDashboard(ConflictedItemDto item,
-                                                      EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
-    return item.getType().equals(ConflictedItemType.DASHBOARD) && !entitiesDeleteRequestDto.getDashboards()
-      .contains(item.getId());
+  private boolean conflictingItemIsUndeletedDashboard(
+      ConflictedItemDto item, EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
+    return item.getType().equals(ConflictedItemType.DASHBOARD)
+        && !entitiesDeleteRequestDto.getDashboards().contains(item.getId());
   }
 
-  private boolean conflictingItemIsUndeletedCombinedReport(ConflictedItemDto item,
-                                                           List<String> reportIds) {
-    return item.getType().equals(ConflictedItemType.COMBINED_REPORT) && !reportIds.contains(
-      item.getId());
+  private boolean conflictingItemIsUndeletedCombinedReport(
+      ConflictedItemDto item, List<String> reportIds) {
+    return item.getType().equals(ConflictedItemType.COMBINED_REPORT)
+        && !reportIds.contains(item.getId());
   }
 
   private boolean reportsHaveConflicts(EntitiesDeleteRequestDto entities, String userId) {
     List<String> reportIds = entities.getReports();
-    return reportIds.stream().anyMatch(entry -> {
-      Set<ConflictedItemDto> conflictedItemDtos =
-        reportService.getConflictedItemsFromReportDefinition(userId, entry);
-      return conflictedItemDtos.stream()
-        .anyMatch(conflictedItemDto -> conflictingItemIsUndeletedDashboard(conflictedItemDto, entities)
-          || conflictedItemDto.getType().equals(ConflictedItemType.ALERT)
-          || conflictingItemIsUndeletedCombinedReport(conflictedItemDto, reportIds));
-    });
+    return reportIds.stream()
+        .anyMatch(
+            entry -> {
+              Set<ConflictedItemDto> conflictedItemDtos =
+                  reportService.getConflictedItemsFromReportDefinition(userId, entry);
+              return conflictedItemDtos.stream()
+                  .anyMatch(
+                      conflictedItemDto ->
+                          conflictingItemIsUndeletedDashboard(conflictedItemDto, entities)
+                              || conflictedItemDto.getType().equals(ConflictedItemType.ALERT)
+                              || conflictingItemIsUndeletedCombinedReport(
+                                  conflictedItemDto, reportIds));
+            });
   }
-
 }

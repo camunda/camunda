@@ -9,9 +9,12 @@ import java.util.Deque;
 
 public interface ZeebeFetcher {
   int getPartitionId();
-  int getDynamicBatchSize();
-  int getConsecutiveSuccessfulFetches();
-  int getConsecutiveEmptyPages();
-  Deque<Integer> getBatchSizeDeque();
 
+  int getDynamicBatchSize();
+
+  int getConsecutiveSuccessfulFetches();
+
+  int getConsecutiveEmptyPages();
+
+  Deque<Integer> getBatchSizeDeque();
 }

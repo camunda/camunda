@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,11 +21,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMapping
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -33,25 +32,27 @@ public class EventProcessMappingCreateRequestDto extends EventProcessMappingRequ
   private static final String DEFAULT_PROCESS_NAME = "New Process";
 
   @Builder(builderMethodName = "eventProcessMappingCreateBuilder")
-  public EventProcessMappingCreateRequestDto(String name,
-                                             String xml,
-                                             Map<String, EventMappingDto> mappings,
-                                             List<EventSourceEntryDto<?>> eventSources,
-                                             boolean autogenerate) {
+  public EventProcessMappingCreateRequestDto(
+      String name,
+      String xml,
+      Map<String, EventMappingDto> mappings,
+      List<EventSourceEntryDto<?>> eventSources,
+      boolean autogenerate) {
     super(name, xml, mappings, eventSources);
     this.autogenerate = autogenerate;
   }
 
-  public static EventProcessMappingDto to(final String userId,
-                                          final EventProcessMappingCreateRequestDto createRequestDto) {
+  public static EventProcessMappingDto to(
+      final String userId, final EventProcessMappingCreateRequestDto createRequestDto) {
     return EventProcessMappingDto.builder()
-      .name(Optional.ofNullable(createRequestDto.getName()).orElse(DEFAULT_PROCESS_NAME))
-      .xml(createRequestDto.getXml())
-      .mappings(createRequestDto.getMappings())
-      .lastModifier(userId)
-      .eventSources(createRequestDto.getEventSources())
-      .roles(Collections.singletonList(new EventProcessRoleRequestDto<>(new IdentityDto(userId, IdentityType.USER))))
-      .build();
+        .name(Optional.ofNullable(createRequestDto.getName()).orElse(DEFAULT_PROCESS_NAME))
+        .xml(createRequestDto.getXml())
+        .mappings(createRequestDto.getMappings())
+        .lastModifier(userId)
+        .eventSources(createRequestDto.getEventSources())
+        .roles(
+            Collections.singletonList(
+                new EventProcessRoleRequestDto<>(new IdentityDto(userId, IdentityType.USER))))
+        .build();
   }
-
 }

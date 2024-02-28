@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import static java.util.stream.Collectors.toSet;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -12,20 +17,14 @@ import org.camunda.optimize.dto.optimize.query.PageResultDto;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.reader.ProcessInstanceReader;
 import org.camunda.optimize.service.db.writer.BusinessKeyWriter;
+import org.camunda.optimize.service.db.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.db.writer.variable.VariableUpdateInstanceWriter;
-import org.camunda.optimize.service.db.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Set;
-
-import static java.util.stream.Collectors.toSet;
 
 @AllArgsConstructor
 @Component
@@ -51,9 +50,10 @@ public class EngineDataProcessCleanupService extends CleanupService {
     final Set<String> allOptimizeProcessDefinitionKeys = getAllCamundaEngineProcessDefinitionKeys();
 
     verifyConfiguredKeysAreKnownDefinitionKeys(
-      allOptimizeProcessDefinitionKeys,
-      getCleanupConfiguration().getProcessDataCleanupConfiguration().getAllProcessSpecificConfigurationKeys()
-    );
+        allOptimizeProcessDefinitionKeys,
+        getCleanupConfiguration()
+            .getProcessDataCleanupConfiguration()
+            .getAllProcessSpecificConfigurationKeys());
     int i = 1;
     for (String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
       log.info("Process History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
@@ -62,16 +62,17 @@ public class EngineDataProcessCleanupService extends CleanupService {
     }
   }
 
-  private void performCleanupForProcessKey(final OffsetDateTime startTime, final String currentProcessDefinitionKey) {
-    final ProcessDefinitionCleanupConfiguration cleanupConfigurationForKey = getCleanupConfiguration()
-      .getProcessDefinitionCleanupConfigurationForKey(currentProcessDefinitionKey);
+  private void performCleanupForProcessKey(
+      final OffsetDateTime startTime, final String currentProcessDefinitionKey) {
+    final ProcessDefinitionCleanupConfiguration cleanupConfigurationForKey =
+        getCleanupConfiguration()
+            .getProcessDefinitionCleanupConfigurationForKey(currentProcessDefinitionKey);
 
     log.info(
-      "Performing cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
-      currentProcessDefinitionKey,
-      cleanupConfigurationForKey.getTtl(),
-      cleanupConfigurationForKey.getCleanupMode()
-    );
+        "Performing cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
+        currentProcessDefinitionKey,
+        cleanupConfigurationForKey.getTtl(),
+        cleanupConfigurationForKey.getCleanupMode());
 
     final OffsetDateTime endDate = startTime.minus(cleanupConfigurationForKey.getTtl());
     switch (cleanupConfigurationForKey.getCleanupMode()) {
@@ -82,58 +83,56 @@ public class EngineDataProcessCleanupService extends CleanupService {
         performVariableDataCleanup(currentProcessDefinitionKey, endDate, getBatchSize());
         break;
       default:
-        throw new IllegalStateException("Unsupported cleanup mode " + cleanupConfigurationForKey.getCleanupMode());
+        throw new IllegalStateException(
+            "Unsupported cleanup mode " + cleanupConfigurationForKey.getCleanupMode());
     }
 
     log.info(
-      "Finished cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
-      currentProcessDefinitionKey,
-      cleanupConfigurationForKey.getTtl(),
-      cleanupConfigurationForKey.getCleanupMode()
-    );
+        "Finished cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
+        currentProcessDefinitionKey,
+        cleanupConfigurationForKey.getTtl(),
+        cleanupConfigurationForKey.getCleanupMode());
   }
 
-  private void performInstanceDataCleanup(final String definitionKey,
-                                          final OffsetDateTime endDate,
-                                          final int batchSize) {
-    PageResultDto<String> currentPageOfProcessInstanceIds = processInstanceReader
-      .getFirstPageOfProcessInstanceIdsThatEndedBefore(definitionKey, endDate, batchSize);
+  private void performInstanceDataCleanup(
+      final String definitionKey, final OffsetDateTime endDate, final int batchSize) {
+    PageResultDto<String> currentPageOfProcessInstanceIds =
+        processInstanceReader.getFirstPageOfProcessInstanceIdsThatEndedBefore(
+            definitionKey, endDate, batchSize);
     while (!currentPageOfProcessInstanceIds.isEmpty()) {
       final List<String> currentInstanceIds = currentPageOfProcessInstanceIds.getEntities();
       camundaActivityEventWriter.deleteByProcessInstanceIds(definitionKey, currentInstanceIds);
       businessKeyWriter.deleteByProcessInstanceIds(currentInstanceIds);
       variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
       processInstanceWriter.deleteByIds(definitionKey, currentInstanceIds);
-      currentPageOfProcessInstanceIds = processInstanceReader
-        .getNextPageOfProcessInstanceIdsThatEndedBefore(
-          definitionKey, endDate, batchSize, currentPageOfProcessInstanceIds
-        );
+      currentPageOfProcessInstanceIds =
+          processInstanceReader.getNextPageOfProcessInstanceIdsThatEndedBefore(
+              definitionKey, endDate, batchSize, currentPageOfProcessInstanceIds);
     }
   }
 
-  private void performVariableDataCleanup(final String definitionKey,
-                                          final OffsetDateTime endDate,
-                                          final int batchSize) {
-    PageResultDto<String> currentPageOfProcessInstanceIds = processInstanceReader
-      .getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(definitionKey, endDate, batchSize);
+  private void performVariableDataCleanup(
+      final String definitionKey, final OffsetDateTime endDate, final int batchSize) {
+    PageResultDto<String> currentPageOfProcessInstanceIds =
+        processInstanceReader.getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+            definitionKey, endDate, batchSize);
     while (!currentPageOfProcessInstanceIds.isEmpty()) {
       final List<String> currentInstanceIds = currentPageOfProcessInstanceIds.getEntities();
       variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
-      processVariableUpdateWriter.deleteVariableDataByProcessInstanceIds(definitionKey, currentInstanceIds);
+      processVariableUpdateWriter.deleteVariableDataByProcessInstanceIds(
+          definitionKey, currentInstanceIds);
 
-      currentPageOfProcessInstanceIds = processInstanceReader
-        .getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
-          definitionKey, endDate, batchSize, currentPageOfProcessInstanceIds
-        );
+      currentPageOfProcessInstanceIds =
+          processInstanceReader.getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
+              definitionKey, endDate, batchSize, currentPageOfProcessInstanceIds);
     }
   }
 
   private Set<String> getAllCamundaEngineProcessDefinitionKeys() {
-    return processDefinitionReader.getAllProcessDefinitions()
-      .stream()
-      .filter(definition -> !definition.isEventBased())
-      .map(ProcessDefinitionOptimizeDto::getKey)
-      .collect(toSet());
+    return processDefinitionReader.getAllProcessDefinitions().stream()
+        .filter(definition -> !definition.isEventBased())
+        .map(ProcessDefinitionOptimizeDto::getKey)
+        .collect(toSet());
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
@@ -143,5 +142,4 @@ public class EngineDataProcessCleanupService extends CleanupService {
   private int getBatchSize() {
     return getCleanupConfiguration().getProcessDataCleanupConfiguration().getBatchSize();
   }
-
 }

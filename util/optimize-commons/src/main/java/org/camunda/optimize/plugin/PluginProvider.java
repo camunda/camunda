@@ -5,12 +5,19 @@
  */
 package org.camunda.optimize.plugin;
 
+import static org.camunda.optimize.plugin.PluginVersionChecker.validatePluginVersion;
+
 import com.google.common.collect.Iterables;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassGraphException;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
 import jakarta.annotation.PostConstruct;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -19,14 +26,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ClassUtils;
-
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.camunda.optimize.plugin.PluginVersionChecker.validatePluginVersion;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -44,10 +43,8 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
     for (Path pluginJar : pluginJarLoader.getPluginJars()) {
       log.debug("Got plugin jar {}", pluginJar.toString());
       try {
-        final PluginClassLoader pluginClassLoader = new PluginClassLoader(
-          pluginJar.toUri().toURL(),
-          getClass().getClassLoader()
-        );
+        final PluginClassLoader pluginClassLoader =
+            new PluginClassLoader(pluginJar.toUri().toURL(), getClass().getClassLoader());
 
         validatePluginVersion(pluginClassLoader);
 
@@ -63,43 +60,52 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
   private void registerPlugins(final PluginClassLoader pluginClassLoader) {
 
     if (!getBasePackages().isEmpty()) {
-      try (ScanResult scanResult = new ClassGraph()
-        .enableClassInfo()
-        .overrideClassLoaders(pluginClassLoader)
-        .acceptPackages(Iterables.toArray(getBasePackages(), String.class))
-        .ignoreParentClassLoaders()
-        .scan()) {
-        final ClassInfoList pluginClasses = scanResult.getClassesImplementing(getPluginClass().getName());
+      try (ScanResult scanResult =
+          new ClassGraph()
+              .enableClassInfo()
+              .overrideClassLoaders(pluginClassLoader)
+              .acceptPackages(Iterables.toArray(getBasePackages(), String.class))
+              .ignoreParentClassLoaders()
+              .scan()) {
+        final ClassInfoList pluginClasses =
+            scanResult.getClassesImplementing(getPluginClass().getName());
 
-        pluginClasses.loadClasses().forEach(pluginClass -> {
-          try {
-            if (validPluginClass(pluginClass)) {
-              registerPlugin(pluginClass);
-            } else {
-              String reason = String.format(
-                "Plugin class [%s] is not valid because it has no default constructor!",
-                pluginClass.getSimpleName()
-              );
-              log.error(reason);
-              throw new OptimizeRuntimeException(reason);
-            }
-          } catch (InstantiationException | IllegalAccessException e) {
-            String reason = String.format("Cannot register plugin class [%s]", pluginClass.getSimpleName());
-            log.error(reason, e);
-            throw new OptimizeRuntimeException(reason, e);
-          }
-        });
+        pluginClasses
+            .loadClasses()
+            .forEach(
+                pluginClass -> {
+                  try {
+                    if (validPluginClass(pluginClass)) {
+                      registerPlugin(pluginClass);
+                    } else {
+                      String reason =
+                          String.format(
+                              "Plugin class [%s] is not valid because it has no default constructor!",
+                              pluginClass.getSimpleName());
+                      log.error(reason);
+                      throw new OptimizeRuntimeException(reason);
+                    }
+                  } catch (InstantiationException | IllegalAccessException e) {
+                    String reason =
+                        String.format(
+                            "Cannot register plugin class [%s]", pluginClass.getSimpleName());
+                    log.error(reason, e);
+                    throw new OptimizeRuntimeException(reason, e);
+                  }
+                });
       } catch (ClassGraphException e) {
         String reason = "There was an error with ClassGraph scanning a plugin!";
         log.error(reason, e);
         throw new OptimizeRuntimeException(reason, e);
       }
     } else {
-      log.debug("No base packages configured for plugin class {}.", getPluginClass().getSimpleName());
+      log.debug(
+          "No base packages configured for plugin class {}.", getPluginClass().getSimpleName());
     }
   }
 
-  private void registerPlugin(final Class<?> pluginClass) throws InstantiationException, IllegalAccessException {
+  private void registerPlugin(final Class<?> pluginClass)
+      throws InstantiationException, IllegalAccessException {
     try {
       @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
       PluginType plugin = (PluginType) pluginClass.getDeclaredConstructor().newInstance();

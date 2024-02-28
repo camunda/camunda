@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.security;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.RoleType;
@@ -16,9 +18,6 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.service.db.reader.EntitiesReader;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @AllArgsConstructor
@@ -37,45 +36,47 @@ public class AuthorizedEntitiesService {
       collectionEntities = entitiesReader.getAllPrivateEntitiesForOwnerId(userId);
     }
 
-    RoleType roleForUser = identityService.getUserAuthorizations(userId)
-      .contains(AuthorizationType.ENTITY_EDITOR) ? RoleType.EDITOR : RoleType.VIEWER;
+    RoleType roleForUser =
+        identityService.getUserAuthorizations(userId).contains(AuthorizationType.ENTITY_EDITOR)
+            ? RoleType.EDITOR
+            : RoleType.VIEWER;
     return collectionEntities.stream()
-      .map(collectionEntity -> Pair.of(
-        collectionEntity,
-        collectionEntity.toEntityDto(roleForUser)
-      ))
-      .filter(collectionEntityAndEntityDto -> {
-        final EntityResponseDto entityDto = collectionEntityAndEntityDto.getValue();
-        if (entityDto.getEntityType().equals(EntityType.REPORT)) {
-          return reportAuthorizationService.isAuthorizedToAccessReportDefinition(
-            userId, (ReportDefinitionDto) collectionEntityAndEntityDto.getKey()
-          );
-        } else {
-          return true;
-        }
-      })
-      .map(Pair::getValue)
-      .collect(Collectors.toList());
+        .map(
+            collectionEntity ->
+                Pair.of(collectionEntity, collectionEntity.toEntityDto(roleForUser)))
+        .filter(
+            collectionEntityAndEntityDto -> {
+              final EntityResponseDto entityDto = collectionEntityAndEntityDto.getValue();
+              if (entityDto.getEntityType().equals(EntityType.REPORT)) {
+                return reportAuthorizationService.isAuthorizedToAccessReportDefinition(
+                    userId, (ReportDefinitionDto) collectionEntityAndEntityDto.getKey());
+              } else {
+                return true;
+              }
+            })
+        .map(Pair::getValue)
+        .collect(Collectors.toList());
   }
 
-  public List<EntityResponseDto> getAuthorizedCollectionEntities(final String userId, final String collectionId) {
-    return entitiesReader
-      .getAllEntitiesForCollection(collectionId)
-      .stream()
-      // defaults to EDITOR, any authorization specific values in a collection have to be applied in responsible service layer
-      .map(collectionEntity -> Pair.of(collectionEntity, collectionEntity.toEntityDto(RoleType.EDITOR)))
-      .filter(collectionEntityAndEntityDto -> {
-        final EntityResponseDto entityDto = collectionEntityAndEntityDto.getValue();
-        if (entityDto.getEntityType().equals(EntityType.REPORT)) {
-          return reportAuthorizationService.isAuthorizedToAccessReportDefinition(
-            userId, (ReportDefinitionDto) collectionEntityAndEntityDto.getKey()
-          );
-        } else {
-          return true;
-        }
-      })
-      .map(Pair::getValue)
-      .collect(Collectors.toList());
+  public List<EntityResponseDto> getAuthorizedCollectionEntities(
+      final String userId, final String collectionId) {
+    return entitiesReader.getAllEntitiesForCollection(collectionId).stream()
+        // defaults to EDITOR, any authorization specific values in a collection have to be applied
+        // in responsible service layer
+        .map(
+            collectionEntity ->
+                Pair.of(collectionEntity, collectionEntity.toEntityDto(RoleType.EDITOR)))
+        .filter(
+            collectionEntityAndEntityDto -> {
+              final EntityResponseDto entityDto = collectionEntityAndEntityDto.getValue();
+              if (entityDto.getEntityType().equals(EntityType.REPORT)) {
+                return reportAuthorizationService.isAuthorizedToAccessReportDefinition(
+                    userId, (ReportDefinitionDto) collectionEntityAndEntityDto.getKey());
+              } else {
+                return true;
+              }
+            })
+        .map(Pair::getValue)
+        .collect(Collectors.toList());
   }
-
 }

@@ -10,13 +10,13 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import java.io.IOException;
 import org.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 
-import java.io.IOException;
-
-public class CustomAuthorizedReportDefinitionDeserializer extends StdDeserializer<AuthorizedReportDefinitionResponseDto> {
+public class CustomAuthorizedReportDefinitionDeserializer
+    extends StdDeserializer<AuthorizedReportDefinitionResponseDto> {
 
   private ObjectMapper objectMapper;
   private CustomReportDefinitionDeserializer reportDefinitionDeserializer;
@@ -32,11 +32,14 @@ public class CustomAuthorizedReportDefinitionDeserializer extends StdDeserialize
   }
 
   @Override
-  public AuthorizedReportDefinitionResponseDto deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+  public AuthorizedReportDefinitionResponseDto deserialize(
+      JsonParser jp, DeserializationContext ctxt) throws IOException {
     final JsonNode node = jp.readValueAsTree();
-    final ReportDefinitionDto reportDefinitionDto = reportDefinitionDeserializer.deserialize(jp, node);
-    final AuthorizedEntityDto authorizedEntityDto = objectMapper.readValue(node.toString(), AuthorizedEntityDto.class);
-    return new AuthorizedReportDefinitionResponseDto(reportDefinitionDto, authorizedEntityDto.getCurrentUserRole());
+    final ReportDefinitionDto reportDefinitionDto =
+        reportDefinitionDeserializer.deserialize(jp, node);
+    final AuthorizedEntityDto authorizedEntityDto =
+        objectMapper.readValue(node.toString(), AuthorizedEntityDto.class);
+    return new AuthorizedReportDefinitionResponseDto(
+        reportDefinitionDto, authorizedEntityDto.getCurrentUserRole());
   }
-
 }

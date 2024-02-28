@@ -5,23 +5,23 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.util.List;
-
 public class ExternalVariableUpdateDatabaseImportJob extends DatabaseImportJob<ProcessVariableDto> {
 
   private final ProcessVariableUpdateWriter variableWriter;
   private final ConfigurationService configurationService;
 
-  public ExternalVariableUpdateDatabaseImportJob(final ProcessVariableUpdateWriter variableWriter,
-                                                 final ConfigurationService configurationService,
-                                                 final Runnable callback,
-                                                 final DatabaseClient databaseClient) {
+  public ExternalVariableUpdateDatabaseImportJob(
+      final ProcessVariableUpdateWriter variableWriter,
+      final ConfigurationService configurationService,
+      final Runnable callback,
+      final DatabaseClient databaseClient) {
     super(callback, databaseClient);
     this.variableWriter = variableWriter;
     this.configurationService = configurationService;
@@ -30,10 +30,8 @@ public class ExternalVariableUpdateDatabaseImportJob extends DatabaseImportJob<P
   @Override
   protected void persistEntities(List<ProcessVariableDto> variableUpdates) {
     databaseClient.executeImportRequestsAsBulk(
-      "External variable updates",
-      variableWriter.generateVariableUpdateImports(variableUpdates),
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        "External variable updates",
+        variableWriter.generateVariableUpdateImports(variableUpdates),
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
-
 }

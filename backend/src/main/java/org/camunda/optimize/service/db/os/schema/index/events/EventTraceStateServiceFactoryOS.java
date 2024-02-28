@@ -8,17 +8,17 @@ package org.camunda.optimize.service.db.os.schema.index.events;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.db.events.EventTraceStateServiceFactory;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.os.reader.EventSequenceCountReaderOS;
+import org.camunda.optimize.service.db.os.reader.EventTraceStateReaderOS;
+import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
+import org.camunda.optimize.service.db.os.writer.EventSequenceCountWriterOS;
+import org.camunda.optimize.service.db.os.writer.EventTraceStateWriterOS;
 import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.db.reader.EventTraceStateReader;
 import org.camunda.optimize.service.db.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.db.writer.EventTraceStateWriter;
 import org.camunda.optimize.service.events.EventTraceStateService;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.reader.EventSequenceCountReaderOS;
-import org.camunda.optimize.service.db.os.reader.EventTraceStateReaderOS;
-import org.camunda.optimize.service.db.os.writer.EventTraceStateWriterOS;
-import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
-import org.camunda.optimize.service.db.os.writer.EventSequenceCountWriterOS;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
@@ -37,11 +37,10 @@ public class EventTraceStateServiceFactoryOS implements EventTraceStateServiceFa
   @Override
   public EventTraceStateService createEventTraceStateService(final String eventSuffix) {
     return new EventTraceStateService(
-      createEventTraceStateWriter(eventSuffix),
-      createEventTraceStateReader(eventSuffix),
-      createEventSequenceCountWriter(eventSuffix),
-      createEventSequenceCountReader(eventSuffix)
-    );
+        createEventTraceStateWriter(eventSuffix),
+        createEventTraceStateReader(eventSuffix),
+        createEventSequenceCountWriter(eventSuffix),
+        createEventSequenceCountReader(eventSuffix));
   }
 
   private EventSequenceCountReader createEventSequenceCountReader(final String indexKey) {
@@ -63,6 +62,4 @@ public class EventTraceStateServiceFactoryOS implements EventTraceStateServiceFa
     openSearchSchemaManager.createIndexIfMissing(osClient, new EventTraceStateIndexOS(indexKey));
     return new EventTraceStateWriterOS(indexKey, osClient, objectMapper);
   }
-
 }
-

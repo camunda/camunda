@@ -18,8 +18,7 @@ public enum AlertNotificationType {
   RESOLVED("alert_resolved"),
   ;
 
-  @JsonIgnore
-  private final String utmSource;
+  @JsonIgnore private final String utmSource;
 
   @JsonValue
   public String getId() {

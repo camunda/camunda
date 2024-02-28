@@ -27,5 +27,4 @@ public class BackupWriterOS implements BackupWriter {
   public void deleteOptimizeSnapshots(final Long backupId) {
     log.error("Functionality not implemented for OpenSearch");
   }
-
 }

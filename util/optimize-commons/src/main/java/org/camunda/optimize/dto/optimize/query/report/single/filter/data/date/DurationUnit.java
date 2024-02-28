@@ -8,8 +8,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * This Enum is a subset of the values available in {@link java.time.temporal.ChronoUnit}.
- * It reflects the values allowed for duration filters on the Optimize Report API.
+ * This Enum is a subset of the values available in {@link java.time.temporal.ChronoUnit}. It
+ * reflects the values allowed for duration filters on the Optimize Report API.
  */
 public enum DurationUnit {
   YEARS("years"),

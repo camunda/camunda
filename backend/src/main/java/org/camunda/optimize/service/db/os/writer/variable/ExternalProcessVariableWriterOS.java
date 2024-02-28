@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.writer.variable;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
@@ -12,9 +14,6 @@ import org.camunda.optimize.service.db.writer.variable.ExternalProcessVariableWr
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
-import java.util.List;
 
 @AllArgsConstructor
 @Component
@@ -24,12 +23,11 @@ public class ExternalProcessVariableWriterOS implements ExternalProcessVariableW
 
   @Override
   public void writeExternalProcessVariables(final List<ExternalProcessVariableDto> variables) {
-log.error("Functionality not implemented for OpenSearch");
+    log.error("Functionality not implemented for OpenSearch");
   }
 
   @Override
   public void deleteExternalVariablesIngestedBefore(final OffsetDateTime timestamp) {
-log.error("Functionality not implemented for OpenSearch");
+    log.error("Functionality not implemented for OpenSearch");
   }
-
 }

@@ -12,8 +12,7 @@ public class MessageEventCorrelater {
 
   private SimpleEngineClient engineClient;
 
-  @Getter
-  private String[] messagesToCorrelate;
+  @Getter private String[] messagesToCorrelate;
 
   public MessageEventCorrelater(SimpleEngineClient engineClient, String[] messagesToCorrelate) {
     this.engineClient = engineClient;
@@ -25,5 +24,4 @@ public class MessageEventCorrelater {
       engineClient.correlateMessage(messageName);
     }
   }
-
 }

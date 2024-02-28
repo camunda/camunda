@@ -8,7 +8,6 @@ package org.camunda.optimize.dto.optimize.persistence.incident;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum IncidentStatus {
-
   OPEN,
   DELETED,
   RESOLVED;

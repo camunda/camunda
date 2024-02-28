@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodeFilterDataDto;
-
 import java.util.Collections;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodeFilterDataDto;
 
 public class CanceledFlowNodeFilterDto extends ProcessFilterDto<CanceledFlowNodeFilterDataDto> {
   @Override

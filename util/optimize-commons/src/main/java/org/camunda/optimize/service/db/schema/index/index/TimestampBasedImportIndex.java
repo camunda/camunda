@@ -5,23 +5,25 @@
  */
 package org.camunda.optimize.service.db.schema.index.index;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+
+import java.io.IOException;
 import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
-
-public abstract class TimestampBasedImportIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+public abstract class TimestampBasedImportIndex<TBuilder>
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 5;
 
-  private static final String LAST_IMPORT_EXECUTION_TIMESTAMP = ImportIndexDto.Fields.lastImportExecutionTimestamp;
+  private static final String LAST_IMPORT_EXECUTION_TIMESTAMP =
+      ImportIndexDto.Fields.lastImportExecutionTimestamp;
   public static final String TIMESTAMP_OF_LAST_ENTITY = ImportIndexDto.Fields.timestampOfLastEntity;
-  public static final String DB_TYPE_INDEX_REFERS_TO = TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo;
+  public static final String DB_TYPE_INDEX_REFERS_TO =
+      TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo;
   public static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
 
   @Override
@@ -43,22 +45,21 @@ public abstract class TimestampBasedImportIndex<TBuilder> extends DefaultIndexMa
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(DATA_SOURCE)
+        .startObject(DATA_SOURCE)
         .field("type", "object")
         .field("dynamic", true)
-      .endObject()
-      .startObject(DB_TYPE_INDEX_REFERS_TO)
+        .endObject()
+        .startObject(DB_TYPE_INDEX_REFERS_TO)
         .field("type", "keyword")
-      .endObject()
-      .startObject(TIMESTAMP_OF_LAST_ENTITY)
+        .endObject()
+        .startObject(TIMESTAMP_OF_LAST_ENTITY)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(LAST_IMPORT_EXECUTION_TIMESTAMP)
+        .endObject()
+        .startObject(LAST_IMPORT_EXECUTION_TIMESTAMP)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject();
+        .endObject();
     // @formatter:on
   }
-
 }

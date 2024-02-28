@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.importing.eventprocess.mediator;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.List;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
@@ -22,28 +26,27 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.util.List;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
 public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
-  extends TimestampBasedImportMediator<EventProcessInstanceImportSourceIndexHandler, T> {
+    extends TimestampBasedImportMediator<EventProcessInstanceImportSourceIndexHandler, T> {
 
-  @Getter
-  private final String publishedProcessStateId;
+  @Getter private final String publishedProcessStateId;
   private final EventFetcherService<T> eventFetcherService;
 
-  public EventProcessInstanceImportMediator(final String publishedProcessStateId,
-                                            final EventProcessInstanceImportSourceIndexHandler importSourceIndexHandler,
-                                            final EventFetcherService<T> eventFetcherService,
-                                            final ImportService<T> eventProcessEventImportService,
-                                            final ConfigurationService configurationService,
-                                            final BackoffCalculator idleBackoffCalculator) {
-    super(configurationService, idleBackoffCalculator, importSourceIndexHandler, eventProcessEventImportService);
+  public EventProcessInstanceImportMediator(
+      final String publishedProcessStateId,
+      final EventProcessInstanceImportSourceIndexHandler importSourceIndexHandler,
+      final EventFetcherService<T> eventFetcherService,
+      final ImportService<T> eventProcessEventImportService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
+    super(
+        configurationService,
+        idleBackoffCalculator,
+        importSourceIndexHandler,
+        eventProcessEventImportService);
     this.publishedProcessStateId = publishedProcessStateId;
     this.eventFetcherService = eventFetcherService;
   }
@@ -52,9 +55,8 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
   protected OffsetDateTime getTimestamp(final T eventProcessEventDto) {
     if (eventProcessEventDto instanceof EventDto) {
       return OffsetDateTime.ofInstant(
-        Instant.ofEpochMilli(((EventDto) eventProcessEventDto).getIngestionTimestamp()),
-        ZoneId.systemDefault()
-      );
+          Instant.ofEpochMilli(((EventDto) eventProcessEventDto).getIngestionTimestamp()),
+          ZoneId.systemDefault());
     } else if (eventProcessEventDto instanceof CamundaActivityEventDto) {
       return ((CamundaActivityEventDto) eventProcessEventDto).getTimestamp();
     } else {
@@ -65,16 +67,13 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
   @Override
   protected List<T> getEntitiesNextPage() {
     return eventFetcherService.getEventsIngestedAfter(
-      importIndexHandler.getTimestampOfLastEntity().toInstant().toEpochMilli(),
-      getMaxPageSize()
-    );
+        importIndexHandler.getTimestampOfLastEntity().toInstant().toEpochMilli(), getMaxPageSize());
   }
 
   @Override
   protected List<T> getEntitiesLastTimestamp() {
     return eventFetcherService.getEventsIngestedAt(
-      importIndexHandler.getTimestampOfLastEntity().toInstant().toEpochMilli()
-    );
+        importIndexHandler.getTimestampOfLastEntity().toInstant().toEpochMilli());
   }
 
   @Override
@@ -86,5 +85,4 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
   public MediatorRank getRank() {
     return MediatorRank.INSTANCE;
   }
-
 }

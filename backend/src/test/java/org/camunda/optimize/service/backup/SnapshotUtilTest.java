@@ -5,39 +5,39 @@
  */
 package org.camunda.optimize.service.backup;
 
-import org.camunda.optimize.service.util.SnapshotUtil;
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.metadata.Version.VERSION;
+
+import org.camunda.optimize.service.util.SnapshotUtil;
+import org.junit.jupiter.api.Test;
 
 public class SnapshotUtilTest {
   @Test
   public void getSnapshotNameForImportIndices() {
     // when/then
     assertThat(SnapshotUtil.getSnapshotNameForImportIndices(123L))
-      .isEqualTo(String.format("camunda_optimize_123_%s_part_1_of_2", VERSION));
+        .isEqualTo(String.format("camunda_optimize_123_%s_part_1_of_2", VERSION));
   }
 
   @Test
   public void getSnapshotNameForNonImportIndices() {
     // when/then
     assertThat(SnapshotUtil.getSnapshotNameForNonImportIndices(123L))
-      .isEqualTo(String.format("camunda_optimize_123_%s_part_2_of_2", VERSION));
+        .isEqualTo(String.format("camunda_optimize_123_%s_part_2_of_2", VERSION));
   }
 
   @Test
   public void getSnapshotPrefixWithBackupId() {
     // when/then
-    assertThat(SnapshotUtil.getSnapshotPrefixWithBackupId(123L))
-      .isEqualTo("camunda_optimize_123_");
+    assertThat(SnapshotUtil.getSnapshotPrefixWithBackupId(123L)).isEqualTo("camunda_optimize_123_");
   }
 
   @Test
   public void getBackupIdFromSnapshotName() {
     // when/then
     assertThat(SnapshotUtil.getBackupIdFromSnapshotName("camunda_optimize_123_3.9.0_part_1_of_2"))
-      .isEqualTo(SnapshotUtil.getBackupIdFromSnapshotName("camunda_optimize_123_3.9.0_part_2_of_2"))
-      .isEqualTo(123L);
+        .isEqualTo(
+            SnapshotUtil.getBackupIdFromSnapshotName("camunda_optimize_123_3.9.0_part_2_of_2"))
+        .isEqualTo(123L);
   }
 }

@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.importing.zeebe.mediator;
 
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
+import static org.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
+
+import java.util.List;
 import org.camunda.optimize.OptimizeMetrics;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.service.importing.PositionBasedImportMediator;
@@ -18,23 +22,20 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
-import static org.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ZeebeProcessInstanceImportMediator
-  extends PositionBasedImportMediator<ZeebeProcessInstanceImportIndexHandler, ZeebeProcessInstanceRecordDto> {
+    extends PositionBasedImportMediator<
+        ZeebeProcessInstanceImportIndexHandler, ZeebeProcessInstanceRecordDto> {
 
   private final ZeebeProcessInstanceFetcher zeebeProcessInstanceFetcher;
 
-  public ZeebeProcessInstanceImportMediator(final ZeebeProcessInstanceImportIndexHandler importIndexHandler,
-                                            final ZeebeProcessInstanceFetcher zeebeProcessInstanceFetcher,
-                                            final ZeebeProcessInstanceImportService importService,
-                                            final ConfigurationService configurationService,
-                                            final BackoffCalculator idleBackoffCalculator) {
+  public ZeebeProcessInstanceImportMediator(
+      final ZeebeProcessInstanceImportIndexHandler importIndexHandler,
+      final ZeebeProcessInstanceFetcher zeebeProcessInstanceFetcher,
+      final ZeebeProcessInstanceImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.zeebeProcessInstanceFetcher = zeebeProcessInstanceFetcher;
     this.importService = importService;
@@ -64,7 +65,9 @@ public class ZeebeProcessInstanceImportMediator
 
   private List<ZeebeProcessInstanceRecordDto> getProcesses() {
     return OptimizeMetrics.getTimer(NEW_PAGE_FETCH_TIME_METRIC, getRecordType(), getPartitionId())
-      .record(() -> zeebeProcessInstanceFetcher.getZeebeRecordsForPrefixAndPartitionFrom(importIndexHandler.getNextPage()));
+        .record(
+            () ->
+                zeebeProcessInstanceFetcher.getZeebeRecordsForPrefixAndPartitionFrom(
+                    importIndexHandler.getNextPage()));
   }
-
 }

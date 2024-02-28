@@ -5,19 +5,18 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-
 import java.util.List;
 import java.util.Optional;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 
 public interface DecisionDefinitionReader {
 
-  Optional<DecisionDefinitionOptimizeDto> getDecisionDefinition(final String decisionDefinitionKey,
-                                                                final List<String> decisionDefinitionVersions,
-                                                                final List<String> tenantIds);
+  Optional<DecisionDefinitionOptimizeDto> getDecisionDefinition(
+      final String decisionDefinitionKey,
+      final List<String> decisionDefinitionVersions,
+      final List<String> tenantIds);
 
   List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitions();
 
   String getLatestVersionToKey(String key);
-
 }

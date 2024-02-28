@@ -6,18 +6,17 @@
 package org.camunda.optimize.service.db.os.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
-import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-
-import java.util.List;
-import java.util.Set;
 
 @AllArgsConstructor
 @Slf4j
@@ -29,26 +28,29 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
   private final ConfigurationService configurationService;
 
   @Override
-  public List<EventSequenceCountDto> getEventSequencesWithSourceInIncomingOrTargetInOutgoing(final List<EventTypeDto> incomingEvents, final List<EventTypeDto> outgoingEvents) {
+  public List<EventSequenceCountDto> getEventSequencesWithSourceInIncomingOrTargetInOutgoing(
+      final List<EventTypeDto> incomingEvents, final List<EventTypeDto> outgoingEvents) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
-  public List<EventCountResponseDto> getEventCountsForAllExternalEventsUsingSearchTerm(final String searchTerm) {
+  public List<EventCountResponseDto> getEventCountsForAllExternalEventsUsingSearchTerm(
+      final String searchTerm) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
-  public List<EventCountResponseDto> getEventCountsForExternalGroupsUsingSearchTerm(final List<String> groups,
-                                                                                    final String searchTerm) {
+  public List<EventCountResponseDto> getEventCountsForExternalGroupsUsingSearchTerm(
+      final List<String> groups, final String searchTerm) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
 
   @Override
-  public List<EventCountResponseDto> getEventCountsForCamundaSources(final List<CamundaEventSourceEntryDto> camundaSources) {
+  public List<EventCountResponseDto> getEventCountsForCamundaSources(
+      final List<CamundaEventSourceEntryDto> camundaSources) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
@@ -60,8 +62,8 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
   }
 
   @Override
-  public List<EventSequenceCountDto> getEventSequencesContainingBothEventTypes(final EventTypeDto firstEventTypeDto,
-                                                                               final EventTypeDto secondEventTypeDto) {
+  public List<EventSequenceCountDto> getEventSequencesContainingBothEventTypes(
+      final EventTypeDto firstEventTypeDto, final EventTypeDto secondEventTypeDto) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
@@ -71,5 +73,4 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
-
 }

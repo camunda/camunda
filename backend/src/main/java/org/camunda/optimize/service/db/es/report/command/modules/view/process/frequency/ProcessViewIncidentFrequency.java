@@ -22,8 +22,9 @@ import org.springframework.stereotype.Component;
 public class ProcessViewIncidentFrequency extends ProcessViewFrequency {
 
   @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setView(new ProcessViewDto(ProcessViewEntity.INCIDENT, ViewProperty.FREQUENCY));
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
+    dataForCommandKey.setView(
+        new ProcessViewDto(ProcessViewEntity.INCIDENT, ViewProperty.FREQUENCY));
   }
-
 }

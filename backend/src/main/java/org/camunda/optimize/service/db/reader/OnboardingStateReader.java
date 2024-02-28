@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.OnboardingStateDto;
-
 import java.util.Optional;
+import org.camunda.optimize.dto.optimize.OnboardingStateDto;
 
 public interface OnboardingStateReader {
 
-  Optional<OnboardingStateDto> getOnboardingStateByKeyAndUserId(final String key, final String userId);
-
+  Optional<OnboardingStateDto> getOnboardingStateByKeyAndUserId(
+      final String key, final String userId);
 }

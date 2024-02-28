@@ -10,5 +10,4 @@ import java.util.Set;
 public interface DecisionInstanceReader {
 
   Set<String> getExistingDecisionDefinitionKeysFromInstances();
-
 }

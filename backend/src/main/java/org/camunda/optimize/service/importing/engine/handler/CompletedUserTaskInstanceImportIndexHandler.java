@@ -13,9 +13,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class CompletedUserTaskInstanceImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
+public class CompletedUserTaskInstanceImportIndexHandler
+    extends TimestampBasedEngineImportIndexHandler {
 
-  private static final String COMPLETED_USER_TASK_INSTANCE_IMPORT_INDEX_DOC_ID = "completedUserTaskInstanceImportIndex";
+  private static final String COMPLETED_USER_TASK_INSTANCE_IMPORT_INDEX_DOC_ID =
+      "completedUserTaskInstanceImportIndex";
 
   private final EngineContext engineContext;
 
@@ -32,5 +34,4 @@ public class CompletedUserTaskInstanceImportIndexHandler extends TimestampBasedE
   protected String getDatabaseDocID() {
     return COMPLETED_USER_TASK_INSTANCE_IMPORT_INDEX_DOC_ID;
   }
-
 }

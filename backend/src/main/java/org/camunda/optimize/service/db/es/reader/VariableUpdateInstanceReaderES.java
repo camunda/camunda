@@ -5,18 +5,28 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.elasticsearch.core.TimeValue.timeValueSeconds;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.search.sort.SortOrder.ASC;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.reader.VariableUpdateInstanceReader;
 import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.db.reader.VariableUpdateInstanceReader;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -24,17 +34,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.elasticsearch.core.TimeValue.timeValueSeconds;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.elasticsearch.search.sort.SortOrder.ASC;
 
 @RequiredArgsConstructor
 @Component
@@ -47,23 +46,32 @@ public class VariableUpdateInstanceReaderES implements VariableUpdateInstanceRea
   private final ConfigurationService configurationService;
 
   @Override
-  public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(Set<String> processInstanceIds) {
-    log.debug("Fetching variable instance updates for [{}] process instances", processInstanceIds.size());
+  public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
+      Set<String> processInstanceIds) {
+    log.debug(
+        "Fetching variable instance updates for [{}] process instances", processInstanceIds.size());
 
     if (processInstanceIds.isEmpty()) {
       return Collections.emptyList();
     }
 
-    final BoolQueryBuilder query = boolQuery()
-      .must(termsQuery(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds));
+    final BoolQueryBuilder query =
+        boolQuery()
+            .must(termsQuery(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds));
 
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .sort(SortBuilders.fieldSort(CamundaActivityEventIndex.TIMESTAMP).order(ASC))
-      .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(query)
+            .sort(SortBuilders.fieldSort(CamundaActivityEventIndex.TIMESTAMP).order(ASC))
+            .size(MAX_RESPONSE_SIZE_LIMIT);
+    SearchRequest searchRequest =
+        new SearchRequest(DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
+            .source(searchSourceBuilder)
+            .scroll(
+                timeValueSeconds(
+                    configurationService
+                        .getElasticSearchConfiguration()
+                        .getScrollTimeoutInSeconds()));
 
     SearchResponse searchResponse;
     try {
@@ -74,12 +82,10 @@ public class VariableUpdateInstanceReaderES implements VariableUpdateInstanceRea
     }
 
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
-      searchResponse,
-      VariableUpdateInstanceDto.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
-    );
+        searchResponse,
+        VariableUpdateInstanceDto.class,
+        objectMapper,
+        esClient,
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
   }
-
 }

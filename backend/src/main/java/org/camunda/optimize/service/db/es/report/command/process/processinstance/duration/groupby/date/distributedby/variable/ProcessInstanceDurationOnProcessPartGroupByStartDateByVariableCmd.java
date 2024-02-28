@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report.command.process.processinstance.duration.groupby.date.distributedby.variable;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.service.db.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.db.es.report.command.exec.ProcessReportCmdExecutionPlan;
@@ -14,25 +15,25 @@ import org.camunda.optimize.service.db.es.report.command.modules.group_by.proces
 import org.camunda.optimize.service.db.es.report.command.modules.view.process.duration.ProcessViewInstanceDurationOnProcessPart;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class ProcessInstanceDurationOnProcessPartGroupByStartDateByVariableCmd
-  extends ProcessCmd<List<HyperMapResultEntryDto>> {
+    extends ProcessCmd<List<HyperMapResultEntryDto>> {
 
-  public ProcessInstanceDurationOnProcessPartGroupByStartDateByVariableCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public ProcessInstanceDurationOnProcessPartGroupByStartDateByVariableCmd(
+      final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
   @Override
   protected ProcessReportCmdExecutionPlan<List<HyperMapResultEntryDto>> buildExecutionPlan(
-    final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .processCommand()
-      .view(ProcessViewInstanceDurationOnProcessPart.class)
-      .groupBy(ProcessGroupByProcessInstanceStartDate.class)
-      .distributedBy(ProcessDistributedByVariable.class)
-      .resultAsHyperMap()
-      .build();
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .processCommand()
+        .view(ProcessViewInstanceDurationOnProcessPart.class)
+        .groupBy(ProcessGroupByProcessInstanceStartDate.class)
+        .distributedBy(ProcessDistributedByVariable.class)
+        .resultAsHyperMap()
+        .build();
   }
 }

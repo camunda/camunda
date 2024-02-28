@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
 
 @NoArgsConstructor
 @AllArgsConstructor

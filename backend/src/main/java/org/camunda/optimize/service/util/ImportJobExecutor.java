@@ -6,14 +6,13 @@
 package org.camunda.optimize.service.util;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class ImportJobExecutor {
 
@@ -37,12 +36,11 @@ public abstract class ImportJobExecutor {
 
   public void executeImportJob(final Runnable dbImportJob) {
     logger.debug(
-      "{}: Currently active [{}] jobs and [{}] in queue of job type [{}]",
-      getClass().getSimpleName(),
-      importExecutor.getActiveCount(),
-      importExecutor.getQueue().size(),
-      dbImportJob.getClass().getSimpleName()
-    );
+        "{}: Currently active [{}] jobs and [{}] in queue of job type [{}]",
+        getClass().getSimpleName(),
+        importExecutor.getActiveCount(),
+        importExecutor.getQueue().size(),
+        dbImportJob.getClass().getSimpleName());
     importExecutor.execute(dbImportJob);
   }
 
@@ -50,26 +48,23 @@ public abstract class ImportJobExecutor {
     if (importExecutor == null || importExecutor.isShutdown()) {
       final BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(getMaxQueueSize());
       importExecutor =
-        new ThreadPoolExecutor(
-          getExecutorThreadCount(),
-          getExecutorThreadCount(),
-          Long.MAX_VALUE,
-          TimeUnit.DAYS,
-          importJobsQueue,
-          new ThreadFactoryBuilder().setNameFormat("ImportJobExecutor-pool-" + this.name + "-%d").build(),
-          new BlockCallerUntilExecutorHasCapacity()
-        );
+          new ThreadPoolExecutor(
+              getExecutorThreadCount(),
+              getExecutorThreadCount(),
+              Long.MAX_VALUE,
+              TimeUnit.DAYS,
+              importJobsQueue,
+              new ThreadFactoryBuilder()
+                  .setNameFormat("ImportJobExecutor-pool-" + this.name + "-%d")
+                  .build(),
+              new BlockCallerUntilExecutorHasCapacity());
     }
   }
 
-  /**
-   * Number of threads that should be used in the thread pool executor.
-   */
+  /** Number of threads that should be used in the thread pool executor. */
   protected abstract int getExecutorThreadCount();
 
-  /**
-   * Number of jobs that should be able to accumulate until new submission is blocked.
-   */
+  /** Number of jobs that should be able to accumulate until new submission is blocked. */
   protected abstract int getMaxQueueSize();
 
   public void stopExecutingImportJobs() {
@@ -78,20 +73,19 @@ public abstract class ImportJobExecutor {
 
     // Waits for 1 minute to finish all currently executing jobs
     try {
-      boolean timeElapsedBeforeTermination = !importExecutor.awaitTermination(60L, TimeUnit.SECONDS);
+      boolean timeElapsedBeforeTermination =
+          !importExecutor.awaitTermination(60L, TimeUnit.SECONDS);
       if (timeElapsedBeforeTermination) {
         logger.warn(
-          "{}: Timeout during shutdown of import job executor! " +
-            "The current running jobs could not end within 60 seconds after shutdown operation.",
-          getClass().getSimpleName()
-        );
+            "{}: Timeout during shutdown of import job executor! "
+                + "The current running jobs could not end within 60 seconds after shutdown operation.",
+            getClass().getSimpleName());
       }
     } catch (InterruptedException e) {
       logger.error(
-        "{}: Interrupted while shutting down the import job executor!",
-        getClass().getSimpleName(),
-        e
-      );
+          "{}: Interrupted while shutting down the import job executor!",
+          getClass().getSimpleName(),
+          e);
     }
   }
 
@@ -101,24 +95,22 @@ public abstract class ImportJobExecutor {
       if (!executor.isShutdown()) {
         try {
           logger.debug(
-            "{}: Max queue capacity is reached and, thus, can't schedule any new jobs." +
-              "Caller needs to wait until there is new free spot. Job class [{}].",
-            super.getClass().getSimpleName(),
-            runnable.getClass().getSimpleName()
-          );
+              "{}: Max queue capacity is reached and, thus, can't schedule any new jobs."
+                  + "Caller needs to wait until there is new free spot. Job class [{}].",
+              super.getClass().getSimpleName(),
+              runnable.getClass().getSimpleName());
           executor.getQueue().put(runnable);
           logger.debug(
-            "{}: Added job to queue. Caller can continue working on his tasks.",
-            super.getClass().getSimpleName()
-          );
+              "{}: Added job to queue. Caller can continue working on his tasks.",
+              super.getClass().getSimpleName());
         } catch (InterruptedException e) {
           logger.error(
-            "{}: Interrupted while waiting to submit a new job to the job executor!", getClass().getSimpleName(), e
-          );
+              "{}: Interrupted while waiting to submit a new job to the job executor!",
+              getClass().getSimpleName(),
+              e);
           Thread.currentThread().interrupt();
         }
       }
     }
   }
-
 }

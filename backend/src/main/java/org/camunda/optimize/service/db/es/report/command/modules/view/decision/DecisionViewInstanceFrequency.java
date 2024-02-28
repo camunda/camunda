@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.view.decision;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
+
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
@@ -20,12 +25,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionViewInstanceFrequency extends DecisionViewPart {
@@ -36,13 +35,16 @@ public class DecisionViewInstanceFrequency extends DecisionViewPart {
   }
 
   @Override
-  public List<AggregationBuilder> createAggregations(final ExecutionContext<DecisionReportDataDto> context) {
+  public List<AggregationBuilder> createAggregations(
+      final ExecutionContext<DecisionReportDataDto> context) {
     return Collections.singletonList(filter(FREQUENCY_AGGREGATION, QueryBuilders.matchAllQuery()));
   }
 
   @Override
-  public ViewResult retrieveResult(final SearchResponse response, final Aggregations aggs,
-                                   final ExecutionContext<DecisionReportDataDto> context) {
+  public ViewResult retrieveResult(
+      final SearchResponse response,
+      final Aggregations aggs,
+      final ExecutionContext<DecisionReportDataDto> context) {
     final Filter count = aggs.get(FREQUENCY_AGGREGATION);
     return createViewResult(count.getDocCount());
   }
@@ -55,13 +57,14 @@ public class DecisionViewInstanceFrequency extends DecisionViewPart {
   }
 
   @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final DecisionReportDataDto dataForCommandKey) {
     dataForCommandKey.setView(new DecisionViewDto(ViewProperty.FREQUENCY));
   }
 
   private ViewResult createViewResult(final double value) {
     return ViewResult.builder()
-      .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(value).build())
-      .build();
+        .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(value).build())
+        .build();
   }
 }

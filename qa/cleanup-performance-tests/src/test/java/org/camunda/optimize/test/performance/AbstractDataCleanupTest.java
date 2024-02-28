@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.test.performance;
 
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
+
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
@@ -18,37 +27,29 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = { INTEGRATION_TESTS + "=true" })
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
+    properties = {INTEGRATION_TESTS + "=true"})
 public abstract class AbstractDataCleanupTest {
   protected static final Logger logger = LoggerFactory.getLogger(AbstractDataCleanupTest.class);
 
-  private static final Properties properties = PropertyUtil.loadProperties("static-cleanup-test.properties");
+  private static final Properties properties =
+      PropertyUtil.loadProperties("static-cleanup-test.properties");
 
-  @Autowired
-  protected static ApplicationContext applicationContext;
+  @Autowired protected static ApplicationContext applicationContext;
 
   @RegisterExtension
   @Order(1)
   protected static DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
-    new DatabaseIntegrationTestExtension(false);
+      new DatabaseIntegrationTestExtension(false);
+
   @RegisterExtension
   @Order(2)
-  protected static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  protected static EmbeddedOptimizeExtension embeddedOptimizeExtension =
+      new EmbeddedOptimizeExtension();
 
-  protected static long maxCleanupDurationInMin = Long.parseLong(properties.getProperty(
-    "cleanup.test.max.duration.in.min",
-    "240"
-  ));
+  protected static long maxCleanupDurationInMin =
+      Long.parseLong(properties.getProperty("cleanup.test.max.duration.in.min", "240"));
 
   @BeforeAll
   public static void beforeAll() {
@@ -66,24 +67,23 @@ public abstract class AbstractDataCleanupTest {
     logger.info("Import took [ " + importDurationInMinutes + " ] min");
   }
 
-  protected static void runCleanupAndAssertFinishedWithinTimeout() throws InterruptedException, TimeoutException {
+  protected static void runCleanupAndAssertFinishedWithinTimeout()
+      throws InterruptedException, TimeoutException {
     logger.info("Starting History Cleanup...");
     final ExecutorService cleanupExecutorService = Executors.newSingleThreadExecutor();
     cleanupExecutorService.execute(
-      () -> embeddedOptimizeExtension.getCleanupScheduler().runCleanup()
-    );
+        () -> embeddedOptimizeExtension.getCleanupScheduler().runCleanup());
     cleanupExecutorService.shutdown();
-    boolean wasAbleToFinishImportInTime = cleanupExecutorService.awaitTermination(
-      maxCleanupDurationInMin, TimeUnit.MINUTES
-    );
+    boolean wasAbleToFinishImportInTime =
+        cleanupExecutorService.awaitTermination(maxCleanupDurationInMin, TimeUnit.MINUTES);
     logger.info(".. History cleanup finished, timed out {} ", !wasAbleToFinishImportInTime);
     if (!wasAbleToFinishImportInTime) {
-      throw new TimeoutException("Import was not able to finish import in " + maxCleanupDurationInMin + " minutes!");
+      throw new TimeoutException(
+          "Import was not able to finish import in " + maxCleanupDurationInMin + " minutes!");
     }
   }
 
   protected CleanupConfiguration getCleanupConfiguration() {
     return embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration();
   }
-
 }

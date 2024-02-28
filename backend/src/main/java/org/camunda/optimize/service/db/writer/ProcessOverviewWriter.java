@@ -5,22 +5,23 @@
  */
 package org.camunda.optimize.service.db.writer;
 
+import java.util.Map;
 import org.camunda.optimize.dto.optimize.importing.LastKpiEvaluationResultsDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 
-import java.util.Map;
-
 public interface ProcessOverviewWriter {
 
-  void updateProcessConfiguration(final String processDefinitionKey, final ProcessUpdateDto processUpdateDto);
+  void updateProcessConfiguration(
+      final String processDefinitionKey, final ProcessUpdateDto processUpdateDto);
 
-  void updateProcessDigestResults(final String processDefKey, final ProcessDigestDto processDigestDto);
+  void updateProcessDigestResults(
+      final String processDefKey, final ProcessDigestDto processDigestDto);
 
   void updateProcessOwnerIfNotSet(final String processDefinitionKey, final String ownerId);
 
-  void updateKpisForProcessDefinitions(Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis);
+  void updateKpisForProcessDefinitions(
+      Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis);
 
   void deleteProcessOwnerEntry(final String processDefinitionKey);
-
 }

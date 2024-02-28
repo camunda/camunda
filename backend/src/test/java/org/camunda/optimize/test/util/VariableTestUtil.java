@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.test.util;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.rest.optimize.dto.VariableDto;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_PRIMITIVE_PROCESS_VARIABLE_TYPES;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_PRIMITIVE_PROCESS_VARIABLE_TYPES;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class VariableTestUtil {

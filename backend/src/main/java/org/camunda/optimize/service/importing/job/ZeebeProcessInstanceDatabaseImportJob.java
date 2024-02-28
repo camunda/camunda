@@ -5,15 +5,13 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-
-import java.util.List;
 
 public class ZeebeProcessInstanceDatabaseImportJob extends DatabaseImportJob<ProcessInstanceDto> {
 
@@ -21,11 +19,12 @@ public class ZeebeProcessInstanceDatabaseImportJob extends DatabaseImportJob<Pro
   private final ConfigurationService configurationService;
   private final String sourceExportIndex;
 
-  public ZeebeProcessInstanceDatabaseImportJob(final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
-                                               final ConfigurationService configurationService,
-                                               final Runnable importCompleteCallback,
-                                               final String sourceExportIndex,
-                                               final DatabaseClient databaseClient) {
+  public ZeebeProcessInstanceDatabaseImportJob(
+      final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
+      final ConfigurationService configurationService,
+      final Runnable importCompleteCallback,
+      final String sourceExportIndex,
+      final DatabaseClient databaseClient) {
     super(importCompleteCallback, databaseClient);
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.configurationService = configurationService;
@@ -35,12 +34,11 @@ public class ZeebeProcessInstanceDatabaseImportJob extends DatabaseImportJob<Pro
   @Override
   protected void persistEntities(List<ProcessInstanceDto> processInstances) {
     final List<ImportRequestDto> importRequests =
-      zeebeProcessInstanceWriter.generateProcessInstanceImports(processInstances, sourceExportIndex);
+        zeebeProcessInstanceWriter.generateProcessInstanceImports(
+            processInstances, sourceExportIndex);
     databaseClient.executeImportRequestsAsBulk(
-      "Zeebe process instances",
-      importRequests,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        "Zeebe process instances",
+        importRequests,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
-
 }

@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.upgrade.migrate312to313;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Map;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import org.camunda.optimize.service.util.configuration.OptimizeProfile;
@@ -13,10 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class MigrateMetadataIndexIT extends AbstractUpgrade313IT {
 
@@ -31,8 +30,8 @@ public class MigrateMetadataIndexIT extends AbstractUpgrade313IT {
 
     // then
     assertThat(getAllDocumentsOfIndex(new MetadataIndexES().getIndexName()))
-      .singleElement()
-      .satisfies(doc -> checkMetadata(doc, OptimizeProfile.PLATFORM));
+        .singleElement()
+        .satisfies(doc -> checkMetadata(doc, OptimizeProfile.PLATFORM));
   }
 
   @SneakyThrows
@@ -49,8 +48,8 @@ public class MigrateMetadataIndexIT extends AbstractUpgrade313IT {
 
     // then
     assertThat(getAllDocumentsOfIndex(new MetadataIndexES().getIndexName()))
-      .singleElement()
-      .satisfies(doc -> checkMetadata(doc, OptimizeProfile.CCSM));
+        .singleElement()
+        .satisfies(doc -> checkMetadata(doc, OptimizeProfile.CCSM));
   }
 
   @SneakyThrows
@@ -64,17 +63,15 @@ public class MigrateMetadataIndexIT extends AbstractUpgrade313IT {
 
     // then
     assertThat(getAllDocumentsOfIndex(new MetadataIndexES().getIndexName()))
-      .singleElement()
-      .satisfies(doc -> checkMetadata(doc, OptimizeProfile.CLOUD));
+        .singleElement()
+        .satisfies(doc -> checkMetadata(doc, OptimizeProfile.CLOUD));
   }
 
   private void checkMetadata(final SearchHit doc, final OptimizeProfile expectedProfile) {
     final Map<String, Object> sourceAsMap = doc.getSourceAsMap();
-    assertThat(sourceAsMap)
-      .containsEntry("optimizeProfile", expectedProfile.getId());
+    assertThat(sourceAsMap).containsEntry("optimizeProfile", expectedProfile.getId());
     assertThat(sourceAsMap).containsKey("installationId");
-    assertThat(sourceAsMap)
-      .containsEntry("schemaVersion", "3.13.0");
+    assertThat(sourceAsMap).containsEntry("schemaVersion", "3.13.0");
     assertThat(doc.getId()).isEqualTo("1");
     assertThat(sourceAsMap).hasSize(3);
   }

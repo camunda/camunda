@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.rest.report;
 
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 @Data
 @AllArgsConstructor

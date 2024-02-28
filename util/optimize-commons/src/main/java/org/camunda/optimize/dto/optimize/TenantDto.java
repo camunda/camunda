@@ -21,10 +21,7 @@ import lombok.experimental.FieldNameConstants;
 @FieldNameConstants(asEnum = true)
 public class TenantDto implements OptimizeDto {
 
-  @EqualsAndHashCode.Include
-  private String id;
-  @EqualsAndHashCode.Include
-  private String name;
+  @EqualsAndHashCode.Include private String id;
+  @EqualsAndHashCode.Include private String name;
   private String engine;
-
 }

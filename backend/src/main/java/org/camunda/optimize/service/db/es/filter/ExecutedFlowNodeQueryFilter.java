@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.db.es.filter;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
@@ -13,26 +20,19 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 /**
- * The executed flow node catches any flow nodes that are completed or still running, including those that are marked
- * as canceled
+ * The executed flow node catches any flow nodes that are completed or still running, including
+ * those that are marked as canceled
  */
 @Slf4j
 @Component
 public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNodeFilterDataDto> {
 
   @Override
-  public void addFilters(final BoolQueryBuilder query,
-                         final List<ExecutedFlowNodeFilterDataDto> flowNodeFilter,
-                         final FilterContext filterContext) {
+  public void addFilters(
+      final BoolQueryBuilder query,
+      final List<ExecutedFlowNodeFilterDataDto> flowNodeFilter,
+      final FilterContext filterContext) {
     List<QueryBuilder> filters = query.filter();
     for (ExecutedFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));
@@ -44,26 +44,24 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
     if (MembershipFilterOperator.IN == flowNodeFilter.getOperator()) {
       for (String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.should(
-          nestedQuery(
-            FLOW_NODE_INSTANCES,
-            termQuery(nestedFlowNodeIdFieldLabel(), value),
-            ScoreMode.None
-          )
-        );
+            nestedQuery(
+                FLOW_NODE_INSTANCES,
+                termQuery(nestedFlowNodeIdFieldLabel(), value),
+                ScoreMode.None));
       }
     } else if (MembershipFilterOperator.NOT_IN == flowNodeFilter.getOperator()) {
       for (String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.mustNot(
-          nestedQuery(
-            FLOW_NODE_INSTANCES,
-            termQuery(nestedFlowNodeIdFieldLabel(), value),
-            ScoreMode.None
-          )
-        );
+            nestedQuery(
+                FLOW_NODE_INSTANCES,
+                termQuery(nestedFlowNodeIdFieldLabel(), value),
+                ScoreMode.None));
       }
     } else {
-      log.error("Could not filter for flow nodes. " +
-                  "Operator [{}] is not allowed! Use either [in] or [not in]", flowNodeFilter.getOperator());
+      log.error(
+          "Could not filter for flow nodes. "
+              + "Operator [{}] is not allowed! Use either [in] or [not in]",
+          flowNodeFilter.getOperator());
     }
     return boolQueryBuilder;
   }

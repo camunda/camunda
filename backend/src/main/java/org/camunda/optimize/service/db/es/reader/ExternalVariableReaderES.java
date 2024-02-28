@@ -5,12 +5,21 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex.INGESTION_TIMESTAMP;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.search.sort.SortOrder.ASC;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
-import org.camunda.optimize.service.db.reader.ExternalVariableReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.reader.ExternalVariableReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.search.SearchRequest;
@@ -22,16 +31,6 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.util.List;
-
-import static org.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex.INGESTION_TIMESTAMP;
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.search.sort.SortOrder.ASC;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -42,8 +41,10 @@ public class ExternalVariableReaderES implements ExternalVariableReader {
   private final ObjectMapper objectMapper;
 
   @Override
-  public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(final Long ingestTimestamp, final int limit) {
-    log.debug("Fetching variables that where ingested after {}", Instant.ofEpochMilli(ingestTimestamp));
+  public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
+      final Long ingestTimestamp, final int limit) {
+    log.debug(
+        "Fetching variables that where ingested after {}", Instant.ofEpochMilli(ingestTimestamp));
 
     final RangeQueryBuilder timestampQuery = rangeQuery(INGESTION_TIMESTAMP).gt(ingestTimestamp);
 
@@ -52,31 +53,33 @@ public class ExternalVariableReaderES implements ExternalVariableReader {
 
   @Override
   public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAt(final Long ingestTimestamp) {
-    log.debug("Fetching variables that where ingested at {}", Instant.ofEpochMilli(ingestTimestamp));
+    log.debug(
+        "Fetching variables that where ingested at {}", Instant.ofEpochMilli(ingestTimestamp));
 
-    final RangeQueryBuilder timestampQuery = rangeQuery(INGESTION_TIMESTAMP)
-      .lte(ingestTimestamp)
-      .gte(ingestTimestamp);
+    final RangeQueryBuilder timestampQuery =
+        rangeQuery(INGESTION_TIMESTAMP).lte(ingestTimestamp).gte(ingestTimestamp);
 
     return getPageOfVariablesSortedByIngestionTimestamp(timestampQuery, MAX_RESPONSE_SIZE_LIMIT);
   }
 
-  private List<ExternalProcessVariableDto> getPageOfVariablesSortedByIngestionTimestamp(final AbstractQueryBuilder<?> query,
-                                                                                        final int limit) {
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .sort(SortBuilders.fieldSort(INGESTION_TIMESTAMP).order(ASC))
-      .size(limit);
+  private List<ExternalProcessVariableDto> getPageOfVariablesSortedByIngestionTimestamp(
+      final AbstractQueryBuilder<?> query, final int limit) {
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(query)
+            .sort(SortBuilders.fieldSort(INGESTION_TIMESTAMP).order(ASC))
+            .size(limit);
 
-    final SearchRequest searchRequest = new SearchRequest(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    final SearchRequest searchRequest =
+        new SearchRequest(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME).source(searchSourceBuilder);
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest);
-      return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), ExternalProcessVariableDto.class, objectMapper);
+      return ElasticsearchReaderUtil.mapHits(
+          searchResponse.getHits(), ExternalProcessVariableDto.class, objectMapper);
     } catch (IOException e) {
-      throw new OptimizeRuntimeException("Was not able to retrieve ingested variables by timestamp!", e);
+      throw new OptimizeRuntimeException(
+          "Was not able to retrieve ingested variables by timestamp!", e);
     }
   }
-
 }

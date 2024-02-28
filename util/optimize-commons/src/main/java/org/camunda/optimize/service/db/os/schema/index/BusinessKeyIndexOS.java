@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.db.os.schema.index;
 
-import org.camunda.optimize.service.db.schema.index.BusinessKeyIndex;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchUtil;
+import org.camunda.optimize.service.db.schema.index.BusinessKeyIndex;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
 public class BusinessKeyIndexOS extends BusinessKeyIndex<IndexSettings.Builder> {
 
   @Override
-  public IndexSettings.Builder addStaticSetting(final String key,
-                                                final int value,
-                                                final IndexSettings.Builder contentBuilder) {
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder contentBuilder) {
     return OptimizeOpenSearchUtil.addStaticSetting(key, value, contentBuilder);
   }
 }

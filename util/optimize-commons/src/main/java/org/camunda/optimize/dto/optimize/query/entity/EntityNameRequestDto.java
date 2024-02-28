@@ -28,5 +28,4 @@ public class EntityNameRequestDto {
 
   @QueryParam("eventBasedProcessId")
   private String eventBasedProcessId;
-
 }

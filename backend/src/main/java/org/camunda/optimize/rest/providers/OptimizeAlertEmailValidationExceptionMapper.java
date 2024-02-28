@@ -5,28 +5,27 @@
  */
 package org.camunda.optimize.rest.providers;
 
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.rest.AlertEmailValidationResponseDto;
-import org.camunda.optimize.service.exceptions.OptimizeAlertEmailValidationException;
-
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.rest.AlertEmailValidationResponseDto;
+import org.camunda.optimize.service.exceptions.OptimizeAlertEmailValidationException;
 
 @Provider
 @Slf4j
-public class OptimizeAlertEmailValidationExceptionMapper implements ExceptionMapper<OptimizeAlertEmailValidationException> {
+public class OptimizeAlertEmailValidationExceptionMapper
+    implements ExceptionMapper<OptimizeAlertEmailValidationException> {
 
   @Override
-  public Response toResponse(final OptimizeAlertEmailValidationException optimizeAlertEmailValidationException) {
+  public Response toResponse(
+      final OptimizeAlertEmailValidationException optimizeAlertEmailValidationException) {
     log.info("Mapping OptimizeAlertEmailValidationException");
 
-    return Response
-      .status(Response.Status.BAD_REQUEST)
-      .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(new AlertEmailValidationResponseDto(optimizeAlertEmailValidationException))
-      .build();
+    return Response.status(Response.Status.BAD_REQUEST)
+        .type(MediaType.APPLICATION_JSON_TYPE)
+        .entity(new AlertEmailValidationResponseDto(optimizeAlertEmailValidationException))
+        .build();
   }
-
 }

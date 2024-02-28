@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.decision.group.value;
 
+import java.util.Objects;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
-
-import java.util.Objects;
 
 @Data
 public class DecisionGroupByEvaluationDateTimeValueDto implements DecisionGroupByValueDto {

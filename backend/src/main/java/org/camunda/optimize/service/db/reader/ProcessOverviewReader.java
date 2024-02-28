@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestResponseDto;
@@ -12,24 +16,20 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDt
 import org.camunda.optimize.service.db.repository.ProcessRepository;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
 @AllArgsConstructor
 @Component
 @Slf4j
 public class ProcessOverviewReader {
   private final ProcessRepository processRepository;
 
-  public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(final Set<String> processDefinitionKeys) {
+  public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(
+      final Set<String> processDefinitionKeys) {
     return processRepository.getProcessOverviewsByKey(processDefinitionKeys);
   }
 
   public Optional<ProcessOverviewDto> getProcessOverviewByKey(final String processDefinitionKey) {
     final Map<String, ProcessOverviewDto> goalsForProcessesByKey =
-      getProcessOverviewsByKey(Collections.singleton(processDefinitionKey));
+        getProcessOverviewsByKey(Collections.singleton(processDefinitionKey));
     return Optional.ofNullable(goalsForProcessesByKey.get(processDefinitionKey));
   }
 

@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.rest.providers;
 
-import org.elasticsearch.client.transport.NoNodeAvailableException;
-
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
+import org.elasticsearch.client.transport.NoNodeAvailableException;
 
 @Provider
 public class ESConnectionExceptionMapper implements ExceptionMapper<NoNodeAvailableException> {
@@ -18,9 +17,8 @@ public class ESConnectionExceptionMapper implements ExceptionMapper<NoNodeAvaila
   @Override
   public Response toResponse(NoNodeAvailableException exception) {
     return Response.status(exception.status().getStatus())
-      .entity(exception.getMessage())
-      .type(MediaType.APPLICATION_JSON)
-      .build();
+        .entity(exception.getMessage())
+        .type(MediaType.APPLICATION_JSON)
+        .build();
   }
-
 }

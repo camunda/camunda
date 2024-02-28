@@ -14,6 +14,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 public class CCSaaSCondition implements Condition {
   @Override
   public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-    return ConfigurationService.getOptimizeProfile(context.getEnvironment()).equals(OptimizeProfile.CLOUD);
+    return ConfigurationService.getOptimizeProfile(context.getEnvironment())
+        .equals(OptimizeProfile.CLOUD);
   }
 }

@@ -5,7 +5,17 @@
  */
 package org.camunda.optimize;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
+import static org.eclipse.jetty.servlet.ServletContextHandler.getServletContextHandler;
+
 import jakarta.servlet.DispatcherType;
+import java.net.InetAddress;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.Optional;
 import org.camunda.optimize.jetty.NotFoundErrorHandler;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -38,35 +48,22 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 
-import java.net.InetAddress;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Optional;
-
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
-import static org.eclipse.jetty.servlet.ServletContextHandler.getServletContextHandler;
-
 @Configuration
 public class JettyConfig {
 
-  private static final String COMPRESSED_MIME_TYPES = "application/json," +
-    "text/html," +
-    "application/x-font-ttf," +
-    "image/svg+xml";
+  private static final String COMPRESSED_MIME_TYPES =
+      "application/json," + "text/html," + "application/x-font-ttf," + "image/svg+xml";
   private static final String PROTOCOL = "http/1.1";
 
-  @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
-  private Environment environment;
+  @Autowired private ConfigurationService configurationService;
+  @Autowired private Environment environment;
 
   @Bean
   public JettyServerCustomizer httpsJettyServerCustomizer() {
     return server ->
-      server.addConnector(initHttpsConnector(configurationService, configurationService.getContainerHost(), server));
+        server.addConnector(
+            initHttpsConnector(
+                configurationService, configurationService.getContainerHost(), server));
   }
 
   // We use the @Order annotation to make sure that this is modified after the http connector
@@ -74,17 +71,20 @@ public class JettyConfig {
   @Order
   public JettyServerCustomizer httpConfigurationCustomizer() {
     return server ->
-      Arrays.stream(server.getConnectors())
-        .flatMap(connector -> connector.getConnectionFactories().stream())
-        .filter(
-          connectionFactory ->
-            HttpConnectionFactory.class.isAssignableFrom(connectionFactory.getClass()))
-        .map(HttpConnectionFactory.class::cast)
-        .forEach(httpConnectionFactory -> applyHeaderSizeConfiguration(httpConnectionFactory.getHttpConfiguration()));
+        Arrays.stream(server.getConnectors())
+            .flatMap(connector -> connector.getConnectionFactories().stream())
+            .filter(
+                connectionFactory ->
+                    HttpConnectionFactory.class.isAssignableFrom(connectionFactory.getClass()))
+            .map(HttpConnectionFactory.class::cast)
+            .forEach(
+                httpConnectionFactory ->
+                    applyHeaderSizeConfiguration(httpConnectionFactory.getHttpConfiguration()));
   }
 
   @Bean
-  public WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> optimizeWebServerFactoryCustomizer() {
+  public WebServerFactoryCustomizer<ConfigurableServletWebServerFactory>
+      optimizeWebServerFactoryCustomizer() {
     return factory -> {
       getContextPath().ifPresent(factory::setContextPath);
       String host = configurationService.getContainerHost();
@@ -119,22 +119,23 @@ public class JettyConfig {
   private void setUpRequestLogging(Server server) {
     final LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
     loggingConfigurationReader.defineLogbackLoggingConfiguration();
-    server.setRequestLog(new CustomRequestLog(new Slf4jRequestLogWriter(), CustomRequestLog.EXTENDED_NCSA_FORMAT));
+    server.setRequestLog(
+        new CustomRequestLog(new Slf4jRequestLogWriter(), CustomRequestLog.EXTENDED_NCSA_FORMAT));
   }
 
   private ServerConnector initHttpsConnector(
-    ConfigurationService configurationService, String host, Server server) {
+      ConfigurationService configurationService, String host, Server server) {
     HttpConfiguration https = new HttpConfiguration();
     https.setSendServerVersion(false);
     final SecureRequestCustomizer customizer =
-      new SecureRequestCustomizer(
-        configurationService.getContainerEnableSniCheck(),
-        configurationService
-          .getSecurityConfiguration()
-          .getResponseHeaders()
-          .getHttpStrictTransportSecurityMaxAge(),
-        getResponseHeadersConfiguration(configurationService).getHttpStrictTransportSecurityIncludeSubdomains()
-      );
+        new SecureRequestCustomizer(
+            configurationService.getContainerEnableSniCheck(),
+            configurationService
+                .getSecurityConfiguration()
+                .getResponseHeaders()
+                .getHttpStrictTransportSecurityMaxAge(),
+            getResponseHeadersConfiguration(configurationService)
+                .getHttpStrictTransportSecurityIncludeSubdomains());
 
     https.addCustomizer(customizer);
     https.setSecureScheme("https");
@@ -148,7 +149,10 @@ public class JettyConfig {
     sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
 
     ServerConnector sslConnector =
-      new ServerConnector(server, new SslConnectionFactory(sslContextFactory, PROTOCOL), new HttpConnectionFactory(https));
+        new ServerConnector(
+            server,
+            new SslConnectionFactory(sslContextFactory, PROTOCOL),
+            new HttpConnectionFactory(https));
     sslConnector.setPort(getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY));
     sslConnector.setHost(host);
     return sslConnector;
@@ -158,8 +162,8 @@ public class JettyConfig {
     String portProperty = environment.getProperty(portType);
     if (portProperty == null) {
       return portType.equals(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)
-        ? configurationService.getContainerHttpsPort()
-        : configurationService.getContainerHttpPort().orElse(8090);
+          ? configurationService.getContainerHttpsPort()
+          : configurationService.getContainerHttpPort().orElse(8090);
     }
     return Integer.parseInt(portProperty);
   }
@@ -193,7 +197,8 @@ public class JettyConfig {
     externalHome.setInitParameter("dirAllowed", "true");
     // Use request pathInfo, don't calculate from contextPath
     externalHome.setInitParameter("pathInfoOnly", "true");
-    servletContextHandler.addServlet(externalHome, "/external/*"); // must end in "/*" for pathInfo to work
+    servletContextHandler.addServlet(
+        externalHome, "/external/*"); // must end in "/*" for pathInfo to work
     // Root path needs to be added last, otherwise it won't work
     servletContextHandler.addServlet(holderPwd, "/");
   }
@@ -207,7 +212,8 @@ public class JettyConfig {
     context.insertHandler(gzipHandler);
   }
 
-  public static ResponseHeadersConfiguration getResponseHeadersConfiguration(final ConfigurationService configurationService) {
+  public static ResponseHeadersConfiguration getResponseHeadersConfiguration(
+      final ConfigurationService configurationService) {
     return configurationService.getSecurityConfiguration().getResponseHeaders();
   }
 }

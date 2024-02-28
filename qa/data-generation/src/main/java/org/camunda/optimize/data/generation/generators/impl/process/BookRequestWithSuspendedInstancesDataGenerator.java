@@ -5,40 +5,36 @@
  */
 package org.camunda.optimize.data.generation.generators.impl.process;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
-
 public class BookRequestWithSuspendedInstancesDataGenerator extends ProcessDataGenerator {
   private static final String DIAGRAM = "/diagrams/process/book-request-suspended-instances.bpmn";
 
-  public BookRequestWithSuspendedInstancesDataGenerator(final SimpleEngineClient engineClient,
-                                                        final Integer nVersions,
-                                                        final UserAndGroupProvider userAndGroupProvider) {
+  public BookRequestWithSuspendedInstancesDataGenerator(
+      final SimpleEngineClient engineClient,
+      final Integer nVersions,
+      final UserAndGroupProvider userAndGroupProvider) {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
   @Override
   protected void startInstance(final String definitionId, final Map<String, Object> variables) {
     addCorrelatingVariable(variables);
-    final ProcessInstanceEngineDto processInstance = engineClient.startProcessInstance(
-      definitionId,
-      variables,
-      getBusinessKey()
-    );
+    final ProcessInstanceEngineDto processInstance =
+        engineClient.startProcessInstance(definitionId, variables, getBusinessKey());
     // randomly suspend some process instances
     Random rnd = ThreadLocalRandom.current();
     if (rnd.nextBoolean()) {
       engineClient.suspendProcessInstance(processInstance.getId());
     }
   }
-
 
   @Override
   protected BpmnModelInstance retrieveDiagram() {

@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.zeebe.fetcher.os;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_VARIABLE_INDEX_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
@@ -17,19 +19,18 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_VARIABLE_INDEX_NAME;
-
 @Component
 @Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Conditional(OpenSearchCondition.class)
-public class ZeebeVariableFetcherOS
-  extends AbstractZeebeRecordFetcherOS<ZeebeVariableRecordDto> implements ZeebeVariableFetcher {
+public class ZeebeVariableFetcherOS extends AbstractZeebeRecordFetcherOS<ZeebeVariableRecordDto>
+    implements ZeebeVariableFetcher {
 
-  public ZeebeVariableFetcherOS(final int partitionId,
-                                final OptimizeOpenSearchClient osClient,
-                                final ObjectMapper objectMapper,
-                                final ConfigurationService configurationService) {
+  public ZeebeVariableFetcherOS(
+      final int partitionId,
+      final OptimizeOpenSearchClient osClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
     super(partitionId, osClient, objectMapper, configurationService);
   }
 
@@ -42,5 +43,4 @@ public class ZeebeVariableFetcherOS
   protected Class<ZeebeVariableRecordDto> getRecordDtoClass() {
     return ZeebeVariableRecordDto.class;
   }
-
 }

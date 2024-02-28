@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.zeebe.fetcher.es;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
@@ -17,19 +19,19 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
-
 @Component
 @Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Conditional(ElasticSearchCondition.class)
 public class ZeebeProcessInstanceFetcherES
-  extends AbstractZeebeRecordFetcherES<ZeebeProcessInstanceRecordDto> implements ZeebeProcessInstanceFetcher {
+    extends AbstractZeebeRecordFetcherES<ZeebeProcessInstanceRecordDto>
+    implements ZeebeProcessInstanceFetcher {
 
-  public ZeebeProcessInstanceFetcherES(final int partitionId,
-                                       final OptimizeElasticsearchClient esClient,
-                                       final ObjectMapper objectMapper,
-                                       final ConfigurationService configurationService) {
+  public ZeebeProcessInstanceFetcherES(
+      final int partitionId,
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
     super(partitionId, esClient, objectMapper, configurationService);
   }
 
@@ -42,5 +44,4 @@ public class ZeebeProcessInstanceFetcherES
   protected Class<ZeebeProcessInstanceRecordDto> getRecordDtoClass() {
     return ZeebeProcessInstanceRecordDto.class;
   }
-
 }

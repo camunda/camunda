@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report.command.process.processinstance.frequency.groupby.duration;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.db.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.db.es.report.command.exec.ProcessReportCmdExecutionPlan;
@@ -14,10 +15,9 @@ import org.camunda.optimize.service.db.es.report.command.modules.group_by.proces
 import org.camunda.optimize.service.db.es.report.command.modules.view.process.frequency.ProcessViewInstanceFrequency;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class ProcessInstanceFrequencyGroupByDurationCmd extends ProcessCmd<List<MapResultEntryDto>> {
+public class ProcessInstanceFrequencyGroupByDurationCmd
+    extends ProcessCmd<List<MapResultEntryDto>> {
 
   public ProcessInstanceFrequencyGroupByDurationCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
@@ -25,13 +25,14 @@ public class ProcessInstanceFrequencyGroupByDurationCmd extends ProcessCmd<List<
 
   @Override
   protected ProcessReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(
-    final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .processCommand()
-      .view(ProcessViewInstanceFrequency.class)
-      .groupBy(ProcessGroupByDuration.class)
-      .distributedBy(ProcessDistributedByNone.class)
-      .resultAsMap()
-      .build();
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .processCommand()
+        .view(ProcessViewInstanceFrequency.class)
+        .groupBy(ProcessGroupByDuration.class)
+        .distributedBy(ProcessDistributedByNone.class)
+        .resultAsMap()
+        .build();
   }
 }

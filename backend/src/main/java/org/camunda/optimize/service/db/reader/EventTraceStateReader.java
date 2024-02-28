@@ -5,19 +5,18 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
-
-import java.util.List;
 
 public interface EventTraceStateReader {
 
   List<EventTraceStateDto> getEventTraceStateForTraceIds(List<String> traceIds);
 
-  List<EventTraceStateDto> getTracesContainingAtLeastOneEventFromEach(final List<EventTypeDto> startEvents,
-                                                                      final List<EventTypeDto> endEvents,
-                                                                      final int maxResultsSize);
+  List<EventTraceStateDto> getTracesContainingAtLeastOneEventFromEach(
+      final List<EventTypeDto> startEvents,
+      final List<EventTypeDto> endEvents,
+      final int maxResultsSize);
 
   List<EventTraceStateDto> getTracesWithTraceIdIn(final List<String> traceIds);
-
 }

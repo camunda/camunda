@@ -5,5 +5,4 @@
  */
 package org.camunda.optimize.service.importing.page;
 
-public interface ImportPage {
-}
+public interface ImportPage {}

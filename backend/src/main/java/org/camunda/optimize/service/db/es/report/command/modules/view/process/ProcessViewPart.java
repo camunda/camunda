@@ -8,6 +8,4 @@ package org.camunda.optimize.service.db.es.report.command.modules.view.process;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.db.es.report.command.modules.view.ViewPart;
 
-public abstract class ProcessViewPart extends ViewPart<ProcessReportDataDto> {
-
-}
+public abstract class ProcessViewPart extends ViewPart<ProcessReportDataDto> {}

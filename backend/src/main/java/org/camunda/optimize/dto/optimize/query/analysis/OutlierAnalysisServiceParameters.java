@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.analysis;
 
+import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import java.time.ZoneId;
 
 @Data
 @AllArgsConstructor
@@ -17,5 +16,4 @@ public class OutlierAnalysisServiceParameters<T extends ProcessDefinitionParamet
   private T processDefinitionParametersDto;
   private ZoneId zoneId;
   private String userId;
-
 }

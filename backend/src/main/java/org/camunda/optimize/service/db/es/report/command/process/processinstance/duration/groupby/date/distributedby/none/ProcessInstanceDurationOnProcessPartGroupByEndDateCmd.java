@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report.command.process.processinstance.duration.groupby.date.distributedby.none;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.db.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.db.es.report.command.exec.ProcessReportCmdExecutionPlan;
@@ -14,23 +15,25 @@ import org.camunda.optimize.service.db.es.report.command.modules.group_by.proces
 import org.camunda.optimize.service.db.es.report.command.modules.view.process.duration.ProcessViewInstanceDurationOnProcessPart;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class ProcessInstanceDurationOnProcessPartGroupByEndDateCmd extends ProcessCmd<List<MapResultEntryDto>> {
+public class ProcessInstanceDurationOnProcessPartGroupByEndDateCmd
+    extends ProcessCmd<List<MapResultEntryDto>> {
 
-  public ProcessInstanceDurationOnProcessPartGroupByEndDateCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public ProcessInstanceDurationOnProcessPartGroupByEndDateCmd(
+      final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .processCommand()
-      .view(ProcessViewInstanceDurationOnProcessPart.class)
-      .groupBy(ProcessGroupByProcessInstanceEndDate.class)
-      .distributedBy(ProcessDistributedByNone.class)
-      .resultAsMap()
-      .build();
+  protected ProcessReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .processCommand()
+        .view(ProcessViewInstanceDurationOnProcessPart.class)
+        .groupBy(ProcessGroupByProcessInstanceEndDate.class)
+        .distributedBy(ProcessDistributedByNone.class)
+        .resultAsMap()
+        .build();
   }
 }

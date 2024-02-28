@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.db.es.report.command.decision.mapping;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;
@@ -16,15 +24,6 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class RawDataDecisionReportResultDtoMapperTest {
 
   @Test
@@ -35,11 +34,8 @@ public class RawDataDecisionReportResultDtoMapperTest {
     final List<DecisionInstanceDto> decisionInstanceDtos = generateInstanceList(rawDataLimit);
 
     // when
-    final List<RawDataDecisionInstanceDto> result = mapper.mapFrom(
-      decisionInstanceDtos,
-      Collections.emptySet(),
-      Collections.emptySet()
-    );
+    final List<RawDataDecisionInstanceDto> result =
+        mapper.mapFrom(decisionInstanceDtos, Collections.emptySet(), Collections.emptySet());
 
     // then
     assertThat(result).hasSize(rawDataLimit);
@@ -49,56 +45,75 @@ public class RawDataDecisionReportResultDtoMapperTest {
   public void testMapFromSearchResponse_additionalVariablesAddedToResults() {
     // given
     final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
-    final List<DecisionInstanceDto> decisionInstanceDtos = generateInstanceList(5)
-      .stream()
-      .peek(instance -> {
-        instance.setInputs(Arrays.asList(new InputInstanceDto(
-          IdGenerator.getNextId(), "inputVarClauseId", "inputVarClauseName", VariableType.STRING, "in1")));
-        instance.setOutputs(Arrays.asList(new OutputInstanceDto(
-          IdGenerator.getNextId(), "outputVarClauseId", "outputVarClauseName",
-          IdGenerator.getNextId(), 1, "outVarName", VariableType.STRING, "out1"
-        )));
-      })
-      .collect(Collectors.toList());
+    final List<DecisionInstanceDto> decisionInstanceDtos =
+        generateInstanceList(5).stream()
+            .peek(
+                instance -> {
+                  instance.setInputs(
+                      Arrays.asList(
+                          new InputInstanceDto(
+                              IdGenerator.getNextId(),
+                              "inputVarClauseId",
+                              "inputVarClauseName",
+                              VariableType.STRING,
+                              "in1")));
+                  instance.setOutputs(
+                      Arrays.asList(
+                          new OutputInstanceDto(
+                              IdGenerator.getNextId(),
+                              "outputVarClauseId",
+                              "outputVarClauseName",
+                              IdGenerator.getNextId(),
+                              1,
+                              "outVarName",
+                              VariableType.STRING,
+                              "out1")));
+                })
+            .collect(Collectors.toList());
 
     // when
-    final List<RawDataDecisionInstanceDto> result = mapper.mapFrom(
-      decisionInstanceDtos,
-      new HashSet<>(Arrays.asList(new InputVariableEntry(
-        IdGenerator.getNextId(),
-        "newInputVarName",
-        VariableType.STRING,
-        "newInVal"
-      ))),
-      new HashSet<>(Arrays.asList(new OutputVariableEntry(
-        IdGenerator.getNextId(),
-        "newOutputVarName",
-        VariableType.STRING,
-        "newOutVal"
-      )))
-    );
+    final List<RawDataDecisionInstanceDto> result =
+        mapper.mapFrom(
+            decisionInstanceDtos,
+            new HashSet<>(
+                Arrays.asList(
+                    new InputVariableEntry(
+                        IdGenerator.getNextId(),
+                        "newInputVarName",
+                        VariableType.STRING,
+                        "newInVal"))),
+            new HashSet<>(
+                Arrays.asList(
+                    new OutputVariableEntry(
+                        IdGenerator.getNextId(),
+                        "newOutputVarName",
+                        VariableType.STRING,
+                        "newOutVal"))));
 
     // then
     assertThat(result)
-      .extracting(RawDataDecisionInstanceDto::getInputVariables)
-      .allSatisfy(instanceInputVars ->
-                    assertThat(instanceInputVars.values()
-                                 .stream()
-                                 .map(VariableEntry::getName)
-                                 .collect(Collectors.toList()))
-                      .containsExactlyInAnyOrder("inputVarClauseName", "newInputVarName"));
+        .extracting(RawDataDecisionInstanceDto::getInputVariables)
+        .allSatisfy(
+            instanceInputVars ->
+                assertThat(
+                        instanceInputVars.values().stream()
+                            .map(VariableEntry::getName)
+                            .collect(Collectors.toList()))
+                    .containsExactlyInAnyOrder("inputVarClauseName", "newInputVarName"));
     assertThat(result)
-      .extracting(RawDataDecisionInstanceDto::getOutputVariables)
-      .allSatisfy(instanceOutputVars ->
-                    assertThat(instanceOutputVars.values()
-                                 .stream()
-                                 .map(VariableEntry::getName)
-                                 .collect(Collectors.toList()))
-                      .containsExactlyInAnyOrder("outputVarClauseName", "newOutputVarName"));
+        .extracting(RawDataDecisionInstanceDto::getOutputVariables)
+        .allSatisfy(
+            instanceOutputVars ->
+                assertThat(
+                        instanceOutputVars.values().stream()
+                            .map(VariableEntry::getName)
+                            .collect(Collectors.toList()))
+                    .containsExactlyInAnyOrder("outputVarClauseName", "newOutputVarName"));
   }
 
   private List<DecisionInstanceDto> generateInstanceList(final Integer rawDataLimit) {
-    return IntStream.range(0, rawDataLimit).mapToObj(i -> new DecisionInstanceDto()).collect(Collectors.toList());
+    return IntStream.range(0, rawDataLimit)
+        .mapToObj(i -> new DecisionInstanceDto())
+        .collect(Collectors.toList());
   }
-
 }

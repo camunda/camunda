@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.rest.report.measure;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.HYPER_MAP_RESULT_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.MAP_RESULT_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.NUMBER_RESULT_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.AccessLevel;
@@ -17,15 +22,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Aggre
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
-import static org.camunda.optimize.dto.optimize.ReportConstants.HYPER_MAP_RESULT_TYPE;
-import static org.camunda.optimize.dto.optimize.ReportConstants.MAP_RESULT_TYPE;
-import static org.camunda.optimize.dto.optimize.ReportConstants.NUMBER_RESULT_TYPE;
-import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = MapMeasureResponseDto.class, name = MAP_RESULT_TYPE),
   @JsonSubTypes.Type(value = HyperMapMeasureResponseDto.class, name = HYPER_MAP_RESULT_TYPE),

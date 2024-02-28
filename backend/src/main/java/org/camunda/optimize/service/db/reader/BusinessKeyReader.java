@@ -5,14 +5,11 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
-
 import java.util.List;
 import java.util.Set;
-
+import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 
 public interface BusinessKeyReader {
 
-   List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(Set<String> processInstanceIds);
-
+  List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(Set<String> processInstanceIds);
 }

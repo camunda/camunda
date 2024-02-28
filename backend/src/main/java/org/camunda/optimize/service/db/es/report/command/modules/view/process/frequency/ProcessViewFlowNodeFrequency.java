@@ -18,11 +18,11 @@ import org.springframework.stereotype.Component;
 public class ProcessViewFlowNodeFrequency extends ProcessViewFrequency {
 
   @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
     ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.FLOW_NODE);
     view.setProperties(ViewProperty.FREQUENCY);
     dataForCommandKey.setView(view);
   }
-
 }

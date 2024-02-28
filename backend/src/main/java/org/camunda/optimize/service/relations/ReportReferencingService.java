@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.service.relations;
 
+import java.util.Set;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-
-import java.util.Set;
 
 public interface ReportReferencingService {
 
@@ -16,9 +15,8 @@ public interface ReportReferencingService {
 
   void handleReportDeleted(ReportDefinitionDto reportDefinition);
 
-  Set<ConflictedItemDto> getConflictedItemsForReportUpdate(ReportDefinitionDto currentDefinition,
-                                                           ReportDefinitionDto updateDefinition);
+  Set<ConflictedItemDto> getConflictedItemsForReportUpdate(
+      ReportDefinitionDto currentDefinition, ReportDefinitionDto updateDefinition);
 
   void handleReportUpdated(final String reportId, final ReportDefinitionDto updateDefinition);
-
 }

@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
-
 import java.util.List;
 import java.util.Optional;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 
 public interface EventProcessDefinitionReader {
 
-  Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(final String eventProcessDefinitionKey);
+  Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(
+      final String eventProcessDefinitionKey);
 
   List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml();
-
 }

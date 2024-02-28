@@ -5,25 +5,24 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_SESSION_INDEX_NAME;
+
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
-import org.camunda.optimize.service.db.schema.index.TerminatedUserSessionIndex;
-import org.camunda.optimize.service.db.writer.TerminatedUserSessionWriter;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import org.camunda.optimize.service.db.schema.index.TerminatedUserSessionIndex;
+import org.camunda.optimize.service.db.writer.TerminatedUserSessionWriter;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_SESSION_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -37,20 +36,21 @@ public class TerminatedUserSessionWriterOS extends TerminatedUserSessionWriter {
   @Override
   protected void performWritingTerminatedUserSession(final TerminatedUserSessionDto sessionDto) {
     final IndexRequest.Builder<TerminatedUserSessionDto> request =
-      new IndexRequest.Builder<TerminatedUserSessionDto>()
-        .index(TERMINATED_USER_SESSION_INDEX_NAME)
-        .id(sessionDto.getId())
-        .document(sessionDto)
-        .refresh(Refresh.True);
+        new IndexRequest.Builder<TerminatedUserSessionDto>()
+            .index(TERMINATED_USER_SESSION_INDEX_NAME)
+            .id(sessionDto.getId())
+            .document(sessionDto)
+            .refresh(Refresh.True);
     osClient.index(request);
   }
 
   @Override
-  protected void performDeleteTerminatedUserSessionOlderThan(final OffsetDateTime timestamp) throws IOException {
+  protected void performDeleteTerminatedUserSessionOlderThan(final OffsetDateTime timestamp)
+      throws IOException {
     final Query filterQuery =
-      QueryDSL.lte(TerminatedUserSessionIndex.TERMINATION_TIMESTAMP, dateTimeFormatter.format(timestamp));
+        QueryDSL.lte(
+            TerminatedUserSessionIndex.TERMINATION_TIMESTAMP, dateTimeFormatter.format(timestamp));
 
     osClient.deleteByQuery(filterQuery, true, TERMINATED_USER_SESSION_INDEX_NAME);
   }
-
 }

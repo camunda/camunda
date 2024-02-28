@@ -5,8 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import static java.util.stream.Collectors.collectingAndThen;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -15,13 +21,6 @@ import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.collectingAndThen;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -44,20 +43,23 @@ public class UserDto extends IdentityWithMetadataResponseDto {
     this(id, firstName, null, null, null);
   }
 
-  public UserDto(final String id, final String firstName, final String lastName, final String email) {
+  public UserDto(
+      final String id, final String firstName, final String lastName, final String email) {
     this(id, firstName, lastName, email, null);
   }
 
-  public UserDto(final String id, final String fullName, final String email, final List<String> roles) {
+  public UserDto(
+      final String id, final String fullName, final String email, final List<String> roles) {
     this(id, fullName, null, email, roles);
   }
 
   @JsonCreator
-  public UserDto(@JsonProperty(required = true, value = "id") @NonNull final String id,
-                 @JsonProperty(required = false, value = "firstName") final String firstName,
-                 @JsonProperty(required = false, value = "lastName") final String lastName,
-                 @JsonProperty(required = false, value = "email") final String email,
-                 @JsonProperty(required = false, value = "roles") final List<String> roles) {
+  public UserDto(
+      @JsonProperty(required = true, value = "id") @NonNull final String id,
+      @JsonProperty(required = false, value = "firstName") final String firstName,
+      @JsonProperty(required = false, value = "lastName") final String lastName,
+      @JsonProperty(required = false, value = "email") final String email,
+      @JsonProperty(required = false, value = "roles") final List<String> roles) {
     super(id, IdentityType.USER, resolveName(id, firstName, lastName));
     this.firstName = firstName;
     this.lastName = lastName;
@@ -65,9 +67,12 @@ public class UserDto extends IdentityWithMetadataResponseDto {
     this.roles = roles;
   }
 
-  private static String resolveName(final String id, final String firstName, final String lastName) {
+  private static String resolveName(
+      final String id, final String firstName, final String lastName) {
     return Stream.of(firstName, lastName)
-      .filter(Objects::nonNull)
-      .collect(collectingAndThen(Collectors.joining(" "), s -> StringUtils.isNotBlank(s) ? s.trim() : id));
+        .filter(Objects::nonNull)
+        .collect(
+            collectingAndThen(
+                Collectors.joining(" "), s -> StringUtils.isNotBlank(s) ? s.trim() : id));
   }
 }

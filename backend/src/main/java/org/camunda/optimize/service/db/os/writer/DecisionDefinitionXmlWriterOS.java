@@ -5,7 +5,11 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -20,11 +24,6 @@ import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -36,34 +35,32 @@ public class DecisionDefinitionXmlWriterOS implements DecisionDefinitionXmlWrite
   private final ObjectMapper objectMapper;
 
   @Override
-  public void importDecisionDefinitionXmls(final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
+  public void importDecisionDefinitionXmls(
+      final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
     String importItemName = "decision definition XML information";
     log.debug("Writing [{}] {} to OS.", decisionDefinitions.size(), importItemName);
     osClient.doImportBulkRequestWithList(
-      importItemName,
-      decisionDefinitions,
-      this::addImportDecisionDefinitionXmlRequest,
-      configurationService.getSkipDataAfterNestedDocLimitReached()
-    );
+        importItemName,
+        decisionDefinitions,
+        this::addImportDecisionDefinitionXmlRequest,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
-  private BulkOperation addImportDecisionDefinitionXmlRequest(final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
-    final Script script = OpenSearchWriterUtil.createFieldUpdateScript(
-      FIELDS_TO_UPDATE,
-      decisionDefinitionDto,
-      objectMapper
-    );
+  private BulkOperation addImportDecisionDefinitionXmlRequest(
+      final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
+    final Script script =
+        OpenSearchWriterUtil.createFieldUpdateScript(
+            FIELDS_TO_UPDATE, decisionDefinitionDto, objectMapper);
     return new BulkOperation.Builder()
-      .update(
-        new UpdateOperation.Builder<DecisionDefinitionOptimizeDto>()
-          .index(indexNameService.getOptimizeIndexAliasForIndex(DECISION_DEFINITION_INDEX_NAME))
-          .id(decisionDefinitionDto.getId())
-          .script(script)
-          .upsert(decisionDefinitionDto)
-          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-          .build()
-      )
-      .build();
+        .update(
+            new UpdateOperation.Builder<DecisionDefinitionOptimizeDto>()
+                .index(
+                    indexNameService.getOptimizeIndexAliasForIndex(DECISION_DEFINITION_INDEX_NAME))
+                .id(decisionDefinitionDto.getId())
+                .script(script)
+                .upsert(decisionDefinitionDto)
+                .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                .build())
+        .build();
   }
-
 }

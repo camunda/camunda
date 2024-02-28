@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.process.usertask;
 
+import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
@@ -26,13 +32,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
@@ -40,78 +39,92 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
   private final MinMaxStatsService minMaxStatsService;
   private final DurationAggregationService durationAggregationService;
 
-  public ProcessGroupByUserTaskDuration(final MinMaxStatsService minMaxStatsService,
-                                        final DurationAggregationService durationAggregationService,
-                                        final DefinitionService definitionService) {
+  public ProcessGroupByUserTaskDuration(
+      final MinMaxStatsService minMaxStatsService,
+      final DurationAggregationService durationAggregationService,
+      final DefinitionService definitionService) {
     super(definitionService);
     this.minMaxStatsService = minMaxStatsService;
     this.durationAggregationService = durationAggregationService;
   }
 
   @Override
-  public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ExecutionContext<ProcessReportDataDto> context) {
+  public List<AggregationBuilder> createAggregation(
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<ProcessReportDataDto> context) {
     final UserTaskDurationTime userTaskDurationTime = getUserTaskDurationTime(context);
     return durationAggregationService
-      .createLimitedGroupByScriptedUserTaskDurationAggregation(
-        searchSourceBuilder, context, distributedByPart, getDurationScript(userTaskDurationTime), userTaskDurationTime
-      )
-      .map(durationAggregation -> (AggregationBuilder) createFilteredUserTaskAggregation(context, durationAggregation))
-      .map(Collections::singletonList)
-      .orElse(Collections.emptyList());
+        .createLimitedGroupByScriptedUserTaskDurationAggregation(
+            searchSourceBuilder,
+            context,
+            distributedByPart,
+            getDurationScript(userTaskDurationTime),
+            userTaskDurationTime)
+        .map(
+            durationAggregation ->
+                (AggregationBuilder)
+                    createFilteredUserTaskAggregation(context, durationAggregation))
+        .map(Collections::singletonList)
+        .orElse(Collections.emptyList());
   }
 
   @Override
-  public void addQueryResult(final CompositeCommandResult compositeCommandResult,
-                             final SearchResponse response,
-                             final ExecutionContext<ProcessReportDataDto> context) {
+  public void addQueryResult(
+      final CompositeCommandResult compositeCommandResult,
+      final SearchResponse response,
+      final ExecutionContext<ProcessReportDataDto> context) {
     compositeCommandResult.setGroupByKeyOfNumericType(true);
-    compositeCommandResult.setDistributedByKeyOfNumericType(distributedByPart.isKeyOfNumericType(context));
+    compositeCommandResult.setDistributedByKeyOfNumericType(
+        distributedByPart.isKeyOfNumericType(context));
     getFilteredUserTaskAggregation(response)
-      .ifPresent(userFilteredFlowNodes -> {
-        final List<CompositeCommandResult.GroupByResult> durationHistogramData =
-          durationAggregationService.mapGroupByDurationResults(
-            response, userFilteredFlowNodes.getAggregations(), context, distributedByPart
-          );
-        compositeCommandResult.setGroups(durationHistogramData);
-      });
+        .ifPresent(
+            userFilteredFlowNodes -> {
+              final List<CompositeCommandResult.GroupByResult> durationHistogramData =
+                  durationAggregationService.mapGroupByDurationResults(
+                      response,
+                      userFilteredFlowNodes.getAggregations(),
+                      context,
+                      distributedByPart);
+              compositeCommandResult.setGroups(durationHistogramData);
+            });
   }
 
   @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto reportData) {
     reportData.setGroupBy(new DurationGroupByDto());
   }
 
   @Override
-  public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
-                                                final BoolQueryBuilder baseQuery) {
-    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery, getUserTaskDurationTime(context)));
+  public Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
+    return Optional.of(
+        retrieveMinMaxDurationStats(context, baseQuery, getUserTaskDurationTime(context)));
   }
 
-  private UserTaskDurationTime getUserTaskDurationTime(final ExecutionContext<ProcessReportDataDto> context) {
+  private UserTaskDurationTime getUserTaskDurationTime(
+      final ExecutionContext<ProcessReportDataDto> context) {
     // groupBy is only supported on the first userTaskDurationTime, defaults to total
     return context.getReportConfiguration().getUserTaskDurationTimes().stream()
-      .findFirst()
-      .orElse(UserTaskDurationTime.TOTAL);
+        .findFirst()
+        .orElse(UserTaskDurationTime.TOTAL);
   }
 
-  private MinMaxStatDto retrieveMinMaxDurationStats(final ExecutionContext<ProcessReportDataDto> context,
-                                                    final QueryBuilder baseQuery,
-                                                    final UserTaskDurationTime userTaskDurationTime) {
+  private MinMaxStatDto retrieveMinMaxDurationStats(
+      final ExecutionContext<ProcessReportDataDto> context,
+      final QueryBuilder baseQuery,
+      final UserTaskDurationTime userTaskDurationTime) {
     return minMaxStatsService.getScriptedMinMaxStats(
-      baseQuery,
-      getIndexNames(context),
-      FLOW_NODE_INSTANCES,
-      getDurationScript(userTaskDurationTime),
-      createUserTaskFlowNodeTypeFilter()
-    );
+        baseQuery,
+        getIndexNames(context),
+        FLOW_NODE_INSTANCES,
+        getDurationScript(userTaskDurationTime),
+        createUserTaskFlowNodeTypeFilter());
   }
 
   private Script getDurationScript(final UserTaskDurationTime userTaskDurationTime) {
     return DurationScriptUtil.getUserTaskDurationScript(
-      LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      FLOW_NODE_INSTANCES + "." + userTaskDurationTime.getDurationFieldName()
-    );
+        LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+        FLOW_NODE_INSTANCES + "." + userTaskDurationTime.getDurationFieldName());
   }
-
 }

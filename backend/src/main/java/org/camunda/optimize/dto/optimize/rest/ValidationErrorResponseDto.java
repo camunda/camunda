@@ -6,13 +6,12 @@
 package org.camunda.optimize.dto.optimize.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -21,7 +20,8 @@ import java.util.List;
 public class ValidationErrorResponseDto extends ErrorResponseDto {
   private List<ValidationError> validationErrors;
 
-  public ValidationErrorResponseDto(final String errorMessage, final List<ValidationError> validationErrors) {
+  public ValidationErrorResponseDto(
+      final String errorMessage, final List<ValidationError> validationErrors) {
     super(errorMessage);
     this.validationErrors = validationErrors;
   }

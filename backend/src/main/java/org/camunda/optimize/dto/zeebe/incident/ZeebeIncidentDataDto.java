@@ -5,14 +5,14 @@
  */
 package org.camunda.optimize.dto.zeebe.incident;
 
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
-
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 @EqualsAndHashCode
 @Data
@@ -35,7 +35,7 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     throw new UnsupportedOperationException("Operation not supported");
   }
 
-  public String getTenantId(){
+  public String getTenantId() {
     return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
   }
 }

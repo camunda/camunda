@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.dashboard;
 
-import lombok.Data;
-import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
-
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Data;
+import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 
 @Data
 @FieldNameConstants

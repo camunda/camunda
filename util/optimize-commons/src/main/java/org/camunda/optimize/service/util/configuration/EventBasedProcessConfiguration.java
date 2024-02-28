@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.util.configuration.engine.EventIngestionConfiguration;
-
-import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -23,5 +22,4 @@ public class EventBasedProcessConfiguration {
   private EventImportConfiguration eventImport;
   private EventIngestionConfiguration eventIngestion;
   private IndexRolloverConfiguration eventIndexRollover;
-
 }

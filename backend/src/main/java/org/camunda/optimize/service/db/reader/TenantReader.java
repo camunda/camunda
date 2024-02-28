@@ -5,12 +5,10 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.TenantDto;
-
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.TenantDto;
 
 public interface TenantReader {
 
   Set<TenantDto> getTenants();
-
 }

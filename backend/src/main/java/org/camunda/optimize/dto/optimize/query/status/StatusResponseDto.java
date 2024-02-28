@@ -5,16 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.status;
 
-import lombok.Data;
-
 import java.util.Map;
+import lombok.Data;
 
 @Data
 public class StatusResponseDto {
   protected Map<String, EngineStatusDto> engineStatus;
 
-  /**
-   * True if Optimize is connected to the Elasticsearch, false otherwise.
-   */
+  /** True if Optimize is connected to the Elasticsearch, false otherwise. */
   protected boolean isConnectedToElasticsearch;
 }

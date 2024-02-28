@@ -5,22 +5,22 @@
  */
 package org.camunda.optimize.testplugin.adapter.variable.util6;
 
-import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
-import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
+import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 
 public class RemoveOptionalFieldsFromVariables implements VariableImportAdapter {
 
   @Override
   public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
     return list.stream()
-      .peek(pluginVariableDto -> {
-        pluginVariableDto.setValue(null);
-        pluginVariableDto.setValueInfo(null);
-        pluginVariableDto.setTenantId(null);
-      })
-      .collect(Collectors.toList());
+        .peek(
+            pluginVariableDto -> {
+              pluginVariableDto.setValue(null);
+              pluginVariableDto.setValueInfo(null);
+              pluginVariableDto.setTenantId(null);
+            })
+        .collect(Collectors.toList());
   }
 }

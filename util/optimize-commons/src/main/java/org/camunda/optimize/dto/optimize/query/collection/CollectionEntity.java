@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
+import java.time.OffsetDateTime;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
-
-import java.time.OffsetDateTime;
 
 public interface CollectionEntity {
 

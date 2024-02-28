@@ -5,14 +5,14 @@
  */
 package org.camunda.optimize.service.db.repository;
 
-import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
-
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 
 public interface DecisionInstanceRepository {
-  void importDecisionInstances(String importItemName, List<DecisionInstanceDto> decisionInstanceDtos);
+  void importDecisionInstances(
+      String importItemName, List<DecisionInstanceDto> decisionInstanceDtos);
 
-  void deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(String decisionDefinitionKey,
-                                                                        OffsetDateTime evaluationDate);
+  void deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(
+      String decisionDefinitionKey, OffsetDateTime evaluationDate);
 }

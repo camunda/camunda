@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report.command.process.flownode.frequency.groupby.duration.distributeby.flownode;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.service.db.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.db.es.report.command.exec.ProcessReportCmdExecutionPlan;
@@ -14,24 +15,25 @@ import org.camunda.optimize.service.db.es.report.command.modules.group_by.proces
 import org.camunda.optimize.service.db.es.report.command.modules.view.process.frequency.ProcessViewFlowNodeFrequency;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd extends ProcessCmd<List<HyperMapResultEntryDto>> {
+public class FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd
+    extends ProcessCmd<List<HyperMapResultEntryDto>> {
 
-  public FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd(
+      final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
   @Override
-  protected ProcessReportCmdExecutionPlan<List<HyperMapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
-    return builder.createExecutionPlan()
-      .processCommand()
-      .view(ProcessViewFlowNodeFrequency.class)
-      .groupBy(ProcessGroupByFlowNodeDuration.class)
-      .distributedBy(ProcessDistributedByFlowNode.class)
-      .resultAsHyperMap()
-      .build();
+  protected ProcessReportCmdExecutionPlan<List<HyperMapResultEntryDto>> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder) {
+    return builder
+        .createExecutionPlan()
+        .processCommand()
+        .view(ProcessViewFlowNodeFrequency.class)
+        .groupBy(ProcessGroupByFlowNodeDuration.class)
+        .distributedBy(ProcessDistributedByFlowNode.class)
+        .resultAsHyperMap()
+        .build();
   }
-
 }

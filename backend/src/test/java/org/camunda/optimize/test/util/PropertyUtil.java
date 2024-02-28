@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.test.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PropertyUtil {
 
@@ -18,15 +17,10 @@ public class PropertyUtil {
   public static Properties loadProperties(String resource) {
     Properties properties = new Properties();
     try {
-      properties.load(
-          PropertyUtil.class
-              .getClassLoader()
-              .getResourceAsStream(resource)
-      );
+      properties.load(PropertyUtil.class.getClassLoader().getResourceAsStream(resource));
     } catch (IOException ex) {
       logger.error("Unable to load test properties!", ex);
     }
     return properties;
   }
-
 }

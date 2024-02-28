@@ -24,8 +24,10 @@ public class DashboardDateVariableFilterDataDto extends DashboardVariableFilterD
     this(name, null, null);
   }
 
-  public DashboardDateVariableFilterDataDto(final String name, final DashboardVariableFilterSubDataDto data,
-                                            final DateFilterDataDto<?> defaultValues) {
+  public DashboardDateVariableFilterDataDto(
+      final String name,
+      final DashboardVariableFilterSubDataDto data,
+      final DateFilterDataDto<?> defaultValues) {
     super(VariableType.DATE, name, data);
     this.defaultValues = defaultValues;
   }

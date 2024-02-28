@@ -5,6 +5,4 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
-public class CollectionDefinitionRestDto extends BaseCollectionDefinitionDto<CollectionDataDto> {
-  
-}
+public class CollectionDefinitionRestDto extends BaseCollectionDefinitionDto<CollectionDataDto> {}

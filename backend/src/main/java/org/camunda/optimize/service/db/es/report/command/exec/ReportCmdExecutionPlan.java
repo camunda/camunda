@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.db.es.report.command.exec;
 
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -27,15 +35,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
-import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
-
 @Slf4j
 public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
@@ -45,11 +44,12 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
   protected DatabaseClient databaseClient;
   private final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult;
 
-  protected ReportCmdExecutionPlan(final ViewPart<D> viewPart,
-                                   final GroupByPart<D> groupByPart,
-                                   final DistributedByPart<D> distributedByPart,
-                                   final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult,
-                                   final DatabaseClient databaseClient) {
+  protected ReportCmdExecutionPlan(
+      final ViewPart<D> viewPart,
+      final GroupByPart<D> groupByPart,
+      final DistributedByPart<D> distributedByPart,
+      final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult,
+      final DatabaseClient databaseClient) {
     groupByPart.setDistributedByPart(distributedByPart);
     distributedByPart.setViewPart(viewPart);
     this.viewPart = viewPart;
@@ -61,13 +61,15 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
   public abstract BoolQueryBuilder setupBaseQuery(final ExecutionContext<D> context);
 
-  protected abstract BoolQueryBuilder setupUnfilteredBaseQuery(final ExecutionContext<D> reportData);
+  protected abstract BoolQueryBuilder setupUnfilteredBaseQuery(
+      final ExecutionContext<D> reportData);
 
   protected abstract String[] getIndexNames(final ExecutionContext<D> context);
 
   protected abstract String[] getMultiIndexAlias();
 
-  public <R extends ReportDefinitionDto<D>> CommandEvaluationResult<T> evaluate(final ReportEvaluationContext<R> reportEvaluationContext) {
+  public <R extends ReportDefinitionDto<D>> CommandEvaluationResult<T> evaluate(
+      final ReportEvaluationContext<R> reportEvaluationContext) {
     return evaluate(new ExecutionContext<>(reportEvaluationContext));
   }
 
@@ -75,19 +77,16 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     SearchRequest searchRequest = createBaseQuerySearchRequest(executionContext);
     SearchResponse response;
     try {
-      response = executeRequests(
-        executionContext,
-        searchRequest
-      );
+      response = executeRequests(executionContext, searchRequest);
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(e)) {
         if (executionContext.getReportData().getDefinitions().size() > 1) {
-          // If there are multiple data sources, we retry with the process instance index multi alias to get a result
+          // If there are multiple data sources, we retry with the process instance index multi
+          // alias to get a result
           log.info(
-            "Could not evaluate report because at least one required instance index {} does not exist. Retrying with index " +
-              "multi alias",
-            Arrays.asList(getIndexNames(executionContext))
-          );
+              "Could not evaluate report because at least one required instance index {} does not exist. Retrying with index "
+                  + "multi alias",
+              Arrays.asList(getIndexNames(executionContext)));
           searchRequest.indices(getMultiIndexAlias());
           try {
             response = executeRequests(executionContext, searchRequest);
@@ -104,13 +103,12 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       }
     } catch (IOException e) {
       String reason =
-        String.format(
-          "Could not evaluate %s %s %s report for definitions [%s]",
-          viewPart.getClass().getSimpleName(),
-          groupByPart.getClass().getSimpleName(),
-          distributedByPart.getClass().getSimpleName(),
-          executionContext.getReportData().getDefinitions()
-        );
+          String.format(
+              "Could not evaluate %s %s %s report for definitions [%s]",
+              viewPart.getClass().getSimpleName(),
+              groupByPart.getClass().getSimpleName(),
+              distributedByPart.getClass().getSimpleName(),
+              executionContext.getReportData().getDefinitions());
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -119,21 +117,23 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
   private CommandEvaluationResult<T> returnEmptyResult(final ExecutionContext<D> executionContext) {
     log.info("Could not evaluate report. Returning empty result instead");
-    return mapToReportResult.apply(new CompositeCommandResult(
-      executionContext.getReportData(),
-      viewPart.getViewProperty(executionContext),
-      // the default number value differs across views, see the corresponding createEmptyResult implementations
-      // thus we refer to it here in order to create an appropriate empty result
-      // see https://jira.camunda.com/browse/OPT-3336
-      viewPart.createEmptyResult(executionContext).getViewMeasures().stream()
-        .findFirst()
-        .map(CompositeCommandResult.ViewMeasure::getValue)
-        .orElse(null)
-    ));
+    return mapToReportResult.apply(
+        new CompositeCommandResult(
+            executionContext.getReportData(),
+            viewPart.getViewProperty(executionContext),
+            // the default number value differs across views, see the corresponding
+            // createEmptyResult implementations
+            // thus we refer to it here in order to create an appropriate empty result
+            // see https://jira.camunda.com/browse/OPT-3336
+            viewPart.createEmptyResult(executionContext).getViewMeasures().stream()
+                .findFirst()
+                .map(CompositeCommandResult.ViewMeasure::getValue)
+                .orElse(null)));
   }
 
-  private SearchResponse executeRequests(final ExecutionContext<D> executionContext, final SearchRequest searchRequest) throws
-                                                                                                                        IOException {
+  private SearchResponse executeRequests(
+      final ExecutionContext<D> executionContext, final SearchRequest searchRequest)
+      throws IOException {
     SearchResponse response;
     response = executeElasticSearchCommand(executionContext, searchRequest);
     String[] indices = getIndexNames(executionContext);
@@ -142,8 +142,9 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     return response;
   }
 
-  private SearchResponse executeElasticSearchCommand(final ExecutionContext<D> executionContext,
-                                                     final SearchRequest searchRequest) throws IOException {
+  private SearchResponse executeElasticSearchCommand(
+      final ExecutionContext<D> executionContext, final SearchRequest searchRequest)
+      throws IOException {
     SearchResponse response;
     SearchScrollRequest scrollRequest = null;
     PaginationDto paginationInfo = executionContext.getPagination().orElse(new PaginationDto());
@@ -157,7 +158,10 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       } else {
         searchRequest.scroll(TimeValue.timeValueSeconds(timeout));
       }
-      response = (scrollRequest != null ? databaseClient.scroll(scrollRequest) : databaseClient.search(searchRequest));
+      response =
+          (scrollRequest != null
+              ? databaseClient.scroll(scrollRequest)
+              : databaseClient.search(searchRequest));
     } else {
       response = databaseClient.search(searchRequest);
     }
@@ -166,21 +170,20 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
   private SearchRequest createBaseQuerySearchRequest(final ExecutionContext<D> executionContext) {
     final BoolQueryBuilder baseQuery = setupBaseQuery(executionContext);
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(baseQuery)
-      .trackTotalHits(true)
-      .fetchSource(false);
+    SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder().query(baseQuery).trackTotalHits(true).fetchSource(false);
     // The null checks below are essential to prevent NPEs in integration tests
-    executionContext.getPagination().ifPresent(
-      pagination -> {
-        Optional.ofNullable(pagination.getOffset()).ifPresent(
-          searchSourceBuilder::from);
-        Optional.ofNullable(pagination.getLimit()).ifPresent(
-          searchSourceBuilder::size);
-      });
+    executionContext
+        .getPagination()
+        .ifPresent(
+            pagination -> {
+              Optional.ofNullable(pagination.getOffset()).ifPresent(searchSourceBuilder::from);
+              Optional.ofNullable(pagination.getLimit()).ifPresent(searchSourceBuilder::size);
+            });
     addAggregation(searchSourceBuilder, executionContext);
 
-    SearchRequest searchRequest = new SearchRequest(getIndexNames(executionContext)).source(searchSourceBuilder);
+    SearchRequest searchRequest =
+        new SearchRequest(getIndexNames(executionContext)).source(searchSourceBuilder);
     groupByPart.adjustSearchRequest(searchRequest, baseQuery, executionContext);
     return searchRequest;
   }
@@ -191,25 +194,29 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
   protected abstract Supplier<D> getDataDtoSupplier();
 
-  private CommandEvaluationResult<T> retrieveQueryResult(final SearchResponse response,
-                                                         final ExecutionContext<D> executionContext) {
-    final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, executionContext);
+  private CommandEvaluationResult<T> retrieveQueryResult(
+      final SearchResponse response, final ExecutionContext<D> executionContext) {
+    final CompositeCommandResult result =
+        groupByPart.retrieveQueryResult(response, executionContext);
     final CommandEvaluationResult<T> reportResult = mapToReportResult.apply(result);
     reportResult.setInstanceCount(response.getHits().getTotalHits().value);
     reportResult.setInstanceCountWithoutFilters(executionContext.getUnfilteredTotalInstanceCount());
-    executionContext.getPagination().ifPresent(
-      plainPagination -> {
-        PaginationScrollableDto scrollablePagination = PaginationScrollableDto.fromPaginationDto(plainPagination);
-        scrollablePagination.setScrollId(response.getScrollId());
-        reportResult.setPagination(scrollablePagination);
-      });
+    executionContext
+        .getPagination()
+        .ifPresent(
+            plainPagination -> {
+              PaginationScrollableDto scrollablePagination =
+                  PaginationScrollableDto.fromPaginationDto(plainPagination);
+              scrollablePagination.setScrollId(response.getScrollId());
+              reportResult.setPagination(scrollablePagination);
+            });
     return reportResult;
   }
 
-  private void addAggregation(final SearchSourceBuilder searchSourceBuilder,
-                              final ExecutionContext<D> executionContext) {
-    final List<AggregationBuilder> aggregations = groupByPart.createAggregation(searchSourceBuilder, executionContext);
+  private void addAggregation(
+      final SearchSourceBuilder searchSourceBuilder, final ExecutionContext<D> executionContext) {
+    final List<AggregationBuilder> aggregations =
+        groupByPart.createAggregation(searchSourceBuilder, executionContext);
     aggregations.forEach(searchSourceBuilder::aggregation);
   }
-
 }

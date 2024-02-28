@@ -18,5 +18,4 @@ public class MixpanelHeartbeatMetrics {
   private long reportShareCount;
   private long dashboardShareCount;
   private long alertCount;
-
 }

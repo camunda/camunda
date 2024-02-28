@@ -5,7 +5,11 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.TenantDto;
@@ -18,11 +22,6 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -40,32 +39,26 @@ public class TenantWriterOS implements TenantWriter {
     log.debug("Writing [{}] {} to Opensearch.", tenantDtos.size(), importItemName);
 
     osClient.doImportBulkRequestWithList(
-      importItemName,
-      tenantDtos,
-      this::addImportTenantRequest,
-      configurationService.getSkipDataAfterNestedDocLimitReached(),
-      TENANT_INDEX_NAME
-    );
+        importItemName,
+        tenantDtos,
+        this::addImportTenantRequest,
+        configurationService.getSkipDataAfterNestedDocLimitReached(),
+        TENANT_INDEX_NAME);
   }
 
   private BulkOperation addImportTenantRequest(TenantDto tenantDto) {
     final String id = tenantDto.getId();
-    final Script updateScript = OpenSearchWriterUtil.createFieldUpdateScript(
-      FIELDS_TO_UPDATE,
-      tenantDto,
-      objectMapper
-    );
+    final Script updateScript =
+        OpenSearchWriterUtil.createFieldUpdateScript(FIELDS_TO_UPDATE, tenantDto, objectMapper);
 
     final UpdateOperation<TenantDto> request =
-      new UpdateOperation.Builder<TenantDto>()
-        .id(id)
-        .script(updateScript)
-        .upsert(tenantDto)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-        .build();
+        new UpdateOperation.Builder<TenantDto>()
+            .id(id)
+            .script(updateScript)
+            .upsert(tenantDto)
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+            .build();
 
-    return new BulkOperation.Builder().update(request)
-      .build();
+    return new BulkOperation.Builder().update(request).build();
   }
-
 }

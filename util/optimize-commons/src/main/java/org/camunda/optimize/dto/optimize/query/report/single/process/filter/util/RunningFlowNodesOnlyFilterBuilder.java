@@ -32,5 +32,4 @@ public class RunningFlowNodesOnlyFilterBuilder {
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
-
 }

@@ -13,6 +13,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 public class CamundaCloudCondition implements Condition {
   @Override
   public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-    return new CCSaaSCondition().matches(context, metadata) || new CCSMCondition().matches(context, metadata);
+    return new CCSaaSCondition().matches(context, metadata)
+        || new CCSMCondition().matches(context, metadata);
   }
 }

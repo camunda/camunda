@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Period;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionCleanupConfiguration;
@@ -12,10 +15,6 @@ import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitio
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.junit.jupiter.api.Test;
-
-import java.time.Period;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class CleanupConfigurationTest {
 
@@ -30,15 +29,15 @@ public class CleanupConfigurationTest {
   public void testGetProcessDefinitionCleanupConfigurationDefaultsForUnknownKey() {
     final CleanupMode defaultMode = CleanupMode.VARIABLES;
     final Period defaultTtl = Period.parse("P1M");
-    final CleanupConfiguration underTest = new CleanupConfiguration(
-      "* * * * *",
-      defaultTtl,
-      new ProcessCleanupConfiguration(true, defaultMode),
-      new DecisionCleanupConfiguration()
-    );
+    final CleanupConfiguration underTest =
+        new CleanupConfiguration(
+            "* * * * *",
+            defaultTtl,
+            new ProcessCleanupConfiguration(true, defaultMode),
+            new DecisionCleanupConfiguration());
 
-    final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
-      .getProcessDefinitionCleanupConfigurationForKey("unknownKey");
+    final ProcessDefinitionCleanupConfiguration configForUnknownKey =
+        underTest.getProcessDefinitionCleanupConfigurationForKey("unknownKey");
 
     assertThat(configForUnknownKey.getCleanupMode()).isEqualTo(defaultMode);
     assertThat(configForUnknownKey.getTtl()).isEqualTo(defaultTtl);
@@ -49,20 +48,21 @@ public class CleanupConfigurationTest {
     final CleanupMode defaultMode = CleanupMode.VARIABLES;
     final Period defaultTtl = Period.parse("P1M");
     final String key = "myKey";
-    final CleanupConfiguration underTest = new CleanupConfiguration(
-      "* * * * *",
-      defaultTtl,
-      new ProcessCleanupConfiguration(true, defaultMode),
-      new DecisionCleanupConfiguration()
-    );
+    final CleanupConfiguration underTest =
+        new CleanupConfiguration(
+            "* * * * *",
+            defaultTtl,
+            new ProcessCleanupConfiguration(true, defaultMode),
+            new DecisionCleanupConfiguration());
 
     final Period customTtl = Period.parse("P1Y");
-    underTest.getProcessDataCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
-      key, new ProcessDefinitionCleanupConfiguration(customTtl)
-    );
+    underTest
+        .getProcessDataCleanupConfiguration()
+        .getProcessDefinitionSpecificConfiguration()
+        .put(key, new ProcessDefinitionCleanupConfiguration(customTtl));
 
-    final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
-      .getProcessDefinitionCleanupConfigurationForKey(key);
+    final ProcessDefinitionCleanupConfiguration configForUnknownKey =
+        underTest.getProcessDefinitionCleanupConfigurationForKey(key);
 
     assertThat(configForUnknownKey.getCleanupMode()).isEqualTo(defaultMode);
     assertThat(configForUnknownKey.getTtl()).isEqualTo(customTtl);
@@ -73,20 +73,21 @@ public class CleanupConfigurationTest {
     final CleanupMode defaultMode = CleanupMode.VARIABLES;
     final Period defaultTtl = Period.parse("P1M");
     final String key = "myKey";
-    final CleanupConfiguration underTest = new CleanupConfiguration(
-      "* * * * *",
-      defaultTtl,
-      new ProcessCleanupConfiguration(true, defaultMode),
-      new DecisionCleanupConfiguration()
-    );
+    final CleanupConfiguration underTest =
+        new CleanupConfiguration(
+            "* * * * *",
+            defaultTtl,
+            new ProcessCleanupConfiguration(true, defaultMode),
+            new DecisionCleanupConfiguration());
 
     final CleanupMode customMode = CleanupMode.ALL;
-    underTest.getProcessDataCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
-      key, new ProcessDefinitionCleanupConfiguration(customMode)
-    );
+    underTest
+        .getProcessDataCleanupConfiguration()
+        .getProcessDefinitionSpecificConfiguration()
+        .put(key, new ProcessDefinitionCleanupConfiguration(customMode));
 
-    final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
-      .getProcessDefinitionCleanupConfigurationForKey(key);
+    final ProcessDefinitionCleanupConfiguration configForUnknownKey =
+        underTest.getProcessDefinitionCleanupConfigurationForKey(key);
 
     assertThat(configForUnknownKey.getCleanupMode()).isEqualTo(customMode);
     assertThat(configForUnknownKey.getTtl()).isEqualTo(defaultTtl);
@@ -95,15 +96,15 @@ public class CleanupConfigurationTest {
   @Test
   public void testGetDecisionDefinitionCleanupConfigurationDefaultsForUnknownKey() {
     final Period defaultTtl = Period.parse("P1M");
-    final CleanupConfiguration underTest = new CleanupConfiguration(
-      "* * * * *",
-      defaultTtl,
-      new ProcessCleanupConfiguration(true),
-      new DecisionCleanupConfiguration()
-    );
+    final CleanupConfiguration underTest =
+        new CleanupConfiguration(
+            "* * * * *",
+            defaultTtl,
+            new ProcessCleanupConfiguration(true),
+            new DecisionCleanupConfiguration());
 
-    final DecisionDefinitionCleanupConfiguration configForUnknownKey = underTest
-      .getDecisionDefinitionCleanupConfigurationForKey("unknownKey");
+    final DecisionDefinitionCleanupConfiguration configForUnknownKey =
+        underTest.getDecisionDefinitionCleanupConfigurationForKey("unknownKey");
 
     assertThat(configForUnknownKey.getTtl()).isEqualTo(defaultTtl);
   }
@@ -112,22 +113,22 @@ public class CleanupConfigurationTest {
   public void testGetDecisionDefinitionCleanupConfigurationCustomTtlForKey() {
     final Period defaultTtl = Period.parse("P1M");
     final String key = "myKey";
-    final CleanupConfiguration underTest = new CleanupConfiguration(
-      "* * * * *",
-      defaultTtl,
-      new ProcessCleanupConfiguration(),
-      new DecisionCleanupConfiguration(true)
-    );
+    final CleanupConfiguration underTest =
+        new CleanupConfiguration(
+            "* * * * *",
+            defaultTtl,
+            new ProcessCleanupConfiguration(),
+            new DecisionCleanupConfiguration(true));
 
     final Period customTtl = Period.parse("P1Y");
-    underTest.getDecisionCleanupConfiguration()
-      .getDecisionDefinitionSpecificConfiguration()
-      .put(key, new DecisionDefinitionCleanupConfiguration(customTtl));
+    underTest
+        .getDecisionCleanupConfiguration()
+        .getDecisionDefinitionSpecificConfiguration()
+        .put(key, new DecisionDefinitionCleanupConfiguration(customTtl));
 
-    final DecisionDefinitionCleanupConfiguration configForUnknownKey = underTest
-      .getDecisionDefinitionCleanupConfigurationForKey(key);
+    final DecisionDefinitionCleanupConfiguration configForUnknownKey =
+        underTest.getDecisionDefinitionCleanupConfigurationForKey(key);
 
     assertThat(configForUnknownKey.getTtl()).isEqualTo(customTtl);
   }
-
 }

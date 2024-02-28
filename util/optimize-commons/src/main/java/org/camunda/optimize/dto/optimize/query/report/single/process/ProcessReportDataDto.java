@@ -5,7 +5,18 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
+import static java.util.Objects.nonNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.Valid;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,18 +40,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
-import jakarta.validation.Valid;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static java.util.Objects.nonNull;
-
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -53,18 +52,16 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   private static final String COMMAND_KEY_SEPARATOR = "_";
   private static final String MISSING_COMMAND_PART_PLACEHOLDER = "null";
 
-  @Builder.Default
-  @Valid
-  protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
+  @Builder.Default @Valid protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected ProcessViewDto view;
   protected ProcessGroupByDto<?> groupBy;
+
   @Builder.Default
   protected ProcessReportDistributedByDto<?> distributedBy = new ProcessReportDistributedByDto<>();
+
   protected ProcessVisualization visualization;
-  @Builder.Default
-  protected boolean managementReport = false;
-  @Builder.Default
-  protected boolean instantPreviewReport = false;
+  @Builder.Default protected boolean managementReport = false;
+  @Builder.Default protected boolean instantPreviewReport = false;
 
   public String getProcessDefinitionKey() {
     return getDefinitionKey();
@@ -117,19 +114,26 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   @Override
   public List<String> createCommandKeys() {
-    final String groupByCommandKey = groupBy == null ? MISSING_COMMAND_PART_PLACEHOLDER : groupBy.createCommandKey();
+    final String groupByCommandKey =
+        groupBy == null ? MISSING_COMMAND_PART_PLACEHOLDER : groupBy.createCommandKey();
     String distributedByCommandKey = createDistributedByCommandKey();
-    String configurationCommandKey = Optional.ofNullable(getConfiguration())
-      .map(SingleReportConfigurationDto::createCommandKey)
-      .orElse(MISSING_COMMAND_PART_PLACEHOLDER);
+    String configurationCommandKey =
+        Optional.ofNullable(getConfiguration())
+            .map(SingleReportConfigurationDto::createCommandKey)
+            .orElse(MISSING_COMMAND_PART_PLACEHOLDER);
     return Optional.ofNullable(view)
-      .map(ProcessViewDto::createCommandKeys)
-      .orElse(Collections.singletonList(MISSING_COMMAND_PART_PLACEHOLDER))
-      .stream()
-      .map(viewKey -> String.join(
-        COMMAND_KEY_SEPARATOR, viewKey, groupByCommandKey, distributedByCommandKey, configurationCommandKey
-      ))
-      .collect(Collectors.toList());
+        .map(ProcessViewDto::createCommandKeys)
+        .orElse(Collections.singletonList(MISSING_COMMAND_PART_PLACEHOLDER))
+        .stream()
+        .map(
+            viewKey ->
+                String.join(
+                    COMMAND_KEY_SEPARATOR,
+                    viewKey,
+                    groupByCommandKey,
+                    distributedByCommandKey,
+                    configurationCommandKey))
+        .collect(Collectors.toList());
   }
 
   @JsonIgnore
@@ -139,8 +143,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   }
 
   public String createDistributedByCommandKey() {
-    if (distributedBy != null
-      && (isModelElementCommand() || isInstanceCommand())) {
+    if (distributedBy != null && (isModelElementCommand() || isInstanceCommand())) {
       return distributedBy.createCommandKey();
     }
     return null;
@@ -156,10 +159,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     }
     ProcessReportDataDto that = (ProcessReportDataDto) o;
     return Combinable.isCombinable(getView(), that.getView())
-      && isGroupByCombinable(that)
-      && Combinable.isCombinable(getDistributedBy(), that.getDistributedBy())
-      && Objects.equals(getVisualization(), that.getVisualization())
-      && getConfiguration().isCombinable(that.getConfiguration());
+        && isGroupByCombinable(that)
+        && Combinable.isCombinable(getDistributedBy(), that.getDistributedBy())
+        && Objects.equals(getVisualization(), that.getVisualization())
+        && getConfiguration().isCombinable(that.getConfiguration());
   }
 
   @JsonIgnore
@@ -179,10 +182,16 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   @JsonIgnore
   public Map<String, List<ProcessFilterDto<?>>> groupFiltersByDefinitionIdentifier() {
     final Map<String, List<ProcessFilterDto<?>>> filterByDefinition = new HashMap<>();
-    getFilter().forEach(filterDto -> filterDto.getAppliedTo().forEach(
-      definitionIdentifier -> filterByDefinition.computeIfAbsent(definitionIdentifier, key -> new ArrayList<>())
-        .add(filterDto)
-    ));
+    getFilter()
+        .forEach(
+            filterDto ->
+                filterDto
+                    .getAppliedTo()
+                    .forEach(
+                        definitionIdentifier ->
+                            filterByDefinition
+                                .computeIfAbsent(definitionIdentifier, key -> new ArrayList<>())
+                                .add(filterDto)));
     return filterByDefinition;
   }
 
@@ -190,8 +199,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     if (Combinable.isCombinable(this.groupBy, that.groupBy)) {
       if (isGroupByDateVariableReport()) {
         return this.getConfiguration()
-          .getGroupByDateVariableUnit()
-          .equals(that.getConfiguration().getGroupByDateVariableUnit());
+            .getGroupByDateVariableUnit()
+            .equals(that.getConfiguration().getGroupByDateVariableUnit());
       } else if (isGroupByNumberReport()) {
         return isBucketSizeCombinable(that);
       }
@@ -202,11 +211,11 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   private boolean isBucketSizeCombinable(final ProcessReportDataDto that) {
     return this.getConfiguration().getCustomBucket().isActive()
-      && that.getConfiguration().getCustomBucket().isActive()
-      && Objects.equals(
-      this.getConfiguration().getCustomBucket().getBucketSize(),
-      that.getConfiguration().getCustomBucket().getBucketSize()
-    ) || isBucketSizeIrrelevant(this) && isBucketSizeIrrelevant(that);
+            && that.getConfiguration().getCustomBucket().isActive()
+            && Objects.equals(
+                this.getConfiguration().getCustomBucket().getBucketSize(),
+                that.getConfiguration().getCustomBucket().getBucketSize())
+        || isBucketSizeIrrelevant(this) && isBucketSizeIrrelevant(that);
   }
 
   private boolean isBucketSizeIrrelevant(final ProcessReportDataDto reportData) {
@@ -220,36 +229,34 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   private boolean isGroupByDateVariableReport() {
     return groupBy != null
-      && ProcessGroupByType.VARIABLE.equals(groupBy.getType())
-      && VariableType.DATE.equals(((VariableGroupByDto) groupBy).getValue().getType());
+        && ProcessGroupByType.VARIABLE.equals(groupBy.getType())
+        && VariableType.DATE.equals(((VariableGroupByDto) groupBy).getValue().getType());
   }
 
   private boolean isGroupByEndDateReport() {
     return groupBy != null
-      && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity())
-      && ProcessGroupByType.END_DATE.equals(groupBy.getType());
+        && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity())
+        && ProcessGroupByType.END_DATE.equals(groupBy.getType());
   }
 
   private boolean isGroupByNumberReport() {
     return groupBy != null
-      &&
-      (
-        ProcessGroupByType.VARIABLE.equals(groupBy.getType())
-          && (VariableType.getNumericTypes().contains(((VariableGroupByDto) groupBy).getValue().getType()))
-          || ProcessGroupByType.DURATION.equals(groupBy.getType())
-      );
+        && (ProcessGroupByType.VARIABLE.equals(groupBy.getType())
+                && (VariableType.getNumericTypes()
+                    .contains(((VariableGroupByDto) groupBy).getValue().getType()))
+            || ProcessGroupByType.DURATION.equals(groupBy.getType()));
   }
 
   private boolean isModelElementCommand() {
-    return nonNull(view) && nonNull(view.getEntity()) &&
-      (ProcessViewEntity.USER_TASK.equals(view.getEntity())
-        || ProcessViewEntity.FLOW_NODE.equals(view.getEntity()));
+    return nonNull(view)
+        && nonNull(view.getEntity())
+        && (ProcessViewEntity.USER_TASK.equals(view.getEntity())
+            || ProcessViewEntity.FLOW_NODE.equals(view.getEntity()));
   }
 
   private boolean isInstanceCommand() {
     return nonNull(view)
-      && nonNull(view.getEntity())
-      && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity());
+        && nonNull(view.getEntity())
+        && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity());
   }
-
 }

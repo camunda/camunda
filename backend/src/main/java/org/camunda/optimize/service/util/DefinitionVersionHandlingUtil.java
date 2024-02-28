@@ -6,40 +6,42 @@
 package org.camunda.optimize.service.util;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Supplier;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Supplier;
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionVersionHandlingUtil {
 
-  public static String convertToLatestParticularVersion(final String processDefinitionVersion,
-                                                        final Supplier<String> latestVersionSupplier) {
-    return convertToLatestParticularVersion(ImmutableList.of(processDefinitionVersion), latestVersionSupplier);
+  public static String convertToLatestParticularVersion(
+      final String processDefinitionVersion, final Supplier<String> latestVersionSupplier) {
+    return convertToLatestParticularVersion(
+        ImmutableList.of(processDefinitionVersion), latestVersionSupplier);
   }
 
-  public static String convertToLatestParticularVersion(@NonNull final List<String> definitionVersions,
-                                                        @NonNull final Supplier<String> latestVersionSupplier) {
-    final boolean isDefinitionVersionSetToAllOrLatest = definitionVersions.stream()
-      .anyMatch(
-        version -> ReportConstants.ALL_VERSIONS.equalsIgnoreCase(version) ||
-          ReportConstants.LATEST_VERSION.equalsIgnoreCase(version)
-      );
+  public static String convertToLatestParticularVersion(
+      @NonNull final List<String> definitionVersions,
+      @NonNull final Supplier<String> latestVersionSupplier) {
+    final boolean isDefinitionVersionSetToAllOrLatest =
+        definitionVersions.stream()
+            .anyMatch(
+                version ->
+                    ReportConstants.ALL_VERSIONS.equalsIgnoreCase(version)
+                        || ReportConstants.LATEST_VERSION.equalsIgnoreCase(version));
     if (isDefinitionVersionSetToAllOrLatest) {
       return latestVersionSupplier.get();
     } else {
       return definitionVersions.stream()
-        .filter(StringUtils::isNumeric)
-        .map(Integer::parseInt)
-        .max(Integer::compareTo)
-        .map(Object::toString)
-        .orElse(getLastEntryInList(definitionVersions));
+          .filter(StringUtils::isNumeric)
+          .map(Integer::parseInt)
+          .max(Integer::compareTo)
+          .map(Object::toString)
+          .orElse(getLastEntryInList(definitionVersions));
     }
   }
 
@@ -61,8 +63,9 @@ public class DefinitionVersionHandlingUtil {
 
   public static boolean isDefinitionVersionSetToAllOrLatest(final List<String> definitionVersions) {
     return definitionVersions.stream()
-      .anyMatch(v -> ReportConstants.ALL_VERSIONS.equalsIgnoreCase(v)
-        || ReportConstants.LATEST_VERSION.equalsIgnoreCase(v));
+        .anyMatch(
+            v ->
+                ReportConstants.ALL_VERSIONS.equalsIgnoreCase(v)
+                    || ReportConstants.LATEST_VERSION.equalsIgnoreCase(v));
   }
-
 }

@@ -18,8 +18,6 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 @Builder
 @Data
 public class DatabaseDto implements OptimizeDto {
-  @NonNull
-  private String vendor;
-  @NonNull
-  private String version;
+  @NonNull private String vendor;
+  @NonNull private String version;
 }

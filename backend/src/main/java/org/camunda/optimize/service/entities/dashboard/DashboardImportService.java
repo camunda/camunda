@@ -5,6 +5,14 @@
  */
 package org.camunda.optimize.service.entities.dashboard;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
@@ -14,23 +22,14 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.index.DashboardIndex;
 import org.camunda.optimize.service.db.writer.DashboardWriter;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
 import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
 import org.camunda.optimize.service.util.DataUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.springframework.stereotype.Component;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-import static org.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -41,112 +40,111 @@ public class DashboardImportService {
   private final DashboardService dashboardService;
   private final OptimizeIndexNameService optimizeIndexNameService;
 
-  public void validateAllDashboardsOrFail(final List<DashboardDefinitionExportDto> dashboardsToImport) {
+  public void validateAllDashboardsOrFail(
+      final List<DashboardDefinitionExportDto> dashboardsToImport) {
     validateAllDashboardsOrFail(null, dashboardsToImport);
   }
 
-  public void validateAllDashboardsOrFail(final String userId,
-                                          final List<DashboardDefinitionExportDto> dashboardsToImport) {
+  public void validateAllDashboardsOrFail(
+      final String userId, final List<DashboardDefinitionExportDto> dashboardsToImport) {
     final Set<ImportIndexMismatchDto> indexMismatches = new HashSet<>();
 
     dashboardsToImport.stream()
-      .mapToInt(DashboardDefinitionExportDto::getSourceIndexVersion)
-      .distinct()
-      .forEach(indexVersion -> {
-        try {
-          validateIndexVersionOrFail(indexVersion);
-        } catch (OptimizeImportIncorrectIndexVersionException e) {
-          indexMismatches.addAll(e.getMismatchingIndices());
-        }
-      });
+        .mapToInt(DashboardDefinitionExportDto::getSourceIndexVersion)
+        .distinct()
+        .forEach(
+            indexVersion -> {
+              try {
+                validateIndexVersionOrFail(indexVersion);
+              } catch (OptimizeImportIncorrectIndexVersionException e) {
+                indexMismatches.addAll(e.getMismatchingIndices());
+              }
+            });
 
-    dashboardsToImport.forEach(exportedDto -> {
-      dashboardService.validateDashboardDescription(exportedDto.getDescription());
-      validateDashboardFiltersOrFail(userId, exportedDto);
-    });
+    dashboardsToImport.forEach(
+        exportedDto -> {
+          dashboardService.validateDashboardDescription(exportedDto.getDescription());
+          validateDashboardFiltersOrFail(userId, exportedDto);
+        });
 
     if (!indexMismatches.isEmpty()) {
       throw new OptimizeImportIncorrectIndexVersionException(
-        "Could not import because source and target index versions do not match for at least one dashboard.",
-        indexMismatches
-      );
+          "Could not import because source and target index versions do not match for at least one dashboard.",
+          indexMismatches);
     }
   }
 
-  public void importDashboardsIntoCollection(final String collectionId,
-                                             final List<DashboardDefinitionExportDto> dashboardsToImport,
-                                             final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
+  public void importDashboardsIntoCollection(
+      final String collectionId,
+      final List<DashboardDefinitionExportDto> dashboardsToImport,
+      final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     importDashboardsIntoCollection(null, collectionId, dashboardsToImport, originalIdToNewIdMap);
   }
 
-  public void importDashboardsIntoCollection(final String userId,
-                                             final String collectionId,
-                                             final List<DashboardDefinitionExportDto> dashboardsToImport,
-                                             final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
-    dashboardsToImport.forEach(exportedDto -> importDashboardIntoCollection(
-      userId,
-      collectionId,
-      exportedDto,
-      originalIdToNewIdMap
-    ));
+  public void importDashboardsIntoCollection(
+      final String userId,
+      final String collectionId,
+      final List<DashboardDefinitionExportDto> dashboardsToImport,
+      final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
+    dashboardsToImport.forEach(
+        exportedDto ->
+            importDashboardIntoCollection(userId, collectionId, exportedDto, originalIdToNewIdMap));
   }
 
-  private void importDashboardIntoCollection(final String userId,
-                                             final String collectionId,
-                                             final DashboardDefinitionExportDto dashboardToImport,
-                                             final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
-    // adjust the ID of each report resource within dashboard, filtering out external resources where the ID is a URL
+  private void importDashboardIntoCollection(
+      final String userId,
+      final String collectionId,
+      final DashboardDefinitionExportDto dashboardToImport,
+      final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
+    // adjust the ID of each report resource within dashboard, filtering out external resources
+    // where the ID is a URL
     dashboardToImport.getTiles().stream()
-      .filter(reportLocationDto -> IdGenerator.isValidId(reportLocationDto.getId()))
-      .forEach(
-        reportLocationDto -> reportLocationDto.setId(originalIdToNewIdMap.get(reportLocationDto.getId()).getId())
-      );
-    final IdResponseDto idResponse = dashboardWriter.createNewDashboard(
-      Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
-      createDashboardDefinition(collectionId, dashboardToImport)
-    );
+        .filter(reportLocationDto -> IdGenerator.isValidId(reportLocationDto.getId()))
+        .forEach(
+            reportLocationDto ->
+                reportLocationDto.setId(
+                    originalIdToNewIdMap.get(reportLocationDto.getId()).getId()));
+    final IdResponseDto idResponse =
+        dashboardWriter.createNewDashboard(
+            Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
+            createDashboardDefinition(collectionId, dashboardToImport));
     originalIdToNewIdMap.put(
-      dashboardToImport.getId(),
-      new EntityIdResponseDto(idResponse.getId(), EntityType.DASHBOARD)
-    );
+        dashboardToImport.getId(),
+        new EntityIdResponseDto(idResponse.getId(), EntityType.DASHBOARD));
   }
 
   private void validateIndexVersionOrFail(final Integer sourceIndexVersion) {
     final int targetIndexVersion = DashboardIndex.VERSION;
     if (targetIndexVersion != sourceIndexVersion) {
       throw new OptimizeImportIncorrectIndexVersionException(
-        "Could not import because source and target index versions do not match",
-        DataUtil.newHashSet(
-          ImportIndexMismatchDto.builder()
-            .indexName(OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
-              optimizeIndexNameService.getOptimizeIndexAliasForIndex(DASHBOARD_INDEX_NAME),
-              String.valueOf(targetIndexVersion)
-            ))
-            .sourceIndexVersion(sourceIndexVersion)
-            .targetIndexVersion(targetIndexVersion)
-            .build()
-        )
-      );
+          "Could not import because source and target index versions do not match",
+          DataUtil.newHashSet(
+              ImportIndexMismatchDto.builder()
+                  .indexName(
+                      OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
+                          optimizeIndexNameService.getOptimizeIndexAliasForIndex(
+                              DASHBOARD_INDEX_NAME),
+                          String.valueOf(targetIndexVersion)))
+                  .sourceIndexVersion(sourceIndexVersion)
+                  .targetIndexVersion(targetIndexVersion)
+                  .build()));
     }
   }
 
-  private void validateDashboardFiltersOrFail(final String userId,
-                                              final DashboardDefinitionExportDto dashboardToImport) {
+  private void validateDashboardFiltersOrFail(
+      final String userId, final DashboardDefinitionExportDto dashboardToImport) {
     try {
       dashboardService.validateDashboardFilters(
-        userId,
-        dashboardToImport.getAvailableFilters(),
-        dashboardToImport.getTiles()
-      );
+          userId, dashboardToImport.getAvailableFilters(), dashboardToImport.getTiles());
     } catch (Exception e) {
       throw new OptimizeImportFileInvalidException(
-        "The provided file includes at least one dashboard with invalid filters. Error: " + e.getMessage()
-      );
+          "The provided file includes at least one dashboard with invalid filters. Error: "
+              + e.getMessage());
     }
   }
 
-  private DashboardDefinitionRestDto createDashboardDefinition(final String collectionId,
-                                                               final DashboardDefinitionExportDto dashboardToImport) {
+  private DashboardDefinitionRestDto createDashboardDefinition(
+      final String collectionId, final DashboardDefinitionExportDto dashboardToImport) {
     final DashboardDefinitionRestDto dashboardDefinition = new DashboardDefinitionRestDto();
     dashboardDefinition.setName(dashboardToImport.getName());
     dashboardDefinition.setDescription(dashboardToImport.getDescription());
@@ -157,5 +155,4 @@ public class DashboardImportService {
     dashboardDefinition.setInstantPreviewDashboard(dashboardToImport.isInstantPreviewDashboard());
     return dashboardDefinition;
   }
-
 }

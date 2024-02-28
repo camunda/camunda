@@ -5,6 +5,19 @@
  */
 package org.camunda.optimize.service.util;
 
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,20 +34,6 @@ import org.camunda.bpm.model.bpmn.instance.UserTask;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -56,57 +55,58 @@ public class BpmnModelUtil {
     return extractUserTaskNames(parseBpmnModel(bpmn20Xml));
   }
 
-  public static Optional<String> extractProcessDefinitionName(final String definitionKey, final String xml) {
+  public static Optional<String> extractProcessDefinitionName(
+      final String definitionKey, final String xml) {
     try {
       final BpmnModelInstance bpmnModelInstance = parseBpmnModel(xml);
       final Collection<Process> processes = bpmnModelInstance.getModelElementsByType(Process.class);
 
       return processes.stream()
-        .filter(process -> process.getId().equals(definitionKey))
-        .map(Process::getName)
-        .filter(Objects::nonNull)
-        .findFirst();
+          .filter(process -> process.getId().equals(definitionKey))
+          .map(Process::getName)
+          .filter(Objects::nonNull)
+          .findFirst();
     } catch (Exception exc) {
       log.warn("Failed parsing the BPMN xml.", exc);
       return Optional.empty();
     }
   }
 
-  public static List<EventTypeDto> getStartEventsFromInstance(final BpmnModelInstance modelInstance,
-                                                              final String definitionKey) {
+  public static List<EventTypeDto> getStartEventsFromInstance(
+      final BpmnModelInstance modelInstance, final String definitionKey) {
     return getEventsFromInstance(modelInstance, StartEvent.class, definitionKey);
   }
 
-  public static List<EventTypeDto> getEndEventsFromInstance(final BpmnModelInstance modelInstance,
-                                                            final String definitionKey) {
+  public static List<EventTypeDto> getEndEventsFromInstance(
+      final BpmnModelInstance modelInstance, final String definitionKey) {
     return getEventsFromInstance(modelInstance, EndEvent.class, definitionKey);
   }
 
-  private static List<EventTypeDto> getEventsFromInstance(final BpmnModelInstance modelInstance,
-                                                          final Class<? extends Event> eventClass,
-                                                          final String definitionKey) {
+  private static List<EventTypeDto> getEventsFromInstance(
+      final BpmnModelInstance modelInstance,
+      final Class<? extends Event> eventClass,
+      final String definitionKey) {
     final List<FlowElement> subProcessStartEndEvents =
-      new ArrayList<>(modelInstance.getModelElementsByType(SubProcess.class))
-        .stream()
-        .filter(Objects::nonNull)
-        .flatMap(subProcess -> subProcess.getFlowElements().stream())
-        .filter(element -> StartEvent.class.isAssignableFrom(element.getClass()) ||
-          EndEvent.class.isAssignableFrom(element.getClass()))
-        .toList();
+        new ArrayList<>(modelInstance.getModelElementsByType(SubProcess.class))
+            .stream()
+                .filter(Objects::nonNull)
+                .flatMap(subProcess -> subProcess.getFlowElements().stream())
+                .filter(
+                    element ->
+                        StartEvent.class.isAssignableFrom(element.getClass())
+                            || EndEvent.class.isAssignableFrom(element.getClass()))
+                .toList();
 
-    return modelInstance.getModelElementsByType(eventClass)
-      .stream()
-      .filter(event -> !subProcessStartEndEvents.contains(event))
-      .map(event -> {
-        final String elementId = event.getAttributeValue("id");
-        final String elementName = Optional.ofNullable(event.getAttributeValue("name")).orElse(elementId);
-        return createCamundaEventTypeDto(
-          definitionKey,
-          elementId,
-          elementName
-        );
-      })
-      .collect(Collectors.toList());
+    return modelInstance.getModelElementsByType(eventClass).stream()
+        .filter(event -> !subProcessStartEndEvents.contains(event))
+        .map(
+            event -> {
+              final String elementId = event.getAttributeValue("id");
+              final String elementName =
+                  Optional.ofNullable(event.getAttributeValue("name")).orElse(elementId);
+              return createCamundaEventTypeDto(definitionKey, elementId, elementName);
+            })
+        .collect(Collectors.toList());
   }
 
   public static Map<String, String> extractUserTaskNames(final BpmnModelInstance model) {
@@ -120,11 +120,8 @@ public class BpmnModelUtil {
   public static List<FlowNodeDataDto> extractFlowNodeData(final BpmnModelInstance model) {
     final List<FlowNodeDataDto> result = new ArrayList<>();
     for (FlowNode node : model.getModelElementsByType(FlowNode.class)) {
-      FlowNodeDataDto flowNode = new FlowNodeDataDto(
-        node.getId(),
-        node.getName(),
-        node.getElementType().getTypeName()
-      );
+      FlowNodeDataDto flowNode =
+          new FlowNodeDataDto(node.getId(), node.getName(), node.getElementType().getTypeName());
       result.add(flowNode);
     }
     return result;
@@ -142,5 +139,4 @@ public class BpmnModelUtil {
     InputStream inputStream = getClass().getResourceAsStream(diagramPath);
     return Bpmn.readModelFromStream(inputStream);
   }
-
 }

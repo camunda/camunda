@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.FIELDS;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+
+import java.io.IOException;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIndex<TBuilder> {
 
@@ -92,65 +91,66 @@ public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIn
   @Override
   public XContentBuilder addProperties(XContentBuilder builder) throws IOException {
     // @formatter:off
-    XContentBuilder newBuilder =  builder
+    XContentBuilder newBuilder =
+        builder
             .startObject(DECISION_INSTANCE_ID)
-              .field("type", "keyword")
+            .field("type", "keyword")
             .endObject()
             .startObject(DECISION_DEFINITION_ID)
-              .field("type", "keyword")
+            .field("type", "keyword")
             .endObject()
             .startObject(DECISION_DEFINITION_KEY)
-              .field("type", "keyword")
+            .field("type", "keyword")
             .endObject()
-              .startObject(DECISION_DEFINITION_VERSION)
-              .field("type", "keyword")
+            .startObject(DECISION_DEFINITION_VERSION)
+            .field("type", "keyword")
             .endObject()
             .startObject(PROCESS_DEFINITION_ID)
-              .field("type", "keyword")
+            .field("type", "keyword")
             .endObject()
             .startObject(PROCESS_DEFINITION_KEY)
-              .field("type", "keyword")
+            .field("type", "keyword")
             .endObject()
             .startObject(PROCESS_INSTANCE_ID)
-              .field("type", "keyword")
+            .field("type", "keyword")
             .endObject()
             .startObject(ROOT_PROCESS_INSTANCE_ID)
-              .field("type", "keyword")
+            .field("type", "keyword")
             .endObject()
             .startObject(EVALUATION_DATE_TIME)
-              .field("type", "date")
-              .field("format", OPTIMIZE_DATE_FORMAT)
+            .field("type", "date")
+            .field("format", OPTIMIZE_DATE_FORMAT)
             .endObject()
             .startObject(ACTIVITY_ID)
-              .field("type", "keyword")
+            .field("type", "keyword")
             .endObject()
             .startObject(INPUTS)
-              .field("type", "nested")
-              .startObject("properties");
-                addNestedInputField(newBuilder)
-              .endObject()
-            .endObject()
-            .startObject(OUTPUTS)
-              .field("type", "nested")
-              .startObject("properties");
-                addNestedOutputField(newBuilder)
-              .endObject()
-            .endObject()
-            .startObject(MATCHED_RULES)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(COLLECT_RESULT_VALUE)
-              .field("type", "double")
-            .endObject()
-            .startObject(ROOT_DECISION_INSTANCE_ID)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(ENGINE)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(TENANT_ID)
-              .field("type", "keyword")
-            .endObject();
+            .field("type", "nested")
+            .startObject("properties");
+    addNestedInputField(newBuilder)
+        .endObject()
+        .endObject()
+        .startObject(OUTPUTS)
+        .field("type", "nested")
+        .startObject("properties");
+    addNestedOutputField(newBuilder)
+        .endObject()
+        .endObject()
+        .startObject(MATCHED_RULES)
+        .field("type", "keyword")
+        .endObject()
+        .startObject(COLLECT_RESULT_VALUE)
+        .field("type", "double")
+        .endObject()
+        .startObject(ROOT_DECISION_INSTANCE_ID)
+        .field("type", "keyword")
+        .endObject()
+        .startObject(ENGINE)
+        .field("type", "keyword")
+        .endObject()
+        .startObject(TENANT_ID)
+        .field("type", "keyword")
+        .endObject();
     // @formatter:on
     return newBuilder;
   }
@@ -158,24 +158,22 @@ public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIn
   private XContentBuilder addNestedInputField(XContentBuilder builder) throws IOException {
     // @formatter:off
     builder
-      .startObject(VARIABLE_ID)
+        .startObject(VARIABLE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_CLAUSE_ID)
+        .endObject()
+        .startObject(VARIABLE_CLAUSE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_CLAUSE_NAME)
+        .endObject()
+        .startObject(VARIABLE_CLAUSE_NAME)
         .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_VALUE_TYPE)
+        .endObject()
+        .startObject(VARIABLE_VALUE_TYPE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_VALUE)
+        .endObject()
+        .startObject(VARIABLE_VALUE)
         .field("type", "keyword")
         .startObject(FIELDS);
-          addValueMultifields(builder)
-        .endObject()
-      .endObject();
+    addValueMultifields(builder).endObject().endObject();
     return builder;
     // @formatter:on
   }
@@ -183,35 +181,34 @@ public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIn
   private XContentBuilder addNestedOutputField(XContentBuilder builder) throws IOException {
     // @formatter:off
     builder
-      .startObject(VARIABLE_ID)
+        .startObject(VARIABLE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_CLAUSE_ID)
+        .endObject()
+        .startObject(VARIABLE_CLAUSE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_CLAUSE_NAME)
+        .endObject()
+        .startObject(VARIABLE_CLAUSE_NAME)
         .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_VALUE_TYPE)
+        .endObject()
+        .startObject(VARIABLE_VALUE_TYPE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_VALUE)
+        .endObject()
+        .startObject(VARIABLE_VALUE)
         .field("type", "keyword")
         .startObject(FIELDS);
-          addValueMultifields(builder)
+    addValueMultifields(builder)
         .endObject()
-      .endObject()
-      .startObject(OUTPUT_VARIABLE_RULE_ID)
+        .endObject()
+        .startObject(OUTPUT_VARIABLE_RULE_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(OUTPUT_VARIABLE_RULE_ORDER)
+        .endObject()
+        .startObject(OUTPUT_VARIABLE_RULE_ORDER)
         .field("type", "long")
-      .endObject()
-      .startObject(OUTPUT_VARIABLE_NAME)
+        .endObject()
+        .startObject(OUTPUT_VARIABLE_NAME)
         .field("type", "keyword")
-      .endObject();
+        .endObject();
     return builder;
     // @formatter:on
   }
-
 }

@@ -5,20 +5,19 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 
 @AllArgsConstructor
 @Data
@@ -29,30 +28,31 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
   private List<FlowNodeDataDto> flowNodeData = new ArrayList<>();
   private Map<String, String> userTaskNames = new HashMap<>();
   private boolean onboarded = false;
-  @JsonIgnore
-  private boolean eventBased;
+  @JsonIgnore private boolean eventBased;
 
   public ProcessDefinitionOptimizeDto() {
     this.setType(DefinitionType.PROCESS);
   }
 
-  public ProcessDefinitionOptimizeDto(final String id,
-                                      final String key,
-                                      final String version,
-                                      final String versionTag,
-                                      final String name,
-                                      final boolean onboarded,
-                                      final DataSourceDto dataSource,
-                                      final String tenantId) {
+  public ProcessDefinitionOptimizeDto(
+      final String id,
+      final String key,
+      final String version,
+      final String versionTag,
+      final String name,
+      final boolean onboarded,
+      final DataSourceDto dataSource,
+      final String tenantId) {
     super(id, key, version, versionTag, name, dataSource, tenantId, false, DefinitionType.PROCESS);
     this.onboarded = onboarded;
   }
 
-  public ProcessDefinitionOptimizeDto(final String id,
-                                      final DataSourceDto dataSource,
-                                      final String bpmn20Xml,
-                                      final List<FlowNodeDataDto> flowNodeData,
-                                      final Map<String, String> userTaskNames) {
+  public ProcessDefinitionOptimizeDto(
+      final String id,
+      final DataSourceDto dataSource,
+      final String bpmn20Xml,
+      final List<FlowNodeDataDto> flowNodeData,
+      final Map<String, String> userTaskNames) {
     super(id, dataSource);
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeData = flowNodeData;
@@ -60,19 +60,21 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
   }
 
   @Builder
-  public ProcessDefinitionOptimizeDto(final String id,
-                                      final String key,
-                                      final String version,
-                                      final String versionTag,
-                                      final String name,
-                                      final DataSourceDto dataSource,
-                                      final String tenantId,
-                                      final String bpmn20Xml,
-                                      final boolean deleted,
-                                      final boolean onboarded,
-                                      final List<FlowNodeDataDto> flowNodeData,
-                                      final Map<String, String> userTaskNames) {
-    super(id, key, version, versionTag, name, dataSource, tenantId, deleted, DefinitionType.PROCESS);
+  public ProcessDefinitionOptimizeDto(
+      final String id,
+      final String key,
+      final String version,
+      final String versionTag,
+      final String name,
+      final DataSourceDto dataSource,
+      final String tenantId,
+      final String bpmn20Xml,
+      final boolean deleted,
+      final boolean onboarded,
+      final List<FlowNodeDataDto> flowNodeData,
+      final Map<String, String> userTaskNames) {
+    super(
+        id, key, version, versionTag, name, dataSource, tenantId, deleted, DefinitionType.PROCESS);
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeData = flowNodeData;
     this.userTaskNames = userTaskNames;
@@ -80,24 +82,19 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
   }
 
   public final List<FlowNodeDataDto> getFlowNodeData() {
-    return flowNodeData == null
-      ? new ArrayList<>()
-      : flowNodeData;
+    return flowNodeData == null ? new ArrayList<>() : flowNodeData;
   }
 
   @JsonIgnore
   public final List<FlowNodeDataDto> getUserTaskData() {
     return flowNodeData == null
-      ? List.of()
-      : flowNodeData.stream()
-      .filter(flowNode -> FLOW_NODE_TYPE_USER_TASK.equalsIgnoreCase(flowNode.getType()))
-      .toList();
+        ? List.of()
+        : flowNodeData.stream()
+            .filter(flowNode -> FLOW_NODE_TYPE_USER_TASK.equalsIgnoreCase(flowNode.getType()))
+            .toList();
   }
 
   public Map<String, String> getUserTaskNames() {
-    return userTaskNames == null
-      ? new HashMap<>()
-      : new HashMap<>(userTaskNames);
+    return userTaskNames == null ? new HashMap<>() : new HashMap<>(userTaskNames);
   }
-
 }

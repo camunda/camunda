@@ -6,15 +6,13 @@
 package org.camunda.optimize.service.db.writer;
 
 import com.google.common.collect.ImmutableSet;
-import org.camunda.optimize.dto.optimize.TenantDto;
-
 import java.util.List;
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.TenantDto;
 
 public interface TenantWriter {
 
   Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(TenantDto.Fields.name.name());
 
   void writeTenants(final List<TenantDto> tenantDtos);
-
 }

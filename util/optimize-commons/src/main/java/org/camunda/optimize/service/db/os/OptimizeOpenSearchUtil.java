@@ -5,24 +5,26 @@
  */
 package org.camunda.optimize.service.db.os;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
+
 import jakarta.ws.rs.NotSupportedException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class OptimizeOpenSearchUtil {
 
-  public static IndexSettings.Builder addStaticSetting(final String key,
-                                                       final int value,
-                                                       final IndexSettings.Builder contentBuilder) {
+  public static IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder contentBuilder) {
     if (NUMBER_OF_SHARDS_SETTING.equalsIgnoreCase(key)) {
       return contentBuilder.numberOfShards(Integer.toString(value));
     } else {
-      throw new NotSupportedException("Cannot set property " + value + " for OpenSearch settings. Operation not " +
-                                        "supported");
+      throw new NotSupportedException(
+          "Cannot set property "
+              + value
+              + " for OpenSearch settings. Operation not "
+              + "supported");
     }
   }
 }

@@ -5,20 +5,20 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
+
+import java.io.IOException;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
 
 public abstract class SettingsIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
   public static final int VERSION = 2;
   public static final String ID = "1";
 
-  public static final String METADATA_TELEMETRY_ENABLED = SettingsResponseDto.Fields.metadataTelemetryEnabled.name();
+  public static final String METADATA_TELEMETRY_ENABLED =
+      SettingsResponseDto.Fields.metadataTelemetryEnabled.name();
   public static final String SHARING_ENABLED = SettingsResponseDto.Fields.sharingEnabled.name();
   public static final String LAST_MODIFIED = SettingsResponseDto.Fields.lastModified.name();
   public static final String LAST_MODIFIER = SettingsResponseDto.Fields.lastModifier.name();
@@ -37,19 +37,19 @@ public abstract class SettingsIndex<TBuilder> extends DefaultIndexMappingCreator
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(METADATA_TELEMETRY_ENABLED)
+        .startObject(METADATA_TELEMETRY_ENABLED)
         .field("type", "boolean")
-      .endObject()
-      .startObject(SHARING_ENABLED)
+        .endObject()
+        .startObject(SHARING_ENABLED)
         .field("type", "boolean")
-      .endObject()
-      .startObject(LAST_MODIFIED)
+        .endObject()
+        .startObject(LAST_MODIFIED)
         .field("type", "date")
-          .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(LAST_MODIFIER)
+        .field("format", OPTIMIZE_DATE_FORMAT)
+        .endObject()
+        .startObject(LAST_MODIFIER)
         .field("type", "keyword")
-      .endObject();
+        .endObject();
     // @formatter:on
   }
 }

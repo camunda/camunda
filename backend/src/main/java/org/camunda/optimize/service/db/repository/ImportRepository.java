@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.repository;
 
+import java.util.List;
+import java.util.Optional;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
@@ -12,21 +14,19 @@ import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 
-import java.util.List;
-import java.util.Optional;
-
 public interface ImportRepository {
-  List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(List<String> indexTypes);
+  List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(
+      List<String> indexTypes);
 
   <T extends ImportIndexDto<D>, D extends DataSourceDto> Optional<T> getImportIndex(
-    String indexName,
-    String indexType,
-    Class<T> importDTOClass,
-    String typeIndexComesFrom,
-    D dataSourceDto
-  );
+      String indexName,
+      String indexType,
+      Class<T> importDTOClass,
+      String typeIndexComesFrom,
+      D dataSourceDto);
 
-  void importPositionBasedIndices(String importItemName, List<PositionBasedImportIndexDto> importIndexDtos);
+  void importPositionBasedIndices(
+      String importItemName, List<PositionBasedImportIndexDto> importIndexDtos);
 
   Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id);
 

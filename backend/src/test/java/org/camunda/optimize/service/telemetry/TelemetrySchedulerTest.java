@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.telemetry;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.DatabaseDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.InternalsDto;
@@ -20,19 +26,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class TelemetrySchedulerTest {
 
-  @Mock
-  private SettingsService settingsService;
-  @Mock
-  private TelemetryReportingService telemetryService;
+  @Mock private SettingsService settingsService;
+  @Mock private TelemetryReportingService telemetryService;
 
   private ConfigurationService configurationService;
 
@@ -75,8 +73,7 @@ public class TelemetrySchedulerTest {
     underTest.run();
 
     // then
-    verify(telemetryService, times(1))
-      .sendTelemetryData();
+    verify(telemetryService, times(1)).sendTelemetryData();
   }
 
   @Test
@@ -97,15 +94,11 @@ public class TelemetrySchedulerTest {
   }
 
   private SettingsResponseDto getSettingsWithTelemetryEnabled() {
-    return SettingsResponseDto.builder()
-      .metadataTelemetryEnabled(true)
-      .build();
+    return SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
   }
 
   private SettingsResponseDto getSettingsWithTelemetryDisabled() {
-    return SettingsResponseDto.builder()
-      .metadataTelemetryEnabled(false)
-      .build();
+    return SettingsResponseDto.builder().metadataTelemetryEnabled(false).build();
   }
 
   private String getConfiguredTelemetryEndpoint() {
@@ -117,9 +110,6 @@ public class TelemetrySchedulerTest {
     final InternalsDto internalsDto = InternalsDto.builder().database(databaseDto).build();
     final ProductDto productDto = ProductDto.builder().internals(internalsDto).build();
 
-    return TelemetryDataDto.builder()
-      .installation("1234-5678")
-      .product(productDto)
-      .build();
+    return TelemetryDataDto.builder().installation("1234-5678").product(productDto).build();
   }
 }

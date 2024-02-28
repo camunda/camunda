@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.tenant;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+
+import java.util.Collections;
+import java.util.List;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.List;
-
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
-import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 
 @Component
 @Conditional(CCSaaSCondition.class)
@@ -27,12 +26,12 @@ public class CamundaSaaSTenantService implements TenantService {
 
   @Override
   public List<TenantDto> getTenantsForUser(final String userId) {
-    return Collections.singletonList(new TenantDto(ZEEBE_DEFAULT_TENANT_ID, null, ZEEBE_DATA_SOURCE));
+    return Collections.singletonList(
+        new TenantDto(ZEEBE_DEFAULT_TENANT_ID, null, ZEEBE_DATA_SOURCE));
   }
 
   @Override
   public boolean isMultiTenantEnvironment() {
     return false;
   }
-
 }

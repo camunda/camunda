@@ -7,5 +7,4 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 
-public interface TypedViewPropertyDto extends Combinable {
-}
+public interface TypedViewPropertyDto extends Combinable {}

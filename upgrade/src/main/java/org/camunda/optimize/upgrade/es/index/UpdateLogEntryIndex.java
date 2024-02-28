@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.upgrade.es.index;
 
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
-import org.elasticsearch.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_DATE;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_LONG;
+
+import java.io.IOException;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
+import org.elasticsearch.xcontent.XContentBuilder;
+import org.springframework.stereotype.Component;
 
 @Component
 public class UpdateLogEntryIndex extends DefaultIndexMappingCreator<XContentBuilder> {
@@ -36,29 +35,27 @@ public class UpdateLogEntryIndex extends DefaultIndexMappingCreator<XContentBuil
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(UpgradeStepLogEntryDto.Fields.indexName)
+        .startObject(UpgradeStepLogEntryDto.Fields.indexName)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(UpgradeStepLogEntryDto.Fields.optimizeVersion)
+        .endObject()
+        .startObject(UpgradeStepLogEntryDto.Fields.optimizeVersion)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(UpgradeStepLogEntryDto.Fields.stepType)
+        .endObject()
+        .startObject(UpgradeStepLogEntryDto.Fields.stepType)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(UpgradeStepLogEntryDto.Fields.stepNumber)
+        .endObject()
+        .startObject(UpgradeStepLogEntryDto.Fields.stepNumber)
         .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
-      .endObject()
-      .startObject(UpgradeStepLogEntryDto.Fields.appliedDate)
+        .endObject()
+        .startObject(UpgradeStepLogEntryDto.Fields.appliedDate)
         .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-      .endObject()
-      ;
+        .endObject();
     // @formatter:on
   }
 
   @Override
-  public XContentBuilder addStaticSetting(final String key,
-                                          final int value,
-                                          final XContentBuilder contentBuilder) throws IOException {
+  public XContentBuilder addStaticSetting(
+      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
     return contentBuilder.field(key, value);
   }
 }

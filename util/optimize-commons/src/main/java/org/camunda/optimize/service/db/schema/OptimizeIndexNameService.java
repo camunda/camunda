@@ -18,17 +18,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class OptimizeIndexNameService implements ConfigurationReloadable {
 
-  @Getter
-  private String indexPrefix;
+  @Getter private String indexPrefix;
 
   @Autowired
-  public OptimizeIndexNameService(final ConfigurationService configurationService,
-                                  final Environment environment) {
+  public OptimizeIndexNameService(
+      final ConfigurationService configurationService, final Environment environment) {
     setIndexPrefix(configurationService, ConfigurationService.getDatabaseType(environment));
   }
 
-  public OptimizeIndexNameService(final ConfigurationService configurationService,
-                                  final DatabaseType databaseProfile) {
+  public OptimizeIndexNameService(
+      final ConfigurationService configurationService, final DatabaseType databaseProfile) {
     setIndexPrefix(configurationService, databaseProfile);
   }
 
@@ -41,54 +40,61 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   }
 
   public String getOptimizeIndexAliasForIndex(final IndexMappingCreator indexMappingCreator) {
-    return getOptimizeIndexAliasForIndexNameAndPrefix(indexMappingCreator.getIndexName(), indexPrefix);
+    return getOptimizeIndexAliasForIndexNameAndPrefix(
+        indexMappingCreator.getIndexName(), indexPrefix);
   }
 
-  public String getOptimizeIndexTemplateNameWithVersion(final IndexMappingCreator indexMappingCreator) {
+  public String getOptimizeIndexTemplateNameWithVersion(
+      final IndexMappingCreator indexMappingCreator) {
     if (!indexMappingCreator.isCreateFromTemplate()) {
       throw new IllegalArgumentException("Given indexMappingCreator is not templated!");
     }
     return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator);
   }
 
-  /**
-   * This will suffix the indices that are created from templates with their initial suffix
-   */
+  /** This will suffix the indices that are created from templates with their initial suffix */
   public String getOptimizeIndexNameWithVersion(final IndexMappingCreator indexMappingCreator) {
-    return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator) + indexMappingCreator.getIndexNameInitialSuffix();
+    return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator)
+        + indexMappingCreator.getIndexNameInitialSuffix();
   }
 
   /**
-   * This will suffix the wildcard for any indices that get rolled over, which is not compatible with all ES APIs. This cannot be
-   * used for Index deletion as wildcard index deletion is prohibited from ES8+
+   * This will suffix the wildcard for any indices that get rolled over, which is not compatible
+   * with all ES APIs. This cannot be used for Index deletion as wildcard index deletion is
+   * prohibited from ES8+
    */
-  public String getOptimizeIndexNameWithVersionForAllIndicesOf(final IndexMappingCreator indexMappingCreator) {
+  public String getOptimizeIndexNameWithVersionForAllIndicesOf(
+      final IndexMappingCreator indexMappingCreator) {
     if (StringUtils.isNotEmpty(indexMappingCreator.getIndexNameInitialSuffix())) {
       return getOptimizeIndexNameWithVersionWithWildcardSuffix(indexMappingCreator);
     }
     return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator);
   }
 
-  public String getOptimizeIndexNameWithVersionWithWildcardSuffix(final IndexMappingCreator indexMappingCreator) {
+  public String getOptimizeIndexNameWithVersionWithWildcardSuffix(
+      final IndexMappingCreator indexMappingCreator) {
     return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator)
-      // match all indices of that version with this wildcard, which also catches potentially rolled over indices
-      + "*";
+        // match all indices of that version with this wildcard, which also catches potentially
+        // rolled over indices
+        + "*";
   }
 
-  public String getOptimizeIndexNameWithVersionWithoutSuffix(final IndexMappingCreator indexMappingCreator) {
+  public String getOptimizeIndexNameWithVersionWithoutSuffix(
+      final IndexMappingCreator indexMappingCreator) {
     return getOptimizeIndexOrTemplateNameForAliasAndVersion(
-      getOptimizeIndexAliasForIndex(indexMappingCreator.getIndexName()),
-      String.valueOf(indexMappingCreator.getVersion())
-    );
+        getOptimizeIndexAliasForIndex(indexMappingCreator.getIndexName()),
+        String.valueOf(indexMappingCreator.getVersion()));
   }
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
     ConfigurationService configurationService = context.getBean(ConfigurationService.class);
-    setIndexPrefix(configurationService, ConfigurationService.getDatabaseType(context.getEnvironment()));
+    setIndexPrefix(
+        configurationService, ConfigurationService.getDatabaseType(context.getEnvironment()));
   }
 
-  private void setIndexPrefix(ConfigurationService configurationService, DatabaseType databaseProfile) {
+  private void setIndexPrefix(
+      ConfigurationService configurationService, DatabaseType databaseProfile) {
     if (databaseProfile.equals(DatabaseType.OPENSEARCH)) {
       this.indexPrefix = configurationService.getOpenSearchConfiguration().getIndexPrefix();
     } else {
@@ -96,17 +102,18 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     }
   }
 
-  public static String getOptimizeIndexOrTemplateNameForAliasAndVersion(final String indexAlias, final String version) {
+  public static String getOptimizeIndexOrTemplateNameForAliasAndVersion(
+      final String indexAlias, final String version) {
     final String versionSuffix = version != null ? "_v" + version : "";
     return indexAlias + versionSuffix;
   }
 
-  public static String getOptimizeIndexAliasForIndexNameAndPrefix(final String indexName, final String indexPrefix) {
+  public static String getOptimizeIndexAliasForIndexNameAndPrefix(
+      final String indexName, final String indexPrefix) {
     String original = indexName;
     if (!indexName.startsWith(indexPrefix)) {
       original = String.join("-", indexPrefix, indexName);
     }
     return original.toLowerCase();
   }
-
 }

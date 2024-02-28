@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
-
-import java.util.Objects;
 
 @Getter
 @Setter
@@ -28,8 +27,7 @@ public class DurationProgressDto {
       return false;
     }
     DurationProgressDto that = (DurationProgressDto) o;
-    return Objects.equals(baseline, that.baseline) &&
-      Objects.equals(target, that.target);
+    return Objects.equals(baseline, that.baseline) && Objects.equals(target, that.target);
   }
 
   @Override

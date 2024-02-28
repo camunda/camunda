@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.service.db.os.schema.index;
 
-import org.camunda.optimize.service.db.schema.index.AlertIndex;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchUtil;
+import org.camunda.optimize.service.db.schema.index.AlertIndex;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
 public class AlertIndexOS extends AlertIndex<IndexSettings.Builder> {
 
   @Override
-  public IndexSettings.Builder addStaticSetting(final String key,
-                                                final int value,
-                                                final IndexSettings.Builder contentBuilder) {
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder contentBuilder) {
     return OptimizeOpenSearchUtil.addStaticSetting(key, value, contentBuilder);
   }
 }

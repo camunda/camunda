@@ -12,6 +12,7 @@ import lombok.Data;
 public class EventIngestionConfiguration {
   @JsonProperty("maxBatchRequestBytes")
   private long maxBatchRequestBytes;
+
   @JsonProperty("maxRequests")
   private int maxRequests;
 }

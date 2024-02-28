@@ -5,23 +5,22 @@
  */
 package org.camunda.optimize.service.db.es.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.ONBOARDING_INDEX_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.OnboardingStateDto;
-import org.camunda.optimize.service.db.reader.OnboardingStateReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.reader.OnboardingStateReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.ONBOARDING_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -33,7 +32,8 @@ public class OnboardingStateReaderES implements OnboardingStateReader {
   private final ObjectMapper objectMapper;
 
   @Override
-  public Optional<OnboardingStateDto> getOnboardingStateByKeyAndUserId(final String key, final String userId) {
+  public Optional<OnboardingStateDto> getOnboardingStateByKeyAndUserId(
+      final String key, final String userId) {
     log.debug("Fetching onboarding state by key [{}] and userId [{}]", key, userId);
 
     final String onboardingStateEntryId = new OnboardingStateDto(key, userId).getId();
@@ -46,14 +46,14 @@ public class OnboardingStateReaderES implements OnboardingStateReader {
         result = objectMapper.readValue(getResponse.getSourceAsString(), OnboardingStateDto.class);
       }
     } catch (IOException e) {
-      final String errorMessage = String.format(
-        "There was an error while reading the onboarding state by key [%s] and userId [%s].", key, userId
-      );
+      final String errorMessage =
+          String.format(
+              "There was an error while reading the onboarding state by key [%s] and userId [%s].",
+              key, userId);
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
     return Optional.ofNullable(result);
   }
-
 }

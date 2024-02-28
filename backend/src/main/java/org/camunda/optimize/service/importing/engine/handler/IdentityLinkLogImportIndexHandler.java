@@ -32,5 +32,4 @@ public class IdentityLinkLogImportIndexHandler extends TimestampBasedEngineImpor
   protected String getDatabaseDocID() {
     return IDENTITY_LINK_LOG_IMPORT_INDEX_DOC_ID;
   }
-
 }

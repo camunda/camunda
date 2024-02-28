@@ -16,12 +16,13 @@ import org.camunda.optimize.service.exceptions.OptimizeAlertEmailValidationExcep
 public class AlertEmailValidationResponseDto extends ErrorResponseDto {
   private final String invalidAlertEmails;
 
-  public AlertEmailValidationResponseDto(final OptimizeAlertEmailValidationException optimizeAlertEmailValidationException) {
+  public AlertEmailValidationResponseDto(
+      final OptimizeAlertEmailValidationException optimizeAlertEmailValidationException) {
     super(
-      optimizeAlertEmailValidationException.getErrorCode(),
-      optimizeAlertEmailValidationException.getMessage(),
-      optimizeAlertEmailValidationException.getMessage()
-    );
-    this.invalidAlertEmails = String.join(", ", optimizeAlertEmailValidationException.getAlertEmails());
+        optimizeAlertEmailValidationException.getErrorCode(),
+        optimizeAlertEmailValidationException.getMessage(),
+        optimizeAlertEmailValidationException.getMessage());
+    this.invalidAlertEmails =
+        String.join(", ", optimizeAlertEmailValidationException.getAlertEmails());
   }
 }

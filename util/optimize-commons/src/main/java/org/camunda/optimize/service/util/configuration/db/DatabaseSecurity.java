@@ -15,5 +15,4 @@ public class DatabaseSecurity {
   private String password;
 
   private DatabaseSSLConfiguration ssl;
-
 }

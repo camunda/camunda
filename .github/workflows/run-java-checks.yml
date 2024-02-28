@@ -1,0 +1,48 @@
+name: Run Java checks
+env:
+  JAVA_VERSION: "17"
+on:
+  push:
+    branches:
+      - master
+  pull_request: { }
+  merge_group: { }
+  workflow_dispatch: { }
+  workflow_call: { }
+jobs:
+  run-checks:
+    name: Run Java checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.8.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "17"
+          cache: "maven"
+      - name: "Create settings.xml"
+        uses: s4u/maven-settings-action@v3.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+               "id": "camunda-nexus",
+               "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+               "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+             }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Run checks
+        run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat verify

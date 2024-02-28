@@ -5,22 +5,21 @@
  */
 package org.camunda.optimize.rest.security;
 
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.Optional;
-
 @AllArgsConstructor
 public class AuthenticationCookieFilter extends AbstractPreAuthenticatedProcessingFilter {
 
   private final SessionService sessionService;
 
-  public AuthenticationCookieFilter(final SessionService sessionService,
-                                    final AuthenticationManager authenticationManager) {
+  public AuthenticationCookieFilter(
+      final SessionService sessionService, final AuthenticationManager authenticationManager) {
     this.sessionService = sessionService;
     setAuthenticationManager(authenticationManager);
   }
@@ -28,9 +27,9 @@ public class AuthenticationCookieFilter extends AbstractPreAuthenticatedProcessi
   @Override
   protected Object getPreAuthenticatedPrincipal(final HttpServletRequest request) {
     return getJwtAuthenticationToken(request)
-      .filter(sessionService::isValidToken)
-      .flatMap(AuthCookieService::getTokenSubject)
-      .orElse(null);
+        .filter(sessionService::isValidToken)
+        .flatMap(AuthCookieService::getTokenSubject)
+        .orElse(null);
   }
 
   @Override

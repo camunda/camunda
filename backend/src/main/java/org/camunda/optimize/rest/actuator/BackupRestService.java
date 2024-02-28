@@ -5,10 +5,17 @@
  */
 package org.camunda.optimize.rest.actuator;
 
+import static org.camunda.optimize.rest.providers.GenericExceptionMapper.BAD_REQUEST_ERROR_CODE;
+import static org.camunda.optimize.rest.providers.GenericExceptionMapper.GENERIC_ERROR_CODE;
+import static org.camunda.optimize.rest.providers.GenericExceptionMapper.NOT_FOUND_ERROR_CODE;
+
 import jakarta.annotation.Nullable;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.xml.bind.ValidationException;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.rest.BackupInfoDto;
 import org.camunda.optimize.dto.optimize.rest.BackupRequestDto;
@@ -36,14 +43,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import jakarta.validation.Valid;
-import java.util.List;
-import java.util.Optional;
-
-import static org.camunda.optimize.rest.providers.GenericExceptionMapper.BAD_REQUEST_ERROR_CODE;
-import static org.camunda.optimize.rest.providers.GenericExceptionMapper.GENERIC_ERROR_CODE;
-import static org.camunda.optimize.rest.providers.GenericExceptionMapper.NOT_FOUND_ERROR_CODE;
-
 @RequiredArgsConstructor
 @Component
 @RestControllerEndpoint(id = "backups")
@@ -53,16 +52,15 @@ public class BackupRestService {
   private final LocalizationService localizationService;
 
   @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
-  public ResponseEntity<String> takeBackup(final @RequestBody @Valid BackupRequestDto backupRequestDto) {
+  public ResponseEntity<String> takeBackup(
+      final @RequestBody @Valid BackupRequestDto backupRequestDto) {
     backupService.triggerBackup(backupRequestDto.getBackupId());
     return new ResponseEntity<>(
-      String.format(
-        "{\"message\" : " +
-          "\"Backup creation for ID %d has been scheduled. Use the GET API to monitor completion of backup process\"}",
-        backupRequestDto.getBackupId()
-      ),
-      HttpStatus.ACCEPTED
-    );
+        String.format(
+            "{\"message\" : "
+                + "\"Backup creation for ID %d has been scheduled. Use the GET API to monitor completion of backup process\"}",
+            backupRequestDto.getBackupId()),
+        HttpStatus.ACCEPTED);
   }
 
   @GetMapping(value = "/{backupId}")
@@ -82,57 +80,66 @@ public class BackupRestService {
   }
 
   @ExceptionHandler(OptimizeRuntimeException.class)
-  public ResponseEntity<ErrorResponseDto> handleServerException(final OptimizeRuntimeException exception) {
+  public ResponseEntity<ErrorResponseDto> handleServerException(
+      final OptimizeRuntimeException exception) {
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-      .contentType(MediaType.APPLICATION_JSON)
-      .body(getErrorResponseDto(exception));
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(getErrorResponseDto(exception));
   }
 
   @ExceptionHandler(OptimizeConfigurationException.class)
-  public ResponseEntity<ErrorResponseDto> handleConfigurationException(final OptimizeConfigurationException exception) {
+  public ResponseEntity<ErrorResponseDto> handleConfigurationException(
+      final OptimizeConfigurationException exception) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-      .contentType(MediaType.APPLICATION_JSON)
-      .body(getErrorResponseDto(exception));
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(getErrorResponseDto(exception));
   }
 
   @ExceptionHandler(OptimizeConflictException.class)
-  public ResponseEntity<ErrorResponseDto> handleConflictException(final OptimizeConflictException exception) {
+  public ResponseEntity<ErrorResponseDto> handleConflictException(
+      final OptimizeConflictException exception) {
     return ResponseEntity.status(HttpStatus.CONFLICT)
-      .contentType(MediaType.APPLICATION_JSON)
-      .body(getErrorResponseDto(exception));
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(getErrorResponseDto(exception));
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<ErrorResponseDto> handleValidationException(final MethodArgumentNotValidException exception) {
+  public ResponseEntity<ErrorResponseDto> handleValidationException(
+      final MethodArgumentNotValidException exception) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-      .contentType(MediaType.APPLICATION_JSON)
-      .body(new ErrorResponseDto(
-        BAD_REQUEST_ERROR_CODE,
-        localizationService.getDefaultLocaleMessageForApiErrorCode(BAD_REQUEST_ERROR_CODE),
-        Optional.ofNullable(exception.getFieldError()).map(FieldError::getDefaultMessage).orElse(exception.getMessage())
-      ));
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(
+            new ErrorResponseDto(
+                BAD_REQUEST_ERROR_CODE,
+                localizationService.getDefaultLocaleMessageForApiErrorCode(BAD_REQUEST_ERROR_CODE),
+                Optional.ofNullable(exception.getFieldError())
+                    .map(FieldError::getDefaultMessage)
+                    .orElse(exception.getMessage())));
   }
 
   @ExceptionHandler(BadRequestException.class)
-  public ResponseEntity<ErrorResponseDto> handleBadRequestException(final BadRequestException exception) {
+  public ResponseEntity<ErrorResponseDto> handleBadRequestException(
+      final BadRequestException exception) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-      .contentType(MediaType.APPLICATION_JSON)
-      .body(getErrorResponseDto(exception));
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(getErrorResponseDto(exception));
   }
 
   @ExceptionHandler(NotFoundException.class)
-  public ResponseEntity<ErrorResponseDto> handleNotFoundException(final NotFoundException exception) {
+  public ResponseEntity<ErrorResponseDto> handleNotFoundException(
+      final NotFoundException exception) {
     return ResponseEntity.status(HttpStatus.NOT_FOUND)
-      .contentType(MediaType.APPLICATION_JSON)
-      .body(getErrorResponseDto(exception));
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(getErrorResponseDto(exception));
   }
 
   @ExceptionHandler(OptimizeElasticsearchConnectionException.class)
-  public ResponseEntity<ErrorResponseDto> handleElasticsearchConnectionException(final OptimizeElasticsearchConnectionException exception) {
+  public ResponseEntity<ErrorResponseDto> handleElasticsearchConnectionException(
+      final OptimizeElasticsearchConnectionException exception) {
     // API to return bad gateway error in case of connection issues
     return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-      .contentType(MediaType.APPLICATION_JSON)
-      .body(getErrorResponseDto(exception));
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(getErrorResponseDto(exception));
   }
 
   private ErrorResponseDto getErrorResponseDto(Throwable e) {
@@ -141,7 +148,8 @@ public class BackupRestService {
 
     if (NotFoundException.class.equals(errorClass)) {
       errorCode = NOT_FOUND_ERROR_CODE;
-    } else if (BadRequestException.class.equals(errorClass) || ValidationException.class.equals(errorClass)) {
+    } else if (BadRequestException.class.equals(errorClass)
+        || ValidationException.class.equals(errorClass)) {
       errorCode = BAD_REQUEST_ERROR_CODE;
     } else if (OptimizeConflictException.class.equals(errorClass)) {
       errorCode = OptimizeConflictException.ERROR_CODE;
@@ -151,13 +159,9 @@ public class BackupRestService {
       errorCode = GENERIC_ERROR_CODE;
     }
 
-    final String localizedMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+    final String localizedMessage =
+        localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
 
-    return new ErrorResponseDto(
-      errorCode,
-      localizedMessage,
-      e.getMessage()
-    );
+    return new ErrorResponseDto(errorCode, localizedMessage, e.getMessage());
   }
-
 }

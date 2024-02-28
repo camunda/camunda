@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process.source;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -12,9 +14,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @NoArgsConstructor
 @SuperBuilder
@@ -26,12 +25,8 @@ public class CamundaEventSourceConfigDto extends EventSourceConfigDto {
 
   private String processDefinitionKey;
   private String processDefinitionName;
-  @Builder.Default
-  private List<String> versions = new ArrayList<>();
-  @Builder.Default
-  private List<String> tenants = new ArrayList<>();
+  @Builder.Default private List<String> versions = new ArrayList<>();
+  @Builder.Default private List<String> tenants = new ArrayList<>();
   private boolean tracedByBusinessKey;
   private String traceVariable;
-
 }
-

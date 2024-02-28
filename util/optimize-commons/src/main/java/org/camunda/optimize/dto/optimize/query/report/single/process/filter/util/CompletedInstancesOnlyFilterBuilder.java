@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
-
 import java.util.List;
 import java.util.Optional;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 
 public class CompletedInstancesOnlyFilterBuilder {
 
@@ -46,5 +45,4 @@ public class CompletedInstancesOnlyFilterBuilder {
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }
-
 }

@@ -5,17 +5,6 @@
  */
 package org.camunda.optimize.service.cleanup;
 
-import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.ArrayList;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
@@ -25,6 +14,16 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class CleanupSchedulerTest {

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.alert;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @FieldNameConstants

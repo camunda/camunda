@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.os.externalcode.client.sync;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cluster.ComponentTemplate;
@@ -12,13 +15,9 @@ import org.opensearch.client.opensearch.cluster.ComponentTemplateNode;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
-  public OpenSearchTemplateOperations(OpenSearchClient openSearchClient,
-                                      OptimizeIndexNameService indexNameService) {
+  public OpenSearchTemplateOperations(
+      OpenSearchClient openSearchClient, OptimizeIndexNameService indexNameService) {
     super(openSearchClient, indexNameService);
   }
 
@@ -28,49 +27,47 @@ public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
 
   public boolean createTemplateWithRetries(PutIndexTemplateRequest request) {
     return executeWithRetries(
-      "CreateTemplate " + request.name(),
-      () -> {
-        if (!templatesExist(request.name())) {
-          return openSearchClient.indices().putIndexTemplate(request).acknowledged();
-        }
-        return true;
-      });
+        "CreateTemplate " + request.name(),
+        () -> {
+          if (!templatesExist(request.name())) {
+            return openSearchClient.indices().putIndexTemplate(request).acknowledged();
+          }
+          return true;
+        });
   }
 
   public boolean deleteTemplatesWithRetries(final String templateNamePattern) {
     return executeWithRetries(
-      "DeleteTemplate " + templateNamePattern,
-      () -> {
-        if (templatesExist(templateNamePattern)) {
-          return openSearchClient
-            .indices()
-            .deleteIndexTemplate(it -> it.name(templateNamePattern))
-            .acknowledged();
-        }
-        return true;
-      });
+        "DeleteTemplate " + templateNamePattern,
+        () -> {
+          if (templatesExist(templateNamePattern)) {
+            return openSearchClient
+                .indices()
+                .deleteIndexTemplate(it -> it.name(templateNamePattern))
+                .acknowledged();
+          }
+          return true;
+        });
   }
 
   public boolean createComponentTemplateWithRetries(final PutComponentTemplateRequest request) {
     return executeWithRetries(
-      "CreateComponentTemplate " + request.name(),
-      () -> {
-        if (!templatesExist(request.name())) {
-          return openSearchClient.cluster().putComponentTemplate(request).acknowledged();
-        }
-        return false;
-      });
+        "CreateComponentTemplate " + request.name(),
+        () -> {
+          if (!templatesExist(request.name())) {
+            return openSearchClient.cluster().putComponentTemplate(request).acknowledged();
+          }
+          return false;
+        });
   }
 
   public Map<String, ComponentTemplateNode> getComponentTemplate() {
     return safe(
-      () -> openSearchClient.cluster().getComponentTemplate()
-        .componentTemplates()
-        .stream()
-        .collect(Collectors.toMap(
-          ComponentTemplate::name,
-          ComponentTemplate::componentTemplate
-        )),
-      e -> "Failed to get component template from opensearch!");
+        () ->
+            openSearchClient.cluster().getComponentTemplate().componentTemplates().stream()
+                .collect(
+                    Collectors.toMap(
+                        ComponentTemplate::name, ComponentTemplate::componentTemplate)),
+        e -> "Failed to get component template from opensearch!");
   }
 }

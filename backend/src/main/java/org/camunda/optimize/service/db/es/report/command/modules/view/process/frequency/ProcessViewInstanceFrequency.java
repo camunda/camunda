@@ -20,7 +20,8 @@ import org.springframework.stereotype.Component;
 public class ProcessViewInstanceFrequency extends ProcessViewFrequency {
 
   @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
     ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.PROCESS_INSTANCE);
     view.setProperties(ViewProperty.FREQUENCY);

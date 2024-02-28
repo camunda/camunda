@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
+import java.time.OffsetDateTime;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
-
-import java.time.OffsetDateTime;
-import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -26,8 +25,6 @@ public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
   protected OffsetDateTime evaluationDateTime;
   protected String engineName;
   protected String tenantId;
-  @FieldNameConstants.Exclude
-  protected Map<String, InputVariableEntry> inputVariables;
-  @FieldNameConstants.Exclude
-  protected Map<String, OutputVariableEntry> outputVariables;
+  @FieldNameConstants.Exclude protected Map<String, InputVariableEntry> inputVariables;
+  @FieldNameConstants.Exclude protected Map<String, OutputVariableEntry> outputVariables;
 }

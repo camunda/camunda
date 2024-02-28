@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.es.report.command.modules.group_by.process.date;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
+
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
@@ -16,22 +18,17 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByProcessInstanceStartDate extends AbstractProcessGroupByProcessInstanceDate {
+public class ProcessGroupByProcessInstanceStartDate
+    extends AbstractProcessGroupByProcessInstanceDate {
 
-  protected ProcessGroupByProcessInstanceStartDate(final ConfigurationService configurationService,
-                                                   final DateAggregationService dateAggregationService,
-                                                   final MinMaxStatsService minMaxStatsService,
-                                                   final ProcessQueryFilterEnhancer queryFilterEnhancer) {
-    super(
-      configurationService,
-      dateAggregationService,
-      minMaxStatsService,
-      queryFilterEnhancer
-    );
+  protected ProcessGroupByProcessInstanceStartDate(
+      final ConfigurationService configurationService,
+      final DateAggregationService dateAggregationService,
+      final MinMaxStatsService minMaxStatsService,
+      final ProcessQueryFilterEnhancer queryFilterEnhancer) {
+    super(configurationService, dateAggregationService, minMaxStatsService, queryFilterEnhancer);
   }
 
   @Override

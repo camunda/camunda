@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -14,8 +15,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -23,7 +22,8 @@ import java.util.List;
 public class EventProcessMappingWriterOS implements EventProcessMappingWriter {
 
   @Override
-  public IdResponseDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
+  public IdResponseDto createEventProcessMapping(
+      final EventProcessMappingDto eventProcessMappingDto) {
     log.error("Functionality not implemented for OpenSearch");
     return null;
   }
@@ -48,5 +48,4 @@ public class EventProcessMappingWriterOS implements EventProcessMappingWriter {
   public void deleteEventProcessMappings(final List<String> eventProcessMappingIds) {
     log.error("Functionality not implemented for OpenSearch");
   }
-
 }

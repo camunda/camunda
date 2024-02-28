@@ -5,21 +5,19 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
-
 @Configuration
 public class ConfigurationServiceBuilder {
 
-  public static final List<String> DEFAULT_CONFIG_LOCATIONS = List.of(
-    "service-config.yaml", "environment-config.yaml"
-  );
+  public static final List<String> DEFAULT_CONFIG_LOCATIONS =
+      List.of("service-config.yaml", "environment-config.yaml");
 
-  private String[] configLocations = DEFAULT_CONFIG_LOCATIONS.toArray(new String[]{});
+  private String[] configLocations = DEFAULT_CONFIG_LOCATIONS.toArray(new String[] {});
   private ConfigurationValidator configurationValidator = new ConfigurationValidator();
 
   @Bean
@@ -32,7 +30,8 @@ public class ConfigurationServiceBuilder {
     return createConfiguration().loadConfigurationFrom(configLocations).build();
   }
 
-  public static ConfigurationService createConfigurationWithDefaultAndAdditionalLocations(String... additionalLocations) {
+  public static ConfigurationService createConfigurationWithDefaultAndAdditionalLocations(
+      String... additionalLocations) {
     return createConfiguration().addConfigurationLocations(additionalLocations).build();
   }
 
@@ -58,5 +57,4 @@ public class ConfigurationServiceBuilder {
   public ConfigurationService build() {
     return new ConfigurationService(configLocations, configurationValidator);
   }
-
 }

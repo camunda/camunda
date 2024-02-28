@@ -23,5 +23,4 @@ public class BusinessKeyDto implements OptimizeDto {
 
   private String processInstanceId;
   private String businessKey;
-
 }

@@ -5,6 +5,13 @@
  */
 package org.camunda.optimize.service.license.es;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.LICENSE_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.LicenseIndex.LICENSE;
+import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
+import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
+
+import java.io.IOException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -20,14 +27,6 @@ import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.schema.index.LicenseIndex.LICENSE;
-import static org.camunda.optimize.service.db.DatabaseConstants.LICENSE_INDEX_NAME;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
-import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 
 @RequiredArgsConstructor
 @Component
@@ -57,28 +56,27 @@ public class LicenseManagerES extends LicenseManager {
   }
 
   @Override
-  public void storeLicense(String licenseAsString)
-  {
+  public void storeLicense(String licenseAsString) {
     XContentBuilder builder;
     try {
-      builder = jsonBuilder()
-        .startObject()
-        .field(LICENSE, licenseAsString)
-        .endObject();
+      builder = jsonBuilder().startObject().field(LICENSE, licenseAsString).endObject();
     } catch (IOException exception) {
-      throw new OptimizeInvalidLicenseException("Could not parse given license. Please check the encoding!");
+      throw new OptimizeInvalidLicenseException(
+          "Could not parse given license. Please check the encoding!");
     }
 
-    IndexRequest request = new IndexRequest(LICENSE_INDEX_NAME)
-      .id(licenseDocumentId)
-      .source(builder)
-      .setRefreshPolicy(IMMEDIATE);
+    IndexRequest request =
+        new IndexRequest(LICENSE_INDEX_NAME)
+            .id(licenseDocumentId)
+            .source(builder)
+            .setRefreshPolicy(IMMEDIATE);
 
     IndexResponse indexResponse;
     try {
       indexResponse = esClient.index(request);
     } catch (IOException e) {
-      String reason = "Could not store license in Elasticsearch. Maybe Optimize is not connected to Elasticsearch?";
+      String reason =
+          "Could not store license in Elasticsearch. Maybe Optimize is not connected to Elasticsearch?";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -88,13 +86,13 @@ public class LicenseManagerES extends LicenseManager {
     } else {
       StringBuilder reason = new StringBuilder();
       for (ReplicationResponse.ShardInfo.Failure failure :
-        indexResponse.getShardInfo().getFailures()) {
+          indexResponse.getShardInfo().getFailures()) {
         reason.append(failure.reason()).append("\n");
       }
-      String errorMessage = String.format("Could not store license to Elasticsearch. Reason: %s", reason);
+      String errorMessage =
+          String.format("Could not store license to Elasticsearch. Reason: %s", reason);
       log.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
     }
   }
-
 }

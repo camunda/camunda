@@ -21,9 +21,6 @@ public class ProcessPartDto {
 
   @Override
   public String toString() {
-    return "ProcessPartDto{" +
-      "start='" + start + '\'' +
-      ", end='" + end + '\'' +
-      '}';
+    return "ProcessPartDto{" + "start='" + start + '\'' + ", end='" + end + '\'' + '}';
   }
 }

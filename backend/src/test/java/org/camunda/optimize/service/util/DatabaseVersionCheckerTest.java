@@ -5,10 +5,12 @@
  */
 package org.camunda.optimize.service.util;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.metadata.Version.getMajorVersionFrom;
+import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
+import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
+import static org.camunda.optimize.service.util.DatabaseVersionChecker.getLatestSupportedESVersion;
+import static org.camunda.optimize.service.util.DatabaseVersionChecker.getLatestSupportedOSVersion;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,31 +19,29 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.metadata.Version.getMajorVersionFrom;
-import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
-import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
-import static org.camunda.optimize.service.util.DatabaseVersionChecker.getLatestSupportedESVersion;
-import static org.camunda.optimize.service.util.DatabaseVersionChecker.getLatestSupportedOSVersion;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class DatabaseVersionCheckerTest {
-  public static final List<String> SUPPORTED_VERSIONS_ES = supportedDatabaseVersionsMap()
-    .get(DatabaseVersionChecker.Database.ELASTICSEARCH);
-  public static final List<String> SUPPORTED_VERSIONS_OS = supportedDatabaseVersionsMap()
-    .get(DatabaseVersionChecker.Database.OPENSEARCH
-    );
+  public static final List<String> SUPPORTED_VERSIONS_ES =
+      supportedDatabaseVersionsMap().get(DatabaseVersionChecker.Database.ELASTICSEARCH);
+  public static final List<String> SUPPORTED_VERSIONS_OS =
+      supportedDatabaseVersionsMap().get(DatabaseVersionChecker.Database.OPENSEARCH);
 
   @AfterEach
   public void resetSupportedVersions() {
-    setSupportedDatabaseVersions(DatabaseVersionChecker.Database.ELASTICSEARCH, SUPPORTED_VERSIONS_ES);
+    setSupportedDatabaseVersions(
+        DatabaseVersionChecker.Database.ELASTICSEARCH, SUPPORTED_VERSIONS_ES);
     setSupportedDatabaseVersions(DatabaseVersionChecker.Database.OPENSEARCH, SUPPORTED_VERSIONS_OS);
   }
 
   @ParameterizedTest
   @MethodSource("validESVersions")
   public void testValidESVersions(final String version) {
-    final boolean isSupported = DatabaseVersionChecker.isCurrentElasticsearchVersionSupported(version);
+    final boolean isSupported =
+        DatabaseVersionChecker.isCurrentElasticsearchVersionSupported(version);
 
     assertThat(isSupported).isTrue();
   }
@@ -56,7 +56,8 @@ public class DatabaseVersionCheckerTest {
   @ParameterizedTest
   @MethodSource("invalidESVersions")
   public void testInvalidESVersions(final String version) {
-    final boolean isSupported = DatabaseVersionChecker.isCurrentElasticsearchVersionSupported(version);
+    final boolean isSupported =
+        DatabaseVersionChecker.isCurrentElasticsearchVersionSupported(version);
     assertThat(isSupported).isFalse();
   }
 
@@ -73,7 +74,9 @@ public class DatabaseVersionCheckerTest {
     String version = constructWarningVersionHigherMinor(getLatestSupportedESVersion());
 
     // then
-    assertThat(DatabaseVersionChecker.doesVersionNeedWarning(version, getLatestSupportedESVersion())).isTrue();
+    assertThat(
+            DatabaseVersionChecker.doesVersionNeedWarning(version, getLatestSupportedESVersion()))
+        .isTrue();
   }
 
   @Test
@@ -82,7 +85,9 @@ public class DatabaseVersionCheckerTest {
     String version = constructWarningVersionHigherMinor(getLatestSupportedOSVersion());
 
     // then
-    assertThat(DatabaseVersionChecker.doesVersionNeedWarning(version, getLatestSupportedOSVersion())).isTrue();
+    assertThat(
+            DatabaseVersionChecker.doesVersionNeedWarning(version, getLatestSupportedOSVersion()))
+        .isTrue();
   }
 
   @Test
@@ -90,7 +95,8 @@ public class DatabaseVersionCheckerTest {
     // given
     final String expectedLatestVersion = "7.11.5";
 
-    List<String> versionsToTest = Arrays.asList("0.0.1", "7.2.0", expectedLatestVersion, "7.11.4", "7.10.6");
+    List<String> versionsToTest =
+        Arrays.asList("0.0.1", "7.2.0", expectedLatestVersion, "7.11.4", "7.10.6");
     setSupportedDatabaseVersions(DatabaseVersionChecker.Database.ELASTICSEARCH, versionsToTest);
     setSupportedDatabaseVersions(DatabaseVersionChecker.Database.OPENSEARCH, versionsToTest);
 
@@ -99,7 +105,8 @@ public class DatabaseVersionCheckerTest {
     assertThat(getLatestSupportedESVersion()).isEqualTo(expectedLatestVersion);
   }
 
-  private static void setSupportedDatabaseVersions(DatabaseVersionChecker.Database database, final List<String> versionsToTest) {
+  private static void setSupportedDatabaseVersions(
+      DatabaseVersionChecker.Database database, final List<String> versionsToTest) {
     supportedDatabaseVersionsMap().put(database, versionsToTest);
   }
 
@@ -113,14 +120,17 @@ public class DatabaseVersionCheckerTest {
   }
 
   private static Stream<String> validESVersions() {
-    return validVersions(supportedDatabaseVersionsMap().get(DatabaseVersionChecker.Database.ELASTICSEARCH));
+    return validVersions(
+        supportedDatabaseVersionsMap().get(DatabaseVersionChecker.Database.ELASTICSEARCH));
   }
 
   private static Stream<String> validOSVersions() {
-    return validVersions(supportedDatabaseVersionsMap().get(DatabaseVersionChecker.Database.OPENSEARCH));
+    return validVersions(
+        supportedDatabaseVersionsMap().get(DatabaseVersionChecker.Database.OPENSEARCH));
   }
 
-  private static EnumMap<DatabaseVersionChecker.Database, List<String>> supportedDatabaseVersionsMap() {
+  private static EnumMap<DatabaseVersionChecker.Database, List<String>>
+      supportedDatabaseVersionsMap() {
     return DatabaseVersionChecker.getDatabaseSupportedVersionsMap();
   }
 
@@ -161,27 +171,33 @@ public class DatabaseVersionCheckerTest {
 
   private static Stream<String> invalidESVersions() {
     return invalidVersions(
-      supportedDatabaseVersionsMap().get(DatabaseVersionChecker.Database.ELASTICSEARCH), getLatestSupportedESVersion());
+        supportedDatabaseVersionsMap().get(DatabaseVersionChecker.Database.ELASTICSEARCH),
+        getLatestSupportedESVersion());
   }
 
   private static Stream<String> invalidOSVersions() {
     return invalidVersions(
-      supportedDatabaseVersionsMap().get(DatabaseVersionChecker.Database.OPENSEARCH), getLatestSupportedOSVersion());
+        supportedDatabaseVersionsMap().get(DatabaseVersionChecker.Database.OPENSEARCH),
+        getLatestSupportedOSVersion());
   }
 
-  private static Stream<String> invalidVersions(List<String> supportedVersions, String latestSupportedVersion) {
+  private static Stream<String> invalidVersions(
+      List<String> supportedVersions, String latestSupportedVersion) {
     List<String> invalidVersions = new ArrayList<>();
 
     if (findPatchedVersionIfPresent(supportedVersions).isPresent()) {
-      invalidVersions.add(constructInvalidVersionLowerPatch(findPatchedVersionIfPresent(supportedVersions).get()));
+      invalidVersions.add(
+          constructInvalidVersionLowerPatch(findPatchedVersionIfPresent(supportedVersions).get()));
     }
     invalidVersions.add(constructInvalidVersionHigherMajor(latestSupportedVersion));
-    invalidVersions.add(constructInvalidVersionLowerMajor(getLeastSupportedVersion(supportedVersions)));
+    invalidVersions.add(
+        constructInvalidVersionLowerMajor(getLeastSupportedVersion(supportedVersions)));
 
     return invalidVersions.stream();
   }
 
-  private static String buildVersionFromParts(final String major, final String minor, final String patch) {
+  private static String buildVersionFromParts(
+      final String major, final String minor, final String patch) {
     return String.join(".", major, minor, patch);
   }
 
@@ -194,11 +210,12 @@ public class DatabaseVersionCheckerTest {
   }
 
   private static Optional<String> findPatchedVersionIfPresent(List<String> supportedVersions) {
-    return supportedVersions.stream().filter(v -> Integer.parseInt(getPatchVersionFrom(v)) > 0).findFirst();
+    return supportedVersions.stream()
+        .filter(v -> Integer.parseInt(getPatchVersionFrom(v)) > 0)
+        .findFirst();
   }
 
   private static String getLeastSupportedVersion(List<String> supportedVersions) {
     return supportedVersions.stream().min(Comparator.naturalOrder()).get();
   }
-
 }

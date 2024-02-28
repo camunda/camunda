@@ -5,18 +5,17 @@
  */
 package org.camunda.optimize.service.security.util;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class LocalDateUtil {
 
-  private volatile static OffsetDateTime CURRENT_TIME = null;
+  private static volatile OffsetDateTime CURRENT_TIME = null;
 
   public static void setCurrentTime(OffsetDateTime currentTime) {
     LocalDateUtil.CURRENT_TIME = normalize(currentTime);
@@ -46,11 +45,11 @@ public class LocalDateUtil {
     return dateTime.truncatedTo(ChronoUnit.MILLIS);
   }
 
-  public static OffsetDateTime atSameTimezoneOffsetDateTime(final OffsetDateTime date, final ZoneId timezone) {
+  public static OffsetDateTime atSameTimezoneOffsetDateTime(
+      final OffsetDateTime date, final ZoneId timezone) {
     if (date != null) {
       return date.atZoneSameInstant(timezone).toOffsetDateTime();
     }
     return null;
   }
-
 }

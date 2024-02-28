@@ -5,6 +5,17 @@
  */
 package org.camunda.optimize.upgrade.main;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Optional;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
@@ -26,31 +37,16 @@ import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 public class UpgradeProcedureTest {
   private static final String TARGET_VERSION = Version.VERSION;
   private static final String FROM_VERSION = PreviousVersion.PREVIOUS_VERSION;
 
-  @Spy
-  private final CreateIndexStep createIndexStep = new CreateIndexStep(new UserTestIndex(1));
-  @Mock
-  private SchemaUpgradeClient schemaUpgradeClient;
-  @Mock
-  private UpgradeValidationService validationService;
-  @Mock
-  private UpgradeStepLogService upgradeStepLogService;
+  @Spy private final CreateIndexStep createIndexStep = new CreateIndexStep(new UserTestIndex(1));
+  @Mock private SchemaUpgradeClient schemaUpgradeClient;
+  @Mock private UpgradeValidationService validationService;
+  @Mock private UpgradeStepLogService upgradeStepLogService;
+
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private OptimizeElasticsearchClient esClient;
 
@@ -58,8 +54,9 @@ public class UpgradeProcedureTest {
   public void before() {
     // this method might be called by some tests
     // for the scope of these tests the value is not relevant though, thus returning static value
-    lenient().when(esClient.getIndexNameService().getOptimizeIndexNameWithVersion(any()))
-      .thenReturn("test");
+    lenient()
+        .when(esClient.getIndexNameService().getOptimizeIndexNameWithVersion(any()))
+        .thenReturn("test");
   }
 
   @Test
@@ -89,7 +86,9 @@ public class UpgradeProcedureTest {
     // The validation order matters since we first need to ensure that the ES client
     // is able to communicate to ElasticSearch before using it to retrieve the schema version.
     inOrder.verify(validationService).validateESVersion(any(), any());
-    inOrder.verify(validationService).validateSchemaVersions(FROM_VERSION, FROM_VERSION, TARGET_VERSION);
+    inOrder
+        .verify(validationService)
+        .validateSchemaVersions(FROM_VERSION, FROM_VERSION, TARGET_VERSION);
     inOrder.verify(createIndexStep).execute(eq(schemaUpgradeClient));
   }
 
@@ -136,19 +135,21 @@ public class UpgradeProcedureTest {
     underTest.performUpgrade(upgradePlan);
 
     // then
-    verify(validationService, never()).validateSchemaVersions(TARGET_VERSION, FROM_VERSION, TARGET_VERSION);
+    verify(validationService, never())
+        .validateSchemaVersions(TARGET_VERSION, FROM_VERSION, TARGET_VERSION);
     verify(upgradePlan, never()).getUpgradeSteps();
   }
 
   private UpgradePlan createUpgradePlan() {
     return UpgradePlanBuilder.createUpgradePlan()
-      .fromVersion(FROM_VERSION)
-      .toVersion(TARGET_VERSION)
-      .addUpgradeStep(createIndexStep)
-      .build();
+        .fromVersion(FROM_VERSION)
+        .toVersion(TARGET_VERSION)
+        .addUpgradeStep(createIndexStep)
+        .build();
   }
 
   private UpgradeProcedure createUpgradeProcedure() {
-    return new UpgradeProcedure(esClient, validationService, schemaUpgradeClient, upgradeStepLogService);
+    return new UpgradeProcedure(
+        esClient, validationService, schemaUpgradeClient, upgradeStepLogService);
   }
 }

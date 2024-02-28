@@ -5,20 +5,20 @@
  */
 package org.camunda.optimize.service.importing.job;
 
+import java.util.List;
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
-import java.util.List;
-
 public class StoreIndexesDatabaseImportJob extends DatabaseImportJob<EngineImportIndexDto> {
 
   private final ImportIndexWriter importIndexWriter;
 
-  public StoreIndexesDatabaseImportJob(final ImportIndexWriter importIndexWriter,
-                                       final Runnable importCompleteCallback,
-                                       final DatabaseClient databaseClient) {
+  public StoreIndexesDatabaseImportJob(
+      final ImportIndexWriter importIndexWriter,
+      final Runnable importCompleteCallback,
+      final DatabaseClient databaseClient) {
     super(importCompleteCallback, databaseClient);
     this.importIndexWriter = importIndexWriter;
   }
@@ -27,5 +27,4 @@ public class StoreIndexesDatabaseImportJob extends DatabaseImportJob<EngineImpor
   protected void persistEntities(List<EngineImportIndexDto> newOptimizeEntities) {
     importIndexWriter.importIndexes(newOptimizeEntities);
   }
-
 }

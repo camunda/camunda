@@ -5,8 +5,13 @@
  */
 package org.camunda.optimize.service.archive;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.PROCESS_INSTANCE_ARCHIVE_INDEX;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.time.Duration;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
@@ -19,16 +24,11 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.util.Set;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.PROCESS_INSTANCE_ARCHIVE_INDEX;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class ProcessInstanceArchivingService extends AbstractScheduledService implements ConfigurationReloadable {
+public class ProcessInstanceArchivingService extends AbstractScheduledService
+    implements ConfigurationReloadable {
 
   private final ConfigurationService configurationService;
   private final ProcessInstanceReader processInstanceReader;
@@ -64,8 +64,8 @@ public class ProcessInstanceArchivingService extends AbstractScheduledService im
   @Override
   protected Trigger createScheduleTrigger() {
     return new PeriodicTrigger(
-      Duration.ofMinutes(configurationService.getDataArchiveConfiguration().getArchiveIntervalInMins())
-    );
+        Duration.ofMinutes(
+            configurationService.getDataArchiveConfiguration().getArchiveIntervalInMins()));
   }
 
   @Override
@@ -77,10 +77,8 @@ public class ProcessInstanceArchivingService extends AbstractScheduledService im
     log.debug("Archiving completed process instances.");
 
     indexRepository.createMissingIndices(
-      PROCESS_INSTANCE_ARCHIVE_INDEX,
-      Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
-      processInstanceReader.getExistingProcessDefinitionKeysFromInstances()
-    );
+        PROCESS_INSTANCE_ARCHIVE_INDEX,
+        Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
+        processInstanceReader.getExistingProcessDefinitionKeysFromInstances());
   }
-
 }

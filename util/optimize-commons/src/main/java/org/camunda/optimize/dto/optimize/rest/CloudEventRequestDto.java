@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import java.time.Instant;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -18,9 +20,6 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.service.util.mapper.CustomCloudEventTimeDeserializer;
-
-import java.time.Instant;
-import java.util.Optional;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -32,26 +31,27 @@ import java.util.Optional;
 @FieldNameConstants
 public class CloudEventRequestDto {
   // required properties
+  @NotBlank @EqualsAndHashCode.Include @ToString.Include private String id;
+
   @NotBlank
-  @EqualsAndHashCode.Include
-  @ToString.Include
-  private String id;
-  @NotBlank
-  @Pattern(regexp = "^(?!camunda$).*", flags = Pattern.Flag.CASE_INSENSITIVE, message = "field must not equal 'camunda'")
+  @Pattern(
+      regexp = "^(?!camunda$).*",
+      flags = Pattern.Flag.CASE_INSENSITIVE,
+      message = "field must not equal 'camunda'")
   @EqualsAndHashCode.Include
   @ToString.Include
   private String source;
+
   @NotNull
   @Pattern(regexp = "1\\.0")
   @EqualsAndHashCode.Include
   @ToString.Include
-  // Note: it's intended to not use camelCase names here to comply with CloudEvents naming conventions
+  // Note: it's intended to not use camelCase names here to comply with CloudEvents naming
+  // conventions
   // https://github.com/cloudevents/spec/blob/v1.0/spec.md#attribute-naming-convention
   private String specversion;
-  @NotBlank
-  @EqualsAndHashCode.Include
-  @ToString.Include
-  private String type;
+
+  @NotBlank @EqualsAndHashCode.Include @ToString.Include private String type;
 
   // optional properties
   @ToString.Include
@@ -61,13 +61,13 @@ public class CloudEventRequestDto {
   private Object data;
 
   // custom/extension properties
-  @NotBlank
-  @ToString.Include
-  // Note: it's intended to not use camelCase names here to comply with CloudEvents naming conventions
+  @NotBlank @ToString.Include
+  // Note: it's intended to not use camelCase names here to comply with CloudEvents naming
+  // conventions
   // https://github.com/cloudevents/spec/blob/v1.0/spec.md#attribute-naming-convention
   private String traceid;
-  @ToString.Include
-  private String group;
+
+  @ToString.Include private String group;
 
   public Optional<Instant> getTime() {
     return Optional.ofNullable(time);

@@ -6,9 +6,8 @@
 package org.camunda.optimize.dto.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
-
 import java.util.Optional;
+import lombok.Data;
 
 @Data
 public class TenantEngineDto implements TenantSpecificEngineDto {

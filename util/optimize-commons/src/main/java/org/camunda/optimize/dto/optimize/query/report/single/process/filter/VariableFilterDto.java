@@ -5,15 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
-
 import java.util.Collections;
 import java.util.List;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 
 public class VariableFilterDto extends ProcessFilterDto<VariableFilterDataDto<?>> {
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {
     return Collections.singletonList(FilterApplicationLevel.INSTANCE);
   }
-
 }

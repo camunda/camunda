@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class GetVariableNamesForReportsRequestDto {

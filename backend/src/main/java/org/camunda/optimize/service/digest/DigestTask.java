@@ -22,5 +22,4 @@ public class DigestTask implements Runnable {
   public void run() {
     digestService.handleDigestTask(processDefinitionKey);
   }
-
 }

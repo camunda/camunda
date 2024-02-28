@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.alert;
 
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
@@ -14,8 +15,6 @@ import org.camunda.optimize.service.telemetry.mixpanel.client.EventReportingEven
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 
 @Component
 @Conditional(CCSaaSCondition.class)

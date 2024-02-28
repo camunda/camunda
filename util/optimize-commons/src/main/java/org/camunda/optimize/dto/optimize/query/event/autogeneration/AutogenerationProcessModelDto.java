@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.autogeneration;
 
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
-
-import java.util.Map;
 
 @Getter
 @Builder

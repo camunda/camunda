@@ -7,6 +7,8 @@ package org.camunda.optimize.service.telemetry;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.time.Duration;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
@@ -20,13 +22,11 @@ import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.util.Optional;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class TelemetryScheduler extends AbstractScheduledService implements ConfigurationReloadable {
+public class TelemetryScheduler extends AbstractScheduledService
+    implements ConfigurationReloadable {
 
   private final ConfigurationService configurationService;
   private final SettingsService settingsService;
@@ -42,7 +42,8 @@ public class TelemetryScheduler extends AbstractScheduledService implements Conf
   @Override
   protected void run() {
     log.info("Checking whether telemetry data can be sent.");
-    Optional<Boolean> telemetryMetadata = settingsService.getSettings().getMetadataTelemetryEnabled();
+    Optional<Boolean> telemetryMetadata =
+        settingsService.getSettings().getMetadataTelemetryEnabled();
     if (telemetryMetadata.isPresent() && Boolean.TRUE.equals(telemetryMetadata.get())) {
       try {
         telemetryService.sendTelemetryData();
@@ -62,7 +63,8 @@ public class TelemetryScheduler extends AbstractScheduledService implements Conf
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(Duration.ofHours(getTelemetryConfiguration().getReportingIntervalInHours()));
+    return new PeriodicTrigger(
+        Duration.ofHours(getTelemetryConfiguration().getReportingIntervalInHours()));
   }
 
   public synchronized boolean startTelemetryScheduling() {
@@ -79,5 +81,4 @@ public class TelemetryScheduler extends AbstractScheduledService implements Conf
   protected TelemetryConfiguration getTelemetryConfiguration() {
     return this.configurationService.getTelemetryConfiguration();
   }
-
 }

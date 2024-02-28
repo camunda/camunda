@@ -13,15 +13,16 @@ public abstract class ProcessInstanceArchiveIndex<TBuilder> extends ProcessInsta
     super(instanceIndexKey);
   }
 
-  // This needs to be done separately to the logic of the constructor, because the non-static method getIndexPrefix()
+  // This needs to be done separately to the logic of the constructor, because the non-static method
+  // getIndexPrefix()
   // will get overridden when a subclass such as EventProcessInstanceIndex is being instantiated
   public static String constructIndexName(final String processInstanceIndexKey) {
-    return DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX + processInstanceIndexKey.toLowerCase();
+    return DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX
+        + processInstanceIndexKey.toLowerCase();
   }
 
   @Override
   protected String getIndexPrefix() {
     return DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
   }
-
 }

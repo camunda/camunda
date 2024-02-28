@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
-import lombok.Data;
-
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Data;
 
 @Data
 public class FlowNodeNamesResponseDto {

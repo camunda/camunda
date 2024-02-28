@@ -16,12 +16,12 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
-@EqualsAndHashCode(callSuper=true)
+@EqualsAndHashCode(callSuper = true)
 public class AuthorizedDashboardDefinitionResponseDto extends AuthorizedEntityDto {
-  @JsonUnwrapped
-  private DashboardDefinitionRestDto definitionDto;
+  @JsonUnwrapped private DashboardDefinitionRestDto definitionDto;
 
-  public AuthorizedDashboardDefinitionResponseDto(final RoleType currentUserRole, final DashboardDefinitionRestDto definitionDto) {
+  public AuthorizedDashboardDefinitionResponseDto(
+      final RoleType currentUserRole, final DashboardDefinitionRestDto definitionDto) {
     super(currentUserRole);
     this.definitionDto = definitionDto;
   }

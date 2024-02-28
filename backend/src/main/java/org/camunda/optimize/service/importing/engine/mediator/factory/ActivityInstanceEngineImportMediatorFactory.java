@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
+import java.util.List;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.activity.CompletedActivityInstanceWriter;
@@ -23,23 +24,23 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
-public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+public class ActivityInstanceEngineImportMediatorFactory
+    extends AbstractEngineImportMediatorFactory {
   private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final RunningActivityInstanceWriter runningActivityInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
 
-  public ActivityInstanceEngineImportMediatorFactory(final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
-                                                     final CompletedActivityInstanceWriter completedActivityInstanceWriter,
-                                                     final RunningActivityInstanceWriter runningActivityInstanceWriter,
-                                                     final BeanFactory beanFactory,
-                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                     final ConfigurationService configurationService,
-                                                     final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                     final DatabaseClient databaseClient) {
+  public ActivityInstanceEngineImportMediatorFactory(
+      final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
+      final CompletedActivityInstanceWriter completedActivityInstanceWriter,
+      final RunningActivityInstanceWriter runningActivityInstanceWriter,
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final ProcessDefinitionResolverService processDefinitionResolverService,
+      final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
@@ -50,45 +51,42 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return List.of(
-      createCompletedActivityInstanceEngineImportMediator(engineContext),
-      createRunningActivityInstanceEngineImportMediator(engineContext)
-    );
+        createCompletedActivityInstanceEngineImportMediator(engineContext),
+        createRunningActivityInstanceEngineImportMediator(engineContext));
   }
 
-  private CompletedActivityInstanceEngineImportMediator createCompletedActivityInstanceEngineImportMediator(
-    EngineContext engineContext) {
+  private CompletedActivityInstanceEngineImportMediator
+      createCompletedActivityInstanceEngineImportMediator(EngineContext engineContext) {
 
     return new CompletedActivityInstanceEngineImportMediator(
-      importIndexHandlerRegistry.getCompletedActivityInstanceImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(CompletedActivityInstanceFetcher.class, engineContext),
-      new CompletedActivityInstanceImportService(
-        completedActivityInstanceWriter,
-        camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        engineContext,
+        importIndexHandlerRegistry.getCompletedActivityInstanceImportIndexHandler(
+            engineContext.getEngineAlias()),
+        beanFactory.getBean(CompletedActivityInstanceFetcher.class, engineContext),
+        new CompletedActivityInstanceImportService(
+            completedActivityInstanceWriter,
+            camundaEventImportServiceFactory.createCamundaEventService(engineContext),
+            engineContext,
+            configurationService,
+            processDefinitionResolverService,
+            databaseClient),
         configurationService,
-        processDefinitionResolverService,
-        databaseClient
-      ),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        new BackoffCalculator(configurationService));
   }
 
-  private RunningActivityInstanceEngineImportMediator createRunningActivityInstanceEngineImportMediator(
-    EngineContext engineContext) {
+  private RunningActivityInstanceEngineImportMediator
+      createRunningActivityInstanceEngineImportMediator(EngineContext engineContext) {
     return new RunningActivityInstanceEngineImportMediator(
-      importIndexHandlerRegistry.getRunningActivityInstanceImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(RunningActivityInstanceFetcher.class, engineContext),
-      new RunningActivityInstanceImportService(
-        runningActivityInstanceWriter,
-        camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        engineContext,
+        importIndexHandlerRegistry.getRunningActivityInstanceImportIndexHandler(
+            engineContext.getEngineAlias()),
+        beanFactory.getBean(RunningActivityInstanceFetcher.class, engineContext),
+        new RunningActivityInstanceImportService(
+            runningActivityInstanceWriter,
+            camundaEventImportServiceFactory.createCamundaEventService(engineContext),
+            engineContext,
+            configurationService,
+            processDefinitionResolverService,
+            databaseClient),
         configurationService,
-        processDefinitionResolverService,
-        databaseClient
-      ),
-      configurationService,
-      new BackoffCalculator(configurationService)
-    );
+        new BackoffCalculator(configurationService));
   }
 }

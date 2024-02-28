@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import static org.camunda.optimize.dto.optimize.ReportConstants.FIXED_DATE_FILTER;
 import static org.camunda.optimize.dto.optimize.ReportConstants.RELATIVE_DATE_FILTER;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ROLLING_DATE_FILTER;
+
+import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum DateFilterType {
   FIXED(FIXED_DATE_FILTER),

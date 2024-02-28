@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -20,8 +19,7 @@ import java.util.List;
 public class PageResultDto<T> {
   private String pagingState;
   private int limit;
-  @NonNull
-  private List<T> entities = new ArrayList<>();
+  @NonNull private List<T> entities = new ArrayList<>();
 
   public PageResultDto(final int limit) {
     this.limit = limit;
@@ -34,5 +32,4 @@ public class PageResultDto<T> {
   public boolean isLastPage() {
     return pagingState == null;
   }
-
 }

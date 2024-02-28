@@ -5,10 +5,9 @@
  */
 package org.camunda.optimize.testplugin.adapter.variable.dmn5;
 
+import java.util.List;
 import org.camunda.optimize.plugin.importing.variable.DecisionInputImportAdapter;
 import org.camunda.optimize.plugin.importing.variable.PluginDecisionInputDto;
-
-import java.util.List;
 
 public class SetAllStringInputsToFoo implements DecisionInputImportAdapter {
 

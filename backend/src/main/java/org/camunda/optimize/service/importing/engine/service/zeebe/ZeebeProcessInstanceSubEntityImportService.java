@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.service.zeebe;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
@@ -17,8 +18,6 @@ import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.job.ZeebeProcessInstanceDatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
-import java.util.List;
-
 @Slf4j
 public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements ImportService<T> {
 
@@ -30,15 +29,15 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
   private final DatabaseClient databaseClient;
   private final String sourceExportIndex;
 
-  protected ZeebeProcessInstanceSubEntityImportService(final ConfigurationService configurationService,
-                                                       final ZeebeProcessInstanceWriter processInstanceWriter,
-                                                       final int partitionId,
-                                                       final ProcessDefinitionReader processDefinitionReader,
-                                                       final DatabaseClient databaseClient,
-                                                       final String sourceExportIndex) {
-    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
-      getClass().getSimpleName(), configurationService
-    );
+  protected ZeebeProcessInstanceSubEntityImportService(
+      final ConfigurationService configurationService,
+      final ZeebeProcessInstanceWriter processInstanceWriter,
+      final int partitionId,
+      final ProcessDefinitionReader processDefinitionReader,
+      final DatabaseClient databaseClient,
+      final String sourceExportIndex) {
+    this.databaseImportJobExecutor =
+        new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.processInstanceWriter = processInstanceWriter;
     this.partitionId = partitionId;
     this.configurationService = configurationService;
@@ -50,14 +49,13 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
   abstract List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(List<T> records);
 
   @Override
-  public void executeImport(final List<T> zeebeRecords,
-                            final Runnable importCompleteCallback) {
+  public void executeImport(final List<T> zeebeRecords, final Runnable importCompleteCallback) {
     boolean newDataIsAvailable = !zeebeRecords.isEmpty();
     if (newDataIsAvailable) {
       final List<ProcessInstanceDto> newOptimizeEntities =
-        filterAndMapZeebeRecordsToOptimizeEntities(zeebeRecords);
+          filterAndMapZeebeRecordsToOptimizeEntities(zeebeRecords);
       final DatabaseImportJob<ProcessInstanceDto> databaseImportJob =
-        createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+          createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
       addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
@@ -67,35 +65,36 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
     return databaseImportJobExecutor;
   }
 
-  protected ProcessInstanceDto createSkeletonProcessInstance(final String processDefinitionKey,
-                                                             final Long processInstanceId,
-                                                             final Long processDefinitionId,
-                                                             final String tenantId) {
+  protected ProcessInstanceDto createSkeletonProcessInstance(
+      final String processDefinitionKey,
+      final Long processInstanceId,
+      final Long processDefinitionId,
+      final String tenantId) {
     final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
     processInstanceDto.setProcessDefinitionKey(processDefinitionKey);
     processInstanceDto.setProcessInstanceId(String.valueOf(processInstanceId));
     processInstanceDto.setProcessDefinitionId(String.valueOf(processDefinitionId));
     processInstanceDto.setTenantId(tenantId);
-    processInstanceDto.setDataSource(new ZeebeDataSourceDto(
-      configurationService.getConfiguredZeebe().getName(),
-      partitionId
-    ));
+    processInstanceDto.setDataSource(
+        new ZeebeDataSourceDto(configurationService.getConfiguredZeebe().getName(), partitionId));
     return processInstanceDto;
   }
 
-  private void addDatabaseImportJobToQueue(DatabaseImportJob<ProcessInstanceDto> databaseImportJob) {
+  private void addDatabaseImportJobToQueue(
+      DatabaseImportJob<ProcessInstanceDto> databaseImportJob) {
     databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
-    final List<ProcessInstanceDto> processInstanceDtos,
-    final Runnable importCompleteCallback) {
+      final List<ProcessInstanceDto> processInstanceDtos, final Runnable importCompleteCallback) {
     ZeebeProcessInstanceDatabaseImportJob processInstanceImportJob =
-      new ZeebeProcessInstanceDatabaseImportJob(
-        processInstanceWriter, configurationService, importCompleteCallback, sourceExportIndex, databaseClient
-      );
+        new ZeebeProcessInstanceDatabaseImportJob(
+            processInstanceWriter,
+            configurationService,
+            importCompleteCallback,
+            sourceExportIndex,
+            databaseClient);
     processInstanceImportJob.setEntitiesToImport(processInstanceDtos);
     return processInstanceImportJob;
   }
-
 }

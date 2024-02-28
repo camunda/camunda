@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
@@ -14,9 +16,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -24,17 +23,19 @@ import java.util.List;
 public class DecisionVariableReaderOS implements DecisionVariableReader {
 
   @Override
-  public List<DecisionVariableNameResponseDto> getInputVariableNames(final String decisionDefinitionKey,
-                                                                     final List<String> decisionDefinitionVersions,
-                                                                     final List<String> tenantIds) {
+  public List<DecisionVariableNameResponseDto> getInputVariableNames(
+      final String decisionDefinitionKey,
+      final List<String> decisionDefinitionVersions,
+      final List<String> tenantIds) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
-  public List<DecisionVariableNameResponseDto> getOutputVariableNames(final String decisionDefinitionKey,
-                                                                      final List<String> decisionDefinitionVersions,
-                                                                      final List<String> tenantIds) {
+  public List<DecisionVariableNameResponseDto> getOutputVariableNames(
+      final String decisionDefinitionKey,
+      final List<String> decisionDefinitionVersions,
+      final List<String> tenantIds) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
@@ -50,5 +51,4 @@ public class DecisionVariableReaderOS implements DecisionVariableReader {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
-
 }

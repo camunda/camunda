@@ -5,8 +5,15 @@
  */
 package org.camunda.optimize.service.importing.engine.handler;
 
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
+
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
+import jakarta.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
@@ -17,14 +24,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class EngineImportIndexHandlerProvider {
@@ -34,23 +33,27 @@ public class EngineImportIndexHandlerProvider {
   private static final List<Class<?>> ALL_ENTITIES_HANDLER_CLASSES;
 
   static {
-    try (ScanResult scanResult = new ClassGraph()
-      .enableClassInfo()
-      .acceptPackages(EngineImportIndexHandlerProvider.class.getPackage().getName())
-      .scan()) {
-      TIMESTAMP_BASED_HANDLER_CLASSES = scanResult.getSubclasses(TimestampBasedEngineImportIndexHandler.class.getName())
-        .loadClasses();
-      SCROLL_BASED_HANDLER_CLASSES = scanResult.getSubclasses(DefinitionXmlImportIndexHandler.class.getName())
-        .loadClasses();
-      ALL_ENTITIES_HANDLER_CLASSES = scanResult.getSubclasses(AllEntitiesBasedImportIndexHandler.class.getName())
-        .loadClasses();
+    try (ScanResult scanResult =
+        new ClassGraph()
+            .enableClassInfo()
+            .acceptPackages(EngineImportIndexHandlerProvider.class.getPackage().getName())
+            .scan()) {
+      TIMESTAMP_BASED_HANDLER_CLASSES =
+          scanResult
+              .getSubclasses(TimestampBasedEngineImportIndexHandler.class.getName())
+              .loadClasses();
+      SCROLL_BASED_HANDLER_CLASSES =
+          scanResult.getSubclasses(DefinitionXmlImportIndexHandler.class.getName()).loadClasses();
+      ALL_ENTITIES_HANDLER_CLASSES =
+          scanResult
+              .getSubclasses(AllEntitiesBasedImportIndexHandler.class.getName())
+              .loadClasses();
     }
   }
 
   private final EngineContext engineContext;
 
-  @Autowired
-  private BeanFactory beanFactory;
+  @Autowired private BeanFactory beanFactory;
   private List<AllEntitiesBasedImportIndexHandler> allEntitiesBasedHandlers;
   private List<DefinitionXmlImportIndexHandler> scrollBasedHandlers;
   private List<TimestampBasedEngineImportIndexHandler> timestampBasedEngineHandlers;
@@ -68,35 +71,32 @@ public class EngineImportIndexHandlerProvider {
     allEntitiesBasedHandlers = new ArrayList<>();
     timestampBasedEngineHandlers = new ArrayList<>();
 
-    TIMESTAMP_BASED_HANDLER_CLASSES
-      .forEach(clazz -> {
-        final TimestampBasedEngineImportIndexHandler importIndexHandlerInstance =
-          (TimestampBasedEngineImportIndexHandler) getImportIndexHandlerInstance(engineContext, clazz);
-        timestampBasedEngineHandlers.add(importIndexHandlerInstance);
-        allHandlers.put(clazz.getSimpleName(), importIndexHandlerInstance);
-      });
+    TIMESTAMP_BASED_HANDLER_CLASSES.forEach(
+        clazz -> {
+          final TimestampBasedEngineImportIndexHandler importIndexHandlerInstance =
+              (TimestampBasedEngineImportIndexHandler)
+                  getImportIndexHandlerInstance(engineContext, clazz);
+          timestampBasedEngineHandlers.add(importIndexHandlerInstance);
+          allHandlers.put(clazz.getSimpleName(), importIndexHandlerInstance);
+        });
 
-    SCROLL_BASED_HANDLER_CLASSES
-      .forEach(clazz -> {
-        EngineImportIndexHandler<?, ?> engineImportIndexHandlerInstance =
-          (EngineImportIndexHandler) getImportIndexHandlerInstance(
-            engineContext,
-            clazz
-          );
-        scrollBasedHandlers.add((DefinitionXmlImportIndexHandler) engineImportIndexHandlerInstance);
-        allHandlers.put(clazz.getSimpleName(), engineImportIndexHandlerInstance);
-      });
+    SCROLL_BASED_HANDLER_CLASSES.forEach(
+        clazz -> {
+          EngineImportIndexHandler<?, ?> engineImportIndexHandlerInstance =
+              (EngineImportIndexHandler) getImportIndexHandlerInstance(engineContext, clazz);
+          scrollBasedHandlers.add(
+              (DefinitionXmlImportIndexHandler) engineImportIndexHandlerInstance);
+          allHandlers.put(clazz.getSimpleName(), engineImportIndexHandlerInstance);
+        });
 
-    ALL_ENTITIES_HANDLER_CLASSES
-      .forEach(clazz -> {
-        EngineImportIndexHandler<?, ?> engineImportIndexHandlerInstance =
-          (EngineImportIndexHandler) getImportIndexHandlerInstance(
-            engineContext,
-            clazz
-          );
-        allEntitiesBasedHandlers.add((AllEntitiesBasedImportIndexHandler) engineImportIndexHandlerInstance);
-        allHandlers.put(clazz.getSimpleName(), engineImportIndexHandlerInstance);
-      });
+    ALL_ENTITIES_HANDLER_CLASSES.forEach(
+        clazz -> {
+          EngineImportIndexHandler<?, ?> engineImportIndexHandlerInstance =
+              (EngineImportIndexHandler) getImportIndexHandlerInstance(engineContext, clazz);
+          allEntitiesBasedHandlers.add(
+              (AllEntitiesBasedImportIndexHandler) engineImportIndexHandlerInstance);
+          allHandlers.put(clazz.getSimpleName(), engineImportIndexHandlerInstance);
+        });
   }
 
   public List<AllEntitiesBasedImportIndexHandler> getAllEntitiesBasedHandlers() {
@@ -117,20 +117,19 @@ public class EngineImportIndexHandlerProvider {
   }
 
   /**
-   * Instantiate index handler for given engine if it has not been instantiated yet.
-   * otherwise return already existing instance.
+   * Instantiate index handler for given engine if it has not been instantiated yet. otherwise
+   * return already existing instance.
    *
    * @param engineContext - engine alias for instantiation
-   * @param requiredType  - type of index handler
-   * @param <R>           - Index handler instance
-   * @param <C>           - Class signature of required index handler
+   * @param requiredType - type of index handler
+   * @param <R> - Index handler instance
+   * @param <C> - Class signature of required index handler
    */
-  private <R, C extends Class<R>> R getImportIndexHandlerInstance(EngineContext engineContext, C requiredType) {
+  private <R, C extends Class<R>> R getImportIndexHandlerInstance(
+      EngineContext engineContext, C requiredType) {
     R result;
     if (isInstantiated(requiredType)) {
-      result = requiredType.cast(
-        allHandlers.get(requiredType.getSimpleName())
-      );
+      result = requiredType.cast(allHandlers.get(requiredType.getSimpleName()));
     } else {
       result = beanFactory.getBean(requiredType, engineContext);
     }
@@ -140,5 +139,4 @@ public class EngineImportIndexHandlerProvider {
   private boolean isInstantiated(Class<?> handlerClass) {
     return allHandlers.get(handlerClass.getSimpleName()) != null;
   }
-
 }

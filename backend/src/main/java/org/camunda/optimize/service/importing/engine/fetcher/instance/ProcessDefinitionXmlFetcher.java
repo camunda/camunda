@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
+import static org.camunda.optimize.service.util.importing.EngineConstants.PROCESS_DEFINITION_XML_ENDPOINT_TEMPLATE;
+
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
@@ -12,15 +14,15 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.util.importing.EngineConstants.PROCESS_DEFINITION_XML_ENDPOINT_TEMPLATE;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessDefinitionXmlFetcher extends AbstractDefinitionXmlFetcher<ProcessDefinitionXmlEngineDto> {
+public class ProcessDefinitionXmlFetcher
+    extends AbstractDefinitionXmlFetcher<ProcessDefinitionXmlEngineDto> {
 
   private final ProcessDefinitionWriter processDefinitionWriter;
 
-  public ProcessDefinitionXmlFetcher(final EngineContext engineContext, final ProcessDefinitionWriter processDefinitionWriter) {
+  public ProcessDefinitionXmlFetcher(
+      final EngineContext engineContext, final ProcessDefinitionWriter processDefinitionWriter) {
     super(engineContext);
     this.processDefinitionWriter = processDefinitionWriter;
   }
@@ -39,5 +41,4 @@ public class ProcessDefinitionXmlFetcher extends AbstractDefinitionXmlFetcher<Pr
   protected Class<ProcessDefinitionXmlEngineDto> getOptimizeClassForDefinitionResponse() {
     return ProcessDefinitionXmlEngineDto.class;
   }
-
 }

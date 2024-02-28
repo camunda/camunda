@@ -5,40 +5,34 @@
  */
 package org.camunda.optimize.test.util;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
+import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.TimeZone;
-
-import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 
 /**
- * This class is a util builder that helps to freeze the date for testing, e.g
- * if you want to test that a collection has the right creation date you can set
- * you this class to freeze the time for Optimize. The production code will then use
- * this frozen date to create a new date/OffsetDateTime.
- * <p>
- * For that you can also use {@link LocalDateUtil} but with Java > 11 the OffsetDateTime
- * uses nanoseconds and the handling becomes a bit trickier. This class abstracts all this
- * away so you don't have to think the correct date handling.
+ * This class is a util builder that helps to freeze the date for testing, e.g if you want to test
+ * that a collection has the right creation date you can set you this class to freeze the time for
+ * Optimize. The production code will then use this frozen date to create a new date/OffsetDateTime.
+ *
+ * <p>For that you can also use {@link LocalDateUtil} but with Java > 11 the OffsetDateTime uses
+ * nanoseconds and the handling becomes a bit trickier. This class abstracts all this away so you
+ * don't have to think the correct date handling.
  */
 @AllArgsConstructor
 public class DateCreationFreezer {
 
   public static InnerDateFreezerBuilder dateFreezer() {
-    return new DateCreationFreezer()
-      .createNewDateFreezerBuilder()
-      .setDateToFreezeToNow();
+    return new DateCreationFreezer().createNewDateFreezerBuilder().setDateToFreezeToNow();
   }
 
   public static InnerDateFreezerBuilder dateFreezer(final OffsetDateTime dateToFreeze) {
-    return new DateCreationFreezer()
-      .createNewDateFreezerBuilder()
-      .dateToFreeze(dateToFreeze);
+    return new DateCreationFreezer().createNewDateFreezerBuilder().dateToFreeze(dateToFreeze);
   }
 
   private InnerDateFreezerBuilder createNewDateFreezerBuilder() {
@@ -86,5 +80,4 @@ public class DateCreationFreezer {
       return LocalDateUtil.getCurrentDateTime();
     }
   }
-
 }

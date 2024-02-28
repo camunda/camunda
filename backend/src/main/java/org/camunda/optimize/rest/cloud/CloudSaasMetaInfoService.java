@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.rest.cloud;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.AppName;
@@ -12,10 +15,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
 
 @Component
 @Slf4j
@@ -59,5 +58,4 @@ public class CloudSaasMetaInfoService {
   public Optional<String> getCurrentUserServiceToken() {
     return accessTokenProvider.getCurrentUsersAccessToken();
   }
-
 }

@@ -6,6 +6,9 @@
 package org.camunda.optimize.service.security.authentication;
 
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
+import jakarta.ws.rs.NotSupportedException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -14,31 +17,28 @@ import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import jakarta.ws.rs.NotSupportedException;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Response;
-
 @Component
 @Conditional(CCSaaSCondition.class)
 @Slf4j
 public class CCSaaSAuthenticationService extends AbstractAuthenticationService {
 
-  public static final String INVALID_ENDPOINT_MESSAGE = "Requests to this endpoint are not valid in Cloud mode";
+  public static final String INVALID_ENDPOINT_MESSAGE =
+      "Requests to this endpoint are not valid in Cloud mode";
 
-  public CCSaaSAuthenticationService(final SessionService sessionService,
-                                     final AuthCookieService authCookieService) {
+  public CCSaaSAuthenticationService(
+      final SessionService sessionService, final AuthCookieService authCookieService) {
     super(sessionService, authCookieService);
   }
 
   @Override
-  public Response authenticateUser(final ContainerRequestContext requestContext,
-                                   final CredentialsRequestDto credentials) {
+  public Response authenticateUser(
+      final ContainerRequestContext requestContext, final CredentialsRequestDto credentials) {
     throw new NotSupportedException(INVALID_ENDPOINT_MESSAGE);
   }
 
   @Override
-  public Response loginCallback(final ContainerRequestContext requestContext,
-                                final AuthCodeDto authCode) {
+  public Response loginCallback(
+      final ContainerRequestContext requestContext, final AuthCodeDto authCode) {
     throw new NotSupportedException(INVALID_ENDPOINT_MESSAGE);
   }
 
@@ -46,5 +46,4 @@ public class CCSaaSAuthenticationService extends AbstractAuthenticationService {
   public Response logout(final ContainerRequestContext requestContext) {
     throw new NotSupportedException(INVALID_ENDPOINT_MESSAGE);
   }
-
 }

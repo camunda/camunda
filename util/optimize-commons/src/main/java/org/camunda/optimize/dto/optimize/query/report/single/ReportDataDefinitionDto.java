@@ -5,26 +5,24 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotEmpty;
+import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 
-import java.util.List;
-import java.util.UUID;
-
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-
 @AllArgsConstructor
 @Data
 @FieldNameConstants
 @NoArgsConstructor
 public class ReportDataDefinitionDto {
-  @NotEmpty
-  private String identifier = UUID.randomUUID().toString();
+  @NotEmpty private String identifier = UUID.randomUUID().toString();
   private String key;
   private String name;
   private String displayName;
@@ -40,16 +38,23 @@ public class ReportDataDefinitionDto {
     this.tenantIds = tenantIds;
   }
 
-  public ReportDataDefinitionDto(final String key, final String name, final List<String> versions,
-                                 final List<String> tenantIds) {
+  public ReportDataDefinitionDto(
+      final String key,
+      final String name,
+      final List<String> versions,
+      final List<String> tenantIds) {
     this.key = key;
     this.name = name;
     this.versions = versions;
     this.tenantIds = tenantIds;
   }
 
-  public ReportDataDefinitionDto(final String key, final String name, final List<String> versions,
-                                 final List<String> tenantIds, final String displayName) {
+  public ReportDataDefinitionDto(
+      final String key,
+      final String name,
+      final List<String> versions,
+      final List<String> tenantIds,
+      final String displayName) {
     this.key = key;
     this.name = name;
     this.versions = versions;
@@ -57,7 +62,8 @@ public class ReportDataDefinitionDto {
     this.displayName = displayName;
   }
 
-  public ReportDataDefinitionDto(final String key, final List<String> versions, final List<String> tenantIds) {
+  public ReportDataDefinitionDto(
+      final String key, final List<String> versions, final List<String> tenantIds) {
     this.key = key;
     this.versions = versions;
     this.tenantIds = tenantIds;
@@ -68,13 +74,15 @@ public class ReportDataDefinitionDto {
     this.key = key;
   }
 
-  public ReportDataDefinitionDto(final String identifier, final String key, final String displayName) {
+  public ReportDataDefinitionDto(
+      final String identifier, final String key, final String displayName) {
     this.identifier = identifier;
     this.key = key;
     this.displayName = displayName;
   }
 
-  public ReportDataDefinitionDto(final String identifier, final String key, final List<String> versions) {
+  public ReportDataDefinitionDto(
+      final String identifier, final String key, final List<String> versions) {
     this.identifier = identifier;
     this.key = key;
     this.versions = versions;

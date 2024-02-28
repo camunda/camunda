@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import java.util.Map;
 
 @Data
 @AllArgsConstructor

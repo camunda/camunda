@@ -23,5 +23,4 @@ public class EngineDataSourceDto extends DataSourceDto implements SchedulerConfi
   public EngineDataSourceDto(final String engineAlias) {
     super(DataImportSourceType.ENGINE, engineAlias);
   }
-
 }

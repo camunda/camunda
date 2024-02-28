@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.db.es.schema.index;
 
-import org.camunda.optimize.service.db.schema.index.ProcessInstanceArchiveIndex;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
 
 import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceArchiveIndex;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public class ProcessInstanceArchiveIndexES extends ProcessInstanceArchiveIndex<XContentBuilder> {
 
@@ -26,14 +25,15 @@ public class ProcessInstanceArchiveIndexES extends ProcessInstanceArchiveIndex<X
   }
 
   @Override
-  public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
-                                           ConfigurationService configurationService) throws IOException {
+  public XContentBuilder getStaticSettings(
+      XContentBuilder xContentBuilder, ConfigurationService configurationService)
+      throws IOException {
     return xContentBuilder.field(NUMBER_OF_SHARDS_SETTING, 1);
   }
 
   @Override
-  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder) throws IOException {
+  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
+      throws IOException {
     return contentBuilder.field(key, value);
   }
-
 }

@@ -6,6 +6,12 @@
 package org.camunda.optimize.dto.optimize.query.report.combined;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,13 +19,6 @@ import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -34,9 +33,11 @@ public class CombinedReportDataDto implements ReportDataDto {
   @JsonIgnore
   public List<String> getReportIds() {
     return Optional.ofNullable(reports)
-      .map(Collection::stream)
-      .map(reportIdStream -> reportIdStream.map(CombinedReportItemDto::getId).collect(Collectors.toList()))
-      .orElse(new ArrayList<>());
+        .map(Collection::stream)
+        .map(
+            reportIdStream ->
+                reportIdStream.map(CombinedReportItemDto::getId).collect(Collectors.toList()))
+        .orElse(new ArrayList<>());
   }
 
   @Override

@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.rest.providers.CacheRequest;
-import org.camunda.optimize.service.LocalizationService;
-import org.springframework.stereotype.Component;
-
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.rest.providers.CacheRequest;
+import org.camunda.optimize.service.LocalizationService;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Path(LocalizationRestService.LOCALIZATION_PATH)

@@ -5,10 +5,27 @@
  */
 package org.camunda.optimize.service.alert;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
+import static org.camunda.bpm.engine.EntityTypes.REPORT;
+import static org.camunda.optimize.service.db.schema.index.AlertIndex.CHECK_INTERVAL;
+import static org.camunda.optimize.service.db.schema.index.AlertIndex.INTERVAL_UNIT;
+import static org.camunda.optimize.service.db.schema.index.AlertIndex.THRESHOLD_OPERATOR;
+
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -49,25 +66,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
-import static org.camunda.bpm.engine.EntityTypes.REPORT;
-import static org.camunda.optimize.service.db.schema.index.AlertIndex.CHECK_INTERVAL;
-import static org.camunda.optimize.service.db.schema.index.AlertIndex.INTERVAL_UNIT;
-import static org.camunda.optimize.service.db.schema.index.AlertIndex.THRESHOLD_OPERATOR;
-
 
 @RequiredArgsConstructor
 @Component
@@ -156,11 +154,12 @@ public class AlertService implements ReportReferencingService {
   }
 
   public List<AlertDefinitionDto> getStoredAlertsForCollection(String userId, String collectionId) {
-    List<String> authorizedReportIds = reportService
-      .findAndFilterReports(userId, collectionId)
-      .stream()
-      .map(authorizedReportDefinitionDto -> authorizedReportDefinitionDto.getDefinitionDto().getId())
-      .toList();
+    List<String> authorizedReportIds =
+        reportService.findAndFilterReports(userId, collectionId).stream()
+            .map(
+                authorizedReportDefinitionDto ->
+                    authorizedReportDefinitionDto.getDefinitionDto().getId())
+            .toList();
 
     return alertReader.getAlertsForReports(authorizedReportIds);
   }
@@ -174,7 +173,8 @@ public class AlertService implements ReportReferencingService {
   }
 
   @Override
-  public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
+  public Set<ConflictedItemDto> getConflictedItemsForReportDelete(
+      final ReportDefinitionDto reportDefinition) {
     return mapAlertsToConflictingItems(getAlertsForReport(reportDefinition.getId()));
   }
 
@@ -184,19 +184,25 @@ public class AlertService implements ReportReferencingService {
   }
 
   @Override
-  public Set<ConflictedItemDto> getConflictedItemsForReportUpdate(ReportDefinitionDto currentDefinition,
-                                                                  ReportDefinitionDto updateDefinition) {
+  public Set<ConflictedItemDto> getConflictedItemsForReportUpdate(
+      ReportDefinitionDto currentDefinition, ReportDefinitionDto updateDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
 
     if (currentDefinition instanceof SingleProcessReportDefinitionRequestDto) {
-      if (validateIfReportIsSuitableForAlert((SingleProcessReportDefinitionRequestDto) currentDefinition)
-        && !validateIfReportIsSuitableForAlert((SingleProcessReportDefinitionRequestDto) updateDefinition)) {
-        conflictedItems.addAll(mapAlertsToConflictingItems(getAlertsForReport(currentDefinition.getId())));
+      if (validateIfReportIsSuitableForAlert(
+              (SingleProcessReportDefinitionRequestDto) currentDefinition)
+          && !validateIfReportIsSuitableForAlert(
+              (SingleProcessReportDefinitionRequestDto) updateDefinition)) {
+        conflictedItems.addAll(
+            mapAlertsToConflictingItems(getAlertsForReport(currentDefinition.getId())));
       }
     } else if (currentDefinition instanceof SingleDecisionReportDefinitionRequestDto) {
-      if (validateIfReportIsSuitableForAlert((SingleDecisionReportDefinitionRequestDto) currentDefinition)
-        && !validateIfReportIsSuitableForAlert((SingleDecisionReportDefinitionRequestDto) updateDefinition)) {
-        conflictedItems.addAll(mapAlertsToConflictingItems(getAlertsForReport(currentDefinition.getId())));
+      if (validateIfReportIsSuitableForAlert(
+              (SingleDecisionReportDefinitionRequestDto) currentDefinition)
+          && !validateIfReportIsSuitableForAlert(
+              (SingleDecisionReportDefinitionRequestDto) updateDefinition)) {
+        conflictedItems.addAll(
+            mapAlertsToConflictingItems(getAlertsForReport(currentDefinition.getId())));
       }
     }
 
@@ -204,7 +210,8 @@ public class AlertService implements ReportReferencingService {
   }
 
   @Override
-  public void handleReportUpdated(final String reportId, final ReportDefinitionDto updateDefinition) {
+  public void handleReportUpdated(
+      final String reportId, final ReportDefinitionDto updateDefinition) {
     deleteAlertsIfNeeded(reportId, updateDefinition);
   }
 
@@ -213,7 +220,9 @@ public class AlertService implements ReportReferencingService {
   }
 
   private AlertDefinitionDto getAlert(String alertId) {
-    return alertReader.getAlert(alertId).orElseThrow(() -> new NotFoundException("Alert does not exist!"));
+    return alertReader
+        .getAlert(alertId)
+        .orElseThrow(() -> new NotFoundException("Alert does not exist!"));
   }
 
   public IdResponseDto createAlert(AlertCreationRequestDto toCreate, String userId) {
@@ -316,51 +325,54 @@ public class AlertService implements ReportReferencingService {
     alertWriter.deleteAlertsForReport(reportId);
   }
 
-  /**
-   * Check if it's still evaluated as number.
-   */
+  /** Check if it's still evaluated as number. */
   private void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
     if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto) {
-      SingleProcessReportDefinitionRequestDto singleReport = (SingleProcessReportDefinitionRequestDto) reportDefinition;
+      SingleProcessReportDefinitionRequestDto singleReport =
+          (SingleProcessReportDefinitionRequestDto) reportDefinition;
       if (!validateIfReportIsSuitableForAlert(singleReport)) {
         this.deleteAlertsForReport(reportId);
       }
     }
   }
 
-  private boolean validateIfReportIsSuitableForAlert(SingleProcessReportDefinitionRequestDto report) {
+  private boolean validateIfReportIsSuitableForAlert(
+      SingleProcessReportDefinitionRequestDto report) {
     final ProcessReportDataDto data = report.getData();
-    return data != null && data.getGroupBy() != null
-      && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
-      && ProcessVisualization.NUMBER.equals(data.getVisualization())
-      && data.getView().getProperties().size() == 1
-      && data.getConfiguration().getAggregationTypes().size() == 1
-      && data.getConfiguration().getUserTaskDurationTimes().size() == 1;
+    return data != null
+        && data.getGroupBy() != null
+        && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
+        && ProcessVisualization.NUMBER.equals(data.getVisualization())
+        && data.getView().getProperties().size() == 1
+        && data.getConfiguration().getAggregationTypes().size() == 1
+        && data.getConfiguration().getUserTaskDurationTimes().size() == 1;
   }
 
-  private boolean validateIfReportIsSuitableForAlert(SingleDecisionReportDefinitionRequestDto report) {
+  private boolean validateIfReportIsSuitableForAlert(
+      SingleDecisionReportDefinitionRequestDto report) {
     final DecisionReportDataDto data = report.getData();
-    return data != null && data.getGroupBy() != null
-      && DecisionGroupByType.NONE.equals(data.getGroupBy().getType())
-      && DecisionVisualization.NUMBER.equals(data.getVisualization());
+    return data != null
+        && data.getGroupBy() != null
+        && DecisionGroupByType.NONE.equals(data.getGroupBy().getType())
+        && DecisionVisualization.NUMBER.equals(data.getVisualization());
   }
 
-  private Set<ConflictedItemDto> mapAlertsToConflictingItems(List<AlertDefinitionDto> alertsForReport) {
+  private Set<ConflictedItemDto> mapAlertsToConflictingItems(
+      List<AlertDefinitionDto> alertsForReport) {
     return alertsForReport.stream()
-      .map(alertDto -> new ConflictedItemDto(alertDto.getId(), ConflictedItemType.ALERT, alertDto.getName()))
-      .collect(toSet());
+        .map(
+            alertDto ->
+                new ConflictedItemDto(
+                    alertDto.getId(), ConflictedItemType.ALERT, alertDto.getName()))
+        .collect(toSet());
   }
 
-  private void verifyUserAuthorizedToEditAlertOrFail(final AlertCreationRequestDto alertDto, final String userId) {
-    AuthorizedReportDefinitionResponseDto reportDefinitionDto = reportService.getReportDefinition(
-      alertDto.getReportId(),
-      userId
-    );
+  private void verifyUserAuthorizedToEditAlertOrFail(
+      final AlertCreationRequestDto alertDto, final String userId) {
+    AuthorizedReportDefinitionResponseDto reportDefinitionDto =
+        reportService.getReportDefinition(alertDto.getReportId(), userId);
     authorizedCollectionService.verifyUserAuthorizedToEditCollectionResources(
-      userId,
-      reportDefinitionDto.getDefinitionDto()
-        .getCollectionId()
-    );
+        userId, reportDefinitionDto.getDefinitionDto().getCollectionId());
   }
 
   private void validateAlert(AlertCreationRequestDto toCreate, String userId) {
@@ -368,15 +380,19 @@ public class AlertService implements ReportReferencingService {
     try {
       report = reportService.getReportDefinition(toCreate.getReportId(), userId).getDefinitionDto();
     } catch (Exception e) {
-      String errorMessage = "Could not create alert [" + toCreate.getName() + "]. Report id [" +
-        toCreate.getReportId() + "] does not exist.";
+      String errorMessage =
+          "Could not create alert ["
+              + toCreate.getName()
+              + "]. Report id ["
+              + toCreate.getReportId()
+              + "] does not exist.";
       log.error(errorMessage);
       throw new BadRequestException(errorMessage, e);
     }
 
     if (report.getCollectionId() == null || report.getCollectionId().isEmpty()) {
       throw new BadRequestException(
-        "Alerts cannot be created for private reports, only for reports within a collection.");
+          "Alerts cannot be created for private reports, only for reports within a collection.");
     }
 
     ValidationHelper.ensureNotEmpty(REPORT, report);
@@ -387,10 +403,13 @@ public class AlertService implements ReportReferencingService {
 
     if (report.getData() instanceof ProcessReportDataDto) {
       ProcessReportDataDto data = (ProcessReportDataDto) report.getData();
-      if (data.getView() != null && data.getView().getFirstProperty() != null &&
-        data.getView().getFirstProperty().equals(ViewProperty.PERCENTAGE) &&
-        (toCreate.getThreshold() == null || (toCreate.getThreshold() > 100 || toCreate.getThreshold() < 0))) {
-        throw new OptimizeValidationException("The threshold for alerts on % reports must be between 0 and 100.");
+      if (data.getView() != null
+          && data.getView().getFirstProperty() != null
+          && data.getView().getFirstProperty().equals(ViewProperty.PERCENTAGE)
+          && (toCreate.getThreshold() == null
+              || (toCreate.getThreshold() > 100 || toCreate.getThreshold() < 0))) {
+        throw new OptimizeValidationException(
+            "The threshold for alerts on % reports must be between 0 and 100.");
       }
     }
 
@@ -401,7 +420,7 @@ public class AlertService implements ReportReferencingService {
     final boolean webhookDefined = StringUtils.isNotBlank(toCreate.getWebhook());
     if (!emailsDefined && !webhookDefined) {
       throw new OptimizeValidationException(
-        "The fields [emails] and [webhook] are not allowed to both be empty. At least one of them must be set.");
+          "The fields [emails] and [webhook] are not allowed to both be empty. At least one of them must be set.");
     }
   }
 
@@ -423,26 +442,27 @@ public class AlertService implements ReportReferencingService {
   }
 
   private List<Trigger> createReminderTriggers(Map<AlertDefinitionDto, JobDetail> reminderDetails) {
-    return reminderDetails.entrySet()
-      .stream()
-      .filter(entry -> Objects.nonNull(entry.getKey().getReminder()))
-      .map(entry -> alertReminderJobFactory.createTrigger(entry.getKey(), entry.getValue()))
-      .collect(Collectors.toList());
+    return reminderDetails.entrySet().stream()
+        .filter(entry -> Objects.nonNull(entry.getKey().getReminder()))
+        .map(entry -> alertReminderJobFactory.createTrigger(entry.getKey(), entry.getValue()))
+        .collect(Collectors.toList());
   }
 
   private List<Trigger> createCheckTriggers(Map<AlertDefinitionDto, JobDetail> details) {
-    return details.entrySet()
-      .stream()
-      .map(entry -> alertCheckJobFactory.createTrigger(entry.getKey(), entry.getValue()))
-      .collect(Collectors.toList());
+    return details.entrySet().stream()
+        .map(entry -> alertCheckJobFactory.createTrigger(entry.getKey(), entry.getValue()))
+        .collect(Collectors.toList());
   }
 
-  private Map<AlertDefinitionDto, JobDetail> createReminderDetails(List<AlertDefinitionDto> alerts) {
-    return alerts.stream().collect(Collectors.toMap(alert -> alert, alertReminderJobFactory::createJobDetails));
+  private Map<AlertDefinitionDto, JobDetail> createReminderDetails(
+      List<AlertDefinitionDto> alerts) {
+    return alerts.stream()
+        .collect(Collectors.toMap(alert -> alert, alertReminderJobFactory::createJobDetails));
   }
 
   private Map<AlertDefinitionDto, JobDetail> createCheckDetails(List<AlertDefinitionDto> alerts) {
-    return alerts.stream().collect(Collectors.toMap(alert -> alert, alertCheckJobFactory::createJobDetails));
+    return alerts.stream()
+        .collect(Collectors.toMap(alert -> alert, alertCheckJobFactory::createJobDetails));
   }
 
   private JobListener createReminderListener() {
@@ -451,21 +471,31 @@ public class AlertService implements ReportReferencingService {
 
   private void checkAlertWebhooksAllExist(List<AlertDefinitionDto> alerts) {
     final Set<String> webhooks = configurationService.getConfiguredWebhooks().keySet();
-    final Map<String, List<String>> missingWebhookMap = alerts.stream()
-      .filter(alert -> StringUtils.isNotEmpty(alert.getWebhook()) && !webhooks.contains(alert.getWebhook()))
-      .collect(groupingBy(AlertCreationRequestDto::getWebhook, mapping(AlertDefinitionDto::getId, toList())));
+    final Map<String, List<String>> missingWebhookMap =
+        alerts.stream()
+            .filter(
+                alert ->
+                    StringUtils.isNotEmpty(alert.getWebhook())
+                        && !webhooks.contains(alert.getWebhook()))
+            .collect(
+                groupingBy(
+                    AlertCreationRequestDto::getWebhook,
+                    mapping(AlertDefinitionDto::getId, toList())));
     if (!missingWebhookMap.isEmpty()) {
-      final String missingWebhookSummary = missingWebhookMap.entrySet()
-        .stream()
-        .map(entry -> String.format("Webhook: [%s] - Associated with alert(s): %s", entry.getKey(), entry.getValue()))
-        .collect(Collectors.joining("\n"));
-      final String errorMsg = String.format(
-        "The following webhooks no longer exist in Optimize configuration, yet are associated with existing " +
-          "alerts:%n%s",
-        missingWebhookSummary
-      );
+      final String missingWebhookSummary =
+          missingWebhookMap.entrySet().stream()
+              .map(
+                  entry ->
+                      String.format(
+                          "Webhook: [%s] - Associated with alert(s): %s",
+                          entry.getKey(), entry.getValue()))
+              .collect(Collectors.joining("\n"));
+      final String errorMsg =
+          String.format(
+              "The following webhooks no longer exist in Optimize configuration, yet are associated with existing "
+                  + "alerts:%n%s",
+              missingWebhookSummary);
       log.error(errorMsg);
     }
   }
-
 }

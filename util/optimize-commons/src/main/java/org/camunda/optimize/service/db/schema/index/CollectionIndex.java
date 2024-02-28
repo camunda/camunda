@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+
+import java.io.IOException;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
@@ -12,12 +17,6 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestD
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
-
-import java.io.IOException;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 public abstract class CollectionIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -40,48 +39,48 @@ public abstract class CollectionIndex<TBuilder> extends DefaultIndexMappingCreat
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    XContentBuilder newBuilder = xContentBuilder
-    .startObject(ID)
-      .field("type", "keyword")
-    .endObject()
-    .startObject(BaseCollectionDefinitionDto.Fields.name.name())
-      .field("type", "keyword")
-    .endObject()
-    .startObject(BaseCollectionDefinitionDto.Fields.lastModified.name())
-      .field("type", "date")
-      .field("format", OPTIMIZE_DATE_FORMAT)
-    .endObject()
-    .startObject(BaseCollectionDefinitionDto.Fields.created.name())
-      .field("type", "date")
-      .field("format", OPTIMIZE_DATE_FORMAT)
-    .endObject()
-    .startObject(BaseCollectionDefinitionDto.Fields.owner.name())
-      .field("type", "keyword")
-    .endObject()
-    .startObject(BaseCollectionDefinitionDto.Fields.lastModifier.name())
-      .field("type", "keyword")
-    .endObject()
-    .startObject(BaseCollectionDefinitionDto.Fields.automaticallyCreated.name())
-      .field("type", "boolean")
-    .endObject();
+    XContentBuilder newBuilder =
+        xContentBuilder
+            .startObject(ID)
+            .field("type", "keyword")
+            .endObject()
+            .startObject(BaseCollectionDefinitionDto.Fields.name.name())
+            .field("type", "keyword")
+            .endObject()
+            .startObject(BaseCollectionDefinitionDto.Fields.lastModified.name())
+            .field("type", "date")
+            .field("format", OPTIMIZE_DATE_FORMAT)
+            .endObject()
+            .startObject(BaseCollectionDefinitionDto.Fields.created.name())
+            .field("type", "date")
+            .field("format", OPTIMIZE_DATE_FORMAT)
+            .endObject()
+            .startObject(BaseCollectionDefinitionDto.Fields.owner.name())
+            .field("type", "keyword")
+            .endObject()
+            .startObject(BaseCollectionDefinitionDto.Fields.lastModifier.name())
+            .field("type", "keyword")
+            .endObject()
+            .startObject(BaseCollectionDefinitionDto.Fields.automaticallyCreated.name())
+            .field("type", "boolean")
+            .endObject();
     newBuilder = addDataField(newBuilder);
     return newBuilder;
-     // @formatter:on
+    // @formatter:on
   }
 
   private XContentBuilder addDataField(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    final XContentBuilder contentBuilder = xContentBuilder.
-      startObject(DATA)
-        .field("type", "nested")
-        .startObject("properties")
-          .startObject(CollectionDataDto.Fields.configuration.name())
+    final XContentBuilder contentBuilder =
+        xContentBuilder
+            .startObject(DATA)
+            .field("type", "nested")
+            .startObject("properties")
+            .startObject(CollectionDataDto.Fields.configuration.name())
             .field(MAPPING_ENABLED_SETTING, false)
-          .endObject();
-          addRolesField(contentBuilder);
-          addScopeField(contentBuilder)
-        .endObject()
-      .endObject();
+            .endObject();
+    addRolesField(contentBuilder);
+    addScopeField(contentBuilder).endObject().endObject();
     // @formatter:on
     return contentBuilder;
   }
@@ -89,53 +88,52 @@ public abstract class CollectionIndex<TBuilder> extends DefaultIndexMappingCreat
   private XContentBuilder addScopeField(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(SCOPE)
+        .startObject(SCOPE)
         .field("type", "nested")
         .startObject("properties")
-          .startObject(CollectionScopeEntryDto.Fields.definitionKey.name())
-            .field("type", "keyword")
-          .endObject()
-          .startObject(CollectionScopeEntryDto.Fields.definitionType.name())
-            .field("type", "keyword")
-          .endObject()
-          .startObject(CollectionScopeEntryDto.Fields.id.name())
-            .field("type", "keyword")
-          .endObject()
-          .startObject(CollectionScopeEntryDto.Fields.tenants.name())
-            .field("type", "keyword")
-          .endObject()
+        .startObject(CollectionScopeEntryDto.Fields.definitionKey.name())
+        .field("type", "keyword")
         .endObject()
-      .endObject();
+        .startObject(CollectionScopeEntryDto.Fields.definitionType.name())
+        .field("type", "keyword")
+        .endObject()
+        .startObject(CollectionScopeEntryDto.Fields.id.name())
+        .field("type", "keyword")
+        .endObject()
+        .startObject(CollectionScopeEntryDto.Fields.tenants.name())
+        .field("type", "keyword")
+        .endObject()
+        .endObject()
+        .endObject();
 
     // @formatter:on
   }
 
   private XContentBuilder addRolesField(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    return xContentBuilder.
-      startObject(CollectionDataDto.Fields.roles.name())
+    return xContentBuilder
+        .startObject(CollectionDataDto.Fields.roles.name())
         .field("type", "nested")
         .startObject("properties")
-          .startObject(CollectionRoleRequestDto.Fields.id.name())
-              .field("type", "keyword")
-          .endObject()
-          .startObject(CollectionRoleRequestDto.Fields.identity.name())
-            .field("type", "object")
-            .startObject("properties")
-              .startObject(IdentityDto.Fields.id)
-                .field("type", "keyword")
-              .endObject()
-              .startObject(IdentityDto.Fields.type)
-                .field("type", "keyword")
-              .endObject()
-            .endObject()
-          .endObject()
-          .startObject(CollectionRoleRequestDto.Fields.role.name())
-            .field("type", "keyword")
-          .endObject()
+        .startObject(CollectionRoleRequestDto.Fields.id.name())
+        .field("type", "keyword")
         .endObject()
-      .endObject();
+        .startObject(CollectionRoleRequestDto.Fields.identity.name())
+        .field("type", "object")
+        .startObject("properties")
+        .startObject(IdentityDto.Fields.id)
+        .field("type", "keyword")
+        .endObject()
+        .startObject(IdentityDto.Fields.type)
+        .field("type", "keyword")
+        .endObject()
+        .endObject()
+        .endObject()
+        .startObject(CollectionRoleRequestDto.Fields.role.name())
+        .field("type", "keyword")
+        .endObject()
+        .endObject()
+        .endObject();
     // @formatter:on
   }
-
 }

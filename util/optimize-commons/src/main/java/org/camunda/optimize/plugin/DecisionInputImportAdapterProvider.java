@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.plugin;
 
+import java.util.List;
 import org.camunda.optimize.plugin.importing.variable.DecisionInputImportAdapter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class DecisionInputImportAdapterProvider extends PluginProvider<DecisionInputImportAdapter> {
 
-  public DecisionInputImportAdapterProvider(final ConfigurationService configurationService,
-                                            final PluginJarFileLoader pluginJarLoader) {
+  public DecisionInputImportAdapterProvider(
+      final ConfigurationService configurationService, final PluginJarFileLoader pluginJarLoader) {
     super(configurationService, pluginJarLoader);
   }
 

@@ -5,6 +5,15 @@
  */
 package org.camunda.optimize.service.alert;
 
+import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
+import static org.quartz.TriggerBuilder.newTrigger;
+
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.quartz.Job;
@@ -16,16 +25,6 @@ import org.quartz.TriggerKey;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.quartz.JobDetailFactoryBean;
 
-import java.time.Duration;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
-import static org.quartz.TriggerBuilder.newTrigger;
-
 public abstract class AbstractAlertFactory<T extends Job> {
 
   private final ApplicationContext applicationContext;
@@ -36,9 +35,10 @@ public abstract class AbstractAlertFactory<T extends Job> {
 
   private long durationInMs(AlertInterval checkInterval) {
     return Duration.between(
-      OffsetDateTime.now(),
-      OffsetDateTime.now().plus(checkInterval.getValue(), unitOf(checkInterval.getUnit().name()))
-    ).toMillis();
+            OffsetDateTime.now(),
+            OffsetDateTime.now()
+                .plus(checkInterval.getValue(), unitOf(checkInterval.getUnit().name())))
+        .toMillis();
   }
 
   private ChronoUnit unitOf(String unit) {
@@ -48,21 +48,20 @@ public abstract class AbstractAlertFactory<T extends Job> {
   public Trigger createTrigger(AlertDefinitionDto alert, JobDetail jobDetail) {
     SimpleTrigger trigger = null;
     if (getInterval(alert) != null) {
-      OffsetDateTime startFuture = OffsetDateTime.now()
-        .plus(
-          getInterval(alert).getValue(),
-          unitOf(getInterval(alert).getUnit().name())
-        );
+      OffsetDateTime startFuture =
+          OffsetDateTime.now()
+              .plus(getInterval(alert).getValue(), unitOf(getInterval(alert).getUnit().name()));
 
-      trigger = newTrigger()
-        .withIdentity(getTriggerName(alert), getTriggerGroup())
-        .startAt(new Date(startFuture.toInstant().toEpochMilli()))
-        .withSchedule(simpleSchedule()
-                        .withIntervalInMilliseconds(durationInMs(getInterval(alert)))
-                        .repeatForever()
-        )
-        .forJob(jobDetail)
-        .build();
+      trigger =
+          newTrigger()
+              .withIdentity(getTriggerName(alert), getTriggerGroup())
+              .startAt(new Date(startFuture.toInstant().toEpochMilli()))
+              .withSchedule(
+                  simpleSchedule()
+                      .withIntervalInMilliseconds(durationInMs(getInterval(alert)))
+                      .repeatForever())
+              .forJob(jobDetail)
+              .build();
     }
     return trigger;
   }
@@ -89,10 +88,7 @@ public abstract class AbstractAlertFactory<T extends Job> {
   }
 
   protected JobKey getJobKey(AlertDefinitionDto alert) {
-    return new JobKey(
-      this.getJobName(alert),
-      this.getJobGroup()
-    );
+    return new JobKey(this.getJobName(alert), this.getJobGroup());
   }
 
   protected TriggerKey getTriggerKey(AlertDefinitionDto toDelete) {

@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.valu
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
-
 public class DecisionGroupByDtoCreator {
 
   public static DecisionGroupByDto createGroupDecisionByNone() {
@@ -26,9 +25,11 @@ public class DecisionGroupByDtoCreator {
     return createGroupDecisionByEvaluationDateTime(null);
   }
 
-  public static DecisionGroupByDto createGroupDecisionByEvaluationDateTime(AggregateByDateUnit groupByDateUnit) {
+  public static DecisionGroupByDto createGroupDecisionByEvaluationDateTime(
+      AggregateByDateUnit groupByDateUnit) {
     DecisionGroupByEvaluationDateTimeDto groupByDto = new DecisionGroupByEvaluationDateTimeDto();
-    DecisionGroupByEvaluationDateTimeValueDto valueDto = new DecisionGroupByEvaluationDateTimeValueDto();
+    DecisionGroupByEvaluationDateTimeValueDto valueDto =
+        new DecisionGroupByEvaluationDateTimeValueDto();
     valueDto.setUnit(groupByDateUnit);
     groupByDto.setValue(valueDto);
 
@@ -39,9 +40,8 @@ public class DecisionGroupByDtoCreator {
     return createGroupDecisionByInputVariable(null, null, null);
   }
 
-  public static DecisionGroupByDto createGroupDecisionByInputVariable(String variableId,
-                                                                      String variableName,
-                                                                      VariableType variableType) {
+  public static DecisionGroupByDto createGroupDecisionByInputVariable(
+      String variableId, String variableName, VariableType variableType) {
     DecisionGroupByVariableValueDto groupByValueDto = new DecisionGroupByVariableValueDto();
     groupByValueDto.setId(variableId);
     groupByValueDto.setName(variableName);
@@ -55,9 +55,8 @@ public class DecisionGroupByDtoCreator {
     return createGroupDecisionByOutputVariable(null, null, null);
   }
 
-  public static DecisionGroupByDto createGroupDecisionByOutputVariable(String variableId,
-                                                                       String variableName,
-                                                                       VariableType variableType) {
+  public static DecisionGroupByDto createGroupDecisionByOutputVariable(
+      String variableId, String variableName, VariableType variableType) {
     DecisionGroupByVariableValueDto groupByValueDto = new DecisionGroupByVariableValueDto();
     groupByValueDto.setId(variableId);
     groupByValueDto.setName(variableName);
@@ -66,5 +65,4 @@ public class DecisionGroupByDtoCreator {
     groupByDto.setValue(groupByValueDto);
     return groupByDto;
   }
-
 }

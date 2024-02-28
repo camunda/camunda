@@ -5,19 +5,19 @@
  */
 package org.camunda.optimize.service.util.configuration.extension;
 
+import static java.lang.System.getProperties;
+import static java.lang.System.setProperties;
+
+import java.util.Properties;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import java.util.Properties;
-
-import static java.lang.System.getProperties;
-import static java.lang.System.setProperties;
-
 /**
- * Extension to allow manipulation of System Properties and restore their state after test completion
+ * Extension to allow manipulation of System Properties and restore their state after test
+ * completion
  */
 @Slf4j
 @NoArgsConstructor
@@ -41,5 +41,4 @@ public class SystemPropertiesExtension implements BeforeEachCallback, AfterEachC
     copy.putAll(source);
     return copy;
   }
-
 }

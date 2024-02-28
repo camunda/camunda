@@ -11,7 +11,8 @@ import org.camunda.optimize.service.db.es.report.ReportEvaluationContext;
 import org.camunda.optimize.service.db.es.report.command.exec.DecisionReportCmdExecutionPlan;
 import org.camunda.optimize.service.db.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 
-public abstract class DecisionCmd<T> implements Command<T, SingleDecisionReportDefinitionRequestDto> {
+public abstract class DecisionCmd<T>
+    implements Command<T, SingleDecisionReportDefinitionRequestDto> {
 
   protected final DecisionReportCmdExecutionPlan<T> executionPlan;
 
@@ -20,11 +21,14 @@ public abstract class DecisionCmd<T> implements Command<T, SingleDecisionReportD
   }
 
   @Override
-  public CommandEvaluationResult<T> evaluate(final ReportEvaluationContext<SingleDecisionReportDefinitionRequestDto> reportEvaluationContext) {
+  public CommandEvaluationResult<T> evaluate(
+      final ReportEvaluationContext<SingleDecisionReportDefinitionRequestDto>
+          reportEvaluationContext) {
     return executionPlan.evaluate(reportEvaluationContext);
   }
 
-  protected abstract DecisionReportCmdExecutionPlan<T> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder);
+  protected abstract DecisionReportCmdExecutionPlan<T> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder);
 
   @Override
   public String createCommandKey() {

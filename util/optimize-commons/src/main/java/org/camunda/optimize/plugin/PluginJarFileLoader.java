@@ -5,11 +5,6 @@
  */
 package org.camunda.optimize.plugin;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,6 +13,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -33,9 +32,7 @@ public class PluginJarFileLoader {
     }
 
     try (Stream<Path> paths = Files.list(getPluginsDirectoryPath())) {
-      return paths
-        .filter(s -> s.toString().endsWith(".jar"))
-        .collect(Collectors.toList());
+      return paths.filter(s -> s.toString().endsWith(".jar")).collect(Collectors.toList());
     } catch (IOException e) {
       log.error("There was an error reading the plugin directory! ");
     }
@@ -45,5 +42,4 @@ public class PluginJarFileLoader {
   private Path getPluginsDirectoryPath() {
     return Paths.get(configurationService.getPluginDirectory());
   }
-
 }

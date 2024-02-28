@@ -22,5 +22,4 @@ public class RelativeDateFilterStartDto {
 
   protected Long value;
   protected DateUnit unit;
-
 }

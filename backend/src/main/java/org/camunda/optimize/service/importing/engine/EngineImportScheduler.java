@@ -5,26 +5,27 @@
  */
 package org.camunda.optimize.service.importing.engine;
 
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
-import org.camunda.optimize.service.importing.AbstractImportScheduler;
-import org.camunda.optimize.service.importing.ImportMediator;
-import org.camunda.optimize.service.importing.engine.service.ImportObserver;
-
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
+import org.camunda.optimize.service.importing.AbstractImportScheduler;
+import org.camunda.optimize.service.importing.ImportMediator;
+import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 
 @Slf4j
 public class EngineImportScheduler extends AbstractImportScheduler<EngineDataSourceDto> {
-  // Iterating through this synchronized list is only thread-safe when synchronizing on the list itself, as per docs
-  private final List<ImportObserver> importObservers = Collections.synchronizedList(new LinkedList<>());
+  // Iterating through this synchronized list is only thread-safe when synchronizing on the list
+  // itself, as per docs
+  private final List<ImportObserver> importObservers =
+      Collections.synchronizedList(new LinkedList<>());
 
-  public EngineImportScheduler(final List<ImportMediator> importMediators,
-                               final EngineDataSourceDto dataImportSourceDto) {
+  public EngineImportScheduler(
+      final List<ImportMediator> importMediators, final EngineDataSourceDto dataImportSourceDto) {
     super(importMediators, dataImportSourceDto);
   }
 
@@ -38,10 +39,10 @@ public class EngineImportScheduler extends AbstractImportScheduler<EngineDataSou
 
   @Override
   public Future<Void> runImportRound(final boolean forceImport) {
-    List<ImportMediator> currentImportRound = importMediators
-      .stream()
-      .filter(mediator -> forceImport || mediator.canImport())
-      .collect(Collectors.toList());
+    List<ImportMediator> currentImportRound =
+        importMediators.stream()
+            .filter(mediator -> forceImport || mediator.canImport())
+            .collect(Collectors.toList());
     if (nothingToBeImported(currentImportRound)) {
       this.isImporting = false;
       if (!hasActiveImportJobs()) {
@@ -77,5 +78,4 @@ public class EngineImportScheduler extends AbstractImportScheduler<EngineDataSou
       }
     }
   }
-
 }

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import java.time.ZoneId;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 
-import java.time.ZoneId;
-
 public interface BranchAnalysisReader {
 
-  BranchAnalysisResponseDto branchAnalysis(final BranchAnalysisRequestDto request, final ZoneId timezone);
-
+  BranchAnalysisResponseDto branchAnalysis(
+      final BranchAnalysisRequestDto request, final ZoneId timezone);
 }

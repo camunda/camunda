@@ -5,7 +5,18 @@
  */
 package org.camunda.optimize.service.db.writer;
 
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COMBINED;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.CREATED;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.LAST_MODIFIED;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.LAST_MODIFIER;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.NAME;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.OWNER;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.REPORT_TYPE;
+import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.DATA;
+
 import com.google.common.collect.ImmutableSet;
+import java.util.Set;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
@@ -17,45 +28,44 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
 
-import java.util.Set;
-
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COMBINED;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.CREATED;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.LAST_MODIFIED;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.LAST_MODIFIER;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.NAME;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.OWNER;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.REPORT_TYPE;
-import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.DATA;
-
 public interface ReportWriter {
 
-  Set<String> UPDATABLE_FIELDS = ImmutableSet.of(
-    NAME, DATA, LAST_MODIFIED, LAST_MODIFIER, CREATED, OWNER, COLLECTION_ID, COMBINED, REPORT_TYPE
-  );
+  Set<String> UPDATABLE_FIELDS =
+      ImmutableSet.of(
+          NAME,
+          DATA,
+          LAST_MODIFIED,
+          LAST_MODIFIER,
+          CREATED,
+          OWNER,
+          COLLECTION_ID,
+          COMBINED,
+          REPORT_TYPE);
 
-  String PROCESS_DEFINITION_PROPERTY = String.join(
-    ".", DATA, SingleReportDataDto.Fields.definitions, ReportDataDefinitionDto.Fields.key
-  );
+  String PROCESS_DEFINITION_PROPERTY =
+      String.join(
+          ".", DATA, SingleReportDataDto.Fields.definitions, ReportDataDefinitionDto.Fields.key);
 
-  IdResponseDto createNewCombinedReport(@NonNull final String userId,
-                                        @NonNull final CombinedReportDataDto reportData,
-                                        @NonNull final String reportName,
-                                        final String description,
-                                        final String collectionId);
+  IdResponseDto createNewCombinedReport(
+      @NonNull final String userId,
+      @NonNull final CombinedReportDataDto reportData,
+      @NonNull final String reportName,
+      final String description,
+      final String collectionId);
 
-  IdResponseDto createNewSingleProcessReport(final String userId,
-                                             @NonNull final ProcessReportDataDto reportData,
-                                             @NonNull final String reportName,
-                                             final String description,
-                                             final String collectionId);
+  IdResponseDto createNewSingleProcessReport(
+      final String userId,
+      @NonNull final ProcessReportDataDto reportData,
+      @NonNull final String reportName,
+      final String description,
+      final String collectionId);
 
-  IdResponseDto createNewSingleDecisionReport(@NonNull final String userId,
-                                              @NonNull final DecisionReportDataDto reportData,
-                                              @NonNull final String reportName,
-                                              final String description,
-                                              final String collectionId);
+  IdResponseDto createNewSingleDecisionReport(
+      @NonNull final String userId,
+      @NonNull final DecisionReportDataDto reportData,
+      @NonNull final String reportName,
+      final String description,
+      final String collectionId);
 
   void updateSingleProcessReport(final SingleProcessReportDefinitionUpdateDto reportUpdate);
 
@@ -63,8 +73,8 @@ public interface ReportWriter {
 
   void updateCombinedReport(final ReportDefinitionUpdateDto updatedReport);
 
-  void updateProcessDefinitionXmlForProcessReportsWithKey(final String definitionKey,
-                                                          final String definitionXml);
+  void updateProcessDefinitionXmlForProcessReportsWithKey(
+      final String definitionKey, final String definitionXml);
 
   void deleteAllManagementReports();
 
@@ -75,5 +85,4 @@ public interface ReportWriter {
   void deleteCombinedReport(final String reportId);
 
   void deleteAllReportsOfCollection(String collectionId);
-
 }

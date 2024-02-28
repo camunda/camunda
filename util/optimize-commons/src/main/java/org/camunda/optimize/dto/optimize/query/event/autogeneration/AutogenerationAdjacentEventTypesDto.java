@@ -5,18 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.autogeneration;
 
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Data
 @Builder
 public class AutogenerationAdjacentEventTypesDto {
-  @Builder.Default
-  private List<EventTypeDto> precedingEvents = new ArrayList<>();
-  @Builder.Default
-  private List<EventTypeDto> succeedingEvents = new ArrayList<>();
+  @Builder.Default private List<EventTypeDto> precedingEvents = new ArrayList<>();
+  @Builder.Default private List<EventTypeDto> succeedingEvents = new ArrayList<>();
 }

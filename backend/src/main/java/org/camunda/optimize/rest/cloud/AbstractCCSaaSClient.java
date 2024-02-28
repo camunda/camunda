@@ -5,7 +5,14 @@
  */
 package org.camunda.optimize.rest.cloud;
 
+import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.CONSOLE;
+import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.MODELER;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
+import jakarta.ws.rs.core.HttpHeaders;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -17,14 +24,6 @@ import org.camunda.optimize.service.util.configuration.security.CloudAuthConfigu
 import org.camunda.optimize.service.util.configuration.users.CloudUsersConfiguration;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.core.HttpHeaders;
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
-import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.CONSOLE;
-import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.MODELER;
 
 @Component
 @Conditional(CCSaaSCondition.class)
@@ -38,37 +37,41 @@ public abstract class AbstractCCSaaSClient {
   // E.g. https://console.cloud.dev.ultrawombat.com
   protected static final String CONSOLE_ROOTURL_TEMPLATE = "https://" + CONSOLE + ".cloud%s";
   // E.g. https://console.cloud.dev.ultrawombat.com/org/<ORG_ID>/cluster/<CLUSTER_ID>
-  protected static final String CONSOLE_URL_TEMPLATE = CONSOLE_ROOTURL_TEMPLATE + "/org/%s/cluster/%s";
+  protected static final String CONSOLE_URL_TEMPLATE =
+      CONSOLE_ROOTURL_TEMPLATE + "/org/%s/cluster/%s";
   // Prod domain as fall back
   protected static final String DEFAULT_DOMAIN_WHEN_ERROR_OCCURS = ".camunda.io";
-
 
   protected final CloseableHttpClient httpClient;
   protected final ObjectMapper objectMapper;
   protected final ConfigurationService configurationService;
 
-  protected AbstractCCSaaSClient(final ObjectMapper objectMapper, final ConfigurationService configurationService) {
+  protected AbstractCCSaaSClient(
+      final ObjectMapper objectMapper, final ConfigurationService configurationService) {
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
     HttpClientBuilder builder = HttpClientBuilder.create();
 
-    // Setting a general timeout for external requests to 5000 milliseconds, so that outgoing requests don't block the
+    // Setting a general timeout for external requests to 5000 milliseconds, so that outgoing
+    // requests don't block the
     // execution flow from Optimize
     int timeout = 5000;
     builder.setConnectionTimeToLive(timeout, TimeUnit.MILLISECONDS);
     builder.evictIdleConnections(timeout, TimeUnit.MILLISECONDS);
-    RequestConfig rc = RequestConfig.custom()
-      .setConnectionRequestTimeout(timeout)
-      .setConnectTimeout(timeout)
-      .setSocketTimeout(timeout)
-      .build();
+    RequestConfig rc =
+        RequestConfig.custom()
+            .setConnectionRequestTimeout(timeout)
+            .setConnectTimeout(timeout)
+            .setSocketTimeout(timeout)
+            .build();
     builder.setDefaultRequestConfig(rc);
     this.httpClient = builder.build();
   }
 
   // In case the connection times out, the execution will throw a SocketTimeoutException or a
   // ConnectionTimeoutException (depending on the reason), which are both also IOExceptions
-  public CloseableHttpResponse performRequest(final HttpRequestBase request, final String accessToken) throws IOException {
+  public CloseableHttpResponse performRequest(
+      final HttpRequestBase request, final String accessToken) throws IOException {
     request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
     return httpClient.execute(request);
   }

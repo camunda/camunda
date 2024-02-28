@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.service.importing.zeebe.mediator;
 
+import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
+import static org.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
+
+import java.util.List;
 import org.camunda.optimize.OptimizeMetrics;
 import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
 import org.camunda.optimize.service.importing.PositionBasedImportMediator;
@@ -18,23 +22,19 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
-import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
-import static org.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ZeebeIncidentImportMediator
-  extends PositionBasedImportMediator<ZeebeIncidentImportIndexHandler, ZeebeIncidentRecordDto> {
+    extends PositionBasedImportMediator<ZeebeIncidentImportIndexHandler, ZeebeIncidentRecordDto> {
 
   private final ZeebeIncidentFetcher zeebeIncidentFetcher;
 
-  public ZeebeIncidentImportMediator(final ZeebeIncidentImportIndexHandler importIndexHandler,
-                                     final ZeebeIncidentFetcher zeebeIncidentFetcher,
-                                     final ZeebeIncidentImportService importService,
-                                     final ConfigurationService configurationService,
-                                     final BackoffCalculator idleBackoffCalculator) {
+  public ZeebeIncidentImportMediator(
+      final ZeebeIncidentImportIndexHandler importIndexHandler,
+      final ZeebeIncidentFetcher zeebeIncidentFetcher,
+      final ZeebeIncidentImportService importService,
+      final ConfigurationService configurationService,
+      final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.zeebeIncidentFetcher = zeebeIncidentFetcher;
     this.importService = importService;
@@ -64,7 +64,9 @@ public class ZeebeIncidentImportMediator
 
   private List<ZeebeIncidentRecordDto> getIncidents() {
     return OptimizeMetrics.getTimer(NEW_PAGE_FETCH_TIME_METRIC, getRecordType(), getPartitionId())
-      .record(() -> zeebeIncidentFetcher.getZeebeRecordsForPrefixAndPartitionFrom(importIndexHandler.getNextPage()));
+        .record(
+            () ->
+                zeebeIncidentFetcher.getZeebeRecordsForPrefixAndPartitionFrom(
+                    importIndexHandler.getNextPage()));
   }
-
 }

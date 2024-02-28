@@ -5,24 +5,24 @@
  */
 package org.camunda.optimize.service.importing.engine.handler;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
-import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
-
 @Slf4j
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionXmlImportIndexHandler extends DefinitionXmlImportIndexHandler {
 
-  private static final String PROCESS_DEFINITION_XML_IMPORT_INDEX_DOC_ID = "processDefinitionXmlImportIndex";
+  private static final String PROCESS_DEFINITION_XML_IMPORT_INDEX_DOC_ID =
+      "processDefinitionXmlImportIndex";
 
   private final EngineContext engineContext;
 
@@ -38,17 +38,15 @@ public class ProcessDefinitionXmlImportIndexHandler extends DefinitionXmlImportI
   @Override
   protected Set<String> performSearchQuery() {
     return databaseClient.performSearchDefinitionQuery(
-      PROCESS_DEFINITION_INDEX_NAME,
-      PROCESS_DEFINITION_XML,
-      PROCESS_DEFINITION_ID,
-      configurationService.getEngineImportProcessDefinitionXmlMaxPageSize(),
-      getEngineAlias()
-    );
+        PROCESS_DEFINITION_INDEX_NAME,
+        PROCESS_DEFINITION_XML,
+        PROCESS_DEFINITION_ID,
+        configurationService.getEngineImportProcessDefinitionXmlMaxPageSize(),
+        getEngineAlias());
   }
 
   @Override
   protected String getDatabaseTypeForStoring() {
     return PROCESS_DEFINITION_XML_IMPORT_INDEX_DOC_ID;
   }
-
 }

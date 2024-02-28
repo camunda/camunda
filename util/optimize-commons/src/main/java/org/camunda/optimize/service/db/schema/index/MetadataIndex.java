@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.camunda.optimize.dto.optimize.query.MetadataDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.xcontent.XContentBuilder;
-
 import java.io.IOException;
+import org.camunda.optimize.dto.optimize.query.MetadataDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class MetadataIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
@@ -35,15 +34,15 @@ public abstract class MetadataIndex<TBuilder> extends DefaultIndexMappingCreator
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(SCHEMA_VERSION)
+        .startObject(SCHEMA_VERSION)
         .field("type", "keyword")
-      .endObject()
-      .startObject(INSTALLATION_ID)
+        .endObject()
+        .startObject(INSTALLATION_ID)
         .field("type", "keyword")
-      .endObject()
-      .startObject(OPTIMIZE_MODE)
+        .endObject()
+        .startObject(OPTIMIZE_MODE)
         .field("type", "keyword")
-      .endObject();
+        .endObject();
     // @formatter:on
   }
 }

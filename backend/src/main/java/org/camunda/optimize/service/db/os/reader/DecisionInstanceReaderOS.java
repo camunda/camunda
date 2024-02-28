@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.db.os.reader;
 
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.reader.DecisionInstanceReader;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @AllArgsConstructor
 @Component
@@ -26,5 +25,4 @@ public class DecisionInstanceReaderOS implements DecisionInstanceReader {
     log.error("Functionality not implemented for OpenSearch");
     return new HashSet<>();
   }
-
 }

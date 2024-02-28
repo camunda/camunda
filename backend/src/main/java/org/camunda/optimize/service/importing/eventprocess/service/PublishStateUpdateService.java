@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing.eventprocess.service;
 
+import java.math.RoundingMode;
+import java.time.Duration;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Precision;
@@ -13,9 +15,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
 import org.camunda.optimize.service.db.EventProcessInstanceIndexManager;
 import org.camunda.optimize.service.db.writer.EventProcessPublishStateWriter;
 import org.springframework.stereotype.Component;
-
-import java.math.RoundingMode;
-import java.time.Duration;
 
 @AllArgsConstructor
 @Slf4j
@@ -26,29 +25,27 @@ public class PublishStateUpdateService {
   private final EventProcessInstanceIndexManager eventProcessInstanceIndexManager;
 
   public void updateEventProcessPublishStates() {
-    eventProcessInstanceIndexManager.getPublishedInstanceStates()
-      .stream()
-      .peek(publishState -> {
-        // for each publishing process we also update progress and eventually state
-        if (EventProcessState.PUBLISH_PENDING.equals(publishState.getState())) {
-          final double publishProgress = publishState.getEventImportSources()
-            .stream()
-            .mapToDouble(this::getProgressForImportSource)
-            .average()
-            .orElse(0.0D);
-          final double roundedPublishProgress = Precision.round(
-            Math.min(publishProgress, 100.0D),
-            1,
-            RoundingMode.DOWN.ordinal()
-          );
-          publishState.setPublishProgress(roundedPublishProgress);
+    eventProcessInstanceIndexManager.getPublishedInstanceStates().stream()
+        .peek(
+            publishState -> {
+              // for each publishing process we also update progress and eventually state
+              if (EventProcessState.PUBLISH_PENDING.equals(publishState.getState())) {
+                final double publishProgress =
+                    publishState.getEventImportSources().stream()
+                        .mapToDouble(this::getProgressForImportSource)
+                        .average()
+                        .orElse(0.0D);
+                final double roundedPublishProgress =
+                    Precision.round(
+                        Math.min(publishProgress, 100.0D), 1, RoundingMode.DOWN.ordinal());
+                publishState.setPublishProgress(roundedPublishProgress);
 
-          if (publishState.getPublishProgress() == 100.0D) {
-            publishState.setState(EventProcessState.PUBLISHED);
-          }
-        }
-      })
-      .forEach(eventProcessPublishStateWriter::updateEventProcessPublishState);
+                if (publishState.getPublishProgress() == 100.0D) {
+                  publishState.setState(EventProcessState.PUBLISHED);
+                }
+              }
+            })
+        .forEach(eventProcessPublishStateWriter::updateEventProcessPublishState);
   }
 
   private Double getProgressForImportSource(EventImportSourceDto eventImportSourceDto) {
@@ -57,32 +54,33 @@ public class PublishStateUpdateService {
     }
 
     final double durationBetweenFirstAndLastEventAtTimeOfPublish =
-      betweenFirstAndLastEventToImport(eventImportSourceDto);
+        betweenFirstAndLastEventToImport(eventImportSourceDto);
     final double durationBetweenFirstAndLastImportedEvent =
-      betweenFirstAndLastCurrentlyImportedEvent(eventImportSourceDto);
+        betweenFirstAndLastCurrentlyImportedEvent(eventImportSourceDto);
 
     if (durationBetweenFirstAndLastEventAtTimeOfPublish == 0.0D) {
       return 100.0D;
     } else {
       return Math.min(
-        durationBetweenFirstAndLastImportedEvent / durationBetweenFirstAndLastEventAtTimeOfPublish * 100.0D,
-        100.0D
-      );
+          durationBetweenFirstAndLastImportedEvent
+              / durationBetweenFirstAndLastEventAtTimeOfPublish
+              * 100.0D,
+          100.0D);
     }
   }
 
-  private double betweenFirstAndLastCurrentlyImportedEvent(final EventImportSourceDto eventImportSourceDto) {
+  private double betweenFirstAndLastCurrentlyImportedEvent(
+      final EventImportSourceDto eventImportSourceDto) {
     return Duration.between(
-      eventImportSourceDto.getFirstEventForSourceAtTimeOfPublishTimestamp().toInstant(),
-      eventImportSourceDto.getLastImportedEventTimestamp().toInstant()
-    ).toMillis();
+            eventImportSourceDto.getFirstEventForSourceAtTimeOfPublishTimestamp().toInstant(),
+            eventImportSourceDto.getLastImportedEventTimestamp().toInstant())
+        .toMillis();
   }
 
   private double betweenFirstAndLastEventToImport(final EventImportSourceDto eventImportSourceDto) {
     return Duration.between(
-      eventImportSourceDto.getFirstEventForSourceAtTimeOfPublishTimestamp().toInstant(),
-      eventImportSourceDto.getLastEventForSourceAtTimeOfPublishTimestamp().toInstant()
-    ).toMillis();
+            eventImportSourceDto.getFirstEventForSourceAtTimeOfPublishTimestamp().toInstant(),
+            eventImportSourceDto.getLastEventForSourceAtTimeOfPublishTimestamp().toInstant())
+        .toMillis();
   }
-
 }

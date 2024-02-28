@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
+import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
-
-import java.util.Objects;
 
 @Getter
 @Setter
@@ -29,9 +28,9 @@ public class TargetDto {
       return false;
     }
     TargetDto targetDto = (TargetDto) o;
-    return unit == targetDto.unit &&
-      Objects.equals(isBelow, targetDto.isBelow) &&
-      Objects.equals(value, targetDto.value);
+    return unit == targetDto.unit
+        && Objects.equals(isBelow, targetDto.isBelow)
+        && Objects.equals(value, targetDto.value);
   }
 
   @Override

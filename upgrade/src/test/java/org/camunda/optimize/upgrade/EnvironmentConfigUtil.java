@@ -5,11 +5,10 @@
  */
 package org.camunda.optimize.upgrade;
 
-import org.camunda.optimize.upgrade.service.UpgradeValidationService;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.net.URISyntaxException;
+import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 
 public class EnvironmentConfigUtil {
 
@@ -47,12 +46,13 @@ public class EnvironmentConfigUtil {
   }
 
   private static File getClasspathFolder() throws URISyntaxException {
-    String executionFolderPath = UpgradeValidationService.class.
-      getProtectionDomain()
-      .getCodeSource()
-      .getLocation()
-      .toURI()
-      .getPath();
+    String executionFolderPath =
+        UpgradeValidationService.class
+            .getProtectionDomain()
+            .getCodeSource()
+            .getLocation()
+            .toURI()
+            .getPath();
     return new File(executionFolderPath);
   }
 }

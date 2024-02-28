@@ -6,6 +6,15 @@
 package org.camunda.optimize.service.license;
 
 import jakarta.annotation.PostConstruct;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -18,16 +27,6 @@ import org.camunda.optimize.dto.optimize.query.LicenseInformationResponseDto;
 import org.camunda.optimize.service.exceptions.license.OptimizeInvalidLicenseException;
 import org.camunda.optimize.service.exceptions.license.OptimizeNoLicenseStoredException;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-
 @RequiredArgsConstructor
 @Slf4j
 public abstract class LicenseManager {
@@ -35,25 +34,27 @@ public abstract class LicenseManager {
   private static final String OPTIMIZE_LICENSE_FILE = "OptimizeLicense.txt";
   protected final String licenseDocumentId = "license";
 
-  @Setter
-  protected String optimizeLicense;
-  private final Map<String, String> requiredUnifiedKeyMap = Collections.singletonMap("optimize", "true");
+  @Setter protected String optimizeLicense;
+  private final Map<String, String> requiredUnifiedKeyMap =
+      Collections.singletonMap("optimize", "true");
 
   public abstract void storeLicense(String licenseAsString);
+
   protected abstract Optional<String> retrieveStoredOptimizeLicense();
 
   @PostConstruct
   public void init() {
-    retrieveStoredOptimizeLicense().ifPresentOrElse(
-      this::setOptimizeLicense,
-      ()-> {
-        log.info("No license stored in the DB, trying to read from file");
-        try {
-          readFileToString().ifPresent(this::storeLicense);
-        } catch (IOException e) {
-          log.warn("Not able to read optimize license from file", e);
-        }
-      });
+    retrieveStoredOptimizeLicense()
+        .ifPresentOrElse(
+            this::setOptimizeLicense,
+            () -> {
+              log.info("No license stored in the DB, trying to read from file");
+              try {
+                readFileToString().ifPresent(this::storeLicense);
+              } catch (IOException e) {
+                log.warn("Not able to read optimize license from file", e);
+              }
+            });
   }
 
   public Optional<String> getOptimizeLicense() {
@@ -68,7 +69,7 @@ public abstract class LicenseManager {
   public LicenseInformationResponseDto validateOptimizeLicense(String license) {
     if (StringUtils.isBlank(license)) {
       throw new OptimizeInvalidLicenseException(
-        "Could not validate given license. Please try to provide another license!");
+          "Could not validate given license. Please try to provide another license!");
     }
 
     try {
@@ -86,9 +87,8 @@ public abstract class LicenseManager {
   }
 
   private Optional<String> readFileToString() throws IOException {
-    InputStream inputStream = this.getClass()
-      .getClassLoader()
-      .getResourceAsStream(OPTIMIZE_LICENSE_FILE);
+    InputStream inputStream =
+        this.getClass().getClassLoader().getResourceAsStream(OPTIMIZE_LICENSE_FILE);
     if (inputStream == null) {
       log.warn("There was an error reading the Optimize license from " + OPTIMIZE_LICENSE_FILE);
       return Optional.empty();
@@ -105,23 +105,24 @@ public abstract class LicenseManager {
 
   private void validateLicenseExists() {
     if (optimizeLicense == null) {
-      log.info("""
+      log.info(
+          """
                 ############### Heads up ################
                 You tried to access Optimize, but no valid license could be
-                found. Please enter a valid license key!  If you already have 
+                found. Please enter a valid license key!  If you already have
                 a valid key you can have a look here, how to add it to Optimize:
-            
-                https://docs.camunda.io/docs/next/self-managed/optimize-deployment/configuration/optimize-license/ 
-            
+
+                https://docs.camunda.io/docs/next/self-managed/optimize-deployment/configuration/optimize-license/
+
                 In case you don't have a valid license, feel free to contact us at:
-            
+
                 https://camunda.com/contact/
-            
+
                 You will now be redirected to the license page...
                 """);
 
       throw new OptimizeNoLicenseStoredException(
-        "No license stored in Optimize. Please provide a valid Optimize license");
+          "No license stored in Optimize. Please provide a valid Optimize license");
     }
   }
 
@@ -130,9 +131,9 @@ public abstract class LicenseManager {
     dto.setCustomerId(licenseKey.getCustomerId());
     dto.setUnlimited(licenseKey.isUnlimited());
     if (!licenseKey.isUnlimited()) {
-      dto.setValidUntil(OffsetDateTime.ofInstant(licenseKey.getValidUntil().toInstant(), ZoneId.systemDefault()));
+      dto.setValidUntil(
+          OffsetDateTime.ofInstant(licenseKey.getValidUntil().toInstant(), ZoneId.systemDefault()));
     }
     return dto;
   }
-
 }

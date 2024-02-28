@@ -18,8 +18,6 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 @Builder
 @Data
 public class TelemetryDataDto implements OptimizeDto {
-  @NonNull
-  private final String installation;
-  @NonNull
-  private final ProductDto product;
+  @NonNull private final String installation;
+  @NonNull private final ProductDto product;
 }

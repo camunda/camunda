@@ -19,5 +19,4 @@ public class CronNormalizerUtil {
       return cronTrigger;
     }
   }
-
 }

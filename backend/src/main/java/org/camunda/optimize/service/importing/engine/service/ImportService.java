@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
-import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
-
 import java.util.List;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 
 public interface ImportService<T> {
 
@@ -22,5 +21,4 @@ public interface ImportService<T> {
   default boolean hasPendingImportJobs() {
     return getDatabaseImportJobExecutor().isActive();
   }
-
 }

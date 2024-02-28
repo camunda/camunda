@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_SHARE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.REPORT_SHARE_INDEX_NAME;
+
 import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,9 +26,6 @@ import org.opensearch.client.opensearch.core.IndexResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_SHARE_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.REPORT_SHARE_INDEX_NAME;
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -40,11 +40,11 @@ public class SharingWriterOS implements SharingWriter {
     createSharingDto.setId(id);
 
     final IndexRequest.Builder<ReportShareRestDto> indexRequestBuilder =
-      new IndexRequest.Builder<ReportShareRestDto>()
-        .index(REPORT_SHARE_INDEX_NAME)
-        .id(createSharingDto.getId())
-        .refresh(Refresh.True)
-        .document(createSharingDto);
+        new IndexRequest.Builder<ReportShareRestDto>()
+            .index(REPORT_SHARE_INDEX_NAME)
+            .id(createSharingDto.getId())
+            .refresh(Refresh.True)
+            .document(createSharingDto);
 
     IndexResponse indexResponse = osClient.index(indexRequestBuilder);
 
@@ -54,7 +54,10 @@ public class SharingWriterOS implements SharingWriter {
       throw new OptimizeRuntimeException(message);
     }
 
-    log.debug("report share with id [{}] for resource [{}] has been created", id, createSharingDto.getReportId());
+    log.debug(
+        "report share with id [{}] for resource [{}] has been created",
+        id,
+        createSharingDto.getReportId());
     return createSharingDto;
   }
 
@@ -64,11 +67,11 @@ public class SharingWriterOS implements SharingWriter {
     createSharingDto.setId(id);
 
     final IndexRequest.Builder<DashboardShareRestDto> indexRequestBuilder =
-      new IndexRequest.Builder<DashboardShareRestDto>()
-        .index(DASHBOARD_SHARE_INDEX_NAME)
-        .id(createSharingDto.getId())
-        .refresh(Refresh.True)
-        .document(createSharingDto);
+        new IndexRequest.Builder<DashboardShareRestDto>()
+            .index(DASHBOARD_SHARE_INDEX_NAME)
+            .id(createSharingDto.getId())
+            .refresh(Refresh.True)
+            .document(createSharingDto);
 
     IndexResponse indexResponse = osClient.index(indexRequestBuilder);
 
@@ -78,35 +81,36 @@ public class SharingWriterOS implements SharingWriter {
       throw new OptimizeRuntimeException(message);
     }
     log.debug(
-      "Dashboard share with id [{}] for resource [{}] has been created",
-      id,
-      createSharingDto.getDashboardId()
-    );
+        "Dashboard share with id [{}] for resource [{}] has been created",
+        id,
+        createSharingDto.getDashboardId());
     return createSharingDto;
   }
 
   public void updateDashboardShare(final DashboardShareRestDto updatedShare) {
     String id = updatedShare.getId();
     final IndexRequest.Builder<DashboardShareRestDto> indexRequestBuilder =
-      new IndexRequest.Builder<DashboardShareRestDto>()
-        .index(DASHBOARD_SHARE_INDEX_NAME)
-        .id(id)
-        .document(updatedShare)
-        .refresh(Refresh.True);
+        new IndexRequest.Builder<DashboardShareRestDto>()
+            .index(DASHBOARD_SHARE_INDEX_NAME)
+            .id(id)
+            .document(updatedShare)
+            .refresh(Refresh.True);
 
     IndexResponse indexResponse = osClient.index(indexRequestBuilder);
 
-    if (!indexResponse.result().equals(Result.Created) &&
-      !indexResponse.result().equals(Result.Updated)) {
-      String message = String.format(
-        "Was not able to update dashboard share with id [%s] for resource [%s].",
-        id,
-        updatedShare.getDashboardId()
-      );
+    if (!indexResponse.result().equals(Result.Created)
+        && !indexResponse.result().equals(Result.Updated)) {
+      String message =
+          String.format(
+              "Was not able to update dashboard share with id [%s] for resource [%s].",
+              id, updatedShare.getDashboardId());
       log.error(message);
       throw new OptimizeRuntimeException(message);
     }
-    log.debug("Dashboard share with id [{}] for resource [{}] has been updated", id, updatedShare.getDashboardId());
+    log.debug(
+        "Dashboard share with id [{}] for resource [{}] has been updated",
+        id,
+        updatedShare.getDashboardId());
   }
 
   public void deleteReportShare(final String shareId) {
@@ -115,8 +119,10 @@ public class SharingWriterOS implements SharingWriter {
     final DeleteResponse deleteResponse = osClient.delete(REPORT_SHARE_INDEX_NAME, shareId);
     if (!deleteResponse.result().equals(Result.Deleted)) {
       String message =
-        String.format("Could not delete report share with id [%s]. Report share does not exist." +
-                        "Maybe it was already deleted by someone else?", shareId);
+          String.format(
+              "Could not delete report share with id [%s]. Report share does not exist."
+                  + "Maybe it was already deleted by someone else?",
+              shareId);
       log.error(message);
       throw new NotFoundException(message);
     }
@@ -129,11 +135,12 @@ public class SharingWriterOS implements SharingWriter {
 
     if (!deleteResponse.result().equals(Result.Deleted)) {
       final String errorMessage =
-        String.format("Could not delete dashboard share with id [%s]. Dashboard share does not exist." +
-                        "Maybe it was already deleted by someone else?", shareId);
+          String.format(
+              "Could not delete dashboard share with id [%s]. Dashboard share does not exist."
+                  + "Maybe it was already deleted by someone else?",
+              shareId);
       log.error(errorMessage);
       throw new NotFoundException(errorMessage);
     }
   }
-
 }

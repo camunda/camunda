@@ -19,9 +19,8 @@ public enum DecisionTypeRef {
   DATE("date"),
   ;
 
-  private static final Set<DecisionTypeRef> NUMERIC_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-    INTEGER, LONG, DOUBLE
-  )));
+  private static final Set<DecisionTypeRef> NUMERIC_TYPES =
+      Collections.unmodifiableSet(new HashSet<>(Arrays.asList(INTEGER, LONG, DOUBLE)));
 
   private final String id;
 
@@ -36,5 +35,4 @@ public enum DecisionTypeRef {
   public static Set<DecisionTypeRef> getNumericTypes() {
     return NUMERIC_TYPES;
   }
-
 }

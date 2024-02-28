@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.events;
 
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,10 +24,6 @@ import org.camunda.optimize.service.db.writer.ExternalEventWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Optional;
-
 @Component
 @Slf4j
 @AllArgsConstructor
@@ -34,7 +33,8 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
   private final ExternalEventWriter externalEventWriter;
   private final EventProcessInstanceWriter eventInstanceWriter;
 
-  public Page<DeletableEventDto> getEventsForRequest(final EventSearchRequestDto eventSearchRequestDto) {
+  public Page<DeletableEventDto> getEventsForRequest(
+      final EventSearchRequestDto eventSearchRequestDto) {
     return externalEventReader.getEventsForRequest(eventSearchRequestDto);
   }
 
@@ -44,7 +44,8 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
 
   public void saveEventBatch(final List<EventDto> eventDtos) {
     final Long rightNow = LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli();
-    // all events of a batch share the same ingestion timestamp as this is the point in time they got ingested
+    // all events of a batch share the same ingestion timestamp as this is the point in time they
+    // got ingested
     for (EventDto eventDto : eventDtos) {
       eventDto.setIngestionTimestamp(rightNow);
     }
@@ -61,21 +62,22 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
     return externalEventReader.getEventsIngestedAt(ingestTimestamp);
   }
 
-  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForAllEvents() {
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
+      getMinAndMaxIngestedTimestampsForAllEvents() {
     return externalEventReader.getMinAndMaxIngestedTimestamps();
   }
 
-  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForGroups(
-    final List<String> eventGroups) {
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
+      getMinAndMaxIngestedTimestampsForGroups(final List<String> eventGroups) {
     return externalEventReader.getMinAndMaxIngestedTimestampsForGroups(eventGroups);
   }
 
   public void deleteEvents(final List<String> eventIdsToDelete) {
     // it's ok to use the ES index because we are not actually wanting to create an index,
-    // but instead we're just misusing the constructor in order to get the fully qualified index name
+    // but instead we're just misusing the constructor in order to get the fully qualified index
+    // name
     final String index = new EventProcessInstanceIndexES("*").getIndexName();
     eventInstanceWriter.deleteEventsWithIdsInFromAllInstances(index, eventIdsToDelete);
     externalEventWriter.deleteEventsWithIdsIn(eventIdsToDelete);
   }
-
 }

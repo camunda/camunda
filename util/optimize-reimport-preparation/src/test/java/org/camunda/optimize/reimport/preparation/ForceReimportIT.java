@@ -5,7 +5,35 @@
  */
 package org.camunda.optimize.reimport.preparation;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.IMPORT_INDEX_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+
 import com.google.common.collect.ImmutableList;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.SpringDefaultC7ITConfig;
@@ -28,35 +56,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Import;
 
-import java.time.OffsetDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.IMPORT_INDEX_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
-import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
-import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-
 @Slf4j
 public class ForceReimportIT extends AbstractEventProcessIT {
 
@@ -67,21 +66,22 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     // given
     final ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
-      engineIntegrationExtension.deployAndStartDecisionDefinition();
+        engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.createTenant("tenant1");
-    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinitionEngineDto);
+    final String collectionId =
+        collectionClient.createNewCollectionWithProcessScope(processDefinitionEngineDto);
     collectionClient.addScopeEntryToCollection(
-      collectionId, decisionDefinitionEngineDto.getKey(), DefinitionType.DECISION, TENANTS
-    );
+        collectionId, decisionDefinitionEngineDto.getKey(), DefinitionType.DECISION, TENANTS);
     final String reportId = createAndStoreNumberReport(collectionId, processDefinitionEngineDto);
-    reportClient.createAndStoreDecisionReport(collectionId, decisionDefinitionEngineDto.getKey(), TENANTS);
+    reportClient.createAndStoreDecisionReport(
+        collectionId, decisionDefinitionEngineDto.getKey(), TENANTS);
     alertClient.createAlertForReport(reportId);
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     importAllEngineEntitiesFromScratch();
 
     final List<AuthorizedReportDefinitionResponseDto> allReports =
-      collectionClient.getReportsForCollection(collectionId);
+        collectionClient.getReportsForCollection(collectionId);
     final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
     final List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts();
     assertThat(allReports).hasSize(2);
@@ -94,8 +94,8 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     assertThat(collectionClient.getReportsForCollection(collectionId)).isEqualTo(allReports);
     assertThat(dashboardClient.getDashboard(dashboardId)).isEqualTo(dashboard);
     assertThat(alertClient.getAllAlerts())
-      .usingRecursiveFieldByFieldElementComparatorIgnoringFields("triggered")
-      .isEqualTo(allAlerts);
+        .usingRecursiveFieldByFieldElementComparatorIgnoringFields("triggered")
+        .isEqualTo(allAlerts);
   }
 
   @Test
@@ -132,7 +132,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     runEventProcessing();
 
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
-      databaseIntegrationTestExtension.getAllProcessDefinitions();
+        databaseIntegrationTestExtension.getAllProcessDefinitions();
     final List<String> allProcessInstanceIds = getProcessInstanceIds();
     assertThat(allProcessDefinitions).isNotEmpty();
     assertThat(allProcessInstanceIds).isNotEmpty();
@@ -150,7 +150,8 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     runEventProcessing();
 
     // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions()).isEqualTo(allProcessDefinitions);
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
+        .isEqualTo(allProcessDefinitions);
     assertThat(getProcessInstanceIds()).isEqualTo(allProcessInstanceIds);
     assertThat(hasEngineProcessData()).isTrue();
   }
@@ -163,7 +164,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     importAllEngineEntitiesFromScratch();
 
     final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
-      databaseIntegrationTestExtension.getAllDecisionDefinitions();
+        databaseIntegrationTestExtension.getAllDecisionDefinitions();
     final List<String> allDecisionInstanceIds = getDecisionInstanceIds();
     assertThat(allDecisionDefinitions).isNotEmpty();
     assertThat(allDecisionInstanceIds).isNotEmpty();
@@ -180,7 +181,8 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    assertThat(databaseIntegrationTestExtension.getAllDecisionDefinitions()).isEqualTo(allDecisionDefinitions);
+    assertThat(databaseIntegrationTestExtension.getAllDecisionDefinitions())
+        .isEqualTo(allDecisionDefinitions);
     assertThat(getDecisionInstanceIds()).isEqualTo(allDecisionInstanceIds);
     assertThat(hasEngineDecisionData()).isTrue();
   }
@@ -196,12 +198,13 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
     final List<String> allProcessDefinitionKeys = getAllProcessDefinitionKeys();
     final List<String> allProcessInstanceIds = getProcessInstanceIds();
-    final List<EventProcessMappingDto> allEventProcessMappings = eventProcessClient.getAllEventProcessMappings();
+    final List<EventProcessMappingDto> allEventProcessMappings =
+        eventProcessClient.getAllEventProcessMappings();
     assertThat(allProcessDefinitionKeys).isNotEmpty();
     assertThat(allProcessInstanceIds).isNotEmpty();
     assertThat(allEventProcessMappings)
-      .extracting(EventProcessMappingDto::getState)
-      .containsExactly(EventProcessState.PUBLISHED);
+        .extracting(EventProcessMappingDto::getState)
+        .containsExactly(EventProcessState.PUBLISHED);
     assertThat(hasExternalEventData()).isTrue();
     assertThat(hasPublishedEventProcessData()).isTrue();
 
@@ -210,11 +213,12 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
     // then
     assertThat(getAllProcessDefinitionKeys()).isEmpty();
-    assertThat(databaseIntegrationTestExtension.indexExists(PROCESS_INSTANCE_MULTI_ALIAS)).isFalse();
+    assertThat(databaseIntegrationTestExtension.indexExists(PROCESS_INSTANCE_MULTI_ALIAS))
+        .isFalse();
     assertThat(eventProcessClient.getAllEventProcessMappings())
-      .isEqualTo(allEventProcessMappings)
-      .extracting(EventProcessMappingDto::getState)
-      .containsExactly(EventProcessState.MAPPED);
+        .isEqualTo(allEventProcessMappings)
+        .extracting(EventProcessMappingDto::getState)
+        .containsExactly(EventProcessState.MAPPED);
     assertThat(hasExternalEventData()).isTrue();
     assertThat(hasPublishedEventProcessData()).isFalse();
 
@@ -229,8 +233,8 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     assertThat(getAllProcessDefinitionKeys()).isEqualTo(allProcessDefinitionKeys);
     assertThat(getProcessInstanceIds()).isEqualTo(allProcessInstanceIds);
     assertThat(allEventProcessMappings)
-      .extracting(EventProcessMappingDto::getState)
-      .containsExactly(EventProcessState.PUBLISHED);
+        .extracting(EventProcessMappingDto::getState)
+        .containsExactly(EventProcessState.PUBLISHED);
     assertThat(hasExternalEventData()).isTrue();
     assertThat(hasPublishedEventProcessData()).isTrue();
   }
@@ -241,25 +245,30 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     return createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
   }
 
-  private String createAndStoreNumberReport(String collectionId, ProcessDefinitionEngineDto processDefinition) {
+  private String createAndStoreNumberReport(
+      String collectionId, ProcessDefinitionEngineDto processDefinition) {
     return reportClient.createAndStoreProcessReport(
-      collectionId, processDefinition.getKey(), Collections.singletonList(TENANT_NOT_DEFINED.getId())
-    );
+        collectionId,
+        processDefinition.getKey(),
+        Collections.singletonList(TENANT_NOT_DEFINED.getId()));
   }
 
   private List<String> getAllProcessDefinitionKeys() {
-    return databaseIntegrationTestExtension.getAllProcessDefinitions()
-      .stream().map(DefinitionOptimizeResponseDto::getKey).collect(Collectors.toList());
+    return databaseIntegrationTestExtension.getAllProcessDefinitions().stream()
+        .map(DefinitionOptimizeResponseDto::getKey)
+        .collect(Collectors.toList());
   }
 
   private List<String> getProcessInstanceIds() {
-    return databaseIntegrationTestExtension.getAllProcessInstances()
-      .stream().map(ProcessInstanceDto::getProcessInstanceId).collect(Collectors.toList());
+    return databaseIntegrationTestExtension.getAllProcessInstances().stream()
+        .map(ProcessInstanceDto::getProcessInstanceId)
+        .collect(Collectors.toList());
   }
 
   private List<String> getDecisionInstanceIds() {
-    return databaseIntegrationTestExtension.getAllDecisionInstances()
-      .stream().map(DecisionInstanceDto::getDecisionInstanceId).collect(Collectors.toList());
+    return databaseIntegrationTestExtension.getAllDecisionInstances().stream()
+        .map(DecisionInstanceDto::getDecisionInstanceId)
+        .collect(Collectors.toList());
   }
 
   private boolean hasEngineProcessData() {
@@ -279,26 +288,38 @@ public class ForceReimportIT extends AbstractEventProcessIT {
   }
 
   private boolean allIndexGroupsHaveData(final Set<List<String>> indexGroups) {
-    final long groupsThatHaveData = indexGroups.stream()
-      .filter(indexGroup -> indexGroup.stream()
-        .anyMatch(index -> databaseIntegrationTestExtension.getDocumentCountOf(index) > 0L))
-      .count();
+    final long groupsThatHaveData =
+        indexGroups.stream()
+            .filter(
+                indexGroup ->
+                    indexGroup.stream()
+                        .anyMatch(
+                            index ->
+                                databaseIntegrationTestExtension.getDocumentCountOf(index) > 0L))
+            .count();
     return indexGroups.size() == groupsThatHaveData;
   }
 
   private boolean hasNoEngineDecisionData() {
-    return noIndexGroupHasData(getEngineDecisionDataIndices()) && !indexExists(DECISION_INSTANCE_MULTI_ALIAS);
+    return noIndexGroupHasData(getEngineDecisionDataIndices())
+        && !indexExists(DECISION_INSTANCE_MULTI_ALIAS);
   }
 
   private boolean hasNoEngineProcessData() {
-    return noIndexGroupHasData(getEngineProcessDataIndices()) && !indexExists(PROCESS_INSTANCE_MULTI_ALIAS);
+    return noIndexGroupHasData(getEngineProcessDataIndices())
+        && !indexExists(PROCESS_INSTANCE_MULTI_ALIAS);
   }
 
   private boolean noIndexGroupHasData(final Set<List<String>> indexGroups) {
-    final long groupsThatHaveNoData = indexGroups.stream()
-      .filter(indexGroup -> indexGroup.stream()
-        .allMatch(index -> databaseIntegrationTestExtension.getDocumentCountOf(index) == 0L))
-      .count();
+    final long groupsThatHaveNoData =
+        indexGroups.stream()
+            .filter(
+                indexGroup ->
+                    indexGroup.stream()
+                        .allMatch(
+                            index ->
+                                databaseIntegrationTestExtension.getDocumentCountOf(index) == 0L))
+            .count();
     return indexGroups.size() == groupsThatHaveNoData;
   }
 
@@ -318,14 +339,14 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     indexGroups.add(Collections.singletonList(BUSINESS_KEY_INDEX_NAME));
     indexGroups.add(Collections.singletonList(VARIABLE_UPDATE_INSTANCE_INDEX_NAME));
     indexGroups.add(Collections.singletonList(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"));
-    indexGroups.add(ImmutableList.of(
-      EVENT_TRACE_STATE_INDEX_PREFIX + "*",
-      "-" + EVENT_TRACE_STATE_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX + "*"
-    ));
-    indexGroups.add(ImmutableList.of(
-      EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*",
-      "-" + EVENT_SEQUENCE_COUNT_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX + "*"
-    ));
+    indexGroups.add(
+        ImmutableList.of(
+            EVENT_TRACE_STATE_INDEX_PREFIX + "*",
+            "-" + EVENT_TRACE_STATE_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX + "*"));
+    indexGroups.add(
+        ImmutableList.of(
+            EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*",
+            "-" + EVENT_SEQUENCE_COUNT_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX + "*"));
     return indexGroups;
   }
 
@@ -346,8 +367,9 @@ public class ForceReimportIT extends AbstractEventProcessIT {
   }
 
   private boolean indexExists(final String indexAlias) {
-    return embeddedOptimizeExtension.getDatabaseSchemaManager()
-      .indexExists(embeddedOptimizeExtension.getOptimizeDatabaseClient(), indexAlias);
+    return embeddedOptimizeExtension
+        .getDatabaseSchemaManager()
+        .indexExists(embeddedOptimizeExtension.getOptimizeDatabaseClient(), indexAlias);
   }
 
   private void runEventProcessing() {
@@ -356,7 +378,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
   }
 
   private void forceReimportOfEngineData() {
-    ReimportPreparation.main(new String[]{});
+    ReimportPreparation.main(new String[] {});
   }
 
   private ProcessDefinitionEngineDto deployAndStartSimpleServiceTask() {
@@ -365,18 +387,17 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     return deployAndStartSimpleServiceTaskWithVariables(variables);
   }
 
-  private ProcessDefinitionEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
+  private ProcessDefinitionEngineDto deployAndStartSimpleServiceTaskWithVariables(
+      Map<String, Object> variables) {
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
 
     ProcessDefinitionEngineDto processDefinitionEngineDto =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
     engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId(), variables);
     return processDefinitionEngineDto;
   }
 
   @Import(SpringDefaultC7ITConfig.class)
   @TestConfiguration
-  public class Configuration {
-  }
-
+  public class Configuration {}
 }

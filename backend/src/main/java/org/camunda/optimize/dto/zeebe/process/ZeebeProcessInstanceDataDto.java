@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.zeebe.process;
 
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -12,8 +14,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
-
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 @FieldNameConstants
 @EqualsAndHashCode

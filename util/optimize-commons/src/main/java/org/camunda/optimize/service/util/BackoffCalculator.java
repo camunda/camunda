@@ -5,15 +5,14 @@
  */
 package org.camunda.optimize.service.util;
 
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -41,7 +40,8 @@ public class BackoffCalculator {
   }
 
   public long calculateSleepTime() {
-    currentTimeToWait = Math.min(Math.round(currentTimeToWait * BACKOFF_MULTIPLIER), maximumBackoff);
+    currentTimeToWait =
+        Math.min(Math.round(currentTimeToWait * BACKOFF_MULTIPLIER), maximumBackoff);
     nextRetryTime = OffsetDateTime.now().plus(Math.round(currentTimeToWait), ChronoUnit.MILLIS);
     return currentTimeToWait;
   }
@@ -64,5 +64,4 @@ public class BackoffCalculator {
   public long getMaximumBackoffMilliseconds() {
     return maximumBackoff;
   }
-
 }

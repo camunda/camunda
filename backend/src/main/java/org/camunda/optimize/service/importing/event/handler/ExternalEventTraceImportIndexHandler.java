@@ -5,14 +5,15 @@
  */
 package org.camunda.optimize.service.importing.event.handler;
 
-import org.camunda.optimize.service.importing.TimestampBasedEventDataImportIndexHandler;
-import org.springframework.stereotype.Component;
-
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
+import org.camunda.optimize.service.importing.TimestampBasedEventDataImportIndexHandler;
+import org.springframework.stereotype.Component;
+
 @Component
-public class ExternalEventTraceImportIndexHandler extends TimestampBasedEventDataImportIndexHandler {
+public class ExternalEventTraceImportIndexHandler
+    extends TimestampBasedEventDataImportIndexHandler {
 
   @Override
   protected String getDatabaseDocID() {

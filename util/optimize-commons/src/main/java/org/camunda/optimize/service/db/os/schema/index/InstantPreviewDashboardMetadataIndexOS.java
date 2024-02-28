@@ -5,25 +5,27 @@
  */
 package org.camunda.optimize.service.db.os.schema.index;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
+
 import jakarta.ws.rs.NotSupportedException;
 import org.camunda.optimize.service.db.schema.index.InstantPreviewDashboardMetadataIndex;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_SETTING;
-
 public class InstantPreviewDashboardMetadataIndexOS
-  extends InstantPreviewDashboardMetadataIndex<IndexSettings.Builder> {
+    extends InstantPreviewDashboardMetadataIndex<IndexSettings.Builder> {
 
   @Override
-  public IndexSettings.Builder addStaticSetting(final String key,
-                                                final int value,
-                                                final IndexSettings.Builder contentBuilder) {
+  public IndexSettings.Builder addStaticSetting(
+      final String key, final int value, final IndexSettings.Builder contentBuilder) {
     if (NUMBER_OF_SHARDS_SETTING.equalsIgnoreCase(key)) {
       return contentBuilder.numberOfShards(Integer.toString(value));
     } else {
-      throw new NotSupportedException("Cannot set property " + value + " for OpenSearch settings. Operation not " +
-                                          " " +
-                                          "supported");
+      throw new NotSupportedException(
+          "Cannot set property "
+              + value
+              + " for OpenSearch settings. Operation not "
+              + " "
+              + "supported");
     }
   }
 }

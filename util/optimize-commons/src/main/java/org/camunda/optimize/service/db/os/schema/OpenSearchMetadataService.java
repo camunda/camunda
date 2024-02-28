@@ -5,7 +5,11 @@
  */
 package org.camunda.optimize.service.db.os.schema;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
@@ -28,11 +32,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
@@ -49,86 +48,90 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
 
   @Override
   public Optional<MetadataDto> readMetadata(final OptimizeOpenSearchClient osClient) {
-    final boolean metaDataIndexExists = osClient.getRichOpenSearchClient().index().indexExists(METADATA_INDEX_NAME);
+    final boolean metaDataIndexExists =
+        osClient.getRichOpenSearchClient().index().indexExists(METADATA_INDEX_NAME);
     if (!metaDataIndexExists) {
       log.info("Optimize Metadata index wasn't found, thus no metadata available.");
       return Optional.empty();
     }
 
-    return osClient.getRichOpenSearchClient().doc()
-      .getWithRetries(METADATA_INDEX_NAME, MetadataIndex.ID, MetadataDto.class);
+    return osClient
+        .getRichOpenSearchClient()
+        .doc()
+        .getWithRetries(METADATA_INDEX_NAME, MetadataIndex.ID, MetadataDto.class);
   }
 
   @Override
-  protected void upsertMetadataWithScript(final OptimizeOpenSearchClient osClient,
-                                          final String schemaVersion,
-                                          final String newInstallationId,
-                                          final OptimizeProfile newOptimizeProfile,
-                                          final ScriptData updateScript) {
+  protected void upsertMetadataWithScript(
+      final OptimizeOpenSearchClient osClient,
+      final String schemaVersion,
+      final String newInstallationId,
+      final OptimizeProfile newOptimizeProfile,
+      final ScriptData updateScript) {
 
-    readMetadata(osClient).ifPresentOrElse(metadataDto -> {
-      if (StringUtils.isBlank(metadataDto.getInstallationId())) {
-        final UpdateRequest.Builder<Void, Void> updateRequestBuilder =
-          RequestDSL.<Void, Void>updateRequestBuilder(METADATA_INDEX_NAME)
-            .id(MetadataIndex.ID)
-            .script(QueryDSL.script(updateScript.scriptString(), updateScript.params()))
-            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    readMetadata(osClient)
+        .ifPresentOrElse(
+            metadataDto -> {
+              if (StringUtils.isBlank(metadataDto.getInstallationId())) {
+                final UpdateRequest.Builder<Void, Void> updateRequestBuilder =
+                    RequestDSL.<Void, Void>updateRequestBuilder(METADATA_INDEX_NAME)
+                        .id(MetadataIndex.ID)
+                        .script(QueryDSL.script(updateScript.scriptString(), updateScript.params()))
+                        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-        final String errorMessage =  "Error updating metadata information";
+                final String errorMessage = "Error updating metadata information";
 
-        final UpdateResponse<Void> response = osClient.update(
-          updateRequestBuilder,
-          errorMessage
-        );
-        if (!response.result().equals(Result.Updated)) {
-          String errorMsg = "Error doing metadata update. " + ERROR_MESSAGE_REQUEST;
-          log.error(errorMsg);
-          throw new OptimizeRuntimeException(errorMsg);
-        }
-      }
-    }, () -> {
-      final String errorMessage =  "Error performing the metadata creation";
-      final UpdateResponse<Void> response;
+                final UpdateResponse<Void> response =
+                    osClient.update(updateRequestBuilder, errorMessage);
+                if (!response.result().equals(Result.Updated)) {
+                  String errorMsg = "Error doing metadata update. " + ERROR_MESSAGE_REQUEST;
+                  log.error(errorMsg);
+                  throw new OptimizeRuntimeException(errorMsg);
+                }
+              }
+            },
+            () -> {
+              final String errorMessage = "Error performing the metadata creation";
+              final UpdateResponse<Void> response;
 
-      if (newOptimizeProfile != null) {
-        final UpdateRequest.Builder<Void, MetadataDto> requestBuilder = new UpdateRequest.Builder<>();
-        requestBuilder
-          .index(METADATA_INDEX_NAME)
-          .id(MetadataIndex.ID)
-          .docAsUpsert(true)
-          .doc(new MetadataDto(schemaVersion, newInstallationId, newOptimizeProfile))
-          .refresh(Refresh.True)
-          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-        response = osClient.update(
-          requestBuilder,
-          errorMessage
-        );
-      } else {
-        final UpdateRequest.Builder<Void, MetadataDtoV3> requestBuilder = new UpdateRequest.Builder<>();
-        requestBuilder
-          .index(METADATA_INDEX_NAME)
-          .id(MetadataIndex.ID)
-          .docAsUpsert(true)
-          .doc(new MetadataDtoV3(schemaVersion, newInstallationId))
-          .refresh(Refresh.True)
-          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-        response = osClient.update(
-          requestBuilder,
-          errorMessage
-        );
-      }
+              if (newOptimizeProfile != null) {
+                final UpdateRequest.Builder<Void, MetadataDto> requestBuilder =
+                    new UpdateRequest.Builder<>();
+                requestBuilder
+                    .index(METADATA_INDEX_NAME)
+                    .id(MetadataIndex.ID)
+                    .docAsUpsert(true)
+                    .doc(new MetadataDto(schemaVersion, newInstallationId, newOptimizeProfile))
+                    .refresh(Refresh.True)
+                    .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+                response = osClient.update(requestBuilder, errorMessage);
+              } else {
+                final UpdateRequest.Builder<Void, MetadataDtoV3> requestBuilder =
+                    new UpdateRequest.Builder<>();
+                requestBuilder
+                    .index(METADATA_INDEX_NAME)
+                    .id(MetadataIndex.ID)
+                    .docAsUpsert(true)
+                    .doc(new MetadataDtoV3(schemaVersion, newInstallationId))
+                    .refresh(Refresh.True)
+                    .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+                response = osClient.update(requestBuilder, errorMessage);
+              }
 
-      if (!response.result().equals(Result.Created)) {
-        String errorMsg = "Error doing metadata creation. " + ERROR_MESSAGE_REQUEST;
-        log.error(errorMsg);
-        throw new OptimizeRuntimeException(errorMsg);
-      }
-    });
+              if (!response.result().equals(Result.Created)) {
+                String errorMsg = "Error doing metadata creation. " + ERROR_MESSAGE_REQUEST;
+                log.error(errorMsg);
+                throw new OptimizeRuntimeException(errorMsg);
+              }
+            });
   }
 
   @Override
-  protected void upsertMetadataWithScript(final OptimizeOpenSearchClient osClient, final String schemaVersion, final String newInstallationId, final ScriptData updateScript) {
+  protected void upsertMetadataWithScript(
+      final OptimizeOpenSearchClient osClient,
+      final String schemaVersion,
+      final String newInstallationId,
+      final ScriptData updateScript) {
     upsertMetadataWithScript(osClient, schemaVersion, newInstallationId, null, updateScript);
   }
-
 }

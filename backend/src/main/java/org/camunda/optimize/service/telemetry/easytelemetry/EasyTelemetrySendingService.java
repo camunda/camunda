@@ -6,6 +6,11 @@
 package org.camunda.optimize.service.telemetry.easytelemetry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -21,12 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-
 @Component
 @Conditional(CamundaPlatformCondition.class)
 @Slf4j
@@ -40,7 +39,8 @@ public class EasyTelemetrySendingService {
     this(HttpClients.createDefault(), objectMapper);
   }
 
-  public EasyTelemetrySendingService(final CloseableHttpClient httpClient, final ObjectMapper objectMapper) {
+  public EasyTelemetrySendingService(
+      final CloseableHttpClient httpClient, final ObjectMapper objectMapper) {
     this.httpClient = httpClient;
     this.objectMapper = objectMapper;
   }
@@ -50,25 +50,24 @@ public class EasyTelemetrySendingService {
     httpClient.close();
   }
 
-  public void sendTelemetryData(final TelemetryDataDto telemetryData,
-                                final String telemetryEndpoint) {
+  public void sendTelemetryData(
+      final TelemetryDataDto telemetryData, final String telemetryEndpoint) {
     log.info("Sending telemetry to {}.", telemetryEndpoint);
 
     try {
       final HttpPost request = new HttpPost(telemetryEndpoint);
-      final StringEntity telemetryAsString = new StringEntity(
-        objectMapper.writeValueAsString(telemetryData),
-        ContentType.APPLICATION_JSON
-      );
+      final StringEntity telemetryAsString =
+          new StringEntity(
+              objectMapper.writeValueAsString(telemetryData), ContentType.APPLICATION_JSON);
       request.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
       request.setEntity(telemetryAsString);
 
       try (final CloseableHttpResponse response = httpClient.execute(request)) {
-        final Response.Status statusCode = Response.Status.fromStatusCode(
-          response.getStatusLine().getStatusCode()
-        );
+        final Response.Status statusCode =
+            Response.Status.fromStatusCode(response.getStatusLine().getStatusCode());
         if (!Response.Status.ACCEPTED.equals(statusCode)) {
-          throw new OptimizeRuntimeException("Unexpected response when sending telemetry data: " + statusCode);
+          throw new OptimizeRuntimeException(
+              "Unexpected response when sending telemetry data: " + statusCode);
         }
       }
     } catch (IllegalArgumentException e) {

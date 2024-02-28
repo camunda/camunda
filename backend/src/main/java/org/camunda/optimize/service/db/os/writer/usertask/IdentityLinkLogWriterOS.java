@@ -5,26 +5,23 @@
  */
 package org.camunda.optimize.service.db.os.writer.usertask;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.usertask.IdentityLinkLogWriter;
-import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
-public class IdentityLinkLogWriterOS extends AbstractUserTaskWriterOS implements IdentityLinkLogWriter {
+public class IdentityLinkLogWriterOS extends AbstractUserTaskWriterOS
+    implements IdentityLinkLogWriter {
 
   @Override
   protected String createInlineUpdateScript() {
@@ -33,15 +30,18 @@ public class IdentityLinkLogWriterOS extends AbstractUserTaskWriterOS implements
   }
 
   @Override
-  public List<ImportRequestDto> generateIdentityLinkLogImports(final List<IdentityLinkLogEntryDto> identityLinkLogs) {
+  public List<ImportRequestDto> generateIdentityLinkLogImports(
+      final List<IdentityLinkLogEntryDto> identityLinkLogs) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
 
   @Override
-  public List<ImportRequestDto> generateUserTaskImports(final String importItemName, final DatabaseClient databaseClient, final List<FlowNodeInstanceDto> userTaskInstances) {
+  public List<ImportRequestDto> generateUserTaskImports(
+      final String importItemName,
+      final DatabaseClient databaseClient,
+      final List<FlowNodeInstanceDto> userTaskInstances) {
     log.error("Functionality not implemented for OpenSearch");
     return new ArrayList<>();
   }
-
 }

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.dto.optimize.rest.definition;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
 @Data
@@ -29,9 +28,7 @@ public class MultiDefinitionTenantsRequestDto {
   @Data
   @NoArgsConstructor
   public static class DefinitionDto {
-    @NotNull
-    private String key;
-    @NotNull
-    private List<String> versions = new ArrayList<>();
+    @NotNull private String key;
+    @NotNull private List<String> versions = new ArrayList<>();
   }
 }

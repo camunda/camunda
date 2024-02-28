@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 
 public interface ProcessDefinitionReader {
 
@@ -27,5 +26,4 @@ public interface ProcessDefinitionReader {
   Set<String> getAllNonOnboardedProcessDefinitionKeys();
 
   DefinitionReader getDefinitionReader();
-
 }

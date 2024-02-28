@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query;
 
+import java.io.Serializable;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,8 +13,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.util.configuration.OptimizeProfile;
-
-import java.io.Serializable;
 
 @FieldNameConstants(asEnum = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

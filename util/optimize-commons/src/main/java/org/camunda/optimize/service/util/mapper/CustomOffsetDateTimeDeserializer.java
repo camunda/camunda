@@ -8,7 +8,6 @@ package org.camunda.optimize.service.util.mapper;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -29,12 +28,14 @@ public class CustomOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDat
   }
 
   @Override
-  public OffsetDateTime deserialize(final JsonParser parser, final DeserializationContext context) throws IOException {
+  public OffsetDateTime deserialize(final JsonParser parser, final DeserializationContext context)
+      throws IOException {
     try {
-      final TemporalAccessor parsedTemporal = this.formatter.parseBest(
-        // having LocalDateTime here as fallback in case the pattern is not including a time zone
-        parser.getText(), OffsetDateTime::from, LocalDateTime::from
-      );
+      final TemporalAccessor parsedTemporal =
+          this.formatter.parseBest(
+              // having LocalDateTime here as fallback in case the pattern is not including a time
+              // zone
+              parser.getText(), OffsetDateTime::from, LocalDateTime::from);
       if (parsedTemporal instanceof OffsetDateTime) {
         return (OffsetDateTime) parsedTemporal;
       } else {
@@ -42,14 +43,11 @@ public class CustomOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDat
       }
     } catch (DateTimeParseException exception) {
       // If the offset is a 'Z', we can handle it using a backup `X` pattern rather than failing
-      return ZonedDateTime
-        .parse(
-          parser.getText(),
-          DateTimeFormatter.ofPattern(OFFSET_X_DATE_TIME_PATTERN)
-            .withZone(ZoneId.systemDefault())
-        )
-        .toOffsetDateTime();
+      return ZonedDateTime.parse(
+              parser.getText(),
+              DateTimeFormatter.ofPattern(OFFSET_X_DATE_TIME_PATTERN)
+                  .withZone(ZoneId.systemDefault()))
+          .toOffsetDateTime();
     }
   }
-
 }

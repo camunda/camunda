@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
@@ -12,9 +14,6 @@ import org.camunda.optimize.service.db.writer.ExternalEventWriter;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
-import java.util.List;
 
 @AllArgsConstructor
 @Slf4j
@@ -36,5 +35,4 @@ public class ExternalEventWriterOS implements ExternalEventWriter {
   public void deleteEventsWithIdsIn(final List<String> eventIdsToDelete) {
     log.error("Functionality not implemented for OpenSearch");
   }
-
 }

@@ -5,24 +5,26 @@
  */
 package org.camunda.optimize.data.generation.onboarding;
 
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.exceptions.DataGenerationException;
 
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @Slf4j
 public class OnboardingDataGeneratorMain {
 
-  private static final Map<String, OnboardingDataGeneratorParameters> defaultParams = Map.of(
-    "numberOfProcessInstancesEndEvent1",
-    new OnboardingDataGeneratorParameters(String.valueOf(333), "onboarding-data/process-instance-endEvent1.json"),
-    "numberOfProcessInstancesEndEvent2",
-    new OnboardingDataGeneratorParameters(String.valueOf(333), "onboarding-data/process-instance-endEvent2.json"),
-    "numberOfProcessInstancesEndEvent3",
-    new OnboardingDataGeneratorParameters(String.valueOf(333), "onboarding-data/process-instance-endEvent3.json")
-  );
+  private static final Map<String, OnboardingDataGeneratorParameters> defaultParams =
+      Map.of(
+          "numberOfProcessInstancesEndEvent1",
+          new OnboardingDataGeneratorParameters(
+              String.valueOf(333), "onboarding-data/process-instance-endEvent1.json"),
+          "numberOfProcessInstancesEndEvent2",
+          new OnboardingDataGeneratorParameters(
+              String.valueOf(333), "onboarding-data/process-instance-endEvent2.json"),
+          "numberOfProcessInstancesEndEvent3",
+          new OnboardingDataGeneratorParameters(
+              String.valueOf(333), "onboarding-data/process-instance-endEvent3.json"));
 
   public static void main(String[] args) {
     final Map<String, OnboardingDataGeneratorParameters> arguments = extractArguments(args);
@@ -30,8 +32,10 @@ public class OnboardingDataGeneratorMain {
     onboardingDataGenerator.executeDataGeneration(arguments);
   }
 
-  private static Map<String, OnboardingDataGeneratorParameters> extractArguments(final String[] args) {
-    final Map<String, OnboardingDataGeneratorParameters> arguments = fillArgumentMapWithDefaultValues();
+  private static Map<String, OnboardingDataGeneratorParameters> extractArguments(
+      final String[] args) {
+    final Map<String, OnboardingDataGeneratorParameters> arguments =
+        fillArgumentMapWithDefaultValues();
     for (int i = 0; i < args.length; i += 2) {
       final String identifier = stripLeadingHyphens(args[i]);
       ensureIdentifierIsKnown(identifier);
@@ -44,7 +48,8 @@ public class OnboardingDataGeneratorMain {
   }
 
   private static Map<String, OnboardingDataGeneratorParameters> fillArgumentMapWithDefaultValues() {
-    return defaultParams.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    return defaultParams.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private static String stripLeadingHyphens(String str) {

@@ -6,12 +6,11 @@
 package org.camunda.optimize.dto.engine;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
-
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.Data;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
