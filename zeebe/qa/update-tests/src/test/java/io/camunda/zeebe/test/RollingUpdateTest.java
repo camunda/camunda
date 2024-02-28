@@ -18,6 +18,7 @@ import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
+import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.ZeebeVolume;
@@ -311,7 +312,10 @@ final class RollingUpdateTest {
               assertThat(brokerInfo.getNodeId()).as("the broker's node ID").isEqualTo(brokerId);
               assertThat(brokerInfo.getVersion())
                   .as("the broker's version")
-                  .isEqualTo(expectedVersion);
+                  .isEqualTo(
+                      "CURRENT".equals(expectedVersion)
+                          ? VersionUtil.getVersion()
+                          : expectedVersion);
             });
   }
 
