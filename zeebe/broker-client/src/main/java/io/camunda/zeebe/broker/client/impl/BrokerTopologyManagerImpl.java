@@ -31,6 +31,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   private static final Logger LOG = LoggerFactory.getLogger(BrokerTopologyManagerImpl.class);
   private volatile BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
+  private volatile ClusterTopology clusterTopology = ClusterTopology.uninitialized();
   private final Supplier<Set<Member>> membersSupplier;
   private final BrokerClientTopologyMetrics topologyMetrics = new BrokerClientTopologyMetrics();
 
@@ -46,6 +47,11 @@ public final class BrokerTopologyManagerImpl extends Actor
   @Override
   public BrokerClusterState getTopology() {
     return topology;
+  }
+
+  @Override
+  public ClusterTopology getClusterTopology() {
+    return clusterTopology;
   }
 
   @Override
@@ -204,6 +210,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     if (clusterTopology.isUninitialized()) {
       return;
     }
+    this.clusterTopology = clusterTopology;
     LOG.debug("Received new cluster topology with clusterSize {}", clusterTopology.clusterSize());
     updateTopology(
         topology -> {

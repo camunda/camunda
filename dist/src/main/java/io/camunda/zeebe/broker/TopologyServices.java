@@ -9,11 +9,11 @@ package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.topology.api.TopologyCoordinatorSupplier.ClusterTopologyAwareCoordinatorSupplier;
 import io.camunda.zeebe.topology.api.TopologyManagementRequestSender;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,8 +44,11 @@ public class TopologyServices {
   }
 
   @Bean
-  TopologyManagementRequestSender topologyManagementRequestSender() {
+  TopologyManagementRequestSender topologyManagementRequestSender(
+      final BrokerTopologyManager brokerTopologyManager) {
     return new TopologyManagementRequestSender(
-        clusterCommunicationService, MemberId.from("0"), new ProtoBufSerializer());
+        clusterCommunicationService,
+        new ClusterTopologyAwareCoordinatorSupplier(brokerTopologyManager::getClusterTopology),
+        new ProtoBufSerializer());
   }
 }

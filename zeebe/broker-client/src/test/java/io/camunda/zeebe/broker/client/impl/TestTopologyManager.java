@@ -40,6 +40,11 @@ final class TestTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
+  public ClusterTopology getClusterTopology() {
+    throw new UnsupportedOperationException("not implemented");
+  }
+
+  @Override
   public void addTopologyListener(final BrokerTopologyListener listener) {
     throw new UnsupportedOperationException();
   }

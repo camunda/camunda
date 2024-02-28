@@ -84,6 +84,11 @@ public class ForceScaleDownRequestTransformer implements TopologyChangeRequest {
     return generateOperations(partitionsWithNewMembers, memberToRemove);
   }
 
+  @Override
+  public boolean isForced() {
+    return true;
+  }
+
   private Either<Exception, List<TopologyChangeOperation>> generateOperations(
       final Map<Integer, ArrayList<MemberId>> partitionsWithNewMembers,
       final List<MemberId> memberToRemove) {

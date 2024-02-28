@@ -49,8 +49,8 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
   private final boolean isCoordinator;
   private final PersistedClusterTopology persistedClusterTopology;
   private final Path topologyFile;
-  private TopologyChangeCoordinator topologyChangeCoordinator;
-  private TopologyRequestServer topologyRequestServer;
+  private final TopologyChangeCoordinator topologyChangeCoordinator;
+  private final TopologyRequestServer topologyRequestServer;
   private final Actor gossipActor;
   private final Actor managerActor;
 
@@ -83,17 +83,15 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
             config,
             clusterTopologyManager::onGossipReceived);
     isCoordinator = localMemberId.id().equals(COORDINATOR_ID);
-    if (isCoordinator) {
-      // Only a coordinator can start topology change
-      topologyChangeCoordinator =
-          new TopologyChangeCoordinatorImpl(clusterTopologyManager, managerActor);
-      topologyRequestServer =
-          new TopologyRequestServer(
-              communicationService,
-              new ProtoBufSerializer(),
-              new TopologyManagementRequestsHandler(
-                  topologyChangeCoordinator, localMemberId, managerActor));
-    }
+    topologyChangeCoordinator =
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, localMemberId, managerActor);
+    topologyRequestServer =
+        new TopologyRequestServer(
+            communicationService,
+            new ProtoBufSerializer(),
+            new TopologyManagementRequestsHandler(
+                topologyChangeCoordinator, localMemberId, managerActor));
+
     clusterTopologyManager.setTopologyGossiper(clusterTopologyGossiper::updateClusterTopology);
   }
 
@@ -173,9 +171,7 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
             ? getCoordinatorInitializer(staticConfiguration)
             : getNonCoordinatorInitializer(memberShipService, staticConfiguration);
 
-    if (topologyRequestServer != null) {
-      topologyRequestServer.start();
-    }
+    topologyRequestServer.start();
 
     // Start gossiper first so that when ClusterTopologyManager initializes the topology, it can
     // immediately gossip it.

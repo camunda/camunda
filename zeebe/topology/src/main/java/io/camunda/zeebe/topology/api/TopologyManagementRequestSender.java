@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.topology.api;
 
-import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
@@ -26,15 +25,15 @@ import java.util.function.Function;
 public final class TopologyManagementRequestSender {
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
   private final ClusterCommunicationService communicationService;
-  private final MemberId coordinator;
+  private final TopologyCoordinatorSupplier coordinatorSupplier;
   private final TopologyRequestsSerializer serializer;
 
   public TopologyManagementRequestSender(
       final ClusterCommunicationService communicationService,
-      final MemberId coordinator,
+      final TopologyCoordinatorSupplier coordinatorSupplier,
       final TopologyRequestsSerializer serializer) {
     this.communicationService = communicationService;
-    this.coordinator = coordinator;
+    this.coordinatorSupplier = coordinatorSupplier;
     this.serializer = serializer;
   }
 
@@ -45,7 +44,7 @@ public final class TopologyManagementRequestSender {
         addMembersRequest,
         serializer::encodeAddMembersRequest,
         serializer::decodeTopologyChangeResponse,
-        coordinator,
+        coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 
@@ -56,7 +55,7 @@ public final class TopologyManagementRequestSender {
         removeMembersRequest,
         serializer::encodeRemoveMembersRequest,
         serializer::decodeTopologyChangeResponse,
-        coordinator,
+        coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 
@@ -67,7 +66,7 @@ public final class TopologyManagementRequestSender {
         joinPartitionRequest,
         serializer::encodeJoinPartitionRequest,
         serializer::decodeTopologyChangeResponse,
-        coordinator,
+        coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 
@@ -78,7 +77,7 @@ public final class TopologyManagementRequestSender {
         leavePartitionRequest,
         serializer::encodeLeavePartitionRequest,
         serializer::decodeTopologyChangeResponse,
-        coordinator,
+        coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 
@@ -89,7 +88,7 @@ public final class TopologyManagementRequestSender {
         reassignPartitionsRequest,
         serializer::encodeReassignPartitionsRequest,
         serializer::decodeTopologyChangeResponse,
-        coordinator,
+        coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 
@@ -100,7 +99,7 @@ public final class TopologyManagementRequestSender {
         scaleRequest,
         serializer::encodeScaleRequest,
         serializer::decodeTopologyChangeResponse,
-        coordinator,
+        coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 
@@ -111,7 +110,7 @@ public final class TopologyManagementRequestSender {
         forceScaleDownRequest,
         serializer::encodeScaleRequest,
         serializer::decodeTopologyChangeResponse,
-        coordinator,
+        coordinatorSupplier.getNextCoordinator(forceScaleDownRequest.members()),
         TIMEOUT);
   }
 
@@ -121,7 +120,7 @@ public final class TopologyManagementRequestSender {
         new byte[0],
         Function.identity(),
         serializer::decodeClusterTopologyResponse,
-        coordinator,
+        coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 
@@ -132,7 +131,7 @@ public final class TopologyManagementRequestSender {
         request,
         serializer::encodeCancelChangeRequest,
         serializer::decodeClusterTopologyResponse,
-        coordinator,
+        coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 }

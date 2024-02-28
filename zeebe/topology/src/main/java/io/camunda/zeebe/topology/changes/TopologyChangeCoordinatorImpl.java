@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.topology.changes;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.ClusterTopologyManager;
@@ -26,11 +27,15 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
   private static final Logger LOG = LoggerFactory.getLogger(TopologyChangeCoordinatorImpl.class);
   private final ClusterTopologyManager clusterTopologyManager;
   private final ConcurrencyControl executor;
+  private final MemberId localMemberId;
 
   public TopologyChangeCoordinatorImpl(
-      final ClusterTopologyManager clusterTopologyManager, final ConcurrencyControl executor) {
+      final ClusterTopologyManager clusterTopologyManager,
+      final MemberId localMemberId,
+      final ConcurrencyControl executor) {
     this.clusterTopologyManager = clusterTopologyManager;
     this.executor = executor;
+    this.localMemberId = localMemberId;
   }
 
   @Override
@@ -91,6 +96,17 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
                     (currentClusterTopology, errorOnGettingTopology) -> {
                       if (errorOnGettingTopology != null) {
                         failFuture(future, errorOnGettingTopology);
+                        return;
+                      }
+                      if (!request.isForced() && !isCoordinator(currentClusterTopology)) {
+                        // if request is forced, it can be processed by a broker which is not
+                        // the default coordinator
+                        failFuture(
+                            future,
+                            new InternalError(
+                                String.format(
+                                    "Cannot process request to change the topology. The broker '%s' is not the coordinator.",
+                                    localMemberId)));
                         return;
                       }
                       final var generatedOperations = request.operations(currentClusterTopology);
@@ -294,5 +310,12 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
       return false;
     }
     return true;
+  }
+
+  private boolean isCoordinator(final ClusterTopology clusterTopology) {
+    // coordinator is usually the broker with the lowest member id
+    // return false if there are currently no known members, which means it will be uninitialized.
+    return localMemberId.equals(
+        clusterTopology.members().keySet().stream().min(MemberId::compareTo).orElse(null));
   }
 }
