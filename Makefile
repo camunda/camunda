@@ -2,13 +2,13 @@
 
 .PHONY: env-up
 env-up:
-	docker-compose up -d elasticsearch zeebe \
+	docker-compose -f operate/docker-compose.yml up -d elasticsearch zeebe \
 	&& mvn install -DskipTests=true -Dskip.fe.build=true \
 	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
 	   mvn -f operate/webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
 
 env-os-up:
-	docker-compose up -d opensearch zeebe-opensearch \
+	docker-compose -f operate/docker-compose.yml up -d opensearch zeebe-opensearch \
 	&& mvn install -DskipTests=true -Dskip.fe.build=true \
 	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
 	&& CAMUNDA_OPERATE_DATABASE=opensearch \
@@ -18,7 +18,7 @@ env-os-up:
 .PHONY: env-ldap-up
 env-ldap-up:
 	@echo "Starting ldap-testserver: Look up for users (fry/fry, bender/bender etc) at: https://github.com/rroemhild/docker-test-openldap" \
-	&& docker-compose up -d elasticsearch zeebe ldap-test-server \
+	&& docker-compose -f operate/docker-compose.yml up -d elasticsearch zeebe ldap-test-server \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false \
 	&& CAMUNDA_OPERATE_LDAP_BASEDN=dc=planetexpress,dc=com \
        CAMUNDA_OPERATE_LDAP_URL=ldap://localhost:10389/ \
@@ -30,7 +30,7 @@ env-ldap-up:
 # Set the env var CAMUNDA_OPERATE_AUTH0_CLIENTSECRET in your shell please, eg: export CAMUNDA_OPERATE_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
 env-sso-up:
-	@docker-compose up -d elasticsearch zeebe \
+	@docker-compose -f operate/docker-compose.yml up -d elasticsearch zeebe \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false \
 	&& CAMUNDA_OPERATE_AUTH0_BACKENDDOMAIN=camunda-dev.eu.auth0.com \
 	   CAMUNDA_OPERATE_AUTH0_CLAIMNAME=https://camunda.com/orgs \
@@ -59,13 +59,13 @@ env-identity-up:
 
 .PHONY: env-down
 env-down:
-	@docker-compose down -v \
+	@docker-compose -f operate/docker-compose.yml down -v \
 	&& docker-compose -f ./operate/config/docker-compose.identity.yml down -v \
 	&& mvn clean
 
 .PHONY: env-status
 env-status:
-	docker-compose ps
+	docker-compose -f operate/docker-compose.yml ps
 
 .PHONY: env-clean
 env-clean: env-down
@@ -75,7 +75,7 @@ env-clean: env-down
 start-e2e:
 	curl --request DELETE --url http://localhost:9200/e2e* \
 	&& docker rm -f zeebe-e2e || true \
-	&& docker-compose up --force-recreate -d zeebe-e2e \
+	&& docker-compose -f operate/docker-compose.yml up --force-recreate -d zeebe-e2e \
 	&& mvn install -DskipTests=true -Dskip.fe.build=true \
 	&& CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=localhost:26503 \
 	CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX=e2e \
