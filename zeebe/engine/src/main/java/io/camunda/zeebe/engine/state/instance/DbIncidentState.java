@@ -111,6 +111,11 @@ public final class DbIncidentState implements MutableIncidentState {
   }
 
   @Override
+  public void migrateIncident(final long incidentKey, final IncidentRecord incident) {
+    // TODO - will be implemented with https://github.com/camunda/zeebe/issues/16621
+  }
+
+  @Override
   public IncidentRecord getIncidentRecord(final long incidentKey) {
     this.incidentKey.wrapLong(incidentKey);
 
