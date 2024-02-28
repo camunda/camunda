@@ -488,15 +488,17 @@ public final class ProcessInstanceMigrationPreconditionChecker {
             .toList();
 
     if (!rejectedBoundaryEvents.isEmpty()) {
+      final String rejectedEventTypes =
+          rejectedBoundaryEvents.stream()
+              .map(ExecutableBoundaryEvent::getEventType)
+              .map(BpmnEventType::name)
+              .collect(Collectors.joining(","));
       final String reason =
           String.format(
               ERROR_ACTIVE_ELEMENT_WITH_BOUNDARY_EVENT,
               elementInstanceRecord.getProcessInstanceKey(),
               elementInstanceRecord.getElementId(),
-              rejectedBoundaryEvents.stream()
-                  .map(ExecutableBoundaryEvent::getEventType)
-                  .map(BpmnEventType::name)
-                  .collect(Collectors.joining(",")));
+              rejectedEventTypes);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
