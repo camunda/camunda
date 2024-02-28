@@ -164,8 +164,7 @@ final class RollingUpdateTest {
           .pollInterval(Duration.ofMillis(500))
           .untilAsserted(() -> assertBrokerHasAtLeastOneSnapshot(0));
 
-      broker.setDockerImageName(
-          DockerImageName.parse("camunda/zeebe").withTag(to).asCanonicalNameString());
+      updateBroker(broker, to);
       broker.start();
       Awaitility.await("updated broker is added to topology")
           .atMost(Duration.ofSeconds(120))
