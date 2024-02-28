@@ -126,18 +126,13 @@
     },
     // Docker deps
     {
-      matchManagers: "dockerfile",
-      separateMajorMinor: true,
-      separateMinorPatch: true,
-      prPriority: 100,
-    },
-    {
       matchDatasources: ["docker"],
       matchPackagePatterns: ["alpine", "docker.io/library/alpine"],
       // Group all docker updates into one PR
       groupName: "Alpine dependencies",
       separateMajorMinor: true,
       pinDigests: true,
+      prPriority: 100
     },
     // Settings for patch versions update
     {
