@@ -1,4 +1,4 @@
-name: Weekly medic benchmark
+name: Zeebe Weekly medic benchmark
 on:
   workflow_dispatch: { }
   schedule:
@@ -49,7 +49,7 @@ jobs:
     needs:
       - benchmark-data
       - delete-old-benchmarks
-    uses: ./.github/workflows/benchmark.yml
+    uses: ./.github/workflows/zeebe-benchmark.yml
     secrets: inherit
     with:
       name: ${{ needs.benchmark-data.outputs.benchmark }}
@@ -59,7 +59,7 @@ jobs:
       publish: "slack"
   setup-mixed-benchmark:
     name: Mixed Benchmark
-    uses: ./.github/workflows/benchmark.yml
+    uses: ./.github/workflows/zeebe-benchmark.yml
     secrets: inherit
     needs:
       - benchmark-data
@@ -78,7 +78,7 @@ jobs:
         --set publisher.rate=25
   setup-latency-benchmark:
     name: Latency Benchmark
-    uses: ./.github/workflows/benchmark.yml
+    uses: ./.github/workflows/zeebe-benchmark.yml
     secrets: inherit
     needs:
       - benchmark-data
