@@ -1118,9 +1118,6 @@ public class MigrateProcessInstanceTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
-    ENGINE.jobs().withType("jobTypeA").withMaxJobsToActivate(1).activate();
-    RecordingExporter.jobRecords(JobIntent.CREATED).withType("jobTypeA").await();
-
     final Record<JobRecordValue> failedEvent =
         ENGINE.job().withType("jobTypeA").ofInstance(processInstanceKey).withRetries(0).fail();
 
@@ -1144,17 +1141,33 @@ public class MigrateProcessInstanceTest {
     // then
     assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
+                .withRecordKey(incident.getKey())
                 .getFirst()
                 .getValue())
         .describedAs("Expect that process definition is updated")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasBpmnProcessId(targetProcessId)
         .describedAs("Expect that element id changed due to mapping")
-        .hasElementId("B");
+        .hasElementId("B")
+        .describedAs("Expect that other properties of the incident did not change")
+        .hasErrorType(incident.getValue().getErrorType())
+        .hasErrorMessage(incident.getValue().getErrorMessage())
+        .hasProcessInstanceKey(incident.getValue().getProcessInstanceKey())
+        .hasElementInstanceKey(incident.getValue().getElementInstanceKey())
+        .hasJobKey(incident.getValue().getJobKey())
+        .hasVariableScopeKey(incident.getValue().getVariableScopeKey())
+        .hasTenantId(incident.getValue().getTenantId());
 
     // after resolving the incident, job can be completed and the process should continue
-    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    final Record<IncidentRecordValue> incidentRecord =
+        ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    assertThat(incidentRecord.getValue())
+        .describedAs("Expect that the incident resolved event contains updated fields")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("B");
+
     // note that re-evaluation of the job type expression is not enabled for this migration
     // so the jobType didn't change
     ENGINE.job().ofInstance(processInstanceKey).withType("jobTypeA").complete();
@@ -1224,12 +1237,28 @@ public class MigrateProcessInstanceTest {
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .hasBpmnProcessId(targetProcessId)
         .describedAs("Expect that element id changed due to mapping")
-        .hasElementId("B");
+        .hasElementId("B")
+        .describedAs("Expect that other properties of the incident did not change")
+        .hasErrorType(incident.getValue().getErrorType())
+        .hasErrorMessage(incident.getValue().getErrorMessage())
+        .hasProcessInstanceKey(incident.getValue().getProcessInstanceKey())
+        .hasElementInstanceKey(incident.getValue().getElementInstanceKey())
+        .hasJobKey(incident.getValue().getJobKey())
+        .hasVariableScopeKey(incident.getValue().getVariableScopeKey())
+        .hasTenantId(incident.getValue().getTenantId());
 
     // after resolving the incident, the process should continue as expected
-    ENGINE.variables().ofScope(processInstanceKey).withDocument(Map.of("x", 1)).update();
-    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    final Record<IncidentRecordValue> incidentRecord =
+        ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
+    assertThat(incidentRecord.getValue())
+        .describedAs("Expect that the incident resolved event contains updated fields")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("B");
+
+    // since the job wasn't created in the source process before the migration, a new job is created
+    // in the target process after resolving the incident
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -1238,8 +1267,6 @@ public class MigrateProcessInstanceTest {
         .describedAs("Expect that the job is created in the migrated process")
         .isTrue();
 
-    // since the job wasn't created in the source process before the migration, a new job is created
-    // in the target process after resolving the incident
     ENGINE.job().ofInstance(processInstanceKey).withType("jobTypeB").complete();
 
     assertThat(
