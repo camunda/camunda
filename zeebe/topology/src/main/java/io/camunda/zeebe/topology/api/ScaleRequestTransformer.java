@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.topology.api;
 
+import static io.camunda.zeebe.topology.api.PartitionReassignRequestTransformer.USE_CURRENT_REPLICATION_FACTOR;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -20,10 +22,16 @@ import java.util.stream.Collectors;
 public class ScaleRequestTransformer implements TopologyChangeRequest {
 
   private final Set<MemberId> members;
+  private final int newReplicationFactor;
   private final ArrayList<TopologyChangeOperation> generatedOperations = new ArrayList<>();
 
   public ScaleRequestTransformer(final Set<MemberId> members) {
+    this(members, USE_CURRENT_REPLICATION_FACTOR);
+  }
+
+  public ScaleRequestTransformer(final Set<MemberId> members, final int newReplicationFactor) {
     this.members = members;
+    this.newReplicationFactor = newReplicationFactor;
   }
 
   @Override
@@ -37,7 +45,9 @@ public class ScaleRequestTransformer implements TopologyChangeRequest {
         .map(this::addToOperations)
         // then reassign partitions
         .flatMap(
-            ignore -> new PartitionReassignRequestTransformer(members).operations(currentTopology))
+            ignore ->
+                new PartitionReassignRequestTransformer(members, newReplicationFactor)
+                    .operations(currentTopology))
         .map(this::addToOperations)
         // then remove members that are not part of the new topology
         .flatMap(

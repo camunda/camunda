@@ -63,6 +63,17 @@ class PartitionReassignRequestTransformerTest {
     shouldReassignPartitionsRoundRobin(partitionCount, 4, oldClusterSize, newClusterSize);
   }
 
+  @Property(tries = 10)
+  void shouldChangeReplicationFactor(
+      @ForAll @IntRange(min = 10, max = 100) final int partitionCount,
+      @ForAll @IntRange(min = 1, max = 6) final int oldReplicationFactor,
+      @ForAll @IntRange(min = 1, max = 6) final int newReplicationFactor,
+      @ForAll @IntRange(min = 10, max = 100) final int oldClusterSize,
+      @ForAll @IntRange(min = 10, max = 100) final int newClusterSize) {
+    shouldReassignPartitionsRoundRobin(
+        partitionCount, oldReplicationFactor, newReplicationFactor, oldClusterSize, newClusterSize);
+  }
+
   @Property
   void shouldFailIfClusterSizeLessThanReplicationFactor3(
       @ForAll @IntRange(min = 0, max = 2) final int newClusterSize) {
@@ -114,20 +125,30 @@ class PartitionReassignRequestTransformerTest {
       final int replicationFactor,
       final int oldClusterSize,
       final int newClusterSize) {
+    shouldReassignPartitionsRoundRobin(
+        partitionCount, replicationFactor, replicationFactor, oldClusterSize, newClusterSize);
+  }
+
+  void shouldReassignPartitionsRoundRobin(
+      final int partitionCount,
+      final int oldReplicationFactor,
+      final int newReplicationFactor,
+      final int oldClusterSize,
+      final int newClusterSize) {
     // given
     final var expectedNewDistribution =
         new RoundRobinPartitionDistributor()
             .distributePartitions(
                 getClusterMembers(newClusterSize),
                 getSortedPartitionIds(partitionCount),
-                replicationFactor);
+                newReplicationFactor);
 
     final var oldDistribution =
         new RoundRobinPartitionDistributor()
             .distributePartitions(
                 getClusterMembers(oldClusterSize),
                 getSortedPartitionIds(partitionCount),
-                replicationFactor);
+                oldReplicationFactor);
     var oldClusterTopology = TopologyUtil.getClusterTopologyFrom(oldDistribution);
     for (int i = 0; i < max(oldClusterSize, newClusterSize); i++) {
       oldClusterTopology =
@@ -139,10 +160,14 @@ class PartitionReassignRequestTransformerTest {
     }
 
     // when
-    final var operations =
-        new PartitionReassignRequestTransformer(getClusterMembers(newClusterSize))
-            .operations(oldClusterTopology)
-            .get();
+    final var request =
+        oldReplicationFactor == newReplicationFactor
+            ? new PartitionReassignRequestTransformer(
+                getClusterMembers(newClusterSize),
+                PartitionReassignRequestTransformer.USE_CURRENT_REPLICATION_FACTOR)
+            : new PartitionReassignRequestTransformer(
+                getClusterMembers(newClusterSize), newReplicationFactor);
+    final var operations = request.operations(oldClusterTopology).get();
 
     // apply operations to generate new topology
     final ClusterTopology newTopology =

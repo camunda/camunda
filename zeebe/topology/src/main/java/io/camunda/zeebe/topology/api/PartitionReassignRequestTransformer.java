@@ -28,11 +28,18 @@ import java.util.stream.IntStream;
 
 /** Reassign all partitions to the given members based on round-robin strategy. */
 public class PartitionReassignRequestTransformer implements TopologyChangeRequest {
-
+  static final int USE_CURRENT_REPLICATION_FACTOR = -1;
   final Set<MemberId> members;
+  private final int newReplicationFactor;
+
+  public PartitionReassignRequestTransformer(
+      final Set<MemberId> members, final int newReplicationFactor) {
+    this.members = members;
+    this.newReplicationFactor = newReplicationFactor;
+  }
 
   public PartitionReassignRequestTransformer(final Set<MemberId> members) {
-    this.members = members;
+    this(members, USE_CURRENT_REPLICATION_FACTOR);
   }
 
   @Override
@@ -48,14 +55,16 @@ public class PartitionReassignRequestTransformer implements TopologyChangeReques
     return generatePartitionDistributionOperations(currentTopology, members);
   }
 
+  private int getReplicationFactor(final ClusterTopology clusterTopology) {
+    return newReplicationFactor > 0 ? newReplicationFactor : clusterTopology.minReplicationFactor();
+  }
+
   private Either<Exception, List<TopologyChangeOperation>> generatePartitionDistributionOperations(
       final ClusterTopology currentTopology, final Set<MemberId> brokers) {
     final List<TopologyChangeOperation> operations = new ArrayList<>();
 
     final var oldDistribution = TopologyUtil.getPartitionDistributionFrom(currentTopology, "temp");
-    // We assume that all partitions have the same replication factor
-    final int replicationFactor =
-        oldDistribution.stream().map(p -> p.members().size()).findFirst().orElseThrow();
+    final int replicationFactor = getReplicationFactor(currentTopology);
 
     if (brokers.size() < replicationFactor) {
       return Either.left(
