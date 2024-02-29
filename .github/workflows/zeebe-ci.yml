@@ -1,4 +1,4 @@
-name: CI
+name: Zeebe CI
 
 on:
   push:
@@ -72,7 +72,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C
-      - uses: ./.github/actions/build-docker
+      - uses: ./.github/actions/build-zeebe-docker
         with:
           repository: localhost:5000/camunda/zeebe
           version: current-test
@@ -194,8 +194,8 @@ jobs:
         with:
           go: false
           maven-extra-args: -T1C
-      - uses: ./.github/actions/build-docker
-        id: build-docker
+      - uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
         # Currently only Linux runners support building docker images without further ado
         if: ${{ runner.os == 'Linux' }}
         with:
@@ -205,7 +205,7 @@ jobs:
           push: false
       - name: Run smoke test on ${{ matrix.arch }}
         env:
-          # For non Linux runners there is no container available for testing, see build-docker job
+          # For non Linux runners there is no container available for testing, see build-zeebe-docker job
           EXCLUDED_TEST_GROUPS: ${{ runner.os != 'Linux' && 'container' }}
         run: >
           ./mvnw -B --no-snapshot-updates
@@ -316,8 +316,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-      - uses: ./.github/actions/build-docker
-        id: build-docker
+      - uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
         with:
           repository: camunda/zeebe
           version: current-test
@@ -453,8 +453,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-      - uses: ./.github/actions/build-docker
-        id: build-docker
+      - uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
         with:
           # we use a local registry for pushing
           repository: ${{ env.LOCAL_DOCKER_IMAGE }}
@@ -466,9 +466,9 @@ jobs:
         uses: ./.github/actions/verify-zeebe-docker
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-docker.outputs.date }}
+          date: ${{ steps.build-zeebe-docker.outputs.date }}
           revision: ${{ github.sha }}
-          version: ${{ steps.build-docker.outputs.version }}
+          version: ${{ steps.build-zeebe-docker.outputs.version }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
   test-summary:
     # Used by bors to check all tests, including the unit test matrix.
@@ -574,8 +574,8 @@ jobs:
           docker-token: REGISTRY_HUB_DOCKER_COM_PSW
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-      - uses: ./.github/actions/build-docker
-        id: build-docker
+      - uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
         with:
           repository: camunda/zeebe
           version: SNAPSHOT
@@ -627,7 +627,7 @@ jobs:
     concurrency:
       group: deploy-snyk-projects
       cancel-in-progress: false
-    uses: ./.github/workflows/snyk.yml
+    uses: ./.github/workflows/zeebe-snyk.yml
     with:
       monitor: true
       build: true
