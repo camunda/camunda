@@ -71,6 +71,7 @@ final class TopologyCoordinatorTest {
     // No exception because the query will be forwarded to broker 1
     Awaitility.await("Query is forwarded to broker 1")
         .timeout(Duration.ofSeconds(30)) // give enough time for topology to be gossiped
+        .ignoreExceptions() // query will fail if the broker is not reachable
         .untilAsserted(
             () ->
                 ClusterActuatorAssert.assertThat(cluster)
