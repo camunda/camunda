@@ -213,7 +213,7 @@ final class PartitionTransitionProcess {
   }
 
   public HealthIssue getHealthIssue() {
-    if (currentStep != null && stepStartedAtMs + STEP_TIMEOUT_MS > ActorClock.currentTimeMillis()) {
+    if (currentStep != null && ActorClock.currentTimeMillis() > stepStartedAtMs + STEP_TIMEOUT_MS) {
       return HealthIssue.of(
           "Transition from %s on term %s appears blocked, step %s has been running for %s"
               .formatted(
