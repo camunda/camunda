@@ -7,6 +7,7 @@ package org.camunda.optimize.service.identity;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.container.ContainerRequestContext;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +30,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
-public class CCSaaSIdentityService extends AbstractIdentityService {
+public class CCSaaSIdentityService extends AbstractIdentityService
+    implements UserTaskIdentityService {
 
   private final CloudUsersService usersService;
 
@@ -101,6 +103,12 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
       log.warn("Failed retrieving users.", e);
       return Collections.emptyList();
     }
+  }
+
+  @Override
+  public List<IdentityWithMetadataResponseDto> getIdentities(
+      final Collection<IdentityDto> identities) {
+    return Collections.emptyList(); // TODO to be implemented with #11655
   }
 
   @NotNull

@@ -6,28 +6,34 @@
 package org.camunda.optimize.service.identity;
 
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toSet;
 
+import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.SearchableIdentityCache;
 import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
 import org.camunda.optimize.service.exceptions.MaxEntryLimitHitException;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PlatformUserTaskIdentityCache extends AbstractPlatformIdentityCache {
-  private final EngineContextFactory engineContextFactory;
-  private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
+@Conditional(CamundaPlatformCondition.class)
+public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdentityCache
+    implements UserTaskIdentityService {
 
   public PlatformUserTaskIdentityCache(
       final ConfigurationService configurationService,
@@ -35,11 +41,10 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformIdentityCache
       final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader,
       final BackoffCalculator backoffCalculator) {
     super(
-        configurationService::getUserTaskIdentityCacheConfiguration,
-        Collections.emptyList(),
+        configurationService,
+        engineContextFactory,
+        assigneeAndCandidateGroupsReader,
         backoffCalculator);
-    this.engineContextFactory = engineContextFactory;
-    this.assigneeAndCandidateGroupsReader = assigneeAndCandidateGroupsReader;
   }
 
   @Override
@@ -76,11 +81,41 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformIdentityCache
             });
   }
 
-  public List<UserDto> getAssigneesByIds(final Collection<String> assigneeIds) {
-    return getUserIdentitiesById(assigneeIds);
+  public void addIdentitiesIfNotPresent(final Set<IdentityDto> identities) {
+    final Set<IdentityDto> identitiesInCache =
+        getIdentities(identities).stream()
+            .map(IdentityWithMetadataResponseDto::toIdentityDto)
+            .collect(toSet());
+    final Sets.SetView<IdentityDto> identitiesToSync =
+        Sets.difference(identities, identitiesInCache);
+    if (!identitiesToSync.isEmpty()) {
+      resolveAndAddIdentities(identitiesToSync);
+    }
   }
 
-  public void resolveAndAddIdentities(final Set<IdentityDto> identities) {
+  @Override
+  public List<IdentityWithMetadataResponseDto> getIdentities(
+      final Collection<IdentityDto> identities) {
+    return getActiveIdentityCache().getIdentities(identities);
+  }
+
+  @Override
+  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
+      final String id, final IdentityType type) {
+    return getActiveIdentityCache().getIdentityByIdAndType(id, type);
+  }
+
+  @Override
+  public IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(
+      final String terms,
+      final Collection<String> identityIds,
+      final IdentityType[] identityTypes,
+      final int resultLimit) {
+    return getActiveIdentityCache()
+        .searchAmongIdentitiesWithIds(terms, identityIds, identityTypes, resultLimit);
+  }
+
+  private void resolveAndAddIdentities(final Set<IdentityDto> identities) {
     if (identities.isEmpty()) {
       return;
     }

@@ -6,7 +6,6 @@
 package org.camunda.optimize.service;
 
 import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
 
 import com.google.common.collect.Sets;
 import jakarta.ws.rs.ForbiddenException;
@@ -37,7 +36,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitio
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
-import org.camunda.optimize.service.identity.PlatformUserTaskIdentityCache;
+import org.camunda.optimize.service.identity.UserTaskIdentityService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
@@ -47,23 +46,22 @@ import org.springframework.stereotype.Component;
 @Component
 public class AssigneeCandidateGroupService {
 
-  private static final IdentityType[] ASSIGNEE_IDENTITY_TYPES = {IdentityType.USER};
+  public static final IdentityType[] ASSIGNEE_IDENTITY_TYPES = {IdentityType.USER};
   private static final IdentityType[] CANDIDATE_GROUP_IDENTITY_TYPES = {IdentityType.GROUP};
-  private static final String PROCESS_DEFINITION_KEY = "process definition key";
 
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
-  private final PlatformUserTaskIdentityCache identityCacheService;
+  private final UserTaskIdentityService identityService;
   private final ReportService reportService;
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
       final String id, final IdentityType type) {
-    return identityCacheService.getIdentityByIdAndType(id, type);
+    return identityService.getIdentityByIdAndType(id, type);
   }
 
   public List<UserDto> getAssigneesByIds(final Collection<String> assigneeIds) {
     final Map<String, UserDto> assigneesById =
-        identityCacheService.getAssigneesByIds(assigneeIds).stream()
+        identityService.getAssigneesByIds(assigneeIds).stream()
             .collect(toMap(IdentityDto::getId, Function.identity()));
     return assigneeIds.stream().map(id -> assigneesById.getOrDefault(id, new UserDto(id))).toList();
   }
@@ -87,11 +85,11 @@ public class AssigneeCandidateGroupService {
         retrieveAuthorizedDefinitionTenantMap(userId, requestDto.getReportIds()));
   }
 
-  public List<GroupDto> getCandidateGroupsByIds(final Collection<String> assigneeIds) {
+  public List<GroupDto> getCandidateGroupsByIds(final Collection<String> candidateGroupIds) {
     final Map<String, GroupDto> candidateGroupsById =
-        identityCacheService.getCandidateGroupIdentitiesById(assigneeIds).stream()
+        identityService.getCandidateGroupIdentitiesById(candidateGroupIds).stream()
             .collect(toMap(IdentityDto::getId, Function.identity()));
-    return assigneeIds.stream()
+    return candidateGroupIds.stream()
         .map(id -> candidateGroupsById.getOrDefault(id, new GroupDto(id)))
         .toList();
   }
@@ -115,18 +113,6 @@ public class AssigneeCandidateGroupService {
         retrieveAuthorizedDefinitionTenantMap(userId, requestDto.getReportIds()));
   }
 
-  public void addIdentitiesIfNotPresent(final Set<IdentityDto> identities) {
-    final Set<IdentityDto> identitiesInCache =
-        identityCacheService.getIdentities(identities).stream()
-            .map(IdentityWithMetadataResponseDto::toIdentityDto)
-            .collect(toSet());
-    final Sets.SetView<IdentityDto> identitiesToSync =
-        Sets.difference(identities, identitiesInCache);
-    if (!identitiesToSync.isEmpty()) {
-      identityCacheService.resolveAndAddIdentities(identitiesToSync);
-    }
-  }
-
   private IdentitySearchResultResponseDto searchForAssignees(
       final int limit,
       @NonNull final String terms,
@@ -137,7 +123,7 @@ public class AssigneeCandidateGroupService {
     // to be worth it
     final Set<String> assigneeIdsForProcess =
         assigneeAndCandidateGroupsReader.getAssigneeIdsForProcess(definitionKeyToTenantsMap);
-    return identityCacheService.searchAmongIdentitiesWithIds(
+    return identityService.searchAmongIdentitiesWithIds(
         terms, assigneeIdsForProcess, ASSIGNEE_IDENTITY_TYPES, limit);
   }
 
@@ -151,7 +137,7 @@ public class AssigneeCandidateGroupService {
     // to be worth it
     final Set<String> candidateGroupIdsForProcess =
         assigneeAndCandidateGroupsReader.getCandidateGroupIdsForProcess(definitionKeyToTenantsMap);
-    return identityCacheService.searchAmongIdentitiesWithIds(
+    return identityService.searchAmongIdentitiesWithIds(
         terms, candidateGroupIdsForProcess, CANDIDATE_GROUP_IDENTITY_TYPES, limit);
   }
 

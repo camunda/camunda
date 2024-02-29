@@ -14,9 +14,9 @@ import org.camunda.optimize.dto.engine.HistoricIdentityLinkLogDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogType;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.usertask.IdentityLinkLogWriter;
+import org.camunda.optimize.service.identity.PlatformUserTaskIdentityCache;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
@@ -32,7 +32,7 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final IdentityLinkLogWriter identityLinkLogWriter;
-  private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+  private final PlatformUserTaskIdentityCache platformUserTaskIdentityCache;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
   private final DatabaseClient databaseClient;
@@ -40,14 +40,14 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
   public IdentityLinkLogImportService(
       final ConfigurationService configurationService,
       final IdentityLinkLogWriter identityLinkLogWriter,
-      final AssigneeCandidateGroupService assigneeCandidateGroupService,
+      final PlatformUserTaskIdentityCache platformUserTaskIdentityCache,
       final EngineContext engineContext,
       final ProcessDefinitionResolverService processDefinitionResolverService,
       final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.identityLinkLogWriter = identityLinkLogWriter;
-    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+    this.platformUserTaskIdentityCache = platformUserTaskIdentityCache;
     this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
@@ -103,7 +103,7 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
     final IdentityLinkLogImportJob importJob =
         new IdentityLinkLogImportJob(
             identityLinkLogWriter,
-            assigneeCandidateGroupService,
+            platformUserTaskIdentityCache,
             configurationService,
             callback,
             databaseClient);

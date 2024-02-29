@@ -12,6 +12,7 @@ import io.camunda.identity.sdk.users.dto.User;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Cookie;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +33,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Conditional(CCSMCondition.class)
-public class CCSMIdentityService extends AbstractIdentityService {
+public class CCSMIdentityService extends AbstractIdentityService
+    implements UserTaskIdentityService {
 
   private final CCSMTokenService ccsmTokenService;
   private final Identity identity;
@@ -156,6 +158,12 @@ public class CCSMIdentityService extends AbstractIdentityService {
           "Cannot search for users by email because no user search available in Camunda identity.");
       return Collections.emptyList();
     }
+  }
+
+  @Override
+  public List<IdentityWithMetadataResponseDto> getIdentities(
+      final Collection<IdentityDto> identities) {
+    return Collections.emptyList(); // TODO to be implemented with #11655
   }
 
   private List<IdentityWithMetadataResponseDto> searchForIdentityUsingSearchTerm(

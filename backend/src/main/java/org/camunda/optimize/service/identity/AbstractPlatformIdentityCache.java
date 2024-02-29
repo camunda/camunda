@@ -13,9 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.camunda.optimize.dto.optimize.GroupDto;
-import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
@@ -38,6 +36,7 @@ import org.springframework.scheduling.support.CronTrigger;
 
 public abstract class AbstractPlatformIdentityCache extends AbstractScheduledService
     implements ConfigurationReloadable {
+
   protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
   private final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier;
@@ -176,46 +175,12 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
     }
   }
 
-  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
-      final String id, final IdentityType type) {
-    return activeIdentityCache.getIdentityByIdAndType(id, type);
-  }
-
   public Optional<UserDto> getUserIdentityById(final String id) {
     return activeIdentityCache.getUserIdentityById(id);
   }
 
-  public List<UserDto> getUserIdentitiesById(final Collection<String> ids) {
-    return activeIdentityCache
-        .getIdentities(
-            ids.stream()
-                .map(id -> new IdentityDto(id, IdentityType.USER))
-                .collect(Collectors.toSet()))
-        .stream()
-        .filter(UserDto.class::isInstance)
-        .map(UserDto.class::cast)
-        .toList();
-  }
-
   public Optional<GroupDto> getGroupIdentityById(final String id) {
     return activeIdentityCache.getGroupIdentityById(id);
-  }
-
-  public List<GroupDto> getCandidateGroupIdentitiesById(final Collection<String> ids) {
-    return activeIdentityCache
-        .getIdentities(
-            ids.stream()
-                .map(id -> new IdentityDto(id, IdentityType.GROUP))
-                .collect(Collectors.toSet()))
-        .stream()
-        .filter(GroupDto.class::isInstance)
-        .map(GroupDto.class::cast)
-        .toList();
-  }
-
-  public List<IdentityWithMetadataResponseDto> getIdentities(
-      final Collection<IdentityDto> identities) {
-    return activeIdentityCache.getIdentities(identities);
   }
 
   public IdentitySearchResultResponseDto searchIdentities(
@@ -235,15 +200,6 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
       final IdentitySearchResultResponseDto searchAfter) {
     return activeIdentityCache.searchIdentitiesAfter(
         terms, identityTypes, resultLimit, searchAfter);
-  }
-
-  public IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(
-      final String terms,
-      final Collection<String> identityIds,
-      final IdentityType[] identityTypes,
-      final int resultLimit) {
-    return activeIdentityCache.searchAmongIdentitiesWithIds(
-        terms, identityIds, identityTypes, resultLimit);
   }
 
   private synchronized void replaceActiveCache(final SearchableIdentityCache newIdentityCache) {
