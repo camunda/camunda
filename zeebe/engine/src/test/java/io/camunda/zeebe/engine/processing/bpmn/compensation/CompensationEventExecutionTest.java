@@ -23,8 +23,10 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1006,6 +1008,67 @@ public class CompensationEventExecutionTest {
             .getFirst();
 
     Assertions.assertThat(variableCreated.getValue()).hasScopeKey(processInstanceKey).hasValue("2");
+  }
+
+  @Test
+  public void shouldPropagateVariablesOfCompensationHandler() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess("subprocess")
+            .zeebeInputExpression("0", "local")
+            .embeddedSubProcess()
+            .startEvent()
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .endEvent()
+            .compensateEventDefinition()
+            .subProcessDone()
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("Undo-A")
+        .withVariables(Map.ofEntries(Map.entry("local", 1), Map.entry("global", 2)))
+        .complete();
+
+    // then
+    final long subprocessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("subprocess")
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords())
+        .extracting(Record::getValue)
+        .extracting(
+            VariableRecordValue::getScopeKey,
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue)
+        .containsExactly(
+            tuple(subprocessInstanceKey, "local", "0"),
+            tuple(subprocessInstanceKey, "local", "1"),
+            tuple(processInstanceKey, "global", "2"));
   }
 
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
