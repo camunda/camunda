@@ -5,180 +5,69 @@
  */
 package org.camunda.optimize.service.db.writer;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.repository.script.ZeebeProcessInstanceScriptFactory.createProcessInstanceUpdateScript;
+import static org.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.PROCESS_INSTANCE_INDEX;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
-import org.camunda.optimize.service.db.es.writer.usertask.UserTaskDurationScriptUtil;
+import org.camunda.optimize.dto.optimize.RequestType;
+import org.camunda.optimize.service.db.repository.IndexRepository;
+import org.springframework.stereotype.Component;
 
-public interface ZeebeProcessInstanceWriter {
+@Component
+@Slf4j
+@AllArgsConstructor
+public class ZeebeProcessInstanceWriter {
+  private static final String NEW_INSTANCE = "instance";
+  private static final String FORMATTER = "dateFormatPattern";
+  private static final String SOURCE_EXPORT_INDEX = "sourceExportIndex";
+  private final IndexRepository indexRepository;
+  private final ObjectMapper objectMapper;
 
-  String NEW_INSTANCE = "instance";
-  String FORMATTER = "dateFormatPattern";
-  String SOURCE_EXPORT_INDEX = "sourceExportIndex";
+  public List<ImportRequestDto> generateProcessInstanceImports(
+      final List<ProcessInstanceDto> processInstances, final String sourceExportIndex) {
+    String importItemName = "zeebe process instances";
+    log.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
+    indexRepository.createMissingIndices(
+        PROCESS_INSTANCE_INDEX,
+        Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
+        processInstances.stream()
+            .map(ProcessInstanceDto::getProcessDefinitionKey)
+            .collect(Collectors.toSet()));
 
-  List<ImportRequestDto> generateProcessInstanceImports(
-      List<ProcessInstanceDto> processInstances, final String sourceExportIndex);
-
-  default String createProcessInstanceUpdateScript() {
-    return createUpdateProcessInstancePropertiesScript()
-        + createUpdateFlowNodeInstancesScript()
-        + createUpdateIncidentsScript();
-  }
-
-  default String createUpdateProcessInstancePropertiesScript() {
-    final String simplePropertyUpdateScript =
-        createUpdatePropertyIfNotNullScript(
-            "newInstance",
-            "existingInstance",
-            Set.of(
-                ProcessInstanceDto.Fields.processInstanceId,
-                ProcessInstanceDto.Fields.processDefinitionKey,
-                ProcessInstanceDto.Fields.processDefinitionVersion,
-                ProcessInstanceDto.Fields.processDefinitionId,
-                ProcessInstanceDto.Fields.startDate,
-                ProcessInstanceDto.Fields.endDate,
-                ProcessInstanceDto.Fields.state,
-                ProcessInstanceDto.Fields.dataSource));
-    return """
-      def newInstance = params.instance;
-      def existingInstance = ctx._source;
-      """
-        + simplePropertyUpdateScript
-        + """
-        if (existingInstance.startDate != null && existingInstance.endDate != null) {
-          def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);
-          existingInstance.duration = dateFormatter.parse(existingInstance.endDate).getTime() -
-            dateFormatter.parse(existingInstance.startDate).getTime();
-        }
-        if (existingInstance.variables == null) {
-          existingInstance.variables = new ArrayList();
-        }
-        if (newInstance.variables != null) {
-           existingInstance.variables = Stream.concat(existingInstance.variables.stream(), newInstance.variables.stream())
-           .collect(Collectors.toMap(variable -> variable.id, Function.identity(), (oldVar, newVar) ->
-              (newVar.version > oldVar.version) ? newVar : oldVar
-           )).values();
-        }
-        """;
-  }
-
-  default String createUpdateFlowNodeInstancesScript() {
-    return """
-      def flowNodesById = existingInstance.flowNodeInstances.stream()
-        .collect(Collectors.toMap(flowNode -> flowNode.flowNodeInstanceId, flowNode -> flowNode, (f1, f2) -> f1));
-      def newFlowNodes = params.instance.flowNodeInstances;
-      """
-        +
-        // userTask import is allowed to overwrite flownode import values
-        """
-        def isUserTaskImport = "user-task".equals(params.sourceExportIndex);
-        for (def newFlowNode : newFlowNodes) {
-          def existingFlowNode = flowNodesById.get(newFlowNode.flowNodeInstanceId);
-          if (existingFlowNode != null) {
-            if (newFlowNode.endDate != null && (existingFlowNode.endDate == null || isUserTaskImport)) {
-              existingFlowNode.endDate = newFlowNode.endDate;
-            }
-            if (newFlowNode.startDate != null && (existingFlowNode.startDate == null || isUserTaskImport)) {
-              existingFlowNode.startDate = newFlowNode.startDate;
-            }
-            if (existingFlowNode.startDate != null && existingFlowNode.endDate != null) {
-              def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);
-              existingFlowNode.totalDurationInMs = dateFormatter.parse(existingFlowNode.endDate).getTime() -
-                dateFormatter.parse(existingFlowNode.startDate).getTime();
-            }
-            if (newFlowNode.canceled != null) {
-              existingFlowNode.canceled = newFlowNode.canceled;
-            }
-            if (existingFlowNode.assigneeOperations == null) {
-              existingFlowNode.assigneeOperations = new ArrayList();
-            }
-            if (newFlowNode.assigneeOperations != null && !newFlowNode.assigneeOperations.isEmpty()) {
-              existingFlowNode.assigneeOperations.addAll(newFlowNode.assigneeOperations);
-            }
-            if (isUserTaskImport) {
-              existingFlowNode.assignee = newFlowNode.assignee;
-            }
-          } else {
-            flowNodesById.put(newFlowNode.flowNodeInstanceId, newFlowNode);
-          }
-        }
-        existingInstance.flowNodeInstances = flowNodesById.values();
-        """
-        + UserTaskDurationScriptUtil.createUpdateUserTaskMetricsScript();
-  }
-
-  default String createUpdateIncidentsScript() {
-    final String simplePropertyUpdateScript =
-        createUpdatePropertyIfNotNullScript(
-            "newIncident",
-            "existingIncident",
-            Set.of(IncidentDto.Fields.createTime, IncidentDto.Fields.endTime));
-    return """
-      def incidentsById = existingInstance.incidents.stream()
-        .collect(Collectors.toMap(incident -> incident.id, incident -> incident, (f1, f2) -> f1));
-      def newIncidents = params.instance.incidents;
-      for (def newIncident : newIncidents) {
-        def existingIncident = incidentsById.get(newIncident.id);
-        if (existingIncident != null) {
-      """
-        + simplePropertyUpdateScript
-        + """
-            if (existingIncident.createTime != null && existingIncident.endTime != null) {
-              def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);
-              existingIncident.durationInMs = dateFormatter.parse(existingIncident.endTime).getTime() -
-                dateFormatter.parse(existingIncident.createTime).getTime();
-            }
-            if (existingIncident.incidentStatus.equals("open")) {
-              existingIncident.incidentStatus = newIncident.incidentStatus;
-            }
-          } else {
-            incidentsById.put(newIncident.id, newIncident);
-          }
-        }
-        """
-        +
-        // We have to set the correct properties for incidents that we can't get from the record
-        """
-            def flowNodeIdsByFlowNodeInstanceIds = flowNodesById.values()
-              .stream()
-              .collect(Collectors.toMap(flowNode -> flowNode.flowNodeInstanceId, flowNode -> flowNode.flowNodeId));
-            existingInstance.incidents = incidentsById.values()
-              .stream()
-              .peek(incident -> {
-                 def flowNodeId = flowNodeIdsByFlowNodeInstanceIds.get(incident.activityId);
-                 if (flowNodeId != null) {
-                   incident.activityId = flowNodeId;
-                 }
-                 incident.definitionVersion = existingInstance.processDefinitionVersion;
-                 return incident;
-              })
-              .collect(Collectors.toList());
-        """;
-  }
-
-  default String createUpdatePropertyIfNotNullScript(
-      final String newEntityName,
-      final String existingEntityName,
-      final Set<String> propertiesToUpdate) {
-    final String simplePropertyUpdateScript =
-        """
-      if (%s.%s != null) {
-        %s.%s = %s.%s;
-      }
-      """;
-    return propertiesToUpdate.stream()
+    return processInstances.stream()
         .map(
-            propertyName ->
-                simplePropertyUpdateScript.formatted(
-                    newEntityName,
-                    propertyName,
-                    existingEntityName,
-                    propertyName,
-                    newEntityName,
-                    propertyName))
-        .collect(Collectors.joining("\n"));
+            procInst -> {
+              final Map<String, Object> params = new HashMap<>();
+              params.put(NEW_INSTANCE, procInst);
+              params.put(FORMATTER, OPTIMIZE_DATE_FORMAT);
+              params.put(SOURCE_EXPORT_INDEX, sourceExportIndex);
+              params.put(FLOW_NODE_INSTANCES, procInst.getFlowNodeInstances());
+              return ImportRequestDto.builder()
+                  .importName(importItemName)
+                  .type(RequestType.UPDATE)
+                  .id(procInst.getProcessInstanceId())
+                  .indexName(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
+                  .source(procInst)
+                  .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                  .scriptData(
+                      DatabaseWriterUtil.createScriptData(
+                          createProcessInstanceUpdateScript(), params, objectMapper))
+                  .build();
+            })
+        .collect(Collectors.toList());
   }
 }
