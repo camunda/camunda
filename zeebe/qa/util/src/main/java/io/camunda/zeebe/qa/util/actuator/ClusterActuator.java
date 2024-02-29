@@ -123,6 +123,17 @@ public interface ClusterActuator {
   PlannedOperationsResponse scaleBrokers(@RequestBody List<Integer> ids, @Param boolean dryRun);
 
   /**
+   * Scales the given brokers up or down and reassigns partitions to the new brokers.
+   *
+   * @param dryRun if true, changes are not applied but only simulated.
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers?dryRun={dryRun}&force={force}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse scaleBrokers(
+      @RequestBody List<Integer> ids, @Param boolean dryRun, @Param boolean force);
+
+  /**
    * Request that the broker is added to the cluster.
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)

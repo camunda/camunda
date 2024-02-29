@@ -119,6 +119,22 @@ final class ClusterEndpointIT {
   }
 
   @Test
+  void shouldRequestForceScaleDownBrokers() {
+    // create cluster with two brokers
+    try (final var cluster = createCluster(2)) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when - force remove broker 1
+      final var response = actuator.scaleBrokers(List.of(0), false, true);
+
+      // then
+      assertThat(response.getExpectedTopology()).hasSize(1);
+    }
+  }
+
+  @Test
   void shouldRequestAddBroker() {
     try (final var cluster = createCluster(1)) {
       // given
