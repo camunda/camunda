@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
@@ -51,12 +52,23 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder gatewayAddress(String gatewayAddress);
 
   /**
+   * <strong>Experimental: This method is under development, and as such using it may have no effect
+   * on the client builder when called. Until this warning is removed, anything described below may
+   * not yet have taken effect, and the interface and its description are subject to
+   * change.</strong>
+   *
    * @param restApiPort the port of the REST API of a gateway that the client can connect to.
    *     Default value is <code>8080</code>.
    */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
   ZeebeClientBuilder gatewayRestApiPort(int restApiPort);
 
   /**
+   * <strong>Experimental: This method is under development, and as such using it may have no effect
+   * on the client builder when called. Until this warning is removed, anything described below may
+   * not yet have taken effect, and the interface and its description are subject to
+   * change.</strong>
+   *
    * @param communicationApi the communication API to use. It can be one of:
    *     <ul>
    *       <li>REST
@@ -65,6 +77,7 @@ public interface ZeebeClientBuilder {
    *     The default value is {@link
    *     io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep#DEFAULT_COMMUNICATION_API}.
    */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
   ZeebeClientBuilder defaultCommunicationApi(String communicationApi);
 
   /**
