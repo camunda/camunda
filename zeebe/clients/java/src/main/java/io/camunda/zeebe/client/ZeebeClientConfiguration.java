@@ -29,6 +29,11 @@ public interface ZeebeClientConfiguration {
   String getGatewayAddress();
 
   /**
+   * @see ZeebeClientBuilder#gatewayRestApiPort(int)
+   */
+  int getGatewayRestApiPort();
+
+  /**
    * @see ZeebeClientBuilder#defaultCommunicationApi(String)
    */
   String getDefaultCommunicationApi();

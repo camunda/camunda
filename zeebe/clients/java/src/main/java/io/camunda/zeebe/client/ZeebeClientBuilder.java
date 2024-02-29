@@ -51,6 +51,12 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder gatewayAddress(String gatewayAddress);
 
   /**
+   * @param restApiPort the port of the REST API of a gateway that the client can connect to.
+   *     Default value is <code>8080</code>.
+   */
+  ZeebeClientBuilder gatewayRestApiPort(int restApiPort);
+
+  /**
    * @param communicationApi the communication API to use. It can be one of:
    *     <ul>
    *       <li>REST

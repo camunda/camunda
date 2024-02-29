@@ -32,6 +32,11 @@ public final class ClientProperties {
   public static final String GATEWAY_ADDRESS = "zeebe.client.gateway.address";
 
   /**
+   * @see ZeebeClientBuilder#gatewayRestApiPort(int)
+   */
+  public static final String GATEWAY_REST_API_PORT = "zeebe.client.gateway.restApi.port";
+
+  /**
    * @see ZeebeClientBuilder#defaultCommunicationApi(String)
    */
   public static final String DEFAULT_COMMUNICATION_API = "zeebe.client.communicationApi";
