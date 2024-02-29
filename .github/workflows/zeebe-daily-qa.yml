@@ -50,7 +50,7 @@ jobs:
           echo "THIRD_LAST_VERSION=${third_last}" >> $GITHUB_ENV
           echo "FOURTH_LAST_VERSION=${fourth_last}" >> $GITHUB_ENV
   # Runs the qa-testbench workflow against the stable branches. It assumes that branches follow the
-  # pattern of `stable/VERSION`, and generations of `Zeebe VERSION`.
+  # pattern of `stable/VERSION`, and generations of `Camunda VERSION`.
   #
   # NOTE: it's not possible to use the env context in a matrix, which is why we use job outputs
   # here.
@@ -78,9 +78,11 @@ jobs:
             generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.third-last-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.fourth-last-version) }}
             generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.fourth-last-version) }}
+    runs-on: ubuntu-latest
     name: Daily QA
-    uses: ./.github/workflows/zeebe-qa-testbench.yaml
-    with:
-      branch: ${{ matrix.branch }}
-      generation: ${{ matrix.generation_template }}
-    secrets: inherit
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trigger QA on ${{ matrix.branch }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run --ref ${{ matrix.branch }} zeebe-qa-testbench.yaml -F generation='${{ matrix.generation_template }}' -F branch=${{ matrix.branch }}
