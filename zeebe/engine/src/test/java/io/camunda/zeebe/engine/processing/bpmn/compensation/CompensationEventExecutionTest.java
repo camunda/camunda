@@ -14,15 +14,19 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -897,6 +901,174 @@ public class CompensationEventExecutionTest {
                 BpmnElementType.PROCESS,
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldApplyInputMappingsOfCompensationHandler() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation
+                                    .serviceTask("Undo-A")
+                                    .zeebeJobType("Undo-A")
+                                    .zeebeInputExpression("x + 1", "y")))
+            .endEvent()
+            .compensateEventDefinition()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("x", 1).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey).withType("Undo-A").complete();
+
+    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.TRIGGERED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(ValueType.VARIABLE, VariableIntent.CREATED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+
+    final long compensationHandlerInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("Undo-A")
+            .getFirst()
+            .getKey();
+
+    final var variableCreated =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("y")
+            .getFirst();
+
+    Assertions.assertThat(variableCreated.getValue())
+        .hasScopeKey(compensationHandlerInstanceKey)
+        .hasValue("2");
+  }
+
+  @Test
+  public void shouldApplyOutputMappingsOfCompensationHandler() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation
+                                    .serviceTask("Undo-A")
+                                    .zeebeJobType("Undo-A")
+                                    .zeebeOutputExpression("x + 1", "y")))
+            .endEvent()
+            .compensateEventDefinition()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("Undo-A").withVariable("x", 1).complete();
+
+    // then
+    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.TRIGGERED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(ValueType.VARIABLE, VariableIntent.CREATED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED));
+
+    final var variableCreated =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("y")
+            .getFirst();
+
+    Assertions.assertThat(variableCreated.getValue()).hasScopeKey(processInstanceKey).hasValue("2");
+  }
+
+  @Test
+  public void shouldPropagateVariablesOfCompensationHandler() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess("subprocess")
+            .zeebeInputExpression("0", "local")
+            .embeddedSubProcess()
+            .startEvent()
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .endEvent()
+            .compensateEventDefinition()
+            .subProcessDone()
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("Undo-A")
+        .withVariables(Map.ofEntries(Map.entry("local", 1), Map.entry("global", 2)))
+        .complete();
+
+    // then
+    final long subprocessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("subprocess")
+            .getFirst()
+            .getKey();
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords())
+        .extracting(Record::getValue)
+        .extracting(
+            VariableRecordValue::getScopeKey,
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue)
+        .containsExactly(
+            tuple(subprocessInstanceKey, "local", "0"),
+            tuple(subprocessInstanceKey, "local", "1"),
+            tuple(processInstanceKey, "global", "2"));
   }
 
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
