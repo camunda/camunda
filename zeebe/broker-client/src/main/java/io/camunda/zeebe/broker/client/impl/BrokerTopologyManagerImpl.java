@@ -166,8 +166,8 @@ public final class BrokerTopologyManagerImpl extends Actor
     if (topology.getClusterSize() == BrokerClusterStateImpl.UNINITIALIZED_CLUSTER_SIZE) {
       topology.setClusterSize(distributedBrokerInfo.getClusterSize());
       topology.setPartitionsCount(distributedBrokerInfo.getPartitionsCount());
+      topology.setReplicationFactor(distributedBrokerInfo.getReplicationFactor());
     }
-    topology.setReplicationFactor(distributedBrokerInfo.getReplicationFactor());
 
     final int nodeId = distributedBrokerInfo.getNodeId();
 
@@ -212,10 +212,12 @@ public final class BrokerTopologyManagerImpl extends Actor
     }
     this.clusterTopology = clusterTopology;
     LOG.debug("Received new cluster topology with clusterSize {}", clusterTopology.clusterSize());
+
     updateTopology(
-        topology -> {
-          topology.setClusterSize(clusterTopology.clusterSize());
-          topology.setPartitionsCount(clusterTopology.partitionCount());
+        topologyToUpdate -> {
+          topologyToUpdate.setClusterSize(clusterTopology.clusterSize());
+          topologyToUpdate.setPartitionsCount(clusterTopology.partitionCount());
+          topologyToUpdate.setReplicationFactor(clusterTopology.replicationFactor());
         });
   }
 }
