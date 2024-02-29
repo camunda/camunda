@@ -2,7 +2,7 @@
 # If no version is given, the version is set to the Maven project version.
 
 ---
-name: Build Docker Image
+name: Build Zeebe Docker Image
 description: Builds the Zeebe Docker image
 
 inputs:
