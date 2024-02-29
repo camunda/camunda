@@ -1,7 +1,16 @@
 {
   "extends": ["config:base", ":rebaseStalePrs", ":semanticCommitTypeAll(chore)"],
-  "includePaths": ["client/**", ".github/**", ".ci/**", "Dockerfile"],
-  "ignorePaths": ["client/pom.xml"],
+  "includePaths": [
+    "client/**",
+    "operate/client/**",
+    ".github/**",
+    ".ci/**",
+    "Dockerfile"
+  ],
+  "ignorePaths": [
+    "client/pom.xml",
+    "operate/client/pom.xml"
+  ],
   "baseBranches": [
     "master",
     "/^stable\\/8\\..*/"
