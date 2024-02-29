@@ -386,28 +386,37 @@ public class ZeebePartitionTest {
   @Test
   public void shouldReportUnhealthyIfTransitionStepIsStuck() {
     // given
-    final var transition = new PartitionTransitionImpl(List.of(new BlockingTransitionStep()));
+    final var transitionStep = mock(PartitionTransitionStep.class);
+    final var transition = new PartitionTransitionImpl(List.of(transitionStep));
     final var partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
-
-    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
-
-    when(ctx.getCurrentRole()).thenReturn(Role.LEADER);
     schedulerRule.submitActor(partition);
 
-    // when
+    // Run one successful transition so that initial services are installed
+    when(transitionStep.prepareTransition(any(), anyLong(), any()))
+        .thenReturn(CompletableActorFuture.completed(null));
+    when(transitionStep.transitionTo(any(), anyLong(), any()))
+        .thenReturn(CompletableActorFuture.completed(null));
+    when(ctx.getCurrentRole()).thenReturn(Role.FOLLOWER);
+    partition.onNewRole(Role.FOLLOWER, 0);
+    schedulerRule.workUntilDone();
+
+    // when -- starting a transition that blocks
+    // We need to travel back instead of forward because querying the health status happens outside
+    // the actor context and doesn't use the manipulated actor clock. So we change the start time
+    // of the transition to be 2 minutes in the past.
+    schedulerRule.getClock().addTime(Duration.ofMinutes(-2));
+    when(transitionStep.transitionTo(any(), anyLong(), any()))
+        .thenReturn(new CompletableActorFuture<>());
     partition.onNewRole(Role.LEADER, 1);
-    schedulerRule.getClock().addTime(Duration.ofMinutes(2));
     schedulerRule.workUntilDone();
 
     // then
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
     verify(healthMonitor).registerComponent(any(), captor.capture());
-    final var zeebePartitionHealth = captor.getValue();
-
-    // then
-    final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
+    final var healthReport = captor.getValue().getHealthReport();
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
     assertThat(healthReport.getIssue().message())
-        .contains("Transition from LEADER on term 0 appears blocked");
+        .contains("Transition from FOLLOWER on term 0 appears blocked");
   }
 
   @Test
@@ -628,26 +637,6 @@ public class ZeebePartitionTest {
     @Override
     public String getName() {
       return "noop-transition-step";
-    }
-  }
-
-  private static final class BlockingTransitionStep implements PartitionTransitionStep {
-
-    @Override
-    public ActorFuture<Void> prepareTransition(
-        final PartitionTransitionContext context, final long term, final Role targetRole) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public ActorFuture<Void> transitionTo(
-        final PartitionTransitionContext context, final long term, final Role targetRole) {
-      return new CompletableActorFuture<>();
-    }
-
-    @Override
-    public String getName() {
-      return "BlockingTransitionStep";
     }
   }
 }
