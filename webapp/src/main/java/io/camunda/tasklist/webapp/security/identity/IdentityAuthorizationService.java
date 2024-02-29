@@ -73,19 +73,15 @@ public class IdentityAuthorizationService {
       return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
     } else if (authentication instanceof TokenAuthentication) {
       accessToken = ((TokenAuthentication) authentication).getAccessToken();
-      final var groups =
-          identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
-      logger.info("Access Token - {}", accessToken);
-      logger.info("Groups retrieved from access token - {}", groups);
-      return groups;
-    } else if (authentication instanceof JwtAuthenticationToken) {
-      tasklistProperties.getIdentity().setIssuerUrl(tasklistProperties.getAuth0().getDomain());
-      accessToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
+      final String organization = ((TokenAuthentication) authentication).getOrganization();
       return identity
           .authentication()
-          .verifyToken(identity.authentication().decodeJWT(accessToken).getToken())
+          .verifyToken(accessToken, organization)
           .getUserDetails()
           .getGroups();
+    } else if (authentication instanceof JwtAuthenticationToken) {
+      accessToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
+      return identity.authentication().verifyToken(accessToken).getUserDetails().getGroups();
     }
 
     // Fallback groups if authentication type is unrecognized or access token is null
