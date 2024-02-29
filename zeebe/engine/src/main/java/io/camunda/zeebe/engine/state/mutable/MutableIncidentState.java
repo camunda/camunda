@@ -15,4 +15,6 @@ public interface MutableIncidentState extends IncidentState {
   void createIncident(long incidentKey, IncidentRecord incident);
 
   void deleteIncident(long key);
+
+  void migrateIncident(long incidentKey, IncidentRecord incident);
 }

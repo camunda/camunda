@@ -111,6 +111,13 @@ public final class DbIncidentState implements MutableIncidentState {
   }
 
   @Override
+  public void migrateIncident(final long incidentKey, final IncidentRecord incident) {
+    this.incidentKey.wrapLong(incidentKey);
+    incidentWrite.setRecord(incident);
+    incidentColumnFamily.update(this.incidentKey, incidentWrite);
+  }
+
+  @Override
   public IncidentRecord getIncidentRecord(final long incidentKey) {
     this.incidentKey.wrapLong(incidentKey);
 

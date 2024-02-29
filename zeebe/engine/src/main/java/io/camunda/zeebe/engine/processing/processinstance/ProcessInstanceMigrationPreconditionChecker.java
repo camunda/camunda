@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
-
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
@@ -17,7 +15,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUse
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
-import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -69,12 +66,6 @@ public final class ProcessInstanceMigrationPreconditionChecker {
       "Expected to migrate process instance '%s' but active element with id '%s' has an unsupported type. The migration of a %s is not supported.";
   private static final String ERROR_UNMAPPED_ACTIVE_ELEMENT =
       "Expected to migrate process instance '%s' but no mapping instruction defined for active element with id '%s'. Elements cannot be migrated without a mapping.";
-  private static final String ERROR_ELEMENT_WITH_INCIDENT =
-      """
-              Expected to migrate process instance '%s' \
-              but active element with id '%s' has an incident. \
-              Elements cannot be migrated with an incident yet. \
-              Please retry migration after resolving the incident.""";
   private static final String ERROR_ELEMENT_TYPE_CHANGED =
       """
               Expected to migrate process instance '%s' \
@@ -308,33 +299,6 @@ public final class ProcessInstanceMigrationPreconditionChecker {
     if (targetElementId == null) {
       final String reason =
           String.format(ERROR_UNMAPPED_ACTIVE_ELEMENT, processInstanceKey, sourceElementId);
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.INVALID_STATE);
-    }
-  }
-
-  /**
-   * Checks whether the given element instance has an incident. Throws an exception if the element
-   * instance has an incident.
-   *
-   * @param incidentState incident state to check for incidents
-   * @param elementInstance element instance to do the check
-   */
-  public static void requireNoIncident(
-      final IncidentState incidentState, final ElementInstance elementInstance) {
-    final boolean hasIncident =
-        incidentState.getProcessInstanceIncidentKey(elementInstance.getKey()) != MISSING_INCIDENT
-            || (elementInstance.getJobKey() > -1L
-                && incidentState.getJobIncidentKey(elementInstance.getJobKey())
-                    != MISSING_INCIDENT);
-
-    if (hasIncident) {
-      final var elementInstanceRecord = elementInstance.getValue();
-      final String reason =
-          String.format(
-              ERROR_ELEMENT_WITH_INCIDENT,
-              elementInstanceRecord.getProcessInstanceKey(),
-              elementInstanceRecord.getElementId());
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
