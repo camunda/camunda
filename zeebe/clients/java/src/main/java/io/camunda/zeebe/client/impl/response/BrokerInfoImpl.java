@@ -30,16 +30,28 @@ public final class BrokerInfoImpl implements BrokerInfo {
   private final String version;
   private final List<PartitionInfo> partitions;
 
-  public BrokerInfoImpl(final GatewayOuterClass.BrokerInfo broker) {
-    nodeId = broker.getNodeId();
-    host = broker.getHost();
-    port = broker.getPort();
-    version = broker.getVersion();
+  public BrokerInfoImpl(final GatewayOuterClass.BrokerInfo grpcBrokerInfo) {
+    nodeId = grpcBrokerInfo.getNodeId();
+    host = grpcBrokerInfo.getHost();
+    port = grpcBrokerInfo.getPort();
+    version = grpcBrokerInfo.getVersion();
 
     partitions = new ArrayList<>();
-    for (final GatewayOuterClass.Partition partition : broker.getPartitionsList()) {
+    for (final GatewayOuterClass.Partition partition : grpcBrokerInfo.getPartitionsList()) {
       partitions.add(new PartitionInfoImpl(partition));
     }
+  }
+
+  public BrokerInfoImpl(final io.camunda.zeebe.gateway.protocol.rest.BrokerInfo httpBrokerInfo) {
+    nodeId = httpBrokerInfo.getNodeId();
+    host = httpBrokerInfo.getHost();
+    port = httpBrokerInfo.getPort();
+    version = httpBrokerInfo.getVersion();
+
+    partitions = new ArrayList<>();
+    httpBrokerInfo
+        .getPartitions()
+        .forEach(partition -> partitions.add(new PartitionInfoImpl(partition)));
   }
 
   @Override

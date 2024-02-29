@@ -20,6 +20,8 @@ import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
+import io.camunda.zeebe.gateway.protocol.rest.Partition.HealthEnum;
+import io.camunda.zeebe.gateway.protocol.rest.Partition.RoleEnum;
 import java.util.Arrays;
 
 public class PartitionInfoImpl implements PartitionInfo {
@@ -55,6 +57,40 @@ public class PartitionInfoImpl implements PartitionInfo {
           String.format(
               "Unexpected partition broker health %s, should be one of %s",
               partition.getHealth(), Arrays.toString(PartitionBrokerHealth.values())));
+    }
+  }
+
+  public PartitionInfoImpl(final io.camunda.zeebe.gateway.protocol.rest.Partition httpPartition) {
+
+    if (httpPartition.getPartitionId() == null) {
+      throw new RuntimeException("Unexpected missing partition ID. A partition ID is required.");
+    }
+    partitionId = httpPartition.getPartitionId();
+
+    if (httpPartition.getRole() == RoleEnum.LEADER) {
+      role = PartitionBrokerRole.LEADER;
+    } else if (httpPartition.getRole() == RoleEnum.FOLLOWER) {
+      role = PartitionBrokerRole.FOLLOWER;
+    } else if (httpPartition.getRole() == RoleEnum.INACTIVE) {
+      role = PartitionBrokerRole.INACTIVE;
+    } else {
+      throw new RuntimeException(
+          String.format(
+              "Unexpected partition broker role %s, should be one of %s",
+              httpPartition.getRole(), Arrays.toString(PartitionBrokerRole.values())));
+    }
+
+    if (httpPartition.getHealth() == HealthEnum.HEALTHY) {
+      partitionBrokerHealth = PartitionBrokerHealth.HEALTHY;
+    } else if (httpPartition.getHealth() == HealthEnum.UNHEALTHY) {
+      partitionBrokerHealth = PartitionBrokerHealth.UNHEALTHY;
+    } else if (httpPartition.getHealth() == HealthEnum.DEAD) {
+      partitionBrokerHealth = PartitionBrokerHealth.DEAD;
+    } else {
+      throw new RuntimeException(
+          String.format(
+              "Unexpected partition broker health %s, should be one of %s",
+              httpPartition.getHealth(), Arrays.toString(PartitionBrokerHealth.values())));
     }
   }
 

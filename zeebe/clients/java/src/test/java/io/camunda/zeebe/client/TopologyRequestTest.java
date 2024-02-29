@@ -42,6 +42,23 @@ import org.junit.Test;
 public final class TopologyRequestTest extends ClientTest {
 
   @Test
+  public void shouldRequestTopologyViaRest() {
+    // given
+    final ZeebeClient zeebeClient =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress("localhost:26500")
+            .gatewayRestApiPort(8080)
+            .usePlaintext()
+            .build();
+
+    // when
+    final Topology topology = zeebeClient.newTopologyRequest().useRest().send().join();
+
+    // then
+    assertThat(topology).isNotNull();
+  }
+
+  @Test
   public void shouldRequestTopology() {
     // given
     gatewayService.onTopologyRequest(

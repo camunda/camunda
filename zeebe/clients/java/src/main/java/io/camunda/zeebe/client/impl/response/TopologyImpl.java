@@ -29,13 +29,24 @@ public final class TopologyImpl implements Topology {
   private final int replicationFactor;
   private final String gatewayVersion;
 
-  public TopologyImpl(final TopologyResponse response) {
+  public TopologyImpl(final TopologyResponse grpcResponse) {
     brokers =
-        response.getBrokersList().stream().map(BrokerInfoImpl::new).collect(Collectors.toList());
-    clusterSize = response.getClusterSize();
-    partitionsCount = response.getPartitionsCount();
-    replicationFactor = response.getReplicationFactor();
-    gatewayVersion = response.getGatewayVersion();
+        grpcResponse.getBrokersList().stream()
+            .map(BrokerInfoImpl::new)
+            .collect(Collectors.toList());
+    clusterSize = grpcResponse.getClusterSize();
+    partitionsCount = grpcResponse.getPartitionsCount();
+    replicationFactor = grpcResponse.getReplicationFactor();
+    gatewayVersion = grpcResponse.getGatewayVersion();
+  }
+
+  public TopologyImpl(final io.camunda.zeebe.gateway.protocol.rest.TopologyResponse httpResponse) {
+    brokers =
+        httpResponse.getBrokers().stream().map(BrokerInfoImpl::new).collect(Collectors.toList());
+    clusterSize = httpResponse.getClusterSize();
+    partitionsCount = httpResponse.getPartitionsCount();
+    replicationFactor = httpResponse.getReplicationFactor();
+    gatewayVersion = httpResponse.getGatewayVersion();
   }
 
   @Override
