@@ -3,7 +3,7 @@
 
 # As this is meant to be run via scheduling, the workflow itself only runs on the default branch
 # (e.g. main), so any changes you make will affect any other branches we test via this workflow.
-name: Weekly E2E tests
+name: Zeebe Weekly E2E tests
 
 on:
   workflow_dispatch: { }
@@ -71,7 +71,7 @@ jobs:
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
             generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
     name: Weekly E2E
-    uses: ./.github/workflows/e2e-testbench.yaml
+    uses: ./.github/workflows/zeebe-e2e-testbench.yaml
     with:
       branch: ${{ matrix.branch }}
       generation: ${{ matrix.generation_template }}
@@ -82,7 +82,7 @@ jobs:
 
   e2e-multiregion-failover:
     name: Multi-region failover with data loss
-    uses: ./.github/workflows/e2e-testbench.yaml
+    uses: ./.github/workflows/zeebe-e2e-testbench.yaml
     with:
       branch: main
       generation: Zeebe SNAPSHOT
@@ -94,7 +94,7 @@ jobs:
 
   e2e-scaling-brokers:
     name: Scaling brokers
-    uses: ./.github/workflows/e2e-testbench.yaml
+    uses: ./.github/workflows/zeebe-e2e-testbench.yaml
     with:
       branch: main
       generation: Zeebe SNAPSHOT

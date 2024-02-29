@@ -1,4 +1,4 @@
-name: Run E2E Tests
+name: Run Zeebe E2E Tests
 
 on:
   workflow_dispatch:
@@ -73,7 +73,7 @@ on:
 jobs:
   e2e:
     name: Run e2e testbench process
-    uses: ./.github/workflows/testbench.yaml
+    uses: ./.github/workflows/zeebe-testbench.yaml
     with:
       processId: e2e_testbench_protocol
       variables: >
