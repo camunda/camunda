@@ -167,6 +167,7 @@
       "decision": "Entscheidungstabelle",
       "process": "Prozess",
       "notCreated": "Es wurden noch keine Quellen hinzugefügt",
+      "addSources": "Sie können der Sammlung eine oder mehrere Quellen hinzufügen",
       "contactManager": "Bitte wenden Sie sich an den Manager der Sammlung, um neue Quellen hinzuzufügen",
       "add": "Quelle hinzufügen",
       "definitionName": "Definitionsname",

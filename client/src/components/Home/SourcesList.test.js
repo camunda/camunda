@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {EntityList, Deleter, Modal} from 'components';
+import {CarbonEntityList, Deleter, Modal} from 'components';
 import {addSources} from 'services';
 
 import {getSources, removeSource, editSource} from './service';
@@ -51,6 +51,7 @@ jest.mock('./service', () => ({
   ]),
   removeSource: jest.fn(),
   editSource: jest.fn(),
+  isUnauthorizedTenant: jest.fn(),
 }));
 
 const SourcesList = SourcesListWithErrorHandling.WrappedComponent;
@@ -73,16 +74,16 @@ it('should hide add button and edit menu when in readOnly mode', async () => {
   const node = shallow(<SourcesList {...props} readOnly />);
   await node.update();
 
-  expect(node.find(EntityList).prop('action')()).toBe(false);
+  expect(node.find(CarbonEntityList).prop('action')).toBe(false);
 
-  expect(node.find(EntityList).prop('data')[0].actions).toEqual([]);
+  expect(node.find(CarbonEntityList).prop('rows')[0].actions).toEqual([]);
 });
 
 it('should pass entity to Deleter', async () => {
   const node = shallow(<SourcesList {...props} />);
   await node.update();
 
-  node.find(EntityList).prop('data')[1].actions[1].action();
+  node.find(CarbonEntityList).prop('rows')[1].actions[1].action();
 
   expect(node.find(Deleter).prop('entity').id).toBe('decision:defKey2');
 });
@@ -101,7 +102,7 @@ it('should show an edit modal when clicking the edit button', async () => {
   const node = shallow(<SourcesList {...props} />);
   await node.update();
 
-  node.find(EntityList).prop('data')[0].actions[0].action();
+  node.find(CarbonEntityList).prop('rows')[0].actions[0].action();
 
   expect(node.find(EditSourceModal)).toExist();
 });
@@ -137,7 +138,7 @@ it('should hide edit and tenants in source items if there are not tenants availa
   areTenantsAvailable.mockReturnValueOnce(false);
   const node = shallow(<SourcesList {...props} />);
   await node.update();
-  expect(node.find('EntityList').props().data[1]).toMatchSnapshot();
+  expect(node.find(CarbonEntityList).props().rows[1]).toMatchSnapshot();
 });
 
 it('should pass conflict to confirmation modal if update failed', async () => {

@@ -10,7 +10,7 @@ export function getRandomId() {
 }
 
 export {loadReports, loadEntities, copyEntity, createEntity, getEntityIcon} from './entityService';
-
+export {UNAUTHORIZED_TENANT_ID} from './tenantService';
 export * as formatters from './formatters';
 export {
   loadProcessDefinitionXml,
@@ -20,7 +20,6 @@ export {
   loadVariables,
 } from './dataLoaders';
 export {numberParser} from './NumberParser';
-
 export {
   TEXT_REPORT_MAX_CHARACTERS,
   isTextTileTooLong,
@@ -28,9 +27,7 @@ export {
   loadRawData,
   evaluateReport,
 } from './reportService';
-
 export {addSources, getCollection} from './collectionService';
-
 export {default as getScreenBounds} from './getScreenBounds';
 export {default as ignoreFragments} from './ignoreFragments';
 export {default as isReactElement} from './isReactElement';

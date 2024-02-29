@@ -167,6 +167,7 @@
       "decision": "Decision table",
       "process": "Process",
       "notCreated": "There are no sources added yet",
+      "addSources": "You can add one or more sources to the collection",
       "contactManager": "Please contact the collection manager to add new sources",
       "add": "Add source",
       "definitionName": "Definition name",

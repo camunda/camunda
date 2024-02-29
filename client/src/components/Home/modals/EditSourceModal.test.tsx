@@ -5,31 +5,38 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {runAllEffects} from '__mocks__/react';
+import {ComponentProps} from 'react';
 import {shallow} from 'enzyme';
+
+import {UNAUTHORIZED_TENANT_ID} from 'services';
+
+import EditSourceModal from './EditSourceModal';
 import {getDefinitionTenants} from './service';
 
-import EditSourceModalWithErrorHandling from './EditSourceModal';
-
-const EditSourceModal = EditSourceModalWithErrorHandling.WrappedComponent;
-
 jest.mock('./service', () => ({getDefinitionTenants: jest.fn()}));
+jest.mock('hooks', () => ({
+  ...jest.requireActual('hooks'),
+  useErrorHandling: () => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  }),
+}));
 
-const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+const props: ComponentProps<typeof EditSourceModal> = {
   onClose: jest.fn(),
   onConfirm: jest.fn(),
   source: {
     definitionKey: 'defKey',
     definitionName: 'defName',
+    definitionType: 'process',
     tenants: [
       {id: null, name: 'Not defined'},
-      {id: '__unauthorizedTenantId__', name: 'unauthorizedTenant'},
+      {id: UNAUTHORIZED_TENANT_ID, name: 'unauthorizedTenant'},
     ],
   },
 };
 
-getDefinitionTenants.mockReturnValue({
+(getDefinitionTenants as jest.Mock).mockReturnValue({
   ...props.source,
   tenants: [
     {id: null, name: 'Not defined'},
@@ -40,11 +47,15 @@ getDefinitionTenants.mockReturnValue({
 it('should match snapshot', () => {
   const node = shallow(<EditSourceModal {...props} />);
 
+  runAllEffects();
+
   expect(node).toMatchSnapshot();
 });
 
 it('should get defintion tenants on mount', () => {
   shallow(<EditSourceModal {...props} />);
+
+  runAllEffects();
 
   expect(getDefinitionTenants).toHaveBeenCalled();
 });
@@ -52,11 +63,7 @@ it('should get defintion tenants on mount', () => {
 it('should update selected tenants on itemList change', () => {
   const node = shallow(<EditSourceModal {...props} />);
 
-  node
-    .find('Checklist')
-    .props()
-    .onChange([{id: null, name: 'Not defined'}]);
-
+  node.find('Checklist').simulate('change', [{id: null, name: 'Not defined'}]);
   node.find('.confirm').simulate('click');
 
   expect(props.onConfirm).toHaveBeenCalledWith([null]);
@@ -65,9 +72,9 @@ it('should update selected tenants on itemList change', () => {
 it('should not deselect unauthorized tenants', () => {
   const node = shallow(<EditSourceModal {...props} />);
 
-  node.find('Checklist').props().onChange([]);
+  node.find('Checklist').simulate('change', []);
 
-  expect(node.find('Checklist').props().selectedItems).toEqual([
-    {id: '__unauthorizedTenantId__', name: 'unauthorizedTenant'},
+  expect(node.find('Checklist').prop('selectedItems')).toEqual([
+    {id: UNAUTHORIZED_TENANT_ID, name: 'unauthorizedTenant'},
   ]);
 });

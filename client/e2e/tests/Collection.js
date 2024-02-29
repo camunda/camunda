@@ -90,7 +90,7 @@ test('user permissions', async (t) => {
 
   await t.click(e.sourcesTab);
 
-  await t.click(e.oldAddButton);
+  await t.click(e.emptyStateAdd);
   const definitionName = 'Invoice Receipt with alternative correlation variable';
   await t.typeText(e.sourceModalSearchField, definitionName, {replace: true});
   await t.click(e.selectAllCheckbox);
@@ -187,7 +187,7 @@ test('add, edit and delete sources', async (t) => {
   await t.click(e.sourcesTab);
 
   // add source by definition
-  await t.click(e.oldAddButton);
+  await t.click(e.emptyStateAdd);
   const definitionName = 'Hiring Demo 5 Tenants';
   await t.typeText(e.sourceModalSearchField, definitionName, {replace: true});
   await t.click(e.selectAllCheckbox);
@@ -198,7 +198,7 @@ test('add, edit and delete sources', async (t) => {
   await t.expect(e.processItem.textContent).contains('engineering');
 
   // add source by tenant
-  await t.click(e.oldAddButton);
+  await t.click(e.addButton);
   const tenantName = 'engineering';
   await t.typeText(Common.comboBox, tenantName, {replace: true});
   await t.click(Common.carbonOption(tenantName));
@@ -212,28 +212,23 @@ test('add, edit and delete sources', async (t) => {
   await t.expect(e.decisionItem.textContent).contains('Beverages');
 
   // edit source
-  await t.hover(e.processItem.nth(1));
-  await t.expect(Common.oldContextMenu(e.processItem.nth(1)).visible).ok();
-  await t.click(Common.oldContextMenu(e.processItem.nth(1)));
-  await t.click(Common.oldEdit(e.processItem.nth(1)));
+  await t.click(Common.listItemTrigger(e.processItem.nth(1), 'Edit'));
   await t.click(e.checkbox('engineering'));
   await t.click(Common.modalConfirmButton);
   await t.expect(e.processItem.nth(1).textContent).notContains('engineering');
 
   // delete source
-  await t.hover(e.decisionItem);
-  await t.click(Common.oldContextMenu(e.decisionItem));
-  await t.click(e.remove(e.decisionItem));
+  await t.click(Common.listItemTrigger(e.decisionItem, 'Remove'));
   await t.click(Common.modalConfirmButton);
   await t.expect(e.decisionItem.exists).notOk();
 
   // bulk deleting sources
   await t.click(Common.listItemCheckbox(e.processItem.nth(0)));
   await t.click(Common.listItemCheckbox(e.processItem.nth(1)));
-  await t.click(Common.bulkMenu.filterVisible());
-  await t.click(e.remove(Common.bulkMenu.filterVisible()));
+  await t.click(e.bulkRemove.filterVisible());
   await t.click(Common.modalConfirmButton);
-  await t.expect(Common.oldListItem.filterVisible().exists).notOk();
+  await t.expect(e.processItem.filterVisible().exists).notOk();
+  await t.expect(e.decisionItem.filterVisible().exists).notOk();
 });
 
 test('create new KPI report', async (t) => {

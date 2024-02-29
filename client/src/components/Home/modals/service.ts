@@ -7,6 +7,10 @@
 
 import {get} from 'request';
 import {Definition, Tenant} from 'types';
+import {formatters, UNAUTHORIZED_TENANT_ID} from 'services';
+import {t} from 'translation';
+
+const {formatTenantName} = formatters;
 
 export type TenantWithDefinitions = Tenant & {definitions: Definition};
 
@@ -22,4 +26,32 @@ export async function getTenantsWithDefinitions(): Promise<TenantWithDefinitions
   const response = await get('api/definition/_groupByTenant');
 
   return await response.json();
+}
+
+export async function getDefinitionTenants(
+  defintionKey: string,
+  defintionType: string
+): Promise<DefinitionWithTenants> {
+  const response = await get(`api/definition/${defintionType}/${defintionKey}`);
+
+  return await response.json();
+}
+
+export function formatTenants(tenants: Tenant[], selectedTenants: Tenant[]) {
+  return tenants.map(({id, name}, index) => {
+    if (id === UNAUTHORIZED_TENANT_ID) {
+      return {
+        id: index,
+        label: t('home.sources.unauthorizedTenant'),
+        checked: true,
+        disabled: true,
+      };
+    }
+
+    return {
+      id,
+      label: formatTenantName({id, name}),
+      checked: selectedTenants.some((tenant) => tenant.id === id),
+    };
+  });
 }

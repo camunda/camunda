@@ -10,6 +10,8 @@ import {Chart, Scale, Tick} from 'chart.js';
 import {t} from 'translation';
 import {FilterData} from 'types';
 
+import {UNAUTHORIZED_TENANT_ID} from './tenantService';
+
 export function getHighlightedText(
   text: string,
   highlight?: string,
@@ -243,7 +245,7 @@ export function formatTenantName({id, name}: {id?: string | null; name?: string}
     return t('common.definitionSelection.tenant.notDefined');
   }
 
-  if (id === '__unauthorizedTenantId__') {
+  if (id === UNAUTHORIZED_TENANT_ID) {
     return t('home.sources.unauthorizedTenant');
   }
 

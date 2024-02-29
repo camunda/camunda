@@ -46,7 +46,7 @@ interface ChecklistProps<T> {
 }
 
 export default function Checklist<
-  T extends string | boolean | number | null | undefined | {id: string; key?: string},
+  T extends string | boolean | number | null | undefined | {id: string | null; key?: string},
 >({
   onSearch = () => {},
   selectedItems,
@@ -220,7 +220,7 @@ export default function Checklist<
 }
 
 function getIdentifier(
-  item: string | boolean | number | null | undefined | {id: string; key?: string}
+  item: string | boolean | number | null | undefined | {id: string | null; key?: string}
 ): string | boolean | number | null | undefined {
   if (typeof item === 'object' && item !== null) {
     return item.key || item.id;

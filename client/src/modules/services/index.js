@@ -22,6 +22,7 @@ export {getDiagramElementsBetween} from './diagramServices';
 export {default as getTooltipText} from './getTooltipText';
 export {default as getScreenBounds} from './getScreenBounds';
 export {loadEntity, loadReports, updateEntity, deleteEntity, copyReport} from './entityService';
+export {UNAUTHORIZED_TENANT_ID} from './tenantService.ts';
 export {loadEntities, copyEntity, createEntity, getEntityIcon} from './entityService.tsx';
 
 export {

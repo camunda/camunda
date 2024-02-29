@@ -5,35 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {get} from 'request';
 import {t} from 'translation';
-import {formatters} from 'services';
-const {formatTenantName} = formatters;
-
-export async function getDefinitionTenants(defintionKey, defintionType) {
-  const response = await get(`api/definition/${defintionType}/${defintionKey}`);
-
-  return await response.json();
-}
-
-export function formatTenants(tenants, selectedTenants) {
-  return tenants.map(({id, name}, index) => {
-    if (id === '__unauthorizedTenantId__') {
-      return {
-        id: index,
-        label: t('home.sources.unauthorizedTenant'),
-        checked: true,
-        disabled: true,
-      };
-    }
-
-    return {
-      id,
-      label: formatTenantName({id, name}),
-      checked: selectedTenants.some((tenant) => tenant.id === id),
-    };
-  });
-}
 
 export function formatDefinitions(definitions, selectedDefinitions) {
   return definitions.map((def) => ({
@@ -49,4 +21,9 @@ export function formatDefintionName({key, name, type}) {
   return (name || key) + ' (' + typeLabel + ')';
 }
 
-export {getDefinitionsWithTenants, getTenantsWithDefinitions} from './service.ts';
+export {
+  getDefinitionsWithTenants,
+  getTenantsWithDefinitions,
+  formatTenants,
+  getDefinitionTenants,
+} from './service.ts';

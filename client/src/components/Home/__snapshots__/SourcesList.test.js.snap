@@ -5,13 +5,13 @@ Object {
   "actions": Array [
     Object {
       "action": [Function],
-      "icon": "delete",
+      "icon": <ForwardRef(TrashCan) />,
       "text": "Remove",
     },
   ],
   "className": "decision",
   "entityType": "process",
-  "icon": "data-source",
+  "icon": <ForwardRef(TableSplit) />,
   "id": "decision:defKey2",
   "meta": Array [
     false,
@@ -26,7 +26,14 @@ exports[`should match snapshot 1`] = `
   className="SourcesList"
 >
   <EntityList
-    action={[Function]}
+    action={
+      <Button
+        kind="primary"
+        onClick={[Function]}
+      >
+        Add
+      </Button>
+    }
     bulkActions={
       Array [
         <BulkDeleterErrorHandler
@@ -34,28 +41,47 @@ exports[`should match snapshot 1`] = `
           conflictMessage="Removing data sources deletes all associated reports and their alerts."
           deleteEntities={[Function]}
           type="remove"
+          useCarbonAction={true}
         />,
       ]
     }
-    columns={
+    emptyStateComponent={
+      <EmptyState
+        actions={
+          <Button
+            kind="primary"
+            onClick={[Function]}
+            size="md"
+          >
+            Add
+          </Button>
+        }
+        description="You can add one or more sources to the collection"
+        icon={<ForwardRef(Db2Database) />}
+        title="There are no sources added yet"
+      />
+    }
+    headers={
       Array [
         "Definition name",
         "Tenants",
       ]
     }
-    data={
+    isLoading={false}
+    onChange={[Function]}
+    rows={
       Array [
         Object {
           "actions": Array [
             Object {
               "action": [Function],
-              "icon": "edit",
+              "icon": <ForwardRef(Edit) />,
               "text": "Edit",
             },
           ],
           "className": "process",
           "entityType": "process",
-          "icon": "data-source",
+          "icon": <ForwardRef(DecisionTree) />,
           "id": "process:defKey",
           "meta": Array [
             "Not defined, Sales, (Unauthorized tenant)",
@@ -67,18 +93,18 @@ exports[`should match snapshot 1`] = `
           "actions": Array [
             Object {
               "action": [Function],
-              "icon": "edit",
+              "icon": <ForwardRef(Edit) />,
               "text": "Edit",
             },
             Object {
               "action": [Function],
-              "icon": "delete",
+              "icon": <ForwardRef(TrashCan) />,
               "text": "Remove",
             },
           ],
           "className": "decision",
           "entityType": "process",
-          "icon": "data-source",
+          "icon": <ForwardRef(TableSplit) />,
           "id": "decision:defKey2",
           "meta": Array [
             "Not defined, Marketing",
@@ -88,14 +114,6 @@ exports[`should match snapshot 1`] = `
         },
       ]
     }
-    empty={
-      <React.Fragment>
-        There are no sources added yet
-      </React.Fragment>
-    }
-    isLoading={false}
-    name="Data sources"
-    onChange={[Function]}
   />
   <DeleterErrorHandler
     checkConflicts={[Function]}

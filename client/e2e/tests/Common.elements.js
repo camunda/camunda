@@ -50,7 +50,7 @@ export const listItemWithText = (text) =>
   Selector('.CarbonEntityList tbody tr td:nth-child(2)').withText(text).parent('tr');
 export const listItemLink = (type, viewerMode = false) =>
   listItem(type, viewerMode).find(`td:nth-child(${viewerMode ? 1 : 2}) a`);
-export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
+export const listItemCheckbox = (item) => item.find('.cds--checkbox-label');
 export const newReportOption = Selector('.cds--menu--shown .cds--menu-item[aria-haspopup=true]');
 export const templateModalProcessField = Selector('.Modal .DefinitionSelection input');
 export const firstOption = Selector('.TemplateModal .cds--list-box__menu-item');

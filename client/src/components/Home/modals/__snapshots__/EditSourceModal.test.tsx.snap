@@ -8,7 +8,6 @@ exports[`should match snapshot 1`] = `
 >
   <ForwardRef(ModalHeader)>
     Edit tenants - defName
-      
   </ForwardRef(ModalHeader)>
   <ForwardRef>
     <Checklist

@@ -16,6 +16,7 @@ import {
   formatVersions,
   formatTenants,
   formatLabel,
+  UNAUTHORIZED_TENANT_ID,
 } from './formatters';
 
 jest.mock('chart.js', () => {
@@ -340,14 +341,14 @@ describe('formatTenants', () => {
     {id: 'a', name: 'Tenant A'},
     {id: 'b', name: 'Tenant B'},
     {id: 'c', name: null},
-    {id: '__unauthorizedTenantId__', name: 'Unauthorized Tenant'},
-    {id: '__unauthorizedTenantId__', name: 'Unauthorized Tenant'},
+    {id: UNAUTHORIZED_TENANT_ID, name: 'Unauthorized Tenant'},
+    {id: UNAUTHORIZED_TENANT_ID, name: 'Unauthorized Tenant'},
   ];
 
   it('should correctly identify a selection of all tenants', () => {
     expect(
       formatTenants(
-        [null, 'a', 'b', 'c', '__unauthorizedTenantId__', '__unauthorizedTenantId__'],
+        [null, 'a', 'b', 'c', UNAUTHORIZED_TENANT_ID, UNAUTHORIZED_TENANT_ID],
         tenantInfo
       )
     ).toBe('All');
@@ -358,7 +359,7 @@ describe('formatTenants', () => {
   });
 
   it('should correctly format unauthorized tenants', () => {
-    expect(formatTenants(['__unauthorizedTenantId__'], tenantInfo)).toBe('(Unauthorized tenant)');
+    expect(formatTenants([UNAUTHORIZED_TENANT_ID], tenantInfo)).toBe('(Unauthorized tenant)');
   });
 
   it('should correctly format special "null" tenant', () => {
