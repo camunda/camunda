@@ -73,6 +73,12 @@ public final class ZeebeElementValidator<T extends ModelElementInstance>
     return this;
   }
 
+  public ZeebeElementValidator<T> hasNonEmptyEnumAttribute(
+      final Function<T, ? extends Enum<?>> enumAttributeSupplier, final String attributeName) {
+    return hasNonEmptyAttribute(
+        enumAttributeSupplier.andThen(e -> e == null ? null : e.name()), attributeName);
+  }
+
   public ZeebeElementValidator<T> hasOnlyOneAttributeInGroup(
       final Map<String, Function<T, String>> nameToAttributeSupplier) {
     nameToAttributeSupplier.forEach(

@@ -21,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePublishMessage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
@@ -83,6 +84,14 @@ public final class ZeebeDesignTimeValidators {
             .hasNonEmptyAttribute(ZeebeTaskDefinition::getType, ZeebeConstants.ATTRIBUTE_TYPE)
             .hasNonEmptyAttribute(
                 ZeebeTaskDefinition::getRetries, ZeebeConstants.ATTRIBUTE_RETRIES));
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeExecutionListener.class)
+            .hasNonEmptyEnumAttribute(
+                ZeebeExecutionListener::getEventType, ZeebeConstants.ATTRIBUTE_EVENT_TYPE)
+            .hasNonEmptyAttribute(ZeebeExecutionListener::getType, ZeebeConstants.ATTRIBUTE_TYPE)
+            .hasNonEmptyAttribute(
+                ZeebeExecutionListener::getRetries, ZeebeConstants.ATTRIBUTE_RETRIES));
+    validators.add(new ExecutionListenersValidator());
     validators.add(
         ZeebeElementValidator.verifyThat(ZeebeSubscription.class)
             .hasNonEmptyAttribute(
