@@ -282,6 +282,10 @@ public final class ReconfigurationHelper {
             .filter(m -> !m.equals(raftContext.getCluster().getLocalMember().memberId()))
             .collect(Collectors.toSet());
 
+    if (otherMembers.isEmpty()) {
+      future.complete(null);
+    }
+
     final var quorum =
         new ForceConfigureQuorum(
             success -> {

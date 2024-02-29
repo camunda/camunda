@@ -656,6 +656,23 @@ final class ReconfigurationTest {
     }
 
     @Test
+    void shouldForceConfigureIfOnlyOneRemainingMember() {
+      // when
+      m2.shutdown().join();
+      m3.shutdown().join();
+      m4.shutdown().join();
+      m1.forceConfigure(Map.of(id1, Type.ACTIVE)).join();
+
+      // then
+      awaitLeader(m1);
+
+      assertThat(m1.cluster().getMembers())
+          .describedAs("Force configuration should have only one members")
+          .containsExactlyInAnyOrderElementsOf(
+              Set.of(new DefaultRaftMember(id1, Type.ACTIVE, Instant.now())));
+    }
+
+    @Test
     void shouldFailForceConfigurationIfOneMemberUnreachable() {
       // when
       m2.shutdown().join();
