@@ -1,4 +1,4 @@
-name: Release Workflow
+name: Zeebe Release Workflow
 on:
   workflow_call:
     inputs:
@@ -47,12 +47,12 @@ jobs:
     steps:
       - name: Output Inputs
         run: echo "${{ toJSON(github.event.inputs) }}"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.4.3
+        uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -112,7 +112,7 @@ jobs:
         uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C
-      - uses: s4u/maven-settings-action@v2.8.0
+      - uses: s4u/maven-settings-action@v3.0.0
         with:
           servers: |
             [{
@@ -124,6 +124,13 @@ jobs:
                 "id": "central",
                 "username": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_USR }}",
                 "password": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_PSW }}"
+            }]
+          mirrors: |
+            [{
+                "id": "camunda-nexus",
+                "name": "Camunda Nexus",
+                "mirrorOf": "camunda-nexus",
+                "url": "https://repository.nexus.camunda.cloud/content/groups/internal/"
             }]
       - name: Maven Release
         id: maven-release
@@ -164,7 +171,7 @@ jobs:
           cp clients/go/cmd/zbctl/dist/zbctl.darwin "${ARTIFACT_DIR}/"
           echo "dir=${ARTIFACT_DIR}" >> $GITHUB_OUTPUT
       - name: Upload Zeebe Release Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: ${{ steps.release-artifacts.outputs.dir }}
@@ -209,7 +216,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Create Artifact Checksums
@@ -255,12 +262,12 @@ jobs:
       DOCKER_IMAGE: camunda/zeebe
       TAG_LATEST: ${{ inputs.isLatest }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.4.3
+        uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -270,17 +277,17 @@ jobs:
             secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
       - name: Login to DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Download Zeebe Release Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Docker Image
-        uses: ./.github/actions/build-docker
-        id: build-docker
+        uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
         with:
           repository: ${{ env.DOCKER_IMAGE }}
           version: ${{ inputs.releaseVersion }}
@@ -312,7 +319,7 @@ jobs:
     concurrency:
       group: release-snyk-${{ inputs.releaseVersion }}
       cancel-in-progress: false
-    uses: ./.github/workflows/snyk.yml
+    uses: ./.github/workflows/zeebe-snyk.yml
     with:
       # Can't reference env.RELEASE_BRANCH directly due to https://github.com/actions/runner/issues/2372
       ref: ${{ needs.release.outputs.releaseBranch }}

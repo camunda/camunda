@@ -1,4 +1,4 @@
-name: CI
+name: Zeebe CI
 
 on:
   push:
@@ -68,7 +68,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C
-      - uses: ./.github/actions/build-docker
+      - uses: ./.github/actions/build-zeebe-docker
         with:
           repository: localhost:5000/camunda/zeebe
           version: current-test
@@ -216,8 +216,8 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-      - uses: ./.github/actions/build-docker
-        id: build-docker
+      - uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
         with:
           repository: camunda/zeebe
           version: current-test
@@ -332,18 +332,18 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-      - uses: ./.github/actions/build-docker
-        id: build-docker
+      - uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
         with:
           # give it a fake name to ensure we never try pushing it
           repository: localhost:5000/camunda/zeebe
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Verify Docker image
         env:
-          DATE: ${{ steps.build-docker.outputs.date }}
+          DATE: ${{ steps.build-zeebe-docker.outputs.date }}
           REVISION: ${{ github.sha }}
-          VERSION: ${{ steps.build-docker.outputs.version }}
-        run: ${PWD}/docker/test/verify.sh '${{ steps.build-docker.outputs.image }}'
+          VERSION: ${{ steps.build-zeebe-docker.outputs.version }}
+        run: ${PWD}/docker/test/verify.sh '${{ steps.build-zeebe-docker.outputs.image }}'
   test-summary:
     # Used by bors to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -448,8 +448,8 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-      - uses: ./.github/actions/build-docker
-        id: build-docker
+      - uses: ./.github/actions/build-zeebe-docker
+        id: build-zeebe-docker
         with:
           repository: camunda/zeebe
           version: SNAPSHOT
@@ -465,7 +465,7 @@ jobs:
     concurrency:
       group: deploy-snyk-projects
       cancel-in-progress: false
-    uses: ./.github/workflows/snyk.yml
+    uses: ./.github/workflows/zeebe-snyk.yml
     with:
       monitor: true
       build: true
