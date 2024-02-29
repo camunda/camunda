@@ -62,6 +62,8 @@ import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
@@ -87,8 +89,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 
 public final class ZeebeClientImpl implements ZeebeClient {
   private final ZeebeClientConfiguration config;
@@ -161,10 +161,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
       credentialsProvider = new NoopCredentialsProvider();
     }
     jobClient = newJobClient();
+    this.httpClient.start();
   }
 
   private static HttpClient buildHttpClient(final ZeebeClientConfiguration config) {
-    return HttpClientBuilder.create().build();
+    return new HttpClientFactory(config).createClient();
   }
 
   public static ManagedChannel buildChannel(final ZeebeClientConfiguration config) {
@@ -280,7 +281,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public TopologyRequestStep1 newTopologyRequest() {
     return new TopologyRequestImpl(
-        asyncStub, config.getDefaultRequestTimeout(), credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        httpClient,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest);
   }
 
   @Override
