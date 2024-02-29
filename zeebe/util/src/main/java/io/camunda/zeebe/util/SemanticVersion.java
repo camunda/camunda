@@ -126,4 +126,13 @@ public record SemanticVersion(
 
     return Integer.compare(preReleaseParts.length, otherPreReleaseParts.length);
   }
+
+  @Override
+  public String toString() {
+    final var version = major + "." + minor + "." + patch;
+    if (preRelease != null) {
+      return version + "-" + preRelease;
+    }
+    return version;
+  }
 }
