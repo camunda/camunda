@@ -785,6 +785,76 @@ public final class ProcessExecutionCleanStateTest {
     assertThatStateIsEmpty();
   }
 
+  @Test
+  public void testProcessWithCompensationEventTriggered() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .endEvent()
+            .compensateEventDefinition()
+            .done();
+
+    engineRule.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        engineRule.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    engineRule.job().ofInstance(processInstanceKey).withType("A").complete();
+    engineRule.job().ofInstance(processInstanceKey).withType("Undo-A").complete();
+
+    // then
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    assertThatStateIsEmpty();
+  }
+
+  @Test
+  public void testProcessWithCompensationEventNotTriggered() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "A",
+                task ->
+                    task.zeebeJobType("A")
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .endEvent()
+            .done();
+
+    engineRule.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        engineRule.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    engineRule.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    // then
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    assertThatStateIsEmpty();
+  }
+
   private void assertThatStateIsEmpty() {
     // sometimes the state takes few moments until is empty
     Awaitility.await()
