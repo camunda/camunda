@@ -1,4 +1,4 @@
-name: Create docker image from a dev branch and deploy it to GCR
+name: Optimize - Create docker image from a dev branch and deploy it to GCR
 
 on:
   workflow_dispatch:

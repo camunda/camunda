@@ -1,4 +1,4 @@
-name: Import Mediator Permutation Test
+name: Optimize Import Mediator Permutation Test
 
 on:
   schedule:

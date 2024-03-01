@@ -1,4 +1,4 @@
-name: Import Dynamic Dataset Performance Test
+name: Optimize Import Dynamic Dataset Performance Test
 
 on:
   workflow_dispatch:

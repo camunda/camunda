@@ -1,4 +1,4 @@
-name: Release Camunda Optimize to Camunda Nexus, DockerHub and internal Harbor registry.
+name: Optimize - Release Camunda Optimize to Camunda Nexus, DockerHub and internal Harbor registry.
 
 on:
   schedule:

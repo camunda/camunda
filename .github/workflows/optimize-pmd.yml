@@ -1,4 +1,4 @@
-name: pmd
+name: Optimize PMD
 on:
   pull_request:
     branches: [ "master", "maintenance/**", "release/**" ]

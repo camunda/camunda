@@ -1,4 +1,4 @@
-name: Backend
+name: Optimize Backend Linting
 on:
   push:
     branches:

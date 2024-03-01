@@ -1,4 +1,4 @@
-name: Upgrade Data Performance Test
+name: Optimize Upgrade Data Performance Test
 
 on:
   workflow_dispatch:

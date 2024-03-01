@@ -1,4 +1,4 @@
-name: E2E tests - browserstack
+name: Optimize E2E tests - browserstack
 
 on:
   workflow_dispatch:

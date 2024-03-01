@@ -1,10 +1,10 @@
-name: Unit Tests
+name: Optimize Unit Tests
 on:
   workflow_call:
 
 jobs:
   unit-tests-backend:
-    name: Unit Tests - Backend
+    name: Optimize Unit Tests - Backend
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
@@ -28,7 +28,7 @@ jobs:
         if-no-files-found: ignore
 
   unit-tests-frontend:
-    name: Unit Tests - Frontend
+    name: Optimize Unit Tests - Frontend
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

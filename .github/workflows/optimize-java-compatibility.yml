@@ -1,4 +1,4 @@
-name: Java Compatibility
+name: Optimize Java Compatibility
 
 on:
   schedule:

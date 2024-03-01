@@ -1,4 +1,4 @@
-name: Trivy check docker image
+name: Optimize Trivy check docker image
 
 on:
   workflow_dispatch:

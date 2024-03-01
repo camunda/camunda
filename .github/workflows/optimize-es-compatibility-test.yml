@@ -1,4 +1,4 @@
-name: Elastic Search Compatibility Test
+name: Optimize Elastic Search Compatibility Test
 
 on:
   workflow_dispatch:
@@ -47,6 +47,18 @@ jobs:
         with:
           secrets: ${{ toJSON(secrets) }}
           java-version: ${{ steps.pom-info.outputs.java_version }}
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize CI_SERVICE_ACCOUNT | GCP_CREDENTIALS;
+            secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
 
       - name: Login to Harbor registry
         uses: ./.github/actions/login-registry

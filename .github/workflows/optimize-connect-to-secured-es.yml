@@ -1,4 +1,4 @@
-name: Connect to secured Elasticsearch
+name: Optimize Connect to secured Elasticsearch
 
 on:
   workflow_dispatch:
@@ -87,7 +87,7 @@ jobs:
           compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
           project_name: cambpm
         env:
-          CAMBPM_VERSION: ${{ inputs.cambpm_version || steps.pom-info.outputs.x_camunda_engine_version }}
+          CAMBPM_VERSION: ${{ steps.java_info.outputs.x_camunda_engine_version }}
           CAMBPM_JVM_MEMORY: 2
 
       - name: Build project

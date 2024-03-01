@@ -1,4 +1,4 @@
-name: e2e cloud test
+name: Optimize e2e cloud test
 
 on:
   pull_request:

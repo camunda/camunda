@@ -1,4 +1,4 @@
-name: publish c4 to npm
+name: Optimize publish c4 to npm
 
 on:
   workflow_dispatch:

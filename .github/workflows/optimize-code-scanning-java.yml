@@ -1,4 +1,4 @@
-name: code-scanning-java
+name: Optimize Java code scan
 
 on:
   pull_request:

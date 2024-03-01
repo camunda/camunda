@@ -1,4 +1,4 @@
-name: code-scanning-javascript-typescript
+name: Optimize Javascript code scan
 
 on:
   pull_request:

@@ -26,6 +26,7 @@ self-hosted-runner:
     - gcp-core-8-longrunning
     - gcp-core-16-longrunning
     - gcp-core-32-longrunning
+    - gcp-core-32-longrunning-big-ssd
     - gcp-core-2-default
     - gcp-core-4-default
     - gcp-core-8-default

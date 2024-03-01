@@ -1,4 +1,4 @@
-name: Run Java checks
+name: Optimize Run Java checks
 env:
   JAVA_VERSION: "17"
 on:

@@ -1,4 +1,4 @@
-name: Engine Compatibility Integration Tests with supported CamBPM Versions
+name: Optimize Engine Compatibility Integration Tests with supported CamBPM Versions
 
 on:
   workflow_dispatch:

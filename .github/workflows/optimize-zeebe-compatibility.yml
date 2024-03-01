@@ -1,4 +1,4 @@
-name: Zeebe Compatibility
+name: Optimize Zeebe Compatibility
 on:
   schedule:
     - cron: "0 23 * * 1-5" # runs every day at 23:00 between Mon - Fri
