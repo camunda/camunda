@@ -7,7 +7,7 @@
 
 import {get, post, put, del} from 'request';
 
-export {getUsers, updateUsers, publish, loadExternalGroups} from './service.ts';
+export {getUsers, updateUsers, publish, createProcess, loadExternalGroups} from './service.ts';
 
 export async function loadProcesses() {
   const response = await get('api/eventBasedProcess');
@@ -25,13 +25,6 @@ export async function removeProcess(id) {
 
 export async function cancelPublish(id) {
   return await post(`api/eventBasedProcess/${id}/_cancelPublish`);
-}
-
-export async function createProcess(payload) {
-  const response = await post('api/eventBasedProcess', payload);
-  const json = await response.json();
-
-  return json.id;
 }
 
 export async function updateProcess(id, name, xml, mappings, eventSources) {

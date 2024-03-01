@@ -13,7 +13,7 @@ import './EmptyState.scss';
 interface EmptyStateProps {
   icon?: string;
   title: ReactNode;
-  description: ReactNode;
+  description?: ReactNode;
   actions?: ReactNode;
 }
 
@@ -24,7 +24,7 @@ export default function EmptyState({icon, title, description, actions}: EmptySta
       <Stack gap={6} className="content">
         <Stack gap={2}>
           <div className="title">{title}</div>
-          <div className="description">{description}</div>
+          {description && <div className="description">{description}</div>}
         </Stack>
         {actions && (
           <Stack gap={4} orientation="horizontal" className="actions">

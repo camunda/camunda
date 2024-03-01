@@ -10,9 +10,8 @@ import {Selector} from 'testcafe';
 export const navItem = Selector('header a[href="#/events/processes/"]');
 export const createDropdown = Selector('.Events .createNewProcess button');
 export const invoiceEventProcess = Selector('.ListItem').withText('Event Invoice process');
-export const editAccess = (element) => element.find('.DropdownOption').withText('Edit access');
+export const editAccess = Selector('.CarbonListItemSingleAction').withText('Edit access');
 export const fileInput = Selector('input').withAttribute('type', 'file');
-export const entity = (title) => Selector('.name .entity').withText(title);
 export const firstEl = Selector('.djs-hit');
 export const activityTask = Selector('.bpmn-icon-task');
 export const saveButton = Selector('.save-button');
@@ -39,7 +38,7 @@ export const batchDeleteButton = Selector('.cds--action-list button').withText('
 export const eventCheckbox = (index) =>
   Selector('.Table tbody tr').nth(index).find('.cds--table-column-checkbox label');
 export const externalEventgroup = (index) =>
-  Selector('.ExternalSource tr .cds--table-column-checkbox').nth(index);
+  Selector('.ExternalSourceSelection tr .cds--table-column-checkbox').nth(index);
 export const sourceMenuButton = (sourceName) =>
   Selector('.SourceMenuButton button').withText(sourceName);
 export const editingNotification = Selector('.editingWarning').withText(

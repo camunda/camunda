@@ -38,7 +38,7 @@ interface ChecklistProps<T> {
   loading?: boolean;
   labels?: Record<string, string | JSX.Element[]>;
   headerHidden?: boolean;
-  preItems?: TableBody;
+  preItems?: TableBody | false;
   customHeader?: string | JSX.Element[];
   title?: string | JSX.Element[];
   columnLabel?: string | JSX.Element[];

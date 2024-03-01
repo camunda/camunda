@@ -378,13 +378,11 @@ export class Collection extends Component {
                   title={t('home.sources.title')}
                   onClick={() => this.props.history.push('sources')}
                 >
-                  {collection && (
-                    <SourcesList
-                      onChange={this.loadEntities}
-                      readOnly={collection.currentUserRole !== 'manager'}
-                      collection={collection.id}
-                    />
-                  )}
+                  <SourcesList
+                    onChange={this.loadEntities}
+                    readOnly={collection.currentUserRole !== 'manager'}
+                    collection={collection.id}
+                  />
                 </Tabs.Tab>
               )}
             </Tabs>

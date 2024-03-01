@@ -12,7 +12,7 @@ import {DefinitionSelection} from 'components';
 import {loadVariables} from 'services';
 
 import EventsSourceModal from './EventsSourceModal';
-import ExternalSource from './ExternalSource';
+import ExternalSourceSelection from './ExternalSourceSelection';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -201,7 +201,7 @@ it('should add selected external sources', () => {
   node.find('Tabs').prop('onChange')('external');
 
   const testSource = {type: 'external', configuration: {group: 'testGroup'}};
-  node.find(ExternalSource).prop('onChange')([testSource]);
+  node.find(ExternalSourceSelection).prop('onChange')([testSource]);
 
   node.find('.confirm').simulate('click');
 
@@ -218,7 +218,7 @@ it('should add new external sources to already existing ones', () => {
   node.find('Tabs').prop('onChange')('external');
 
   const newGroupSource = {type: 'external', configuration: {group: 'testGroup'}};
-  node.find(ExternalSource).prop('onChange')([newGroupSource]);
+  node.find(ExternalSourceSelection).prop('onChange')([newGroupSource]);
 
   node.find('.confirm').simulate('click');
 
@@ -233,7 +233,7 @@ it('should not include existing groups if all external groups is selected', () =
   );
 
   node.find('Tabs').prop('onChange')('external');
-  node.find(ExternalSource).prop('onChange')([allExternalGroups]);
+  node.find(ExternalSourceSelection).prop('onChange')([allExternalGroups]);
 
   node.find('.confirm').simulate('click');
 
@@ -248,7 +248,7 @@ it('should add all external groups in auto generation', () => {
 
   node.find('.confirm').simulate('click');
 
-  expect(node.find(ExternalSource)).not.toExist();
+  expect(node.find(ExternalSourceSelection)).not.toExist();
   expect(node.find('.addExternalInfo')).toExist();
   expect(spy).toHaveBeenCalledWith([allExternalGroups], false);
 });

@@ -5,12 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import {Component, createRef} from 'react';
-import {Redirect, withRouter} from 'react-router-dom';
+import React, {Component, createRef} from 'react';
+import {Link, Redirect, withRouter} from 'react-router-dom';
 import {parseISO} from 'date-fns';
 import {MenuButton, MenuItem} from '@carbon/react';
+import {DecisionTree, Edit, Error, TrashCan, Upload, User} from '@carbon/icons-react';
 
-import {EntityList, BulkDeleter, Deleter, PageTitle} from 'components';
+import {BulkDeleter, Deleter, PageTitle, EmptyState, CarbonEntityList} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
 import {t} from 'translation';
@@ -118,6 +119,21 @@ export class EventsProcesses extends Component {
       openGenerationModal: !openGenerationModal,
     }));
 
+  renderMenuButton = (size) => {
+    return (
+      <MenuButton size={size} kind="primary" label={t('events.new').toString()}>
+        <MenuItem
+          onClick={this.toggleGenerationModal}
+          label={t('events.autogenerate').toString()}
+        />
+        <Link to="new/edit">
+          <MenuItem label={t('events.modelProcess').toString()} />
+        </Link>
+        <MenuItem onClick={this.triggerUpload} label={t('events.upload').toString()} />
+      </MenuButton>
+    );
+  };
+
   render() {
     const {processes, deleting, redirect, publishing, editingAccess, openGenerationModal} =
       this.state;
@@ -129,28 +145,23 @@ export class EventsProcesses extends Component {
     return (
       <div className="EventsProcesses">
         <PageTitle pageName={t('navigation.events')} />
-        <EntityList
-          name={t('navigation.events')}
-          empty={t('events.empty')}
+        <CarbonEntityList
+          emptyStateComponent={
+            <EmptyState
+              icon={<DecisionTree />}
+              title={t('events.createProcess')}
+              description={t('events.createTip')}
+              actions={this.renderMenuButton('md')}
+            />
+          }
           isLoading={!processes}
-          action={(bulkActive) => (
-            <MenuButton
-              className="createNewProcess"
-              kind={!bulkActive ? 'primary' : 'secondary'}
-              label={t('events.new')}
-            >
-              <MenuItem onClick={this.toggleGenerationModal} label={t('events.autogenerate')} />
-              <MenuItem
-                onClick={() => this.props.history.push('new/edit')}
-                label={t('events.modelProcess')}
-              />
-              <MenuItem onClick={this.triggerUpload} label={t('events.upload')} />
-            </MenuButton>
-          )}
-          bulkActions={[<BulkDeleter type="delete" deleteEntities={deleteProcesses} />]}
+          action={this.renderMenuButton('lg')}
+          bulkActions={[
+            <BulkDeleter type="delete" deleteEntities={deleteProcesses} useCarbonAction />,
+          ]}
           onChange={this.loadList}
-          columns={[t('common.name'), t('common.entity.modified'), t('events.stateColumn')]}
-          data={
+          headers={[t('common.name'), t('common.entity.modified'), t('events.stateColumn')]}
+          rows={
             processes &&
             processes.map((process) => {
               const {id, name, lastModified, state, publishingProgress} = process;
@@ -159,17 +170,17 @@ export class EventsProcesses extends Component {
 
               const actions = [
                 {
-                  icon: 'edit',
+                  icon: <Edit />,
                   text: t('common.edit'),
                   action: () => this.setState({redirect: link + 'edit'}),
                 },
                 {
-                  icon: 'user',
+                  icon: <User />,
                   text: t('common.editAccess'),
                   action: () => this.setState({editingAccess: process}),
                 },
                 {
-                  icon: 'delete',
+                  icon: <TrashCan />,
                   text: t('common.delete'),
                   action: () => this.setState({deleting: process}),
                 },
@@ -177,7 +188,7 @@ export class EventsProcesses extends Component {
 
               if (state === 'mapped' || state === 'unpublished_changes') {
                 actions.unshift({
-                  icon: 'publish',
+                  icon: <Upload />,
                   text: t('events.publish'),
                   action: () => this.setState({publishing: process}),
                 });
@@ -185,7 +196,7 @@ export class EventsProcesses extends Component {
 
               if (state === 'publish_pending') {
                 actions.unshift({
-                  icon: 'cancel',
+                  icon: <Error />,
                   text: t('events.cancelPublish'),
                   action: () => {
                     this.props.mightFail(cancelPublish(id), this.loadList, showError);
@@ -195,7 +206,7 @@ export class EventsProcesses extends Component {
 
               return {
                 id,
-                icon: 'process',
+                icon: <DecisionTree />,
                 type: t('events.label'),
                 entityType: 'process',
                 name,

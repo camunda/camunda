@@ -7,22 +7,24 @@
 
 import React, {useState} from 'react';
 import {Redirect} from 'react-router';
-import {Button} from '@carbon/react';
+import {Button, Layer} from '@carbon/react';
+import {Db2Database, DecisionTree, TrashCan} from '@carbon/icons-react';
 
-import {Button as LegacyButton, Modal, EntityList, Icon, DocsLink} from 'components';
+import {Modal, DocsLink, CarbonEntityList, EmptyState} from 'components';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {useErrorHandling} from 'hooks';
 
 import EventsSourceModal from './EventsSourceModal';
 import {createProcess} from './service';
 
 import './GenerationModal.scss';
 
-export function GenerationModal({onClose, mightFail}) {
+export default function GenerationModal({onClose}) {
   const [sources, setSources] = useState([]);
   const [openEventsSourceModal, setOpenEventsSourceModal] = useState(false);
   const [redirect, setRedirect] = useState();
+  const {mightFail} = useErrorHandling();
 
   const removeSource = (target) => setSources(sources.filter((src) => src !== target));
 
@@ -43,49 +45,59 @@ export function GenerationModal({onClose, mightFail}) {
             {t('events.sources.learnMore')}
           </DocsLink>
         </p>
-        <EntityList
-          embedded
-          action={() => (
-            <LegacyButton onClick={() => setOpenEventsSourceModal(true)}>
-              <Icon type="plus" />
-              {t('events.sources.add')}
-            </LegacyButton>
-          )}
-          name={t('events.addedSources')}
-          empty={t('home.sources.notCreated')}
-          data={sources.map((source) => {
-            const {
-              configuration: {processDefinitionKey, processDefinitionName},
-              type,
-            } = source;
-
-            const actions = [
-              {
-                icon: 'delete',
-                text: t('common.remove'),
-                action: () => removeSource(source),
-              },
-            ];
-
-            if (type === 'external') {
-              return {
-                id: 'allExternal',
-                icon: 'data-source',
-                type: t('events.sources.externalEvents'),
-                name: t('events.sources.allExternal'),
-                actions,
-              };
-            } else {
-              return {
-                id: processDefinitionKey,
-                icon: 'camunda-source',
-                type: t('events.sources.camundaProcess'),
-                name: processDefinitionName || processDefinitionKey,
-                actions,
-              };
+        <Layer>
+          <CarbonEntityList
+            action={
+              <Button kind="secondary" onClick={() => setOpenEventsSourceModal(true)}>
+                {t('events.sources.add')}
+              </Button>
             }
-          })}
-        />
+            title={t('events.addedSources')}
+            emptyStateComponent={
+              <EmptyState
+                title={t('home.sources.notCreated')}
+                actions={
+                  <Button kind="primary" size="md" onClick={() => setOpenEventsSourceModal(true)}>
+                    {t('events.sources.add')}
+                  </Button>
+                }
+              />
+            }
+            headers={[t('events.sources.eventSource')]}
+            rows={sources.map((source) => {
+              const {
+                configuration: {processDefinitionKey, processDefinitionName},
+                type,
+              } = source;
+
+              const actions = [
+                {
+                  icon: <TrashCan />,
+                  text: t('common.remove'),
+                  action: () => removeSource(source),
+                },
+              ];
+
+              if (type === 'external') {
+                return {
+                  id: 'allExternal',
+                  icon: <Db2Database />,
+                  type: t('events.sources.externalEvents'),
+                  name: t('events.sources.allExternal'),
+                  actions,
+                };
+              } else {
+                return {
+                  id: processDefinitionKey,
+                  icon: <DecisionTree />,
+                  type: t('events.sources.camundaProcess'),
+                  name: processDefinitionName || processDefinitionKey,
+                  actions,
+                };
+              }
+            })}
+          />
+        </Layer>
         {openEventsSourceModal && (
           <EventsSourceModal
             autoGenerate
@@ -109,5 +121,3 @@ export function GenerationModal({onClose, mightFail}) {
     </Modal>
   );
 }
-
-export default withErrorHandling(GenerationModal);

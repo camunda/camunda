@@ -45,10 +45,10 @@ export interface Action {
 interface Row {
   id: string;
   type: string;
-  link: string;
+  link?: string;
   icon: ReactNode;
   name: string;
-  meta: ReactNode[];
+  meta?: ReactNode[];
   actions: Action[];
 }
 
@@ -67,14 +67,14 @@ interface BulkAction {
 }
 
 interface EntityListProps {
-  title?: string;
+  title?: ReactNode;
   rows: Row[];
   headers: Column[];
   action: ReactNode;
   bulkActions?: React.ReactElement<BulkAction>;
   isLoading?: boolean;
   sorting?: {key: string; order: 'asc' | 'desc'};
-  onChange: (key?: string, order?: 'asc' | 'desc') => void;
+  onChange?: (key?: string, order?: 'asc' | 'desc') => void;
   emptyStateComponent?: ReactNode;
 }
 
@@ -127,7 +127,7 @@ export default function EntityList({
         </Stack>
       ),
     }),
-    ...row.meta.reduce((acc, curr, idx) => {
+    ...row.meta?.reduce((acc, curr, idx) => {
       const header = dataTableHeaders[idx + 1];
       if (header) {
         return {...acc, [header.key]: curr};
@@ -239,7 +239,7 @@ export default function EntityList({
                         <MenuItemSelectable
                           selected={(sorting.key || 'entityType') === key}
                           key={key}
-                          onChange={() => onChange(key, defaultOrder)}
+                          onChange={() => onChange?.(key, defaultOrder)}
                           label={name}
                         />
                       ))}
@@ -263,9 +263,9 @@ export default function EntityList({
                             const header = visibleHeaders[idx];
                             if (isObjectHeader(header)) {
                               if (header.key === sorting?.key) {
-                                onChange(sorting.key, sorting?.order === 'desc' ? 'asc' : 'desc');
+                                onChange?.(sorting.key, sorting?.order === 'desc' ? 'asc' : 'desc');
                               } else {
-                                onChange(header.key, header.defaultOrder);
+                                onChange?.(header.key, header.defaultOrder);
                               }
                             }
                           },

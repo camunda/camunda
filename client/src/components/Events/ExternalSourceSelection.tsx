@@ -29,9 +29,9 @@ const pageSize = 10;
 
 interface ExternalSourceProps {
   empty: boolean;
+  onChange: (sources: ExternalSource[]) => void;
   externalSources: ExternalSource[];
   existingExternalSources: ExternalSource[];
-  onChange: (sources: (ExternalSource | null)[]) => void;
 }
 
 export default function ExternalSourceSelection({

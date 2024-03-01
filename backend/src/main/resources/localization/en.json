@@ -246,7 +246,8 @@
     "addedSources": "Added sources",
     "modelProcess": "Model a process",
     "upload": "Upload .bpmn",
-    "empty": "There are no event-based processes created yet",
+    "createProcess": "Start by creating a process",
+    "createTip": "Click New Process to create your first event-based process",
     "label": "Event-based process",
     "parseError": "Could not parse file. Please make sure to upload a valid BPMN file.",
     "list": "Events list",
@@ -294,6 +295,7 @@
     },
     "sources": {
       "add": "Add event source",
+      "eventSource": "Event Source",
       "externalEvents": "External events",
       "editSource": "Edit event source",
       "addEvents": "Add process events",

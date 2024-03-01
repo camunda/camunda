@@ -246,7 +246,8 @@
     "addedSources": "Hinzugefügte Quellen",
     "modelProcess": "Prozess modellieren",
     "upload": ".bpmn hochladen",
-    "empty": "Es wurden noch keine Eventbasierten Prozesse erstellt",
+    "createProcess": "Beginnen Sie mit der Erstellung eines Prozesses",
+    "createTip": "Klicken Sie auf Neuer Prozess, um Ihren ersten Eventbasierten Prozess zu erstellen",
     "label": "Eventbasierter Prozess",
     "parseError": "Konnte Datei nicht verarbeiten. Bitte wählen Sie eine valide BPMN-Datei aus.",
     "list": "Event Liste",
@@ -294,6 +295,7 @@
     },
     "sources": {
       "add": "Eventquelle hinzufügen",
+      "eventSource": "Eventquelle",
       "externalEvents": "Externe Events",
       "editSource": "Eventquelle bearbeiten",
       "addEvents": "Prozessevents hinzufügen",

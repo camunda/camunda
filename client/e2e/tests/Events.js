@@ -22,7 +22,7 @@ fixture('Events Processes')
 
 test('create a process from scratch', async (t) => {
   await t.click(e.navItem);
-  await t.click(e.createDropdown);
+  await t.click(Common.emptyStateAdd);
   await t.click(Common.menuOption('Model a process'));
   await t.typeText(Common.nameEditField, 'Invoice Process', {replace: true});
   await t.click(e.firstEl);
@@ -35,9 +35,9 @@ test('add sources, map and publish a process', async (t) => {
   // Creation
   await t.resizeWindow(1100, 800);
   await t.click(e.navItem);
-  await t.click(e.createDropdown);
+  await t.click(Common.emptyStateAdd);
   await t.setFilesToUpload(e.fileInput, './resources/eventsProcess.bpmn');
-  await t.click(e.entity('Event Invoice process'));
+  await t.click(Common.listItemLink('event-based process'));
   await t.click(Common.editButton);
 
   await t.typeText(Common.nameEditField, 'Event Invoice process', {replace: true});
@@ -124,8 +124,8 @@ test('add sources, map and publish a process', async (t) => {
 
   // Listing
   await t.click(e.navItem);
-  await t.hover(e.entity('Event Invoice process'));
-  await t.click(Common.oldContextMenu(e.invoiceEventProcess));
+  await t.hover(Common.listItem('event-based process'));
+  await t.click(Common.contextMenu(Common.listItem('event-based process')));
   await t.takeScreenshot('additional-features/img/processList.png');
 
   // Edit Access
@@ -138,7 +138,7 @@ test('add sources, map and publish a process', async (t) => {
 
 test('auto generate a process', async (t) => {
   await t.click(e.navItem);
-  await t.click(e.createDropdown);
+  await t.click(Common.emptyStateAdd);
   await t.click(Common.menuOption('Autogenerate'));
   await t.click(e.addEventSourceBtn);
 

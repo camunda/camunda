@@ -24,7 +24,7 @@ import {loadVariables as loadVariablesService} from 'services';
 import {showError} from 'notifications';
 import {useErrorHandling} from 'hooks';
 
-import ExternalSource from './ExternalSource';
+import ExternalSourceSelection from './ExternalSourceSelection';
 import {loadEvents} from './service';
 
 import './EventsSourceModal.scss';
@@ -291,7 +291,7 @@ export default function EventsSourceModal({
           </Tabs.Tab>
           <Tabs.Tab value="external" title={t('events.sources.externalEvents')}>
             {!autoGenerate && (
-              <ExternalSource
+              <ExternalSourceSelection
                 empty={!externalExist}
                 existingExternalSources={existingSources.filter((src) => src.type === 'external')}
                 externalSources={externalSources}

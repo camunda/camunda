@@ -57,7 +57,6 @@ it('should match snapshot', async () => {
 it('should invoke onChange when selecting a group', () => {
   const spy = jest.fn();
   const node = shallow(<ExternalSourceSelection {...props} onChange={spy} />);
-
   node.find('Checklist').simulate('change', ['testGroup']);
 
   expect(spy).toHaveBeenCalledWith([
