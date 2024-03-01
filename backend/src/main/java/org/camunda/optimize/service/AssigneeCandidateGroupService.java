@@ -46,8 +46,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class AssigneeCandidateGroupService {
 
-  public static final IdentityType[] ASSIGNEE_IDENTITY_TYPES = {IdentityType.USER};
-  private static final IdentityType[] CANDIDATE_GROUP_IDENTITY_TYPES = {IdentityType.GROUP};
+  public static final IdentityType ASSIGNEE_IDENTITY_TYPE = IdentityType.USER;
+  private static final IdentityType CANDIDATE_GROUP_IDENTITY_TYPE = IdentityType.GROUP;
 
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
@@ -116,7 +116,7 @@ public class AssigneeCandidateGroupService {
   private IdentitySearchResultResponseDto searchForAssignees(
       final int limit,
       @NonNull final String terms,
-      @NonNull Map<String, Set<String>> definitionKeyToTenantsMap) {
+      @NonNull final Map<String, Set<String>> definitionKeyToTenantsMap) {
     // this is not efficient but a compromise assuming assignee cardinality is usually within a
     // handleable frame
     // and that the effort to enrich the cache data with the definition scope is for now too complex
@@ -124,13 +124,13 @@ public class AssigneeCandidateGroupService {
     final Set<String> assigneeIdsForProcess =
         assigneeAndCandidateGroupsReader.getAssigneeIdsForProcess(definitionKeyToTenantsMap);
     return identityService.searchAmongIdentitiesWithIds(
-        terms, assigneeIdsForProcess, ASSIGNEE_IDENTITY_TYPES, limit);
+        terms, assigneeIdsForProcess, ASSIGNEE_IDENTITY_TYPE, limit);
   }
 
   private IdentitySearchResultResponseDto searchForCandidateGroups(
       final int limit,
       @NonNull final String terms,
-      @NonNull Map<String, Set<String>> definitionKeyToTenantsMap) {
+      @NonNull final Map<String, Set<String>> definitionKeyToTenantsMap) {
     // this is not efficient but a compromise assuming assignee cardinality is usually within a
     // handleable frame
     // and that the effort to enrich the cache data with the definition scope is for now too complex
@@ -138,7 +138,7 @@ public class AssigneeCandidateGroupService {
     final Set<String> candidateGroupIdsForProcess =
         assigneeAndCandidateGroupsReader.getCandidateGroupIdsForProcess(definitionKeyToTenantsMap);
     return identityService.searchAmongIdentitiesWithIds(
-        terms, candidateGroupIdsForProcess, CANDIDATE_GROUP_IDENTITY_TYPES, limit);
+        terms, candidateGroupIdsForProcess, CANDIDATE_GROUP_IDENTITY_TYPE, limit);
   }
 
   private Map<String, Set<String>> retrieveAuthorizedDefinitionTenantMap(

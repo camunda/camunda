@@ -15,12 +15,14 @@ import jakarta.ws.rs.core.Cookie;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
@@ -61,7 +63,7 @@ public class CCSMIdentityService extends AbstractIdentityService
               .stream()
               .findFirst()
               .map(this::mapToUserDto);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           log.warn("Failed retrieving user by ID.", e);
           return Optional.empty();
         }
@@ -136,7 +138,9 @@ public class CCSMIdentityService extends AbstractIdentityService
   public List<UserDto> getUsersByEmail(final List<String> emails) {
     if (identity.users().isAvailable()) {
       final Set<String> lowerCasedEmails =
-          emails.stream().map(String::toLowerCase).collect(Collectors.toSet());
+          emails.stream()
+              .map(email -> email.toLowerCase(Locale.ENGLISH))
+              .collect(Collectors.toSet());
       final Optional<String> token = ccsmTokenService.getCurrentUserAuthToken();
       if (token.isPresent()) {
         return lowerCasedEmails.stream()
@@ -161,6 +165,12 @@ public class CCSMIdentityService extends AbstractIdentityService
   }
 
   @Override
+  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
+      final String id, final IdentityType type) {
+    return Optional.empty(); // TODO with #11655
+  }
+
+  @Override
   public List<IdentityWithMetadataResponseDto> getIdentities(
       final Collection<IdentityDto> identities) {
     return Collections.emptyList(); // TODO to be implemented with #11655
@@ -175,7 +185,7 @@ public class CCSMIdentityService extends AbstractIdentityService
             .map(this::mapToUserDto)
             .map(IdentityWithMetadataResponseDto.class::cast)
             .toList();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         log.warn("Failed searching for users with searchString {}.", searchString, e);
         return Collections.emptyList();
       }

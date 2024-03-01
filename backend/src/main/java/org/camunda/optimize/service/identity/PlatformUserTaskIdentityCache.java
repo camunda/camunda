@@ -69,9 +69,9 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdent
                     groupIds ->
                         newIdentityCache.addIdentities(fetchGroupsById(engineContext, groupIds)),
                     getCacheConfiguration().getMaxPageSize());
-              } catch (MaxEntryLimitHitException e) {
+              } catch (final MaxEntryLimitHitException e) {
                 throw e;
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 log.error(
                     "Failed to sync {} identities from engine {}",
                     getCacheLabel(),
@@ -109,10 +109,11 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdent
   public IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(
       final String terms,
       final Collection<String> identityIds,
-      final IdentityType[] identityTypes,
+      final IdentityType identityType,
       final int resultLimit) {
     return getActiveIdentityCache()
-        .searchAmongIdentitiesWithIds(terms, identityIds, identityTypes, resultLimit);
+        .searchAmongIdentitiesWithIds(
+            terms, identityIds, new IdentityType[] {identityType}, resultLimit);
   }
 
   private void resolveAndAddIdentities(final Set<IdentityDto> identities) {
@@ -138,9 +139,9 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdent
               try {
                 getActiveIdentityCache().addIdentities(fetchUsersById(engineContext, userIds));
                 getActiveIdentityCache().addIdentities(fetchGroupsById(engineContext, groupIds));
-              } catch (MaxEntryLimitHitException e) {
+              } catch (final MaxEntryLimitHitException e) {
                 throw e;
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 log.error(
                     "Failed to resolve and add {} identities from engine {}",
                     getCacheLabel(),

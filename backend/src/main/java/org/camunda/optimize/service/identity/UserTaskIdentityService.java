@@ -43,19 +43,17 @@ public interface UserTaskIdentityService {
   default IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(
       final String terms,
       final Collection<String> identityIds,
-      final IdentityType[] identityTypes,
+      final IdentityType identityType,
       final int resultLimit) {
     return new IdentitySearchResultResponseDto(
         identityIds.stream()
-            .map(UserDto::new)
+            .map(id -> IdentityType.USER == identityType ? new UserDto(id) : new GroupDto(id))
             .map(IdentityWithMetadataResponseDto.class::cast)
             .toList());
   }
 
-  default Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
-      final String id, final IdentityType type) {
-    return Optional.empty(); // TODO with #11655 for CCSM and CSaaS
-  }
+  Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
+      final String id, final IdentityType type);
 
   List<IdentityWithMetadataResponseDto> getIdentities(final Collection<IdentityDto> identities);
 }
