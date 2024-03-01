@@ -243,6 +243,20 @@ public record ClusterTopology(
         members.values().stream().flatMap(m -> m.partitions().keySet().stream()).distinct().count();
   }
 
+  public Integer minReplicationFactor() {
+    // return minimum replication factor. During a topology change, replication factor might
+    // increase temporarily.
+    return members.values().stream()
+        .filter(entry -> entry.state() != State.LEFT && entry.state() != State.UNINITIALIZED)
+        .flatMap(m -> m.partitions().entrySet().stream())
+        .collect(Collectors.groupingBy(Entry::getKey, Collectors.counting()))
+        .values()
+        .stream()
+        .reduce(Math::min)
+        .map(Long::intValue)
+        .orElse(0);
+  }
+
   public TopologyChangeOperation nextPendingOperation() {
     if (!hasPendingChanges()) {
       throw new NoSuchElementException();

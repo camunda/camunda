@@ -52,7 +52,15 @@ public class GatewayClusterTopologyService extends Actor implements TopologyUpda
           }
 
           try {
-            this.clusterTopology = this.clusterTopology.merge(clusterTopology);
+            final var mergedTopology = this.clusterTopology.merge(clusterTopology);
+            if (mergedTopology.equals(this.clusterTopology)) {
+              return;
+            }
+            LOG.debug(
+                "Received new topology {}. Updating local topology to {}",
+                clusterTopology,
+                mergedTopology);
+            this.clusterTopology = mergedTopology;
             clusterTopologyGossiper.updateClusterTopology(this.clusterTopology);
           } catch (final Exception updateFailed) {
             LOG.warn(

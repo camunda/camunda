@@ -50,6 +50,24 @@ class ClusterTopologyTest {
   }
 
   @Test
+  void canDetermineClusterSizePartitionAndReplicationFactor() {
+    // when
+    final var topology =
+        ClusterTopology.init()
+            .addMember(
+                member(1), MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))))
+            .addMember(
+                member(2), MemberState.initializeAsActive(Map.of(1, PartitionState.active(2))))
+            .addMember(
+                member(3), MemberState.initializeAsActive(Map.of(1, PartitionState.active(3))));
+
+    // then
+    assertThat(topology.clusterSize()).isEqualTo(3);
+    assertThat(topology.partitionCount()).isEqualTo(1);
+    assertThat(topology.minReplicationFactor()).isEqualTo(3);
+  }
+
+  @Test
   void shouldMergeConcurrentUpdatesToMembers() {
     // given
     final var topology =
