@@ -101,6 +101,7 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
   }
 
   private void sendHttpRequest(final HttpZeebeFuture<Topology> result) {
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     httpClient.get(
         "/topology",
         httpRequestConfig.build(),
