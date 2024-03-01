@@ -88,6 +88,12 @@ function getWrapper(initialPath: string = Paths.processes()) {
           >
             Fetch process xml
           </button>
+          <button onClick={batchModificationStore.enable}>
+            Enter batch modification mode
+          </button>
+          <button onClick={batchModificationStore.disable}>
+            Exit batch modification mode
+          </button>
         </MemoryRouter>
       );
     },

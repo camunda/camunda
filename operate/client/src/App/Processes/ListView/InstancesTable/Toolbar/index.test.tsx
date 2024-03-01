@@ -8,13 +8,25 @@
 import {render, screen} from 'modules/testing-library';
 import {Toolbar} from '.';
 import {MemoryRouter} from 'react-router-dom';
+import {batchModificationStore} from 'modules/stores/batchModification';
+import {useEffect} from 'react';
 
 type Props = {
   children?: React.ReactNode;
 };
 
 const Wrapper = ({children}: Props) => {
-  return <MemoryRouter>{children}</MemoryRouter>;
+  useEffect(() => {
+    return batchModificationStore.reset;
+  });
+  return (
+    <MemoryRouter>
+      {children}
+      <button onClick={batchModificationStore.enable}>
+        Enter batch modification mode
+      </button>
+    </MemoryRouter>
+  );
 };
 
 describe('<ProcessOperations />', () => {
@@ -46,5 +58,29 @@ describe('<ProcessOperations />', () => {
     rerender(<Toolbar selectedInstancesCount={10} />);
 
     expect(screen.getByText('10 items selected'));
+  });
+
+  it('should disable cancel and retry in batch modification mode', async () => {
+    const {user} = render(<Toolbar selectedInstancesCount={1} />, {
+      wrapper: Wrapper,
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: /enter batch modification mode/i}),
+    );
+
+    expect(
+      screen.getByRole('button', {
+        description: 'Not available in batch modification mode',
+        name: 'Cancel',
+      }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', {
+        description: 'Not available in batch modification mode',
+        name: 'Retry',
+      }),
+    ).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Discard'})).toBeEnabled();
   });
 });

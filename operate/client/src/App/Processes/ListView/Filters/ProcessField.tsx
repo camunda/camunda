@@ -11,6 +11,7 @@ import {observer} from 'mobx-react';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {ComboBox} from 'modules/components/ComboBox';
 import {authenticationStore} from 'modules/stores/authentication';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 const ProcessField: React.FC = observer(() => {
   const {processes, versionsByProcessAndTenant} = processesStore;
@@ -21,6 +22,10 @@ const ProcessField: React.FC = observer(() => {
 
   const isSpecificTenantSelected =
     selectedTenant !== '' && selectedTenant !== 'all';
+
+  const isDisabled =
+    (isMultiTenancyEnabled && selectedTenant === '') ||
+    batchModificationStore.state.isEnabled;
 
   return (
     <Field name="process" data-testid="filter-process-name-field">
@@ -63,7 +68,12 @@ const ProcessField: React.FC = observer(() => {
             };
           })}
           value={input.value}
-          disabled={isMultiTenancyEnabled && selectedTenant === ''}
+          disabled={isDisabled}
+          title={
+            batchModificationStore.state.isEnabled
+              ? 'Not changeable in batch modification mode'
+              : undefined
+          }
         />
       )}
     </Field>

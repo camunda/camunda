@@ -18,6 +18,7 @@ type Props = {
   onChange: (data: {[selectedItem: string]: Item | null | undefined}) => void;
   items: Item[];
   disabled?: boolean;
+  title?: string;
 };
 
 const ComboBox: React.FC<Props> = observer(

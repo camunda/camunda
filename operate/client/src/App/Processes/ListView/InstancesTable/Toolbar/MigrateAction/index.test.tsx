@@ -154,9 +154,9 @@ describe('<MigrateAction />', () => {
 
     await fetchProcessInstances(screen, user);
 
-    act(() => {
-      processInstancesSelectionStore.selectAllProcessInstances();
-    });
+    await user.click(
+      screen.getByRole('button', {name: /select all instances/i}),
+    );
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeEnabled();
   });
@@ -282,5 +282,29 @@ describe('<MigrateAction />', () => {
     );
 
     trackSpy.mockRestore();
+  });
+
+  it('should disable migrate action in batch modification mode', async () => {
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+
+    const {user} = render(<MigrateAction />, {
+      wrapper: getWrapper(
+        `/processes?process=eventBasedGatewayProcess&version=1`,
+      ),
+    });
+
+    await fetchProcessInstances(screen, user);
+
+    await user.click(
+      screen.getByRole('button', {name: /select all instances/i}),
+    );
+
+    expect(screen.getByRole('button', {name: /migrate/i})).toBeEnabled();
+
+    await user.click(
+      screen.getByRole('button', {name: /enter batch modification mode/i}),
+    );
+
+    expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
   });
 });

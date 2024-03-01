@@ -16,6 +16,8 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {MigrateAction} from './MigrateAction';
 import {MoveAction} from './MoveAction';
 import {IS_BATCH_MOVE_MODIFICATION_ENABLED} from 'modules/feature-flags';
+import {batchModificationStore} from 'modules/stores/batchModification';
+import {observer} from 'mobx-react';
 
 type Props = {
   selectedInstancesCount: number;
@@ -28,7 +30,7 @@ const ACTION_NAMES: Readonly<
   CANCEL_PROCESS_INSTANCE: 'cancel',
 };
 
-const Toolbar: React.FC<Props> = ({selectedInstancesCount}) => {
+const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
   const [modalMode, setModalMode] = useState<
     'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE' | null
   >(null);
@@ -89,12 +91,24 @@ const Toolbar: React.FC<Props> = ({selectedInstancesCount}) => {
           <TableBatchAction
             renderIcon={Error}
             onClick={() => setModalMode('CANCEL_PROCESS_INSTANCE')}
+            disabled={batchModificationStore.state.isEnabled}
+            title={
+              batchModificationStore.state.isEnabled
+                ? 'Not available in batch modification mode'
+                : undefined
+            }
           >
             Cancel
           </TableBatchAction>
           <TableBatchAction
             renderIcon={RetryFailed}
             onClick={() => setModalMode('RESOLVE_INCIDENT')}
+            disabled={batchModificationStore.state.isEnabled}
+            title={
+              batchModificationStore.state.isEnabled
+                ? 'Not available in batch modification mode'
+                : undefined
+            }
           >
             Retry
           </TableBatchAction>
@@ -116,6 +130,6 @@ const Toolbar: React.FC<Props> = ({selectedInstancesCount}) => {
       </Modal>
     </>
   );
-};
+});
 
 export {Toolbar};

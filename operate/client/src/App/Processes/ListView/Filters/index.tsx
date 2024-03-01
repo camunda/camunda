@@ -35,6 +35,7 @@ import {
 } from './OptionalFiltersFormGroup';
 import {TenantField} from 'modules/components/TenantField';
 import {processesStore} from 'modules/stores/processes/processes.list';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 const initialValues: ProcessInstanceFilters = {
   active: true,
@@ -45,6 +46,7 @@ const Filters: React.FC = observer(() => {
   const filters = useFilters();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
   const filtersFromUrl = filters.getFilters();
+  const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
 
   return (
     <Form<ProcessInstanceFilters>
@@ -77,7 +79,8 @@ const Filters: React.FC = observer(() => {
           <FiltersPanel
             localStorageKey="isFiltersCollapsed"
             isResetButtonDisabled={
-              isEqual(initialValues, values) && visibleFilters.length === 0
+              (isEqual(initialValues, values) && visibleFilters.length === 0) ||
+              isBatchModificationEnabled
             }
             onResetClick={() => {
               form.reset();

@@ -23,6 +23,7 @@ import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {ListItem, Modal} from './styled';
 import isNil from 'lodash/isNil';
 import {tracking} from 'modules/tracking';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 const MigrateAction: React.FC = observer(() => {
   const location = useLocation();
@@ -57,6 +58,7 @@ const MigrateAction: React.FC = observer(() => {
   const hasXmlError = processXmlStore.state.status === 'error';
 
   const isDisabled =
+    batchModificationStore.state.isEnabled ||
     !isVersionSelected ||
     !hasSelectedRunningInstances ||
     isChildProcess ||
@@ -99,7 +101,11 @@ const MigrateAction: React.FC = observer(() => {
               });
             }}
             disabled={isDisabled}
-            title={getTooltipText()}
+            title={
+              batchModificationStore.state.isEnabled
+                ? 'Not available in batch modification mode'
+                : getTooltipText()
+            }
           >
             Migrate
           </TableBatchAction>

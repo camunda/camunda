@@ -10,9 +10,11 @@ import {observer} from 'mobx-react';
 import {Field} from 'react-final-form';
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {ComboBox} from 'modules/components/ComboBox';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 const FlowNodeField: React.FC = observer(() => {
   const {flowNodeFilterOptions} = processXmlStore;
+  const isDisabled = batchModificationStore.state.isEnabled;
 
   return (
     <Field name="flowNodeId">
@@ -32,6 +34,12 @@ const FlowNodeField: React.FC = observer(() => {
           })}
           value={input.value}
           placeholder="Search by Process Flow Node"
+          disabled={isDisabled}
+          title={
+            batchModificationStore.state.isEnabled
+              ? 'Not changeable in batch modification mode'
+              : undefined
+          }
         />
       )}
     </Field>

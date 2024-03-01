@@ -257,9 +257,9 @@ describe('<MoveAction />', () => {
     await fetchProcessInstances(screen, user);
     await fetchProcessXml(screen, user);
 
-    act(() => {
-      processInstancesSelectionStore.selectAllProcessInstances();
-    });
+    await user.click(
+      screen.getByRole('button', {name: /select all instances/i}),
+    );
 
     expect(screen.getByRole('button', {name: /move/i})).toBeEnabled();
   });
@@ -277,9 +277,9 @@ describe('<MoveAction />', () => {
     await fetchProcessInstances(screen, user);
     await fetchProcessXml(screen, user);
 
-    act(() => {
-      processInstancesSelectionStore.selectAllProcessInstances();
-    });
+    await user.click(
+      screen.getByRole('button', {name: /select all instances/i}),
+    );
 
     await user.click(screen.getByRole('button', {name: /move/i}));
 
@@ -298,6 +298,8 @@ describe('<MoveAction />', () => {
     await user.click(screen.getByRole('button', {name: 'Continue'}));
 
     expect(batchModificationStore.state.isEnabled).toBe(true);
+
+    expect(screen.getByRole('button', {name: /move/i})).toBeDisabled();
   });
 
   it('should hide helper modal after checkbox click', async () => {
@@ -313,9 +315,9 @@ describe('<MoveAction />', () => {
     await fetchProcessInstances(screen, user);
     await fetchProcessXml(screen, user);
 
-    act(() => {
-      processInstancesSelectionStore.selectAllProcessInstances();
-    });
+    await user.click(
+      screen.getByRole('button', {name: /select all instances/i}),
+    );
 
     await user.click(screen.getByRole('button', {name: /move/i}));
 
@@ -336,6 +338,10 @@ describe('<MoveAction />', () => {
     ).not.toBeInTheDocument();
 
     localStorage.clear();
+
+    await user.click(
+      screen.getByRole('button', {name: /exit batch modification mode/i}),
+    );
 
     await user.click(screen.getByRole('button', {name: /move/i}));
 

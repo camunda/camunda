@@ -58,6 +58,7 @@ const MoveAction: React.FC = observer(() => {
   };
 
   const isDisabled =
+    batchModificationStore.state.isEnabled ||
     isNil(businessObject) ||
     flowNodeId === undefined ||
     !isTypeSupported(businessObject) ||
@@ -107,7 +108,11 @@ const MoveAction: React.FC = observer(() => {
               }
             }}
             disabled={isDisabled}
-            title={getTooltipText()}
+            title={
+              batchModificationStore.state.isEnabled
+                ? 'Not available in batch modification mode'
+                : getTooltipText()
+            }
           >
             Move
           </TableBatchAction>

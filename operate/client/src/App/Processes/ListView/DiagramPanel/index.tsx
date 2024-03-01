@@ -24,6 +24,7 @@ import {StateOverlay} from 'modules/components/StateOverlay';
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 function setSearchParam(
   location: Location,
@@ -151,7 +152,11 @@ const DiagramPanel: React.FC = observer(() => {
         {xml !== null && (
           <Diagram
             xml={xml}
-            selectableFlowNodes={processXmlStore.selectableIds}
+            selectableFlowNodes={
+              batchModificationStore.state.isEnabled
+                ? []
+                : processXmlStore.selectableIds
+            }
             selectedFlowNodeIds={flowNodeId ? [flowNodeId] : undefined}
             onFlowNodeSelection={(flowNodeId) => {
               if (flowNodeId === null || flowNodeId === undefined) {

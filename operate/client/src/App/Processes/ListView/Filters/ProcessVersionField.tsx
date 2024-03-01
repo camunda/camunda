@@ -10,6 +10,7 @@ import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 import {Dropdown} from '@carbon/react';
 import {processesStore} from 'modules/stores/processes/processes.list';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 const ProcessVersionField: React.FC = observer(() => {
   const {versionsByProcessAndTenant} = processesStore;
@@ -21,6 +22,8 @@ const ProcessVersionField: React.FC = observer(() => {
     ...versions.map(({version}) => version).sort((a, b) => b - a),
   ];
   const form = useForm();
+  const isDisabled =
+    batchModificationStore.state.isEnabled || versions.length === 0;
 
   return (
     <Field name="version">
@@ -35,7 +38,7 @@ const ProcessVersionField: React.FC = observer(() => {
               input.onChange(selectedItem);
               form.change('flowNodeId', undefined);
             }}
-            disabled={versions.length === 0}
+            disabled={isDisabled}
             items={items}
             itemToString={(item) =>
               item === 'all' ? 'All versions' : item.toString()

@@ -13,9 +13,15 @@ type CheckboxProps = {
   input: FieldInputProps<string, HTMLElement>;
   labelText: string;
   Icon: Icon;
+  isDisabled?: boolean;
 };
 
-const Checkbox: React.FC<CheckboxProps> = ({input, labelText, Icon}) => {
+const Checkbox: React.FC<CheckboxProps> = ({
+  input,
+  labelText,
+  Icon,
+  isDisabled = false,
+}) => {
   return (
     <CheckBox
       {...input}
@@ -28,6 +34,7 @@ const Checkbox: React.FC<CheckboxProps> = ({input, labelText, Icon}) => {
       invalidText=""
       warnText=""
       id={input.name}
+      disabled={isDisabled}
     />
   );
 };
