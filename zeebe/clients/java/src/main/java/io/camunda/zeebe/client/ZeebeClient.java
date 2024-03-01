@@ -500,7 +500,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p>This command is only send via REST over HTTP, not via gRPC <br>
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
    * <br>
    *
    * <p><strong>Experimental: This method is under development, and as such using it may have no
