@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.8.0
+        uses: hashicorp/vault-action@9f522b85981b491eab9a52c144d15aedbd0bf371 # v2.8.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -28,13 +28,13 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
         with:
           distribution: "adopt"
           java-version: "17"
           cache: "maven"
       - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v3.0.0
+        uses: s4u/maven-settings-action@7802f6aec16c9098b4798ad1f1d8ac75198194bd # v3.0.0
         with:
           githubServer: false
           servers: |
