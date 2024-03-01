@@ -1,9 +1,9 @@
 ---
 
-name: Bug report
+name: Zeebe Bug report
 about: Create a report to help us improve
 title: ''
-labels: 'kind/bug'
+labels: ['kind/bug', 'component/zeebe']
 assignees: ''
 
 ---
