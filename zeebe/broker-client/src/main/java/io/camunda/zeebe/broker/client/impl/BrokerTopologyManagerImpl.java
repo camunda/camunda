@@ -216,7 +216,7 @@ public final class BrokerTopologyManagerImpl extends Actor
         topologyToUpdate -> {
           final var newClusterSize = clusterTopology.clusterSize();
           final var newPartitionsCount = clusterTopology.partitionCount();
-          final var newReplicationFactor = clusterTopology.replicationFactor();
+          final var newReplicationFactor = clusterTopology.minReplicationFactor();
           if (newClusterSize != topologyToUpdate.getClusterSize()
               || newPartitionsCount != topologyToUpdate.getPartitionsCount()
               || newReplicationFactor != topologyToUpdate.getReplicationFactor()) {

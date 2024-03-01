@@ -64,7 +64,7 @@ class ClusterTopologyTest {
     // then
     assertThat(topology.clusterSize()).isEqualTo(3);
     assertThat(topology.partitionCount()).isEqualTo(1);
-    assertThat(topology.replicationFactor()).isEqualTo(3);
+    assertThat(topology.minReplicationFactor()).isEqualTo(3);
   }
 
   @Test

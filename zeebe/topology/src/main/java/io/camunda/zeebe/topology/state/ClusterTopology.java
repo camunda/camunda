@@ -243,7 +243,7 @@ public record ClusterTopology(
         members.values().stream().flatMap(m -> m.partitions().keySet().stream()).distinct().count();
   }
 
-  public Integer replicationFactor() {
+  public Integer minReplicationFactor() {
     // return minimum replication factor. During a topology change, replication factor might
     // increase temporarily.
     return members.values().stream()
