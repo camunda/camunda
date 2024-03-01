@@ -21,10 +21,8 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class TimestampBasedImportIndexReader
     implements ImportIndexReader<TimestampBasedImportIndexDto, DataSourceDto> {
-
   final ImportRepository importRepository;
 
-  @Override
   public Optional<TimestampBasedImportIndexDto> getImportIndex(
       final String typeIndexComesFrom, final DataSourceDto dataSourceDto) {
     return importRepository.getImportIndex(
@@ -35,8 +33,7 @@ public class TimestampBasedImportIndexReader
         dataSourceDto);
   }
 
-  public List<TimestampBasedImportIndexDto> getAllImportIndicesForTypes(
-      final List<String> indexTypes) {
+  public List<TimestampBasedImportIndexDto> getAllImportIndicesForTypes(List<String> indexTypes) {
     return importRepository.getAllTimestampBasedImportIndicesForTypes(indexTypes);
   }
 }

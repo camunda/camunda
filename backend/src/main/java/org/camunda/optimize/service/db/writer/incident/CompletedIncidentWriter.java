@@ -7,7 +7,6 @@ package org.camunda.optimize.service.db.writer.incident;
 
 public interface CompletedIncidentWriter extends AbstractIncidentWriter {
 
-  @Override
   default String createInlineUpdateScript() {
     // new import incidents should win over already
     // imported incidents, since those might be open incidents

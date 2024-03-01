@@ -79,17 +79,17 @@ public class DashboardWriterOS implements DashboardWriter {
     dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     final String dashboardId = dashboardDefinitionDto.getId();
 
-    final IndexRequest.Builder<DashboardDefinitionRestDto> request =
+    IndexRequest.Builder<DashboardDefinitionRestDto> request =
         new IndexRequest.Builder<DashboardDefinitionRestDto>()
             .index(DASHBOARD_INDEX_NAME)
             .id(dashboardId)
             .document(dashboardDefinitionDto)
             .refresh(Refresh.True);
 
-    final IndexResponse indexResponse = osClient.index(request);
+    IndexResponse indexResponse = osClient.index(request);
 
     if (!indexResponse.result().equals(Result.Created)) {
-      final String message =
+      String message =
           "Could not write dashboard to OpenSearch. "
               + "Maybe the connection to OpenSearch was lost?";
       log.error(message);
@@ -101,10 +101,10 @@ public class DashboardWriterOS implements DashboardWriter {
   }
 
   @Override
-  public void updateDashboard(final DashboardDefinitionUpdateDto dashboard, final String id) {
+  public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {
     log.debug("Updating dashboard with id [{}] in OpenSearch", id);
 
-    final UpdateRequest.Builder<Void, DashboardDefinitionUpdateDto> request =
+    UpdateRequest.Builder<Void, DashboardDefinitionUpdateDto> request =
         new UpdateRequest.Builder<Void, DashboardDefinitionUpdateDto>()
             .index(DASHBOARD_INDEX_NAME)
             .id(id)
@@ -117,7 +117,7 @@ public class DashboardWriterOS implements DashboardWriter {
             "Was not able to update dashboard with id [%s] and name [%s].",
             id, dashboard.getName());
 
-    final UpdateResponse<Void> updateResponse = osClient.update(request, errorMessage);
+    UpdateResponse<Void> updateResponse = osClient.update(request, errorMessage);
 
     if (updateResponse.shards().failed().intValue() > 0) {
       log.error(
@@ -126,49 +126,46 @@ public class DashboardWriterOS implements DashboardWriter {
     }
   }
 
-  @Override
-  public void removeReportFromDashboards(final String reportId) {
+  public void removeReportFromDashboards(String reportId) {
     final String updateItem = String.format("report from dashboard with report ID [%s]", reportId);
     log.info("Removing {}}.", updateItem);
 
-    final Script removeReportFromDashboardScript =
+    Script removeReportFromDashboardScript =
         OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
             "ctx._source.tiles.removeIf(report -> report.id.equals(params.idToRemove))",
             Collections.singletonMap("idToRemove", JsonData.of(reportId)));
 
-    final Query query =
+    Query query =
         new NestedQuery.Builder()
             .path(TILES)
             .query(QueryDSL.term(TILES + "." + DashboardIndex.REPORT_ID, reportId))
             .scoreMode(ChildScoreMode.None)
             .build()
-            .toQuery();
+            ._toQuery();
 
     osClient.updateByQuery(DASHBOARD_INDEX_NAME, query, removeReportFromDashboardScript);
   }
 
-  @Override
-  public void deleteDashboardsOfCollection(final String collectionId) {
-    final Query query = QueryDSL.term(COLLECTION_ID, collectionId);
+  public void deleteDashboardsOfCollection(String collectionId) {
+    Query query = QueryDSL.term(COLLECTION_ID, collectionId);
     osClient.deleteByQuery(query, true, DASHBOARD_INDEX_NAME);
   }
 
-  @Override
-  public void deleteDashboard(final String dashboardId) {
+  public void deleteDashboard(String dashboardId) {
     log.debug("Deleting dashboard with id [{}]", dashboardId);
 
-    final DeleteRequest.Builder request =
+    DeleteRequest.Builder request =
         new DeleteRequest.Builder()
             .index(DASHBOARD_INDEX_NAME)
             .id(dashboardId)
             .refresh(Refresh.True);
 
-    final String reason = String.format("Could not delete dashboard with id [%s].", dashboardId);
+    String reason = String.format("Could not delete dashboard with id [%s].", dashboardId);
 
-    final DeleteResponse deleteResponse = osClient.delete(request, reason);
+    DeleteResponse deleteResponse = osClient.delete(request, reason);
 
     if (!deleteResponse.result().equals(Result.Deleted)) {
-      final String message =
+      String message =
           String.format(
               "Could not delete dashboard with id [%s]. Dashboard does not exist.", dashboardId);
       log.error(message);
@@ -176,9 +173,8 @@ public class DashboardWriterOS implements DashboardWriter {
     }
   }
 
-  @Override
   public void deleteManagementDashboard() {
-    final Query query = QueryDSL.term(MANAGEMENT_DASHBOARD, true);
+    Query query = QueryDSL.term(MANAGEMENT_DASHBOARD, true);
     osClient.deleteByQuery(query, true, DASHBOARD_INDEX_NAME);
   }
 }

@@ -32,13 +32,12 @@ public class StorePositionBasedIndexImportService
       final ConfigurationService configurationService,
       final PositionBasedImportIndexWriter importIndexWriter,
       final DatabaseClient databaseClient) {
-    databaseImportJobExecutor =
+    this.databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.importIndexWriter = importIndexWriter;
     this.databaseClient = databaseClient;
   }
 
-  @Override
   public void executeImport(
       final List<PositionBasedImportIndexDto> importIndexesToStore,
       final Runnable importCompleteCallback) {

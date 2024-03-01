@@ -12,12 +12,10 @@ import org.camunda.optimize.plugin.importing.variable.DecisionInputImportAdapter
 import org.camunda.optimize.plugin.importing.variable.PluginDecisionInputDto;
 
 public class ReturnMoreInputVariables implements DecisionInputImportAdapter {
-
-  @Override
-  public List<PluginDecisionInputDto> adaptInputs(final List<PluginDecisionInputDto> inputs) {
-    final List<PluginDecisionInputDto> newInputs = new ArrayList<>();
-    for (final PluginDecisionInputDto input : inputs) {
-      final PluginDecisionInputDto newInput =
+  public List<PluginDecisionInputDto> adaptInputs(List<PluginDecisionInputDto> inputs) {
+    List<PluginDecisionInputDto> newInputs = new ArrayList<>();
+    for (PluginDecisionInputDto input : inputs) {
+      PluginDecisionInputDto newInput =
           new PluginDecisionInputDto(
               UUID.randomUUID().toString(),
               UUID.randomUUID().toString(),

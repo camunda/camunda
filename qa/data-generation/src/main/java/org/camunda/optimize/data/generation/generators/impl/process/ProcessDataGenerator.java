@@ -53,8 +53,8 @@ public abstract class ProcessDataGenerator extends DataGenerator<BpmnModelInstan
     return engineClient.deployProcesses(instance, nVersions, tenants);
   }
 
-  public BpmnModelInstance readProcessDiagramAsInstance(final String diagramPath) {
-    final InputStream inputStream = ProcessDataGenerator.class.getResourceAsStream(diagramPath);
+  public BpmnModelInstance readProcessDiagramAsInstance(String diagramPath) {
+    InputStream inputStream = getClass().getResourceAsStream(diagramPath);
     return Bpmn.readModelFromStream(inputStream);
   }
 }

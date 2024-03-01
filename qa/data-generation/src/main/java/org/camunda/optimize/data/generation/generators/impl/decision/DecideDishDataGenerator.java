@@ -22,12 +22,12 @@ public class DecideDishDataGenerator extends DecisionDataGenerator {
 
   private static final String DMN_DIAGRAM = "/diagrams/decision/decide-dish.dmn";
 
-  private final Triple<String, String, String> inputVarNames =
+  private Triple<String, String, String> inputVarNames =
       Triple.of(
           INPUT_VARIABLE_NUMBER_OF_GUESTS,
           INPUT_VARIABLE_SEASON,
           INPUT_VARIABLE_GUEST_WITH_CHILDREN);
-  private final List<Triple<Integer, String, Boolean>> possibleInputCombinations =
+  private List<Triple<Integer, String, Boolean>> possibleInputCombinations =
       ImmutableList.of(
           Triple.of(RandomUtils.nextInt(0, 11), "Monsoon", RandomUtils.nextBoolean()),
           Triple.of(RandomUtils.nextInt(0, 9), "Fall", RandomUtils.nextBoolean()),
@@ -40,11 +40,10 @@ public class DecideDishDataGenerator extends DecisionDataGenerator {
           Triple.of(RandomUtils.nextInt(0, 15), "Summer", RandomUtils.nextBoolean()),
           Triple.of(RandomUtils.nextInt(0, 15), "Summer", RandomUtils.nextBoolean()));
 
-  public DecideDishDataGenerator(final SimpleEngineClient engineClient, final Integer nVersions) {
+  public DecideDishDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);
   }
 
-  @Override
   protected DmnModelInstance retrieveDiagram() {
     return readDecisionDiagram(DMN_DIAGRAM);
   }
@@ -54,7 +53,7 @@ public class DecideDishDataGenerator extends DecisionDataGenerator {
     final int nextCombinationIndex = RandomUtils.nextInt(0, possibleInputCombinations.size());
     final Triple<Integer, String, Boolean> nextCombination =
         possibleInputCombinations.get(nextCombinationIndex);
-    final Map<String, Object> variables = new HashMap<>();
+    Map<String, Object> variables = new HashMap<>();
     variables.put(inputVarNames.getLeft(), nextCombination.getLeft());
     variables.put(inputVarNames.getMiddle(), nextCombination.getMiddle());
     variables.put(inputVarNames.getRight(), nextCombination.getRight());

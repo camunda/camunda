@@ -5,11 +5,6 @@
  */
 package org.camunda.optimize;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
-import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
-
-import java.util.HashMap;
-import java.util.Map;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.engine.IncidentClient;
 import org.camunda.optimize.test.engine.OutlierDistributionClient;
@@ -23,34 +18,35 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
+import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
+
 @Tag("platform-test")
 @ActiveProfiles(PLATFORM_PROFILE)
 public abstract class AbstractPlatformIT extends AbstractIT {
 
   @RegisterExtension
   @Order(2)
-  public static EngineIntegrationExtension engineIntegrationExtension =
-      new EngineIntegrationExtension();
+  public static EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension();
 
   @RegisterExtension
   @Order(4)
   public static EngineDatabaseExtension engineDatabaseExtension =
-      new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   // engine test helpers
-  protected AuthorizationClient authorizationClient =
-      new AuthorizationClient(engineIntegrationExtension);
-  protected OutlierDistributionClient outlierDistributionClient =
-      new OutlierDistributionClient(engineIntegrationExtension);
-  protected IncidentClient incidentClient =
-      new IncidentClient(engineIntegrationExtension, engineDatabaseExtension);
+  protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  protected OutlierDistributionClient outlierDistributionClient = new OutlierDistributionClient(engineIntegrationExtension);
+  protected IncidentClient incidentClient = new IncidentClient(engineIntegrationExtension, engineDatabaseExtension);
 
-  @Override
   protected void startAndUseNewOptimizeInstance() {
     startAndUseNewOptimizeInstance(new HashMap<>());
   }
 
-  protected void startAndUseNewOptimizeInstance(final Map<String, String> argMap) {
+  protected void startAndUseNewOptimizeInstance(Map<String, String> argMap) {
     startAndUseNewOptimizeInstance(argMap, PLATFORM_PROFILE);
   }
 
@@ -58,15 +54,10 @@ public abstract class AbstractPlatformIT extends AbstractIT {
     return useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName());
   }
 
-  protected ClientAndServer useAndGetMockServerForEngine(final String engineName) {
-    final String mockServerUrl =
-        "http://"
-            + MOCKSERVER_HOST
-            + ":"
-            + IntegrationTestConfigurationUtil.getEngineMockServerPort()
-            + "/engine-rest";
-    embeddedOptimizeExtension.configureEngineRestEndpointForEngineWithName(
-        engineName, mockServerUrl);
+  protected ClientAndServer useAndGetMockServerForEngine(String engineName) {
+    String mockServerUrl = "http://" + MOCKSERVER_HOST + ":" +
+      IntegrationTestConfigurationUtil.getEngineMockServerPort() + "/engine-rest";
+    embeddedOptimizeExtension.configureEngineRestEndpointForEngineWithName(engineName, mockServerUrl);
     return engineIntegrationExtension.useEngineMockServer();
   }
 
@@ -87,4 +78,5 @@ public abstract class AbstractPlatformIT extends AbstractIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
+
 }

@@ -33,9 +33,8 @@ public class RunningProcessInstanceDatabaseImportJob extends DatabaseImportJob<P
     this.configurationService = configurationService;
   }
 
-  @Override
-  protected void persistEntities(final List<ProcessInstanceDto> runningProcessInstances) {
-    final List<ImportRequestDto> importBulks = new ArrayList<>();
+  protected void persistEntities(List<ProcessInstanceDto> runningProcessInstances) {
+    List<ImportRequestDto> importBulks = new ArrayList<>();
     importBulks.addAll(
         runningProcessInstanceWriter.generateProcessInstanceImports(runningProcessInstances));
     importBulks.addAll(

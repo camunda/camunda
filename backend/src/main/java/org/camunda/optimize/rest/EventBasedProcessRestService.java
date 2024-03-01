@@ -67,7 +67,7 @@ public class EventBasedProcessRestService {
   @GET
   @Path("/isEnabled")
   @Produces(MediaType.APPLICATION_JSON)
-  public boolean getIsEnabled(@Context final ContainerRequestContext requestContext) {
+  public boolean getIsEnabled(@Context ContainerRequestContext requestContext) {
     return isUserGrantedEventProcessManagementAccess(
         sessionService.getRequestUserOrFailNotAuthorized(requestContext));
   }
@@ -77,7 +77,7 @@ public class EventBasedProcessRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public EventProcessMappingResponseDto getEventProcessMapping(
       @PathParam("id") final String eventProcessId,
-      @Context final ContainerRequestContext requestContext) {
+      @Context ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
         sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
@@ -149,8 +149,7 @@ public class EventBasedProcessRestService {
   @Path("/{id}/delete-conflicts")
   @Produces(MediaType.APPLICATION_JSON)
   public ConflictResponseDto getDeleteConflicts(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("id") final String eventProcessId) {
+      @Context ContainerRequestContext requestContext, @PathParam("id") String eventProcessId) {
     validateAccessToEventProcessManagement(
         sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     return eventProcessService.getDeleteConflictingItems(eventProcessId);
@@ -170,7 +169,7 @@ public class EventBasedProcessRestService {
     if (!wasFoundAndDeleted) {
       final String errorMessage =
           String.format(
-              "Could not delete event-based process with id [%s]. Event-based process does not exist. "
+              "Could not delete event-based process with id [%s]. Event-based process does not exist."
                   + "Maybe it was already deleted by someone else?",
               eventProcessId);
       throw new NotFoundException(errorMessage);
@@ -230,8 +229,8 @@ public class EventBasedProcessRestService {
   @Path("/delete-conflicts")
   @Consumes(MediaType.APPLICATION_JSON)
   public boolean checkEventBasedProcessesHaveConflicts(
-      @Context final ContainerRequestContext requestContext,
-      @NotNull @RequestBody final List<String> eventBasedProcessIds) {
+      @Context ContainerRequestContext requestContext,
+      @NotNull @RequestBody List<String> eventBasedProcessIds) {
     validateAccessToEventProcessManagement(
         sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     return eventProcessService.hasDeleteConflicts(eventBasedProcessIds);
@@ -241,8 +240,8 @@ public class EventBasedProcessRestService {
   @Path("/delete")
   @Consumes(MediaType.APPLICATION_JSON)
   public void bulkDeleteEventProcessMappings(
-      @Context final ContainerRequestContext requestContext,
-      @NotNull @RequestBody final List<String> eventBasedProcessIds) {
+      @Context ContainerRequestContext requestContext,
+      @NotNull @RequestBody List<String> eventBasedProcessIds) {
     validateAccessToEventProcessManagement(
         sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     eventProcessService.bulkDeleteEventProcessMappings(eventBasedProcessIds);

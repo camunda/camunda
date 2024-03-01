@@ -28,13 +28,12 @@ public class StoreIndexesEngineImportService implements ImportService<EngineImpo
       final ConfigurationService configurationService,
       final ImportIndexWriter importIndexWriter,
       final DatabaseClient databaseClient) {
-    databaseImportJobExecutor =
+    this.databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.importIndexWriter = importIndexWriter;
     this.databaseClient = databaseClient;
   }
 
-  @Override
   public void executeImport(
       final List<EngineImportIndexDto> importIndexesToStore,
       final Runnable importCompleteCallback) {

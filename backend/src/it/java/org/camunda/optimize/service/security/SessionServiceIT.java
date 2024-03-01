@@ -5,20 +5,21 @@
  */
 package org.camunda.optimize.service.security;
 
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
+import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_SESSION_INDEX_NAME;
-
-import jakarta.ws.rs.core.NewCookie;
-import jakarta.ws.rs.core.Response;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 @Tag(OPENSEARCH_PASSING)
 public class SessionServiceIT extends AbstractPlatformIT {
@@ -36,25 +37,17 @@ public class SessionServiceIT extends AbstractPlatformIT {
     final String token = authenticateAdminUser();
 
     // when
-    embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildLogOutRequest()
-        .withGivenAuthToken(token)
-        .execute();
+    embeddedOptimizeExtension.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
 
-    LocalDateUtil.setCurrentTime(
-        OffsetDateTime.now()
-            .plusMinutes(
-                embeddedOptimizeExtension
-                    .getConfigurationService()
-                    .getAuthConfiguration()
-                    .getTokenLifeTimeMinutes()));
+    LocalDateUtil.setCurrentTime(OffsetDateTime.now().plus(
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getTokenLifeTimeMinutes(),
+      ChronoUnit.MINUTES
+    ));
     getTerminatedSessionService().cleanup();
 
     // then
-    assertThat(
-            databaseIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME))
-        .isEqualTo(0);
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME))
+      .isEqualTo(0);
   }
 
   @Test
@@ -67,20 +60,20 @@ public class SessionServiceIT extends AbstractPlatformIT {
 
     // when
     final Response logoutResponse =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildLogOutRequest()
-            .withGivenAuthToken(firstToken)
-            .execute();
+      embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildLogOutRequest()
+        .withGivenAuthToken(firstToken)
+        .execute();
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // then
     final Response getPrivateReportsResponse =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildGetAllPrivateReportsRequest()
-            .withGivenAuthToken(secondToken)
-            .execute();
+      embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildGetAllPrivateReportsRequest()
+        .withGivenAuthToken(secondToken)
+        .execute();
 
     assertThat(getPrivateReportsResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
@@ -93,16 +86,11 @@ public class SessionServiceIT extends AbstractPlatformIT {
     final String token = authenticateAdminUser();
 
     // when
-    embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildLogOutRequest()
-        .withGivenAuthToken(token)
-        .execute();
+    embeddedOptimizeExtension.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
 
     // then
-    assertThat(
-            databaseIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME))
-        .isEqualTo(1);
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME))
+      .isEqualTo(1);
   }
 
   @Test
@@ -114,157 +102,129 @@ public class SessionServiceIT extends AbstractPlatformIT {
 
     // when
     final Response logoutResponse =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildLogOutRequest()
-            .withGivenAuthToken(token)
-            .execute();
+      embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildLogOutRequest()
+        .withGivenAuthToken(token)
+        .execute();
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // then
     final Response getPrivateReportsResponse =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildGetAllPrivateReportsRequest()
-            .withGivenAuthToken(token)
-            .execute();
+      embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildGetAllPrivateReportsRequest()
+        .withGivenAuthToken(token)
+        .execute();
 
-    assertThat(getPrivateReportsResponse.getStatus())
-        .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+    assertThat(getPrivateReportsResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void logoutInvalidatesAllTokensOfASession() {
     // given
-    final long expiryMinutes =
-        embeddedOptimizeExtension
-            .getConfigurationService()
-            .getAuthConfiguration()
-            .getTokenLifeTimeMinutes();
+    int expiryMinutes = embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration().getTokenLifeTimeMinutes();
     engineIntegrationExtension.addUser("genzo", "genzo");
     engineIntegrationExtension.grantUserOptimizeAccess("genzo");
 
-    final String firstToken = embeddedOptimizeExtension.authenticateUser("genzo", "genzo");
+    String firstToken = embeddedOptimizeExtension.authenticateUser("genzo", "genzo");
 
     // when
     // modify time to get a new token for same session
-    LocalDateUtil.setCurrentTime(
-        LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes * 2 / 3));
-    final Response getNewAuthTokenForSameSessionResponse =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildAuthTestRequest()
-            .withGivenAuthToken(firstToken)
-            .execute();
+    LocalDateUtil.setCurrentTime(LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes * 2 / 3));
+    final Response getNewAuthTokenForSameSessionResponse = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthToken(firstToken)
+      .execute();
 
-    assertThat(getNewAuthTokenForSameSessionResponse.getStatus())
-        .isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(getNewAuthTokenForSameSessionResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     LocalDateUtil.reset();
 
-    final NewCookie newAuthCookie =
-        getNewAuthTokenForSameSessionResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
+    final NewCookie newAuthCookie = getNewAuthTokenForSameSessionResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
     final String newToken = newAuthCookie.getValue().replace(AUTH_COOKIE_TOKEN_VALUE_PREFIX, "");
 
     final Response logoutResponse =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildLogOutRequest()
-            .withGivenAuthToken(firstToken)
-            .execute();
+      embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildLogOutRequest()
+        .withGivenAuthToken(firstToken)
+        .execute();
     assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // then
     final Response getPrivateReportsResponse =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildGetAllPrivateReportsRequest()
-            .withGivenAuthToken(newToken)
-            .execute();
+      embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildGetAllPrivateReportsRequest()
+        .withGivenAuthToken(newToken)
+        .execute();
 
-    assertThat(getPrivateReportsResponse.getStatus())
-        .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+    assertThat(getPrivateReportsResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void tokenShouldExpireAfterConfiguredTime() {
     // given
-    final int expiryTime =
-        embeddedOptimizeExtension
-            .getConfigurationService()
-            .getAuthConfiguration()
-            .getTokenLifeTimeMinutes();
+    int expiryTime = embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration().getTokenLifeTimeMinutes();
     engineIntegrationExtension.addUser("genzo", "genzo");
     engineIntegrationExtension.grantUserOptimizeAccess("genzo");
-    final String firstToken = embeddedOptimizeExtension.authenticateUser("genzo", "genzo");
+    String firstToken = embeddedOptimizeExtension.authenticateUser("genzo", "genzo");
 
-    Response testAuthenticationResponse =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildAuthTestRequest()
-            .withGivenAuthToken(firstToken)
-            .execute();
-    assertThat(testAuthenticationResponse.getStatus())
-        .isEqualTo(Response.Status.OK.getStatusCode());
+    Response testAuthenticationResponse = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthToken(firstToken)
+      .execute();
+    assertThat(testAuthenticationResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // when
     LocalDateUtil.setCurrentTime(get1MinuteAfterExpiryTime(expiryTime));
-    testAuthenticationResponse =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildAuthTestRequest()
-            .withGivenAuthToken(firstToken)
-            .execute();
+    testAuthenticationResponse = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthToken(firstToken)
+      .execute();
 
     // then
-    assertThat(testAuthenticationResponse.getStatus())
-        .isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+    assertThat(testAuthenticationResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void authCookieIsExtendedByRequestInLastThirdOfLifeTime() {
     // given
-    final long expiryMinutes =
-        embeddedOptimizeExtension
-            .getConfigurationService()
-            .getAuthConfiguration()
-            .getTokenLifeTimeMinutes();
+    int expiryMinutes = embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration().getTokenLifeTimeMinutes();
     engineIntegrationExtension.addUser("genzo", "genzo");
     engineIntegrationExtension.grantUserOptimizeAccess("genzo");
-    final String firstToken = embeddedOptimizeExtension.authenticateUser("genzo", "genzo");
+    String firstToken = embeddedOptimizeExtension.authenticateUser("genzo", "genzo");
 
-    Response testAuthenticationResponse =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildAuthTestRequest()
-            .withGivenAuthToken(firstToken)
-            .execute();
-    assertThat(testAuthenticationResponse.getStatus())
-        .isEqualTo(Response.Status.OK.getStatusCode());
+    Response testAuthenticationResponse = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthToken(firstToken)
+      .execute();
+    assertThat(testAuthenticationResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // when
     final OffsetDateTime dateTimeBeforeRefresh = LocalDateUtil.getCurrentDateTime();
     LocalDateUtil.setCurrentTime(dateTimeBeforeRefresh.plusMinutes(expiryMinutes * 2 / 3));
-    testAuthenticationResponse =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildAuthTestRequest()
-            .withGivenAuthToken(firstToken)
-            .execute();
+    testAuthenticationResponse = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthToken(firstToken)
+      .execute();
 
     // then
-    assertThat(testAuthenticationResponse.getStatus())
-        .isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(testAuthenticationResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(testAuthenticationResponse.getCookies()).containsKey(OPTIMIZE_AUTHORIZATION);
-    final NewCookie newAuthCookie =
-        testAuthenticationResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
+    final NewCookie newAuthCookie = testAuthenticationResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
     final String newToken = newAuthCookie.getValue().replace(AUTH_COOKIE_TOKEN_VALUE_PREFIX, "");
     assertThat(newToken).isNotEqualTo(firstToken);
-    assertThat(newAuthCookie.getExpiry().toInstant().truncatedTo(ChronoUnit.SECONDS))
-        .isEqualTo(
-            LocalDateUtil.getCurrentDateTime()
-                .plusMinutes(expiryMinutes)
-                .toInstant()
-                .truncatedTo(ChronoUnit.SECONDS));
+    assertThat(newAuthCookie.getExpiry().toInstant().truncatedTo(ChronoUnit.SECONDS)).isEqualTo(
+      LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes).toInstant().truncatedTo(ChronoUnit.SECONDS));
   }
 
   @Test
@@ -280,24 +240,23 @@ public class SessionServiceIT extends AbstractPlatformIT {
       databaseIntegrationTestExtension.deleteTerminatedSessionsIndex();
 
       final Response getPrivateReportsResponse =
-          embeddedOptimizeExtension
-              .getRequestExecutor()
-              .buildGetAllPrivateReportsRequest()
-              .withGivenAuthToken(token)
-              .execute();
+        embeddedOptimizeExtension
+          .getRequestExecutor()
+          .buildGetAllPrivateReportsRequest()
+          .withGivenAuthToken(token)
+          .execute();
 
       // then
 
-      assertThat(getPrivateReportsResponse.getStatus())
-          .isEqualTo(Response.Status.OK.getStatusCode());
+      assertThat(getPrivateReportsResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     } finally {
-      embeddedOptimizeExtension
-          .getDatabaseSchemaManager()
-          .initializeSchema(embeddedOptimizeExtension.getOptimizeDatabaseClient());
+      embeddedOptimizeExtension.getDatabaseSchemaManager().initializeSchema(
+        embeddedOptimizeExtension.getOptimizeDatabaseClient()
+      );
     }
   }
 
-  private OffsetDateTime get1MinuteAfterExpiryTime(final int expiryTime) {
+  private OffsetDateTime get1MinuteAfterExpiryTime(int expiryTime) {
     return LocalDateUtil.getCurrentDateTime().plusMinutes(expiryTime + 1);
   }
 

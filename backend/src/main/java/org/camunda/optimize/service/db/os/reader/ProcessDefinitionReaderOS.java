@@ -56,15 +56,15 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
   @Override
   public Set<String> getAllNonOnboardedProcessDefinitionKeys() {
     final String defKeyAgg = "keyAgg";
-    final Query query =
+    Query query =
         new BoolQuery.Builder()
             .must(QueryDSL.term(ProcessDefinitionIndex.ONBOARDED, false))
             .must(QueryDSL.term(DEFINITION_DELETED, false))
             .should(QueryDSL.exists(PROCESS_DEFINITION_XML))
             .build()
-            .toQuery();
+            ._toQuery();
 
-    final SearchRequest.Builder searchRequest =
+    SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .index(PROCESS_DEFINITION_INDEX_NAME)
             .size(MAX_RESPONSE_SIZE_LIMIT)
@@ -78,7 +78,7 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
             .source(new SourceConfig.Builder().fetch(false).build());
 
     final String errorMessage = "Was not able to fetch non-onboarded process definition keys.";
-    final SearchResponse<String> searchResponse =
+    SearchResponse<String> searchResponse =
         osClient.search(searchRequest, String.class, errorMessage);
     return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse, defKeyAgg);
   }

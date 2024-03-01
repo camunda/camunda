@@ -11,10 +11,9 @@ import org.camunda.optimize.plugin.importing.variable.PluginDecisionInputDto;
 
 public class DoubleNumericInputValues implements DecisionInputImportAdapter {
 
-  @Override
-  public List<PluginDecisionInputDto> adaptInputs(final List<PluginDecisionInputDto> inputs) {
-    for (final PluginDecisionInputDto input : inputs) {
-      if (input.getType().equalsIgnoreCase("double")) {
+  public List<PluginDecisionInputDto> adaptInputs(List<PluginDecisionInputDto> inputs) {
+    for (PluginDecisionInputDto input : inputs) {
+      if (input.getType().toLowerCase().equals("double")) {
         input.setValue(String.valueOf(Double.parseDouble(input.getValue()) * 2));
       }
     }

@@ -116,13 +116,13 @@ public class DefinitionReaderOS implements DefinitionReader {
     if (type == null || key == null) {
       return Optional.empty();
     }
-    final BoolQuery.Builder query =
+    BoolQuery.Builder query =
         new BoolQuery.Builder()
             .must(QueryDSL.term(DEFINITION_KEY, key))
             .must(QueryDSL.term(DEFINITION_DELETED, false));
 
     addVersionFilterToQuery(versions, latestVersionSupplier, query);
-    return getDefinitionWithTenantIdsDtos(query.build().toQuery(), type).stream().findFirst();
+    return getDefinitionWithTenantIdsDtos(query.build()._toQuery(), type).stream().findFirst();
   }
 
   @Override
@@ -138,7 +138,7 @@ public class DefinitionReaderOS implements DefinitionReader {
             .should(QueryDSL.exists(PROCESS_DEFINITION_XML))
             .should(QueryDSL.exists(DECISION_DEFINITION_XML))
             .build()
-            .toQuery());
+            ._toQuery());
 
     if (!CollectionUtils.isEmpty(keys)) {
       filterQuery.filter(QueryDSL.terms(DEFINITION_KEY, keys, FieldValue::of));
@@ -146,7 +146,7 @@ public class DefinitionReaderOS implements DefinitionReader {
 
     addTenantIdFilter(tenantIds, filterQuery);
 
-    return getDefinitionWithTenantIdsDtos(filterQuery.build().toQuery(), type);
+    return getDefinitionWithTenantIdsDtos(filterQuery.build()._toQuery(), type);
   }
 
   @Override
@@ -171,7 +171,7 @@ public class DefinitionReaderOS implements DefinitionReader {
             definitionVersions, () -> getLatestVersionToKey(type, definitionKey));
 
     Optional<T> definition = Optional.empty();
-    for (final String tenantId : tenantIds) {
+    for (String tenantId : tenantIds) {
       definition =
           getFullyImportedDefinition(type, definitionKey, mostRecentValidVersion, tenantId);
       if (definition.isPresent()) {
@@ -209,7 +209,7 @@ public class DefinitionReaderOS implements DefinitionReader {
                     .must(QueryDSL.term(resolveDefinitionKeyFieldFromType(type), definitionKey))
                     .must(QueryDSL.term(DEFINITION_DELETED, false))
                     .build()
-                    .toQuery())
+                    ._toQuery())
             .size(0)
             .aggregations(
                 Collections.singletonMap(ENGINE_AGGREGATION, enginesAggregation._toAggregation()));
@@ -239,8 +239,7 @@ public class DefinitionReaderOS implements DefinitionReader {
             DATA_SOURCE + "." + DataSourceDto.Fields.name, LIST_FETCH_LIMIT);
 
     // 1. group by key, type and tenant (composite aggregation)
-    final List<Map<String, CompositeAggregationSource>> keyAndTypeAndTenantSources =
-        new ArrayList<>();
+    List<Map<String, CompositeAggregationSource>> keyAndTypeAndTenantSources = new ArrayList<>();
     keyAndTypeAndTenantSources.add(
         Collections.singletonMap(
             TENANT_AGGREGATION,
@@ -266,13 +265,13 @@ public class DefinitionReaderOS implements DefinitionReader {
                 .terms(new TermsAggregation.Builder().field(DatabaseConstants.INDEX).build())
                 .build()));
 
-    final CompositeAggregation keyAndTypeAndTenantAggregation =
+    CompositeAggregation keyAndTypeAndTenantAggregation =
         new CompositeAggregation.Builder()
             .sources(keyAndTypeAndTenantSources)
             .size(configurationService.getOpenSearchConfiguration().getAggregationBucketLimit())
             .build();
 
-    final Aggregation complexAggregation =
+    Aggregation complexAggregation =
         Aggregation.of(
             a ->
                 a.composite(keyAndTypeAndTenantAggregation)
@@ -300,13 +299,13 @@ public class DefinitionReaderOS implements DefinitionReader {
             })
         .consumeAllPages();
 
-    final Map<String, TenantIdWithDefinitionsDto> resultMap = new HashMap<>();
+    Map<String, TenantIdWithDefinitionsDto> resultMap = new HashMap<>();
 
     keyAndTypeAggBucketsByTenantId.forEach(
         (key, value) -> {
           // convert not defined bucket back to a `null` id
           final String tenantId = TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(key) ? null : key;
-          final List<SimpleDefinitionDto> simpleDefinitionDtos =
+          List<SimpleDefinitionDto> simpleDefinitionDtos =
               value.stream()
                   .map(
                       parsedBucket -> {
@@ -353,11 +352,11 @@ public class DefinitionReaderOS implements DefinitionReader {
   public String getLatestVersionToKey(final DefinitionType type, final String key) {
     log.debug("Fetching latest [{}] definition for key [{}]", type, key);
 
-    final Script script =
+    Script script =
         createDefaultScript(
             "Integer.parseInt(doc['" + resolveVersionFieldFromType(type) + "'].value)");
 
-    final SearchRequest.Builder searchBuilder =
+    SearchRequest.Builder searchBuilder =
         new SearchRequest.Builder()
             .index(List.of(resolveIndexNameForType(type)))
             .size(1)
@@ -366,7 +365,7 @@ public class DefinitionReaderOS implements DefinitionReader {
                     .must(QueryDSL.term(resolveDefinitionKeyFieldFromType(type), key))
                     .must(QueryDSL.term(DEFINITION_DELETED, false))
                     .build()
-                    .toQuery())
+                    ._toQuery())
             .sort(
                 new SortOptions.Builder()
                     .script(
@@ -377,9 +376,9 @@ public class DefinitionReaderOS implements DefinitionReader {
                             .build())
                     .build());
 
-    final String errorMessage =
+    String errorMessage =
         String.format("Was not able to fetch latest [%s] definition for key [%s]", type, key);
-    final SearchResponse<DefinitionOptimizeResponseDto> searchResponse =
+    SearchResponse<DefinitionOptimizeResponseDto> searchResponse =
         osClient.search(searchBuilder, resolveDefinitionClassFromType(type), errorMessage);
 
     if (searchResponse.hits().hits().size() == 1) {
@@ -412,7 +411,7 @@ public class DefinitionReaderOS implements DefinitionReader {
     final SearchRequest.Builder searchBuilder =
         new SearchRequest.Builder()
             .index(List.of(resolveIndexNameForType(type)))
-            .query(filterQuery.build().toQuery())
+            .query(filterQuery.build()._toQuery())
             .aggregations(
                 Collections.singletonMap(
                     VERSION_AGGREGATION,
@@ -495,7 +494,7 @@ public class DefinitionReaderOS implements DefinitionReader {
     final SearchRequest.Builder searchBuilder =
         new SearchRequest.Builder()
             .index(List.of(resolveIndexNameForType(type)))
-            .query(filterQuery.toQuery())
+            .query(filterQuery._toQuery())
             .source(searchSourceBuilder)
             .size(LIST_FETCH_LIMIT)
             .scroll(
@@ -509,7 +508,7 @@ public class DefinitionReaderOS implements DefinitionReader {
     final OpenSearchDocumentOperations.AggregatedResult<Hit<T>> scrollResp;
     try {
       scrollResp = osClient.retrieveAllScrollResults(searchBuilder, typeClass);
-    } catch (final IOException e) {
+    } catch (IOException e) {
       final String errorMsg =
           String.format("Was not able to retrieve definitions of type %s", type);
       log.error(errorMsg, e);
@@ -561,21 +560,20 @@ public class DefinitionReaderOS implements DefinitionReader {
       query.mustNot(QueryDSL.exists(TENANT_ID));
     }
 
-    final SearchRequest.Builder searchBuilder =
+    SearchRequest.Builder searchBuilder =
         new SearchRequest.Builder()
             .index(List.of(resolveIndexNameForType(type)))
-            .query(query.build().toQuery())
+            .query(query.build()._toQuery())
             .size(1);
 
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
 
-    final String errorMessage =
+    String errorMessage =
         String.format(
             "Was not able to fetch [%s] definition with key [%s], version [%s] and tenantId [%s]",
             type, definitionKey, validVersion, tenantId);
 
-    final SearchResponse<T> searchResponse =
-        osClient.search(searchBuilder, typeClass, errorMessage);
+    SearchResponse<T> searchResponse = osClient.search(searchBuilder, typeClass, errorMessage);
 
     if (searchResponse.hits().total().value() == 0L) {
       log.debug(
@@ -604,7 +602,7 @@ public class DefinitionReaderOS implements DefinitionReader {
                     .must(QueryDSL.term(DEFINITION_DELETED, false))
                     .must(QueryDSL.exists(resolveXmlFieldFromType(type)))
                     .build()
-                    .toQuery()));
+                    ._toQuery()));
 
     final TermsAggregation tenantsAggregation =
         new TermsAggregation.Builder()
@@ -626,7 +624,7 @@ public class DefinitionReaderOS implements DefinitionReader {
             // custom sort agg to sort by numeric version value (instead of string bucket key)
             .build();
 
-    final Map<String, Aggregation> subAggregations = new HashMap<>();
+    Map<String, Aggregation> subAggregations = new HashMap<>();
 
     subAggregations.put(
         "versionForSorting",
@@ -656,7 +654,7 @@ public class DefinitionReaderOS implements DefinitionReader {
     final String errorMessage =
         String.format("Was not able to fetch latest [%s] definitions for key [%s]", type, key);
 
-    final SearchResponse<T> searchResponse =
+    SearchResponse<T> searchResponse =
         osClient.search(searchBuilder, resolveDefinitionClassFromType(type), errorMessage);
 
     final List<T> result = retrieveResultsFromLatestDefinitionPerTenant(type, searchResponse);
@@ -688,7 +686,7 @@ public class DefinitionReaderOS implements DefinitionReader {
 
     // custom sort agg to sort by numeric version value (instead of string bucket key)
     // "versionForSorting"
-    final Aggregation nameAggregationSub =
+    Aggregation nameAggregationSub =
         AggregationDSL.withSubaggregations(
             nameAggregation,
             Collections.singletonMap(
@@ -704,7 +702,7 @@ public class DefinitionReaderOS implements DefinitionReader {
             DATA_SOURCE + "." + DataSourceDto.Fields.name, LIST_FETCH_LIMIT);
     // 1. group by key and type
 
-    final List<Map<String, CompositeAggregationSource>> keyAndTypeSources = new ArrayList<>();
+    List<Map<String, CompositeAggregationSource>> keyAndTypeSources = new ArrayList<>();
 
     keyAndTypeSources.add(
         Collections.singletonMap(
@@ -720,12 +718,12 @@ public class DefinitionReaderOS implements DefinitionReader {
                 .terms(new TermsAggregation.Builder().field(DatabaseConstants.INDEX).build())
                 .build()));
 
-    final CompositeAggregation.Builder keyAndTypeCompositeAggregation =
+    CompositeAggregation.Builder keyAndTypeCompositeAggregation =
         new CompositeAggregation.Builder()
             .sources(keyAndTypeSources)
             .size(configurationService.getOpenSearchConfiguration().getAggregationBucketLimit());
 
-    final Aggregation.Builder complexKeyAndTypeAggregationBuilder =
+    Aggregation.Builder complexKeyAndTypeAggregationBuilder =
         new Aggregation.Builder()
             .aggregations(TENANT_AGGREGATION, tenantsAggregation._toAggregation())
             .aggregations(NAME_AGGREGATION, nameAggregationSub)
@@ -780,27 +778,27 @@ public class DefinitionReaderOS implements DefinitionReader {
 
       if (tenantIds.contains(null)) {
         tenantFilterQuery.should(
-            new BoolQuery.Builder().mustNot(QueryDSL.exists(TENANT_ID)).build().toQuery());
+            new BoolQuery.Builder().mustNot(QueryDSL.exists(TENANT_ID)).build()._toQuery());
       }
       final Set<String> nonNullValues =
           tenantIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
       if (!nonNullValues.isEmpty()) {
         tenantFilterQuery.should(QueryDSL.terms(TENANT_ID, nonNullValues, FieldValue::of));
       }
-      query.filter(tenantFilterQuery.build().toQuery());
+      query.filter(tenantFilterQuery.build()._toQuery());
     }
   }
 
   private <T> List<CompositeBucket> performSearchAndCollectAllKeyAndTypeBuckets(
       final Query filterQuery,
       final String[] definitionIndexNames,
-      final Aggregation.Builder keyTypeAggregationBuilder,
-      final CompositeAggregation.Builder keyAndTypeCompositeAggregation,
+      Aggregation.Builder keyTypeAggregationBuilder,
+      CompositeAggregation.Builder keyAndTypeCompositeAggregation,
       final Class<T> typeResponse) {
 
-    final CompositeAggregation compositeAggregation = keyAndTypeCompositeAggregation.build();
+    CompositeAggregation compositeAggregation = keyAndTypeCompositeAggregation.build();
 
-    final Aggregation keyTypeAggregation =
+    Aggregation keyTypeAggregation =
         keyTypeAggregationBuilder.composite(compositeAggregation).build();
 
     SearchRequest.Builder searchReqBuilder =
@@ -810,7 +808,7 @@ public class DefinitionReaderOS implements DefinitionReader {
             .query(filterQuery)
             .size(0);
 
-    final List<CompositeBucket> keyAndTypeAggBuckets = new ArrayList<>();
+    List<CompositeBucket> keyAndTypeAggBuckets = new ArrayList<>();
 
     final String errorMessage =
         String.format(
@@ -824,13 +822,13 @@ public class DefinitionReaderOS implements DefinitionReader {
     while (!keyAndTypeAggregationResult.buckets().array().isEmpty()) {
       keyAndTypeAggBuckets.addAll(keyAndTypeAggregationResult.buckets().array());
 
-      final Map<String, String> keysToTypes =
+      Map<String, String> keysToTypes =
           keyAndTypeAggregationResult.afterKey().entrySet().stream()
               .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().to(String.class)));
 
-      final Aggregation.Builder keyTypeAggregationTempBuilder =
+      Aggregation.Builder keyTypeAggregationTempBuilder =
           new Aggregation.Builder().aggregations(keyTypeAggregation.aggregations());
-      final Aggregation compositeWithAfterAggregation =
+      Aggregation compositeWithAfterAggregation =
           keyTypeAggregationTempBuilder
               .composite(
                   new CompositeAggregation.Builder()
@@ -858,7 +856,7 @@ public class DefinitionReaderOS implements DefinitionReader {
       List<T> retrieveResultsFromLatestDefinitionPerTenant(
           final DefinitionType type, final SearchResponse<T> searchResponse) {
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
-    final List<T> results = new ArrayList<>();
+    List<T> results = new ArrayList<>();
     final FiltersBucket filteredDefsAgg =
         searchResponse
             .aggregations()
@@ -873,11 +871,11 @@ public class DefinitionReaderOS implements DefinitionReader {
 
     // There should be max. one version bucket in each tenant bucket containing the latest
     // definition for this tenant
-    for (final StringTermsBucket tenantBucket : tenantsAgg) {
+    for (StringTermsBucket tenantBucket : tenantsAgg) {
       final List<StringTermsBucket> versionsAgg =
           tenantBucket.aggregations().get(VERSION_AGGREGATION).sterms().buckets().array();
 
-      for (final StringTermsBucket b : versionsAgg) {
+      for (StringTermsBucket b : versionsAgg) {
         final TopHitsAggregate topHits = b.aggregations().get(TOP_HITS_AGGREGATION).topHits();
         results.addAll(OpensearchReaderUtil.mapHits(topHits.hits(), 1, typeClass));
       }
@@ -885,7 +883,7 @@ public class DefinitionReaderOS implements DefinitionReader {
     return results;
   }
 
-  private DefinitionType resolveDefinitionTypeFromIndexAlias(final String indexName) {
+  private DefinitionType resolveDefinitionTypeFromIndexAlias(String indexName) {
     if (indexName.equals(getOptimizeIndexNameForIndex(new ProcessDefinitionIndexOS()))
         || indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndexOS()))) {
       return DefinitionType.PROCESS;
@@ -896,7 +894,7 @@ public class DefinitionReaderOS implements DefinitionReader {
     }
   }
 
-  private boolean resolveIsEventProcessFromIndexAlias(final String indexName) {
+  private boolean resolveIsEventProcessFromIndexAlias(String indexName) {
     return indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndexOS()));
   }
 

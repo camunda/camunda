@@ -38,7 +38,7 @@ public abstract class PositionBasedImportMediator<
   @Override
   public CompletableFuture<Void> runImport() {
     final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
-    final boolean pageIsPresent = importNextPageWithRetries(importCompleted);
+    boolean pageIsPresent = importNextPageWithRetries(importCompleted);
     if (pageIsPresent) {
       idleBackoffCalculator.resetBackoff();
     } else {
@@ -47,7 +47,6 @@ public abstract class PositionBasedImportMediator<
     return importCompleted;
   }
 
-  @Override
   public long getBackoffTimeInMs() {
     return idleBackoffCalculator.getTimeUntilNextRetry();
   }
@@ -59,7 +58,7 @@ public abstract class PositionBasedImportMediator<
 
   @Override
   public boolean canImport() {
-    final boolean canImportNewPage = idleBackoffCalculator.isReadyForNextRetry();
+    boolean canImportNewPage = idleBackoffCalculator.isReadyForNextRetry();
     logger.debug("can import next page [{}]", canImportNewPage);
     return canImportNewPage;
   }
@@ -93,7 +92,7 @@ public abstract class PositionBasedImportMediator<
           importCompleteCallback.complete(null);
           result = true;
         } else {
-          final long timeToSleep = errorBackoffCalculator.calculateSleepTime();
+          long timeToSleep = errorBackoffCalculator.calculateSleepTime();
           logger.error(
               "Was not able to import next page, retrying after sleeping for {}ms.",
               timeToSleep,
@@ -171,7 +170,7 @@ public abstract class PositionBasedImportMediator<
   private void sleep(final long timeToSleep) {
     try {
       Thread.sleep(timeToSleep);
-    } catch (final InterruptedException e) {
+    } catch (InterruptedException e) {
       logger.error("Was interrupted from sleep.", e);
       Thread.currentThread().interrupt();
     }

@@ -14,6 +14,7 @@ import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionInde
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,7 +58,7 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
   }
 
   @Override
-  public void importProcessDefinitions(final List<ProcessDefinitionOptimizeDto> procDefs) {
+  public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) {
     log.debug("Writing [{}] process definitions to opensearch", procDefs.size());
     writeProcessDefinitionInformation(procDefs);
   }
@@ -90,6 +91,7 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
         .forEach(
             partition -> {
               final BoolQuery.Builder definitionsToDeleteQuery = new BoolQuery.Builder();
+              final Set<String> processDefIds = new HashSet<>();
               partition.forEach(
                   definition -> {
                     final BoolQuery.Builder matchingDefinitionQuery =
@@ -98,6 +100,7 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
                             .must(
                                 QueryDSL.term(PROCESS_DEFINITION_VERSION, definition.getVersion()))
                             .mustNot(QueryDSL.term(PROCESS_DEFINITION_ID, definition.getId()));
+                    processDefIds.add(definition.getId());
                     if (definition.getTenantId() != null) {
                       matchingDefinitionQuery.must(
                           QueryDSL.term(
@@ -106,13 +109,13 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
                       matchingDefinitionQuery.mustNot(
                           QueryDSL.exists(DecisionDefinitionIndex.TENANT_ID));
                     }
-                    definitionsToDeleteQuery.should(matchingDefinitionQuery.build().toQuery());
+                    definitionsToDeleteQuery.should(matchingDefinitionQuery.build()._toQuery());
                   });
 
               final long deleted =
                   osClient.updateByQuery(
                       PROCESS_DEFINITION_INDEX_NAME,
-                      definitionsToDeleteQuery.build().toQuery(),
+                      definitionsToDeleteQuery.build()._toQuery(),
                       MARK_AS_DELETED_SCRIPT);
 
               if (deleted > 0 && !definitionsUpdated.get()) {
@@ -132,7 +135,7 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
         new BoolQuery.Builder()
             .must(QueryDSL.terms(PROCESS_DEFINITION_KEY, definitionKeys, FieldValue::of))
             .build()
-            .toQuery(),
+            ._toQuery(),
         MARK_AS_ONBOARDED_SCRIPT);
   }
 
@@ -142,9 +145,8 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
         FIELDS_TO_UPDATE, processDefinitionDto, objectMapper);
   }
 
-  private void writeProcessDefinitionInformation(
-      final List<ProcessDefinitionOptimizeDto> procDefs) {
-    final String importItemName = "process definition information";
+  private void writeProcessDefinitionInformation(List<ProcessDefinitionOptimizeDto> procDefs) {
+    String importItemName = "process definition information";
     log.debug("Writing [{}] {} to OpenSearch.", procDefs.size(), importItemName);
 
     osClient.doImportBulkRequestWithList(

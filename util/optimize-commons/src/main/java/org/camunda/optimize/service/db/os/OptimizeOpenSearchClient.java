@@ -583,7 +583,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                     .build())
             .index(indexName)
             .source(new SourceConfig.Builder().fetch(false).build())
-            .query(filterQuery.toQuery());
+            .query(filterQuery._toQuery());
 
     // refresh to ensure we see the latest state
     richOpenSearchClient.index().refresh(indexName);

@@ -29,8 +29,8 @@ public abstract class DecisionDataGenerator extends DataGenerator<DmnModelInstan
     return engineClient.deployDecisions(instance, nVersions, tenants);
   }
 
-  protected DmnModelInstance readDecisionDiagram(final String dmnPath) {
-    final InputStream inputStream = DecisionDataGenerator.class.getResourceAsStream(dmnPath);
+  protected DmnModelInstance readDecisionDiagram(String dmnPath) {
+    InputStream inputStream = getClass().getResourceAsStream(dmnPath);
     return Dmn.readModelFromStream(inputStream);
   }
 }

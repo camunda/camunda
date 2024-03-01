@@ -58,8 +58,9 @@ public class ObjectMapperFactoryTest {
     final ReportDefinitionDto reportDefinitionDto =
         createOptimizeMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
-                    "/test/data/single-process-report-definition-create-request.json"),
+                getClass()
+                    .getResourceAsStream(
+                        "/test/data/single-process-report-definition-create-request.json"),
                 ReportDefinitionDto.class);
     assertThat(reportDefinitionDto.isCombined()).isFalse();
     assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.PROCESS);
@@ -76,8 +77,9 @@ public class ObjectMapperFactoryTest {
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
         createOptimizeMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
-                    "/test/data/single-process-report-definition-create-request.json"),
+                getClass()
+                    .getResourceAsStream(
+                        "/test/data/single-process-report-definition-create-request.json"),
                 SingleProcessReportDefinitionRequestDto.class);
 
     assertThat(reportDefinitionDto.isCombined()).isFalse();
@@ -90,8 +92,9 @@ public class ObjectMapperFactoryTest {
     final SingleDecisionReportDefinitionRequestDto reportDefinitionDto =
         createOptimizeMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
-                    "/test/data/single-decision-report-definition-create-request.json"),
+                getClass()
+                    .getResourceAsStream(
+                        "/test/data/single-decision-report-definition-create-request.json"),
                 SingleDecisionReportDefinitionRequestDto.class);
 
     assertThat(reportDefinitionDto.isCombined()).isFalse();
@@ -104,8 +107,9 @@ public class ObjectMapperFactoryTest {
     final CombinedReportDefinitionRequestDto reportDefinitionDto =
         createOptimizeMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
-                    "/test/data/combined-process-report-definition-create-request.json"),
+                getClass()
+                    .getResourceAsStream(
+                        "/test/data/combined-process-report-definition-create-request.json"),
                 CombinedReportDefinitionRequestDto.class);
 
     assertThat(reportDefinitionDto.isCombined()).isTrue();
@@ -118,7 +122,7 @@ public class ObjectMapperFactoryTest {
     ProcessReportDataDto data =
         createOptimizeMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream("/test/data/filter_request.json"),
+                this.getClass().getResourceAsStream("/test/data/filter_request.json"),
                 ProcessReportDataDto.class);
     assertThat(
             ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
@@ -129,8 +133,7 @@ public class ObjectMapperFactoryTest {
     data =
         createOptimizeMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
-                    "/test/data/filter_request_single.json"),
+                this.getClass().getResourceAsStream("/test/data/filter_request_single.json"),
                 ProcessReportDataDto.class);
     assertThat(
             ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
@@ -144,8 +147,8 @@ public class ObjectMapperFactoryTest {
     ProcessReportDataDto data =
         createOptimizeMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
-                    "/test/data/filter_request_lowercase_type.json"),
+                this.getClass()
+                    .getResourceAsStream("/test/data/filter_request_lowercase_type.json"),
                 ProcessReportDataDto.class);
     assertThat(
             ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
@@ -156,8 +159,7 @@ public class ObjectMapperFactoryTest {
     data =
         createOptimizeMapper()
             .readValue(
-                ObjectMapperFactoryTest.class.getResourceAsStream(
-                    "/test/data/filter_request_single.json"),
+                this.getClass().getResourceAsStream("/test/data/filter_request_single.json"),
                 ProcessReportDataDto.class);
     assertThat(
             ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
@@ -172,9 +174,9 @@ public class ObjectMapperFactoryTest {
     final String dateString = "2017-12-11T17:28:38.222+0100";
 
     // when
-    final DateHolder instance = new DateHolder();
+    DateHolder instance = new DateHolder();
     instance.setDate(OffsetDateTime.parse(dateString, createEngineDateFormatter()));
-    final String parsedString = createOptimizeMapper().writeValueAsString(instance);
+    String parsedString = createOptimizeMapper().writeValueAsString(instance);
 
     // then
     assertThat(parsedString).contains(dateString);
@@ -203,9 +205,9 @@ public class ObjectMapperFactoryTest {
     final String dateString = "2017-12-11T17:28:38.222+0100";
 
     // when
-    final DateHolder instance = new DateHolder();
+    DateHolder instance = new DateHolder();
     instance.setDate(OffsetDateTime.parse(dateString, createEngineDateFormatter()));
-    final String parsedString = createEngineMapper().writeValueAsString(instance);
+    String parsedString = createEngineMapper().writeValueAsString(instance);
 
     // then
     assertThat(parsedString).contains(dateString);
@@ -275,7 +277,7 @@ public class ObjectMapperFactoryTest {
       return date.truncatedTo(ChronoUnit.MILLIS);
     }
 
-    public void setDate(final OffsetDateTime date) {
+    public void setDate(OffsetDateTime date) {
       this.date = date;
     }
   }

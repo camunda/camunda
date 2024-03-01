@@ -38,11 +38,13 @@ import org.springframework.stereotype.Component;
 @Conditional(CamundaPlatformCondition.class)
 public class PlatformIdentityService extends AbstractIdentityService implements SessionListener {
   private static final int CACHE_MAXIMUM_SIZE = 10_000;
+
+  private LoadingCache<String, List<GroupDto>> userGroupsCache;
+
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final IdentityAuthorizationService identityAuthorizationService;
   private final EngineContextFactory engineContextFactory;
   private final PlatformUserIdentityCache syncedIdentityCache;
-  private LoadingCache<String, List<GroupDto>> userGroupsCache;
 
   public PlatformIdentityService(
       final ApplicationAuthorizationService applicationAuthorizationService,
@@ -154,7 +156,6 @@ public class PlatformIdentityService extends AbstractIdentityService implements 
     syncedIdentityCache.addIdentity(identity);
   }
 
-  @Override
   public IdentitySearchResultResponseDto searchForIdentitiesAsUser(
       final String userId,
       final String searchString,

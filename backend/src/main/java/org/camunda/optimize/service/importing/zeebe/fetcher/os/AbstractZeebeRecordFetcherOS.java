@@ -44,10 +44,14 @@ public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecor
     this.osClient = osClient;
   }
 
+  protected abstract String getBaseIndexName();
+
+  protected abstract Class<T> getRecordDtoClass();
+
   @Override
   protected List<T> fetchZeebeRecordsForPrefixAndPartitionFrom(
       final PositionBasedImportPage positionBasedImportPage) throws Exception {
-    final SearchRequest.Builder builder =
+    SearchRequest.Builder builder =
         new SearchRequest.Builder()
             .index(getIndexAlias())
             .routing(String.valueOf(partitionId))
@@ -56,7 +60,7 @@ public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecor
             .size(getDynamicBatchSize())
             .sort(buildSortOptions(positionBasedImportPage));
 
-    final SearchResponse<T> searchResponse =
+    SearchResponse<T> searchResponse =
         osClient.getOpenSearchClient().search(builder.build(), getRecordDtoClass());
     if (!searchResponse.shards().failures().isEmpty()
         || (searchResponse.shards().total().intValue()
@@ -97,7 +101,7 @@ public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecor
     if (getConsecutiveEmptyPages() < getZeebeImportConfig().getMaxEmptyPagesToImport()) {
       return false;
     }
-    final CountRequest.Builder builder =
+    CountRequest.Builder builder =
         new CountRequest.Builder()
             .index(getIndexAlias())
             .routing(String.valueOf(partitionId))
@@ -122,7 +126,7 @@ public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecor
         log.info(
             "There are no newer records to process, so empty pages of records are currently expected");
       }
-    } catch (final Exception e) {
+    } catch (Exception e) {
       if (isZeebeInstanceIndexNotFoundException(e)) {
         log.warn("No Zeebe index of type {} found to count records from!", getIndexAlias());
       } else {

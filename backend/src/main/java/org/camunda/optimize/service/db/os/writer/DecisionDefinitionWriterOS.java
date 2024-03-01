@@ -15,7 +15,9 @@ import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionInd
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,16 +41,17 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
 
-  private static final Script MARK_AS_DELETED_SCRIPT =
-      OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-          "ctx._source.deleted = true", Collections.emptyMap());
   private final ObjectMapper objectMapper;
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
+  private static final Script MARK_AS_DELETED_SCRIPT =
+      OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+          "ctx._source.deleted = true", Collections.emptyMap());
+
   @Override
   public void importDecisionDefinitions(
-      final List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
+      List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     log.debug(
         "Writing [{}] decision definitions to opensearch", decisionDefinitionOptimizeDtos.size());
     writeDecisionDefinitionInformation(decisionDefinitionOptimizeDtos);
@@ -64,7 +67,7 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
             .script(MARK_AS_DELETED_SCRIPT)
             .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-    final String errorMessage =
+    String errorMessage =
         String.format(
             "There was a problem when trying to mark decision definition with ID %s as deleted",
             definitionId);
@@ -82,6 +85,7 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
         .forEach(
             partition -> {
               final BoolQuery.Builder definitionsToDeleteQuery = new BoolQuery.Builder();
+              final Set<String> decisionDefIds = new HashSet<>();
               partition.forEach(
                   definition -> {
                     final BoolQuery.Builder matchingDefinitionQuery =
@@ -90,19 +94,22 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
                             .must(
                                 QueryDSL.term(DECISION_DEFINITION_VERSION, definition.getVersion()))
                             .mustNot(QueryDSL.term(DECISION_DEFINITION_ID, definition.getId()));
+
+                    decisionDefIds.add(definition.getId());
+
                     if (definition.getTenantId() != null) {
                       matchingDefinitionQuery.must(
                           QueryDSL.term(TENANT_ID, definition.getTenantId()));
                     } else {
                       matchingDefinitionQuery.mustNot(QueryDSL.exists(TENANT_ID));
                     }
-                    definitionsToDeleteQuery.should(matchingDefinitionQuery.build().toQuery());
+                    definitionsToDeleteQuery.should(matchingDefinitionQuery.build()._toQuery());
                   });
 
               final long markedAsDeleted =
                   osClient.updateByQuery(
                       DECISION_DEFINITION_INDEX_NAME,
-                      definitionsToDeleteQuery.build().toQuery(),
+                      definitionsToDeleteQuery.build()._toQuery(),
                       MARK_AS_DELETED_SCRIPT);
 
               if (markedAsDeleted > 0 && !definitionsUpdated.get()) {
@@ -116,8 +123,8 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
   }
 
   private void writeDecisionDefinitionInformation(
-      final List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
-    final String importItemName = "decision definition information";
+      List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
+    String importItemName = "decision definition information";
     log.debug("Writing [{}] {} to OS.", decisionDefinitionOptimizeDtos.size(), importItemName);
     osClient.doImportBulkRequestWithList(
         importItemName,

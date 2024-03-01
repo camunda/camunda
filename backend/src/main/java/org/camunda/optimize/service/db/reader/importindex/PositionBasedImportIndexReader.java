@@ -20,10 +20,8 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class PositionBasedImportIndexReader
     implements ImportIndexReader<PositionBasedImportIndexDto, ZeebeDataSourceDto> {
-
   private final ImportRepository importRepository;
 
-  @Override
   public Optional<PositionBasedImportIndexDto> getImportIndex(
       final String typeIndexComesFrom, final ZeebeDataSourceDto dataSourceDto) {
     return importRepository.getImportIndex(

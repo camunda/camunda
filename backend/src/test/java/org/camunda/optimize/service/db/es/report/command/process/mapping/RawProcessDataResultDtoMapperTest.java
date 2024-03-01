@@ -31,7 +31,7 @@ public class RawProcessDataResultDtoMapperTest {
   @Test
   public void testMapFromSearchResponse_hitCountNotEqualTotalCount() {
     // given
-    final int rawDataLimit = 2;
+    final Integer rawDataLimit = 2;
     final RawProcessDataResultDtoMapper mapper = new RawProcessDataResultDtoMapper();
     final List<ProcessInstanceDto> processInstanceDtos = generateInstanceList(rawDataLimit);
 
