@@ -41,7 +41,7 @@ public class DashboardReaderOS implements DashboardReader {
 
   @Override
   public long getDashboardCount() {
-    String errorMessage = "Was not able to retrieve dashboard count!";
+    final String errorMessage = "Was not able to retrieve dashboard count!";
     return osClient.count(
         new String[] {DASHBOARD_INDEX_NAME},
         QueryDSL.term(DashboardIndex.MANAGEMENT_DASHBOARD, false),
@@ -49,14 +49,15 @@ public class DashboardReaderOS implements DashboardReader {
   }
 
   @Override
-  public Optional<DashboardDefinitionRestDto> getDashboard(String dashboardId) {
+  public Optional<DashboardDefinitionRestDto> getDashboard(final String dashboardId) {
     log.debug("Fetching dashboard with id [{}]", dashboardId);
-    GetRequest.Builder getRequest =
+    final GetRequest.Builder getRequest =
         new GetRequest.Builder().index(DASHBOARD_INDEX_NAME).id(dashboardId);
 
-    String errorMessage = String.format("Could not fetch dashboard with id [%s]", dashboardId);
+    final String errorMessage =
+        String.format("Could not fetch dashboard with id [%s]", dashboardId);
 
-    GetResponse<DashboardDefinitionRestDto> getResponse =
+    final GetResponse<DashboardDefinitionRestDto> getResponse =
         osClient.get(getRequest, DashboardDefinitionRestDto.class, errorMessage);
 
     if (!getResponse.found()) {
@@ -66,45 +67,45 @@ public class DashboardReaderOS implements DashboardReader {
   }
 
   @Override
-  public List<DashboardDefinitionRestDto> getDashboards(Set<String> dashboardIds) {
+  public List<DashboardDefinitionRestDto> getDashboards(final Set<String> dashboardIds) {
     log.debug("Fetching dashboards with IDs {}", dashboardIds);
     final String[] dashboardIdsAsArray = dashboardIds.toArray(new String[0]);
 
-    SearchRequest.Builder requestBuilder =
+    final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
             .index(DASHBOARD_INDEX_NAME)
             .query(QueryDSL.ids(dashboardIdsAsArray))
             .size(LIST_FETCH_LIMIT);
 
-    String errorMessage =
+    final String errorMessage =
         String.format("Was not able to fetch dashboards for IDs [%s]", dashboardIds);
 
-    SearchResponse<DashboardDefinitionRestDto> searchResponse =
+    final SearchResponse<DashboardDefinitionRestDto> searchResponse =
         osClient.search(requestBuilder, DashboardDefinitionRestDto.class, errorMessage);
 
     return OpensearchReaderUtil.extractResponseValues(searchResponse);
   }
 
   @Override
-  public List<DashboardDefinitionRestDto> getDashboardsForCollection(String collectionId) {
+  public List<DashboardDefinitionRestDto> getDashboardsForCollection(final String collectionId) {
     log.debug("Fetching dashboards using collection with id {}", collectionId);
 
-    SearchRequest.Builder requestBuilder =
+    final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
             .index(DASHBOARD_INDEX_NAME)
             .query(QueryDSL.term(COLLECTION_ID, collectionId))
             .size(LIST_FETCH_LIMIT);
 
-    String errorMessage =
+    final String errorMessage =
         String.format("Was not able to fetch dashboards for collection with id [%s]", collectionId);
 
-    SearchResponse<DashboardDefinitionRestDto> searchResponse =
+    final SearchResponse<DashboardDefinitionRestDto> searchResponse =
         osClient.search(requestBuilder, DashboardDefinitionRestDto.class, errorMessage);
     return OpensearchReaderUtil.extractResponseValues(searchResponse);
   }
 
   @Override
-  public List<DashboardDefinitionRestDto> getDashboardsForReport(String reportId) {
+  public List<DashboardDefinitionRestDto> getDashboardsForReport(final String reportId) {
     log.debug("Fetching dashboards using report with id {}", reportId);
 
     final Query getCombinedReportsBySimpleReportIdQuery =
@@ -117,11 +118,11 @@ public class DashboardReaderOS implements DashboardReader {
                             DashboardIndex.TILES + "." + DashboardIndex.REPORT_ID, reportId))
                     .scoreMode(ChildScoreMode.None)
                     .build()
-                    ._toQuery())
+                    .toQuery())
             .build()
-            ._toQuery();
+            .toQuery();
 
-    SearchRequest.Builder requestBuilder =
+    final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
             .index(DASHBOARD_INDEX_NAME)
             .query(getCombinedReportsBySimpleReportIdQuery)
@@ -129,7 +130,7 @@ public class DashboardReaderOS implements DashboardReader {
 
     final String errorMessage =
         String.format("Was not able to fetch dashboards for report with id [%s]", reportId);
-    SearchResponse<DashboardDefinitionRestDto> searchResponse =
+    final SearchResponse<DashboardDefinitionRestDto> searchResponse =
         osClient.search(requestBuilder, DashboardDefinitionRestDto.class, errorMessage);
 
     return OpensearchReaderUtil.extractResponseValues(searchResponse);

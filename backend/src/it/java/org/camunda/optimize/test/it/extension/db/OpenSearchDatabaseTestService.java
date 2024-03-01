@@ -474,7 +474,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     BoolQuery query = queryForProcessableEvents.toOpenSearchQuery();
     SearchRequest.Builder searchRequest = RequestDSL.searchRequestBuilder()
       .index(exportIndex)
-      .query(query._toQuery())
+      .query(query.toQuery())
       .size(100);
     return getOptimizeOpenSearchClient()
       .getOpenSearchClient()

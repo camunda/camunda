@@ -49,13 +49,13 @@ public class SharingReaderOS implements SharingReader {
   private final ConfigurationService configurationService;
 
   @Override
-  public Optional<ReportShareRestDto> getReportShare(String shareId) {
+  public Optional<ReportShareRestDto> getReportShare(final String shareId) {
     log.debug("Fetching report share with id [{}]", shareId);
-    GetRequest.Builder getReqBuilder =
+    final GetRequest.Builder getReqBuilder =
         new GetRequest.Builder().index(REPORT_SHARE_INDEX_NAME).id(shareId);
 
     final String errorMessage = String.format("Could not fetch report share with id [%s]", shareId);
-    GetResponse<ReportShareRestDto> getResponse =
+    final GetResponse<ReportShareRestDto> getResponse =
         osClient.get(getReqBuilder, ReportShareRestDto.class, errorMessage);
 
     if (getResponse.found()) {
@@ -66,14 +66,14 @@ public class SharingReaderOS implements SharingReader {
   }
 
   @Override
-  public Optional<DashboardShareRestDto> findDashboardShare(String shareId) {
+  public Optional<DashboardShareRestDto> findDashboardShare(final String shareId) {
     log.debug("Fetching dashboard share with id [{}]", shareId);
-    GetRequest.Builder getReqBuilder =
+    final GetRequest.Builder getReqBuilder =
         new GetRequest.Builder().index(DASHBOARD_SHARE_INDEX_NAME).id(shareId);
 
     final String errorMessage =
         String.format("Could not fetch dashboard share with id [%s]", shareId);
-    GetResponse<DashboardShareRestDto> getResponse =
+    final GetResponse<DashboardShareRestDto> getResponse =
         osClient.get(getReqBuilder, DashboardShareRestDto.class, errorMessage);
     if (getResponse.found()) {
       return Optional.ofNullable(getResponse.source());
@@ -83,19 +83,19 @@ public class SharingReaderOS implements SharingReader {
   }
 
   @Override
-  public Optional<ReportShareRestDto> findShareForReport(String reportId) {
+  public Optional<ReportShareRestDto> findShareForReport(final String reportId) {
     log.debug("Fetching share for resource [{}]", reportId);
-    BoolQuery.Builder boolQueryBuilder =
+    final BoolQuery.Builder boolQueryBuilder =
         new BoolQuery.Builder().must(QueryDSL.term(ReportShareIndex.REPORT_ID, reportId));
     return findReportShareByQuery(boolQueryBuilder.build());
   }
 
   @Override
-  public Optional<DashboardShareRestDto> findShareForDashboard(String dashboardId) {
+  public Optional<DashboardShareRestDto> findShareForDashboard(final String dashboardId) {
     log.debug("Fetching share for resource [{}]", dashboardId);
-    SearchResponse<DashboardShareRestDto> searchResponse =
+    final SearchResponse<DashboardShareRestDto> searchResponse =
         performSearchShareForDashboardIdRequest(dashboardId);
-    List<DashboardShareRestDto> results =
+    final List<DashboardShareRestDto> results =
         OpensearchReaderUtil.extractResponseValues(searchResponse);
     if (!results.isEmpty()) {
       return Optional.of(results.get(0));
@@ -105,8 +105,8 @@ public class SharingReaderOS implements SharingReader {
   }
 
   @Override
-  public Map<String, ReportShareRestDto> findShareForReports(List<String> reports) {
-    BoolQuery.Builder boolQueryBuilder =
+  public Map<String, ReportShareRestDto> findShareForReports(final List<String> reports) {
+    final BoolQuery.Builder boolQueryBuilder =
         new BoolQuery.Builder()
             .must(QueryDSL.terms(ReportShareIndex.REPORT_ID, reports, FieldValue::of));
     return findSharesByQuery(
@@ -119,8 +119,8 @@ public class SharingReaderOS implements SharingReader {
   }
 
   @Override
-  public Map<String, DashboardShareRestDto> findShareForDashboards(List<String> dashboards) {
-    BoolQuery.Builder boolQueryBuilder =
+  public Map<String, DashboardShareRestDto> findShareForDashboards(final List<String> dashboards) {
+    final BoolQuery.Builder boolQueryBuilder =
         new BoolQuery.Builder()
             .must(QueryDSL.terms(DashboardShareIndex.DASHBOARD_ID, dashboards, FieldValue::of));
     return findSharesByQuery(
@@ -139,15 +139,16 @@ public class SharingReaderOS implements SharingReader {
     return osClient.count(indexName, errorMessage);
   }
 
-  private Optional<ReportShareRestDto> findReportShareByQuery(BoolQuery query) {
+  private Optional<ReportShareRestDto> findReportShareByQuery(final BoolQuery query) {
 
-    SearchRequest.Builder searchReqBuilder =
-        new SearchRequest.Builder().index(REPORT_SHARE_INDEX_NAME).size(1).query(query._toQuery());
+    final SearchRequest.Builder searchReqBuilder =
+        new SearchRequest.Builder().index(REPORT_SHARE_INDEX_NAME).size(1).query(query.toQuery());
 
     final String errorMessage = "Was not able to fetch report share.";
-    SearchResponse<ReportShareRestDto> searchResponse =
+    final SearchResponse<ReportShareRestDto> searchResponse =
         osClient.search(searchReqBuilder, ReportShareRestDto.class, errorMessage);
-    List<ReportShareRestDto> results = OpensearchReaderUtil.extractResponseValues(searchResponse);
+    final List<ReportShareRestDto> results =
+        OpensearchReaderUtil.extractResponseValues(searchResponse);
     if (!results.isEmpty()) {
       return Optional.of(results.get(0));
     } else {
@@ -156,17 +157,17 @@ public class SharingReaderOS implements SharingReader {
   }
 
   private SearchResponse<DashboardShareRestDto> performSearchShareForDashboardIdRequest(
-      String dashboardId) {
-    BoolQuery boolQuery =
+      final String dashboardId) {
+    final BoolQuery boolQuery =
         new BoolQuery.Builder()
             .must(QueryDSL.term(DashboardShareIndex.DASHBOARD_ID, dashboardId))
             .build();
 
-    SearchRequest.Builder searchReqBuilder =
+    final SearchRequest.Builder searchReqBuilder =
         new SearchRequest.Builder()
             .index(DASHBOARD_SHARE_INDEX_NAME)
             .size(1)
-            .query(boolQuery._toQuery());
+            .query(boolQuery.toQuery());
 
     final String errorMessage =
         String.format("Was not able to fetch share for dashboard with id [%s]", dashboardId);
@@ -174,12 +175,15 @@ public class SharingReaderOS implements SharingReader {
   }
 
   private <T> List<T> findSharesByQuery(
-      BoolQuery query, final String index, final Class<T> responseType, final String errorMessage) {
-    SearchRequest.Builder searchReqBuilder =
+      final BoolQuery query,
+      final String index,
+      final Class<T> responseType,
+      final String errorMessage) {
+    final SearchRequest.Builder searchReqBuilder =
         new SearchRequest.Builder()
             .index(index)
             .size(LIST_FETCH_LIMIT)
-            .query(query._toQuery())
+            .query(query.toQuery())
             .scroll(
                 RequestDSL.time(
                     String.valueOf(
@@ -187,10 +191,10 @@ public class SharingReaderOS implements SharingReader {
                             .getOpenSearchConfiguration()
                             .getScrollTimeoutInSeconds())));
 
-    OpenSearchDocumentOperations.AggregatedResult<Hit<T>> scrollResp;
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<T>> scrollResp;
     try {
       scrollResp = osClient.retrieveAllScrollResults(searchReqBuilder, responseType);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }

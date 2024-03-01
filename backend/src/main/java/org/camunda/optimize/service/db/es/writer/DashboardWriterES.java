@@ -84,23 +84,23 @@ public class DashboardWriterES implements DashboardWriter {
     dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     final String dashboardId = dashboardDefinitionDto.getId();
     try {
-      IndexRequest request =
+      final IndexRequest request =
           new IndexRequest(DASHBOARD_INDEX_NAME)
               .id(dashboardId)
               .source(objectMapper.writeValueAsString(dashboardDefinitionDto), XContentType.JSON)
               .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request);
+      final IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
-        String message =
+        final String message =
             "Could not write dashboard to Elasticsearch. "
                 + "Maybe the connection to Elasticsearch was lost?";
         log.error(message);
         throw new OptimizeRuntimeException(message);
       }
-    } catch (IOException e) {
-      String errorMessage = "Could not create dashboard.";
+    } catch (final IOException e) {
+      final String errorMessage = "Could not create dashboard.";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -110,10 +110,10 @@ public class DashboardWriterES implements DashboardWriter {
   }
 
   @Override
-  public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {
+  public void updateDashboard(final DashboardDefinitionUpdateDto dashboard, final String id) {
     log.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     try {
-      UpdateRequest request =
+      final UpdateRequest request =
           new UpdateRequest()
               .index(DASHBOARD_INDEX_NAME)
               .id(id)
@@ -121,7 +121,7 @@ public class DashboardWriterES implements DashboardWriter {
               .setRefreshPolicy(IMMEDIATE)
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      UpdateResponse updateResponse = esClient.update(request);
+      final UpdateResponse updateResponse = esClient.update(request);
 
       if (updateResponse.getShardInfo().getFailed() > 0) {
         log.error(
@@ -130,15 +130,15 @@ public class DashboardWriterES implements DashboardWriter {
             dashboard.getName());
         throw new OptimizeRuntimeException("Was not able to update dashboard!");
       }
-    } catch (IOException e) {
-      String errorMessage =
+    } catch (final IOException e) {
+      final String errorMessage =
           String.format(
               "Was not able to update dashboard with id [%s] and name [%s].",
               id, dashboard.getName());
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
-    } catch (ElasticsearchStatusException e) {
-      String errorMessage =
+    } catch (final ElasticsearchStatusException e) {
+      final String errorMessage =
           String.format(
               "Was not able to update dashboard with id [%s] and name [%s]. Dashboard does not exist!",
               id, dashboard.getName());
@@ -148,18 +148,18 @@ public class DashboardWriterES implements DashboardWriter {
   }
 
   @Override
-  public void removeReportFromDashboards(String reportId) {
+  public void removeReportFromDashboards(final String reportId) {
     final String updateItem = String.format("report from dashboard with report ID [%s]", reportId);
     log.info("Removing {}}.", updateItem);
 
-    Script removeReportFromDashboardScript =
+    final Script removeReportFromDashboardScript =
         new Script(
             ScriptType.INLINE,
             Script.DEFAULT_SCRIPT_LANG,
             "ctx._source.tiles.removeIf(report -> report.id.equals(params.idToRemove))",
             Collections.singletonMap("idToRemove", reportId));
 
-    NestedQueryBuilder query =
+    final NestedQueryBuilder query =
         QueryBuilders.nestedQuery(
             TILES,
             QueryBuilders.termQuery(TILES + "." + DashboardIndex.REPORT_ID, reportId),
@@ -170,7 +170,7 @@ public class DashboardWriterES implements DashboardWriter {
   }
 
   @Override
-  public void deleteDashboardsOfCollection(String collectionId) {
+  public void deleteDashboardsOfCollection(final String collectionId) {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
         QueryBuilders.termQuery(COLLECTION_ID, collectionId),
@@ -180,24 +180,24 @@ public class DashboardWriterES implements DashboardWriter {
   }
 
   @Override
-  public void deleteDashboard(String dashboardId) {
+  public void deleteDashboard(final String dashboardId) {
     log.debug("Deleting dashboard with id [{}]", dashboardId);
-    DeleteRequest request =
+    final DeleteRequest request =
         new DeleteRequest(DASHBOARD_INDEX_NAME).id(dashboardId).setRefreshPolicy(IMMEDIATE);
 
-    DeleteResponse deleteResponse;
+    final DeleteResponse deleteResponse;
     try {
       deleteResponse = esClient.delete(request);
-    } catch (IOException e) {
-      String reason = String.format("Could not delete dashboard with id [%s].", dashboardId);
+    } catch (final IOException e) {
+      final String reason = String.format("Could not delete dashboard with id [%s].", dashboardId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
     if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
-      String message =
+      final String message =
           String.format(
-              "Could not delete dashboard with id [%s]. Dashboard does not exist."
+              "Could not delete dashboard with id [%s]. Dashboard does not exist. "
                   + "Maybe it was already deleted by someone else?",
               dashboardId);
       log.error(message);

@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,8 +30,11 @@ public class UserAndGroupGenerator implements UserAndGroupProvider {
   @SneakyThrows
   public UserAndGroupGenerator(final SimpleEngineClient engineClient) {
     this.engineClient = engineClient;
-    this.users =
-        IOUtils.readLines(getClass().getResourceAsStream("/users.csv"), StandardCharsets.UTF_8)
+    users =
+        IOUtils.readLines(
+                Objects.requireNonNull(
+                    UserAndGroupGenerator.class.getResourceAsStream("/users.csv")),
+                StandardCharsets.UTF_8)
             .stream()
             .map(rawUserLine -> rawUserLine.split(","))
             .map(
@@ -42,8 +46,11 @@ public class UserAndGroupGenerator implements UserAndGroupProvider {
                         .email(properties[2])
                         .build())
             .collect(ImmutableList.toImmutableList());
-    this.groups =
-        IOUtils.readLines(getClass().getResourceAsStream("/groups.csv"), StandardCharsets.UTF_8)
+    groups =
+        IOUtils.readLines(
+                Objects.requireNonNull(
+                    UserAndGroupGenerator.class.getResourceAsStream("/groups.csv")),
+                StandardCharsets.UTF_8)
             .stream()
             .map(rawGroupLine -> rawGroupLine.split(","))
             .map(

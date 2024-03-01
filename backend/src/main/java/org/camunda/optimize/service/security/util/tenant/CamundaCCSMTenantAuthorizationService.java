@@ -51,6 +51,7 @@ public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAu
             .build();
   }
 
+  @Override
   public boolean isAuthorizedToSeeAllTenants(
       final String identityId, final IdentityType identityType, final List<String> tenantIds) {
     // In CCSM, we can only retrieve tenant auths for the current user using the user's token, so we
@@ -87,7 +88,7 @@ public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAu
 
   public List<TenantDto> getCurrentUserAuthorizedTenants() {
     if (configurationService.isMultiTenancyEnabled()) {
-      Optional<String> currentUserId = getCurrentUserId();
+      final Optional<String> currentUserId = getCurrentUserId();
       if (currentUserId.isEmpty()) {
         log.warn(
             "Unable to determine currently logged in user ID to retrieve tenant authorizations.");

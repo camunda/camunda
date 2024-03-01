@@ -18,18 +18,19 @@ public class ExampleDmn11DataGenerator extends DecisionDataGenerator {
 
   private static final String DMN_DIAGRAM = "/diagrams/decision/Example-DMN-1.1.dmn";
 
-  private Pair<String, String> inputVarNames = Pair.of("status", "sum");
-  private List<Pair<String, Double>> possibleInputCombinations =
+  private final Pair<String, String> inputVarNames = Pair.of("status", "sum");
+  private final List<Pair<String, Double>> possibleInputCombinations =
       ImmutableList.of(
           Pair.of("bronze", RandomUtils.nextDouble()),
           Pair.of("silver", RandomUtils.nextDouble(0, 999.99)),
           Pair.of("silver", RandomUtils.nextDouble(1000, Double.MAX_VALUE)),
           Pair.of("gold", RandomUtils.nextDouble()));
 
-  public ExampleDmn11DataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+  public ExampleDmn11DataGenerator(final SimpleEngineClient engineClient, final Integer nVersions) {
     super(engineClient, nVersions);
   }
 
+  @Override
   protected DmnModelInstance retrieveDiagram() {
     return readDecisionDiagram(DMN_DIAGRAM);
   }
@@ -39,7 +40,7 @@ public class ExampleDmn11DataGenerator extends DecisionDataGenerator {
     final int nextCombinationIndex = RandomUtils.nextInt(0, possibleInputCombinations.size());
     final Pair<String, Double> nextCombination =
         possibleInputCombinations.get(nextCombinationIndex);
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(inputVarNames.getLeft(), nextCombination.getLeft());
     variables.put(inputVarNames.getRight(), nextCombination.getRight());
     return variables;

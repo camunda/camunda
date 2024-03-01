@@ -103,9 +103,9 @@ public class EntitiesReaderOS implements EntitiesReader {
                             .mustNot(QueryDSL.exists(MANAGEMENT_DASHBOARD))
                             .mustNot(QueryDSL.exists(DATA + "." + MANAGEMENT_REPORT))
                             .build()
-                            ._toQuery())
+                            .toQuery())
                     .build()
-                    ._toQuery())
+                    .toQuery())
             .must(
                 new BoolQuery.Builder()
                     .minimumShouldMatch("1")
@@ -116,23 +116,23 @@ public class EntitiesReaderOS implements EntitiesReader {
                             .mustNot(QueryDSL.exists(INSTANT_PREVIEW_DASHBOARD))
                             .mustNot(QueryDSL.exists(DATA + "." + INSTANT_PREVIEW_REPORT))
                             .build()
-                            ._toQuery())
+                            .toQuery())
                     .build()
-                    ._toQuery());
+                    .toQuery());
 
     if (ownerId != null) {
       query.must(QueryDSL.term(OWNER, ownerId));
     }
 
-    SourceFilter filter =
+    final SourceFilter filter =
         new SourceFilter.Builder().excludes(Arrays.asList(ENTITY_LIST_EXCLUDES)).build();
 
-    SourceConfig sourceConfig = new SourceConfig.Builder().filter(filter).build();
+    final SourceConfig sourceConfig = new SourceConfig.Builder().filter(filter).build();
 
-    SearchRequest.Builder requestBuilder =
+    final SearchRequest.Builder requestBuilder =
         createReportAndDashboardSearchRequest()
             .size(LIST_FETCH_LIMIT)
-            .query(query.build()._toQuery())
+            .query(query.build().toQuery())
             .source(sourceConfig)
             .scroll(
                 RequestDSL.time(
@@ -141,10 +141,10 @@ public class EntitiesReaderOS implements EntitiesReader {
                             .getOpenSearchConfiguration()
                             .getScrollTimeoutInSeconds())));
 
-    OpenSearchDocumentOperations.AggregatedResult<Hit<CollectionEntity>> scrollResp;
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<CollectionEntity>> scrollResp;
     try {
       scrollResp = osClient.retrieveAllScrollResults(requestBuilder, CollectionEntity.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Was not able to retrieve private entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve private entities!", e);
     }
@@ -155,7 +155,7 @@ public class EntitiesReaderOS implements EntitiesReader {
   @Override
   public Map<String, Map<EntityType, Long>> countEntitiesForCollections(
       final List<? extends BaseCollectionDefinitionDto<?>> collections) {
-    List<String> collectionIds =
+    final List<String> collectionIds =
         collections.stream().map(BaseCollectionDefinitionDto::getId).toList();
     log.debug("Counting all available entities for collection ids [{}]", collectionIds);
 
@@ -179,7 +179,7 @@ public class EntitiesReaderOS implements EntitiesReader {
           final TermsAggregation byIndexNameAggregation =
               TermsAggregation.of(a -> a.field("_index"));
 
-          Aggregation collectionFilterAggregation =
+          final Aggregation collectionFilterAggregation =
               AggregationDSL.withSubaggregations(
                   byIndexNameAggregation,
                   Collections.singletonMap(
@@ -204,7 +204,7 @@ public class EntitiesReaderOS implements EntitiesReader {
   @Override
   public List<CollectionEntity> getAllEntitiesForCollection(final String collectionId) {
     log.debug("Fetching all available entities for collection [{}]", collectionId);
-    SearchRequest.Builder requestBuilder =
+    final SearchRequest.Builder requestBuilder =
         createReportAndDashboardSearchRequest()
             .size(LIST_FETCH_LIMIT)
             .query(QueryDSL.term(COLLECTION_ID, collectionId))
@@ -215,10 +215,10 @@ public class EntitiesReaderOS implements EntitiesReader {
                             .getOpenSearchConfiguration()
                             .getScrollTimeoutInSeconds())));
 
-    OpenSearchDocumentOperations.AggregatedResult<Hit<CollectionEntity>> scrollResp;
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<CollectionEntity>> scrollResp;
     try {
       scrollResp = osClient.retrieveAllScrollResults(requestBuilder, CollectionEntity.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Was not able to retrieve collection entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);
     }
@@ -231,17 +231,18 @@ public class EntitiesReaderOS implements EntitiesReader {
       final EntityNameRequestDto requestDto, final String locale) {
     log.debug(
         String.format("Performing get entity names search request %s", requestDto.toString()));
-    MgetResponse<CollectionEntity> multiGetItemResponse = runGetEntityNamesRequest(requestDto);
+    final MgetResponse<CollectionEntity> multiGetItemResponse =
+        runGetEntityNamesRequest(requestDto);
 
-    EntityNameResponseDto result = new EntityNameResponseDto();
-    for (MultiGetResponseItem<CollectionEntity> itemResponse : multiGetItemResponse.docs()) {
+    final EntityNameResponseDto result = new EntityNameResponseDto();
+    for (final MultiGetResponseItem<CollectionEntity> itemResponse : multiGetItemResponse.docs()) {
       if (itemResponse.isResult()) {
-        Optional<CollectionEntity> optionalResponse =
+        final Optional<CollectionEntity> optionalResponse =
             OpensearchReaderUtil.processGetResponse(itemResponse.result());
 
         optionalResponse.ifPresent(
             entity -> {
-              String entityId = entity.getId();
+              final String entityId = entity.getId();
               if (entityId.equals(requestDto.getCollectionId())) {
                 result.setCollectionName(entity.getName());
               }
@@ -260,8 +261,8 @@ public class EntitiesReaderOS implements EntitiesReader {
   }
 
   private Map<EntityType, Long> extractEntityIndexCounts(
-      List<StringTermsBucket> aggregationBuckets) {
-    Map<String, Long> bucketNameToDocCount =
+      final List<StringTermsBucket> aggregationBuckets) {
+    final Map<String, Long> bucketNameToDocCount =
         aggregationBuckets.stream()
             .map(bucket -> new AbstractMap.SimpleEntry<>(bucket.key(), bucket.docCount()))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -290,15 +291,17 @@ public class EntitiesReaderOS implements EntitiesReader {
         optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper), 0L);
   }
 
-  private MgetResponse<CollectionEntity> runGetEntityNamesRequest(EntityNameRequestDto requestDto) {
-    Map<String, String> indexesToEntitiesId = new HashMap<>();
+  private MgetResponse<CollectionEntity> runGetEntityNamesRequest(
+      final EntityNameRequestDto requestDto) {
+    final Map<String, String> indexesToEntitiesId = new HashMap<>();
     indexesToEntitiesId.put(SINGLE_PROCESS_REPORT_INDEX_NAME, requestDto.getReportId());
     indexesToEntitiesId.put(SINGLE_DECISION_REPORT_INDEX_NAME, requestDto.getReportId());
     indexesToEntitiesId.put(COMBINED_REPORT_INDEX_NAME, requestDto.getReportId());
     indexesToEntitiesId.put(DASHBOARD_INDEX_NAME, requestDto.getDashboardId());
     indexesToEntitiesId.put(COLLECTION_INDEX_NAME, requestDto.getCollectionId());
     indexesToEntitiesId.put(EVENT_PROCESS_MAPPING_INDEX_NAME, requestDto.getEventBasedProcessId());
-    String errorMessage = String.format("Could not get entity names search request %s", requestDto);
+    final String errorMessage =
+        String.format("Could not get entity names search request %s", requestDto);
     return osClient.mget(CollectionEntity.class, errorMessage, indexesToEntitiesId);
   }
 

@@ -59,10 +59,10 @@ public class CollectionWriterOS implements CollectionWriter {
   private final DateTimeFormatter formatter;
 
   @Override
-  public void updateCollection(CollectionDefinitionUpdateDto collection, String id) {
+  public void updateCollection(final CollectionDefinitionUpdateDto collection, final String id) {
     log.debug("Updating collection with id [{}] in OpenSearch", id);
 
-    UpdateRequest.Builder request =
+    final UpdateRequest.Builder request =
         new UpdateRequest.Builder<>()
             .index(COLLECTION_INDEX_NAME)
             .id(id)
@@ -74,7 +74,7 @@ public class CollectionWriterOS implements CollectionWriter {
         String.format(
             "Was not able to update collection with id [%s] and name [%s].",
             id, collection.getName());
-    UpdateResponse updateResponse = osClient.update(request, errorMessage);
+    final UpdateResponse updateResponse = osClient.update(request, errorMessage);
 
     if (updateResponse.shards().failed().intValue() > 0) {
       log.error(
@@ -86,18 +86,19 @@ public class CollectionWriterOS implements CollectionWriter {
   }
 
   @Override
-  public void persistCollection(String id, CollectionDefinitionDto collectionDefinitionDto) {
-    IndexRequest.Builder<CollectionDefinitionDto> request =
+  public void persistCollection(
+      final String id, final CollectionDefinitionDto collectionDefinitionDto) {
+    final IndexRequest.Builder<CollectionDefinitionDto> request =
         new IndexRequest.Builder<CollectionDefinitionDto>()
             .index(COLLECTION_INDEX_NAME)
             .id(id)
             .document(collectionDefinitionDto)
             .refresh(Refresh.True);
 
-    IndexResponse indexResponse = osClient.index(request);
+    final IndexResponse indexResponse = osClient.index(request);
 
     if (!indexResponse.result().equals(Result.Created)) {
-      String message = "Could not write collection to Opensearch. ";
+      final String message = "Could not write collection to Opensearch. ";
       log.error(message);
       throw new OptimizeRuntimeException(message);
     }
@@ -105,9 +106,9 @@ public class CollectionWriterOS implements CollectionWriter {
   }
 
   @Override
-  public void deleteCollection(String collectionId) {
+  public void deleteCollection(final String collectionId) {
     log.debug("Deleting collection with id [{}]", collectionId);
-    DeleteRequest.Builder request =
+    final DeleteRequest.Builder request =
         new DeleteRequest.Builder()
             .index(COLLECTION_INDEX_NAME)
             .id(collectionId)
@@ -115,12 +116,12 @@ public class CollectionWriterOS implements CollectionWriter {
 
     final String errorMessage =
         String.format("Could not delete collection with id [%s]. ", collectionId);
-    DeleteResponse deleteResponse = osClient.delete(request, errorMessage);
+    final DeleteResponse deleteResponse = osClient.delete(request, errorMessage);
 
     if (!deleteResponse.result().equals(Result.Deleted)) {
-      String message =
+      final String message =
           String.format(
-              "Could not delete collection with id [%s]. Collection does not exist."
+              "Could not delete collection with id [%s]. Collection does not exist. "
                   + "Maybe it was already deleted by someone else?",
               collectionId);
       log.error(message);
@@ -156,16 +157,17 @@ public class CollectionWriterOS implements CollectionWriter {
     }
   }
 
+  @Override
   public void deleteScopeEntryFromAllCollections(final String scopeEntryId) {
     final String updateItem = String.format("collection scope entry with ID [%s].", scopeEntryId);
     log.info("Removing {} from all collections.", updateItem);
 
-    Script removeScopeEntryFromCollectionsScript =
+    final Script removeScopeEntryFromCollectionsScript =
         OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
             REMOVE_SCOPE_ENTRY_FROM_COLLECTION_SCRIPT_CODE,
             Collections.singletonMap("scopeEntryIdToRemove", JsonData.of(scopeEntryId)));
 
-    Query query =
+    final Query query =
         new NestedQuery.Builder()
             .path(DATA)
             .query(
@@ -177,16 +179,17 @@ public class CollectionWriterOS implements CollectionWriter {
                             scopeEntryId))
                     .scoreMode(ChildScoreMode.None)
                     .build()
-                    ._toQuery())
+                    .toQuery())
             .scoreMode(ChildScoreMode.None)
             .build()
-            ._toQuery();
+            .toQuery();
 
     osClient.updateByQuery(COLLECTION_INDEX_NAME, query, removeScopeEntryFromCollectionsScript);
   }
 
   @Override
-  public void removeScopeEntry(String collectionId, String scopeEntryId, String userId)
+  public void removeScopeEntry(
+      final String collectionId, final String scopeEntryId, final String userId)
       throws NotFoundException {
     final Map<String, JsonData> params = new HashMap<>();
     params.put("id", JsonData.of(scopeEntryId));
@@ -197,7 +200,7 @@ public class CollectionWriterOS implements CollectionWriter {
         OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
             REMOVE_SCOPE_ENTRY_SCRIPT_CODE, params);
 
-    UpdateResponse updateResponse =
+    final UpdateResponse updateResponse =
         executeUpdateRequest(
             collectionId, updateEntityScript, "Was not able to update collection with id [%s].");
 
@@ -209,7 +212,8 @@ public class CollectionWriterOS implements CollectionWriter {
   }
 
   @Override
-  public void removeScopeEntries(String collectionId, List<String> scopeEntryIds, String userId)
+  public void removeScopeEntries(
+      final String collectionId, final List<String> scopeEntryIds, final String userId)
       throws NotFoundException {
     final Map<String, JsonData> params = new HashMap<>();
     params.put("ids", JsonData.of(scopeEntryIds));
@@ -225,10 +229,10 @@ public class CollectionWriterOS implements CollectionWriter {
 
   @Override
   public void updateScopeEntity(
-      String collectionId,
-      CollectionScopeEntryUpdateDto scopeEntry,
-      String userId,
-      String scopeEntryId) {
+      final String collectionId,
+      final CollectionScopeEntryUpdateDto scopeEntry,
+      final String userId,
+      final String scopeEntryId) {
     final Map<String, JsonData> params = new HashMap<>();
     params.put("entryDto", JsonData.of(scopeEntry));
     params.put("entryId", JsonData.of(scopeEntryId));
@@ -265,7 +269,9 @@ public class CollectionWriterOS implements CollectionWriter {
 
   @Override
   public void addRoleToCollection(
-      String collectionId, List<CollectionRoleRequestDto> rolesToAdd, String userId) {
+      final String collectionId,
+      final List<CollectionRoleRequestDto> rolesToAdd,
+      final String userId) {
     log.debug(
         "Adding roles {} to collection with id [{}] in OpenSearch.", rolesToAdd, collectionId);
 
@@ -378,7 +384,7 @@ public class CollectionWriterOS implements CollectionWriter {
   }
 
   private Map<String, JsonData> constructParamsForRoleUpdateScript(
-      String roleEntryId, String userId) {
+      final String roleEntryId, final String userId) {
     final Map<String, JsonData> params = new HashMap<>();
     params.put("roleEntryId", JsonData.of(roleEntryId));
     params.put("managerRole", JsonData.of(RoleType.MANAGER.toString()));

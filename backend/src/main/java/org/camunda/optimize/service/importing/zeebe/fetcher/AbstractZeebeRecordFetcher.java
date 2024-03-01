@@ -10,7 +10,7 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -19,7 +19,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ZeebeImportConfiguration;
 
 @Slf4j
-@Data
+@Getter
 public abstract class AbstractZeebeRecordFetcher<T> {
 
   protected final int partitionId;
@@ -38,11 +38,11 @@ public abstract class AbstractZeebeRecordFetcher<T> {
   }
 
   public List<T> getZeebeRecordsForPrefixAndPartitionFrom(
-      PositionBasedImportPage positionBasedImportPage) {
-    List<T> results;
+      final PositionBasedImportPage positionBasedImportPage) {
+    final List<T> results;
     try {
       results = fetchZeebeRecordsForPrefixAndPartitionFrom(positionBasedImportPage);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (isZeebeInstanceIndexNotFoundException(e)) {
         log.warn("No Zeebe index with alias {} found to read records from!", getIndexAlias());
         return Collections.emptyList();
@@ -94,7 +94,7 @@ public abstract class AbstractZeebeRecordFetcher<T> {
     // records. In some cases, the sequence query could not find the next page. In this scenario,
     // Optimize will use the position
     // query to get the next page
-    this.consecutiveEmptyPages = 0;
+    consecutiveEmptyPages = 0;
   }
 
   private void initializeDynamicBatchSizing(final ConfigurationService configurationService) {
@@ -103,9 +103,9 @@ public abstract class AbstractZeebeRecordFetcher<T> {
     // where larger batches aren't possible. This could be when the payload is too large, for
     // example. Based on configured values,
     // Optimize will always aim to get back to the max configured batch size
-    this.dynamicBatchSize = configurationService.getConfiguredZeebe().getMaxImportPageSize();
-    this.consecutiveSuccessfulFetches = 0;
-    this.batchSizeDeque = new ArrayDeque<>();
+    dynamicBatchSize = configurationService.getConfiguredZeebe().getMaxImportPageSize();
+    consecutiveSuccessfulFetches = 0;
+    batchSizeDeque = new ArrayDeque<>();
   }
 
   private void dynamicallyReduceBatchSizeForNextAttempt() {

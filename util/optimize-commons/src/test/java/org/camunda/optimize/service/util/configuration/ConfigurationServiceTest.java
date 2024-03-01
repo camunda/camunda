@@ -9,6 +9,7 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.collect.ImmutableList;
 import com.jayway.jsonpath.spi.mapper.MappingException;
@@ -28,6 +29,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ConfigurationServiceTest {
 
+  public static final int CUSTOM_CONTAINER_HTTP_PORT = 9876;
+  public static final int CUSTOM_CONTAINER_HTTPS_PORT = 9877;
+  public static final String CUSTOM_CONTAINER_KEYSTORE_PASSWORD = "customPassword";
+  public static final int CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS = 5;
+  public static final String CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER = "0 * * * 1";
+  public static final Period CUSTOM_HISTORY_CLEANUP_TTL = Period.ZERO;
+  public static final CleanupMode CUSTOM_HISTORY_CLEANUP_MODE = CleanupMode.VARIABLES;
+  public static final int CUSTOM_HISTORY_CLEANUP_BATCH_SIZE = 5000;
   private static final int DEFAULT_AUTH_TOKEN_LIFE_MIN = 5;
   private static final int CUSTOM_AUTH_TOKEN_LIFE_MIN = 6;
   private static final String TOKEN_SECRET = "someSecret";
@@ -65,14 +74,6 @@ public class ConfigurationServiceTest {
   private static final Boolean CUSTOM_SHARING_ENABLED = true;
   private static final Boolean CUSTOM_UI_LOGOUT_HIDDEN = true;
   private static final String CUSTOM_REPOSITORY_NAME = "snapshotRepoName";
-  public static final int CUSTOM_CONTAINER_HTTP_PORT = 9876;
-  public static final int CUSTOM_CONTAINER_HTTPS_PORT = 9877;
-  public static final String CUSTOM_CONTAINER_KEYSTORE_PASSWORD = "customPassword";
-  public static final int CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS = 5;
-  public static final String CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER = "0 * * * 1";
-  public static final Period CUSTOM_HISTORY_CLEANUP_TTL = Period.ZERO;
-  public static final CleanupMode CUSTOM_HISTORY_CLEANUP_MODE = CleanupMode.VARIABLES;
-  public static final int CUSTOM_HISTORY_CLEANUP_BATCH_SIZE = 5000;
 
   @RegisterExtension
   @Order(1)
@@ -85,48 +86,48 @@ public class ConfigurationServiceTest {
 
   @Test
   public void getTokenLifeTimeMinutes() {
-    ConfigurationService underTest = createDefaultConfiguration();
+    final ConfigurationService underTest = createDefaultConfiguration();
     assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(60);
   }
 
   @Test
   public void testOverrideAliasOfEngine() {
-    String[] locations = {
+    final String[] locations = {
       defaultConfigFile(), "environment-config.yaml", "override-engine-config.yaml"
     };
-    ConfigurationService underTest = createConfiguration(locations);
+    final ConfigurationService underTest = createConfiguration(locations);
     assertThat(underTest.getConfiguredEngines()).hasSize(1);
     assertThat(underTest.getConfiguredEngines().get("myAwesomeEngine").getName()).isNotNull();
   }
 
   @Test
   public void certificateAuthorizationCanBeAList() {
-    String[] locations = {
+    final String[] locations = {
       defaultConfigFile(), "config-samples/certificate-authorities/ca-auth-as-list.yaml"
     };
-    ConfigurationService underTest = createConfiguration(locations);
+    final ConfigurationService underTest = createConfiguration(locations);
     assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities())
         .hasSize(2);
   }
 
   @Test
   public void certificateAuthorizationStringIsConvertedToList() {
-    String[] locations = {
+    final String[] locations = {
       defaultConfigFile(),
       "config-samples/certificate-authorities/ca-auth-as-string-is-converted.yaml"
     };
-    ConfigurationService underTest = createConfiguration(locations);
+    final ConfigurationService underTest = createConfiguration(locations);
     assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities())
         .hasSize(1);
   }
 
   @Test
   public void wrongCaAuthFormatThrowsError() {
-    String[] locations = {
+    final String[] locations = {
       defaultConfigFile(),
       "config-samples/certificate-authorities/wrong-ca-auth-format-throws-error.yaml"
     };
-    ConfigurationService underTest = createConfiguration(locations);
+    final ConfigurationService underTest = createConfiguration(locations);
     assertThatThrownBy(
             () -> underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities())
         .isInstanceOf(MappingException.class);
@@ -134,11 +135,11 @@ public class ConfigurationServiceTest {
 
   @Test
   public void wrongCaAuthListFormatThrowsError() {
-    String[] locations = {
+    final String[] locations = {
       defaultConfigFile(),
       "config-samples/certificate-authorities/wrong-ca-auth-list-format-throws-error.yaml"
     };
-    ConfigurationService underTest = createConfiguration(locations);
+    final ConfigurationService underTest = createConfiguration(locations);
     assertThatThrownBy(
             () -> underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities())
         .isInstanceOf(MappingException.class);
@@ -146,16 +147,16 @@ public class ConfigurationServiceTest {
 
   @Test
   public void disableHttpPort() {
-    String[] possibilitiesToDisableHttpPortConnection = {
+    final String[] possibilitiesToDisableHttpPortConnection = {
       "config-samples/port/empty-http-port.yaml", "config-samples/port/null-http-port.yaml"
     };
-    for (String configLocation : possibilitiesToDisableHttpPortConnection) {
+    for (final String configLocation : possibilitiesToDisableHttpPortConnection) {
       // given
-      ConfigurationService underTest =
+      final ConfigurationService underTest =
           createConfiguration(new String[] {defaultConfigFile(), configLocation});
 
       // when
-      Optional<Integer> containerHttpPort = underTest.getContainerHttpPort();
+      final Optional<Integer> containerHttpPort = underTest.getContainerHttpPort();
 
       // then
       assertThat(containerHttpPort).isNotPresent();
@@ -164,18 +165,18 @@ public class ConfigurationServiceTest {
 
   @Test
   public void invalidHttpsPortThrowsError() {
-    String[] locations = {defaultConfigFile(), "config-samples/port/invalid-https-port.yaml"};
-    ConfigurationService underTest = createConfiguration(locations);
+    final String[] locations = {defaultConfigFile(), "config-samples/port/invalid-https-port.yaml"};
+    final ConfigurationService underTest = createConfiguration(locations);
     assertThatThrownBy(underTest::getContainerHttpsPort)
         .isInstanceOf(OptimizeConfigurationException.class);
   }
 
   @Test
   public void invalidElasticsearchProxyConfigThrowsError() {
-    String[] locations = {
+    final String[] locations = {
       defaultConfigFile(), "config-samples/config-invalid-elasticsearch-proxy-config.yaml"
     };
-    ConfigurationService underTest = createConfiguration(locations);
+    final ConfigurationService underTest = createConfiguration(locations);
     assertThatThrownBy(() -> underTest.getElasticSearchConfiguration().getProxyConfig())
         .isInstanceOf(OptimizeConfigurationException.class);
   }
@@ -570,39 +571,36 @@ public class ConfigurationServiceTest {
   public void failOnMissingSystemOrEnvironmentVariableAndNoDefaultValue() {
     // when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};
-    OptimizeConfigurationException configurationException = null;
-    try {
-      final ConfigurationService underTest = createConfiguration(locations);
-    } catch (OptimizeConfigurationException e) {
-      configurationException = e;
-    }
+
     // then
-    assertThat(configurationException).isNotNull();
-    assertThat(configurationException.getMessage())
-        .contains("Could not resolve system/environment variable");
+    final OptimizeConfigurationException exception =
+        assertThrows(OptimizeConfigurationException.class, () -> createConfiguration(locations));
+    assertThat(exception).isNotNull();
+    assertThat(exception.getMessage()).contains("Could not resolve system/environment variable");
   }
 
   @Test
   public void testOverride() {
-    String[] locations = {
+    final String[] locations = {
       defaultConfigFile(), "environment-config.yaml", "override-test-config.yaml"
     };
-    ConfigurationService underTest = createConfiguration(locations);
+    final ConfigurationService underTest = createConfiguration(locations);
     assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(10);
   }
 
   @Test
   public void testAllFieldsAreRead() throws Exception {
-    String[] locations = {
+    final String[] locations = {
       defaultConfigFile(), "environment-config.yaml", "override-test-config.yaml"
     };
-    ConfigurationService underTest = createConfiguration(locations);
+    final ConfigurationService underTest = createConfiguration(locations);
 
-    Method[] allMethods = ConfigurationService.class.getMethods();
-    for (Method method : allMethods) {
-      boolean isGetter = method.getName().startsWith("get") || method.getName().startsWith("is");
+    final Method[] allMethods = ConfigurationService.class.getMethods();
+    for (final Method method : allMethods) {
+      final boolean isGetter =
+          method.getName().startsWith("get") || method.getName().startsWith("is");
       if (isGetter && method.getParameterCount() == 0) {
-        Object invoke = method.invoke(underTest);
+        final Object invoke = method.invoke(underTest);
         assertThat(invoke)
             .withFailMessage("Method " + method.getName() + " returned null")
             .isNotNull();
@@ -613,11 +611,11 @@ public class ConfigurationServiceTest {
   @Test
   public void testCutTrailingSlash() {
     // given
-    String[] locations = {defaultConfigFile(), "override-engine-config.yaml"};
-    ConfigurationService underTest = createConfiguration(locations);
+    final String[] locations = {defaultConfigFile(), "override-engine-config.yaml"};
+    final ConfigurationService underTest = createConfiguration(locations);
 
     // when
-    String resultUrl =
+    final String resultUrl =
         underTest.getConfiguredEngines().get("myAwesomeEngine").getWebapps().getEndpoint();
 
     // then
