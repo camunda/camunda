@@ -11,60 +11,106 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.gateway.Gateway;
-import io.camunda.zeebe.it.clustering.ClusteringRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import java.time.Duration;
 import java.util.List;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
+@ZeebeIntegration
+@AutoCloseResources
 public final class TopologyClusterTest {
 
-  private static final Timeout TEST_TIMEOUT = Timeout.seconds(120);
-  private static final ClusteringRule CLUSTERING_RULE = new ClusteringRule(3, 3, 3);
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(CLUSTERING_RULE);
+  @TestZeebe(autoStart = false)
+  private static final TestCluster CLUSTER =
+      TestCluster.builder()
+          .withEmbeddedGateway(false)
+          .withGatewaysCount(1)
+          .withBrokersCount(3)
+          .withPartitionsCount(3)
+          .withReplicationFactor(3)
+          .build();
 
-  @ClassRule
-  public static final RuleChain RULE_CHAIN =
-      RuleChain.outerRule(TEST_TIMEOUT).around(CLUSTERING_RULE).around(CLIENT_RULE);
-
-  @Test
-  public void shouldContainAllBrokers() {
-
-    // when
-    final Topology topology = CLIENT_RULE.getClient().newTopologyRequest().send().join();
-
-    // then
-    final List<BrokerInfo> brokers = topology.getBrokers();
-
-    assertThat(brokers.size()).isEqualTo(3);
-    assertThat(brokers).extracting(BrokerInfo::getNodeId).containsExactlyInAnyOrder(0, 1, 2);
+  @BeforeAll
+  static void init() {
+    CLUSTER.start().awaitCompleteTopology();
   }
 
-  @Test
-  public void shouldContainAllPartitions() {
-    // when
-    final Topology topology = CLIENT_RULE.getClient().newTopologyRequest().send().join();
+  @ParameterizedTest
+  @MethodSource("communicationApi")
+  public void shouldContainAllBrokers(final boolean useRest) {
+    try (final var client = createZeebeClient()) {
+      // when
+      final Topology topology = sendRequest(client, useRest);
 
-    // then
-    final List<BrokerInfo> brokers = topology.getBrokers();
+      // then
+      final List<BrokerInfo> brokers = topology.getBrokers();
 
-    assertThat(brokers)
-        .flatExtracting(BrokerInfo::getPartitions)
-        .filteredOn(PartitionInfo::isLeader)
-        .extracting(PartitionInfo::getPartitionId)
-        .containsExactlyInAnyOrder(
-            START_PARTITION_ID, START_PARTITION_ID + 1, START_PARTITION_ID + 2);
+      assertThat(brokers.size()).isEqualTo(3);
+      assertThat(brokers).extracting(BrokerInfo::getNodeId).containsExactlyInAnyOrder(0, 1, 2);
+    }
+  }
 
-    assertPartitionInTopology(brokers, START_PARTITION_ID);
-    assertPartitionInTopology(brokers, START_PARTITION_ID + 1);
-    assertPartitionInTopology(brokers, START_PARTITION_ID + 2);
+  @ParameterizedTest
+  @MethodSource("communicationApi")
+  public void shouldContainAllPartitions(final boolean useRest) {
+    try (final var client = createZeebeClient()) {
+      // when
+      final Topology topology = sendRequest(client, useRest);
+
+      // then
+      final List<BrokerInfo> brokers = topology.getBrokers();
+
+      assertThat(brokers)
+          .flatExtracting(BrokerInfo::getPartitions)
+          .filteredOn(PartitionInfo::isLeader)
+          .extracting(PartitionInfo::getPartitionId)
+          .containsExactlyInAnyOrder(
+              START_PARTITION_ID, START_PARTITION_ID + 1, START_PARTITION_ID + 2);
+
+      assertPartitionInTopology(brokers, START_PARTITION_ID);
+      assertPartitionInTopology(brokers, START_PARTITION_ID + 1);
+      assertPartitionInTopology(brokers, START_PARTITION_ID + 2);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("communicationApi")
+  public void shouldExposeClusterSettings(final boolean useRest) {
+    try (final var client = createZeebeClient()) {
+      // when
+      final Topology topology = sendRequest(client, useRest);
+
+      // then
+      assertThat(topology.getClusterSize()).isEqualTo(CLUSTER.brokers().size());
+      assertThat(topology.getPartitionsCount()).isEqualTo(CLUSTER.partitionsCount());
+      assertThat(topology.getReplicationFactor()).isEqualTo(CLUSTER.replicationFactor());
+      // NOTE: this fails in Intellij because we don't have access to the package version but it
+      // works
+      // when run from the CLI
+      assertThat(topology.getGatewayVersion())
+          .isEqualTo(Gateway.class.getPackage().getImplementationVersion());
+
+      for (final BrokerInfo broker : topology.getBrokers()) {
+        assertThat(broker.getVersion())
+            .isEqualTo(Broker.class.getPackage().getImplementationVersion());
+      }
+    }
   }
 
   private void assertPartitionInTopology(final List<BrokerInfo> brokers, final int partition) {
@@ -76,23 +122,27 @@ public final class TopologyClusterTest {
             PartitionBrokerRole.LEADER, PartitionBrokerRole.FOLLOWER, PartitionBrokerRole.FOLLOWER);
   }
 
-  @Test
-  public void shouldExposeClusterSettings() {
-    // when
-    final Topology topology = CLIENT_RULE.getClient().newTopologyRequest().send().join();
+  private static ZeebeClient createZeebeClient() {
+    final var gateway = CLUSTER.anyGateway();
+    return CLUSTER
+        .newClientBuilder()
+        .gatewayAddress(gateway.gatewayAddress())
+        .gatewayRestApiPort(gateway.mappedPort(TestZeebePort.REST))
+        .defaultRequestTimeout(Duration.ofSeconds(15))
+        .build();
+  }
 
-    // then
-    assertThat(topology.getClusterSize()).isEqualTo(CLUSTERING_RULE.getClusterSize());
-    assertThat(topology.getPartitionsCount()).isEqualTo(CLUSTERING_RULE.getPartitionCount());
-    assertThat(topology.getReplicationFactor()).isEqualTo(CLUSTERING_RULE.getReplicationFactor());
-    // NOTE: this fails in Intellij because we don't have access to the package version but it works
-    // when run from the CLI
-    assertThat(topology.getGatewayVersion())
-        .isEqualTo(Gateway.class.getPackage().getImplementationVersion());
-
-    for (final BrokerInfo broker : topology.getBrokers()) {
-      assertThat(broker.getVersion())
-          .isEqualTo(Broker.class.getPackage().getImplementationVersion());
+  private Topology sendRequest(final ZeebeClient client, final boolean useRest) {
+    var request = client.newTopologyRequest();
+    if (useRest) {
+      request = request.useRest();
+    } else {
+      request = request.useGrpc();
     }
+    return request.send().join();
+  }
+
+  private static Stream<Arguments> communicationApi() {
+    return Stream.of(Arguments.of(true), Arguments.of(false));
   }
 }
