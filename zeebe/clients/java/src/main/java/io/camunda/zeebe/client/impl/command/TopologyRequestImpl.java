@@ -103,7 +103,9 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
   private void sendHttpRequest(final HttpZeebeFuture<Topology> result) {
     httpClient.get(
         "/topology",
-        httpRequestConfig.build(),
+        httpRequestConfig
+            .setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+            .build(),
         io.camunda.zeebe.gateway.protocol.rest.TopologyResponse.class,
         TopologyImpl::new,
         result);

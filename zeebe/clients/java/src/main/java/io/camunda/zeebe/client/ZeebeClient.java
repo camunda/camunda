@@ -473,6 +473,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>If the user task is linked to a process instance then this command will complete the related
    * activity and continue the flow.
    *
+   * <p>This command is only send via REST over HTTP, not via gRPC
+   *
    * @param userTaskKey the key of the user tasks
    * @return a builder for the command
    */

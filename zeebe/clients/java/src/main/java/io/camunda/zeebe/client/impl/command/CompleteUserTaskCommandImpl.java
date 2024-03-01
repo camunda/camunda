@@ -25,6 +25,7 @@ import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 /**
@@ -52,6 +53,7 @@ public final class CompleteUserTaskCommandImpl implements CompleteUserTaskComman
 
   @Override
   public FinalCommandStep<CompleteUserTaskResponse> requestTimeout(final Duration requestTimeout) {
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
