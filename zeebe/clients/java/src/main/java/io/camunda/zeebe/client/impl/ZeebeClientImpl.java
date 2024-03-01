@@ -27,6 +27,7 @@ import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
@@ -442,6 +444,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
         asyncStub,
         credentialsProvider::shouldRetryRequest,
         config.getDefaultRequestTimeout());
+  }
+
+  @Override
+  public CompleteUserTaskCommandStep1 newUserTaskCompleteCommand(final long userTaskKey) {
+    return new CompleteUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   private JobClient newJobClient() {

@@ -18,6 +18,7 @@ package io.camunda.zeebe.client;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -456,4 +457,24 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return the builder for the command
    */
   DeleteResourceCommandStep1 newDeleteResourceCommand(long resourceKey);
+
+  /**
+   * Command to complete a user task.
+   *
+   * <pre>
+   * long userTaskKey = ..;
+   *
+   * zeebeClient
+   *  .newUserTaskCompleteCommand(userTaskKey)
+   *  .variables(map)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the user task is linked to a process instance then this command will complete the related
+   * activity and continue the flow.
+   *
+   * @param userTaskKey the key of the user tasks
+   * @return a builder for the command
+   */
+  CompleteUserTaskCommandStep1 newUserTaskCompleteCommand(long userTaskKey);
 }
