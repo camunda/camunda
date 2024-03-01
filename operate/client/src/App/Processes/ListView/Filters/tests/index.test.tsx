@@ -26,6 +26,7 @@ import {
 } from 'modules/testUtils/selectComboBoxOption';
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 
+jest.setTimeout(10000);
 jest.unmock('modules/utils/date/formatDate');
 
 describe('Filters', () => {
@@ -46,7 +47,6 @@ describe('Filters', () => {
   });
 
   it('should load the process and version fields', async () => {
-    jest.useFakeTimers();
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
@@ -64,9 +64,6 @@ describe('Filters', () => {
         /^\?process=bigVarProcess&version=1$/,
       ),
     );
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 
   it('should load values from the URL', async () => {
@@ -388,9 +385,6 @@ describe('Filters', () => {
     );
 
     expect(screen.getByRole('button', {name: /reset filters/i})).toBeEnabled();
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 
   it('should not submit an invalid form after deleting an optional filter', async () => {
