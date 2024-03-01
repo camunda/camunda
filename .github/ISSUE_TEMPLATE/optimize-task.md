@@ -1,5 +1,5 @@
 ---
-name: Task
+name: Optimize Task
 about: Describe a task for the technical issue - it may be individual issue or be
   connected to an epic.
 title: ''

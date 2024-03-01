@@ -1,5 +1,5 @@
 ---
-name: Bug report
+name: Optimize Bug report
 about: Report a problem and help us fix it.
 title: ''
 labels: type:bug
