@@ -1,9 +1,9 @@
 ---
 
-name: Feature request
+name: Zeebe Feature request
 about: Suggest an idea for this project
 title: ''
-labels: 'kind/feature'
+labels: ['kind/feature', 'component/zeebe']
 assignees: ''
 
 ---
