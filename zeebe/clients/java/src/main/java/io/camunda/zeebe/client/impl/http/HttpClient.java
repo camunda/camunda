@@ -24,6 +24,7 @@ import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.util.TimeValue;
@@ -94,7 +95,7 @@ public final class HttpClient implements AutoCloseable {
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpZeebeFuture<RespT> result) {
-    sendRequest(path, null, requestConfig, responseType, transformer, result);
+    sendRequest(Method.GET, path, null, requestConfig, responseType, transformer, result);
   }
 
   public <HttpT, RespT> void post(
@@ -102,10 +103,11 @@ public final class HttpClient implements AutoCloseable {
       final String body,
       final RequestConfig requestConfig,
       final HttpZeebeFuture<RespT> result) {
-    sendRequest(path, body, requestConfig, Void.class, r -> null, result);
+    sendRequest(Method.POST, path, body, requestConfig, Void.class, r -> null, result);
   }
 
   private <HttpT, RespT> void sendRequest(
+      final Method httpMethod,
       final String path,
       final String body,
       final RequestConfig requestConfig,
@@ -113,7 +115,9 @@ public final class HttpClient implements AutoCloseable {
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpZeebeFuture<RespT> result) {
     final URI target = buildRequestURI(path);
-    final SimpleRequestBuilder requestBuilder = SimpleRequestBuilder.post(target);
+
+    final SimpleRequestBuilder requestBuilder =
+        SimpleRequestBuilder.create(httpMethod).setUri(target);
     if (body != null) {
       requestBuilder.setBody(body, ContentType.APPLICATION_JSON);
     }
