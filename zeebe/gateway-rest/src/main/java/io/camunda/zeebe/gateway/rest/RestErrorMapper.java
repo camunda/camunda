@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
@@ -36,7 +37,7 @@ public class RestErrorMapper {
         .map(e -> mapErrorToProblem(e, rejectionMapper))
         .or(() -> mapBrokerErrorToProblem(brokerResponse))
         .or(() -> mapRejectionToProblem(brokerResponse, rejectionMapper))
-        .map(p -> ResponseEntity.of(p).build());
+        .map(RestErrorMapper::mapProblemToResponse);
   }
 
   private static ProblemDetail mapErrorToProblem(
@@ -125,5 +126,11 @@ public class RestErrorMapper {
     final var problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
     problemDetail.setTitle(title);
     return problemDetail;
+  }
+
+  public static <T> ResponseEntity<T> mapProblemToResponse(final ProblemDetail problemDetail) {
+    return ResponseEntity.of(problemDetail)
+        .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .build();
   }
 }

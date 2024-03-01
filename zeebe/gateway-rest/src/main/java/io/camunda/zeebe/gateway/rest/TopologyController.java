@@ -19,6 +19,7 @@ import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @ZeebeRestController
@@ -30,7 +31,7 @@ public final class TopologyController {
     this.client = client;
   }
 
-  @GetMapping(path = "/topology", produces = "application/json")
+  @GetMapping(path = "/topology", produces = MediaType.APPLICATION_JSON_VALUE)
   public TopologyResponse get() {
 
     final var response = new TopologyResponse();

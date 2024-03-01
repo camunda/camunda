@@ -424,6 +424,8 @@ public class UserTaskControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
 
@@ -455,6 +457,8 @@ public class UserTaskControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
 
@@ -482,6 +486,8 @@ public class UserTaskControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
 
@@ -520,6 +526,8 @@ public class UserTaskControllerTest {
         .exchange()
         .expectStatus()
         .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
 
@@ -563,6 +571,8 @@ public class UserTaskControllerTest {
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.CONFLICT)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
 
@@ -606,6 +616,8 @@ public class UserTaskControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
 
@@ -649,6 +661,8 @@ public class UserTaskControllerTest {
         .exchange()
         .expectStatus()
         .is5xxServerError()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
 
@@ -853,6 +867,8 @@ public class UserTaskControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
 

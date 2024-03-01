@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -37,8 +38,8 @@ public class UserTaskController {
 
   @PostMapping(
       path = "/user-tasks/{userTaskKey}/completion",
-      produces = "application/json",
-      consumes = "application/json")
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> completeUserTask(
       final ServerWebExchange context,
       @PathVariable final long userTaskKey,
@@ -50,8 +51,8 @@ public class UserTaskController {
 
   @PostMapping(
       path = "/user-tasks/{userTaskKey}/assignment",
-      produces = "application/json",
-      consumes = "application/json")
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> assignUserTask(
       final ServerWebExchange context,
       @PathVariable final long userTaskKey,
@@ -71,8 +72,8 @@ public class UserTaskController {
 
   @PatchMapping(
       path = "/user-tasks/{userTaskKey}",
-      produces = "application/json",
-      consumes = "application/json")
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> updateUserTask(
       final ServerWebExchange context,
       @PathVariable final long userTaskKey,
@@ -95,7 +96,7 @@ public class UserTaskController {
 
   private static CompletableFuture<ResponseEntity<Object>> handleRequestMappingError(
       final ProblemDetail problemDetail) {
-    return CompletableFuture.completedFuture(ResponseEntity.of(problemDetail).build());
+    return CompletableFuture.completedFuture(RestErrorMapper.mapProblemToResponse(problemDetail));
   }
 
   private static ProblemDetail mapRejectionToProblem(final BrokerRejection rejection) {
