@@ -1,9 +1,9 @@
 ---
 
-name: QA issue
+name: Operate QA issue
 about: collect information about the feature.
 title: ''
-labels: kind/QA
+labels: ["kind/QA", "component/operate"]
 assignees: ''
 
 ---

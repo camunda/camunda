@@ -1,9 +1,9 @@
 ---
 
-name: Spike/Research
+name: Operate Spike/Research
 about: Research about a possible solution/change
 title: ''
-labels: kind/spike
+labels: ["kind/spike", "component/operate"]
 assignees: ''
 
 ---

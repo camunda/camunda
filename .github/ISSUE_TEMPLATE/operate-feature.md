@@ -1,8 +1,8 @@
 ---
-name: Feature
-about: This is a template to write a new feature or story related to the Epic
+name: Operate feature
+about: This is a template to write a new Operate feature or story related to the Epic
 title: ''
-labels: kind/feature
+labels: ["kind/feature", "component/operate"]
 assignees: ''
 
 ---

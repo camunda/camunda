@@ -1,9 +1,9 @@
 ---
 
-name: Bug report
-about: Report a problem and help us fix it.
+name: Operate bug report
+about: Report a problem about Operate and help us to fix it.
 title: ''
-labels: kind/bug
+labels: ["kind/bug", "component/operate"]
 assignees: ''
 
 ---
