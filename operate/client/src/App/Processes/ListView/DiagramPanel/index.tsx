@@ -15,7 +15,7 @@ import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 import {Restricted} from 'modules/components/Restricted';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {ProcessOperations} from '../ProcessOperations';
-import {PanelHeader, Section} from './styled';
+import {InlineNotification, PanelHeader, Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
@@ -185,6 +185,15 @@ const DiagramPanel: React.FC = observer(() => {
           </Diagram>
         )}
       </DiagramShell>
+      {batchModificationStore.state.isEnabled && (
+        <InlineNotification
+          hideCloseButton
+          lowContrast
+          kind="info"
+          title=""
+          subtitle="Please select where you want to move the selected instances on the diagram."
+        />
+      )}
     </Section>
   );
 });

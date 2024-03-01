@@ -9,11 +9,22 @@ import {render, screen} from 'modules/testing-library';
 import {InstancesTable} from '.';
 import {MemoryRouter} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
+import {batchModificationStore} from 'modules/stores/batchModification';
+import {useEffect} from 'react';
 
 function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return batchModificationStore.reset;
+    });
+
     return (
-      <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
+      <MemoryRouter initialEntries={[initialPath]}>
+        {children}
+        <button onClick={batchModificationStore.enable}>
+          Enable batch modification mode
+        </button>
+      </MemoryRouter>
     );
   };
 
@@ -71,6 +82,27 @@ describe('<InstancesTable />', () => {
 
     expect(
       screen.queryByRole('columnheader', {name: 'Tenant'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should render batch modification footer', async () => {
+    const {user} = render(<InstancesTable />, {wrapper: getWrapper()});
+
+    await user.click(
+      screen.getByRole('button', {name: /enable batch modification mode/i}),
+    );
+
+    expect(
+      screen.getByRole('button', {name: /apply modification/i}),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /exit/i}));
+
+    expect(
+      screen.queryByRole('button', {name: /apply modification/i}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /exit/i}),
     ).not.toBeInTheDocument();
   });
 });

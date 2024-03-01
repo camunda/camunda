@@ -28,6 +28,7 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
 import {act} from 'react-dom/test-utils';
 import {Paths} from 'modules/Routes';
+import {batchModificationStore} from 'modules/stores/batchModification';
 
 jest.mock('modules/utils/bpmn');
 
@@ -38,11 +39,17 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
         processXmlStore.reset();
         processStatisticsStore.reset();
         processesStore.reset();
+        batchModificationStore.reset();
       };
     }, []);
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
+      <MemoryRouter initialEntries={[initialPath]}>
+        {children}
+        <button onClick={batchModificationStore.enable}>
+          Enable batch modification mode
+        </button>
+      </MemoryRouter>
     );
   };
 
@@ -291,5 +298,22 @@ describe('DiagramPanel', () => {
     });
 
     expect(screen.queryByTestId('state-overlay')).not.toBeInTheDocument();
+  });
+
+  it('should render batch modification notification', async () => {
+    const {user} = render(<DiagramPanel />, {
+      wrapper: getWrapper(),
+    });
+
+    const notificationText =
+      'Please select where you want to move the selected instances on the diagram.';
+
+    expect(screen.queryByText(notificationText)).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', {name: /enable batch modification mode/i}),
+    );
+
+    expect(screen.getByText(notificationText)).toBeInTheDocument();
   });
 });

@@ -28,6 +28,8 @@ import {useLocation} from 'react-router-dom';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
+import {batchModificationStore} from 'modules/stores/batchModification';
+import {BatchModificationFooter} from './BatchModificationFooter';
 
 const ROW_HEIGHT = 34;
 
@@ -283,6 +285,7 @@ const InstancesTable: React.FC = observer(() => {
             : []),
         ]}
       />
+      {batchModificationStore.state.isEnabled && <BatchModificationFooter />}
     </Container>
   );
 });
