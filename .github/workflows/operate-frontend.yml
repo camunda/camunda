@@ -1,4 +1,4 @@
-name: Frontend
+name: Operate Frontend
 on:
   push:
     branches:

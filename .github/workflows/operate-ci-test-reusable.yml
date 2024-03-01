@@ -14,7 +14,7 @@
 # Triggers on a workflow_call event and accepts inputs for branch name and fork count
 # Performs integration tests for the tasklist service with parallel execution.
 
-name: CI IT test reusable
+name: Operate CI IT test reusable
 
 on:
   workflow_call:
@@ -67,7 +67,7 @@ jobs:
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
 
       # Setup: configure Java, Maven, settings.xml
-      - uses: ./.github/actions/build-setup
+      - uses: ./.github/actions/build-operate-setup
         name: Build setup
         with:
           nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
@@ -92,7 +92,7 @@ jobs:
             !**/target/*-reports/*-summary.xml
       - name: Upload Test Report
         if: ${{ (success() || failure()) }}
-        uses: ./.github/actions/collect-test-artifacts
+        uses: ./.github/actions/collect-operate-test-artifacts
         with:
           name: "ci tests"
       - name: Send Slack notification on failure

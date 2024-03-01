@@ -1,4 +1,4 @@
-name: Update screenshots
+name: Operate Update screenshots
 on: workflow_dispatch
 
 jobs:

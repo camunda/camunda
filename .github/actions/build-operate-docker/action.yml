@@ -1,6 +1,6 @@
 # This action expects the code to have been checked out beforehand, e.g. via actions/checkout@v3
 ---
-name: Build Docker Image
+name: Build Operate Docker Image
 description: Builds the Operate Docker image
 
 inputs:

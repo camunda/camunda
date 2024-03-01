@@ -1,6 +1,6 @@
 # This GitHub Actions is used to test workflows. By default, workflow invokes  `ci-test-reusable` workflows.
 ---
-name: Backend
+name: Operate Backend
 on:
   workflow_dispatch:
 
@@ -13,7 +13,7 @@ concurrency:
 jobs:
   run-tests:
     name: run-tests
-    uses: ./.github/workflows/ci-test-reusable.yml
+    uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}

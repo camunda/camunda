@@ -1,10 +1,10 @@
-name: Run Test Backup/Restore
+name: Operate Run Test Backup/Restore
 on:
   schedule:
     - cron: "0 5 * * *"
 jobs:
   run-backup-restore-tests:
-    uses: ./.github/workflows/run-tests.yml
+    uses: ./.github/workflows/operate-run-tests.yml
     with:
       command: mvn -B -f operate/qa/backup-restore-tests -P -docker,-skipTests verify
     secrets: inherit

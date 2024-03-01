@@ -19,7 +19,7 @@
 # - If specified, uploads the Docker image to the Docker registry.
 # - If the release process fails, sends a notification to a (#operate-ci) Slack channel.
 
-name: Release (reusable workflow)
+name: Operate Release (reusable workflow)
 
 on:
   workflow_call:
@@ -115,7 +115,7 @@ jobs:
         with:
           from: ${{ inputs.fromCommit }}
           to: HEAD
-          config-file: "${{ github.workspace }}/.github/workflows/defaultChangelogConfig.json"
+          config-file: "${{ github.workspace }}/.github/workflows/operate-defaultChangelogConfig.json"
 
       # Setup: configure Java, Maven, settings.xml
       - name: Setup Java ${{ env.JAVA_VERSION }}

@@ -1,5 +1,5 @@
 ---
-name: Visual regression tests
+name: Operate Visual regression tests
 on: push
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).

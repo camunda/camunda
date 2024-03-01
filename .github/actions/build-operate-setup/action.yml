@@ -1,6 +1,6 @@
 # This action does configure Java, Maven, settings.xml
 ---
-name: Build setup
+name: Build Operate setup
 description: configure Java, Maven, settings.xml
 
 inputs:

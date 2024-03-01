@@ -8,7 +8,7 @@
 # - 'githubUploadRelease': if true, the release will be uploaded to GitHub. Defaults to `false`.
 # - 'isLatest': if true, the Docker image will be tagged with the 'latest' tag. Defaults to `false`.
 #
-# The workflow leverages a reusable workflow (./.github/workflows/release-reusable.yml)
+# The workflow leverages a reusable workflow (./.github/workflows/operate-release-reusable.yml)
 # to perform the actual release process.
 #
 # It allows you to manually dispatch the workflow with custom input parameters to control the release process.
@@ -58,7 +58,7 @@ on:
 jobs:
   release:
     name: "release manually v${{ inputs.releaseVersion }}"
-    uses: camunda/operate/.github/workflows/release-reusable.yml@master
+    uses: camunda/operate/.github/workflows/operate-release-reusable.yml@master
     secrets: inherit
     with:
       branch: ${{ inputs.branch }}

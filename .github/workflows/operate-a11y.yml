@@ -1,4 +1,4 @@
-name: a11y tests
+name: Operate a11y tests
 on: push
 
 jobs:

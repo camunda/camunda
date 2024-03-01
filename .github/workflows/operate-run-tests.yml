@@ -1,4 +1,4 @@
-name: Run Tests
+name: Operate Run Tests
 env:
   JAVA_VERSION: "17"
 on:

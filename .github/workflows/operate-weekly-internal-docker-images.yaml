@@ -1,4 +1,4 @@
-name: Weekly internal docker images
+name: Operate Weekly internal docker images
 on:
   workflow_dispatch: { }
   schedule:
