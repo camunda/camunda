@@ -41,16 +41,15 @@ public class SessionService implements ConfigurationReloadable {
   private static final String ISSUER = "Optimize-" + Version.RAW_VERSION;
   private static final byte[] DEFAULT_SECRET_BYTES = new byte[64];
 
-  private final TerminatedSessionService terminatedSessionService;
-  private final ConfigurationService configurationService;
-  private final List<SessionListener> sessionListeners;
-
-  private Algorithm hashingAlgorithm;
-  private JWTVerifier jwtVerifier;
-
   static {
     new SecureRandom().nextBytes(DEFAULT_SECRET_BYTES);
   }
+
+  private final TerminatedSessionService terminatedSessionService;
+  private final ConfigurationService configurationService;
+  private final List<SessionListener> sessionListeners;
+  private Algorithm hashingAlgorithm;
+  private JWTVerifier jwtVerifier;
 
   public SessionService(
       final TerminatedSessionService terminatedSessionService,
@@ -63,7 +62,7 @@ public class SessionService implements ConfigurationReloadable {
     initJwtVerifier();
   }
 
-  public String createAuthToken(String userId) {
+  public String createAuthToken(final String userId) {
     final String token = generateAuthToken(UUID.randomUUID().toString(), userId);
 
     notifyOnSessionCreate(userId);
@@ -84,13 +83,13 @@ public class SessionService implements ConfigurationReloadable {
     return AuthCookieService.getAuthCookieToken(servletRequest).isPresent();
   }
 
-  private boolean isValidAuthToken(String token) {
+  private boolean isValidAuthToken(final String token) {
     boolean isValid = false;
 
     try {
       final DecodedJWT decodedJWT = jwtVerifier.verify(token);
       isValid = isStillValid(decodedJWT);
-    } catch (JWTVerificationException exception) {
+    } catch (final JWTVerificationException exception) {
       log.error(
           "Error while validating authentication token [{}]. Invalid signature or claims!",
           token,
@@ -100,7 +99,7 @@ public class SessionService implements ConfigurationReloadable {
     return isValid;
   }
 
-  public Optional<String> refreshAuthToken(String currentToken) {
+  public Optional<String> refreshAuthToken(final String currentToken) {
     String newToken = null;
     try {
       final DecodedJWT decodedJWT = jwtVerifier.verify(currentToken);
@@ -110,17 +109,15 @@ public class SessionService implements ConfigurationReloadable {
         notifyOnSessionRefresh(decodedJWT.getSubject());
       }
 
-    } catch (JWTVerificationException exception) {
+    } catch (final JWTVerificationException exception) {
       log.error(
-          "Error while validating authentication token [{}]. Invalid signature or claims!",
-          currentToken,
-          exception);
+          "Error while validating authentication token. Invalid signature or claims!", exception);
     }
 
     return Optional.ofNullable(newToken);
   }
 
-  public void invalidateSession(ContainerRequestContext requestContext) {
+  public void invalidateSession(final ContainerRequestContext requestContext) {
     AuthCookieService.getAuthCookieToken(requestContext).ifPresent(this::invalidateAuthToken);
   }
 
@@ -130,7 +127,7 @@ public class SessionService implements ConfigurationReloadable {
       terminatedSessionService.terminateUserSession(decodedJwt.getId());
       sessionListeners.forEach(
           sessionListener -> sessionListener.onSessionDestroy(decodedJwt.getSubject()));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message = "Could not decode security token for invalidation!";
       log.debug(message, e);
       throw new IllegalArgumentException(message, e);
@@ -141,13 +138,13 @@ public class SessionService implements ConfigurationReloadable {
     DecodedJWT decodedJWT = null;
     try {
       decodedJWT = JWT.decode(token);
-    } catch (JWTDecodeException e) {
-      log.debug("Invalid jwt token {}", token, e);
+    } catch (final JWTDecodeException e) {
+      log.debug("Invalid jwt token", e);
     }
     return Optional.ofNullable(decodedJWT).flatMap(this::getDynamicExpiresAtLocalDateTime);
   }
 
-  public String getRequestUserOrFailNotAuthorized(ContainerRequestContext requestContext) {
+  public String getRequestUserOrFailNotAuthorized(final ContainerRequestContext requestContext) {
     return AuthCookieService.getAuthCookieToken(requestContext)
         .flatMap(AuthCookieService::getTokenSubject)
         .orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
@@ -193,7 +190,7 @@ public class SessionService implements ConfigurationReloadable {
             decodedJWT.getId());
         isValid = false;
       }
-    } catch (OptimizeRuntimeException e) {
+    } catch (final OptimizeRuntimeException e) {
       log.warn(
           "Failed checking if session {} is a terminated session, defaulting to handle it as not terminated",
           decodedJWT.getId(),
@@ -216,7 +213,7 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   private String generateAuthToken(final String sessionId, final String userId) {
-    Instant issuedAt =
+    final Instant issuedAt =
         LocalDateUtil.getCurrentLocalDateTime().atZone(ZoneId.systemDefault()).toInstant();
     return JWT.create()
         .withJWTId(sessionId)
@@ -233,9 +230,9 @@ public class SessionService implements ConfigurationReloadable {
             .map(secretString -> secretString.getBytes(StandardCharsets.UTF_8))
             .orElse(DEFAULT_SECRET_BYTES);
 
-    this.hashingAlgorithm = Algorithm.HMAC256(secretBytes);
+    hashingAlgorithm = Algorithm.HMAC256(secretBytes);
     // ignore issued at validation, we validate that in #isStillValid
-    this.jwtVerifier = JWT.require(hashingAlgorithm).withIssuer(ISSUER).ignoreIssuedAt().build();
+    jwtVerifier = JWT.require(hashingAlgorithm).withIssuer(ISSUER).ignoreIssuedAt().build();
   }
 
   private AuthConfiguration getAuthConfiguration() {

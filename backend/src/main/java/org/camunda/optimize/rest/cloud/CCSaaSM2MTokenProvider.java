@@ -44,7 +44,7 @@ public class CCSaaSM2MTokenProvider extends AbstractCCSaaSClient {
             .clientId(getM2MClientId())
             .clientSecret(getM2MClientSecret())
             .build();
-    log.info("Requesting M2M token for audience {}", audience);
+    log.info("Requesting M2M token");
     try {
       final HttpPost request = new HttpPost(getTokenProviderUrl());
       final StringEntity notificationRequestBody =
@@ -64,7 +64,7 @@ public class CCSaaSM2MTokenProvider extends AbstractCCSaaSClient {
             EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8),
             TokenResponseDto.class);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("There was a problem retrieving the M2M token.", e);
     }
   }
