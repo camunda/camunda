@@ -19,6 +19,7 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionReq
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
+import io.camunda.zeebe.topology.api.TopologyRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeResult;
@@ -27,14 +28,18 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the requests for the topology management. This is expected be running on the coordinator
  * node.
  */
 public final class TopologyManagementRequestsHandler implements TopologyManagementApi {
-
+  private static final Logger LOG =
+      LoggerFactory.getLogger(TopologyManagementRequestsHandler.class);
   private final TopologyChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
@@ -109,6 +114,18 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   @Override
   public ActorFuture<TopologyChangeResponse> forceScaleDown(
       final ScaleRequest forceScaleDownRequest) {
+    final Optional<Integer> optionalNewReplicationFactor =
+        forceScaleDownRequest.newReplicationFactor();
+    if (optionalNewReplicationFactor.isPresent() && optionalNewReplicationFactor.get() > 0) {
+      final var failedFuture = executor.<TopologyChangeResponse>createFuture();
+      final String errorMessage =
+          String.format(
+              "The replication factor cannot be changed to requested value '%s' during force scale down. It will be automatically changed based on which brokers are removed. Do not provide any replication factor in the request",
+              optionalNewReplicationFactor.get());
+      failedFuture.completeExceptionally(new InvalidRequest(errorMessage));
+      return failedFuture;
+    }
+
     return handleRequest(
         forceScaleDownRequest.dryRun(),
         new ForceScaleDownRequestTransformer(forceScaleDownRequest.members(), localMemberId));
