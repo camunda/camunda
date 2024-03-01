@@ -1,5 +1,5 @@
 {
-  "plugins": ["testing-library", "prettier"],
+  "plugins": ["testing-library", "prettier", "license-header"],
   "rules": {
     "prettier/prettier": "warn",
     "testing-library/await-async-query": "error",
@@ -14,9 +14,10 @@
     "testing-library/prefer-screen-queries": "error",
     "testing-library/prefer-wait-for": "error",
     "import/no-anonymous-default-export": "off",
-    "no-duplicate-imports": "error"
+    "no-duplicate-imports": "error",
+    "license-header/header": [ "error", "./resources/license-header.js" ]
   },
-  "extends": ["react-app", "plugin:camunda-licensed/commercial"],
+  "extends": ["react-app"],
   "settings": {
     "react": {
       "version": "detect"

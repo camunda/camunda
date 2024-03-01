@@ -80,7 +80,7 @@
     "@types/react-dom": "18.2.18",
     "@types/react-transition-group": "4.4.10",
     "cross-env": "^7.0.3",
-    "eslint-plugin-camunda-licensed": "0.4.6",
+    "eslint-plugin-license-header": "^0.6.0",
     "eslint-plugin-prettier": "5.1.2",
     "event-source-polyfill": "1.0.31",
     "glob": "8.1.0",

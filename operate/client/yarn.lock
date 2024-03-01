@@ -5433,13 +5433,6 @@ eslint-module-utils@^2.7.3:
   dependencies:
     debug "^3.2.7"
 
-eslint-plugin-camunda-licensed@0.4.6:
-  version "0.4.6"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-camunda-licensed/-/eslint-plugin-camunda-licensed-0.4.6.tgz#f714a2bb473d6460cfe6fc84f8a320190a77635b"
-  integrity sha512-cdt0dPcEKKurUKeX8zxQhyXD/cloVRIzsAJWXE57bqzeV/Q2edDQGOHxQDSoAd07MHCHJyizZBMb/5y8gN3PTg==
-  dependencies:
-    eslint-plugin-license-header "^0.2.0"
-
 eslint-plugin-flowtype@^8.0.3:
   version "8.0.3"
   resolved "https://registry.yarnpkg.com/eslint-plugin-flowtype/-/eslint-plugin-flowtype-8.0.3.tgz#e1557e37118f24734aa3122e7536a038d34a4912"
@@ -5493,10 +5486,10 @@ eslint-plugin-jsx-a11y@^6.5.1:
     minimatch "^3.1.2"
     semver "^6.3.0"
 
-eslint-plugin-license-header@^0.2.0:
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-license-header/-/eslint-plugin-license-header-0.2.1.tgz#01941e3074e0bc4f110220ba20244436a5f84e45"
-  integrity sha512-l+fiPajCJztDzIHJ8BA6AFy/0oDhI8ZovytzRp1dY49tiW7BP+1yKp2cv7SPlTAkTtUH1MFEYspPS4zxVhQ3QA==
+eslint-plugin-license-header@^0.6.0:
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-license-header/-/eslint-plugin-license-header-0.6.0.tgz#81b0bab59da5a752d3a129f04bd0ca35bb6b07a2"
+  integrity sha512-IEywStBWaDBDMkogYoKUAdaOuomZ+YaQmdoSD2vHmXobekM+XuP6SWLlvwUUhIbdocn3MTlb5CUJ8E4VHz1c/w==
   dependencies:
     requireindex "^1.2.0"
 
