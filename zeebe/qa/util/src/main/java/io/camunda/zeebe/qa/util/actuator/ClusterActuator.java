@@ -126,6 +126,7 @@ public interface ClusterActuator {
    * Scales the given brokers up or down and reassigns partitions to the new brokers.
    *
    * @param dryRun if true, changes are not applied but only simulated.
+   * @param force if true, the brokers that are not specified will be forcely removed.
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("POST /brokers?dryRun={dryRun}&force={force}")
