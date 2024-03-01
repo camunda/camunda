@@ -185,6 +185,19 @@ public class TasklistTester {
     return this;
   }
 
+  public TasklistTester createAndDeploySimpleProcessWithAssignee(
+      String processId, String flowNodeBpmnId, String user) {
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .userTask(flowNodeBpmnId)
+            .zeebeAssignee(user)
+            .endEvent()
+            .done();
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
+    return this;
+  }
+
   public TasklistTester createAndDeploySimpleProcess(
       String processId, String flowNodeBpmnId, String tenantId) {
     final BpmnModelInstance process =

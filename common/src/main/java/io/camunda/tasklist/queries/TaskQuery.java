@@ -9,16 +9,18 @@ package io.camunda.tasklist.queries;
 import io.camunda.tasklist.entities.TaskState;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.StringJoiner;
 
 public class TaskQuery {
 
   private TaskState state;
   private Boolean assigned;
   private String assignee;
+  private String[] assignees;
   private String taskDefinitionId;
   private String candidateGroup;
+  private String[] candidateGroups;
   private String candidateUser;
+  private String[] candidateUsers;
   private String processDefinitionId;
   private String processInstanceId;
   private int pageSize;
@@ -195,6 +197,33 @@ public class TaskQuery {
     return this;
   }
 
+  public String[] getAssignees() {
+    return assignees;
+  }
+
+  public TaskQuery setAssignees(String[] assignees) {
+    this.assignees = assignees;
+    return this;
+  }
+
+  public String[] getCandidateGroups() {
+    return candidateGroups;
+  }
+
+  public TaskQuery setCandidateGroups(String[] candidateGroups) {
+    this.candidateGroups = candidateGroups;
+    return this;
+  }
+
+  public String[] getCandidateUsers() {
+    return candidateUsers;
+  }
+
+  public TaskQuery setCandidateUsers(String[] candidateUsers) {
+    this.candidateUsers = candidateUsers;
+    return this;
+  }
+
   public TaskByCandidateUserOrGroup getTaskByCandidateUserOrGroups() {
     return taskByCandidateUserOrGroups;
   }
@@ -219,7 +248,10 @@ public class TaskQuery {
         .setTaskVariables(this.taskVariables)
         .setTenantIds(this.tenantIds)
         .setCandidateGroup(this.candidateGroup)
-        .setTaskByCandidateUserOrGroups(this.taskByCandidateUserOrGroups);
+        .setTaskByCandidateUserOrGroups(this.taskByCandidateUserOrGroups)
+        .setAssignees(this.assignees)
+        .setCandidateGroups(this.candidateGroups)
+        .setCandidateUsers(this.candidateUsers);
   }
 
   @Override
@@ -235,12 +267,14 @@ public class TaskQuery {
         && state == taskQuery.state
         && Objects.equals(assigned, taskQuery.assigned)
         && Objects.equals(assignee, taskQuery.assignee)
+        && Arrays.equals(assignees, taskQuery.assignees)
         && Objects.equals(taskDefinitionId, taskQuery.taskDefinitionId)
         && Objects.equals(candidateGroup, taskQuery.candidateGroup)
+        && Arrays.equals(candidateGroups, taskQuery.candidateGroups)
         && Objects.equals(candidateUser, taskQuery.candidateUser)
+        && Arrays.equals(candidateUsers, taskQuery.candidateUsers)
         && Objects.equals(processDefinitionId, taskQuery.processDefinitionId)
         && Objects.equals(processInstanceId, taskQuery.processInstanceId)
-        && Objects.equals(taskByCandidateUserOrGroups, taskQuery.taskByCandidateUserOrGroups)
         && Arrays.equals(taskVariables, taskQuery.taskVariables)
         && Arrays.equals(tenantIds, taskQuery.tenantIds)
         && Arrays.equals(searchAfter, taskQuery.searchAfter)
@@ -249,7 +283,8 @@ public class TaskQuery {
         && Arrays.equals(searchBeforeOrEqual, taskQuery.searchBeforeOrEqual)
         && Objects.equals(followUpDate, taskQuery.followUpDate)
         && Objects.equals(dueDate, taskQuery.dueDate)
-        && Arrays.equals(sort, taskQuery.sort);
+        && Arrays.equals(sort, taskQuery.sort)
+        && Objects.equals(taskByCandidateUserOrGroups, taskQuery.taskByCandidateUserOrGroups);
   }
 
   @Override
@@ -262,14 +297,17 @@ public class TaskQuery {
             taskDefinitionId,
             candidateGroup,
             candidateUser,
-            taskByCandidateUserOrGroups,
             processDefinitionId,
             processInstanceId,
             pageSize,
             followUpDate,
-            dueDate);
-    result = 31 * result + Arrays.hashCode(tenantIds);
+            dueDate,
+            taskByCandidateUserOrGroups);
+    result = 31 * result + Arrays.hashCode(assignees);
+    result = 31 * result + Arrays.hashCode(candidateGroups);
+    result = 31 * result + Arrays.hashCode(candidateUsers);
     result = 31 * result + Arrays.hashCode(taskVariables);
+    result = 31 * result + Arrays.hashCode(tenantIds);
     result = 31 * result + Arrays.hashCode(searchAfter);
     result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
     result = 31 * result + Arrays.hashCode(searchBefore);
@@ -280,26 +318,57 @@ public class TaskQuery {
 
   @Override
   public String toString() {
-    return new StringJoiner(", ", TaskQuery.class.getSimpleName() + "[", "]")
-        .add("state=" + state)
-        .add("assigned=" + assigned)
-        .add("assignee='" + assignee + "'")
-        .add("taskDefinitionId='" + taskDefinitionId + "'")
-        .add("candidateGroup='" + candidateGroup + "'")
-        .add("candidateUser='" + candidateUser + "'")
-        .add("candidateUserAndGroups='" + taskByCandidateUserOrGroups + "'")
-        .add("processDefinitionId='" + processDefinitionId + "'")
-        .add("processInstanceId='" + processInstanceId + "'")
-        .add("pageSize=" + pageSize)
-        .add("taskVariables=" + Arrays.toString(taskVariables))
-        .add("tenantIds=" + Arrays.toString(tenantIds))
-        .add("searchAfter=" + Arrays.toString(searchAfter))
-        .add("searchAfterOrEqual=" + Arrays.toString(searchAfterOrEqual))
-        .add("searchBefore=" + Arrays.toString(searchBefore))
-        .add("searchBeforeOrEqual=" + Arrays.toString(searchBeforeOrEqual))
-        .add("followUpDate=" + followUpDate)
-        .add("dueDate=" + dueDate)
-        .add("sort=" + Arrays.toString(sort))
-        .toString();
+    return "TaskQuery{"
+        + "state="
+        + state
+        + ", assigned="
+        + assigned
+        + ", assignee='"
+        + assignee
+        + '\''
+        + ", assignees="
+        + Arrays.toString(assignees)
+        + ", taskDefinitionId='"
+        + taskDefinitionId
+        + '\''
+        + ", candidateGroup='"
+        + candidateGroup
+        + '\''
+        + ", candidateGroups="
+        + Arrays.toString(candidateGroups)
+        + ", candidateUser='"
+        + candidateUser
+        + '\''
+        + ", candidateUsers="
+        + Arrays.toString(candidateUsers)
+        + ", processDefinitionId='"
+        + processDefinitionId
+        + '\''
+        + ", processInstanceId='"
+        + processInstanceId
+        + '\''
+        + ", pageSize="
+        + pageSize
+        + ", taskVariables="
+        + Arrays.toString(taskVariables)
+        + ", tenantIds="
+        + Arrays.toString(tenantIds)
+        + ", searchAfter="
+        + Arrays.toString(searchAfter)
+        + ", searchAfterOrEqual="
+        + Arrays.toString(searchAfterOrEqual)
+        + ", searchBefore="
+        + Arrays.toString(searchBefore)
+        + ", searchBeforeOrEqual="
+        + Arrays.toString(searchBeforeOrEqual)
+        + ", followUpDate="
+        + followUpDate
+        + ", dueDate="
+        + dueDate
+        + ", sort="
+        + Arrays.toString(sort)
+        + ", taskByCandidateUserOrGroups="
+        + taskByCandidateUserOrGroups
+        + '}';
   }
 }

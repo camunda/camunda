@@ -118,6 +118,18 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
         .taskIsCreated(flowNodeBpmnId);
   }
 
+  private TasklistTester createTaskWithAssignee(
+      String bpmnProcessId, String flowNodeBpmnId, int numberOfInstances, String assignee) {
+    return tester
+        .createAndDeploySimpleProcessWithAssignee(bpmnProcessId, flowNodeBpmnId, assignee)
+        .then()
+        .processIsDeployed()
+        .and()
+        .startProcessInstances(bpmnProcessId, numberOfInstances)
+        .then()
+        .taskIsCreated(flowNodeBpmnId);
+  }
+
   @Nested
   class SearchTaskTests {
     @Test
@@ -169,6 +181,77 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasApplicationJsonContentType()
           .extractingListContent(objectMapper, TaskSearchResponse.class)
           .isEmpty();
+    }
+
+    @Test
+    public void searchTasksByCandidateGroupsArray() {
+      final String bpmnProcessId = "testProcess";
+      final String flowNodeBpmnId = "taskA_".concat(UUID.randomUUID().toString());
+      final int numberOfInstances = 3;
+
+      createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Admins");
+      createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Users");
+      createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Sales");
+      when(identityAuthorizationService.getUserGroups())
+          .thenReturn(List.of("Admins", "Users", "Sales"));
+
+      final var searchQuery =
+          new TaskQueryDTO().setCandidateGroups(new String[] {"Admins", "Users"});
+
+      final var result =
+          mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")), searchQuery);
+
+      assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, TaskSearchResponse.class)
+          .hasSize(6);
+    }
+
+    @Test
+    public void searchTasksByAssigneesArray() {
+      final String bpmnProcessId = "testProcess";
+      final String flowNodeBpmnId = "taskA_".concat(UUID.randomUUID().toString());
+      final int numberOfInstances = 3;
+
+      createTaskWithAssignee(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "demo");
+      createTaskWithAssignee(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "admin");
+      createTaskWithAssignee(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "sales");
+
+      final var searchQuery = new TaskQueryDTO().setAssignees(new String[] {"demo", "sales"});
+
+      final var result =
+          mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")), searchQuery);
+
+      assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, TaskSearchResponse.class)
+          .hasSize(6);
+    }
+
+    @Test
+    public void searchTasksByCandidateUsersArray() {
+      final String bpmnProcessId = "testProcess";
+      final String flowNodeBpmnId = "taskA_".concat(UUID.randomUUID().toString());
+      final int numberOfInstances = 3;
+
+      createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "demo");
+      createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "admin");
+      createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "john");
+      // when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins", "Users",
+      // "Sales"));
+
+      final var searchQuery = new TaskQueryDTO().setCandidateUsers(new String[] {"demo"});
+
+      final var result =
+          mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")), searchQuery);
+
+      assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, TaskSearchResponse.class)
+          .hasSize(3);
     }
 
     @Test

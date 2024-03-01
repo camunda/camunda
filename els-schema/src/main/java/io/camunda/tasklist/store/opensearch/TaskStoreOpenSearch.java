@@ -351,6 +351,20 @@ public class TaskStoreOpenSearch implements TaskStore {
       assigneeQ.term(t -> t.field(TaskTemplate.ASSIGNEE).value(FieldValue.of(query.getAssignee())));
     }
 
+    Query.Builder assigneesQ = null;
+    if (query.getAssignees() != null) {
+      assigneesQ = new Query.Builder();
+      assigneesQ.terms(
+          t ->
+              t.field(TaskTemplate.ASSIGNEE)
+                  .terms(
+                      terms ->
+                          terms.value(
+                              Arrays.stream(query.getAssignees())
+                                  .map(m -> FieldValue.of(m))
+                                  .toList())));
+    }
+
     Query.Builder idsQuery = null;
     if (taskIds != null) {
       idsQuery = new Query.Builder();
@@ -375,12 +389,40 @@ public class TaskStoreOpenSearch implements TaskStore {
                   .value(FieldValue.of(query.getCandidateGroup())));
     }
 
+    Query.Builder candidateGroupsQ = null;
+    if (query.getCandidateGroups() != null) {
+      candidateGroupsQ = new Query.Builder();
+      candidateGroupsQ.terms(
+          t ->
+              t.field(TaskTemplate.CANDIDATE_GROUPS)
+                  .terms(
+                      terms ->
+                          terms.value(
+                              Arrays.stream(query.getCandidateGroups())
+                                  .map(m -> FieldValue.of(m))
+                                  .toList())));
+    }
+
     Query.Builder candidateUserQ = null;
     if (query.getCandidateUser() != null) {
       candidateUserQ = new Query.Builder();
       candidateUserQ.term(
           t ->
               t.field(TaskTemplate.CANDIDATE_USERS).value(FieldValue.of(query.getCandidateUser())));
+    }
+
+    Query.Builder candidateUsersQ = null;
+    if (query.getCandidateUsers() != null) {
+      candidateUsersQ = new Query.Builder();
+      candidateUsersQ.terms(
+          t ->
+              t.field(TaskTemplate.CANDIDATE_USERS)
+                  .terms(
+                      terms ->
+                          terms.value(
+                              Arrays.stream(query.getCandidateUsers())
+                                  .map(m -> FieldValue.of(m))
+                                  .toList())));
     }
 
     Query.Builder candidateGroupsAndUserByCurrentUserQ = null;
@@ -432,10 +474,13 @@ public class TaskStoreOpenSearch implements TaskStore {
             stateQ,
             assignedQ,
             assigneeQ,
+            assigneesQ,
             idsQuery,
             taskDefinitionQ,
             candidateGroupQ,
+            candidateGroupsQ,
             candidateUserQ,
+            candidateUsersQ,
             candidateGroupsAndUserByCurrentUserQ,
             processInstanceIdQ,
             processDefinitionIdQ,

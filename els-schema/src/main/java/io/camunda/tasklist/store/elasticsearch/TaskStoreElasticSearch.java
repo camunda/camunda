@@ -17,13 +17,7 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.tasklist.util.ElasticsearchUtil.mapSearchHits;
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -349,6 +343,12 @@ public class TaskStoreElasticSearch implements TaskStore {
     if (query.getAssignee() != null) {
       assigneeQ = termQuery(TaskTemplate.ASSIGNEE, query.getAssignee());
     }
+
+    QueryBuilder assigneesQ = null;
+    if (query.getAssignees() != null) {
+      assigneesQ = termsQuery(TaskTemplate.ASSIGNEE, query.getAssignees());
+    }
+
     IdsQueryBuilder idsQuery = null;
     if (taskIds != null) {
       idsQuery = idsQuery().addIds(taskIds.toArray(new String[0]));
@@ -364,9 +364,19 @@ public class TaskStoreElasticSearch implements TaskStore {
       candidateGroupQ = termQuery(TaskTemplate.CANDIDATE_GROUPS, query.getCandidateGroup());
     }
 
+    QueryBuilder candidateGroupsQ = null;
+    if (query.getCandidateGroups() != null) {
+      candidateGroupsQ = termsQuery(TaskTemplate.CANDIDATE_GROUPS, query.getCandidateGroups());
+    }
+
     QueryBuilder candidateUserQ = null;
     if (query.getCandidateUser() != null) {
       candidateUserQ = termQuery(TaskTemplate.CANDIDATE_USERS, query.getCandidateUser());
+    }
+
+    QueryBuilder candidateUsersQ = null;
+    if (query.getCandidateUsers() != null) {
+      candidateUsersQ = termsQuery(TaskTemplate.CANDIDATE_USERS, query.getCandidateUsers());
     }
 
     QueryBuilder candidateGroupsAndUserByCurrentUserQ = null;
@@ -409,10 +419,13 @@ public class TaskStoreElasticSearch implements TaskStore {
             stateQ,
             assignedQ,
             assigneeQ,
+            assigneesQ,
             idsQuery,
             taskDefinitionQ,
             candidateGroupQ,
+            candidateGroupsQ,
             candidateUserQ,
+            candidateUsersQ,
             candidateGroupsAndUserByCurrentUserQ,
             processInstanceIdQ,
             processDefinitionIdQ,

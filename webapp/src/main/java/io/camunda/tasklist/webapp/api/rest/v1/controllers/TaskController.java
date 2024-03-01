@@ -122,6 +122,7 @@ public class TaskController extends ApiErrorController {
     } else {
       variableNamesToReturnFullValue = Collections.emptyMap();
     }
+
     final Set<String> includeVariableNames = variableNamesToReturnFullValue.keySet();
     final boolean fetchFullValuesFromDB =
         variableNamesToReturnFullValue.values().stream().anyMatch(Boolean::booleanValue);
