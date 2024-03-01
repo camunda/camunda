@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.grpc.ClientInterceptor;
 import java.time.Duration;
@@ -29,8 +30,25 @@ public interface ZeebeClientConfiguration {
   String getGatewayAddress();
 
   /**
+   * <strong>Experimental: This method is under development, and as such using it may have no effect
+   * on the client builder when called. Until this warning is removed, anything described below may
+   * not yet have taken effect, and the interface and its description are subject to
+   * change.</strong>
+   *
+   * @see ZeebeClientBuilder#gatewayRestApiPort(int)
+   */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  int getGatewayRestApiPort();
+
+  /**
+   * <strong>Experimental: This method is under development, and as such using it may have no effect
+   * on the client builder when called. Until this warning is removed, anything described below may
+   * not yet have taken effect, and the interface and its description are subject to
+   * change.</strong>
+   *
    * @see ZeebeClientBuilder#defaultCommunicationApi(String)
    */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
   String getDefaultCommunicationApi();
 
   /**

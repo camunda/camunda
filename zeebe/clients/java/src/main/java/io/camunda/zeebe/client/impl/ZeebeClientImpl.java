@@ -62,6 +62,8 @@ import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
@@ -97,14 +99,32 @@ public final class ZeebeClientImpl implements ZeebeClient {
   private final List<Closeable> closeables = new CopyOnWriteArrayList<>();
   private final JobClient jobClient;
   private final CredentialsProvider credentialsProvider;
+  private final HttpClient httpClient;
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
   }
 
   public ZeebeClientImpl(
+      final ZeebeClientConfiguration configuration, final HttpClient httpClient) {
+    this(configuration, buildChannel(configuration), httpClient);
+  }
+
+  public ZeebeClientImpl(
       final ZeebeClientConfiguration configuration, final ManagedChannel channel) {
     this(configuration, channel, buildGatewayStub(channel, configuration));
+  }
+
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration configuration,
+      final ManagedChannel channel,
+      final HttpClient httpClient) {
+    this(
+        configuration,
+        channel,
+        buildGatewayStub(channel, configuration),
+        buildExecutorService(configuration),
+        httpClient);
   }
 
   public ZeebeClientImpl(
@@ -119,11 +139,21 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final ManagedChannel channel,
       final GatewayStub gatewayStub,
       final ExecutorResource executorResource) {
+    this(config, channel, gatewayStub, executorResource, buildHttpClient(config));
+  }
+
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration config,
+      final ManagedChannel channel,
+      final GatewayStub gatewayStub,
+      final ExecutorResource executorResource,
+      final HttpClient httpClient) {
     this.config = config;
     jsonMapper = config.getJsonMapper();
     this.channel = channel;
     asyncStub = gatewayStub;
     this.executorResource = executorResource;
+    this.httpClient = httpClient;
 
     if (config.getCredentialsProvider() != null) {
       credentialsProvider = config.getCredentialsProvider();
@@ -131,6 +161,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
       credentialsProvider = new NoopCredentialsProvider();
     }
     jobClient = newJobClient();
+    this.httpClient.start();
+  }
+
+  private static HttpClient buildHttpClient(final ZeebeClientConfiguration config) {
+    return new HttpClientFactory(config).createClient();
   }
 
   public static ManagedChannel buildChannel(final ZeebeClientConfiguration config) {
@@ -246,7 +281,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public TopologyRequestStep1 newTopologyRequest() {
     return new TopologyRequestImpl(
-        asyncStub, config.getDefaultRequestTimeout(), credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        httpClient,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest);
   }
 
   @Override

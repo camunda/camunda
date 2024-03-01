@@ -120,6 +120,12 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder gatewayRestApiPort(final int restApiPort) {
+    innerBuilder.gatewayRestApiPort(restApiPort);
+    return this;
+  }
+
+  @Override
   public ZeebeClientBuilder defaultCommunicationApi(final String communicationApi) {
     innerBuilder.defaultCommunicationApi(communicationApi);
     return this;

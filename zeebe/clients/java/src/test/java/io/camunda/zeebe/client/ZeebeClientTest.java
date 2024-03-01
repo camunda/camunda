@@ -27,6 +27,7 @@ import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_COMMUNICATION_API_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.GATEWAY_REST_API_PORT_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
@@ -568,6 +569,77 @@ public final class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.getDefaultCommunicationApi()).isEqualTo(overrideCommunicationApi);
+  }
+
+  @Test
+  public void shouldUseClientDefaultRestApiPort() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getGatewayRestApiPort())
+        .isEqualTo(ZeebeClientBuilderImpl.DEFAULT_GATEWAY_REST_API_PORT);
+  }
+
+  @Test
+  public void shouldSetRestApiPortFromSetterWithClientBuilder() {
+    // given
+    final int restApiPort = 9090;
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.gatewayRestApiPort(restApiPort);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getGatewayRestApiPort()).isEqualTo(restApiPort);
+  }
+
+  @Test
+  public void shouldNotSetIncorrectValueForRestApiPortFromSetterWithClientBuilder() {
+    // given
+    final int falseRestApiPort = -9090;
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    // when / then
+    assertThatThrownBy(() -> builder.gatewayRestApiPort(falseRestApiPort))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "The REST API port must be a number between 0 and 65535, but was '%s'.",
+            falseRestApiPort);
+  }
+
+  @Test
+  public void shouldSetRestApiPortFromPropertyWithClientBuilder() {
+    // given
+    final int restApiPort = 9090;
+    final Properties properties = new Properties();
+    properties.setProperty(ClientProperties.GATEWAY_REST_API_PORT, String.valueOf(restApiPort));
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getGatewayRestApiPort()).isEqualTo(restApiPort);
+  }
+
+  @Test
+  public void shouldSetRestApiPortFromEnvVarWithClientBuilder() {
+    // given
+    final int restApiPort = 9090;
+    Environment.system().put(GATEWAY_REST_API_PORT_VAR, String.valueOf(restApiPort));
+
+    // when
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getGatewayRestApiPort()).isEqualTo(restApiPort);
   }
 
   @Test
