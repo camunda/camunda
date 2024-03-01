@@ -211,13 +211,24 @@ public final class BrokerTopologyManagerImpl extends Actor
       return;
     }
     this.clusterTopology = clusterTopology;
-    LOG.debug("Received new cluster topology with clusterSize {}", clusterTopology.clusterSize());
 
     updateTopology(
         topologyToUpdate -> {
-          topologyToUpdate.setClusterSize(clusterTopology.clusterSize());
-          topologyToUpdate.setPartitionsCount(clusterTopology.partitionCount());
-          topologyToUpdate.setReplicationFactor(clusterTopology.replicationFactor());
+          final var newClusterSize = clusterTopology.clusterSize();
+          final var newPartitionsCount = clusterTopology.partitionCount();
+          final var newReplicationFactor = clusterTopology.replicationFactor();
+          if (newClusterSize != topologyToUpdate.getClusterSize()
+              || newPartitionsCount != topologyToUpdate.getPartitionsCount()
+              || newReplicationFactor != topologyToUpdate.getReplicationFactor()) {
+            LOG.debug(
+                "Updating topology with clusterSize {}, partitionsCount {} and replicationFactor {}",
+                newClusterSize,
+                newPartitionsCount,
+                newReplicationFactor);
+            topologyToUpdate.setClusterSize(newClusterSize);
+            topologyToUpdate.setPartitionsCount(newPartitionsCount);
+            topologyToUpdate.setReplicationFactor(newReplicationFactor);
+          }
         });
   }
 }
