@@ -6120,7 +6120,12 @@ diagram-js@^7.8.2:
     path-intersection "^2.2.1"
     tiny-svg "^2.2.2"
 
-didi@^10.0.0, didi@^10.0.1:
+didi@^10.0.0:
+  version "10.2.0"
+  resolved "https://registry.yarnpkg.com/didi/-/didi-10.2.0.tgz#2198fb354dcf8acd4bf9f9175516a67d6ed78d7f"
+  integrity sha512-HqlQimiIImFz8amKDomklW8pZ/7JhiGtgru8yOUlN/VE2X9WQ4sMj2pdsuk8IhWQjGVHTmvKXEmmYQaOKLrr5Q==
+
+didi@^10.0.1:
   version "10.0.1"
   resolved "https://registry.yarnpkg.com/didi/-/didi-10.0.1.tgz#b995c7cd2d42232be081688512ecc4e67663e344"
   integrity sha512-rddmyUjpIh8pIu9OVtqQjGkZB4jNOaaRMz9AClSH3WUEOoJctxpFmqjTButmI5na5sSIDpfjABe34wEvEhrjcg==
@@ -14410,9 +14415,9 @@ synckit@^0.8.6:
     tslib "^2.6.2"
 
 table-js@^9.0.0:
-  version "9.0.0"
-  resolved "https://registry.yarnpkg.com/table-js/-/table-js-9.0.0.tgz#82556d2560650805570a451535bf50b42a4e40f7"
-  integrity sha512-CBRMuPUdHRQNtOsD6ommWCHd6TJbxLWbNbLIfs6lU1XqD0dlSMH9xBqD7asFra5XDVTrLSHzx2PBD83pWVqDDg==
+  version "9.1.0"
+  resolved "https://registry.yarnpkg.com/table-js/-/table-js-9.1.0.tgz#145af32c674f6bc9ab956d519f0d277e58427a14"
+  integrity sha512-yxzIBXZe5pFHXBng8+Rz3dDGiO4anWptlWQXP4Pm1oIetgdG4nq+DkZkRG4Lq5L1HFu1OVif4h3YMI7rxudvPw==
   dependencies:
     didi "^10.0.0"
     ids "^1.0.0"
