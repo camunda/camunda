@@ -31,6 +31,7 @@ message LeavePartitionRequest {
 message ScaleRequest {
   repeated string memberIds = 1;
   bool dryRun = 2;
+  optional int32 newReplicationFactor = 3; // can be -1 to keep the current replication factor
 }
 
 message ReassignAllPartitionsRequest {

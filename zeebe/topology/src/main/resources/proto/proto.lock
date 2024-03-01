@@ -116,6 +116,11 @@
                 "id": 2,
                 "name": "dryRun",
                 "type": "bool"
+              },
+              {
+                "id": 3,
+                "name": "newReplicationFactor",
+                "type": "int32"
               }
             ]
           },
