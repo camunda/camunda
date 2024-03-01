@@ -30,7 +30,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
   private long importIndex = 0;
 
   public void readIndexFromDatabase() {
-    Optional<AllEntitiesBasedImportIndexDto> storedIndex =
+    final Optional<AllEntitiesBasedImportIndexDto> storedIndex =
         importIndexReader.getImportIndex(
             DatabaseHelper.constructKey(getDatabaseImportIndexType(), getEngineAlias()));
     storedIndex.ifPresent(
@@ -40,13 +40,14 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   @Override
   public AllEntitiesBasedImportIndexDto getIndexStateDto() {
-    AllEntitiesBasedImportIndexDto indexToStore = new AllEntitiesBasedImportIndexDto();
+    final AllEntitiesBasedImportIndexDto indexToStore = new AllEntitiesBasedImportIndexDto();
     indexToStore.setImportIndex(importIndex);
     indexToStore.setEsTypeIndexRefersTo(getDatabaseImportIndexType());
     indexToStore.setEngine(getEngineAlias());
     return indexToStore;
   }
 
+  @Override
   public void resetImportIndex() {
     importIndex = 0;
   }
@@ -62,7 +63,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   protected abstract String getDatabaseImportIndexType();
 
-  protected void moveImportIndex(long units) {
+  protected void moveImportIndex(final long units) {
     importIndex += units;
   }
 }

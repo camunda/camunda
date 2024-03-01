@@ -25,14 +25,13 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 public class CompletedActivityInstanceImportService
     implements ImportService<HistoricActivityInstanceEngineDto> {
 
-  protected EngineContext engineContext;
-
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final CamundaEventImportService camundaEventService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
   private final DatabaseClient databaseClient;
+  protected EngineContext engineContext;
 
   public CompletedActivityInstanceImportService(
       final CompletedActivityInstanceWriter completedActivityInstanceWriter,
@@ -41,7 +40,7 @@ public class CompletedActivityInstanceImportService
       final ConfigurationService configurationService,
       final ProcessDefinitionResolverService processDefinitionResolverService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
@@ -53,20 +52,21 @@ public class CompletedActivityInstanceImportService
 
   @Override
   public void executeImport(
-      List<HistoricActivityInstanceEngineDto> pageOfEngineEntities,
-      Runnable importCompleteCallback) {
+      final List<HistoricActivityInstanceEngineDto> pageOfEngineEntities,
+      final Runnable importCompleteCallback) {
     log.trace("Importing completed activity instances from engine...");
 
-    boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
+    final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<FlowNodeEventDto> newOptimizeEntities =
+      final List<FlowNodeEventDto> newOptimizeEntities =
           mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      DatabaseImportJob<FlowNodeEventDto> databaseImportJob =
+      final DatabaseImportJob<FlowNodeEventDto> databaseImportJob =
           createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
       addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
+  @Override
   public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
     return databaseImportJobExecutor;
   }
@@ -85,8 +85,8 @@ public class CompletedActivityInstanceImportService
   }
 
   private DatabaseImportJob<FlowNodeEventDto> createDatabaseImportJob(
-      List<FlowNodeEventDto> events, Runnable callback) {
-    CompletedActivityInstanceDatabaseImportJob activityImportJob =
+      final List<FlowNodeEventDto> events, final Runnable callback) {
+    final CompletedActivityInstanceDatabaseImportJob activityImportJob =
         new CompletedActivityInstanceDatabaseImportJob(
             completedActivityInstanceWriter,
             camundaEventService,

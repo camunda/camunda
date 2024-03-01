@@ -12,12 +12,10 @@ import com.google.common.collect.Lists;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import org.camunda.optimize.dto.optimize.query.report.CombinedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
@@ -36,6 +34,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class CombinedProcessReportResultTest {
+
+  private static AggregationDto[] getAggregationTypes() {
+    return getSupportedAggregationTypes();
+  }
 
   @Test
   public void testGetResultAsCsvForMapResult() {
@@ -57,7 +59,8 @@ public class CombinedProcessReportResultTest {
                 processReportDataDto));
 
     // when
-    CombinedReportEvaluationResult underTest = createTestCombinedProcessReportResult(mapResults);
+    final CombinedReportEvaluationResult underTest =
+        createTestCombinedProcessReportResult(mapResults);
     List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
@@ -127,7 +130,8 @@ public class CombinedProcessReportResultTest {
                 processReportDataDto));
 
     // when
-    CombinedReportEvaluationResult underTest = createTestCombinedProcessReportResult(numberResults);
+    final CombinedReportEvaluationResult underTest =
+        createTestCombinedProcessReportResult(numberResults);
     final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
@@ -136,10 +140,6 @@ public class CombinedProcessReportResultTest {
     assertThat(resultAsCsv.get(1))
         .isEqualTo(new String[] {"processInstance_frequency", "", "processInstance_frequency"});
     assertThat(resultAsCsv.get(2)).isEqualTo(new String[] {"5.0", "", "2.0"});
-  }
-
-  private static AggregationDto[] getAggregationTypes() {
-    return getSupportedAggregationTypes();
   }
 
   @ParameterizedTest
@@ -161,7 +161,8 @@ public class CombinedProcessReportResultTest {
                 processReportDataDto));
 
     // when
-    CombinedReportEvaluationResult underTest = createTestCombinedProcessReportResult(numberResults);
+    final CombinedReportEvaluationResult underTest =
+        createTestCombinedProcessReportResult(numberResults);
     final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
@@ -169,7 +170,7 @@ public class CombinedProcessReportResultTest {
   }
 
   private void assertCsvByAggregationType(
-      final List<String[]> resultAsCsv, AggregationDto aggregationDto) {
+      final List<String[]> resultAsCsv, final AggregationDto aggregationDto) {
     assertThat(resultAsCsv.get(0))
         .isEqualTo(new String[] {"SingleTestReport0", "", "SingleTestReport1"});
     assertThat(resultAsCsv.get(1))
@@ -207,7 +208,8 @@ public class CombinedProcessReportResultTest {
                 processReportDataDto));
 
     // when
-    CombinedReportEvaluationResult underTest = createTestCombinedProcessReportResult(mapResults);
+    final CombinedReportEvaluationResult underTest =
+        createTestCombinedProcessReportResult(mapResults);
     List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
@@ -290,12 +292,12 @@ public class CombinedProcessReportResultTest {
   @Test
   public void testGetResultAsCsvForEmptyReport() {
     // given
-    CombinedReportEvaluationResult underTest =
+    final CombinedReportEvaluationResult underTest =
         new CombinedReportEvaluationResult(
             Collections.emptyList(), 0L, new CombinedReportDefinitionRequestDto());
 
     // when
-    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
+    final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
     assertThat(resultAsCsv.get(0)).isEqualTo(new String[] {});
@@ -304,7 +306,7 @@ public class CombinedProcessReportResultTest {
   private <T> CombinedReportEvaluationResult createTestCombinedProcessReportResult(
       final List<? extends CommandEvaluationResult<T>> reportCommandResults) {
 
-    List<SingleReportEvaluationResult<?>> reportEvaluationResults = new ArrayList<>();
+    final List<SingleReportEvaluationResult<?>> reportEvaluationResults = new ArrayList<>();
     for (int i = 0; i < reportCommandResults.size(); i++) {
       final CommandEvaluationResult<T> commandEvaluationResult = reportCommandResults.get(i);
       final ReportDefinitionDto<ProcessReportDataDto> reportDefinition =
@@ -330,12 +332,6 @@ public class CombinedProcessReportResultTest {
 
   private CombinedReportEvaluationResult createCombinedProcessReportResult(
       final List<SingleReportEvaluationResult<?>> singleReportResults) {
-    final LinkedHashMap<String, ReportEvaluationResult> mapIMap = new LinkedHashMap<>();
-
-    for (int i = 0; i < singleReportResults.size(); i++) {
-      mapIMap.put("test-id-" + i, singleReportResults.get(i));
-    }
-
     return new CombinedReportEvaluationResult(
         singleReportResults, 0L, new CombinedReportDefinitionRequestDto());
   }

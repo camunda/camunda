@@ -12,11 +12,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
 import net.minidev.json.annotate.JsonIgnore;
 
-@EqualsAndHashCode
 @Data
 @FieldNameConstants
 public class ZeebeUserTaskDataDto implements UserTaskRecordValue {

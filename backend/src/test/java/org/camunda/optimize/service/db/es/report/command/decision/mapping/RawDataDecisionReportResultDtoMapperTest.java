@@ -29,7 +29,7 @@ public class RawDataDecisionReportResultDtoMapperTest {
   @Test
   public void testMapFromSearchResponse_hitCountNotEqualTotalCount() {
     // given
-    final Integer rawDataLimit = 2;
+    final int rawDataLimit = 2;
     final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
     final List<DecisionInstanceDto> decisionInstanceDtos = generateInstanceList(rawDataLimit);
 

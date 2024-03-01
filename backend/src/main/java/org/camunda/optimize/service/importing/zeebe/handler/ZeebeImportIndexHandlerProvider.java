@@ -30,7 +30,7 @@ public class ZeebeImportIndexHandlerProvider {
   private static final List<Class<?>> POSITION_BASED_HANDLER_CLASSES;
 
   static {
-    try (ScanResult scanResult =
+    try (final ScanResult scanResult =
         new ClassGraph()
             .enableClassInfo()
             .acceptPackages(ZeebeImportIndexHandlerProvider.class.getPackage().getName())
@@ -40,7 +40,7 @@ public class ZeebeImportIndexHandlerProvider {
     }
   }
 
-  private ZeebeDataSourceDto zeebeDataSourceDto;
+  private final ZeebeDataSourceDto zeebeDataSourceDto;
   @Autowired private BeanFactory beanFactory;
   private Map<String, PositionBasedImportIndexHandler> positionBasedHandlersByName;
 
@@ -66,13 +66,13 @@ public class ZeebeImportIndexHandlerProvider {
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
-  public <C extends ZeebeImportIndexHandler> C getImportIndexHandler(Class<C> clazz) {
+  public <C extends ZeebeImportIndexHandler> C getImportIndexHandler(final Class<C> clazz) {
     return (C) positionBasedHandlersByName.get(clazz.getSimpleName());
   }
 
   private <R, C extends Class<R>> R getImportIndexHandlerInstance(
-      ZeebeDataSourceDto zeebeDataSourceDto, C requiredType) {
-    R result;
+      final ZeebeDataSourceDto zeebeDataSourceDto, final C requiredType) {
+    final R result;
     if (isInstantiated(requiredType)) {
       result = requiredType.cast(positionBasedHandlersByName.get(requiredType.getSimpleName()));
     } else {
@@ -81,7 +81,7 @@ public class ZeebeImportIndexHandlerProvider {
     return result;
   }
 
-  private boolean isInstantiated(Class<?> handlerClass) {
+  private boolean isInstantiated(final Class<?> handlerClass) {
     return positionBasedHandlersByName.get(handlerClass.getSimpleName()) != null;
   }
 }

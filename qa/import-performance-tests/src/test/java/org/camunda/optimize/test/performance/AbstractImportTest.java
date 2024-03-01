@@ -30,19 +30,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public abstract class AbstractImportTest {
-  protected final Logger logger = LoggerFactory.getLogger(getClass());
+  @RegisterExtension
+  @Order(2)
+  public static EmbeddedOptimizeExtension embeddedOptimizeExtension =
+      new EmbeddedOptimizeExtension();
 
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
   private final Properties properties = getProperties();
 
   @RegisterExtension
   @Order(1)
   public DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
       new DatabaseIntegrationTestExtension();
-
-  @RegisterExtension
-  @Order(2)
-  public static EmbeddedOptimizeExtension embeddedOptimizeExtension =
-      new EmbeddedOptimizeExtension();
 
   @RegisterExtension
   @Order(3)
@@ -92,7 +91,7 @@ public abstract class AbstractImportTest {
           "The Camunda Platform contains {} historic decision instances. Optimize: {}",
           engineDatabaseExtension.countHistoricDecisionInstances(),
           databaseIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS));
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       logger.error("Failed producing stats", e);
     }
   }
@@ -111,14 +110,13 @@ public abstract class AbstractImportTest {
 
   private long computeImportProgress() {
     // assumption: we know how many process instances have been generated
-    Integer processInstancesImported =
+    final Integer processInstancesImported =
         databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS);
-    Long totalInstances;
+    final long totalInstances;
     try {
       totalInstances = Math.max(engineDatabaseExtension.countHistoricProcessInstances(), 1L);
-      return Math.round(
-          processInstancesImported.doubleValue() / totalInstances.doubleValue() * 100);
-    } catch (SQLException e) {
+      return Math.round(processInstancesImported.doubleValue() / (double) totalInstances * 100);
+    } catch (final SQLException e) {
       e.printStackTrace();
       return 0L;
     }

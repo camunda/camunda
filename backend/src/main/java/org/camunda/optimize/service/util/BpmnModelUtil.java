@@ -9,7 +9,6 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamund
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,7 +41,7 @@ public class BpmnModelUtil {
   public static BpmnModelInstance parseBpmnModel(final String bpmn20Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(bpmn20Xml.getBytes())) {
       return Bpmn.readModelFromStream(stream);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Failed reading model", e);
     }
   }
@@ -66,7 +65,7 @@ public class BpmnModelUtil {
           .map(Process::getName)
           .filter(Objects::nonNull)
           .findFirst();
-    } catch (Exception exc) {
+    } catch (final Exception exc) {
       log.warn("Failed parsing the BPMN xml.", exc);
       return Optional.empty();
     }
@@ -111,7 +110,7 @@ public class BpmnModelUtil {
 
   public static Map<String, String> extractUserTaskNames(final BpmnModelInstance model) {
     final Map<String, String> result = new HashMap<>();
-    for (UserTask userTask : model.getModelElementsByType(UserTask.class)) {
+    for (final UserTask userTask : model.getModelElementsByType(UserTask.class)) {
       result.put(userTask.getId(), userTask.getName());
     }
     return result;
@@ -119,24 +118,19 @@ public class BpmnModelUtil {
 
   public static List<FlowNodeDataDto> extractFlowNodeData(final BpmnModelInstance model) {
     final List<FlowNodeDataDto> result = new ArrayList<>();
-    for (FlowNode node : model.getModelElementsByType(FlowNode.class)) {
-      FlowNodeDataDto flowNode =
+    for (final FlowNode node : model.getModelElementsByType(FlowNode.class)) {
+      final FlowNodeDataDto flowNode =
           new FlowNodeDataDto(node.getId(), node.getName(), node.getElementType().getTypeName());
       result.add(flowNode);
     }
     return result;
   }
 
-  public static Map<String, String> extractFlowNodeNames(List<FlowNodeDataDto> flowNodes) {
+  public static Map<String, String> extractFlowNodeNames(final List<FlowNodeDataDto> flowNodes) {
     final Map<String, String> flowNodeNames = new HashMap<>();
-    for (FlowNodeDataDto flowNode : flowNodes) {
+    for (final FlowNodeDataDto flowNode : flowNodes) {
       flowNodeNames.put(flowNode.getId(), flowNode.getName());
     }
     return flowNodeNames;
-  }
-
-  public BpmnModelInstance readProcessDiagramAsInstance(final String diagramPath) {
-    InputStream inputStream = getClass().getResourceAsStream(diagramPath);
-    return Bpmn.readModelFromStream(inputStream);
   }
 }

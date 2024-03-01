@@ -18,8 +18,8 @@ public class InvoiceBusinessDecisionsDataGenerator extends DecisionDataGenerator
 
   private static final String DMN_DIAGRAM = "/diagrams/decision/invoiceBusinessDecisions.dmn";
 
-  private Pair<String, String> inputVarNames = Pair.of("invoiceCategory", "amount");
-  private List<Pair<String, Integer>> possibleInputCombinations =
+  private final Pair<String, String> inputVarNames = Pair.of("invoiceCategory", "amount");
+  private final List<Pair<String, Integer>> possibleInputCombinations =
       ImmutableList.of(
           Pair.of("Misc", RandomUtils.nextInt(0, 250)),
           Pair.of("Misc", RandomUtils.nextInt(250, 1001)),
@@ -27,10 +27,12 @@ public class InvoiceBusinessDecisionsDataGenerator extends DecisionDataGenerator
           Pair.of("Travel Expenses", RandomUtils.nextInt()),
           Pair.of("Software License Costs", RandomUtils.nextInt()));
 
-  public InvoiceBusinessDecisionsDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+  public InvoiceBusinessDecisionsDataGenerator(
+      final SimpleEngineClient engineClient, final Integer nVersions) {
     super(engineClient, nVersions);
   }
 
+  @Override
   protected DmnModelInstance retrieveDiagram() {
     return readDecisionDiagram(DMN_DIAGRAM);
   }
@@ -40,7 +42,7 @@ public class InvoiceBusinessDecisionsDataGenerator extends DecisionDataGenerator
     final int nextCombinationIndex = RandomUtils.nextInt(0, possibleInputCombinations.size());
     final Pair<String, Integer> nextCombination =
         possibleInputCombinations.get(nextCombinationIndex);
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(inputVarNames.getLeft(), nextCombination.getLeft());
     variables.put(inputVarNames.getRight(), nextCombination.getRight());
     return variables;

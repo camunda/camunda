@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Scope;
 public abstract class TimestampBasedEngineImportIndexHandler
     extends TimestampBasedDataSourceImportIndexHandler<EngineDataSourceDto> {
 
+  @Override
   protected EngineDataSourceDto getDataSource() {
     return new EngineDataSourceDto(getEngineAlias());
   }

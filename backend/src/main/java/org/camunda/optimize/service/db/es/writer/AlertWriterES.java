@@ -49,29 +49,29 @@ public class AlertWriterES implements AlertWriter {
   private final ObjectMapper objectMapper;
 
   @Override
-  public AlertDefinitionDto createAlert(AlertDefinitionDto alertDefinitionDto) {
+  public AlertDefinitionDto createAlert(final AlertDefinitionDto alertDefinitionDto) {
     log.debug("Writing new alert to Elasticsearch");
 
-    String id = IdGenerator.getNextId();
+    final String id = IdGenerator.getNextId();
     alertDefinitionDto.setId(id);
     try {
-      IndexRequest request =
+      final IndexRequest request =
           new IndexRequest(ALERT_INDEX_NAME)
               .id(id)
               .source(objectMapper.writeValueAsString(alertDefinitionDto), XContentType.JSON)
               .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request);
+      final IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
-        String message =
+        final String message =
             "Could not write alert to Elasticsearch. "
                 + "Maybe the connection to Elasticsearch got lost?";
         log.error(message);
         throw new OptimizeRuntimeException(message);
       }
-    } catch (IOException e) {
-      String errorMessage = "Could not create alert.";
+    } catch (final IOException e) {
+      final String errorMessage = "Could not create alert.";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -81,10 +81,10 @@ public class AlertWriterES implements AlertWriter {
   }
 
   @Override
-  public void updateAlert(AlertDefinitionDto alertUpdate) {
+  public void updateAlert(final AlertDefinitionDto alertUpdate) {
     log.debug("Updating alert with id [{}] in Elasticsearch", alertUpdate.getId());
     try {
-      UpdateRequest request =
+      final UpdateRequest request =
           new UpdateRequest()
               .index(ALERT_INDEX_NAME)
               .id(alertUpdate.getId())
@@ -92,10 +92,10 @@ public class AlertWriterES implements AlertWriter {
               .setRefreshPolicy(IMMEDIATE)
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      UpdateResponse updateResponse = esClient.update(request);
+      final UpdateResponse updateResponse = esClient.update(request);
 
       if (updateResponse.getShardInfo().getFailed() > 0) {
-        String errorMessage =
+        final String errorMessage =
             String.format(
                 "Was not able to update alert with id [%s] and name [%s]. "
                     + "Error during the update in Elasticsearch.",
@@ -103,15 +103,15 @@ public class AlertWriterES implements AlertWriter {
         log.error(errorMessage);
         throw new OptimizeRuntimeException(errorMessage);
       }
-    } catch (IOException e) {
-      String errorMessage =
+    } catch (final IOException e) {
+      final String errorMessage =
           String.format(
               "Was not able to update alert with id [%s] and name [%s].",
               alertUpdate.getId(), alertUpdate.getName());
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
-    } catch (DocumentMissingException e) {
-      String errorMessage =
+    } catch (final DocumentMissingException e) {
+      final String errorMessage =
           String.format(
               "Was not able to update alert with id [%s] and name [%s]. Alert does not exist!",
               alertUpdate.getId(), alertUpdate.getName());
@@ -121,16 +121,16 @@ public class AlertWriterES implements AlertWriter {
   }
 
   @Override
-  public void deleteAlert(String alertId) {
+  public void deleteAlert(final String alertId) {
     log.debug("Deleting alert with id [{}]", alertId);
-    DeleteRequest request =
+    final DeleteRequest request =
         new DeleteRequest(ALERT_INDEX_NAME).id(alertId).setRefreshPolicy(IMMEDIATE);
 
-    DeleteResponse deleteResponse;
+    final DeleteResponse deleteResponse;
     try {
       deleteResponse = esClient.delete(request);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Could not delete alert with id [%s]. "
                   + "Maybe Optimize is not connected to Elasticsearch?",
@@ -140,9 +140,9 @@ public class AlertWriterES implements AlertWriter {
     }
 
     if (!deleteResponse.getResult().equals(DocWriteResponse.Result.DELETED)) {
-      String message =
+      final String message =
           String.format(
-              "Could not delete alert with id [%s]. Alert does not exist."
+              "Could not delete alert with id [%s]. Alert does not exist. "
                   + "Maybe it was already deleted by someone else?",
               alertId);
       log.error(message);
@@ -151,7 +151,7 @@ public class AlertWriterES implements AlertWriter {
   }
 
   @Override
-  public void deleteAlerts(List<String> alertIds) {
+  public void deleteAlerts(final List<String> alertIds) {
     log.debug("Deleting alerts with ids: {}", alertIds);
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
@@ -162,12 +162,12 @@ public class AlertWriterES implements AlertWriter {
   }
 
   @Override
-  public void writeAlertTriggeredStatus(boolean alertStatus, String alertId) {
+  public void writeAlertTriggeredStatus(final boolean alertStatus, final String alertId) {
     log.debug("Writing alert status for alert with id [{}] to Elasticsearch", alertId);
     try {
-      XContentBuilder docFieldToUpdate =
+      final XContentBuilder docFieldToUpdate =
           jsonBuilder().startObject().field(AlertIndex.TRIGGERED, alertStatus).endObject();
-      UpdateRequest request =
+      final UpdateRequest request =
           new UpdateRequest()
               .index(ALERT_INDEX_NAME)
               .id(alertId)
@@ -176,14 +176,14 @@ public class AlertWriterES implements AlertWriter {
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       esClient.update(request);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Can't update status of alert [{}]", alertId, e);
     }
   }
 
   /** Delete all alerts that are associated with following report ID */
   @Override
-  public void deleteAlertsForReport(String reportId) {
+  public void deleteAlertsForReport(final String reportId) {
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
         QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId),

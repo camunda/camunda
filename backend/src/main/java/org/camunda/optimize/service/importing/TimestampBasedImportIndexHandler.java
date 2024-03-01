@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import lombok.Getter;
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -26,7 +27,7 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
 
   @Autowired protected ConfigurationService configurationService;
 
-  protected OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
+  @Getter protected OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
 
   public void updateTimestampOfLastEntity(final OffsetDateTime timestamp) {
     final OffsetDateTime backOffWindowStart =
@@ -60,7 +61,7 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
 
   @Override
   public TimestampBasedImportPage getNextPage() {
-    TimestampBasedImportPage page = new TimestampBasedImportPage();
+    final TimestampBasedImportPage page = new TimestampBasedImportPage();
     page.setTimestampOfLastEntity(getTimestampOfLastEntity());
     return page;
   }
@@ -72,19 +73,15 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
     updatePendingLastEntityTimestamp(BEGINNING_OF_TIME);
   }
 
-  public OffsetDateTime getTimestampOfLastEntity() {
-    return timestampOfLastEntity;
-  }
-
   protected abstract void updateLastPersistedEntityTimestamp(OffsetDateTime timestamp);
 
   protected abstract void updateLastImportExecutionTimestamp(OffsetDateTime timestamp);
 
   protected void updatePendingLastEntityTimestamp(final OffsetDateTime timestamp) {
-    this.timestampOfLastEntity = timestamp;
+    timestampOfLastEntity = timestamp;
   }
 
-  protected OffsetDateTime reduceByCurrentTimeBackoff(OffsetDateTime currentDateTime) {
+  protected OffsetDateTime reduceByCurrentTimeBackoff(final OffsetDateTime currentDateTime) {
     return currentDateTime.minus(getTipOfTimeBackoffMilliseconds(), ChronoUnit.MILLIS);
   }
 

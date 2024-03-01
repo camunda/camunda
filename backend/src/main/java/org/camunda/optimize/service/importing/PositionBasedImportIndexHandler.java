@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Scope;
 public abstract class PositionBasedImportIndexHandler
     implements ZeebeImportIndexHandler<PositionBasedImportPage, PositionBasedImportIndexDto> {
 
+  protected ZeebeDataSourceDto dataSource;
   private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
   private OffsetDateTime timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
   private long persistedPositionOfLastEntity = 0;
@@ -35,13 +36,11 @@ public abstract class PositionBasedImportIndexHandler
   private long pendingPositionOfLastEntity = 0;
   private long pendingSequenceOfLastEntity = 0;
   private boolean hasSeenSequenceField = false;
-  protected ZeebeDataSourceDto dataSource;
-
   @Autowired private PositionBasedImportIndexReader positionBasedImportIndexReader;
 
   @Override
   public PositionBasedImportIndexDto getIndexStateDto() {
-    PositionBasedImportIndexDto indexToStore = new PositionBasedImportIndexDto();
+    final PositionBasedImportIndexDto indexToStore = new PositionBasedImportIndexDto();
     indexToStore.setDataSource(dataSource);
     indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
     indexToStore.setPositionOfLastEntity(persistedPositionOfLastEntity);
@@ -57,14 +56,14 @@ public abstract class PositionBasedImportIndexHandler
     final Optional<PositionBasedImportIndexDto> dto =
         positionBasedImportIndexReader.getImportIndex(getDatabaseDocID(), dataSource);
     if (dto.isPresent()) {
-      PositionBasedImportIndexDto loadedImportIndex = dto.get();
+      final PositionBasedImportIndexDto loadedImportIndex = dto.get();
       updateLastPersistedEntityPositionAndSequence(
           loadedImportIndex.getPositionOfLastEntity(), loadedImportIndex.getSequenceOfLastEntity());
       updatePendingLastEntityPositionAndSequence(
           loadedImportIndex.getPositionOfLastEntity(), loadedImportIndex.getSequenceOfLastEntity());
       updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
       updateTimestampOfLastPersistedEntity(loadedImportIndex.getTimestampOfLastEntity());
-      this.hasSeenSequenceField = loadedImportIndex.isHasSeenSequenceField();
+      hasSeenSequenceField = loadedImportIndex.isHasSeenSequenceField();
     }
   }
 
@@ -80,8 +79,13 @@ public abstract class PositionBasedImportIndexHandler
   }
 
   @Override
+  public ZeebeDataSourceDto getDataSource() {
+    return dataSource;
+  }
+
+  @Override
   public PositionBasedImportPage getNextPage() {
-    PositionBasedImportPage page = new PositionBasedImportPage();
+    final PositionBasedImportPage page = new PositionBasedImportPage();
     page.setPosition(pendingPositionOfLastEntity);
     page.setSequence(pendingSequenceOfLastEntity);
     page.setHasSeenSequenceField(hasSeenSequenceField);
@@ -93,16 +97,16 @@ public abstract class PositionBasedImportIndexHandler
 
   public void updateLastPersistedEntityPositionAndSequence(
       final long position, final long sequence) {
-    this.persistedPositionOfLastEntity = position;
-    this.persistedSequenceOfLastEntity = sequence;
+    persistedPositionOfLastEntity = position;
+    persistedSequenceOfLastEntity = sequence;
     if (!hasSeenSequenceField && persistedSequenceOfLastEntity > 0) {
       hasSeenSequenceField = true;
     }
   }
 
   public void updatePendingLastEntityPositionAndSequence(final long position, final long sequence) {
-    this.pendingPositionOfLastEntity = position;
-    this.pendingSequenceOfLastEntity = sequence;
+    pendingPositionOfLastEntity = position;
+    pendingSequenceOfLastEntity = sequence;
     if (!hasSeenSequenceField && pendingSequenceOfLastEntity > 0) {
       log.info(
           "First Zeebe record with sequence field for import type {} has been imported."
@@ -113,10 +117,10 @@ public abstract class PositionBasedImportIndexHandler
   }
 
   public void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
-    this.lastImportExecutionTimestamp = timestamp;
+    lastImportExecutionTimestamp = timestamp;
   }
 
   public void updateTimestampOfLastPersistedEntity(final OffsetDateTime timestamp) {
-    this.timestampOfLastPersistedEntity = timestamp;
+    timestampOfLastPersistedEntity = timestamp;
   }
 }

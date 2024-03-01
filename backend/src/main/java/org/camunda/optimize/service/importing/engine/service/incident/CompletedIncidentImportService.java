@@ -31,9 +31,10 @@ public class CompletedIncidentImportService extends AbstractEngineIncidentImport
     this.completedIncidentWriter = completedIncidentWriter;
   }
 
+  @Override
   protected DatabaseImportJob<IncidentDto> createDatabaseImportJob(
       final List<IncidentDto> incidents, final Runnable callback) {
-    CompletedIncidentDatabaseImportJob incidentImportJob =
+    final CompletedIncidentDatabaseImportJob incidentImportJob =
         new CompletedIncidentDatabaseImportJob(
             completedIncidentWriter, configurationService, callback, databaseClient);
     incidentImportJob.setEntitiesToImport(incidents);

@@ -54,40 +54,40 @@ public interface QueryDSL {
   }
 
   static Query and(Query... queries) {
-    return BoolQuery.of(q -> q.must(nonNull(queries)))._toQuery();
+    return BoolQuery.of(q -> q.must(nonNull(queries))).toQuery();
   }
 
   static Query constantScore(Query query) {
-    return ConstantScoreQuery.of(q -> q.filter(query))._toQuery();
+    return ConstantScoreQuery.of(q -> q.filter(query)).toQuery();
   }
 
   static Query exists(String field) {
-    return ExistsQuery.of(q -> q.field(field))._toQuery();
+    return ExistsQuery.of(q -> q.field(field)).toQuery();
   }
 
   static <A> Query gt(String field, A gt) {
-    return RangeQuery.of(q -> q.field(field).gte(json(gt)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).gte(json(gt))).toQuery();
   }
 
   static <A> Query gteLte(String field, A gte, A lte) {
-    return RangeQuery.of(q -> q.field(field).gte(json(gte)).lte(json(lte)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).gte(json(gte)).lte(json(lte))).toQuery();
   }
 
   static <A> Query gtLte(String field, A gt, A lte) {
-    return RangeQuery.of(q -> q.field(field).gt(json(gt)).lte(json(lte)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).gt(json(gt)).lte(json(lte))).toQuery();
   }
 
   static Query hasChildQuery(String type, Query query) {
     return HasChildQuery.of(q -> q.query(query).type(type).scoreMode(ChildScoreMode.None))
-        ._toQuery();
+        .toQuery();
   }
 
   static Query ids(List<String> ids) {
-    return IdsQuery.of(q -> q.values(nonNull(ids)))._toQuery();
+    return IdsQuery.of(q -> q.values(nonNull(ids))).toQuery();
   }
 
   static Query ids(Collection<String> ids) {
-    return IdsQuery.of(q -> q.values(ids.stream().toList()))._toQuery();
+    return IdsQuery.of(q -> q.values(ids.stream().toList())).toQuery();
   }
 
   static Query ids(String... ids) {
@@ -109,15 +109,15 @@ public interface QueryDSL {
   static <A> Query terms(String field, Collection<A> values, Function<A, FieldValue> toFieldValue) {
     final List<FieldValue> fieldValues = values.stream().map(toFieldValue).toList();
     return TermsQuery.of(q -> q.field(field).terms(TermsQueryField.of(f -> f.value(fieldValues))))
-        ._toQuery();
+        .toQuery();
   }
 
   static <A> Query lt(String field, A lt) {
-    return RangeQuery.of(q -> q.field(field).lte(json(lt)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).lte(json(lt))).toQuery();
   }
 
   static <A> Query lte(String field, A lte) {
-    return RangeQuery.of(q -> q.field(field).lte(json(lte)))._toQuery();
+    return RangeQuery.of(q -> q.field(field).lte(json(lte))).toQuery();
   }
 
   static <A> Query match(
@@ -127,7 +127,7 @@ public interface QueryDSL {
         .query(toFieldValue.apply(value))
         .operator(operator)
         .build()
-        ._toQuery();
+        .toQuery();
   }
 
   static Query match(String field, String value, Operator operator) {
@@ -135,27 +135,27 @@ public interface QueryDSL {
   }
 
   static Query matchAll() {
-    return new MatchAllQuery.Builder().build()._toQuery();
+    return new MatchAllQuery.Builder().build().toQuery();
   }
 
   static Query matchNone() {
-    return new MatchNoneQuery.Builder().build()._toQuery();
+    return new MatchNoneQuery.Builder().build().toQuery();
   }
 
   static Query nested(String path, Query query, ChildScoreMode scoreMode) {
-    return NestedQuery.of(q -> q.path(path).query(query).scoreMode(scoreMode))._toQuery();
+    return NestedQuery.of(q -> q.path(path).query(query).scoreMode(scoreMode)).toQuery();
   }
 
   static Query not(Query... queries) {
-    return BoolQuery.of(q -> q.mustNot(nonNull(queries)))._toQuery();
+    return BoolQuery.of(q -> q.mustNot(nonNull(queries))).toQuery();
   }
 
   static Query or(Query... queries) {
-    return BoolQuery.of(q -> q.should(nonNull(queries)))._toQuery();
+    return BoolQuery.of(q -> q.should(nonNull(queries))).toQuery();
   }
 
   static Query prefix(String field, String value) {
-    return PrefixQuery.of(q -> q.field(field).value(value))._toQuery();
+    return PrefixQuery.of(q -> q.field(field).value(value)).toQuery();
   }
 
   static SortOrder reverseOrder(final SortOrder sortOrder) {
@@ -219,10 +219,10 @@ public interface QueryDSL {
   }
 
   static <A> Query term(String field, A value, Function<A, FieldValue> toFieldValue) {
-    return TermQuery.of(q -> q.field(field).value(toFieldValue.apply(value)))._toQuery();
+    return TermQuery.of(q -> q.field(field).value(toFieldValue.apply(value))).toQuery();
   }
 
   static Query wildcardQuery(String field, String value) {
-    return WildcardQuery.of(q -> q.field(field).value(value))._toQuery();
+    return WildcardQuery.of(q -> q.field(field).value(value)).toQuery();
   }
 }
