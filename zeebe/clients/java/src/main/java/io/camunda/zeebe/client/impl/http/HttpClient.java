@@ -16,15 +16,14 @@
 package io.camunda.zeebe.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.impl.http.JsonAsyncResponseConsumer.JsonResponse;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.concurrent.Future;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.util.TimeValue;
@@ -95,16 +94,37 @@ public final class HttpClient implements AutoCloseable {
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpZeebeFuture<RespT> result) {
-    final URI target = buildRequestURI(path);
-    final SimpleHttpRequest request = SimpleRequestBuilder.get(target).build();
-    request.setConfig(requestConfig);
-    final JsonAsyncResponseConsumer<HttpT> responseConsumer =
-        new JsonAsyncResponseConsumer<>(jsonMapper, responseType, maxMessageSize);
-    final JsonCallback<HttpT, RespT> callback = new JsonCallback<>(result, transformer);
+    sendRequest(path, null, requestConfig, responseType, transformer, result);
+  }
 
-    final Future<JsonResponse<HttpT>> httpFuture =
-        client.execute(SimpleRequestProducer.create(request), responseConsumer, callback);
-    result.transportFuture(httpFuture);
+  public <HttpT, RespT> void post(
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
+      final HttpZeebeFuture<RespT> result) {
+    sendRequest(path, body, requestConfig, Void.class, r -> null, result);
+  }
+
+  private <HttpT, RespT> void sendRequest(
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpZeebeFuture<RespT> result) {
+    final URI target = buildRequestURI(path);
+    final SimpleRequestBuilder requestBuilder = SimpleRequestBuilder.post(target);
+    if (body != null) {
+      requestBuilder.setBody(body, ContentType.APPLICATION_JSON);
+    }
+    final SimpleHttpRequest request = requestBuilder.build();
+    request.setConfig(requestConfig);
+
+    result.transportFuture(
+        client.execute(
+            SimpleRequestProducer.create(request),
+            new JsonAsyncResponseConsumer<>(jsonMapper, responseType, maxMessageSize),
+            new JsonCallback<>(result, transformer)));
   }
 
   private URI buildRequestURI(final String path) {
