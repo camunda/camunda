@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
+import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
@@ -486,4 +487,30 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
   CompleteUserTaskCommandStep1 newUserTaskCompleteCommand(long userTaskKey);
+
+  /**
+   * Command to assign a user task.
+   *
+   * <pre>
+   * long userTaskKey = ..;
+   *
+   * zeebeClient
+   *  .newUserTaskAssignCommand(userTaskKey)
+   *  .assignee(newAssignee)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only send via REST over HTTP, not via gRPC <br>
+   * <br>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. Until this warning is removed, anything described
+   * below may not yet have taken effect, and the interface and its description are subject to
+   * change.</strong>
+   *
+   * @param userTaskKey the key of the user tasks
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  AssignUserTaskCommandStep1 newUserTaskAssignCommand(long userTaskKey);
 }
