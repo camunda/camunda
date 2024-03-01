@@ -24,8 +24,13 @@ import org.elasticsearch.client.core.CountResponse;
 @Slf4j
 public class Upgrade312To313PlanFactory implements UpgradePlanFactory {
 
+  private static String addOptimizeProfileScript(final OptimizeProfile optimizeProfile) {
+    return String.format("ctx._source.optimizeProfile = '%s';\n", optimizeProfile.getId());
+  }
+
   @Override
-  public UpgradePlan createUpgradePlan(UpgradeExecutionDependencies upgradeExecutionDependencies) {
+  public UpgradePlan createUpgradePlan(
+      final UpgradeExecutionDependencies upgradeExecutionDependencies) {
     return UpgradePlanBuilder.createUpgradePlan()
         .fromVersion("3.12")
         .toVersion("3.13.0")
@@ -34,12 +39,12 @@ public class Upgrade312To313PlanFactory implements UpgradePlanFactory {
   }
 
   private UpgradeStep addOptimizeProfileFieldToMetadataIndex(
-      UpgradeExecutionDependencies upgradeExecutionDependencies) {
-    OptimizeProfile optimizeProfile;
+      final UpgradeExecutionDependencies upgradeExecutionDependencies) {
+    final OptimizeProfile optimizeProfile;
     if (isC8Instance(upgradeExecutionDependencies)) {
       if (StringUtils.isBlank(
           upgradeExecutionDependencies
-              .getConfigurationService()
+              .configurationService()
               .getOnboarding()
               .getProperties()
               .getClusterId())) {
@@ -57,23 +62,19 @@ public class Upgrade312To313PlanFactory implements UpgradePlanFactory {
     return new UpdateIndexStep(new MetadataIndexES(), addOptimizeProfileScript(optimizeProfile));
   }
 
-  private static String addOptimizeProfileScript(OptimizeProfile optimizeProfile) {
-    return String.format("ctx._source.optimizeProfile = '%s';\n", optimizeProfile.getId());
-  }
-
   private boolean isC8Instance(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
-    return upgradeExecutionDependencies.getConfigurationService().getConfiguredZeebe().isEnabled()
+    return upgradeExecutionDependencies.configurationService().getConfiguredZeebe().isEnabled()
         || isC8ImportDataPresent(upgradeExecutionDependencies);
   }
 
   private boolean isC8ImportDataPresent(
       final UpgradeExecutionDependencies upgradeExecutionDependencies) {
-    CountRequest countRequest = new CountRequest().indices(POSITION_BASED_IMPORT_INDEX_NAME);
+    final CountRequest countRequest = new CountRequest().indices(POSITION_BASED_IMPORT_INDEX_NAME);
 
-    CountResponse countResponse;
+    final CountResponse countResponse;
     try {
-      countResponse = upgradeExecutionDependencies.getEsClient().count(countRequest);
-    } catch (IOException e) {
+      countResponse = upgradeExecutionDependencies.esClient().count(countRequest);
+    } catch (final IOException e) {
       final String reason = "Was not able to determine existence of imported C8 data.";
       log.error(reason, e);
       throw new UpgradeRuntimeException(reason, e);

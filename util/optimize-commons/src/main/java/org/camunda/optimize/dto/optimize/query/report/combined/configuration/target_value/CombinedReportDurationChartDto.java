@@ -10,12 +10,14 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class CombinedReportDurationChartDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
@@ -23,14 +25,13 @@ public class CombinedReportDurationChartDto {
   private String value = "2";
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof CombinedReportDurationChartDto)) {
+    if (!(o instanceof final CombinedReportDurationChartDto that)) {
       return false;
     }
-    CombinedReportDurationChartDto that = (CombinedReportDurationChartDto) o;
     return unit == that.unit
         && Objects.equals(isBelow, that.isBelow)
         && Objects.equals(value, that.value);

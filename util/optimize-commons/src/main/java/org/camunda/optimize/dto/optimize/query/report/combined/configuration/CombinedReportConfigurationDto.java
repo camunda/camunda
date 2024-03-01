@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportTargetValueDto;
 
 @Getter
 @Setter
+@ToString
 public class CombinedReportConfigurationDto {
 
   private Boolean pointMarkers = true;
@@ -32,14 +34,13 @@ public class CombinedReportConfigurationDto {
   private CombinedReportTargetValueDto targetValue = new CombinedReportTargetValueDto();
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof CombinedReportConfigurationDto)) {
+    if (!(o instanceof final CombinedReportConfigurationDto that)) {
       return false;
     }
-    CombinedReportConfigurationDto that = (CombinedReportConfigurationDto) o;
     return Objects.equals(pointMarkers, that.pointMarkers)
         && Objects.equals(hideRelativeValue, that.hideRelativeValue)
         && Objects.equals(hideAbsoluteValue, that.hideAbsoluteValue)

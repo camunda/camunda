@@ -7,9 +7,11 @@ package org.camunda.optimize.service.db.es.report;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class MinMaxStatDto {
 
   private double min;
@@ -21,8 +23,8 @@ public class MinMaxStatDto {
   public MinMaxStatDto(final double min, final double max) {
     this.min = min;
     this.max = max;
-    this.minAsString = Double.toString(min);
-    this.maxAsString = Double.toString(max);
+    minAsString = Double.toString(min);
+    maxAsString = Double.toString(max);
   }
 
   public MinMaxStatDto(

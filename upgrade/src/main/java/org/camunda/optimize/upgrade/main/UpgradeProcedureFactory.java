@@ -17,7 +17,7 @@ import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 public class UpgradeProcedureFactory {
   public static UpgradeProcedure create(final UpgradeExecutionDependencies upgradeDependencies) {
     return new UpgradeProcedure(
-        upgradeDependencies.getEsClient(),
+        upgradeDependencies.esClient(),
         new UpgradeValidationService(),
         createSchemaUpgradeClient(upgradeDependencies),
         new UpgradeStepLogService());

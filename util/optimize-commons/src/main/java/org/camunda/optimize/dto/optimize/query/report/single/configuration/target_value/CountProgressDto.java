@@ -8,11 +8,13 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration.targ
 import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
 @Getter
 @Setter
 @FieldNameConstants
+@ToString
 public class CountProgressDto {
 
   private String baseline = "0";
@@ -20,14 +22,13 @@ public class CountProgressDto {
   private Boolean isBelow = false;
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof CountProgressDto)) {
+    if (!(o instanceof final CountProgressDto that)) {
       return false;
     }
-    CountProgressDto that = (CountProgressDto) o;
     return Objects.equals(baseline, that.baseline)
         && Objects.equals(isBelow, that.isBelow)
         && Objects.equals(target, that.target);

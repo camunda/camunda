@@ -8,9 +8,11 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration.targ
 import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class SingleReportDurationChartDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
@@ -18,14 +20,13 @@ public class SingleReportDurationChartDto {
   private String value = "2";
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof SingleReportDurationChartDto)) {
+    if (!(o instanceof final SingleReportDurationChartDto that)) {
       return false;
     }
-    SingleReportDurationChartDto that = (SingleReportDurationChartDto) o;
     return unit == that.unit
         && Objects.equals(isBelow, that.isBelow)
         && Objects.equals(value, that.value);

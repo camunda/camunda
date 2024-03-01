@@ -8,25 +8,26 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration.targ
 import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
 @Getter
 @Setter
 @FieldNameConstants
+@ToString
 public class DurationProgressDto {
 
   private BaseLineDto baseline = new BaseLineDto();
   private TargetDto target = new TargetDto();
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof DurationProgressDto)) {
+    if (!(o instanceof final DurationProgressDto that)) {
       return false;
     }
-    DurationProgressDto that = (DurationProgressDto) o;
     return Objects.equals(baseline, that.baseline) && Objects.equals(target, that.target);
   }
 

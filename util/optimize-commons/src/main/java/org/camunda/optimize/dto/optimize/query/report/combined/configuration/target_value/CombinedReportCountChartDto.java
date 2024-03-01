@@ -10,25 +10,26 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class CombinedReportCountChartDto {
 
   private Boolean isBelow = false;
   private String value = "100";
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof CombinedReportCountChartDto)) {
+    if (!(o instanceof final CombinedReportCountChartDto that)) {
       return false;
     }
-    CombinedReportCountChartDto that = (CombinedReportCountChartDto) o;
     return Objects.equals(isBelow, that.isBelow) && Objects.equals(value, that.value);
   }
 

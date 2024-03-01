@@ -10,11 +10,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class CombinedReportTargetValueDto {
 
   private CombinedReportCountChartDto countChart = new CombinedReportCountChartDto();
@@ -22,14 +24,13 @@ public class CombinedReportTargetValueDto {
   private CombinedReportDurationChartDto durationChart = new CombinedReportDurationChartDto();
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof CombinedReportTargetValueDto)) {
+    if (!(o instanceof final CombinedReportTargetValueDto that)) {
       return false;
     }
-    CombinedReportTargetValueDto that = (CombinedReportTargetValueDto) o;
     return Objects.equals(countChart, that.countChart)
         && Objects.equals(active, that.active)
         && Objects.equals(durationChart, that.durationChart);

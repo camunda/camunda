@@ -8,23 +8,24 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration.targ
 import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class BaseLineDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
   private String value = "0";
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof BaseLineDto)) {
+    if (!(o instanceof final BaseLineDto that)) {
       return false;
     }
-    BaseLineDto that = (BaseLineDto) o;
     return unit == that.unit && Objects.equals(value, that.value);
   }
 

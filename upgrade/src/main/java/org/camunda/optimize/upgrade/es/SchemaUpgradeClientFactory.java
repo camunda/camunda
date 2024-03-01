@@ -25,10 +25,10 @@ public class SchemaUpgradeClientFactory {
   public static SchemaUpgradeClient createSchemaUpgradeClient(
       final UpgradeExecutionDependencies upgradeDependencies) {
     return createSchemaUpgradeClient(
-        upgradeDependencies.getMetadataService(),
-        upgradeDependencies.getConfigurationService(),
-        upgradeDependencies.getIndexNameService(),
-        upgradeDependencies.getEsClient());
+        upgradeDependencies.metadataService(),
+        upgradeDependencies.configurationService(),
+        upgradeDependencies.indexNameService(),
+        upgradeDependencies.esClient());
   }
 
   public static SchemaUpgradeClient createSchemaUpgradeClient(
@@ -36,7 +36,7 @@ public class SchemaUpgradeClientFactory {
       final ConfigurationService configurationService,
       final OptimizeIndexNameService indexNameService,
       final OptimizeElasticsearchClient esClient) {
-    MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
+    final MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
     // TODO remove call to convert list with OPT-7238
     return createSchemaUpgradeClient(
         new ElasticSearchSchemaManager(
@@ -66,7 +66,7 @@ public class SchemaUpgradeClientFactory {
   // TODO delete with OPT-7238
   @SuppressWarnings("unchecked") // Suppress unchecked cast warnings
   private static List<IndexMappingCreator<XContentBuilder>> convertList(
-      List<IndexMappingCreator<?>> wildcardList) {
+      final List<IndexMappingCreator<?>> wildcardList) {
     return wildcardList.stream()
         .map(creator -> (IndexMappingCreator<XContentBuilder>) creator) // Unchecked cast
         .toList();
