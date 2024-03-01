@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +20,8 @@ public class ExecutableFlowNode extends AbstractFlowElement {
 
   private Optional<Expression> inputMappings = Optional.empty();
   private Optional<Expression> outputMappings = Optional.empty();
+
+  private final List<ExecutionListener> executionListeners = new ArrayList<>();
 
   public ExecutableFlowNode(final String id) {
     super(id);
@@ -54,5 +57,29 @@ public class ExecutableFlowNode extends AbstractFlowElement {
 
   public void setOutputMappings(final Expression outputMappings) {
     this.outputMappings = Optional.of(outputMappings);
+  }
+
+  public void addListener(
+      final ExecutionListenerEventType eventType, final Expression type, final Expression retries) {
+    final ExecutionListener listener = new ExecutionListener();
+    listener.setEventType(eventType);
+
+    final JobWorkerProperties jobWorkerProperties = new JobWorkerProperties();
+    jobWorkerProperties.setType(type);
+    jobWorkerProperties.setRetries(retries);
+    listener.setJobWorkerProperties(jobWorkerProperties);
+    executionListeners.add(listener);
+  }
+
+  public List<ExecutionListener> getStartExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ExecutionListenerEventType.START)
+        .toList();
+  }
+
+  public List<ExecutionListener> getEndExecutionListeners() {
+    return executionListeners.stream()
+        .filter(el -> el.getEventType() == ExecutionListenerEventType.END)
+        .toList();
   }
 }

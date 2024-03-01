@@ -23,11 +23,15 @@ import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
  * @author Sebastian Menski
  */
 public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBuilder<B>>
-    extends AbstractJobWorkerTaskBuilder<B, ServiceTask> {
+    extends AbstractJobWorkerTaskBuilder<B, ServiceTask>
+    implements ZeebeExecutionListenersBuilder<B> {
+
+  private final ZeebeExecutionListenersBuilder<B> zeebeExecutionListenersBuilder;
 
   protected AbstractServiceTaskBuilder(
       final BpmnModelInstance modelInstance, final ServiceTask element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
+    zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
   }
 
   /**
@@ -39,5 +43,25 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
   public B implementation(final String implementation) {
     element.setImplementation(implementation);
     return myself;
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type);
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type);
   }
 }
