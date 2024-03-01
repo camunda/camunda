@@ -450,6 +450,7 @@
               </includes>
               <excludes>
                 <exclude>**/target/**/*.md</exclude>
+                <exclude>**/node_modules/**/*.md</exclude>
               </excludes>
               <flexmark></flexmark>
             </markdown>
