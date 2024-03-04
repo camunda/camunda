@@ -153,6 +153,27 @@ public final class ZeebeAssertHelper {
     consumer.accept(userTask);
   }
 
+  public static void assertUserTaskAssigned(
+      final long userTaskKey, final Consumer<UserTaskRecordValue> consumer) {
+    assertUserTaskAssigned(userTaskKey, 1, consumer);
+  }
+
+  public static void assertUserTaskAssigned(
+      final long userTaskKey,
+      final long expectedRecords,
+      final Consumer<UserTaskRecordValue> consumer) {
+    final UserTaskRecordValue userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .filter(record -> record.getKey() == userTaskKey)
+            .limit(expectedRecords)
+            .map(Record::getValue)
+            .toList()
+            .getLast();
+
+    assertThat(userTask).isNotNull();
+    consumer.accept(userTask);
+  }
+
   public static void assertElementCompleted(final String bpmnId, final String activity) {
     assertElementCompleted(bpmnId, activity, (e) -> {});
   }
