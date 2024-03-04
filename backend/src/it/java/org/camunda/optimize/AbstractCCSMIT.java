@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize;
 
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 
@@ -307,6 +308,23 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     final ZeebeRecordDto startOfElement =
         eventsForElement.stream()
             .filter(event -> event.getIntent().equals(intent))
+            .findFirst()
+            .orElseThrow(eventNotFoundExceptionSupplier);
+    return OffsetDateTime.ofInstant(
+        Instant.ofEpochMilli(startOfElement.getTimestamp()), ZoneId.systemDefault());
+  }
+
+  protected OffsetDateTime getTimestampForZeebeAssignEvents(
+      final List<? extends ZeebeRecordDto> eventsForElement, final String assigneeId) {
+    final ZeebeRecordDto startOfElement =
+        eventsForElement.stream()
+            .filter(
+                event ->
+                    event.getIntent().equals(ASSIGNED)
+                        && ((ZeebeUserTaskRecordDto) event)
+                            .getValue()
+                            .getAssignee()
+                            .equals(assigneeId))
             .findFirst()
             .orElseThrow(eventNotFoundExceptionSupplier);
     return OffsetDateTime.ofInstant(
