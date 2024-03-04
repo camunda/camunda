@@ -2115,6 +2115,68 @@ public class CompensationEventExecutionTest {
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Test
+  public void shouldCompensateSubprocess() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                subprocess ->
+                    subprocess
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask("A", task -> task.zeebeJobType("A"))
+                        .endEvent())
+            .boundaryEvent()
+            .compensation(compensation -> compensation.serviceTask("B").zeebeJobType("B"))
+            .moveToActivity("subprocess")
+            .endEvent()
+            .compensateEventDefinition()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getBpmnEventType(),
+            Record::getIntent)
+        .containsSubsequence(
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.END_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SERVICE_TASK,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.END_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                BpmnElementType.PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
     final var resourceAsStream = getClass().getResourceAsStream(classpath);
     return Bpmn.readModelFromStream(resourceAsStream);
