@@ -12,14 +12,12 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collection;
-import java.util.Set;
 
 public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
@@ -95,7 +93,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .partitionMessagingService(context.getMessagingService())
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)
-            .positionsToSkip(getPositionsToSkip(context));
+            .positionsToSkip(context.getBrokerCfg().getExporting().getSkipRecords());
 
     final ExporterDirector director = new ExporterDirector(exporterCtx, !context.shouldExport());
 
@@ -115,23 +113,5 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           }
         });
     return startFuture;
-  }
-
-  private Set<Long> getPositionsToSkip(final PartitionTransitionContext context) {
-    // Since the filtering of the positions to skip is done at the ExporterDirector level, we need
-    // to collect all the positions to skip from all the exporter configurations.
-    // This means that positions to skip in exporter A will also be skipped in exporter B.
-    final Set<Long> positionsToSkip = new java.util.HashSet<>(Set.of());
-    context.getExportedDescriptors().stream()
-        .map(ExporterDescriptor::getId)
-        .forEach(
-            id -> {
-              final ExporterCfg exporterCfg = context.getBrokerCfg().getExporters().get(id);
-              if (exporterCfg != null) {
-                positionsToSkip.addAll(exporterCfg.getSkipRecords());
-              }
-            });
-
-    return positionsToSkip;
   }
 }

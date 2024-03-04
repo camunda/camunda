@@ -23,6 +23,7 @@ public class BrokerCfg {
   private ThreadsCfg threads = new ThreadsCfg();
   private DataCfg data = new DataCfg();
   private Map<String, ExporterCfg> exporters = new HashMap<>();
+  private ExportingCfg exporting = new ExportingCfg();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private BackpressureCfg backpressure = new BackpressureCfg();
   private ProcessingCfg processingCfg = new ProcessingCfg();
@@ -99,6 +100,14 @@ public class BrokerCfg {
     this.exporters = exporters;
   }
 
+  public ExportingCfg getExporting() {
+    return exporting;
+  }
+
+  public void setExporting(final ExportingCfg exporting) {
+    this.exporting = exporting;
+  }
+
   public EmbeddedGatewayCfg getGateway() {
     return gateway;
   }
@@ -154,6 +163,8 @@ public class BrokerCfg {
         + data
         + ", exporters="
         + exporters
+        + ", exporting="
+        + exporting
         + ", gateway="
         + gateway
         + ", backpressure="
