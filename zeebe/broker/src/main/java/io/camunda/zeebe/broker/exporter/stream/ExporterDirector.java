@@ -282,7 +282,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       container.configureExporter();
     }
 
-    eventFilter = createEventFilter(containers).and(positionsToSkipFilter);
+    eventFilter = positionsToSkipFilter.and(createEventFilter(containers));
     LOG.debug("Set event filter for exporters: {}", eventFilter);
   }
 
