@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
@@ -74,6 +73,7 @@ public class BpmnCompensationSubscriptionBehaviour {
               .setCompensableActivityScopeId(
                   BufferUtil.bufferAsString(element.getFlowScope().getId()))
               .setCompensationHandlerId(compensationHandlerId)
+              .setCompensableActivityInstanceKey(context.getElementInstanceKey())
               .setCompensableActivityScopeKey(context.getFlowScopeKey());
       stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
     }
@@ -134,7 +134,8 @@ public class BpmnCompensationSubscriptionBehaviour {
     // use recursions here
     // starting from throw event level scope to bottom and triggering the handler
     triggerHandlerTopToBottom(context, subscriptionsOfScopes, subs, context.getFlowScopeKey());
-    return true;
+    return notTriggeredSubscriptions.stream()
+        .anyMatch(subscription -> subscription.getRecord().getCompensableActivityScopeKey() == context.getFlowScopeKey());
   }
 
   public void completeCompensationHandler(
@@ -155,7 +156,7 @@ public class BpmnCompensationSubscriptionBehaviour {
                 completeSubprocessSubscription(
                     tenantId,
                     processInstanceKey,
-                    compensation.getRecord().getCompensableActivityInstanceKey());
+                    compensation.getRecord().getCompensableActivityScopeKey());
 
                 final var compensations =
                     compensationSubscriptionState.findSubscriptionsByThrowEventInstanceKey(
@@ -372,7 +373,9 @@ public class BpmnCompensationSubscriptionBehaviour {
             .noneMatch(
                 compensationSubscription ->
                     scopeInstanceKey
-                            == compensationSubscription.getRecord().getCompensableActivityInstanceKey()
+                            == compensationSubscription
+                                .getRecord()
+                                .getCompensableActivityScopeKey()
                         && !compensationSubscription
                             .getRecord()
                             .getCompensationHandlerId()
@@ -386,7 +389,8 @@ public class BpmnCompensationSubscriptionBehaviour {
         compensations.stream()
             .filter(
                 subscription ->
-                    scopeInstanceKey == subscription.getRecord().getCompensableActivityInstanceKey())
+                    scopeInstanceKey
+                        == subscription.getRecord().getCompensableActivityInstanceKey())
             .filter(subscription -> subscription.getRecord().getCompensationHandlerId().isEmpty())
             .findFirst();
 
@@ -398,18 +402,31 @@ public class BpmnCompensationSubscriptionBehaviour {
                 subscription.getRecord()));
   }
 
-  private void triggerHandlerTopToBottom(final BpmnElementContext context, final Collection<CompensationSubscription> subscriptionOfScopes, final Map<Long, List<CompensationSubscription>> subs, final long compensableActivityInstanceKey) {
-    final Optional<CompensationSubscription> childSubscriptionOpt = subscriptionOfScopes.stream().filter(subscription -> compensableActivityInstanceKey == subscription.getRecord().getCompensableActivityScopeKey()).findFirst();
-    if (childSubscriptionOpt.isEmpty()) {
-      return;
-    }
-    final var childSubscriptionRecord = childSubscriptionOpt.get();
-    triggerHandlerTopToBottom(context, subscriptionOfScopes, subs, childSubscriptionRecord.getRecord().getCompensableActivityInstanceKey());
-    appendCompensationSubscriptionTriggerEvent(childSubscriptionRecord, context);
-    triggerCompensationForScope(
-        context,
-        subs.get(childSubscriptionRecord.getRecord().getCompensableActivityInstanceKey()),
-        childSubscriptionRecord.getRecord().getCompensableActivityId(),
-        childSubscriptionRecord.getRecord().getCompensableActivityInstanceKey());
+  private void triggerHandlerTopToBottom(
+      final BpmnElementContext context,
+      final Collection<CompensationSubscription> subscriptionOfScopes,
+      final Map<Long, List<CompensationSubscription>> subs,
+      final long compensableActivityInstanceKey) {
+
+        subscriptionOfScopes.stream()
+            .filter(
+                subscription ->
+                    compensableActivityInstanceKey
+                        == subscription.getRecord().getCompensableActivityScopeKey())
+                .forEach(childSubscriptionRecord -> {
+
+                  triggerHandlerTopToBottom(
+                      context,
+                      subscriptionOfScopes,
+                      subs,
+                      childSubscriptionRecord.getRecord().getCompensableActivityInstanceKey());
+                  appendCompensationSubscriptionTriggerEvent(childSubscriptionRecord, context);
+                  triggerCompensationForScope(
+                      context,
+                      subs.get(childSubscriptionRecord.getRecord().getCompensableActivityInstanceKey()),
+                      childSubscriptionRecord.getRecord().getCompensableActivityId(),
+                      childSubscriptionRecord.getRecord().getCompensableActivityInstanceKey());
+                });
+
   }
 }
