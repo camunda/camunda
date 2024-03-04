@@ -297,7 +297,7 @@ jobs:
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
       - name: Verify Docker image
         env:
-          DATE: ${{ steps.build-docker.outputs.date }}
+          DATE: ${{ steps.build-zeebe-docker.outputs.date }}
           REVISION: ${{ needs.release.outputs.releaseTagRevision }}
           VERSION: ${{ inputs.releaseVersion }}
         run: |
