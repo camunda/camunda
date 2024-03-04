@@ -19,13 +19,13 @@ class ExporterConfigurationTest {
   void shouldSetSkipPositionsFromEnvironment() {
     // given
     final var environment = new HashMap<String, String>();
-    environment.put("zeebe.broker.exporters.elasticsearch.skipRecords", "1, 2, 3 , 3, 2, 1, 0");
+    environment.put("zeebe.broker.exporting.skipRecords", "1, 2, 3 , 3, 2, 1, 0");
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("exporters", environment);
-    final ExporterCfg exporterCfg = cfg.getExporters().get("elasticsearch");
+    final ExportingCfg exportingCfg = cfg.getExporting();
 
     // then
-    assertThat(exporterCfg.getSkipRecords()).isEqualTo(Set.of(1L, 2L, 3L, 0L));
+    assertThat(exportingCfg.getSkipRecords()).isEqualTo(Set.of(1L, 2L, 3L, 0L));
   }
 
   @Test
@@ -35,32 +35,31 @@ class ExporterConfigurationTest {
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("exporters", environment);
-    final ExporterCfg exporterCfg = cfg.getExporters().get("elasticsearch");
-
+    final ExportingCfg exportingCfg = cfg.getExporting();
     // then
-    assertThat(exporterCfg.getSkipRecords()).isEqualTo(Set.of(112233L, 445566L));
+    assertThat(exportingCfg.getSkipRecords()).isEqualTo(Set.of(112233L, 445566L));
   }
 
   @Test
   void shouldSetSkipPositions() {
     // given
-    final ExporterCfg exporterCfg = new ExporterCfg();
-    exporterCfg.setSkipRecords(Set.of(1L, 2L));
+    final ExportingCfg exportingCfg = new ExportingCfg();
+    exportingCfg.setSkipRecords(Set.of(1L, 2L));
 
     // then
-    assertThat(exporterCfg.getSkipRecords()).isEqualTo(Set.of(1L, 2L));
+    assertThat(exportingCfg.getSkipRecords()).isEqualTo(Set.of(1L, 2L));
   }
 
   @Test
   void shouldSetSkipPositionsForOtherExporters() {
     // given
     final var environment = new HashMap<String, String>();
-    environment.put("zeebe.broker.exporters.openSearch.skipRecords", "1, 2, 3");
+    environment.put("zeebe.broker.exporting.skipRecords", "1, 2, 3");
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("exporters", environment);
-    final ExporterCfg exporterCfg = cfg.getExporters().get("openSearch");
+    final ExportingCfg exportingCfg = cfg.getExporting();
 
     // then
-    assertThat(exporterCfg.getSkipRecords()).isEqualTo(Set.of(1L, 2L, 3L));
+    assertThat(exportingCfg.getSkipRecords()).isEqualTo(Set.of(1L, 2L, 3L));
   }
 }
