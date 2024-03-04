@@ -34,8 +34,6 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class BpmnCompensationSubscriptionBehaviour {
 
@@ -119,7 +117,7 @@ public class BpmnCompensationSubscriptionBehaviour {
                 context.getTenantId(), context.getProcessInstanceKey())
             .stream()
             .filter(not(BpmnCompensationSubscriptionBehaviour::isCompensationTriggered))
-            .collect(Collectors.toSet());
+            .toList();
 
     if (hasCompensationSubscriptionInScope(subscriptions, context.getFlowScopeKey())) {
       // trigger the compensation in the current scope and propagate to the subprocesses
@@ -132,7 +130,7 @@ public class BpmnCompensationSubscriptionBehaviour {
   }
 
   private static boolean hasCompensationSubscriptionInScope(
-      final Set<CompensationSubscription> subscriptions, final long scopeKey) {
+      final Collection<CompensationSubscription> subscriptions, final long scopeKey) {
     return subscriptions.stream()
         .anyMatch(
             subscription -> subscription.getRecord().getCompensableActivityScopeKey() == scopeKey);

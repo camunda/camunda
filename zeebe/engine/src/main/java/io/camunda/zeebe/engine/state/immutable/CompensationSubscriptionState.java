@@ -8,19 +8,19 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.compensation.CompensationSubscription;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public interface CompensationSubscriptionState {
 
   CompensationSubscription get(String tenantId, long processInstanceKey, long key);
 
-  Set<CompensationSubscription> findSubscriptionsByProcessInstanceKey(
+  List<CompensationSubscription> findSubscriptionsByProcessInstanceKey(
       String tenantId, long processInstanceKey);
 
   Optional<CompensationSubscription> findSubscriptionByCompensationHandlerId(
       String tenantId, long processInstanceKey, String compensationHandlerId);
 
-  Set<CompensationSubscription> findSubscriptionsByThrowEventInstanceKey(
+  List<CompensationSubscription> findSubscriptionsByThrowEventInstanceKey(
       String tenantId, long processInstanceKey, long throwEventInstanceKey);
 }
