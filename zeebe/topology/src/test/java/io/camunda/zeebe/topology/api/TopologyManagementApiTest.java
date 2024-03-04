@@ -243,6 +243,29 @@ final class TopologyManagementApiTest {
   }
 
   @Test
+  void shouldRejectScaleRequestWithInvalidReplicationFactor() {
+    // given
+    final var request =
+        new TopologyManagementRequest.ScaleRequest(Set.of(id0, id1), Optional.of(0), false);
+    final ClusterTopology currentTopology =
+        initialTopology
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1)))
+            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1)));
+
+    recordingCoordinator.setCurrentTopology(currentTopology);
+
+    // when
+    final var changeStatus = clientApi.scaleMembers(request).join();
+
+    // then
+    EitherAssert.assertThat(changeStatus)
+        .isLeft()
+        .left()
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.INVALID_REQUEST);
+  }
+
+  @Test
   void shouldReduceReplicationFactorWithoutScalingDown() {
     // given
     final var request =
