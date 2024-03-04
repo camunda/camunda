@@ -10,5 +10,6 @@ public enum TaskState {
   CREATED,
   COMPLETED,
   CANCELED,
-  MIGRATED
+  MIGRATED,
+  FAILED
 }

@@ -183,6 +183,18 @@ public class JobZeebeRecordProcessorElasticSearch {
           .setFlowNodeBpmnId(recordValue.getElementId())
           .setBpmnProcessId(recordValue.getBpmnProcessId())
           .setProcessDefinitionId(processDefinitionId);
+    } else if (taskState.equals(Intent.FAILED.name())) {
+      if (recordValue.getRetries() > 0) {
+        if (recordValue.getRetryBackoff() > 0) {
+          entity.setState(TaskState.FAILED);
+        } else {
+          entity.setState(TaskState.CREATED);
+        }
+      } else {
+        entity.setState(TaskState.FAILED);
+      }
+    } else if (taskState.equals(Intent.RECURRED_AFTER_BACKOFF.name())) {
+      entity.setState(TaskState.CREATED);
     } else {
       LOGGER.warn(String.format("TaskState %s not supported", taskState));
     }
@@ -199,7 +211,9 @@ public class JobZeebeRecordProcessorElasticSearch {
         updateFields.put(TaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
         updateFields.put(TaskTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
       } else {
-        updateFields.put(TaskTemplate.STATE, entity.getState());
+        if (entity.getState() != null) {
+          updateFields.put(TaskTemplate.STATE, entity.getState());
+        }
         updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
       }
       // format date fields properly

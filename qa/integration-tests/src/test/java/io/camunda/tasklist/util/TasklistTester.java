@@ -229,6 +229,26 @@ public class TasklistTester {
     return this;
   }
 
+  public TasklistTester createFailedTasks(
+      String processId, String flowNodeBpmnId, int numberOfTasks, int numberOfRetries)
+      throws IOException {
+    createAndDeploySimpleProcess(processId, flowNodeBpmnId).waitUntil().processIsDeployed();
+
+    for (int i = 0; i < numberOfTasks; i++) {
+      startProcessInstance(processId).waitUntil().taskIsCreated(flowNodeBpmnId);
+    }
+
+    ZeebeTestUtil.failTaskWithRetries(
+        zeebeClient,
+        Protocol.USER_TASK_JOB_TYPE,
+        TestUtil.createRandomString(10),
+        numberOfTasks,
+        numberOfRetries,
+        null);
+
+    return this;
+  }
+
   public GraphQLResponse getByQueryResource(String resource) throws IOException {
     graphQLResponse = graphQLTestTemplate.postForResource(resource);
     return graphQLResponse;
@@ -499,6 +519,14 @@ public class TasklistTester {
         taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CANCELED);
+    return this;
+  }
+
+  public TasklistTester taskIsFailed(String flowNodeBpmnId) {
+    databaseTestExtension.processAllRecordsAndWait(
+        taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
+    // update taskId
+    resolveTaskId(flowNodeBpmnId, TaskState.FAILED);
     return this;
   }
 

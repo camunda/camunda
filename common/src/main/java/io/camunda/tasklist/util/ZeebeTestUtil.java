@@ -208,6 +208,29 @@ public abstract class ZeebeTestUtil {
         .get(0);
   }
 
+  public static Long failTaskWithRetries(
+      ZeebeClient client,
+      String jobType,
+      String workerName,
+      int numberOfJobs,
+      int numberOfRetries,
+      String errorMessage) {
+    return handleTasks(
+            client,
+            jobType,
+            workerName,
+            numberOfJobs,
+            ((jobClient, job) -> {
+              final FailJobCommandStep2 failCommand =
+                  jobClient.newFailCommand(job.getKey()).retries(numberOfRetries);
+              if (errorMessage != null) {
+                failCommand.errorMessage(errorMessage);
+              }
+              failCommand.send().join();
+            }))
+        .get(0);
+  }
+
   public static Long throwErrorInTask(
       ZeebeClient client,
       String jobType,

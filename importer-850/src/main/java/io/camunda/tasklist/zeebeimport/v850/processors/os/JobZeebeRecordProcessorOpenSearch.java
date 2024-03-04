@@ -179,6 +179,18 @@ public class JobZeebeRecordProcessorOpenSearch {
           .setFlowNodeBpmnId(recordValue.getElementId())
           .setBpmnProcessId(recordValue.getBpmnProcessId())
           .setProcessDefinitionId(processDefinitionId);
+    } else if (taskState.equals(Intent.FAILED.name())) {
+      if (recordValue.getRetries() > 0) {
+        if (recordValue.getRetryBackoff() > 0) {
+          entity.setState(TaskState.FAILED);
+        } else {
+          entity.setState(TaskState.CREATED);
+        }
+      } else {
+        entity.setState(TaskState.FAILED);
+      }
+    } else if (taskState.equals(Intent.RECURRED_AFTER_BACKOFF.name())) {
+      entity.setState(TaskState.CREATED);
     } else {
       LOGGER.warn(String.format("TaskState %s not supported", taskState));
     }

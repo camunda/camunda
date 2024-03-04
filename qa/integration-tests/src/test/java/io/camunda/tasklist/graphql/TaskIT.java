@@ -10,37 +10,37 @@ import static io.camunda.tasklist.util.TestCheck.TASK_IS_CANCELED_BY_FLOW_NODE_B
 import static io.camunda.tasklist.util.TestCheck.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static java.util.Comparator.comparing;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.util.DateUtil;
+import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestCheck;
+import io.camunda.tasklist.util.assertions.CustomAssertions;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
+import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.tasklist.webapp.security.Permission;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 public class TaskIT extends TasklistZeebeIntegrationTest {
 
@@ -52,6 +52,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   private static final SimpleDateFormat SIMPLE_DATE_FORMAT =
       new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
+  private MockMvcHelper mockMvcHelper;
+
   @Autowired
   @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCreatedCheck;
@@ -61,6 +63,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   private TestCheck taskIsCanceledCheck;
 
   @Autowired private TaskMutationResolver taskMutationResolver;
+
+  @Autowired private WebApplicationContext context;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -154,6 +158,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   @BeforeEach
   public void before() {
     super.before();
+    mockMvcHelper =
+        new MockMvcHelper(MockMvcBuilders.webAppContextSetup(context).build(), objectMapper);
   }
 
   @Nested
@@ -1075,6 +1081,52 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       assertEquals(
           DateUtil.toOffsetDateTime(followUpDate),
           DateUtil.toOffsetDateTime(response.get("$.data.tasks[0].followUpDate")));
+    }
+  }
+
+  @Nested
+  class TaskStates {
+    @Test
+    public void shouldFailTaskJobAndReturnTaskAsCreated() throws IOException {
+      final int numberOfTasks = 2;
+
+      final var searchQuery = new TaskQueryDTO().setState(TaskState.CREATED);
+
+      tester
+          .having()
+          .createFailedTasks(BPMN_PROCESS_ID, ELEMENT_ID, numberOfTasks, 1)
+          .waitUntil()
+          .taskIsFailed(ELEMENT_ID);
+
+      final var result =
+          mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")), searchQuery);
+
+      CustomAssertions.assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, TaskSearchResponse.class)
+          .hasSize(numberOfTasks);
+    }
+
+    @Test
+    public void shouldFailTaskJobAndReturnTaskAsFailed() throws IOException {
+      final int numberOfTasks = 2;
+
+      final var searchQuery = new TaskQueryDTO().setState(TaskState.FAILED);
+      tester
+          .having()
+          .createFailedTasks(BPMN_PROCESS_ID, ELEMENT_ID, numberOfTasks, 0)
+          .waitUntil()
+          .taskIsFailed(ELEMENT_ID);
+
+      final var result =
+          mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")), searchQuery);
+
+      CustomAssertions.assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, TaskSearchResponse.class)
+          .hasSize(numberOfTasks);
     }
   }
 }
