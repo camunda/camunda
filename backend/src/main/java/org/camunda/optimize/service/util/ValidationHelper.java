@@ -50,11 +50,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ValidationHelper {
+  protected static final Logger logger = LoggerFactory.getLogger(ValidationHelper.class);
 
-  public static void validate(BranchAnalysisRequestDto dto) {
+  public static void validate(final BranchAnalysisRequestDto dto) {
     ensureNotEmpty("gateway activity id", dto.getGateway());
     ensureNotEmpty("end activity id", dto.getEnd());
     ensureNotEmpty("query dto", dto);
@@ -63,19 +66,19 @@ public class ValidationHelper {
     validateProcessFilters(dto.getFilter());
   }
 
-  public static void ensureNotEmpty(String fieldName, Object target) {
+  public static void ensureNotEmpty(final String fieldName, final Object target) {
     if (target == null || target.toString().isEmpty()) {
       throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
     }
   }
 
-  public static void ensureCollectionNotEmpty(String fieldName, Collection<?> target) {
+  public static void ensureCollectionNotEmpty(final String fieldName, final Collection<?> target) {
     if (target == null || target.isEmpty()) {
       throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
     }
   }
 
-  public static void ensureNotNull(String fieldName, Object object) {
+  public static void ensureNotNull(final String fieldName, final Object object) {
     if (object == null) {
       throw new OptimizeValidationException(fieldName + " is not allowed to be null");
     }
@@ -84,24 +87,24 @@ public class ValidationHelper {
   public static void validateCombinedReportDefinition(
       final CombinedReportDefinitionRequestDto combinedReportDefinitionDto,
       final RoleType currentUserRole) {
-    AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
+    final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
         new AuthorizedReportDefinitionResponseDto(combinedReportDefinitionDto, currentUserRole);
     if (combinedReportDefinitionDto.getData() == null) {
-      OptimizeValidationException ex =
+      final OptimizeValidationException ex =
           new OptimizeValidationException(
               "Report data for a combined report is not allowed to be null!");
       throw new ReportEvaluationException(authorizedReportDefinitionDto, ex);
     } else if (combinedReportDefinitionDto.getData().getReportIds() == null) {
-      OptimizeValidationException ex =
+      final OptimizeValidationException ex =
           new OptimizeValidationException(
               "Reports list for a combined report is not allowed to be null!");
       throw new ReportEvaluationException(authorizedReportDefinitionDto, ex);
     }
   }
 
-  private static void validateDefinitionData(ReportDataDto data) {
+  private static void validateDefinitionData(final ReportDataDto data) {
     if (data instanceof SingleReportDataDto) {
-      SingleReportDataDto singleReportData = (SingleReportDataDto) data;
+      final SingleReportDataDto singleReportData = (SingleReportDataDto) data;
       if (data instanceof ProcessReportDataDto
           && !((ProcessReportDataDto) data).isManagementReport()) {
         // it is valid for management reports to not have a key if the user has no authorization for
@@ -114,21 +117,34 @@ public class ValidationHelper {
     }
   }
 
-  public static void validate(ReportDataDto dataDto) {
+  /*
+   * A simple boolean wrapper for the .validate() method
+   */
+  public static boolean isValid(final ReportDataDto dataDto) {
+    try {
+      validate(dataDto);
+      return true;
+    } catch (final Exception e) {
+      logger.debug("Report Data Validation failed", e);
+      return false;
+    }
+  }
+
+  public static void validate(final ReportDataDto dataDto) {
     validateDefinitionData(dataDto);
 
     if (dataDto instanceof ProcessReportDataDto) {
       final ProcessReportDataDto processReportDataDto = (ProcessReportDataDto) dataDto;
       ensureNotNull("report data", processReportDataDto);
-      ProcessViewDto viewDto = processReportDataDto.getView();
+      final ProcessViewDto viewDto = processReportDataDto.getView();
       ensureNotNull("view", viewDto);
       ensureNotNull("group by", processReportDataDto.getGroupBy());
       validateProcessFilters(processReportDataDto.getFilter());
       validateAggregationTypes(processReportDataDto.getConfiguration().getAggregationTypes());
     } else if (dataDto instanceof DecisionReportDataDto) {
-      DecisionReportDataDto decisionReportDataDto = (DecisionReportDataDto) dataDto;
+      final DecisionReportDataDto decisionReportDataDto = (DecisionReportDataDto) dataDto;
       ensureNotNull("report data", decisionReportDataDto);
-      DecisionViewDto viewDto = decisionReportDataDto.getView();
+      final DecisionViewDto viewDto = decisionReportDataDto.getView();
       ensureNotNull("view", viewDto);
       ensureNotNull("group by", decisionReportDataDto.getGroupBy());
       validateDecisionFilters(decisionReportDataDto.getFilter());
@@ -136,9 +152,9 @@ public class ValidationHelper {
     }
   }
 
-  public static void validateProcessFilters(List<ProcessFilterDto<?>> filters) {
+  public static void validateProcessFilters(final List<ProcessFilterDto<?>> filters) {
     if (filters != null) {
-      for (ProcessFilterDto<?> filterDto : filters) {
+      for (final ProcessFilterDto<?> filterDto : filters) {
         if (!filterDto.validApplicationLevels().contains(filterDto.getFilterLevel())) {
           throw new OptimizeValidationException(
               String.format(
@@ -146,39 +162,42 @@ public class ValidationHelper {
                   filterDto.getFilterLevel()));
         }
         if (filterDto instanceof InstanceStartDateFilterDto) {
-          InstanceStartDateFilterDto instanceStartDateFilterDto =
+          final InstanceStartDateFilterDto instanceStartDateFilterDto =
               (InstanceStartDateFilterDto) filterDto;
-          DateFilterDataDto<?> startDateFilterDataDto = instanceStartDateFilterDto.getData();
+          final DateFilterDataDto<?> startDateFilterDataDto = instanceStartDateFilterDto.getData();
           ensureAtLeastOneNotNull(
               "start date filter ",
               startDateFilterDataDto.getStart(),
               startDateFilterDataDto.getEnd());
         } else if (filterDto instanceof VariableFilterDto) {
-          VariableFilterDto variableFilterDto = (VariableFilterDto) filterDto;
-          VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();
+          final VariableFilterDto variableFilterDto = (VariableFilterDto) filterDto;
+          final VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();
           ensureNotEmpty("data", variableFilterData.getData());
           ensureNotEmpty("name", variableFilterData.getName());
           ensureNotEmpty("type", variableFilterData.getType());
         } else if (filterDto instanceof ExecutedFlowNodeFilterDto) {
-          ExecutedFlowNodeFilterDto executedFlowNodeFilterDto =
+          final ExecutedFlowNodeFilterDto executedFlowNodeFilterDto =
               (ExecutedFlowNodeFilterDto) filterDto;
-          ExecutedFlowNodeFilterDataDto flowNodeFilterData = executedFlowNodeFilterDto.getData();
+          final ExecutedFlowNodeFilterDataDto flowNodeFilterData =
+              executedFlowNodeFilterDto.getData();
           ensureNotEmpty("operator", flowNodeFilterData.getOperator());
           ensureNotEmpty("values", flowNodeFilterData.getValues());
         } else if (filterDto instanceof ExecutingFlowNodeFilterDto) {
-          ExecutingFlowNodeFilterDto executingFlowNodeFilterDto =
+          final ExecutingFlowNodeFilterDto executingFlowNodeFilterDto =
               (ExecutingFlowNodeFilterDto) filterDto;
-          ExecutingFlowNodeFilterDataDto flowNodeFilterData = executingFlowNodeFilterDto.getData();
+          final ExecutingFlowNodeFilterDataDto flowNodeFilterData =
+              executingFlowNodeFilterDto.getData();
           ensureNotEmpty("values", flowNodeFilterData.getValues());
         } else if (filterDto instanceof CanceledFlowNodeFilterDto) {
-          CanceledFlowNodeFilterDto executingFlowNodeFilterDto =
+          final CanceledFlowNodeFilterDto executingFlowNodeFilterDto =
               (CanceledFlowNodeFilterDto) filterDto;
-          CanceledFlowNodeFilterDataDto flowNodeFilterData = executingFlowNodeFilterDto.getData();
+          final CanceledFlowNodeFilterDataDto flowNodeFilterData =
+              executingFlowNodeFilterDto.getData();
           ensureNotEmpty("values", flowNodeFilterData.getValues());
         } else if (filterDto instanceof FlowNodeStartDateFilterDto
             || filterDto instanceof FlowNodeEndDateFilterDto) {
           @SuppressWarnings(UNCHECKED_CAST)
-          ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilterDto =
+          final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilterDto =
               (ProcessFilterDto<FlowNodeDateFilterDataDto<?>>) filterDto;
           validateFlowNodeDateFilter(flowNodeDateFilterDto);
         }
@@ -186,7 +205,7 @@ public class ValidationHelper {
     }
   }
 
-  public static void validateAggregationTypes(Set<AggregationDto> aggregationDtos) {
+  public static void validateAggregationTypes(final Set<AggregationDto> aggregationDtos) {
     if (aggregationDtos != null) {
       aggregationDtos.forEach(
           aggType -> {
@@ -206,7 +225,7 @@ public class ValidationHelper {
 
   private static void validateFlowNodeDateFilter(
       final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilter) {
-    FlowNodeDateFilterDataDto<?> flowNodeDateFilterDataDto = flowNodeDateFilter.getData();
+    final FlowNodeDateFilterDataDto<?> flowNodeDateFilterDataDto = flowNodeDateFilter.getData();
     if (DateFilterType.FIXED.equals(flowNodeDateFilterDataDto.getType())) {
       ensureAtLeastOneNotNull(
           "flowNode date filter start or end field",
@@ -235,26 +254,28 @@ public class ValidationHelper {
     }
   }
 
-  private static void validateDecisionFilters(List<DecisionFilterDto<?>> filters) {
+  private static void validateDecisionFilters(final List<DecisionFilterDto<?>> filters) {
     if (filters != null) {
-      for (DecisionFilterDto<?> filterDto : filters) {
+      for (final DecisionFilterDto<?> filterDto : filters) {
         if (filterDto instanceof EvaluationDateFilterDto) {
-          EvaluationDateFilterDto evaluationDateFilterDto = (EvaluationDateFilterDto) filterDto;
-          DateFilterDataDto<?> evaluationDateFilterDataDto = evaluationDateFilterDto.getData();
+          final EvaluationDateFilterDto evaluationDateFilterDto =
+              (EvaluationDateFilterDto) filterDto;
+          final DateFilterDataDto<?> evaluationDateFilterDataDto =
+              evaluationDateFilterDto.getData();
 
           ensureAtLeastOneNotNull(
               "evaluation date filter ",
               evaluationDateFilterDataDto.getStart(),
               evaluationDateFilterDataDto.getEnd());
         } else if (filterDto instanceof InputVariableFilterDto) {
-          InputVariableFilterDto variableFilterDto = (InputVariableFilterDto) filterDto;
-          VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();
+          final InputVariableFilterDto variableFilterDto = (InputVariableFilterDto) filterDto;
+          final VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();
           ensureNotEmpty("data", variableFilterData.getData());
           ensureNotEmpty("name", variableFilterData.getName());
           ensureNotEmpty("type", variableFilterData.getType());
         } else if (filterDto instanceof OutputVariableFilterDto) {
-          OutputVariableFilterDto variableFilterDto = (OutputVariableFilterDto) filterDto;
-          VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();
+          final OutputVariableFilterDto variableFilterDto = (OutputVariableFilterDto) filterDto;
+          final VariableFilterDataDto<?> variableFilterData = variableFilterDto.getData();
           ensureNotEmpty("data", variableFilterData.getData());
           ensureNotEmpty("name", variableFilterData.getName());
           ensureNotEmpty("type", variableFilterData.getType());
@@ -263,15 +284,15 @@ public class ValidationHelper {
     }
   }
 
-  private static void ensureAtLeastOneNotNull(String fieldName, Object... objects) {
-    boolean oneNotNull = Arrays.stream(objects).anyMatch(Objects::nonNull);
+  private static void ensureAtLeastOneNotNull(final String fieldName, final Object... objects) {
+    final boolean oneNotNull = Arrays.stream(objects).anyMatch(Objects::nonNull);
     if (!oneNotNull) {
       throw new OptimizeValidationException(
           fieldName + " at least one sub field not allowed to be empty or null");
     }
   }
 
-  private static void ensureNull(String fieldName, Object object) {
+  private static void ensureNull(final String fieldName, final Object object) {
     if (object != null) {
       throw new OptimizeValidationException(fieldName + " has to be null");
     }

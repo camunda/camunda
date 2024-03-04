@@ -71,7 +71,7 @@ public class ReportServiceConflictTest {
   @Test
   public void testUpdateSingleProcessReport() {
     // given
-    SingleProcessReportDefinitionRequestDto updateDto =
+    final SingleProcessReportDefinitionRequestDto updateDto =
         new SingleProcessReportDefinitionRequestDto();
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
@@ -91,7 +91,7 @@ public class ReportServiceConflictTest {
   @Test
   public void testUpdateSingleProcessReportWithConflicts() {
     // given
-    SingleProcessReportDefinitionRequestDto updateDto =
+    final SingleProcessReportDefinitionRequestDto updateDto =
         new SingleProcessReportDefinitionRequestDto();
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
@@ -99,7 +99,7 @@ public class ReportServiceConflictTest {
         .thenReturn(Optional.of(RoleType.EDITOR));
     when(authorizationService.isAuthorizedToReport(any(), any())).thenReturn(true);
 
-    Set<ConflictedItemDto> conflicts =
+    final Set<ConflictedItemDto> conflicts =
         Sets.newHashSet(
             new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),
             new ConflictedItemDto("conflict2", ConflictedItemType.ALERT, "name"));
@@ -115,7 +115,7 @@ public class ReportServiceConflictTest {
   @Test
   public void testUpdateSingleDecisionReport() throws OptimizeConflictException {
     // given
-    SingleDecisionReportDefinitionRequestDto updateDto =
+    final SingleDecisionReportDefinitionRequestDto updateDto =
         new SingleDecisionReportDefinitionRequestDto();
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
@@ -134,7 +134,7 @@ public class ReportServiceConflictTest {
   @Test
   public void testUpdateSingleDecisionReportWithConflicts() {
     // given
-    SingleDecisionReportDefinitionRequestDto updateDto =
+    final SingleDecisionReportDefinitionRequestDto updateDto =
         new SingleDecisionReportDefinitionRequestDto();
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
@@ -142,7 +142,7 @@ public class ReportServiceConflictTest {
         .thenReturn(Optional.of(RoleType.EDITOR));
     when(authorizationService.isAuthorizedToReport(any(), any())).thenReturn(true);
 
-    Set<ConflictedItemDto> conflicts =
+    final Set<ConflictedItemDto> conflicts =
         Sets.newHashSet(
             new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),
             new ConflictedItemDto("conflict2", ConflictedItemType.ALERT, "name"));
@@ -181,7 +181,7 @@ public class ReportServiceConflictTest {
     when(authorizationService.getAuthorizedRole(any(), any()))
         .thenReturn(Optional.of(RoleType.EDITOR));
 
-    Set<ConflictedItemDto> conflicts =
+    final Set<ConflictedItemDto> conflicts =
         Sets.newHashSet(
             new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),
             new ConflictedItemDto("conflict2", ConflictedItemType.ALERT, "name"));
