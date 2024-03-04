@@ -2177,6 +2177,57 @@ public class CompensationEventExecutionTest {
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Test
+  public void shouldCompensateSubprocessWithInnerCompensationHandler() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subprocess",
+                subprocess ->
+                    subprocess
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask("A", task -> task.zeebeJobType("A"))
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .boundaryEvent()
+            .compensation(compensation -> compensation.serviceTask("B").zeebeJobType("B"))
+            .moveToActivity("subprocess")
+            .endEvent("compensation-throw-event")
+            .compensateEventDefinition()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey).withType("Undo-A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("subprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("Undo-A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("Undo-A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
     final var resourceAsStream = getClass().getResourceAsStream(classpath);
     return Bpmn.readModelFromStream(resourceAsStream);
