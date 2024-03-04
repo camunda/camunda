@@ -131,7 +131,7 @@ public abstract class AbstractBoundaryEventBuilder<B extends AbstractBoundaryEve
     return myself;
   }
 
-  public AbstractFlowNodeBuilder compensation(final Consumer<AbstractFlowNodeBuilder> consumer) {
+  public AbstractFlowNodeBuilder compensation(final Consumer<B> consumer) {
     compensateEventDefinition();
     compensationStart();
     consumer.accept(myself);
