@@ -20,6 +20,7 @@ import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
@@ -193,9 +194,9 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
 
                 final var oldTopology = persistedClusterTopology.getTopology();
                 final var isConflictingTopology =
-                    !mergedTopology
-                        .getMember(localMemberId)
-                        .equals(oldTopology.getMember(localMemberId));
+                    !Objects.equals(
+                        mergedTopology.getMember(localMemberId),
+                        oldTopology.getMember(localMemberId));
                 persistedClusterTopology.update(mergedTopology);
 
                 if (isConflictingTopology && onInconsistentTopologyDetected != null) {
