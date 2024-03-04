@@ -941,7 +941,7 @@ public class CompensationEventExecutionTest {
     assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(18))
+                .limit(20))
         .extracting(
             Record::getValueType, Record::getIntent, r -> r.getValue().getCompensationHandlerId())
         .containsSubsequence(
@@ -1011,7 +1011,7 @@ public class CompensationEventExecutionTest {
         .getJobKeys()
         .forEach(
             jobKey -> {
-              if (i.get() == 1) {
+              if (i.get() == 2) {
                 ENGINE.job().withKey(jobKey).throwError();
               } else {
                 ENGINE.job().withKey(jobKey).complete();
@@ -1208,6 +1208,154 @@ public class CompensationEventExecutionTest {
                 BpmnElementType.PROCESS,
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldNotTriggerHandlersForMultiInstanceInsideNotCompletedSubprocess() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .parallelGateway("fork")
+            .subProcess()
+            .embeddedSubProcess()
+            .startEvent()
+            .subProcess(
+                "subprocess-2",
+                subprocess ->
+                    subprocess
+                        .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask("A", task -> task.zeebeJobType("A"))
+                        .boundaryEvent()
+                        .compensation(
+                            compensation ->
+                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
+            .serviceTask("B")
+            .zeebeJobType("B")
+            .endEvent()
+            .subProcessDone()
+            .parallelGateway("join")
+            .moveToNode("fork")
+            .serviceTask("C")
+            .zeebeJobType("C")
+            .intermediateThrowEvent("compensation-throw-event")
+            .compensateEventDefinition()
+            .compensateEventDefinitionDone()
+            .connectTo("join")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType("A")
+        .limit(3)
+        .forEach(job -> ENGINE.job().withKey(job.getKey()).withType("A").complete());
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("C").complete();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(tuple("Undo-A", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void
+      shouldNotTriggerHandlersForSubprocessIfParentMultiInstancesSubprocessesAreNotCompleted() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .parallelGateway("fork")
+            .subProcess(
+                "subprocess",
+                subprocess ->
+                    subprocess
+                        .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .subProcess(
+                            "subprocess-2",
+                            subprocess2 ->
+                                subprocess2
+                                    .embeddedSubProcess()
+                                    .startEvent()
+                                    .serviceTask("A", task -> task.zeebeJobType("A"))
+                                    .boundaryEvent()
+                                    .compensation(
+                                        compensation ->
+                                            compensation
+                                                .serviceTask("Undo-A")
+                                                .zeebeJobType("Undo-A")))
+                        .serviceTask("B")
+                        .zeebeJobType("B"))
+            .parallelGateway("join")
+            .moveToNode("fork")
+            .serviceTask("C")
+            .zeebeJobType("C")
+            .intermediateThrowEvent("compensation-throw-event")
+            .compensateEventDefinition()
+            .compensateEventDefinitionDone()
+            .connectTo("join")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType("A")
+        .limit(3)
+        .forEach(job -> ENGINE.job().withKey(job.getKey()).withType("A").complete());
+
+    final var jobKeys =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("B")
+            .limit(3)
+            .map(Record::getKey)
+            .toList();
+
+    ENGINE.job().withKey(jobKeys.getFirst()).complete();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("C").complete();
+
+    jobKeys.stream().skip(1).forEach(key -> ENGINE.job().withKey(key).complete());
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(tuple("Undo-A", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test

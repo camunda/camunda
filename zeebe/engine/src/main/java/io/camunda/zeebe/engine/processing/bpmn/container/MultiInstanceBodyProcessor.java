@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
@@ -62,6 +63,7 @@ public final class MultiInstanceBodyProcessor
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public MultiInstanceBodyProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -72,6 +74,7 @@ public final class MultiInstanceBodyProcessor
     expressionBehavior = bpmnBehaviors.expressionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
 
   @Override
@@ -89,7 +92,11 @@ public final class MultiInstanceBodyProcessor
                 eventSubscriptionBehavior
                     .subscribeToEvents(element, context)
                     .map(ok -> inputCollection))
-        .thenDo(inputCollection -> activate(element, context, inputCollection));
+        .thenDo(inputCollection -> {
+          activate(element, context, inputCollection);
+          compensationSubscriptionBehaviour.createCompensationSubscriptionForMultiInstance(
+              element, context);
+        });
   }
 
   @Override
@@ -105,7 +112,11 @@ public final class MultiInstanceBodyProcessor
 
     return stateTransitionBehavior
         .transitionToCompleted(element, context)
-        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+        .thenDo(completed -> {
+          compensationSubscriptionBehaviour.completeCompensationSubscriptionForMultiInstance(
+              context);
+          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+        });
   }
 
   @Override
@@ -296,12 +307,16 @@ public final class MultiInstanceBodyProcessor
                   terminated.getFlowScopeKey(),
                   eventTrigger,
                   terminated);
+              compensationSubscriptionBehaviour.deleteCompensationSubscriptionForMultiInstance(
+                  flowScopeContext);
               stateTransitionBehavior.onElementTerminated(element, terminated);
             },
             () -> {
               final var terminated =
                   stateTransitionBehavior.transitionToTerminated(
                       flowScopeContext, element.getEventType());
+              compensationSubscriptionBehaviour.deleteCompensationSubscriptionForMultiInstance(
+                  flowScopeContext);
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
   }

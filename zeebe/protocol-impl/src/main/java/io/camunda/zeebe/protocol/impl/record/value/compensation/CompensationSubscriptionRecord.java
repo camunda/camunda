@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.compensation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -44,12 +45,15 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   private final LongProperty compensableActivityScopeKeyProperty =
       new LongProperty("compensableActivityScopeKey", -1);
 
+  private final BooleanProperty isMultiInstanceProperty =
+      new BooleanProperty("isMultiInstance", false);
+
   private final LongProperty compensableActivityInstanceKeyProperty =
       new LongProperty("compensableActivityInstanceKey", -1);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public CompensationSubscriptionRecord() {
-    super(11);
+    super(12);
     declareProperty(tenantIdProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
@@ -60,6 +64,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(compensationHandlerIdProperty)
         .declareProperty(compensableActivityScopeKeyProperty)
         .declareProperty(compensableActivityInstanceKeyProperty)
+        .declareProperty(isMultiInstanceProperty)
         .declareProperty(variablesProperty);
   }
 
@@ -74,6 +79,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     compensationHandlerIdProperty.setValue(record.getCompensationHandlerId());
     compensableActivityScopeKeyProperty.setValue(record.getCompensableActivityScopeKey());
     compensableActivityInstanceKeyProperty.setValue(record.getCompensableActivityInstanceKey());
+    isMultiInstanceProperty.setValue(record.isMultiInstance());
     variablesProperty.setValue(record.getVariablesBuffer());
   }
 
@@ -143,12 +149,22 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
+  public boolean isMultiInstance() {
+    return isMultiInstanceProperty.getValue();
+  }
+
+  @Override
   public Map<String, Object> getVariables() {
     return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
   public CompensationSubscriptionRecord setVariables(final DirectBuffer variables) {
     variablesProperty.setValue(variables);
+    return this;
+  }
+
+  public CompensationSubscriptionRecord setMultiInstance(final boolean isMultiInstance) {
+    isMultiInstanceProperty.setValue(isMultiInstance);
     return this;
   }
 

@@ -77,6 +77,11 @@ public interface CompensationSubscriptionRecordValue extends RecordValue {
   long getCompensableActivityInstanceKey();
 
   /**
+   * @return true if the subscription is related to a multi instance
+   */
+  boolean isMultiInstance();
+
+  /**
    * @return the local variables of activity with compensation handler
    */
   Map<String, Object> getVariables();
