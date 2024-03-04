@@ -14,6 +14,9 @@
   <packaging>jar</packaging>
 
   <name>Zeebe QA Update Tests</name>
+  <properties>
+    <version.resilience4j>2.2.0</version.resilience4j>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -105,6 +108,32 @@
       <artifactId>agrona</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-retry</artifactId>
+      <version>${version.resilience4j}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-core</artifactId>
+      <version>${version.resilience4j}</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
