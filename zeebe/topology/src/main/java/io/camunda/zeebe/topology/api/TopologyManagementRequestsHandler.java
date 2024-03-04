@@ -30,16 +30,12 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Handles the requests for the topology management. This is expected be running on the coordinator
  * node.
  */
 public final class TopologyManagementRequestsHandler implements TopologyManagementApi {
-  private static final Logger LOG =
-      LoggerFactory.getLogger(TopologyManagementRequestsHandler.class);
   private final TopologyChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
