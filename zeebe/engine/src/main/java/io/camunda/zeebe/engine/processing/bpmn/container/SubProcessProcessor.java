@@ -80,7 +80,11 @@ public final class SubProcessProcessor
               compensationSubscriptionBehaviour.createCompensationSubscription(element, completing);
               return stateTransitionBehavior.transitionToCompleted(element, completing);
             })
-        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+        .thenDo(
+            completed -> {
+              compensationSubscriptionBehaviour.completeCompensationHandler(completed);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            });
   }
 
   @Override
