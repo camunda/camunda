@@ -16,6 +16,9 @@
  */
 package io.camunda.operate.schema;
 
+import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
+import io.camunda.operate.schema.indices.IndexDescriptor;
+import io.camunda.operate.schema.templates.TemplateDescriptor;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,6 +34,12 @@ public interface SchemaManager {
   String DELETE_PHASE = "delete";
 
   void createSchema();
+
+  void createDefaults();
+
+  void createIndex(IndexDescriptor indexDescriptor, String indexClasspathResource);
+
+  void createTemplate(TemplateDescriptor templateDescriptor, String templateClasspathResource);
 
   boolean setIndexSettingsFor(Map<String, ?> settings, String indexPattern);
 
@@ -59,4 +68,10 @@ public interface SchemaManager {
   Map<String, String> getIndexSettingsFor(String s, String... fields);
 
   String getIndexPrefix();
+
+  Map<String, IndexMapping> getIndexMappings(String indexNamePattern);
+
+  void updateSchema(Map<IndexDescriptor, Set<IndexMappingProperty>> newFields);
+
+  IndexMapping getExpectedIndexFields(IndexDescriptor indexDescriptor);
 }

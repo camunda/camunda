@@ -1,0 +1,13 @@
+{
+	"mappings": {
+	    "dynamic": "strict",
+		"properties": {
+			"propA": {
+				"type": "keyword"
+			},
+      "propC": {
+        "type": "keyword"
+      }
+	    }
+    }
+}

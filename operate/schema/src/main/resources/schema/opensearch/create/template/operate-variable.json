@@ -37,9 +37,12 @@
 			"isPreview": {
 				"type": "boolean"
 			},
-            "tenantId": {
-              "type": "keyword"
-            }
+      "tenantId": {
+        "type": "keyword"
+      },
+      "position": {
+        "type": "long"
+      }
 		}
 	}
 }

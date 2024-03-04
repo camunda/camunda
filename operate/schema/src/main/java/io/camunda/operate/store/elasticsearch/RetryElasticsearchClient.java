@@ -16,13 +16,16 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import static io.camunda.operate.schema.IndexMappingDifference.createIndexMapping;
 import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
 import static io.camunda.operate.util.CollectionUtil.map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.store.elasticsearch.dao.response.TaskResponse;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.RetryOperation;
@@ -67,10 +70,13 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
+import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
+import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
@@ -100,6 +106,7 @@ public class RetryElasticsearchClient {
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryElasticsearchClient.class);
   @Autowired private RestHighLevelClient esClient;
   @Autowired private ElasticsearchTaskStore elasticsearchTaskStore;
+  @Autowired private ObjectMapper objectMapper;
   private RequestOptions requestOptions = RequestOptions.DEFAULT;
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
@@ -189,6 +196,45 @@ public class RetryElasticsearchClient {
           } catch (ElasticsearchException e) {
             if (e.status().equals(RestStatus.NOT_FOUND)) {
               return Set.of();
+            }
+            throw e;
+          }
+        });
+  }
+
+  public Map<String, IndexMapping> getIndexMappings(String namePattern) {
+    return executeWithRetries(
+        "Get indices mappings for " + namePattern,
+        () -> {
+          try {
+            final Map<String, IndexMapping> mappingsMap = new HashMap<>();
+            final Map<String, MappingMetadata> mappings =
+                esClient
+                    .indices()
+                    .getMapping(
+                        new GetMappingsRequest().indices(namePattern), RequestOptions.DEFAULT)
+                    .mappings();
+            for (Map.Entry<String, MappingMetadata> entry : mappings.entrySet()) {
+              final Map<String, Object> mappingMetadata =
+                  (Map<String, Object>)
+                      objectMapper
+                          .readValue(
+                              entry.getValue().source().string(),
+                              new TypeReference<HashMap<String, Object>>() {})
+                          .get("properties");
+              mappingsMap.put(
+                  entry.getKey(),
+                  new IndexMapping()
+                      .setIndexName(entry.getKey())
+                      .setProperties(
+                          mappingMetadata.entrySet().stream()
+                              .map(p -> createIndexMapping(p))
+                              .collect(Collectors.toSet())));
+            }
+            return mappingsMap;
+          } catch (ElasticsearchException e) {
+            if (e.status().equals(RestStatus.NOT_FOUND)) {
+              return Map.of();
             }
             throw e;
           }
@@ -342,10 +388,14 @@ public class RetryElasticsearchClient {
   }
 
   public boolean createTemplate(PutComposableIndexTemplateRequest request) {
+    return createTemplate(request, false);
+  }
+
+  public boolean createTemplate(PutComposableIndexTemplateRequest request, boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())) {
+          if (overwrite || !templatesExist(request.name())) {
             return esClient.indices().putIndexTemplate(request, requestOptions).isAcknowledged();
           }
           return true;
@@ -707,6 +757,13 @@ public class RetryElasticsearchClient {
                 .indexLifecycle()
                 .putLifecyclePolicy(putLifecyclePolicyRequest, requestOptions)
                 .isAcknowledged(),
+        null);
+  }
+
+  public void putMapping(final PutMappingRequest request) {
+    executeWithRetries(
+        String.format("Put Mapping %s ", request.indices()),
+        () -> esClient.indices().putMapping(request, RequestOptions.DEFAULT),
         null);
   }
 }

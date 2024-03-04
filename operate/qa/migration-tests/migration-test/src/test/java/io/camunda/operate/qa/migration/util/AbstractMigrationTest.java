@@ -18,10 +18,29 @@ package io.camunda.operate.qa.migration.util;
 
 import static org.junit.Assume.assumeTrue;
 
+import io.camunda.operate.JacksonConfig;
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.qa.util.TestContext;
-import io.camunda.operate.schema.indices.*;
-import io.camunda.operate.schema.templates.*;
+import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
+import io.camunda.operate.schema.indices.DecisionIndex;
+import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
+import io.camunda.operate.schema.indices.ImportPositionIndex;
+import io.camunda.operate.schema.indices.MetricIndex;
+import io.camunda.operate.schema.indices.ProcessIndex;
+import io.camunda.operate.schema.indices.UserIndex;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
+import io.camunda.operate.schema.templates.EventTemplate;
+import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.OperationTemplate;
+import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
+import io.camunda.operate.schema.templates.SequenceFlowTemplate;
+import io.camunda.operate.schema.templates.VariableTemplate;
+import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -36,7 +55,16 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(classes = TestConfig.class)
+@ContextConfiguration(
+    classes = {
+      TestConfig.class,
+      ElasticsearchSchemaManager.class,
+      RetryElasticsearchClient.class,
+      ElasticsearchTaskStore.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class,
+      JacksonConfig.class
+    })
 @TestPropertySource(locations = "/test.properties")
 @TestExecutionListeners(
     listeners = DependencyInjectionTestExecutionListener.class,

@@ -120,12 +120,15 @@
 			"pendingIncident": {
 				"type": "boolean"
 			},
-            "tenantId": {
-              "type": "keyword"
-            },
-            "jobFailedWithRetriesLeft": {
-              "type": "boolean"
-            }
+      "tenantId": {
+        "type": "keyword"
+      },
+      "jobFailedWithRetriesLeft": {
+        "type": "boolean"
+      },
+      "position": {
+        "type": "long"
+      }
 		}
 	}
 }

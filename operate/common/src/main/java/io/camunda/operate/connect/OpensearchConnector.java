@@ -72,6 +72,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -95,6 +96,7 @@ public class OpensearchConnector {
   }
 
   @Bean
+  @Primary
   public OpenSearchClient openSearchClient() {
     final OpenSearchClient openSearchClient = createOsClient(operateProperties.getOpensearch());
     try {
@@ -373,7 +375,7 @@ public class OpensearchConnector {
     return cert;
   }
 
-  private HttpAsyncClientBuilder configureHttpClient(
+  protected HttpAsyncClientBuilder configureHttpClient(
       HttpAsyncClientBuilder httpAsyncClientBuilder, OpensearchProperties osConfig) {
     setupAuthentication(httpAsyncClientBuilder, osConfig);
     if (osConfig.getSsl() != null) {

@@ -15,6 +15,7 @@
 						"type": "keyword"
 					},
 					"jobCustomHeaders": {
+            "type": "object",
 						"enabled": false
 					},
 					"incidentErrorMessage": {
@@ -71,9 +72,12 @@
 			"key": {
 				"type": "long"
 			},
-            "tenantId": {
-              "type": "keyword"
-            }
+      "tenantId": {
+        "type": "keyword"
+      },
+      "position": {
+        "type": "long"
+      }
 		}
 	}
 }
