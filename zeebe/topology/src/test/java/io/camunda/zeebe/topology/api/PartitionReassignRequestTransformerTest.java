@@ -20,6 +20,7 @@ import io.camunda.zeebe.topology.util.TopologyUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -163,10 +164,9 @@ class PartitionReassignRequestTransformerTest {
     final var request =
         oldReplicationFactor == newReplicationFactor
             ? new PartitionReassignRequestTransformer(
-                getClusterMembers(newClusterSize),
-                PartitionReassignRequestTransformer.USE_CURRENT_REPLICATION_FACTOR)
+                getClusterMembers(newClusterSize), Optional.empty())
             : new PartitionReassignRequestTransformer(
-                getClusterMembers(newClusterSize), newReplicationFactor);
+                getClusterMembers(newClusterSize), Optional.of(newReplicationFactor));
     final var operations = request.operations(oldClusterTopology).get();
 
     // apply operations to generate new topology

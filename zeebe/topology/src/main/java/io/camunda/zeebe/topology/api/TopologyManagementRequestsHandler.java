@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.topology.api;
 
-import static io.camunda.zeebe.topology.api.PartitionReassignRequestTransformer.USE_CURRENT_REPLICATION_FACTOR;
-
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -102,9 +100,7 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   public ActorFuture<TopologyChangeResponse> scaleMembers(final ScaleRequest scaleRequest) {
     return handleRequest(
         scaleRequest.dryRun(),
-        new ScaleRequestTransformer(
-            scaleRequest.members(),
-            scaleRequest.newReplicationFactor().orElse(USE_CURRENT_REPLICATION_FACTOR)));
+        new ScaleRequestTransformer(scaleRequest.members(), scaleRequest.newReplicationFactor()));
   }
 
   @Override
@@ -112,7 +108,7 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
       final ScaleRequest forceScaleDownRequest) {
     final Optional<Integer> optionalNewReplicationFactor =
         forceScaleDownRequest.newReplicationFactor();
-    if (optionalNewReplicationFactor.isPresent() && optionalNewReplicationFactor.get() > 0) {
+    if (optionalNewReplicationFactor.isPresent()) {
       final var failedFuture = executor.<TopologyChangeResponse>createFuture();
       final String errorMessage =
           String.format(
