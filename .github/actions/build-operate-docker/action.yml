@@ -63,3 +63,4 @@ runs:
           REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
           VERSION=${{ steps.pom-info.outputs.project_version }}
         target: app
+        file: operate.Dockerfile

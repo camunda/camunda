@@ -5,7 +5,8 @@
     "operate/client/**",
     ".github/**",
     ".ci/**",
-    "Dockerfile"
+    "Dockerfile",
+    "operate.Dockerfile"
   ],
   "ignorePaths": [
     "client/pom.xml",

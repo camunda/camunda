@@ -26,6 +26,7 @@ jobs:
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           ignore: DL3018 # redundant when pinning the base image
+          dockerfile: operate.Dockerfile
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v2.8.0
@@ -70,6 +71,7 @@ jobs:
           context: .
           push: true
           tags: ${{ env.OPERATE_TEST_DOCKER_IMAGE }}
+          file: operate.Dockerfile
       - name: Run Docker tests
         run: mvn -f operate/qa/integration-tests -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report

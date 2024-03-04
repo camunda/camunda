@@ -214,7 +214,6 @@ jobs:
           DOCKER_PASSWORD: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
         run: |
           echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USERNAME --password-stdin
-
           docker buildx create --use
 
           commit_hash=$(git rev-parse --verify HEAD)
@@ -228,10 +227,17 @@ jobs:
           sudo apt install -y jq
           sudo apt install -y bash
 
+          if [ -f operate.Dockerfile ]; then
+            export DOCKER_FILE_NAME=operate.Dockerfile
+          else
+            export DOCKER_FILE_NAME=Dockerfile
+          fi
+
           # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
           # able to perform the checks before pushing
           # First amd64
           docker buildx build \
+            -f $DOCKER_FILE_NAME \
             -t $IMAGE_NAME:$IMAGE_TAG \
             --build-arg VERSION=$VERSION \
             --build-arg DATE=$date_time_stamp \
@@ -245,6 +251,7 @@ jobs:
 
           # Now arm64
           docker buildx build \
+            -f $DOCKER_FILE_NAME \
             -t $IMAGE_NAME:$IMAGE_TAG \
             --build-arg VERSION=$VERSION \
             --build-arg DATE=$date_time_stamp \
@@ -257,6 +264,7 @@ jobs:
           bash ./.ci/docker/test/verify.sh $IMAGE_NAME:$IMAGE_TAG
 
           docker buildx build . \
+          -f $DOCKER_FILE_NAME \
           --platform linux/arm64,linux/amd64 \
           --build-arg VERSION=$VERSION \
           --build-arg REVISION=$commit_hash \
