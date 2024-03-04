@@ -120,7 +120,7 @@
               {
                 "id": 3,
                 "name": "newReplicationFactor",
-                "type": "int32"
+                "type": "uint32"
               }
             ]
           },
