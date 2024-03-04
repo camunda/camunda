@@ -4,14 +4,19 @@ on:
     branches:
       - master
     paths-ignore:
+      - ".github/workflows/zeebe-*"
       - "operate/client/**"
       - ".ci/**"
       - ".husky/**"
+      - "zeebe/**"
   pull_request:
     paths-ignore:
+      - ".github/workflows/zeebe-*"
       - "operate/client/**"
       - ".ci/**"
       - ".husky/**"
+      - "zeebe/**"
+
 jobs:
   linting:
     name: Linting

@@ -5,6 +5,9 @@ on:
     branches:
       - 'master'
       - 'stable/**'
+    paths-ignore:
+      - '.github/workflows/zeebe-*'
+      - 'zeebe/**'
   pull_request:
     types: [ labeled,synchronize ]
 

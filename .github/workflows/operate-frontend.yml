@@ -5,9 +5,14 @@ on:
       - master
     paths:
       - 'operate/client/**'
+      - '!.github/workflows/zeebe-*'
+      - '!zeebe/**'
   pull_request:
     paths:
       - 'operate/client/**'
+      - '!.github/workflows/zeebe-*'
+      - '!zeebe/**'
+
 jobs:
   linting-and-testing:
     name: Linting & Testing

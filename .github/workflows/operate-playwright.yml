@@ -1,6 +1,10 @@
 ---
 name: Operate Visual regression tests
-on: push
+on:
+  push:
+    paths-ignore:
+      - '.github/workflows/zeebe-*'
+      - 'zeebe/**'
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.

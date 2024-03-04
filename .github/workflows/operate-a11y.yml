@@ -1,5 +1,9 @@
 name: Operate a11y tests
-on: push
+on:
+  push:
+    paths-ignore:
+      - '.github/workflows/zeebe-*'
+      - 'zeebe/**'
 
 jobs:
   test:
