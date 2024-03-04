@@ -83,8 +83,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final Duration distributionInterval;
   private ExporterStateDistributionService exporterDistributionService;
   private final int partitionId;
-
-  private final Set<Long> positionsToSkip;
+  private final EventFilter positionsToSkipFilter;
 
   public ExporterDirector(final ExporterDirectorContext context, final boolean shouldPauseOnStart) {
     name = context.getName();
@@ -105,7 +104,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     exporterPositionsTopic = String.format(EXPORTER_STATE_TOPIC_FORMAT, partitionId);
     exporterMode = context.getExporterMode();
     distributionInterval = context.getDistributionInterval();
-    positionsToSkip = context.getPositionsToSkip();
+    positionsToSkipFilter = context.getPositionsToSkipFilter();
   }
 
   public ActorFuture<Void> startAsync(final ActorSchedulingService actorSchedulingService) {
@@ -283,7 +282,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       container.configureExporter();
     }
 
-    eventFilter = createEventFilter(containers);
+    eventFilter = createEventFilter(containers).and(positionsToSkipFilter);
     LOG.debug("Set event filter for exporters: {}", eventFilter);
   }
 
@@ -394,9 +393,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void readNextEvent() {
     if (shouldExport()) {
       final LoggedEvent currentEvent = logStreamReader.next();
-      if (eventFilter == null
-          || eventFilter.applies(currentEvent)
-              && !positionsToSkip.contains(currentEvent.getPosition())) {
+      if (eventFilter == null || eventFilter.applies(currentEvent)) {
         inExportingPhase = true;
         exportEvent(currentEvent);
       } else {

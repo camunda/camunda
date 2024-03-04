@@ -22,10 +22,10 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.time.Duration;
 import java.util.List;
-import java.util.Set;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -55,7 +55,7 @@ public final class ExporterRule implements TestRule {
   private PartitionMessagingService partitionMessagingService = new SimplePartitionMessageService();
   private ExporterDirector director;
   private Duration distributionInterval = Duration.ofSeconds(15);
-  private Set<Long> skipRecords;
+  private EventFilter positionsToSkipFilter;
 
   private ExporterRule(final ExporterMode exporterMode) {
     this.exporterMode = exporterMode;
@@ -85,8 +85,8 @@ public final class ExporterRule implements TestRule {
     return this;
   }
 
-  public ExporterRule withSkipRecords(final Set<Long> skipRecords) {
-    this.skipRecords = skipRecords;
+  public ExporterRule withPositionsToSkipFilter(final EventFilter positionsToSkipFilter) {
+    this.positionsToSkipFilter = positionsToSkipFilter;
     return this;
   }
 
@@ -110,7 +110,7 @@ public final class ExporterRule implements TestRule {
             .distributionInterval(distributionInterval)
             .partitionMessagingService(partitionMessagingService)
             .descriptors(exporterDescriptors)
-            .positionsToSkip(skipRecords);
+            .positionsToSkipFilter(positionsToSkipFilter);
 
     director = new ExporterDirector(context, false);
     director.startAsync(actorSchedulerRule.get()).join();

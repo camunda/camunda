@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -341,7 +342,7 @@ public final class ExporterDirectorTest {
         .get(1)
         .onConfigure(withFilter(List.of(RecordType.COMMAND), List.of(ValueType.DEPLOYMENT)));
 
-    rule.withSkipRecords(Set.of(1L));
+    rule.withPositionsToSkipFilter(SkipPositionsFilter.of(Set.of(1L)));
     startExporterDirector(exporterDescriptors);
 
     // when
