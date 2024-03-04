@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
     with:
-      releaseBranch: stable/8.5
+      releaseBranch: stable/8.4
       releaseVersion: 0.8.4
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
