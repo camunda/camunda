@@ -133,6 +133,7 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
 
       final SearchRequest searchRequest =
           new SearchRequest(draftTaskVariableTemplate.getFullQualifiedName());
+      searchRequest.source(sourceBuilder);
 
       return ElasticsearchUtil.scroll(
           searchRequest, DraftTaskVariableEntity.class, objectMapper, esClient);
