@@ -33,6 +33,7 @@ import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
@@ -513,4 +514,30 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
   AssignUserTaskCommandStep1 newUserTaskAssignCommand(long userTaskKey);
+
+  /**
+   * Command to update a user task.
+   *
+   * <pre>
+   * long userTaskKey = ..;
+   *
+   * zeebeClient
+   *  .newUserTaskUpdateCommand(userTaskKey)
+   *  .candidateGroups(newCandidateGroups)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   * <br>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. Until this warning is removed, anything described
+   * below may not yet have taken effect, and the interface and its description are subject to
+   * change.</strong>
+   *
+   * @param userTaskKey the key of the user tasks
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  UpdateUserTaskCommandStep1 newUserTaskUpdateCommand(long userTaskKey);
 }
