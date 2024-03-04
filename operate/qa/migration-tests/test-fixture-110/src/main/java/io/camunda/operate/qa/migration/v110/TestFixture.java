@@ -18,6 +18,7 @@ package io.camunda.operate.qa.migration.v110;
 
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.migration.AbstractTestFixture;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -25,16 +26,29 @@ public class TestFixture extends AbstractTestFixture {
 
   public static final String VERSION = "1.1.0";
 
+  @Autowired private BasicProcessDataGenerator basicProcessDataGenerator;
+
+  @Autowired private BigProcessDataGenerator bigProcessDataGenerator;
+
   @Override
   public void setup(TestContext testContext) {
     super.setup(testContext);
     startZeebeAndOperate();
-    // no additional data is needed
+    generateData();
     stopZeebeAndOperate(testContext);
   }
 
   @Override
   public String getVersion() {
     return VERSION;
+  }
+
+  private void generateData() {
+    try {
+      basicProcessDataGenerator.createData(testContext);
+      bigProcessDataGenerator.createData(testContext);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 }

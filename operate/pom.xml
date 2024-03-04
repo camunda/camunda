@@ -213,13 +213,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-qa-migration-tests-test-fixture-100</artifactId>
-        <version>${project.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>operate-qa-migration-tests-test-fixture-110</artifactId>
         <version>${project.version}</version>
         <scope>test</scope>

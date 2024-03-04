@@ -46,6 +46,7 @@
 			},
 			"joinRelation": {
 				"type": "join",
+        "eager_global_ordinals": true,
 				"relations": {
 					"processInstance": [
 						"activity",
@@ -118,12 +119,23 @@
 			"pendingIncident": {
 				"type": "boolean"
 			},
-            "tenantId": {
-              "type": "keyword"
-            },
-            "jobFailedWithRetriesLeft": {
-              "type": "boolean"
-            }
+      "tenantId": {
+        "type": "keyword"
+      },
+      "jobFailedWithRetriesLeft": {
+        "type": "boolean"
+      },
+      "position": {
+        "type": "long"
+      },
+      "positionIncident": {
+        "type": "long",
+        "index": false
+      },
+      "positionJob": {
+        "type": "long",
+        "index": false
+      }
 		}
 	}
 }

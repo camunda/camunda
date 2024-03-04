@@ -86,7 +86,7 @@ public class Migrator {
     return executor;
   }
 
-  public void migrate() throws MigrationException {
+  public void migrateData() throws MigrationException {
     try {
       stepsRepository.updateSteps();
     } catch (IOException e) {
