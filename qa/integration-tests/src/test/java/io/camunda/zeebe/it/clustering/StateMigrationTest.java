@@ -49,14 +49,21 @@ public class StateMigrationTest {
     clientRule.createSingleJob(jobType);
 
     final var activateResponse =
-        clientRule
-            .getClient()
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(1)
-            .send()
-            .join();
-    final var jobKey = activateResponse.getJobs().get(0).getKey();
+        Awaitility.await("Initial job is activated")
+            .ignoreExceptions()
+            .until(
+                () ->
+                    clientRule
+                        .getClient()
+                        .newActivateJobsCommand()
+                        .jobType(jobType)
+                        .maxJobsToActivate(1)
+                        .timeout(Duration.ofSeconds(5))
+                        .send()
+                        .join(),
+                r -> !r.getJobs().isEmpty());
+
+    final var jobKey = activateResponse.getJobs().getFirst().getKey();
 
     final Duration backoffTimeout = Duration.ofDays(1);
     clientRule
@@ -83,8 +90,9 @@ public class StateMigrationTest {
                     .newActivateJobsCommand()
                     .jobType(jobType)
                     .maxJobsToActivate(1)
+                    .timeout(Duration.ofSeconds(5))
                     .send()
                     .join(),
-            r -> !activateResponse.getJobs().isEmpty());
+            r -> !r.getJobs().isEmpty());
   }
 }
