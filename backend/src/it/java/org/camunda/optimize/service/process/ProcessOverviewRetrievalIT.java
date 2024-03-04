@@ -195,7 +195,6 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
 
   @ParameterizedTest
   @MethodSource("getDefinitionNameAndExpectedSortOrder")
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getProcessOverview_processesGetOrderedByOwnerAndDefinitionNameWhenOwnerNameIsMissingFromSomeDefinitions(final SortOrder sortOrder,
                                                                                                                       final List<String> processDefinitionKeys) {
     // given

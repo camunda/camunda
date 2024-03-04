@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.db.es.writer;
+package org.camunda.optimize.service.db.repository.es;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_OVERVIEW_INDEX_NAME;
@@ -11,19 +11,18 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.importing.LastKpiEvaluationResultsDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.index.ProcessOverviewIndexES;
-import org.camunda.optimize.service.db.writer.ProcessOverviewWriter;
+import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
+import org.camunda.optimize.service.db.repository.ProcessOverviewRepository;
+import org.camunda.optimize.service.db.repository.script.ProcessOverviewScriptFactory;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -34,21 +33,18 @@ import org.elasticsearch.script.ScriptType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
-@Component
 @Slf4j
+@Component
+@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public class ProcessOverviewWriterES implements ProcessOverviewWriter {
-
+public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
   @Override
   public void updateProcessConfiguration(
-      final String processDefinitionKey, final ProcessUpdateDto processUpdateDto) {
+      final String processDefinitionKey, final ProcessOverviewDto overviewDto) {
     try {
-      final ProcessOverviewDto overviewDto =
-          createNewProcessOverviewDto(processDefinitionKey, processUpdateDto);
       final Map<String, Object> paramMap = new HashMap<>();
       paramMap.put("owner", overviewDto.getOwner());
       paramMap.put("processDefinitionKey", overviewDto.getProcessDefinitionKey());
@@ -61,7 +57,7 @@ public class ProcessOverviewWriterES implements ProcessOverviewWriter {
                   new Script(
                       ScriptType.INLINE,
                       Script.DEFAULT_SCRIPT_LANG,
-                      getUpdateOverviewScript(),
+                      ProcessOverviewScriptFactory.createUpdateOverviewScript(),
                       paramMap))
               .upsert(objectMapper.convertValue(overviewDto, Map.class))
               .setRefreshPolicy(IMMEDIATE)
@@ -69,7 +65,7 @@ public class ProcessOverviewWriterES implements ProcessOverviewWriter {
       esClient.update(updateRequest);
     } catch (Exception e) {
       final String errorMessage =
-          String.format("There was a problem while updating the process: [%s].", processUpdateDto);
+          String.format("There was a problem while updating the process: [%s].", overviewDto);
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -87,7 +83,7 @@ public class ProcessOverviewWriterES implements ProcessOverviewWriter {
                   new Script(
                       ScriptType.INLINE,
                       Script.DEFAULT_SCRIPT_LANG,
-                      "ctx._source.digest.kpiReportResults = params.kpiReportResults;\n",
+                      ProcessOverviewScriptFactory.createUpdateProcessDigestScript(),
                       Map.of("kpiReportResults", processDigestDto.getKpiReportResults())))
               .setRefreshPolicy(IMMEDIATE)
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -103,24 +99,20 @@ public class ProcessOverviewWriterES implements ProcessOverviewWriter {
   }
 
   @Override
-  public void updateProcessOwnerIfNotSet(final String processDefinitionKey, final String ownerId) {
+  public void updateProcessOwnerIfNotSet(
+      final String processDefinitionKey,
+      final String ownerId,
+      final ProcessOverviewDto processOverviewDto) {
     try {
-      final ProcessUpdateDto processUpdateDto = new ProcessUpdateDto();
-      processUpdateDto.setOwnerId(ownerId);
-      final ProcessDigestRequestDto processDigestRequestDto = new ProcessDigestRequestDto();
-      processUpdateDto.setProcessDigest(processDigestRequestDto);
       final UpdateRequest updateRequest =
           new UpdateRequest()
               .index(PROCESS_OVERVIEW_INDEX_NAME)
               .id(processDefinitionKey)
               .script(
                   ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-                      getUpdateOwnerIfNotSetScript(),
+                      ProcessOverviewScriptFactory.createUpdateOwnerIfNotSetScript(),
                       Map.of("owner", ownerId, "processDefinitionKey", processDefinitionKey)))
-              .upsert(
-                  objectMapper.convertValue(
-                      createNewProcessOverviewDto(processDefinitionKey, processUpdateDto),
-                      Map.class))
+              .upsert(objectMapper.convertValue(processOverviewDto, Map.class))
               .setRefreshPolicy(IMMEDIATE)
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       esClient.update(updateRequest);
@@ -135,37 +127,28 @@ public class ProcessOverviewWriterES implements ProcessOverviewWriter {
   }
 
   @Override
-  public void updateKpisForProcessDefinitions(
-      Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis) {
+  public void updateKpisForProcessDefinitions(List<ProcessOverviewDto> processOverviewDtos) {
     final BulkRequest bulkRequest = new BulkRequest();
-    log.debug(
-        "Updating KPI values for process definitions with keys: [{}]",
-        definitionKeyToKpis.keySet());
-    for (Map.Entry<String, LastKpiEvaluationResultsDto> entry : definitionKeyToKpis.entrySet()) {
-      Map<String, String> reportIdToValue = entry.getValue().getReportIdToValue();
-      ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
-      processOverviewDto.setProcessDefinitionKey(entry.getKey());
-      processOverviewDto.setDigest(new ProcessDigestDto(false, Collections.emptyMap()));
-      processOverviewDto.setLastKpiEvaluationResults(reportIdToValue);
-      UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(PROCESS_OVERVIEW_INDEX_NAME)
-              .id(entry.getKey())
-              .upsert(objectMapper.convertValue(processOverviewDto, Map.class))
-              .script(
-                  ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-                      "ctx._source.lastKpiEvaluationResults = params.lastKpiEvaluationResults;\n",
-                      Map.of("lastKpiEvaluationResults", reportIdToValue)))
-              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-      bulkRequest.add(updateRequest);
-    }
+    processOverviewDtos.forEach(
+        processOverviewDto ->
+            bulkRequest.add(
+                new UpdateRequest()
+                    .index(PROCESS_OVERVIEW_INDEX_NAME)
+                    .id(processOverviewDto.getProcessDefinitionKey())
+                    .upsert(objectMapper.convertValue(processOverviewDto, Map.class))
+                    .script(
+                        ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+                            ProcessOverviewScriptFactory.createUpdateKpisScript(),
+                            Map.of(
+                                "lastKpiEvaluationResults",
+                                processOverviewDto.getLastKpiEvaluationResults())))
+                    .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)));
 
     esClient.doBulkRequest(bulkRequest, new ProcessOverviewIndexES().getIndexName(), false);
   }
 
   @Override
   public void deleteProcessOwnerEntry(final String processDefinitionKey) {
-    log.info("Removing pending entry " + processDefinitionKey);
     try {
       final DeleteRequest deleteRequest =
           new DeleteRequest().index(PROCESS_OVERVIEW_INDEX_NAME).id(processDefinitionKey);
@@ -178,41 +161,5 @@ public class ProcessOverviewWriterES implements ProcessOverviewWriter {
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-  }
-
-  private String getUpdateOverviewScript() {
-    // @formatter:off
-    return "ctx._source.owner = params.owner;\n"
-        + "ctx._source.processDefinitionKey = params.processDefinitionKey;\n"
-        + "ctx._source.digest.enabled = params.digestEnabled;\n"
-        + "if (params.digestCheckIntervalValue != null && params.digestCheckIntervalUnit != null) {\n"
-        + "  def alertInterval = [\n"
-        + "    'value': params.digestCheckIntervalValue,\n"
-        + "    'unit': params.digestCheckIntervalUnit\n"
-        + "  ];\n"
-        + "  ctx._source.digest.checkInterval = alertInterval;\n"
-        + "}\n";
-    // @formatter:on
-  }
-
-  private String getUpdateOwnerIfNotSetScript() {
-    // @formatter:off
-    return "if (ctx._source.owner == null) {\n"
-        + "  ctx._source.owner = params.owner;\n"
-        + "}\n"
-        + "ctx._source.processDefinitionKey = params.processDefinitionKey;\n";
-    // @formatter:on
-  }
-
-  private ProcessOverviewDto createNewProcessOverviewDto(
-      final String processDefinitionKey, final ProcessUpdateDto processUpdateDto) {
-    final ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
-    processOverviewDto.setProcessDefinitionKey(processDefinitionKey);
-    processOverviewDto.setOwner(processUpdateDto.getOwnerId());
-    processOverviewDto.setDigest(
-        new ProcessDigestDto(
-            processUpdateDto.getProcessDigest().isEnabled(), Collections.emptyMap()));
-    processOverviewDto.setLastKpiEvaluationResults(Collections.emptyMap());
-    return processOverviewDto;
   }
 }

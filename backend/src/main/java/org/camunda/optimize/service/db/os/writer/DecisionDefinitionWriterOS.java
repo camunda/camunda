@@ -78,7 +78,8 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
     // We must partition this into batches to avoid the maximum OS boolQuery clause limit(1024)
     // being reached
     // OS counts the clauses in a different way to ES: 300 is roughly equivalent to 1000 in ES
-    Lists.partition(importedDefinitions, 300)
+    // The issue was reproduced locally with 300 partition size so reduced to 100
+    Lists.partition(importedDefinitions, 100)
         .forEach(
             partition -> {
               final BoolQuery.Builder definitionsToDeleteQuery = new BoolQuery.Builder();
