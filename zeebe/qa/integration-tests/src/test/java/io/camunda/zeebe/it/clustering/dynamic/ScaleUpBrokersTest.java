@@ -202,6 +202,35 @@ final class ScaleUpBrokersTest {
     cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
   }
 
+  @Test
+  void shouldScaleReplicationFactor() {
+    // given
+    final int currentClusterSize = cluster.brokers().size();
+    final int newClusterSize = currentClusterSize + 1;
+    final int newBrokerId = newClusterSize - 1;
+    final var actuator = ClusterActuator.of(cluster.anyGateway());
+
+    // when
+    createNewBroker(newClusterSize, newBrokerId);
+    final var response = actuator.scaleBrokers(List.of(0, newBrokerId), 2);
+    Awaitility.await()
+        .timeout(Duration.ofMinutes(2))
+        .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response));
+
+    // then
+    // verify replicationFactor is increased
+    IntStream.rangeClosed(1, PARTITIONS_COUNT)
+        .forEach(
+            partitionId ->
+                ClusterActuatorAssert.assertThat(cluster)
+                    .describedAs("Partition %d has two replicas", partitionId)
+                    .brokerHasPartition(newBrokerId, partitionId)
+                    .brokerHasPartition(0, partitionId));
+
+    // Changes are reflected in the topology returned by grpc query
+    cluster.awaitCompleteTopology(newClusterSize, PARTITIONS_COUNT, 2, Duration.ofSeconds(30));
+  }
+
   private void createNewBroker(final int newClusterSize, final int newBrokerId) {
     createNewBroker(newClusterSize, newBrokerId, Optional.empty());
   }

@@ -470,11 +470,14 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
 
   @Override
   public byte[] encodeScaleRequest(final ScaleRequest scaleRequest) {
-    return Requests.ScaleRequest.newBuilder()
-        .addAllMemberIds(scaleRequest.members().stream().map(MemberId::id).toList())
-        .setDryRun(scaleRequest.dryRun())
-        .build()
-        .toByteArray();
+    final var builder =
+        Requests.ScaleRequest.newBuilder()
+            .addAllMemberIds(scaleRequest.members().stream().map(MemberId::id).toList())
+            .setDryRun(scaleRequest.dryRun());
+
+    scaleRequest.newReplicationFactor().ifPresent(builder::setNewReplicationFactor);
+
+    return builder.build().toByteArray();
   }
 
   @Override
@@ -559,8 +562,13 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   public ScaleRequest decodeScaleRequest(final byte[] encodedState) {
     try {
       final var scaleRequest = Requests.ScaleRequest.parseFrom(encodedState);
+      final Optional<Integer> newReplicationFactor =
+          scaleRequest.hasNewReplicationFactor()
+              ? Optional.of(scaleRequest.getNewReplicationFactor())
+              : Optional.empty();
       return new ScaleRequest(
           scaleRequest.getMemberIdsList().stream().map(MemberId::from).collect(Collectors.toSet()),
+          newReplicationFactor,
           scaleRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);

@@ -23,16 +23,23 @@ import io.camunda.zeebe.topology.util.TopologyUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 
 /** Reassign all partitions to the given members based on round-robin strategy. */
 public class PartitionReassignRequestTransformer implements TopologyChangeRequest {
-
   final Set<MemberId> members;
+  private final Optional<Integer> newReplicationFactor;
+
+  public PartitionReassignRequestTransformer(
+      final Set<MemberId> members, final Optional<Integer> newReplicationFactor) {
+    this.members = members;
+    this.newReplicationFactor = newReplicationFactor;
+  }
 
   public PartitionReassignRequestTransformer(final Set<MemberId> members) {
-    this.members = members;
+    this(members, Optional.empty());
   }
 
   @Override
@@ -48,14 +55,22 @@ public class PartitionReassignRequestTransformer implements TopologyChangeReques
     return generatePartitionDistributionOperations(currentTopology, members);
   }
 
+  private int getReplicationFactor(final ClusterTopology clusterTopology) {
+    return newReplicationFactor.orElse(clusterTopology.minReplicationFactor());
+  }
+
   private Either<Exception, List<TopologyChangeOperation>> generatePartitionDistributionOperations(
       final ClusterTopology currentTopology, final Set<MemberId> brokers) {
     final List<TopologyChangeOperation> operations = new ArrayList<>();
 
     final var oldDistribution = TopologyUtil.getPartitionDistributionFrom(currentTopology, "temp");
-    // We assume that all partitions have the same replication factor
-    final int replicationFactor =
-        oldDistribution.stream().map(p -> p.members().size()).findFirst().orElseThrow();
+    final int replicationFactor = getReplicationFactor(currentTopology);
+
+    if (replicationFactor <= 0) {
+      return Either.left(
+          new TopologyRequestFailedException.InvalidRequest(
+              String.format("Replication factor [%d] must be greater than 0", replicationFactor)));
+    }
 
     if (brokers.size() < replicationFactor) {
       return Either.left(

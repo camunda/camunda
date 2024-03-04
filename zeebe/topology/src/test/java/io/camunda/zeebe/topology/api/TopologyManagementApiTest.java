@@ -30,9 +30,11 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberRemoveOpera
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.AfterEach;
@@ -214,6 +216,80 @@ final class TopologyManagementApiTest {
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
             new PartitionLeaveOperation(id0, 2));
+  }
+
+  @Test
+  void shouldScaleBrokersWithNewReplicationFactor() {
+    // given
+    final var request =
+        new TopologyManagementRequest.ScaleRequest(Set.of(id0, id1), Optional.of(2), false);
+    final ClusterTopology currentTopology =
+        initialTopology
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1)))
+            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1)));
+
+    recordingCoordinator.setCurrentTopology(currentTopology);
+
+    // when
+    final var changeStatus = clientApi.scaleMembers(request).join().get();
+
+    // then
+    assertThat(changeStatus.plannedChanges())
+        .containsExactly(
+            new MemberJoinOperation(id1),
+            new PartitionJoinOperation(id1, 2, 2),
+            new PartitionJoinOperation(id1, 1, 1),
+            new PartitionReconfigurePriorityOperation(id0, 1, 2));
+  }
+
+  @Test
+  void shouldRejectScaleRequestWithInvalidReplicationFactor() {
+    // given
+    final var request =
+        new TopologyManagementRequest.ScaleRequest(Set.of(id0, id1), Optional.of(0), false);
+    final ClusterTopology currentTopology =
+        initialTopology
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1)))
+            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1)));
+
+    recordingCoordinator.setCurrentTopology(currentTopology);
+
+    // when
+    final var changeStatus = clientApi.scaleMembers(request).join();
+
+    // then
+    EitherAssert.assertThat(changeStatus)
+        .isLeft()
+        .left()
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.INVALID_REQUEST);
+  }
+
+  @Test
+  void shouldReduceReplicationFactorWithoutScalingDown() {
+    // given
+    final var request =
+        new TopologyManagementRequest.ScaleRequest(Set.of(id0, id1), Optional.of(1), false);
+    final ClusterTopology currentTopology =
+        initialTopology
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(2)))
+            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1)))
+            .addMember(id1, MemberState.initializeAsActive(Map.of()))
+            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(1)))
+            .updateMember(id1, m -> m.addPartition(2, PartitionState.active(2)));
+
+    recordingCoordinator.setCurrentTopology(currentTopology);
+
+    // when
+    final var changeStatus = clientApi.scaleMembers(request).join().get();
+
+    // then
+    assertThat(changeStatus.plannedChanges())
+        .containsExactlyInAnyOrder(
+            new PartitionLeaveOperation(id0, 2),
+            new PartitionLeaveOperation(id1, 1),
+            new PartitionReconfigurePriorityOperation(id0, 1, 1),
+            new PartitionReconfigurePriorityOperation(id1, 2, 1));
   }
 
   @Test

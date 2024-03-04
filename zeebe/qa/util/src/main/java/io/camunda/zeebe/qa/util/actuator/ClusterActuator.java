@@ -113,6 +113,19 @@ public interface ClusterActuator {
   PlannedOperationsResponse scaleBrokers(@RequestBody List<Integer> ids);
 
   /**
+   * Scales the given brokers up or down and reassigns partitions to the new brokers based on new
+   * replication factor.
+   *
+   * @param ids
+   * @param newReplicationFactor new replication factor after scaling, if <=0 use the current value
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers?replicationFactor={newReplicationFactor}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse scaleBrokers(
+      @RequestBody List<Integer> ids, @Param final int newReplicationFactor);
+
+  /**
    * Scales the given brokers up or down and reassigns partitions to the new brokers.
    *
    * @param dryRun if true, changes are not applied but only simulated.

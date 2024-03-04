@@ -8,6 +8,7 @@
 package io.camunda.zeebe.topology.api;
 
 import io.atomix.cluster.MemberId;
+import java.util.Optional;
 import java.util.Set;
 
 /** Defines the supported requests for the topology management. */
@@ -34,7 +35,12 @@ public sealed interface TopologyManagementRequest {
   record ReassignPartitionsRequest(Set<MemberId> members, boolean dryRun)
       implements TopologyManagementRequest {}
 
-  record ScaleRequest(Set<MemberId> members, boolean dryRun) implements TopologyManagementRequest {}
+  record ScaleRequest(Set<MemberId> members, Optional<Integer> newReplicationFactor, boolean dryRun)
+      implements TopologyManagementRequest {
+    public ScaleRequest(final Set<MemberId> members, final boolean dryRun) {
+      this(members, Optional.empty(), dryRun);
+    }
+  }
 
   record CancelChangeRequest(long changeId) implements TopologyManagementRequest {
 

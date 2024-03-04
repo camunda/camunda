@@ -14,16 +14,24 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ScaleRequestTransformer implements TopologyChangeRequest {
 
   private final Set<MemberId> members;
+  private final Optional<Integer> newReplicationFactor;
   private final ArrayList<TopologyChangeOperation> generatedOperations = new ArrayList<>();
 
   public ScaleRequestTransformer(final Set<MemberId> members) {
+    this(members, Optional.empty());
+  }
+
+  public ScaleRequestTransformer(
+      final Set<MemberId> members, final Optional<Integer> newReplicationFactor) {
     this.members = members;
+    this.newReplicationFactor = newReplicationFactor;
   }
 
   @Override
@@ -37,7 +45,9 @@ public class ScaleRequestTransformer implements TopologyChangeRequest {
         .map(this::addToOperations)
         // then reassign partitions
         .flatMap(
-            ignore -> new PartitionReassignRequestTransformer(members).operations(currentTopology))
+            ignore ->
+                new PartitionReassignRequestTransformer(members, newReplicationFactor)
+                    .operations(currentTopology))
         .map(this::addToOperations)
         // then remove members that are not part of the new topology
         .flatMap(
