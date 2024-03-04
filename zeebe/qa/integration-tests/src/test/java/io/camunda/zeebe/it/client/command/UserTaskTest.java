@@ -50,6 +50,7 @@ public abstract class UserTaskTest {
           .withPartitionsCount(3)
           .withReplicationFactor(3)
           .build();
+
   protected long userTaskKey;
   protected ZeebeClient client;
 
