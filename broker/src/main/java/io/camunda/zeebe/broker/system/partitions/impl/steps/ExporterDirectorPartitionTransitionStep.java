@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import java.util.Collection;
 
 public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
@@ -81,7 +82,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
   private ActorFuture<Void> openExporter(
       final PartitionTransitionContext context, final Role targetRole) {
     final Collection<ExporterDescriptor> exporterDescriptors = context.getExportedDescriptors();
-
+    final var exporterFilter =
+        SkipPositionsFilter.of(context.getBrokerCfg().getExporting().getSkipRecords());
     final ExporterMode exporterMode =
         targetRole == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
     final ExporterDirectorContext exporterCtx =
@@ -93,7 +95,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .partitionMessagingService(context.getMessagingService())
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)
-            .positionsToSkip(context.getBrokerCfg().getExporting().getSkipRecords());
+            .positionsToSkipFilter(exporterFilter);
 
     final ExporterDirector director = new ExporterDirector(exporterCtx, !context.shouldExport());
 
