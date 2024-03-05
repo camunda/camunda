@@ -149,7 +149,7 @@ follow the following steps:
    it would be best if they are split up into another commit. Think about how
    a reviewer can best understand your changes. Please follow the
    [commit message guidelines](#commit-message-guidelines).
-9. After finishing up the squashing force push your changes to your branch.
+8. After finishing up the squashing, force push your changes to your branch.
 
    ```
    git push --force-with-lease
