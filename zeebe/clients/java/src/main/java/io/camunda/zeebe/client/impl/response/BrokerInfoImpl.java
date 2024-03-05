@@ -42,7 +42,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
     }
   }
 
-  public BrokerInfoImpl(final io.camunda.zeebe.gateway.protocol.rest.BrokerInfo httpBrokerInfo) {
+  public BrokerInfoImpl(final io.camunda.zeebe.client.protocol.rest.BrokerInfo httpBrokerInfo) {
     nodeId = httpBrokerInfo.getNodeId();
     host = httpBrokerInfo.getHost();
     port = httpBrokerInfo.getPort();
