@@ -85,7 +85,9 @@ describe('<Tasks />', () => {
       wrapper: getWrapper(),
     });
 
-    await waitFor(() => expect(screen.getByTitle('All open')).toBeDisabled());
+    await waitFor(() =>
+      expect(screen.getByTitle('All open tasks')).toBeDisabled(),
+    );
 
     expect(await screen.findByText('TASK 0')).toBeInTheDocument();
     expect(screen.getByText('TASK 49')).toBeInTheDocument();

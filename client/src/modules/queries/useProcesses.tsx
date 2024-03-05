@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, UseQueryOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {request, RequestError} from 'modules/request';
 import {tracking} from 'modules/tracking';
@@ -22,7 +22,13 @@ type Params = {
   isStartedByForm?: boolean;
 };
 
-function useProcesses(params: Params) {
+function useProcesses(
+  params: Params,
+  options: Pick<
+    UseQueryOptions<Data, RequestError>,
+    'refetchInterval' | 'enabled' | 'keepPreviousData'
+  > = {},
+) {
   const {query, tenantId, isStartedByForm} = params;
   return useQuery<Data, RequestError>({
     queryKey: ['processes', query, tenantId, isStartedByForm],
@@ -40,7 +46,6 @@ function useProcesses(params: Params) {
 
       throw error ?? new Error('Failed to fetch processes');
     },
-    refetchInterval: 5000,
     onSuccess: (data) => {
       tracking.track({
         eventName: 'processes-loaded',
@@ -48,7 +53,7 @@ function useProcesses(params: Params) {
         count: data.processes.length,
       });
     },
-    keepPreviousData: true,
+    ...options,
   });
 }
 

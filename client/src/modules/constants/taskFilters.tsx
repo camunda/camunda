@@ -8,7 +8,7 @@
 const taskFilters = {
   'all-open': {
     id: 'all-open',
-    text: 'All open',
+    text: 'All open tasks',
   },
   'assigned-to-me': {
     id: 'assigned-to-me',

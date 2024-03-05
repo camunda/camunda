@@ -7,6 +7,7 @@
 
 import styled, {createGlobalStyle, css} from 'styled-components';
 import {MENU_OPTIONS_STYLES_CLASSNAME} from './constants';
+import {IS_PROCESS_CUSTOM_FILTERS_ENABLED} from 'modules/featureFlags';
 
 const MenuOptionsStyles = createGlobalStyle`
   ${() => css`
@@ -25,8 +26,15 @@ const Container = styled.section`
 const FormElement = styled.form`
   display: grid;
   align-items: flex-end;
-  grid-template-columns: 1fr min-content;
-  gap: var(--cds-spacing-03);
+  ${IS_PROCESS_CUSTOM_FILTERS_ENABLED
+    ? css`
+        grid-template-columns: 1fr min-content min-content;
+        gap: var(--cds-spacing-02);
+      `
+    : css`
+        grid-template-columns: 1fr min-content;
+        gap: var(--cds-spacing-03);
+      `}
   width: 100%;
 `;
 

@@ -12,6 +12,8 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
 
+vi.mock('modules/featureFlags');
+
 const createWrapper = (
   initialEntries: React.ComponentProps<
     typeof MemoryRouter
@@ -39,7 +41,9 @@ describe('<Filters />', () => {
 
     fireEvent.click(screen.getByRole('combobox', {name: 'Filter options'}));
 
-    expect(screen.getByRole('option', {name: 'All open'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', {name: 'All open tasks'}),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('option', {name: 'Assigned to me'}),
     ).toBeInTheDocument();
@@ -132,7 +136,7 @@ describe('<Filters />', () => {
     });
 
     fireEvent.click(screen.getByRole('combobox', {name: 'Filter options'}));
-    fireEvent.click(screen.getByRole('option', {name: 'All open'}));
+    fireEvent.click(screen.getByRole('option', {name: 'All open tasks'}));
 
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?filter=all-open&sortBy=creation',

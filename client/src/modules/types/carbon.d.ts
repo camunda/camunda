@@ -244,6 +244,41 @@ declare module '@carbon/react' {
 
   export const usePrefix: () => string;
 
+  export const OverflowMenu: React.FunctionComponent<{
+    'aria-label'?: string;
+    children?: React.ReactNode;
+    className?: string;
+    direction?: 'top' | 'bottom';
+    flipped?: boolean;
+    focusTrap?: boolean;
+    iconClass?: string;
+    iconDescription?: string;
+    id?: string;
+    menuOffset?: {top: number; left: number} | (() => void);
+    menuOffsetFlip?: {top: number; left: number} | (() => void);
+    menuOptionsClass?: string;
+    onClick?: React.MouseEventHandler<HTMLDivElement>;
+    onClose?: () => void;
+    onFocus?: React.FocusEventHandler<HTMLDivElement>;
+    onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>;
+    onBlur?: React.FocusEventHandler<HTMLDivElement>;
+    disabled?: boolean;
+    onOpen?: () => void;
+    open?: boolean;
+    renderIcon?: React.FC | object;
+    selectorPrimaryFocus?: string;
+    size?: 'sm' | 'md' | 'lg';
+    align?:
+      | 'top'
+      | 'top-left'
+      | 'top-right'
+      | 'bottom'
+      | 'bottom-left'
+      | 'bottom-right'
+      | 'left'
+      | 'right';
+  }>;
+
   export * from 'carbon-components-react';
 }
 
@@ -275,6 +310,7 @@ declare module '@carbon/react/icons' {
   export const CheckmarkOutline: Icon;
   export const RadioButtonChecked: Icon;
   export const Share: Icon;
+  export const Filter: Icon;
 }
 
 declare module '@carbon/elements' {

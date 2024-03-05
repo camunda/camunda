@@ -39,9 +39,10 @@ import {usePermissions} from 'modules/hooks/usePermissions';
 import {History} from './History';
 import {IS_PROCESS_INSTANCES_ENABLED} from 'modules/featureFlags';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
-import {CurrentUser} from 'modules/types';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {pages} from 'modules/routing';
+import {useMultiTenancyDropdown} from 'modules/components/useMultiTenancyDropdown';
+import {MultiTenancyDropdown} from 'modules/components/useMultiTenancyDropdown/MultiTenancyDropdown';
 
 type UseProcessesFilterParams = Omit<
   Parameters<typeof useProcesses>[0],
@@ -110,6 +111,7 @@ const Processes: React.FC = observer(() => {
   const {instance} = newProcessInstance;
   const {hasPermission} = usePermissions(['write']);
   const {data: currentUser} = useCurrentUser();
+  const {isMultiTenancyVisible} = useMultiTenancyDropdown();
   const hasMultipleTenants = (currentUser?.tenants.length ?? 0) > 1;
   const defaultTenant = currentUser?.tenants[0];
   const location = useLocation();
@@ -141,11 +143,17 @@ const Processes: React.FC = observer(() => {
           (opt) => opt.searchParamValue === startFormFilterSearchParam,
         )
       : undefined) ?? START_FORM_FILTER_OPTIONS[0];
-  const {data, error, isInitialLoading} = useProcesses({
-    query: searchParams.get('search') ?? undefined,
-    tenantId: selectedTenantId,
-    ...(startFormFilter?.params ?? {}),
-  });
+  const {data, error, isInitialLoading} = useProcesses(
+    {
+      query: searchParams.get('search') ?? undefined,
+      tenantId: selectedTenantId,
+      ...(startFormFilter?.params ?? {}),
+    },
+    {
+      refetchInterval: 5000,
+      keepPreviousData: true,
+    },
+  );
   const debouncedNavigate = useRef(debounce(updateSearchParams, 500)).current;
   const initialTenantId = useRef(
     defaultTenant?.id ?? getStateLocally('tenantId'),
@@ -239,39 +247,23 @@ const Processes: React.FC = observer(() => {
     >
       <NewProcessInstanceTasksPolling />
       <Stack as={Content} gap={6}>
-        {window.clientConfig?.isMultiTenancyEnabled &&
-        currentUser !== undefined &&
-        hasMultipleTenants ? (
+        {isMultiTenancyVisible ? (
           <MultiTenancyContainer>
-            <Dropdown<CurrentUser['tenants'][0]>
-              key={`tenant-dropdown-${currentUser?.tenants.length ?? 0}`}
-              id="tenantId"
-              items={currentUser?.tenants ?? []}
-              itemToString={(item) => (item ? `${item.name} - ${item.id}` : '')}
-              label="Tenant"
-              titleText="Tenant"
-              initialSelectedItem={
-                currentUser?.tenants.find(({id}) =>
-                  [
-                    searchParams.get('tenantId') ?? undefined,
-                    getStateLocally('tenantId'),
-                  ]
-                    .filter((tenantId) => tenantId !== undefined)
-                    .includes(id),
-                ) ?? defaultTenant
-              }
-              onChange={(event) => {
-                const id = event.selectedItem?.id;
-
-                if (!id) {
-                  return;
-                }
-
+            <MultiTenancyDropdown
+              initialSelectedItem={currentUser?.tenants.find(({id}) =>
+                [
+                  searchParams.get('tenantId') ?? undefined,
+                  getStateLocally('tenantId'),
+                ]
+                  .filter((tenantId) => tenantId !== undefined)
+                  .includes(id),
+              )}
+              onChange={(tenant) => {
                 updateSearchParams(searchParams, {
                   name: 'tenantId',
-                  value: id,
+                  value: tenant,
                 });
-                storeStateLocally('tenantId', id);
+                storeStateLocally('tenantId', tenant);
               }}
             />
             <Search {...processSearchProps} />
