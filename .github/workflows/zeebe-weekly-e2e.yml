@@ -70,15 +70,14 @@ jobs:
             generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-latest-major-minor-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
             generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
+    runs-on: ubuntu-latest
     name: Weekly E2E
-    uses: ./.github/workflows/zeebe-e2e-testbench.yaml
-    with:
-      branch: ${{ matrix.branch }}
-      generation: ${{ matrix.generation_template }}
-      maxTestDuration: P5D
-      clusterPlan: Production - M
-      maxInstanceDuration: 40m
-    secrets: inherit
+    steps:
+      - uses: ./.github/workflows/zeebe-e2e-testbench.yaml
+      - name: Trigger Weekly E2E on ${{ matrix.branch }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run --ref ${{ matrix.branch }} zeebe-e2e-testbench.yaml -F generation='${{ matrix.generation_template }}' -F branch=${{ matrix.branch }} -F maxTestDuration='P5D' -F maxInstanceDuration='40m' -F clusterPlan='Production - M'
 
   e2e-multiregion-failover:
     name: Multi-region failover with data loss
