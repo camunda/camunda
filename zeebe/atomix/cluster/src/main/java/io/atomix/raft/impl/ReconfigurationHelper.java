@@ -285,6 +285,7 @@ public final class ReconfigurationHelper {
 
     if (otherMembers.isEmpty()) {
       future.complete(null);
+      return;
     }
 
     final var quorum =
