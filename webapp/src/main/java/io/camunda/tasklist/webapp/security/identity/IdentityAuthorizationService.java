@@ -95,4 +95,8 @@ public class IdentityAuthorizationService {
         getProcessDefinitionsFromAuthorization(),
         Set.of(IdentityProperties.ALL_RESOURCES, processDefinitionKey));
   }
+
+  public boolean isJwtAuthentication() {
+    return SecurityContextHolder.getContext().getAuthentication() instanceof JwtAuthenticationToken;
+  }
 }

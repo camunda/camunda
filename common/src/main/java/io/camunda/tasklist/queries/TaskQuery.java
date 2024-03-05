@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.queries;
 
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import java.util.Arrays;
 import java.util.Objects;
@@ -34,6 +35,7 @@ public class TaskQuery {
   private DateFilter dueDate;
   private TaskOrderBy[] sort;
   private TaskByCandidateUserOrGroup taskByCandidateUserOrGroups;
+  private TaskImplementation implementation;
 
   public TaskState getState() {
     return state;
@@ -234,6 +236,15 @@ public class TaskQuery {
     return this;
   }
 
+  public TaskImplementation getImplementation() {
+    return implementation;
+  }
+
+  public TaskQuery setImplementation(TaskImplementation implementation) {
+    this.implementation = implementation;
+    return this;
+  }
+
   public TaskQuery createCopy() {
     return new TaskQuery()
         .setAssigned(this.assigned)
@@ -249,6 +260,7 @@ public class TaskQuery {
         .setTenantIds(this.tenantIds)
         .setCandidateGroup(this.candidateGroup)
         .setTaskByCandidateUserOrGroups(this.taskByCandidateUserOrGroups)
+        .setImplementation(this.implementation)
         .setAssignees(this.assignees)
         .setCandidateGroups(this.candidateGroups)
         .setCandidateUsers(this.candidateUsers);
@@ -265,6 +277,7 @@ public class TaskQuery {
     final TaskQuery taskQuery = (TaskQuery) o;
     return pageSize == taskQuery.pageSize
         && state == taskQuery.state
+        && implementation == taskQuery.implementation
         && Objects.equals(assigned, taskQuery.assigned)
         && Objects.equals(assignee, taskQuery.assignee)
         && Arrays.equals(assignees, taskQuery.assignees)
@@ -302,7 +315,9 @@ public class TaskQuery {
             pageSize,
             followUpDate,
             dueDate,
-            taskByCandidateUserOrGroups);
+            taskByCandidateUserOrGroups,
+            implementation);
+    result = 31 * result + Arrays.hashCode(tenantIds);
     result = 31 * result + Arrays.hashCode(assignees);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
@@ -369,6 +384,8 @@ public class TaskQuery {
         + Arrays.toString(sort)
         + ", taskByCandidateUserOrGroups="
         + taskByCandidateUserOrGroups
+        + ", implementation="
+        + implementation
         + '}';
   }
 }

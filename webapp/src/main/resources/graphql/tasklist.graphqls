@@ -20,6 +20,8 @@ type Task {
     variables: [Variable!]
     # State of the task
     taskState: TaskState!
+    # Task implementation
+    implementation: TaskImplementation!
     # Array of values to be copied into `TaskQuery` to request for next or previous page of tasks.
     sortValues: [String!]
     # Flag to show that the task is first in current filter
@@ -68,6 +70,8 @@ input DateFilter {
 input TaskQuery {
     # State of the tasks
     state: TaskState
+    # Tasks implementation
+    implementation: TaskImplementation
     # Are the tasks assigned?
     assigned: Boolean
     # Who is assigned to the tasks?
@@ -122,6 +126,12 @@ enum TaskState {
     CREATED,
     COMPLETED,
     CANCELED
+}
+
+# Implementation of the task.
+enum TaskImplementation {
+    JOB_WORKER,
+    ZEEBE_USER_TASK
 }
 
 # Variable used in task.

@@ -469,6 +469,15 @@ public class TaskStoreOpenSearch implements TaskStore {
                   .to(JsonData.of(query.getDueDate().getTo())));
     }
 
+    Query.Builder implementationQ = null;
+    if (query.getImplementation() != null) {
+      implementationQ = new Query.Builder();
+      implementationQ.term(
+          t ->
+              t.field(TaskTemplate.IMPLEMENTATION)
+                  .value(FieldValue.of(query.getImplementation().name())));
+    }
+
     final Query.Builder jointQ =
         joinQueryBuilderWithAnd(
             stateQ,
@@ -485,7 +494,8 @@ public class TaskStoreOpenSearch implements TaskStore {
             processInstanceIdQ,
             processDefinitionIdQ,
             followUpQ,
-            dueDateQ);
+            dueDateQ,
+            implementationQ);
 
     if (jointQ == null) {
       jointQ.matchAll(new MatchAllQuery.Builder().build());

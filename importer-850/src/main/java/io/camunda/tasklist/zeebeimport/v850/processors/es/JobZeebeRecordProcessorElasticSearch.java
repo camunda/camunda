@@ -12,13 +12,12 @@ import static io.camunda.zeebe.protocol.Protocol.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.zeebeimport.v850.record.Intent;
 import io.camunda.tasklist.zeebeimport.v850.record.value.JobRecordValueImpl;
@@ -31,14 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,11 +49,7 @@ public class JobZeebeRecordProcessorElasticSearch {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private RestHighLevelClient esClient;
-
-  @Autowired private FormIndex formIndex;
-
-  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private FormStore formStore;
 
   public void processJobRecord(Record<JobRecordValueImpl> record, BulkRequest bulkRequest)
       throws PersistenceException {
@@ -82,6 +70,7 @@ public class JobZeebeRecordProcessorElasticSearch {
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
     final TaskEntity entity =
         new TaskEntity()
+            .setImplementation(TaskImplementation.JOB_WORKER)
             .setId(String.valueOf(record.getKey()))
             .setKey(record.getKey())
             .setPartitionId(record.getPartitionId())
@@ -115,11 +104,11 @@ public class JobZeebeRecordProcessorElasticSearch {
     entity.setFormKey(formKey);
 
     Optional.ofNullable(formKey)
-        .map(this::getHighestVersionFormByKey)
+        .flatMap(formStore::getHighestVersionFormByKey)
         .ifPresentOrElse(
             linkedForm -> {
-              entity.setFormVersion(linkedForm.getVersion());
-              entity.setFormId(linkedForm.getBpmnId());
+              entity.setFormVersion(linkedForm.version());
+              entity.setFormId(linkedForm.bpmnId());
               entity.setIsFormEmbedded(false);
             },
             () -> {
@@ -156,57 +145,48 @@ public class JobZeebeRecordProcessorElasticSearch {
       } catch (JsonProcessingException e) {
         LOGGER.warn(
             String.format(
-                "Candidate users can't be parsed from %s: %s", candidateGroups, e.getMessage()),
+                "Candidate users can't be parsed from %s: %s", candidateUsers, e.getMessage()),
             e);
       }
     }
 
-    final String taskState = record.getIntent().name();
-    LOGGER.debug("JobState {}", taskState);
-    if (taskState.equals(Intent.CANCELED.name())) {
-      entity
+    final Intent intent = (Intent) record.getIntent();
+    LOGGER.debug("Intent {}", intent);
+
+    switch (intent) {
+      case CANCELED -> entity
           .setState(TaskState.CANCELED)
           .setCompletionTime(
               DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    } else if (taskState.equals(Intent.COMPLETED.name())) {
-      entity
+      case COMPLETED -> entity
           .setState(TaskState.COMPLETED)
           .setCompletionTime(
               DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    } else if (taskState.equals(Intent.CREATED.name())) {
-      entity
+      case CREATED -> entity
           .setState(TaskState.CREATED)
           .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    } else if (taskState.equals(Intent.MIGRATED.name())) {
-      entity
-          .setState(TaskState.MIGRATED)
-          .setFlowNodeBpmnId(recordValue.getElementId())
-          .setBpmnProcessId(recordValue.getBpmnProcessId())
-          .setProcessDefinitionId(processDefinitionId);
-    } else if (taskState.equals(Intent.FAILED.name())) {
-      if (recordValue.getRetries() > 0) {
-        if (recordValue.getRetryBackoff() > 0) {
-          entity.setState(TaskState.FAILED);
+      case MIGRATED, RECURRED_AFTER_BACKOFF -> entity.setState(TaskState.CREATED);
+      case FAILED -> {
+        if (recordValue.getRetries() > 0) {
+          if (recordValue.getRetryBackoff() > 0) {
+            entity.setState(TaskState.FAILED);
+          } else {
+            entity.setState(TaskState.CREATED);
+          }
         } else {
-          entity.setState(TaskState.CREATED);
+          entity.setState(TaskState.FAILED);
         }
-      } else {
-        entity.setState(TaskState.FAILED);
       }
-    } else if (taskState.equals(Intent.RECURRED_AFTER_BACKOFF.name())) {
-      entity.setState(TaskState.CREATED);
-    } else {
-      LOGGER.warn(String.format("TaskState %s not supported", taskState));
+      default -> LOGGER.warn(String.format("Intent %s not supported", intent));
     }
-    return getTaskQuery(entity);
+    return getTaskQuery(entity, intent);
   }
 
-  private UpdateRequest getTaskQuery(TaskEntity entity) throws PersistenceException {
+  private UpdateRequest getTaskQuery(TaskEntity entity, Intent intent) throws PersistenceException {
     try {
       final Map<String, Object> updateFields = new HashMap<>();
       LOGGER.debug("Task instance: id {}", entity.getId());
-      if (entity.getState() == TaskState.MIGRATED) {
-        updateFields.put(TaskTemplate.STATE, TaskState.CREATED); // Gonna keep as Created
+      if (intent == Intent.MIGRATED) {
         updateFields.put(TaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
         updateFields.put(TaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
         updateFields.put(TaskTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
@@ -231,36 +211,5 @@ public class JobZeebeRecordProcessorElasticSearch {
           String.format("Error preparing the query to upsert task instance [%s]", entity.getId()),
           e);
     }
-  }
-
-  private FormEntity getHighestVersionFormByKey(String formKey) {
-    final SearchRequest searchRequest =
-        new SearchRequest(formIndex.getFullQualifiedName()); // Replace with your index name
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-
-    searchSourceBuilder.query(QueryBuilders.termQuery(FormIndex.ID, formKey));
-
-    searchSourceBuilder.sort(FormIndex.VERSION, SortOrder.DESC);
-    searchSourceBuilder.size(1);
-
-    searchRequest.source(searchSourceBuilder);
-
-    try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-      if (searchResponse.getHits().getHits().length > 0) {
-        // Extract the source and map it to your FormEntity object
-        final Map<String, Object> sourceAsMap =
-            searchResponse.getHits().getHits()[0].getSourceAsMap();
-        final FormEntity formEntity = new FormEntity();
-        formEntity.setBpmnId((String) sourceAsMap.get(FormIndex.BPMN_ID));
-        formEntity.setVersion(((Number) sourceAsMap.get(FormIndex.VERSION)).longValue());
-        formEntity.setEmbedded((Boolean) sourceAsMap.get(FormIndex.EMBEDDED));
-        return formEntity;
-      }
-    } catch (IOException e) {
-      String.format("Error retrieving the last version for the formKey: [%s]", formKey);
-    }
-    return null;
   }
 }

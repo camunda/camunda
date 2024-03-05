@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.IdentityProperties;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -64,7 +66,10 @@ class TaskControllerTest {
   @Mock private VariableService variableService;
   @Mock private TaskMapper taskMapper;
   @InjectMocks private TaskController instance;
-  @Mock private TasklistProperties tasklistProperties;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private TasklistProperties tasklistProperties;
+
   @Mock private UserReader userReader;
   @Mock private IdentityAuthorizationService identityAuthorizationService;
 
@@ -490,30 +495,6 @@ class TaskControllerTest {
           .perform(post(TasklistURIs.TASKS_URL_V1.concat("{taskId}/variables/search"), taskId))
           .andExpect(status().isNotFound());
     }
-
-    @Test
-    void searchTaskVariablesWhenRequestBodyIsEmpty() throws Exception {
-      // Given
-      final var taskId = "11778899";
-      when(variableService.getVariableSearchResponses(taskId, emptySet())).thenReturn(emptyList());
-
-      // When
-      final var responseAsString =
-          mockMvc
-              .perform(post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId))
-              .andDo(print())
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-
-      final var result =
-          CommonUtils.OBJECT_MAPPER.readValue(
-              responseAsString, new TypeReference<List<VariableSearchResponse>>() {});
-
-      // Then
-      assertThat(result).isEmpty();
-    }
   }
 
   @Nested
@@ -529,7 +510,8 @@ class TaskControllerTest {
               .setBpmnProcessId("Flight registration")
               .setAssignee("demo")
               .setCreationTime("2023-02-20T18:37:19.214+0000")
-              .setTaskState(TaskState.CREATED);
+              .setTaskState(TaskState.CREATED)
+              .setImplementation(TaskImplementation.JOB_WORKER);
       final var taskResponse =
           new TaskResponse()
               .setId(taskId)
@@ -579,14 +561,16 @@ class TaskControllerTest {
       final var taskId = "3333333";
       final var assignRequest =
           new TaskAssignRequest().setAssignee("demo1").setAllowOverrideAssignment(true);
-      final var mockedTask = mock(TaskDTO.class);
+      final var taskDTO =
+          new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER);
 
       final TaskResponse expectedTaskResponse = new TaskResponse();
       expectedTaskResponse.setId("3333333");
       expectedTaskResponse.setAssignee("demo1");
 
-      when(taskService.assignTask(taskId, "demo1", true)).thenReturn(mockedTask);
-      when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
+      when(taskService.getTask(taskId)).thenReturn(taskDTO);
+      when(taskService.assignTask(taskId, "demo1", true)).thenReturn(taskDTO);
+      when(taskMapper.toTaskResponse(taskDTO)).thenReturn(expectedTaskResponse);
 
       // When
       final var responseAsString =
@@ -622,6 +606,8 @@ class TaskControllerTest {
       // When
       when(taskService.assignTask(taskId, "", true))
           .thenThrow(new InvalidRequestException(expectedErrorMessage));
+      when(taskService.getTask(taskId))
+          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
 
       // Then
       mockMvc
@@ -647,14 +633,16 @@ class TaskControllerTest {
     void unassignTask() throws Exception {
       // Given
       final var taskId = "44444444";
-      final var mockedTask = mock(TaskDTO.class);
+      final var taskDTO =
+          new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER);
 
       final TaskResponse expectedTaskResponse = new TaskResponse();
       expectedTaskResponse.setId("44444444");
       expectedTaskResponse.setAssignee("");
 
-      when(taskService.unassignTask(taskId)).thenReturn(mockedTask);
-      when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
+      when(taskService.getTask(taskId)).thenReturn(taskDTO);
+      when(taskService.unassignTask(taskId)).thenReturn(taskDTO);
+      when(taskMapper.toTaskResponse(taskDTO)).thenReturn(expectedTaskResponse);
 
       // When
       final var responseAsString =
@@ -677,6 +665,8 @@ class TaskControllerTest {
       // Given
       final var taskId = "3333333";
       when(taskService.unassignTask(taskId)).thenThrow(NotFoundException.class);
+      when(taskService.getTask(taskId))
+          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
       // When
       mockMvc
           .perform(patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/unassign"), taskId))
@@ -692,6 +682,7 @@ class TaskControllerTest {
           new TaskAssignRequest().setAssignee("").setAllowOverrideAssignment(true);
 
       // When
+      when(taskService.getTask(taskId)).thenThrow(NotFoundException.class);
       when(taskService.assignTask(taskId, "", true)).thenThrow(NotFoundException.class);
 
       // Then
@@ -715,6 +706,7 @@ class TaskControllerTest {
       final var taskId = "3333333";
 
       // When
+      when(taskService.getTask(taskId)).thenThrow(NotFoundException.class);
       when(taskService.unassignTask(taskId)).thenThrow(NotFoundException.class);
 
       // Then
@@ -740,6 +732,8 @@ class TaskControllerTest {
       final var taskId = "taskId778800";
       final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
 
+      when(taskService.getTask(taskId))
+          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
       // When
       mockMvc
           .perform(
@@ -771,6 +765,8 @@ class TaskControllerTest {
                       new VariableInputDTO()
                           .setName("invalid_variable")
                           .setValue("strWithoutQuotes")));
+      when(taskService.getTask(taskId))
+          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
 
       // When
       doThrow(
@@ -811,6 +807,8 @@ class TaskControllerTest {
       when(taskService.assignTask(
               taskId, assignRequest.getAssignee(), assignRequest.isAllowOverrideAssignment()))
           .thenThrow(NotFoundException.class);
+      when(taskService.getTask(taskId))
+          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
       // When
       mockMvc
           .perform(
@@ -827,7 +825,8 @@ class TaskControllerTest {
     void completeTask() throws Exception {
       // Given
       final var taskId = "55555555";
-      final var mockedTask = mock(TaskDTO.class);
+      final var taskDTO =
+          new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER);
       final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
       final var completeRequest = new TaskCompleteRequest().setVariables(variables);
 
@@ -835,8 +834,9 @@ class TaskControllerTest {
       expectedTaskResponse.setId("44444444");
       expectedTaskResponse.setTaskState(TaskState.COMPLETED);
 
-      when(taskService.completeTask(taskId, variables, true)).thenReturn(mockedTask);
-      when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
+      when(taskService.getTask(taskId)).thenReturn(taskDTO);
+      when(taskService.completeTask(taskId, variables, true)).thenReturn(taskDTO);
+      when(taskMapper.toTaskResponse(taskDTO)).thenReturn(expectedTaskResponse);
       when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
       when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
@@ -869,13 +869,15 @@ class TaskControllerTest {
     void completeTaskWhenEmptyRequestBodySent() throws Exception {
       // Given
       final var taskId = "55555555";
-      final var mockedTask = mock(TaskDTO.class);
+      final var taskDTO =
+          new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER);
 
       final TaskResponse expectedTaskResponse = new TaskResponse();
       expectedTaskResponse.setId("55555555");
 
-      when(taskService.completeTask(taskId, List.of(), true)).thenReturn(mockedTask);
-      when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
+      when(taskService.getTask(taskId)).thenReturn(taskDTO);
+      when(taskService.completeTask(taskId, List.of(), true)).thenReturn(taskDTO);
+      when(taskMapper.toTaskResponse(taskDTO)).thenReturn(expectedTaskResponse);
       when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
       when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
@@ -906,6 +908,8 @@ class TaskControllerTest {
       final var completeRequest = new TaskCompleteRequest().setVariables(variables);
 
       when(tasklistProperties.getIdentity()).thenReturn(null);
+      when(taskService.getTask(taskId))
+          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
       when(taskService.completeTask(taskId, variables, true)).thenThrow(NotFoundException.class);
       when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
@@ -1159,7 +1163,11 @@ class TaskControllerTest {
       void completeTask() throws Exception {
         // Given
         final var taskId = "55555555";
-        final var mockedTask = mock(TaskDTO.class).setCandidateGroups(new String[] {"Admins"});
+        final var taskDto =
+            new TaskDTO()
+                .setId(taskId)
+                .setCandidateGroups(new String[] {"Admins"})
+                .setImplementation(TaskImplementation.JOB_WORKER);
         final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
         final var completeRequest = new TaskCompleteRequest().setVariables(variables);
 
@@ -1172,8 +1180,9 @@ class TaskControllerTest {
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
         when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
-        when(taskService.completeTask(taskId, variables, true)).thenReturn(mockedTask);
-        when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
+        when(taskService.getTask(taskId)).thenReturn(taskDto);
+        when(taskService.completeTask(taskId, variables, true)).thenReturn(taskDto);
+        when(taskMapper.toTaskResponse(taskDto)).thenReturn(expectedTaskResponse);
 
         // When
         final var responseAsString =
@@ -1201,7 +1210,11 @@ class TaskControllerTest {
       void completeTaskShouldReturnForbiddenWhenUserHasNoAccess() throws Exception {
         // Given
         final var taskId = "55555555";
-        final var mockedTask = mock(TaskDTO.class).setCandidateGroups(new String[] {"Admins"});
+        final var taskDto =
+            new TaskDTO()
+                .setId(taskId)
+                .setCandidateGroups(new String[] {"Admins"})
+                .setImplementation(TaskImplementation.JOB_WORKER);
         final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
         final var completeRequest = new TaskCompleteRequest().setVariables(variables);
 
@@ -1215,8 +1228,9 @@ class TaskControllerTest {
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
         when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Demo"));
-        when(taskService.completeTask(taskId, variables, true)).thenReturn(mockedTask);
-        when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
+        when(taskService.getTask(taskId)).thenReturn(taskDto);
+        when(taskService.completeTask(taskId, variables, true)).thenReturn(taskDto);
+        when(taskMapper.toTaskResponse(taskDto)).thenReturn(expectedTaskResponse);
 
         // When
         final var responseAsString =
@@ -1250,7 +1264,8 @@ class TaskControllerTest {
                 .setBpmnProcessId("Flight registration")
                 .setCreationTime("2023-02-20T18:37:19.214+0000")
                 .setTaskState(TaskState.CREATED)
-                .setCandidateUsers(new String[] {"demo"});
+                .setCandidateUsers(new String[] {"demo"})
+                .setImplementation(TaskImplementation.JOB_WORKER);
         final var taskResponse =
             new TaskResponse()
                 .setId("111111")
@@ -1299,7 +1314,8 @@ class TaskControllerTest {
                 .setBpmnProcessId("Flight registration")
                 .setCreationTime("2023-02-20T18:37:19.214+0000")
                 .setTaskState(TaskState.CREATED)
-                .setCandidateGroups(new String[] {"Admins"});
+                .setCandidateGroups(new String[] {"Admins"})
+                .setImplementation(TaskImplementation.JOB_WORKER);
         final var taskResponse =
             new TaskResponse()
                 .setId("111111")
@@ -1349,7 +1365,8 @@ class TaskControllerTest {
                 .setCreationTime("2023-02-20T18:37:19.214+0000")
                 .setTaskState(TaskState.CREATED)
                 .setCandidateUsers(new String[] {"admin"})
-                .setCandidateGroups(new String[] {"Admins"});
+                .setCandidateGroups(new String[] {"Admins"})
+                .setImplementation(TaskImplementation.JOB_WORKER);
         final var taskResponse =
             new TaskResponse()
                 .setId("111111")
@@ -1401,7 +1418,8 @@ class TaskControllerTest {
                 .setBpmnProcessId("Flight registration")
                 .setCreationTime("2023-02-20T18:37:19.214+0000")
                 .setTaskState(TaskState.CREATED)
-                .setCandidateGroups(new String[] {"Admins"});
+                .setCandidateGroups(new String[] {"Admins"})
+                .setImplementation(TaskImplementation.JOB_WORKER);
         final var taskResponse =
             new TaskResponse()
                 .setId("111111")
@@ -1450,7 +1468,8 @@ class TaskControllerTest {
                 .setBpmnProcessId("Flight registration")
                 .setCreationTime("2023-02-20T18:37:19.214+0000")
                 .setTaskState(TaskState.CREATED)
-                .setCandidateGroups(new String[] {"Admins"});
+                .setCandidateGroups(new String[] {"Admins"})
+                .setImplementation(TaskImplementation.JOB_WORKER);
         final var taskResponse =
             new TaskResponse()
                 .setId("111111")
@@ -1490,6 +1509,332 @@ class TaskControllerTest {
         verify(variableService, never()).persistDraftTaskVariables(taskId, variables);
         assertThat(responseAsString).contains(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK);
       }
+    }
+  }
+
+  @Nested
+  class SearchTaskVariables {
+    @Test
+    void searchTaskVariablesWithVariableNamesAndIncludeVariablesShouldReturn400() throws Exception {
+      final String taskId = "taskId";
+      when(taskService.getTask(taskId))
+          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
+      final var expectedErrorMessage =
+          "Only one of [variableNames, includeVariables] must be present in request";
+      mockMvc
+          .perform(
+              post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId)
+                  .characterEncoding(StandardCharsets.UTF_8.name())
+                  .content(
+                      CommonUtils.OBJECT_MAPPER.writeValueAsString(
+                          new VariablesSearchRequest()
+                              .setVariableNames(List.of("varA"))
+                              .setIncludeVariables(List.of(new IncludeVariable().setName("varA")))))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .accept(MediaType.APPLICATION_JSON))
+          .andDo(print())
+          .andExpect(
+              content()
+                  .string(
+                      containsString(
+                          expectedErrorMessage))) // Check for the error message in the response
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
+    }
+
+    @Test
+    void searchTaskVariables() throws Exception {
+      // Given
+      final var taskId = "778899";
+      when(taskService.getTask(taskId))
+          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
+      final var variableA =
+          new VariableSearchResponse()
+              .setId("111")
+              .setName("varA")
+              .setValue("925.5")
+              .setPreviewValue("925.5")
+              .setDraft(
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setValue("10000.5")
+                      .setPreviewValue("10000.5"));
+      final var variableB =
+          new VariableSearchResponse()
+              .setId("112")
+              .setName("varB")
+              .setValue("\"veryVeryLongValueThatExceedsVariableSizeLimit\"")
+              .setIsValueTruncated(true)
+              .setPreviewValue("\"veryVeryLongValue");
+      final var variableC =
+          new VariableSearchResponse()
+              .setId("113")
+              .setName("varC")
+              .setValue("\"normalValue\"")
+              .setPreviewValue("\"normalValue\"")
+              .setDraft(
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setValue("\"updatedVeryVeryLongValue\"")
+                      .setIsValueTruncated(true)
+                      .setPreviewValue("\"updatedVeryVeryLo"));
+      final var variableNames = Set.of("varA", "varB", "varC");
+      when(variableService.getVariableSearchResponses(taskId, variableNames))
+          .thenReturn(List.of(variableA, variableB, variableC));
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId)
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(
+                          CommonUtils.OBJECT_MAPPER.writeValueAsString(
+                              new VariablesSearchRequest()
+                                  .setVariableNames(new ArrayList<>(variableNames))))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      final var result =
+          CommonUtils.OBJECT_MAPPER.readValue(
+              responseAsString, new TypeReference<List<VariableSearchResponse>>() {});
+
+      // Then
+      assertThat(result)
+          .extracting("name", "value", "isValueTruncated", "previewValue", "draft")
+          .containsExactly(
+              tuple(
+                  "varA",
+                  "925.5",
+                  false,
+                  "925.5",
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setValue("10000.5")
+                      .setPreviewValue("10000.5")),
+              tuple("varB", null, true, "\"veryVeryLongValue", null),
+              tuple(
+                  "varC",
+                  "\"normalValue\"",
+                  false,
+                  "\"normalValue\"",
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setIsValueTruncated(true)
+                      .setPreviewValue("\"updatedVeryVeryLo")));
+    }
+
+    @Test
+    void searchTaskVariablesWithFullValues() throws Exception {
+      // Given
+      final var taskId = "778899";
+      final var variableA =
+          new VariableSearchResponse()
+              .setId("111")
+              .setName("varA")
+              .setValue("925.5")
+              .setPreviewValue("925.5")
+              .setDraft(
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setValue("10000.5")
+                      .setPreviewValue("10000.5"));
+      final var variableB =
+          new VariableSearchResponse()
+              .setId("112")
+              .setName("varB")
+              .setValue("\"veryVeryLongValueThatExceedsVariableSizeLimit\"")
+              .setIsValueTruncated(true)
+              .setPreviewValue("\"veryVeryLongValue");
+      final var variableC =
+          new VariableSearchResponse()
+              .setId("113")
+              .setName("varC")
+              .setValue("\"normalValue\"")
+              .setPreviewValue("\"normalValue\"")
+              .setDraft(
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setValue("\"updatedVeryVeryLongValue\"")
+                      .setIsValueTruncated(true)
+                      .setPreviewValue("\"updatedVeryVeryLo"));
+      final var variableNames = Set.of("varA", "varB", "varC");
+      when(variableService.getVariableSearchResponses(taskId, variableNames))
+          .thenReturn(List.of(variableA, variableB, variableC));
+      when(taskService.getTask(taskId))
+          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId)
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(
+                          CommonUtils.OBJECT_MAPPER.writeValueAsString(
+                              new VariablesSearchRequest()
+                                  .setIncludeVariables(
+                                      List.of(
+                                          new IncludeVariable()
+                                              .setName("varA")
+                                              .setAlwaysReturnFullValue(true),
+                                          new IncludeVariable()
+                                              .setName("varB")
+                                              .setAlwaysReturnFullValue(true),
+                                          new IncludeVariable()
+                                              .setName("varC")
+                                              .setAlwaysReturnFullValue(true)))))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      final var result =
+          CommonUtils.OBJECT_MAPPER.readValue(
+              responseAsString, new TypeReference<List<VariableSearchResponse>>() {});
+
+      // Then
+      assertThat(result)
+          .extracting("name", "value", "isValueTruncated", "previewValue", "draft")
+          .containsExactly(
+              tuple(
+                  "varA",
+                  "925.5",
+                  false,
+                  "925.5",
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setValue("10000.5")
+                      .setPreviewValue("10000.5")),
+              tuple(
+                  "varB",
+                  "\"veryVeryLongValueThatExceedsVariableSizeLimit\"",
+                  true,
+                  "\"veryVeryLongValue",
+                  null),
+              tuple(
+                  "varC",
+                  "\"normalValue\"",
+                  false,
+                  "\"normalValue\"",
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setIsValueTruncated(true)
+                      .setPreviewValue("\"updatedVeryVeryLo")
+                      .setValue("\"updatedVeryVeryLongValue\"")));
+    }
+
+    @Test
+    void searchTaskVariablesWhenRequestBodyIsEmpty() throws Exception {
+      // Given
+      final var taskId = "11778899";
+      when(variableService.getVariableSearchResponses(taskId, emptySet())).thenReturn(emptyList());
+      when(taskService.getTask(taskId))
+          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      final var result =
+          CommonUtils.OBJECT_MAPPER.readValue(
+              responseAsString, new TypeReference<List<VariableSearchResponse>>() {});
+
+      // Then
+      assertThat(result).isEmpty();
+    }
+  }
+
+  @Nested
+  class UnsupportedZeebeUserTaskOperationsForApiCustomerTests {
+
+    private static final String ERROR_MSG =
+        "This operation is not supported using Tasklist V1 API. Please use the latest API. For more information, refer to the documentation: https://docs.camunda.tasklist";
+
+    private String taskId = "taskId";
+
+    @BeforeEach
+    public void setUp() {
+      when(tasklistProperties.getDocumentation().getApiMigrationDocsUrl())
+          .thenReturn("https://docs.camunda.tasklist");
+      when(taskService.getTask(taskId))
+          .thenReturn(
+              new TaskDTO().setId(taskId).setImplementation(TaskImplementation.ZEEBE_USER_TASK));
+      when(identityAuthorizationService.isJwtAuthentication()).thenReturn(true);
+    }
+
+    @Test
+    void completeUserTaskShouldReturnBadRequest() throws Exception {
+      // Given
+      final var completeRequest =
+          new TaskCompleteRequest()
+              .setVariables(List.of(new VariableInputDTO().setName("var_a").setValue("val_a")));
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId)
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(completeRequest))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isBadRequest())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      // Then
+      assertThat(responseAsString).contains(ERROR_MSG);
+    }
+
+    @Test
+    void assignUserTaskShouldReturnBadRequest() throws Exception {
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/assign"), taskId)
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(
+                          CommonUtils.OBJECT_MAPPER.writeValueAsString(
+                              new TaskAssignRequest()
+                                  .setAssignee("demo1")
+                                  .setAllowOverrideAssignment(true)))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isBadRequest())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      // Then
+      assertThat(responseAsString).contains(ERROR_MSG);
+    }
+
+    @Test
+    void unassignUserTaskShouldReturnBadRequest() throws Exception {
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/unassign"), taskId))
+              .andDo(print())
+              .andExpect(status().isBadRequest())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      // Then
+      assertThat(responseAsString).contains(ERROR_MSG);
     }
   }
 }

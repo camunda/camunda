@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskQuery;
@@ -97,6 +98,7 @@ class TaskStoreElasticSearchTest {
               assertThat(index).endsWith(expectedIndexSuffix);
             });
     assertThat(result).hasSize(1);
+    assertThat(result.get(0).getImplementation()).isEqualTo(TaskImplementation.JOB_WORKER);
     verify(tenantAwareClient).search(any());
   }
 
@@ -145,7 +147,8 @@ class TaskStoreElasticSearchTest {
         + "\",\n"
         + "  \"assignee\": null,\n"
         + "  \"candidateGroups\": null,\n"
-        + "  \"formKey\": \"camunda-forms:bpmn:userTaskForm_1111111\"\n"
+        + "  \"formKey\": \"camunda-forms:bpmn:userTaskForm_1111111\",\n"
+        + "  \"implementation\": \"JOB_WORKER\"\n"
         + "}";
   }
 }

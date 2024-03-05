@@ -15,6 +15,6 @@ public interface ZeebeESConstants {
   String JOB_INDEX_NAME = "job";
   String PROCESS_INDEX_NAME = "process";
   String VARIABLE_INDEX_NAME = "variable";
-  String VARIABLE_DOCUMENT_INDEX_NAME = "variable-document";
   String FORM_INDEX_NAME = "form";
+  String USER_TASK_INDEX_NAME = "user-task";
 }

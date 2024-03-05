@@ -12,30 +12,23 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v850.record.Intent;
 import io.camunda.tasklist.zeebeimport.v850.record.value.JobRecordValueImpl;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
-import jakarta.json.JsonObjectBuilder;
-import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.FieldValue;
-import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
@@ -55,14 +48,9 @@ public class JobZeebeRecordProcessorOpenSearch {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private FormIndex formIndex;
+  @Autowired private FormStore formStore;
 
-  @Autowired private OpenSearchClient openSearchClient;
-
-  @Autowired private TasklistProperties tasklistProperties;
-
-  public void processJobRecord(Record record, List<BulkOperation> operations)
-      throws PersistenceException {
+  public void processJobRecord(Record record, List<BulkOperation> operations) {
     final JobRecordValueImpl recordValue = (JobRecordValueImpl) record.getValue();
     if (recordValue.getType().equals(Protocol.USER_TASK_JOB_TYPE)) {
       if (record.getIntent() != null
@@ -73,11 +61,11 @@ public class JobZeebeRecordProcessorOpenSearch {
     // else skip task
   }
 
-  private BulkOperation persistTask(Record record, JobRecordValueImpl recordValue)
-      throws PersistenceException {
+  private BulkOperation persistTask(Record record, JobRecordValueImpl recordValue) {
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
     final TaskEntity entity =
         new TaskEntity()
+            .setImplementation(TaskImplementation.JOB_WORKER)
             .setId(String.valueOf(record.getKey()))
             .setKey(record.getKey())
             .setPartitionId(record.getPartitionId())
@@ -111,11 +99,11 @@ public class JobZeebeRecordProcessorOpenSearch {
     entity.setFormKey(formKey);
 
     Optional.ofNullable(formKey)
-        .map(this::getHighestVersionFormByKey)
+        .flatMap(formStore::getHighestVersionFormByKey)
         .ifPresentOrElse(
             linkedForm -> {
-              entity.setFormVersion(linkedForm.getVersion());
-              entity.setFormId(linkedForm.getBpmnId());
+              entity.setFormVersion(linkedForm.version());
+              entity.setFormId(linkedForm.bpmnId());
               entity.setIsFormEmbedded(false);
             },
             () -> {
@@ -152,97 +140,60 @@ public class JobZeebeRecordProcessorOpenSearch {
       } catch (JsonProcessingException e) {
         LOGGER.warn(
             String.format(
-                "Candidate users can't be parsed from %s: %s", candidateGroups, e.getMessage()),
+                "Candidate users can't be parsed from %s: %s", candidateUsers, e.getMessage()),
             e);
       }
     }
-
-    final String taskState = record.getIntent().name();
-    LOGGER.debug("JobState {}", taskState);
-    if (taskState.equals(Intent.CANCELED.name())) {
-      entity
+    final Intent intent = (Intent) record.getIntent();
+    switch (intent) {
+      case CANCELED -> entity
           .setState(TaskState.CANCELED)
           .setCompletionTime(
               DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    } else if (taskState.equals(Intent.COMPLETED.name())) {
-      entity
+      case COMPLETED -> entity
           .setState(TaskState.COMPLETED)
           .setCompletionTime(
               DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    } else if (taskState.equals(Intent.CREATED.name())) {
-      entity
+      case CREATED -> entity
           .setState(TaskState.CREATED)
           .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    } else if (taskState.equals(Intent.MIGRATED.name())) {
-      entity
-          .setState(TaskState.MIGRATED)
-          .setFlowNodeBpmnId(recordValue.getElementId())
-          .setBpmnProcessId(recordValue.getBpmnProcessId())
-          .setProcessDefinitionId(processDefinitionId);
-    } else if (taskState.equals(Intent.FAILED.name())) {
-      if (recordValue.getRetries() > 0) {
-        if (recordValue.getRetryBackoff() > 0) {
-          entity.setState(TaskState.FAILED);
+      case MIGRATED, RECURRED_AFTER_BACKOFF -> entity.setState(TaskState.CREATED);
+      case FAILED -> {
+        if (recordValue.getRetries() > 0) {
+          if (recordValue.getRetryBackoff() > 0) {
+            entity.setState(TaskState.FAILED);
+          } else {
+            entity.setState(TaskState.CREATED);
+          }
         } else {
-          entity.setState(TaskState.CREATED);
+          entity.setState(TaskState.FAILED);
         }
-      } else {
-        entity.setState(TaskState.FAILED);
       }
-    } else if (taskState.equals(Intent.RECURRED_AFTER_BACKOFF.name())) {
-      entity.setState(TaskState.CREATED);
-    } else {
-      LOGGER.warn(String.format("TaskState %s not supported", taskState));
+      default -> LOGGER.warn(String.format("Intent %s not supported", intent));
     }
-    return getTaskQuery(entity);
+    return getTaskQuery(entity, intent);
   }
 
-  private BulkOperation getTaskQuery(TaskEntity entity) throws PersistenceException {
+  private BulkOperation getTaskQuery(TaskEntity entity, Intent intent) {
     LOGGER.debug("Task instance: id {}", entity.getId());
     final Map<String, Object> updateFields = new HashMap<>();
-    if (entity.getState() == TaskState.MIGRATED) {
-      entity.setState(TaskState.CREATED); // Set back the state of Migrated
+    if (intent == Intent.MIGRATED) {
+      updateFields.put(TaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
+      updateFields.put(TaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
+      updateFields.put(TaskTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
+    } else {
+      updateFields.put(TaskTemplate.STATE, entity.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
     }
-
-    final JsonObjectBuilder jsonEntityBuilder = CommonUtils.getJsonObjectBuilderForEntity(entity);
-    if (entity.getCreationTime() == null) {
-      jsonEntityBuilder.remove(TaskTemplate.CREATION_TIME);
-    }
-
-    if (entity.getAssignee() == null) {
-      jsonEntityBuilder.remove(TaskTemplate.ASSIGNEE);
-    }
-
     return new BulkOperation.Builder()
         .update(
             UpdateOperation.of(
                 u ->
                     u.index(taskTemplate.getFullQualifiedName())
                         .id(entity.getId())
-                        .document(jsonEntityBuilder.build())
-                        .docAsUpsert(true)
+                        .document(CommonUtils.getJsonObjectFromEntity(updateFields))
+                        .upsert(CommonUtils.getJsonObjectFromEntity(entity))
                         .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT)))
         .build();
-  }
-
-  private FormEntity getHighestVersionFormByKey(final String formKey) {
-    try {
-
-      final var formEntityResponse =
-          openSearchClient.search(
-              b ->
-                  b.index(formIndex.getFullQualifiedName())
-                      .query(q -> q.term(t -> t.field(FormIndex.ID).value(FieldValue.of(formKey))))
-                      .sort(s -> s.field(f -> f.field(FormIndex.VERSION).order(SortOrder.Desc)))
-                      .size(1),
-              FormEntity.class);
-      if (formEntityResponse.hits().total().value() == 1L) {
-        return formEntityResponse.hits().hits().get(0).source();
-      } else {
-        return null;
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 }

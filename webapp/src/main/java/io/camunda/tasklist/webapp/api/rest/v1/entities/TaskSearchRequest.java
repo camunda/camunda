@@ -8,6 +8,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import static io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO.DEFAULT_PAGE_SIZE;
 
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.queries.DateFilter;
 import io.camunda.tasklist.queries.TaskByVariables;
@@ -131,6 +132,8 @@ public class TaskSearchRequest {
                   "An array used to specify a list of variable names that should be included in the response when querying tasks.<br>"
                       + "This field allows users to selectively retrieve specific variables associated with the tasks returned in the search results."))
   private IncludeVariable[] includeVariables;
+
+  private TaskImplementation implementation;
 
   public TaskState getState() {
     return state;
@@ -303,6 +306,15 @@ public class TaskSearchRequest {
     return this;
   }
 
+  public TaskImplementation getImplementation() {
+    return implementation;
+  }
+
+  public TaskSearchRequest setImplementation(TaskImplementation implementation) {
+    this.implementation = implementation;
+    return this;
+  }
+
   public String[] getAssignees() {
     return assignees;
   }
@@ -341,6 +353,7 @@ public class TaskSearchRequest {
     final TaskSearchRequest that = (TaskSearchRequest) o;
     return pageSize == that.pageSize
         && state == that.state
+        && implementation == that.implementation
         && Objects.equals(assigned, that.assigned)
         && Objects.equals(assignee, that.assignee)
         && Arrays.equals(assignees, that.assignees)
@@ -377,7 +390,8 @@ public class TaskSearchRequest {
             processInstanceKey,
             pageSize,
             followUpDate,
-            dueDate);
+            dueDate,
+            implementation);
     result = 31 * result + Arrays.hashCode(assignees);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
@@ -445,6 +459,8 @@ public class TaskSearchRequest {
         + Arrays.toString(searchBeforeOrEqual)
         + ", includeVariables="
         + Arrays.toString(includeVariables)
+        + ", implementation="
+        + implementation
         + '}';
   }
 }

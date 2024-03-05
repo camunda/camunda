@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.store.TaskMetricsStore;
@@ -80,12 +81,14 @@ class TaskServiceTest {
         new TaskSearchView()
             .setId("123")
             .setState(TaskState.CREATED)
-            .setSortValues(new String[] {"123", "456"});
+            .setSortValues(new String[] {"123", "456"})
+            .setImplementation(TaskImplementation.JOB_WORKER);
     final var expectedTask =
         new TaskDTO()
             .setId("123")
             .setTaskState(TaskState.CREATED)
-            .setSortValues(new String[] {"123", "456"});
+            .setSortValues(new String[] {"123", "456"})
+            .setImplementation(TaskImplementation.JOB_WORKER);
 
     when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(List.of(providedTask));
 

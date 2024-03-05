@@ -9,6 +9,7 @@ package io.camunda.tasklist.views;
 import static io.camunda.tasklist.util.CollectionUtil.toArrayOfStrings;
 
 import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -38,6 +39,7 @@ public class TaskSearchView {
   private OffsetDateTime dueDate;
   private boolean first = false;
   private String[] sortValues;
+  private TaskImplementation implementation;
 
   public String getId() {
     return id;
@@ -228,6 +230,15 @@ public class TaskSearchView {
     return this;
   }
 
+  public TaskImplementation getImplementation() {
+    return implementation;
+  }
+
+  public TaskSearchView setImplementation(TaskImplementation implementation) {
+    this.implementation = implementation;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -241,6 +252,7 @@ public class TaskSearchView {
     }
     final TaskSearchView that = (TaskSearchView) o;
     return first == that.first
+        && implementation == that.implementation
         && Objects.equals(id, that.id)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
@@ -285,7 +297,8 @@ public class TaskSearchView {
             tenantId,
             followUpDate,
             dueDate,
-            first);
+            first,
+            implementation);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     result = 31 * result + Arrays.hashCode(sortValues);
@@ -316,6 +329,7 @@ public class TaskSearchView {
         .add("dueDate=" + dueDate)
         .add("first=" + first)
         .add("sortValues=" + Arrays.toString(sortValues))
+        .add("implementation=" + implementation)
         .toString();
   }
 
@@ -340,7 +354,8 @@ public class TaskSearchView {
             .setFollowUpDate(taskEntity.getFollowUpDate())
             .setDueDate(taskEntity.getDueDate())
             .setCandidateGroups(taskEntity.getCandidateGroups())
-            .setCandidateUsers(taskEntity.getCandidateUsers());
+            .setCandidateUsers(taskEntity.getCandidateUsers())
+            .setImplementation(taskEntity.getImplementation());
     if (sortValues != null) {
       taskSearchView.setSortValues(toArrayOfStrings(sortValues));
     }

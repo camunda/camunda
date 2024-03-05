@@ -10,6 +10,7 @@ import static io.camunda.tasklist.util.CollectionUtil.toArrayOfStrings;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.DateUtil;
@@ -49,6 +50,7 @@ public final class TaskDTO {
   private OffsetDateTime dueDate;
   private OffsetDateTime followUpDate;
   private VariableDTO[] variables;
+  private TaskImplementation implementation;
 
   public String getId() {
     return id;
@@ -252,6 +254,15 @@ public final class TaskDTO {
     return this;
   }
 
+  public TaskImplementation getImplementation() {
+    return implementation;
+  }
+
+  public TaskDTO setImplementation(TaskImplementation implementation) {
+    this.implementation = implementation;
+    return this;
+  }
+
   public static TaskDTO createFrom(TaskEntity taskEntity, ObjectMapper objectMapper) {
     return createFrom(taskEntity, null, objectMapper);
   }
@@ -279,7 +290,8 @@ public final class TaskDTO {
             .setFollowUpDate(taskEntity.getFollowUpDate())
             .setDueDate(taskEntity.getDueDate())
             .setCandidateGroups(taskEntity.getCandidateGroups())
-            .setCandidateUsers(taskEntity.getCandidateUsers());
+            .setCandidateUsers(taskEntity.getCandidateUsers())
+            .setImplementation(taskEntity.getImplementation());
     if (sortValues != null) {
       taskDTO.setSortValues(toArrayOfStrings(sortValues));
     }
@@ -311,7 +323,8 @@ public final class TaskDTO {
         .setCandidateUsers(taskSearchView.getCandidateUsers())
         .setSortValues(taskSearchView.getSortValues())
         .setIsFirst(taskSearchView.isFirst())
-        .setVariables(variables);
+        .setVariables(variables)
+        .setImplementation(taskSearchView.getImplementation());
   }
 
   public static TaskEntity toTaskEntity(TaskDTO taskDTO) {
@@ -339,7 +352,8 @@ public final class TaskDTO {
               .setFollowUpDate(taskDTO.getFollowUpDate())
               .setDueDate(taskDTO.getDueDate())
               .setCandidateGroups(taskDTO.getCandidateGroups())
-              .setCandidateUsers(taskDTO.getCandidateUsers());
+              .setCandidateUsers(taskDTO.getCandidateUsers())
+              .setImplementation(taskDTO.getImplementation());
 
       if (taskDTO.getCompletionTime() != null) {
         taskEntity.setCompletionTime(
@@ -363,6 +377,7 @@ public final class TaskDTO {
     }
     final TaskDTO taskDTO = (TaskDTO) o;
     return isFirst == taskDTO.isFirst
+        && implementation == taskDTO.implementation
         && Objects.equals(id, taskDTO.id)
         && Objects.equals(processInstanceId, taskDTO.processInstanceId)
         && Objects.equals(flowNodeBpmnId, taskDTO.flowNodeBpmnId)
@@ -407,7 +422,8 @@ public final class TaskDTO {
             isFormEmbedded,
             tenantId,
             dueDate,
-            followUpDate);
+            followUpDate,
+            implementation);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     result = 31 * result + Arrays.hashCode(sortValues);
@@ -440,6 +456,7 @@ public final class TaskDTO {
         .add("dueDate=" + dueDate)
         .add("followUpDate=" + followUpDate)
         .add("variables=" + Arrays.toString(variables))
+        .add("implementation=" + implementation)
         .toString();
   }
 }

@@ -19,6 +19,7 @@ import static java.util.Objects.requireNonNullElse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
@@ -85,6 +86,14 @@ public class TaskService {
       throw new InvalidRequestException("Page size cannot should be a positive number");
     }
 
+    if (query.getImplementation() != null
+        && !query.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)
+        && !query.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
+      throw new InvalidRequestException(
+          String.format(
+              "Invalid implementation, the valid values are %s and %s",
+              TaskImplementation.ZEEBE_USER_TASK, TaskImplementation.JOB_WORKER));
+    }
     final List<TaskSearchView> tasks = taskStore.getTasks(query.toTaskQuery());
     final Set<String> fieldNames =
         fetchFullValuesFromDB

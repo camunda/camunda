@@ -29,6 +29,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   private Boolean isFormEmbedded;
   private OffsetDateTime followUpDate;
   private OffsetDateTime dueDate;
+  private TaskImplementation implementation;
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
@@ -183,6 +184,15 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
+  public TaskImplementation getImplementation() {
+    return implementation;
+  }
+
+  public TaskEntity setImplementation(TaskImplementation implementation) {
+    this.implementation = implementation;
+    return this;
+  }
+
   public TaskEntity makeCopy() {
     return new TaskEntity()
         .setId(this.getId())
@@ -203,7 +213,8 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         .setFormId(this.getFormId())
         .setFormVersion(this.getFormVersion())
         .setIsFormEmbedded(this.getIsFormEmbedded())
-        .setTenantId(this.getTenantId());
+        .setTenantId(this.getTenantId())
+        .setImplementation(this.getImplementation());
   }
 
   @Override
@@ -218,14 +229,15 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
       return false;
     }
     final TaskEntity that = (TaskEntity) o;
-    return Objects.equals(bpmnProcessId, that.bpmnProcessId)
+    return implementation == that.implementation
+        && state == that.state
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(flowNodeBpmnId, that.flowNodeBpmnId)
         && Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
         && Objects.equals(processInstanceId, that.processInstanceId)
         && Objects.equals(creationTime, that.creationTime)
         && Objects.equals(completionTime, that.completionTime)
-        && state == that.state
         && Objects.equals(assignee, that.assignee)
         && Arrays.equals(candidateGroups, that.candidateGroups)
         && Objects.equals(followUpDate, that.followUpDate)
@@ -256,7 +268,8 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
             formVersion,
             isFormEmbedded,
             followUpDate,
-            dueDate);
+            dueDate,
+            implementation);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     return result;

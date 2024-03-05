@@ -22,6 +22,7 @@ import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -217,6 +218,36 @@ public class FormStoreOpenSearch implements FormStore {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
     } catch (IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public Optional<FormIdView> getHighestVersionFormByKey(String formKey) {
+    try {
+      final var formEntityResponse =
+          osClient.search(
+              b ->
+                  b.index(formIndex.getFullQualifiedName())
+                      .query(q -> q.term(t -> t.field(FormIndex.ID).value(FieldValue.of(formKey))))
+                      .sort(s -> s.field(f -> f.field(FormIndex.VERSION).order(SortOrder.Desc)))
+                      .source(
+                          s ->
+                              s.filter(
+                                  f ->
+                                      f.includes(
+                                          List.of(
+                                              FormIndex.ID, FormIndex.BPMN_ID, FormIndex.VERSION))))
+                      .size(1),
+              FormEntity.class);
+      if (formEntityResponse.hits().total().value() == 1L) {
+        final FormEntity formEntity = formEntityResponse.hits().hits().get(0).source();
+        return Optional.of(
+            new FormIdView(formEntity.getId(), formEntity.getBpmnId(), formEntity.getVersion()));
+      } else {
+        return Optional.empty();
+      }
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e);
     }
   }
 }

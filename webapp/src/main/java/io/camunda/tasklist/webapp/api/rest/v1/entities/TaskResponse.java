@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -87,6 +88,8 @@ public class TaskResponse {
 
   @ArraySchema(arraySchema = @Schema(description = "The candidate users for the task."))
   private String[] candidateUsers;
+
+  private TaskImplementation implementation;
 
   public String getId() {
     return id;
@@ -256,6 +259,15 @@ public class TaskResponse {
 
   public TaskResponse setCandidateUsers(String[] candidateUsers) {
     this.candidateUsers = candidateUsers;
+    return this;
+  }
+
+  public TaskImplementation getImplementation() {
+    return implementation;
+  }
+
+  public TaskResponse setImplementation(TaskImplementation implementation) {
+    this.implementation = implementation;
     return this;
   }
 

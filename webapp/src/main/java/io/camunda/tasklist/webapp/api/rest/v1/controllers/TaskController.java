@@ -8,9 +8,11 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskByCandidateUserOrGroup;
+import io.camunda.tasklist.util.LazySupplier;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.IncludeVariable;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskAssignRequest;
@@ -20,6 +22,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariablesSearchRequest;
+import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.mapper.TaskMapper;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
@@ -45,6 +48,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -62,7 +67,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = TasklistURIs.TASKS_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
 public class TaskController extends ApiErrorController {
 
-  public static final String USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR =
+  private static final Logger LOGGER = LoggerFactory.getLogger(TaskController.class);
+
+  private static final String ZEEBE_USER_TASK_OPERATIONS_NOT_SUPPORTED =
+      "This operation is not supported using Tasklist V1 API. Please use the latest API. For more information, refer to the documentation: %s";
+  private static final String USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR =
       "User does not have permission to perform on this task.";
 
   @Autowired private TaskService taskService;
@@ -181,19 +190,33 @@ public class TaskController extends ApiErrorController {
   public ResponseEntity<TaskResponse> getTaskById(
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
           String taskId) {
-    final TaskResponse task = taskMapper.toTaskResponse(taskService.getTask(taskId));
-
-    if (!isUserRestrictionEnabled() || hasAccessToTask(task)) {
-      return ResponseEntity.ok(task);
+    final var taskSupplier = getTaskSupplier(taskId);
+    if (!isUserRestrictionEnabled() || hasAccessToTask(taskSupplier)) {
+      return ResponseEntity.ok(taskMapper.toTaskResponse(taskSupplier.get()));
     } else {
       throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);
     }
   }
 
-  private boolean hasAccessToTask(TaskResponse task) {
+  private void checkTaskImplementation(LazySupplier<TaskDTO> taskSupplier) {
+    if (identityAuthorizationService.isJwtAuthentication()
+        && taskSupplier.get().getImplementation() != TaskImplementation.JOB_WORKER) {
+      final TaskDTO task = taskSupplier.get();
+      LOGGER.warn(
+          "V1 API is used for task with id={} implementation={}",
+          task.getId(),
+          task.getImplementation());
+      throw new InvalidRequestException(
+          String.format(
+              ZEEBE_USER_TASK_OPERATIONS_NOT_SUPPORTED,
+              tasklistProperties.getDocumentation().getApiMigrationDocsUrl()));
+    }
+  }
+
+  private boolean hasAccessToTask(LazySupplier<TaskDTO> taskSupplier) {
     final String userName = userReader.getCurrentUser().getUserId();
     final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
-
+    final var task = taskSupplier.get();
     final boolean allUsersTask =
         task.getCandidateUsers() == null && task.getCandidateGroups() == null;
     final boolean candidateGroupTasks =
@@ -255,6 +278,7 @@ public class TaskController extends ApiErrorController {
   public ResponseEntity<TaskResponse> assignTask(
       @PathVariable @Parameter(description = "The ID of the task.", required = true) String taskId,
       @RequestBody(required = false) TaskAssignRequest assignRequest) {
+    checkTaskImplementation(getTaskSupplier(taskId));
     final var safeAssignRequest = requireNonNullElse(assignRequest, new TaskAssignRequest());
     final var assignedTask =
         taskService.assignTask(
@@ -292,6 +316,7 @@ public class TaskController extends ApiErrorController {
   public ResponseEntity<TaskResponse> unassignTask(
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
           String taskId) {
+    checkTaskImplementation(getTaskSupplier(taskId));
     final var unassignedTask = taskService.unassignTask(taskId);
     return ResponseEntity.ok(taskMapper.toTaskResponse(unassignedTask));
   }
@@ -336,9 +361,9 @@ public class TaskController extends ApiErrorController {
       @RequestBody(required = false) TaskCompleteRequest taskCompleteRequest) {
     final var variables =
         requireNonNullElse(taskCompleteRequest, new TaskCompleteRequest()).getVariables();
-    final TaskResponse task = taskMapper.toTaskResponse(taskService.getTask(taskId));
-
-    if (!isUserRestrictionEnabled() || hasAccessToTask(task)) {
+    final var taskSupplier = getTaskSupplier(taskId);
+    checkTaskImplementation(taskSupplier);
+    if (!isUserRestrictionEnabled() || hasAccessToTask(taskSupplier)) {
       final var completedTask = taskService.completeTask(taskId, variables, true);
       return ResponseEntity.ok(taskMapper.toTaskResponse(completedTask));
     } else {
@@ -395,8 +420,7 @@ public class TaskController extends ApiErrorController {
   public ResponseEntity<Void> saveDraftTaskVariables(
       @PathVariable @Parameter(description = "The ID of the task.", required = true) String taskId,
       @RequestBody SaveVariablesRequest saveVariablesRequest) {
-    final TaskResponse task = taskMapper.toTaskResponse(taskService.getTask(taskId));
-    if (!isUserRestrictionEnabled() || hasAccessToTask(task)) {
+    if (!isUserRestrictionEnabled() || hasAccessToTask(getTaskSupplier(taskId))) {
       variableService.persistDraftTaskVariables(taskId, saveVariablesRequest.getVariables());
     } else {
       throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);
@@ -456,5 +480,9 @@ public class TaskController extends ApiErrorController {
     variables.forEach(resp -> unsetBigVariableValuesIfNeeded(resp, variableNamesToReturnFullValue));
 
     return ResponseEntity.ok(variables);
+  }
+
+  private LazySupplier<TaskDTO> getTaskSupplier(String taskId) {
+    return LazySupplier.of(() -> taskService.getTask(taskId));
   }
 }

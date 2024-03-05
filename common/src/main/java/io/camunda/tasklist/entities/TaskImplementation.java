@@ -6,9 +6,7 @@
  */
 package io.camunda.tasklist.entities;
 
-public enum TaskState {
-  CREATED,
-  COMPLETED,
-  CANCELED,
-  FAILED
+public enum TaskImplementation {
+  JOB_WORKER,
+  ZEEBE_USER_TASK
 }

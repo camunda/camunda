@@ -98,6 +98,9 @@ public class TasklistProperties {
   @NestedConfigurationProperty
   private MultiTenancyProperties multiTenancy = new MultiTenancyProperties();
 
+  @NestedConfigurationProperty
+  private TasklistDocumentationProperties documentation = new TasklistDocumentationProperties();
+
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -410,5 +413,13 @@ public class TasklistProperties {
   public TasklistProperties setMultiTenancy(MultiTenancyProperties multiTenancy) {
     this.multiTenancy = multiTenancy;
     return this;
+  }
+
+  public TasklistDocumentationProperties getDocumentation() {
+    return documentation;
+  }
+
+  public void setDocumentation(TasklistDocumentationProperties documentation) {
+    this.documentation = documentation;
   }
 }

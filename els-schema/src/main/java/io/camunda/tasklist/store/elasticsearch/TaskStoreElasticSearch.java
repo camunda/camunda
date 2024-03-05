@@ -413,6 +413,10 @@ public class TaskStoreElasticSearch implements TaskStore {
               .from(query.getDueDate().getFrom())
               .to(query.getDueDate().getTo());
     }
+    QueryBuilder implementationQ = null;
+    if (query.getImplementation() != null) {
+      implementationQ = termQuery(TaskTemplate.IMPLEMENTATION, query.getImplementation());
+    }
 
     QueryBuilder jointQ =
         joinWithAnd(
@@ -430,7 +434,8 @@ public class TaskStoreElasticSearch implements TaskStore {
             processInstanceIdQ,
             processDefinitionIdQ,
             followUpQ,
-            dueDateQ);
+            dueDateQ,
+            implementationQ);
     if (jointQ == null) {
       jointQ = matchAllQuery();
     }

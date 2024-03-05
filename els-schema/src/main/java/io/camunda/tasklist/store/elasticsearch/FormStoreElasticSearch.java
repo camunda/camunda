@@ -25,13 +25,17 @@ import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -39,6 +43,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class FormStoreElasticSearch implements FormStore {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(FormStoreElasticSearch.class);
 
   @Autowired private FormIndex formIndex;
 
@@ -84,6 +90,39 @@ public class FormStoreElasticSearch implements FormStore {
     } catch (IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
+  }
+
+  @Override
+  public Optional<FormIdView> getHighestVersionFormByKey(String formKey) {
+
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(QueryBuilders.termQuery(FormIndex.ID, formKey))
+            .sort(FormIndex.VERSION, SortOrder.DESC)
+            .size(1)
+            .fetchSource(new String[] {FormIndex.ID, FormIndex.BPMN_ID, FormIndex.VERSION}, null);
+
+    final SearchRequest searchRequest =
+        new SearchRequest(formIndex.getFullQualifiedName()).source(searchSourceBuilder);
+
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+      if (searchResponse.getHits().getHits().length > 0) {
+        // Extract the source and map it to your FormEntity object
+        final Map<String, Object> sourceAsMap =
+            searchResponse.getHits().getHits()[0].getSourceAsMap();
+        return Optional.of(
+            new FormIdView(
+                (String) sourceAsMap.get(FormIndex.ID),
+                (String) sourceAsMap.get(FormIndex.BPMN_ID),
+                ((Number) sourceAsMap.get(FormIndex.VERSION)).longValue()));
+      }
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(
+          String.format("Error retrieving the last version for the formKey: %s", formKey), e);
+    }
+    return Optional.empty();
   }
 
   private FormEntity getFormEmbedded(final String id, final String processDefinitionId) {

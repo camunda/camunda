@@ -19,7 +19,7 @@ import io.camunda.tasklist.zeebeimport.os.AbstractImportBatchProcessorOpenSearch
 import io.camunda.tasklist.zeebeimport.v850.record.RecordImpl;
 import io.camunda.tasklist.zeebeimport.v850.record.value.JobRecordValueImpl;
 import io.camunda.tasklist.zeebeimport.v850.record.value.ProcessInstanceRecordValueImpl;
-import io.camunda.tasklist.zeebeimport.v850.record.value.VariableDocumentRecordImpl;
+import io.camunda.tasklist.zeebeimport.v850.record.value.UserTaskRecordValueImpl;
 import io.camunda.tasklist.zeebeimport.v850.record.value.VariableRecordValueImpl;
 import io.camunda.tasklist.zeebeimport.v850.record.value.deployment.DeployedProcessImpl;
 import io.camunda.tasklist.zeebeimport.v850.record.value.deployment.FormRecordImpl;
@@ -51,6 +51,8 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
   @Autowired private ProcessZeebeRecordProcessorOpenSearch processZeebeRecordProcessor;
 
   @Autowired private FormZeebeRecordProcessorOpenSearch formZeebeRecordProcessor;
+
+  @Autowired private UserTaskZeebeRecordProcessorOpenSearch userTaskZeebeRecordProcessor;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -91,6 +93,9 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
           // form records can be processed one by one
           formZeebeRecordProcessor.processFormRecord(record, operations);
           break;
+        case USER_TASK:
+          userTaskZeebeRecordProcessor.processUserTaskRecord(record, operations);
+          break;
         default:
           LOGGER.debug("Default case triggered for type {}", importValueType);
           break;
@@ -121,12 +126,12 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
         return JobRecordValueImpl.class;
       case VARIABLE:
         return VariableRecordValueImpl.class;
-      case VARIABLE_DOCUMENT:
-        return VariableDocumentRecordImpl.class;
       case PROCESS:
         return DeployedProcessImpl.class;
       case FORM:
         return FormRecordImpl.class;
+      case USER_TASK:
+        return UserTaskRecordValueImpl.class;
       default:
         throw new TasklistRuntimeException(
             String.format("No value type class found for: %s", importValueType));

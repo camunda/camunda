@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -101,6 +102,8 @@ public class TaskSearchResponse {
               description =
                   "An array of the task's variables. Only variables specified in `TaskSearchRequest.includeVariables` are returned. Note that a variable's draft value is not returned in `TaskSearchResponse`."))
   private VariableSearchResponse[] variables;
+
+  private TaskImplementation implementation;
 
   public String getId() {
     return id;
@@ -300,6 +303,15 @@ public class TaskSearchResponse {
     return this;
   }
 
+  public TaskImplementation getImplementation() {
+    return implementation;
+  }
+
+  public TaskSearchResponse setImplementation(TaskImplementation implementation) {
+    this.implementation = implementation;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -310,6 +322,7 @@ public class TaskSearchResponse {
     }
     final TaskSearchResponse that = (TaskSearchResponse) o;
     return isFirst == that.isFirst
+        && implementation == that.implementation
         && Objects.equals(id, that.id)
         && Objects.equals(name, that.name)
         && Objects.equals(taskDefinitionId, that.taskDefinitionId)
@@ -354,7 +367,8 @@ public class TaskSearchResponse {
             processInstanceKey,
             tenantId,
             dueDate,
-            followUpDate);
+            followUpDate,
+            implementation);
     result = 31 * result + Arrays.hashCode(sortValues);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
@@ -373,6 +387,7 @@ public class TaskSearchResponse {
         .add("completionDate='" + completionDate + "'")
         .add("assignee='" + assignee + "'")
         .add("taskState=" + taskState)
+        .add("implementation=" + implementation)
         .add("sortValues=" + Arrays.toString(sortValues))
         .add("isFirst=" + isFirst)
         .add("formKey='" + formKey + "'")

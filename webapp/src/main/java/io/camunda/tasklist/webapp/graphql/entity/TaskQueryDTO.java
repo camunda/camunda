@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.queries.*;
 import java.util.Arrays;
@@ -37,6 +38,7 @@ public class TaskQueryDTO {
   private DateFilter dueDate;
   private TaskOrderBy[] sort;
   private TaskByCandidateUserOrGroup taskByCandidateUserOrGroup;
+  private TaskImplementation implementation;
 
   public TaskState getState() {
     return state;
@@ -210,6 +212,15 @@ public class TaskQueryDTO {
     return this;
   }
 
+  public TaskImplementation getImplementation() {
+    return implementation;
+  }
+
+  public TaskQueryDTO setImplementation(TaskImplementation implementation) {
+    this.implementation = implementation;
+    return this;
+  }
+
   public String[] getAssignees() {
     return assignees;
   }
@@ -248,6 +259,7 @@ public class TaskQueryDTO {
     final TaskQueryDTO that = (TaskQueryDTO) o;
     return pageSize == that.pageSize
         && state == that.state
+        && implementation == that.implementation
         && Objects.equals(assigned, that.assigned)
         && Objects.equals(assignee, that.assignee)
         && Arrays.equals(assignees, that.assignees)
@@ -285,7 +297,8 @@ public class TaskQueryDTO {
             pageSize,
             followUpDate,
             dueDate,
-            taskByCandidateUserOrGroup);
+            taskByCandidateUserOrGroup,
+            implementation);
     result = 31 * result + Arrays.hashCode(assignees);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
@@ -323,7 +336,8 @@ public class TaskQueryDTO {
         .setSearchBeforeOrEqual(this.searchBeforeOrEqual)
         .setFollowUpDate(this.followUpDate)
         .setDueDate(this.dueDate)
-        .setSort(this.sort);
+        .setSort(this.sort)
+        .setImplementation(this.implementation);
   }
 
   @Override
@@ -379,6 +393,8 @@ public class TaskQueryDTO {
         + Arrays.toString(sort)
         + ", taskByCandidateUserOrGroup="
         + taskByCandidateUserOrGroup
+        + ", implementation="
+        + implementation
         + '}';
   }
 }

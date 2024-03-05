@@ -7,19 +7,22 @@
 package io.camunda.tasklist.zeebeimport.v840.processors.es;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
-import static io.camunda.tasklist.zeebeimport.v840.record.Intent.*;
-import static io.camunda.zeebe.protocol.Protocol.*;
+import static io.camunda.tasklist.zeebeimport.v840.record.Intent.CANCELED;
+import static io.camunda.tasklist.zeebeimport.v840.record.Intent.COMPLETED;
+import static io.camunda.tasklist.zeebeimport.v840.record.Intent.CREATED;
+import static io.camunda.zeebe.protocol.Protocol.USER_TASK_ASSIGNEE_HEADER_NAME;
+import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME;
+import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.zeebeimport.v840.record.Intent;
 import io.camunda.tasklist.zeebeimport.v840.record.value.JobRecordValueImpl;
@@ -32,14 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,11 +54,7 @@ public class JobZeebeRecordProcessorElasticSearch {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private RestHighLevelClient esClient;
-
-  @Autowired private FormIndex formIndex;
-
-  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private FormStore formStore;
 
   public void processJobRecord(Record<JobRecordValueImpl> record, BulkRequest bulkRequest)
       throws PersistenceException {
@@ -83,6 +75,7 @@ public class JobZeebeRecordProcessorElasticSearch {
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
     final TaskEntity entity =
         new TaskEntity()
+            .setImplementation(TaskImplementation.JOB_WORKER)
             .setId(String.valueOf(record.getKey()))
             .setKey(record.getKey())
             .setPartitionId(record.getPartitionId())
@@ -116,11 +109,11 @@ public class JobZeebeRecordProcessorElasticSearch {
     entity.setFormKey(formKey);
 
     Optional.ofNullable(formKey)
-        .map(this::getHighestVersionFormByKey)
+        .flatMap(formStore::getHighestVersionFormByKey)
         .ifPresentOrElse(
             linkedForm -> {
-              entity.setFormVersion(linkedForm.getVersion());
-              entity.setFormId(linkedForm.getBpmnId());
+              entity.setFormVersion(linkedForm.version());
+              entity.setFormId(linkedForm.bpmnId());
               entity.setIsFormEmbedded(false);
             },
             () -> {
@@ -157,7 +150,7 @@ public class JobZeebeRecordProcessorElasticSearch {
       } catch (JsonProcessingException e) {
         LOGGER.warn(
             String.format(
-                "Candidate users can't be parsed from %s: %s", candidateGroups, e.getMessage()),
+                "Candidate users can't be parsed from %s: %s", candidateUsers, e.getMessage()),
             e);
       }
     }
@@ -221,36 +214,5 @@ public class JobZeebeRecordProcessorElasticSearch {
           String.format("Error preparing the query to upsert task instance [%s]", entity.getId()),
           e);
     }
-  }
-
-  private FormEntity getHighestVersionFormByKey(String formKey) {
-    final SearchRequest searchRequest =
-        new SearchRequest(formIndex.getFullQualifiedName()); // Replace with your index name
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-
-    searchSourceBuilder.query(QueryBuilders.termQuery(FormIndex.ID, formKey));
-
-    searchSourceBuilder.sort(FormIndex.VERSION, SortOrder.DESC);
-    searchSourceBuilder.size(1);
-
-    searchRequest.source(searchSourceBuilder);
-
-    try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-      if (searchResponse.getHits().getHits().length > 0) {
-        // Extract the source and map it to your FormEntity object
-        final Map<String, Object> sourceAsMap =
-            searchResponse.getHits().getHits()[0].getSourceAsMap();
-        final FormEntity formEntity = new FormEntity();
-        formEntity.setBpmnId((String) sourceAsMap.get(FormIndex.BPMN_ID));
-        formEntity.setVersion(((Number) sourceAsMap.get(FormIndex.VERSION)).longValue());
-        formEntity.setEmbedded((Boolean) sourceAsMap.get(FormIndex.EMBEDDED));
-        return formEntity;
-      }
-    } catch (IOException e) {
-      String.format("Error retrieving the last version for the formKey: [%s]", formKey);
-    }
-    return null;
   }
 }

@@ -19,7 +19,6 @@ import io.camunda.tasklist.zeebeimport.es.AbstractImportBatchProcessorElasticSea
 import io.camunda.tasklist.zeebeimport.v840.record.RecordImpl;
 import io.camunda.tasklist.zeebeimport.v840.record.value.JobRecordValueImpl;
 import io.camunda.tasklist.zeebeimport.v840.record.value.ProcessInstanceRecordValueImpl;
-import io.camunda.tasklist.zeebeimport.v840.record.value.VariableDocumentRecordImpl;
 import io.camunda.tasklist.zeebeimport.v840.record.value.VariableRecordValueImpl;
 import io.camunda.tasklist.zeebeimport.v840.record.value.deployment.DeployedProcessImpl;
 import io.camunda.tasklist.zeebeimport.v840.record.value.deployment.FormRecordImpl;
@@ -122,8 +121,6 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
         return JobRecordValueImpl.class;
       case VARIABLE:
         return VariableRecordValueImpl.class;
-      case VARIABLE_DOCUMENT:
-        return VariableDocumentRecordImpl.class;
       case PROCESS:
         return DeployedProcessImpl.class;
       case FORM:

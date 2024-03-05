@@ -8,10 +8,15 @@ package io.camunda.tasklist.store;
 
 import io.camunda.tasklist.entities.FormEntity;
 import java.util.List;
+import java.util.Optional;
 
 public interface FormStore {
 
   FormEntity getForm(final String id, final String processDefinitionId, final Long version);
 
   List<String> getFormIdsByProcessDefinitionId(String processDefinitionId);
+
+  Optional<FormIdView> getHighestVersionFormByKey(String formKey);
+
+  record FormIdView(String id, String bpmnId, Long version) {}
 }

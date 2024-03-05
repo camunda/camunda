@@ -7,6 +7,7 @@
 package io.camunda.tasklist.zeebeimport.v850.record;
 
 public enum Intent implements io.camunda.zeebe.protocol.record.intent.Intent {
+  CREATING,
   CREATED,
 
   RESOLVED,

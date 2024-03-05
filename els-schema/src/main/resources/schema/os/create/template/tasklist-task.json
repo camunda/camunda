@@ -70,6 +70,9 @@
     },
     "tenantId": {
       "type": "keyword"
+    },
+    "implementation": {
+      "type": "keyword"
     }
   }
 }

@@ -6,8 +6,6 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
-import static io.camunda.tasklist.zeebe.ImportValueType.IMPORT_VALUE_TYPES;
-
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.zeebe.ImportValueType;
@@ -50,7 +48,7 @@ public class RecordsReaderHolder {
     LOGGER.info("Starting import for partitions: {}", partitionIds);
     for (Integer partitionId : partitionIds) {
       // TODO what if it's not the final list of partitions
-      for (ImportValueType importValueType : IMPORT_VALUE_TYPES) {
+      for (ImportValueType importValueType : ImportValueType.values()) {
         // we load deployments only from deployment partition
         if (!importValueType.equals(ImportValueType.PROCESS)
             || partitionId.equals(Protocol.DEPLOYMENT_PARTITION)) {

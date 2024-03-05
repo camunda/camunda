@@ -53,7 +53,8 @@ public class TaskMapper {
                 ? Stream.of(taskDTO.getVariables())
                     .map(this::toVariableSearchResponse)
                     .toArray(VariableSearchResponse[]::new)
-                : null);
+                : null)
+        .setImplementation(taskDTO.getImplementation());
   }
 
   private VariableSearchResponse toVariableSearchResponse(VariableDTO variableDTO) {
@@ -93,7 +94,8 @@ public class TaskMapper {
         .setFollowUpDate(taskDTO.getFollowUpDate())
         .setCandidateGroups(taskDTO.getCandidateGroups())
         .setCandidateUsers(taskDTO.getCandidateUsers())
-        .setTenantId(taskDTO.getTenantId());
+        .setTenantId(taskDTO.getTenantId())
+        .setImplementation(taskDTO.getImplementation());
   }
 
   public TaskQueryDTO toTaskQuery(TaskSearchRequest searchRequest) {
@@ -118,7 +120,8 @@ public class TaskMapper {
         .setSearchAfter(searchRequest.getSearchAfter())
         .setSearchAfterOrEqual(searchRequest.getSearchAfterOrEqual())
         .setSearchBefore(searchRequest.getSearchBefore())
-        .setSearchBeforeOrEqual(searchRequest.getSearchBeforeOrEqual());
+        .setSearchBeforeOrEqual(searchRequest.getSearchBeforeOrEqual())
+        .setImplementation(searchRequest.getImplementation());
   }
 
   public String getName(TaskDTO task) {

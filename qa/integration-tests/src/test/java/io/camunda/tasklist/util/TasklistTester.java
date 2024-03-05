@@ -34,6 +34,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -156,6 +157,39 @@ public class TasklistTester {
             .endEvent()
             .done();
     processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
+    return this;
+  }
+
+  public TasklistTester createAndDeploySimpleProcessWithZeebeUserTask(
+      String processId, String flowNodeBpmnId) {
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .userTask(flowNodeBpmnId)
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
+    return this;
+  }
+
+  public TasklistTester createAndDeployProcess(BpmnModelInstance process) {
+    processDefinitionKey =
+        ZeebeTestUtil.deployProcess(
+            zeebeClient, process, process.getDefinitions().getId() + ".bpmn");
+    return this;
+  }
+
+  public TasklistTester migrateProcessInstance(String oldTaskMapping, String newTaskMapping) {
+    zeebeClient
+        .newMigrateProcessInstanceCommand(Long.valueOf(processInstanceId))
+        .migrationPlan(
+            new MigrationPlanBuilderImpl()
+                .withTargetProcessDefinitionKey(Long.valueOf(processDefinitionKey))
+                .addMappingInstruction(oldTaskMapping, newTaskMapping)
+                .build())
+        .send()
+        .join();
     return this;
   }
 
