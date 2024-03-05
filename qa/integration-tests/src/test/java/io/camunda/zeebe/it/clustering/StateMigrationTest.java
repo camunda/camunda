@@ -63,7 +63,7 @@ public class StateMigrationTest {
                         .join(),
                 r -> !r.getJobs().isEmpty());
 
-    final var jobKey = activateResponse.getJobs().getFirst().getKey();
+    final var jobKey = activateResponse.getJobs().get(0).getKey();
 
     final Duration backoffTimeout = Duration.ofDays(1);
     clientRule
