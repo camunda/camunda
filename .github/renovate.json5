@@ -127,7 +127,7 @@
       matchManagers: "dockerfile",
       separateMajorMinor: true,
       separateMinorPatch: true,
-      pinDigests: true,
+      pinDigests: false,
       prPriority: 100,
     },
     // Settings for patch versions update
