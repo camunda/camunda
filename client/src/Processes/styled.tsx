@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {breakpoints, rem} from '@carbon/elements';
+import {rem} from '@carbon/elements';
 import styled, {css} from 'styled-components';
 import {SkeletonPlaceholder, Dropdown as BaseDropdown} from '@carbon/react';
 
@@ -60,37 +60,109 @@ const Content = styled.div`
 `;
 
 const SearchContainer = styled.div`
+  --min-column-width: 200px;
+  --max-column-width: 400px;
+
   width: 100%;
   height: min-content;
+
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(var(--max-column-width), 1fr)
+  );
+  gap: var(--cds-spacing-04);
   padding-right: var(--cds-spacing-13);
 
-  @media (min-width: 1000px) {
-    width: 70%;
-    padding-right: 0;
+  & > :nth-child(1) {
+    grid-column: 1 / -2;
   }
 
-  @media (min-width: 2000px) {
-    width: 50%;
-    padding-right: 0;
+  & > :nth-child(2) {
+    grid-column: -2 / -1;
   }
 `;
 
 const MultiTenancyContainer = styled.div`
+  --min-column-width: 200px;
+  --max-column-width: 200px;
   width: 100%;
-  padding-right: var(--cds-spacing-13);
-  display: grid;
-  grid-template-rows: 1fr 1fr 1fr;
-  grid-template-columns: 1fr;
-  align-items: end;
 
-  @media (min-width: ${breakpoints.lg.width}) {
-    --column-gap: var(--cds-spacing-10);
-    --content-width: calc(100% - var(--cds-spacing-13) - var(--column-gap));
-    grid-template-rows: 1fr;
-    grid-template-columns:
-      calc(var(--content-width) * 0.25) calc(var(--content-width) * 0.5)
-      calc(var(--content-width) * 0.25);
-    gap: var(--column-gap);
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(var(--max-column-width), 1fr)
+  );
+  gap: var(--cds-spacing-04);
+  align-items: self-end;
+  padding-right: var(--cds-spacing-13);
+
+  & > :nth-child(1) {
+    grid-column: 1 / -3;
+  }
+
+  & > :nth-child(2) {
+    grid-column: -3 / -2;
+  }
+
+  & > :nth-child(3) {
+    grid-column: -2 / -1;
+  }
+
+  @media (max-width: 1367px) {
+    & > :nth-child(1) {
+      grid-column: 1 / span 4;
+    }
+
+    & > :nth-child(2) {
+      grid-column: auto / span 2;
+    }
+
+    & > :nth-child(3) {
+      grid-column: auto / span 2;
+    }
+  }
+
+  @media (max-width: 1131px) {
+    & > :nth-child(1) {
+      grid-column: auto / span 3;
+    }
+
+    & > :nth-child(2) {
+      grid-column: auto / span 3;
+    }
+
+    & > :nth-child(3) {
+      grid-column: auto / span 3;
+    }
+  }
+
+  @media (max-width: 943px) {
+    & > :nth-child(1) {
+      grid-column: auto / span 2;
+    }
+
+    & > :nth-child(2) {
+      grid-column: auto / span 2;
+    }
+
+    & > :nth-child(3) {
+      grid-column: auto / span 2;
+    }
+  }
+
+  @media (max-width: 714px) {
+    & > :nth-child(1) {
+      grid-column: auto;
+    }
+
+    & > :nth-child(2) {
+      grid-column: auto;
+    }
+
+    & > :nth-child(3) {
+      grid-column: auto;
+    }
   }
 `;
 
@@ -106,7 +178,7 @@ const ProcessesContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(
     auto-fill,
-    minmax(max(var(--min-column-width), var(--max-column-width)), 1fr)
+    minmax(var(--max-column-width), 1fr)
   );
   gap: var(--cds-spacing-04);
   padding-bottom: var(--cds-spacing-08);

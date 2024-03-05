@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Search, Stack, Link, Column, Row, FlexGrid} from '@carbon/react';
+import {Search, Stack, Link} from '@carbon/react';
 import {ProcessTile} from './ProcessTile';
 import {
   Container,
@@ -249,6 +249,17 @@ const Processes: React.FC = observer(() => {
       <Stack as={Content} gap={6}>
         {isMultiTenancyVisible ? (
           <MultiTenancyContainer>
+            <Search {...processSearchProps} />
+            <FilterDropdown
+              items={START_FORM_FILTER_OPTIONS}
+              selected={startFormFilter}
+              onChange={(value) =>
+                updateSearchParams(searchParams, {
+                  name: 'hasStartForm',
+                  value: value.searchParamValue ?? '',
+                })
+              }
+            />
             <MultiTenancyDropdown
               initialSelectedItem={currentUser?.tenants.find(({id}) =>
                 [
@@ -266,6 +277,9 @@ const Processes: React.FC = observer(() => {
                 storeStateLocally('tenantId', tenant);
               }}
             />
+          </MultiTenancyContainer>
+        ) : (
+          <SearchContainer>
             <Search {...processSearchProps} />
             <FilterDropdown
               items={START_FORM_FILTER_OPTIONS}
@@ -277,28 +291,6 @@ const Processes: React.FC = observer(() => {
                 })
               }
             />
-          </MultiTenancyContainer>
-        ) : (
-          <SearchContainer>
-            <FlexGrid>
-              <Row narrow>
-                <Column>
-                  <Search {...processSearchProps} />
-                </Column>
-                <Column>
-                  <FilterDropdown
-                    items={START_FORM_FILTER_OPTIONS}
-                    selected={startFormFilter}
-                    onChange={(value) =>
-                      updateSearchParams(searchParams, {
-                        name: 'hasStartForm',
-                        value: value.searchParamValue ?? '',
-                      })
-                    }
-                  />
-                </Column>
-              </Row>
-            </FlexGrid>
           </SearchContainer>
         )}
         {!isInitialLoading && processes.length === 0 ? (
