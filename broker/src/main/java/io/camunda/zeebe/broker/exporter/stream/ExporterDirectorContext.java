@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.stream.api.EventFilter;
 import java.time.Duration;
 import java.util.Collection;
 
@@ -26,6 +27,7 @@ public final class ExporterDirectorContext {
   private PartitionMessagingService partitionMessagingService;
   private ExporterMode exporterMode = ExporterMode.ACTIVE; // per default we export records
   private Duration distributionInterval = DEFAULT_DISTRIBUTION_INTERVAL;
+  private EventFilter positionsToSkipFilter;
 
   public int getId() {
     return id;
@@ -57,6 +59,10 @@ public final class ExporterDirectorContext {
 
   public Duration getDistributionInterval() {
     return distributionInterval;
+  }
+
+  public EventFilter getPositionsToSkipFilter() {
+    return positionsToSkipFilter;
   }
 
   public ExporterDirectorContext id(final int id) {
@@ -97,6 +103,11 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext distributionInterval(final Duration distributionInterval) {
     this.distributionInterval = distributionInterval;
+    return this;
+  }
+
+  public ExporterDirectorContext positionsToSkipFilter(final EventFilter skipPositionsFilter) {
+    positionsToSkipFilter = skipPositionsFilter;
     return this;
   }
 

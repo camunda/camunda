@@ -83,6 +83,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final Duration distributionInterval;
   private ExporterStateDistributionService exporterDistributionService;
   private final int partitionId;
+  private final EventFilter positionsToSkipFilter;
 
   public ExporterDirector(final ExporterDirectorContext context, final boolean shouldPauseOnStart) {
     name = context.getName();
@@ -101,6 +102,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     exporterPositionsTopic = String.format(EXPORTER_STATE_TOPIC_FORMAT, partitionId);
     exporterMode = context.getExporterMode();
     distributionInterval = context.getDistributionInterval();
+    positionsToSkipFilter = context.getPositionsToSkipFilter();
   }
 
   public ActorFuture<Void> startAsync(final ActorSchedulingService actorSchedulingService) {
@@ -278,7 +280,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       container.configureExporter();
     }
 
-    eventFilter = createEventFilter(containers);
+    eventFilter = positionsToSkipFilter.and(createEventFilter(containers));
     LOG.debug("Set event filter for exporters: {}", eventFilter);
   }
 
