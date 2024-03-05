@@ -36,6 +36,6 @@ public interface ClusterTopologyManager {
      * @param newTopology new topology received
      * @param oldTopology the local topology before receiving the new one
      */
-    void onTopologyChanged(ClusterTopology newTopology, ClusterTopology oldTopology);
+    void onLocalTopologyChanged(ClusterTopology newTopology, ClusterTopology oldTopology);
   }
 }

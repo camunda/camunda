@@ -200,7 +200,8 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
                 persistedClusterTopology.update(mergedTopology);
 
                 if (isConflictingTopology && onInconsistentTopologyDetected != null) {
-                  onInconsistentTopologyDetected.onTopologyChanged(mergedTopology, oldTopology);
+                  onInconsistentTopologyDetected.onLocalTopologyChanged(
+                      mergedTopology, oldTopology);
                 }
 
                 topologyGossiper.accept(mergedTopology);
