@@ -183,6 +183,11 @@ test.describe('Processes', () => {
       })}`,
     );
 
+    // Ensure Check Payment flow node is not selected
+    await expect(
+      processesPage.diagram.getFlowNode('Check Payment'),
+    ).not.toHaveClass(/selected/);
+
     // Select "Check Payment" flow node
     const checkPaymentTaskId = 'checkPayment';
 
@@ -201,6 +206,16 @@ test.describe('Processes', () => {
         flowNodeId: checkPaymentTaskId,
       })}`,
     );
+
+    await expect(
+      processesPage.diagram.getFlowNode('Check Payment'),
+    ).toHaveClass(/selected/);
+
+    // Ensure that flow node is still selected after page reload
+    await page.reload();
+    await expect(
+      processesPage.diagram.getFlowNode('Check Payment'),
+    ).toHaveClass(/selected/);
   });
 
   test('Wait for process creation', async ({processesPage, page}) => {
