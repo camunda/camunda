@@ -1,4 +1,4 @@
-name: Optimize - Release Camunda Optimize to Camunda Nexus, DockerHub and internal Harbor registry.
+name: Optimize Release Camunda Optimize to Camunda Nexus, DockerHub and internal Harbor registry.
 
 on:
   schedule:
@@ -7,32 +7,32 @@ on:
     inputs:
       RELEASE_VERSION:
         required: true
-        description: 'Version to release. Applied to pom.xml and Git tag'
-        default: '0.0.0'
+        description: "Version to release. Applied to pom.xml and Git tag"
+        default: "0.0.0"
       DEVELOPMENT_VERSION:
         required: true
-        description: 'Next development version'
-        default: '0.1.0-SNAPSHOT'
+        description: "Next development version"
+        default: "0.1.0-SNAPSHOT"
       BRANCH:
         required: true
-        description: 'The branch used for the release checkout'
-        default: 'release/0.0.0'
+        description: "The branch used for the release checkout"
+        default: "release/0.0.0"
       ADDITIONAL_DOCKER_TAG:
         required: false
-        description: 'Any additional tag that should be added to the docker image'
+        description: "Any additional tag that should be added to the docker image"
       DOCKER_LATEST:
         required: true
-        description: 'Should the docker image be tagged as latest?'
+        description: "Should the docker image be tagged as latest?"
         type: boolean
         default: true
       IS_DRY_RUN:
         required: true
-        description: 'Is this a dry run?'
+        description: "Is this a dry run?"
         type: boolean
         default: true
       RELEASE_EXAMPLES:
         required: true
-        description: 'Update Optimize examples repository?'
+        description: "Update Optimize examples repository?"
         type: boolean
         default: false
 
@@ -119,7 +119,7 @@ jobs:
           app_id: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
           private_key: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_KEY }}
 
-      - name: Install common tooling (buildx)  # required on self-hosted runners
+      - name: Install common tooling (buildx) # required on self-hosted runners
         uses: camunda/infra-global-github-actions/common-tooling@main
         with:
           buildx-enabled: true
@@ -178,11 +178,11 @@ jobs:
         uses: camunda/infra-global-github-actions/download-center-upload@main
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
-          ee: 'true'
-          env: 'prod'
+          ee: "true"
+          env: "prod"
           version: ${{ github.event.inputs.RELEASE_VERSION }}
           artifact_file: target/checkout/distro/target/*.{tar.gz,zip}
-          repo_name: 'optimize'
+          repo_name: "optimize"
 
       - name: Auto-update previous version
         env:
@@ -205,7 +205,8 @@ jobs:
           OPTIMIZE_IMAGE_TAG: ${{ github.event.inputs.RELEASE_VERSION }}
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
           CAMBPM_HOST: "172.17.0.1"
-          CAMBPM_PORT: "8080"
+          CAMBPM_PORT:
+            "8080"
             # ^ starting ~2023-10-10, the hostname resolution for the cambpm docker-compose service
             # http://cambpm:8080 does not work anymore for neither SaaS nor self-hosted Linux runners.
             # 172.17.0.1 is the host IP address from the container perspective, and cambpm is running
@@ -216,7 +217,7 @@ jobs:
         with:
           version: ${{ env.VERSION }}
           date: ${{ env.DATE }}
-          revision:  ${{ env.REVISION }}
+          revision: ${{ env.REVISION }}
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
