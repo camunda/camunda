@@ -94,6 +94,12 @@ public class TaskService {
               "Invalid implementation, the valid values are %s and %s",
               TaskImplementation.ZEEBE_USER_TASK, TaskImplementation.JOB_WORKER));
     }
+
+    final UserDTO currentUser = getCurrentUser();
+    if (!currentUser.isApiUser()) {
+      query.setImplementation(TaskImplementation.JOB_WORKER);
+    }
+    
     final List<TaskSearchView> tasks = taskStore.getTasks(query.toTaskQuery());
     final Set<String> fieldNames =
         fetchFullValuesFromDB

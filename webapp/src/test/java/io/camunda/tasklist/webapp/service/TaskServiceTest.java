@@ -93,6 +93,7 @@ class TaskServiceTest {
     when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(List.of(providedTask));
 
     // When
+    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
     final var result = instance.getTasks(taskQuery);
 
     // Then
@@ -185,6 +186,7 @@ class TaskServiceTest {
                         .setIsValueTruncated(true))));
 
     // When
+    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
     final var result = instance.getTasks(taskQuery, Set.of("varA"), false);
 
     // Then
@@ -205,7 +207,7 @@ class TaskServiceTest {
             new TaskDTO().setId("456").setTaskState(TaskState.COMPLETED));
 
     when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(providedTasks);
-
+    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
     // When
     final var result = instance.getTasks(taskQuery, emptySet(), false);
 
