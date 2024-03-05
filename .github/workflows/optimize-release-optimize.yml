@@ -186,7 +186,7 @@ jobs:
           GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
           GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           .github/scripts/execute-release.sh
 
@@ -204,6 +204,7 @@ jobs:
 
       - name: Auto-update previous version
         env:
+          GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
         run: |
@@ -266,6 +267,7 @@ jobs:
         if: inputs.RELEASE_EXAMPLES == true
         working-directory: camunda-optimize-examples
         env:
+          GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
         run: |
