@@ -1,9 +1,9 @@
 ---
 
-name: General issue
+name: Zeebe General issue
 about: General changes to the project
 title: ''
-labels: 'kind/toil'
+labels: ['kind/toil', 'component/zeebe']
 assignees: ''
 
 ---

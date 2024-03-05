@@ -1,9 +1,9 @@
 ---
 
-name: Unstable test
+name: Zeebe Unstable test
 about: Report tests that are flaky/non-deterministic
 title: ''
-labels: 'kind/flake'
+labels: ['kind/flake', 'component/zeebe']
 assignees: ''
 
 ---
