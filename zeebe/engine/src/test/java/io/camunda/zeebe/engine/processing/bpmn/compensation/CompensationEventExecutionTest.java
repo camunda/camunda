@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1213,33 +1215,33 @@ public class CompensationEventExecutionTest {
   @Test
   public void shouldNotTriggerHandlersForMultiInstanceInsideNotCompletedSubprocess() {
     // given
+    final Consumer<SubProcessBuilder> subprocessLevel2 =
+        subprocess ->
+            subprocess
+                .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask("A", task -> task.zeebeJobType("A"))
+                .boundaryEvent()
+                .compensation(
+                    compensation -> compensation.serviceTask("Undo-A").zeebeJobType("Undo-A"));
+
     final var process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .parallelGateway("fork")
-            .subProcess()
-            .embeddedSubProcess()
-            .startEvent()
             .subProcess(
-                "subprocess-2",
+                "subprocess-1",
                 subprocess ->
                     subprocess
-                        .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
                         .embeddedSubProcess()
                         .startEvent()
-                        .serviceTask("A", task -> task.zeebeJobType("A"))
-                        .boundaryEvent()
-                        .compensation(
-                            compensation ->
-                                compensation.serviceTask("Undo-A").zeebeJobType("Undo-A")))
-            .serviceTask("B")
-            .zeebeJobType("B")
-            .endEvent()
-            .subProcessDone()
+                        .subProcess("subprocess-2", subprocessLevel2)
+                        .serviceTask("B", task -> task.zeebeJobType("B"))
+                        .endEvent())
             .parallelGateway("join")
             .moveToNode("fork")
-            .serviceTask("C")
-            .zeebeJobType("C")
+            .serviceTask("C", task -> task.zeebeJobType("C"))
             .intermediateThrowEvent("compensation-throw-event")
             .compensateEventDefinition()
             .compensateEventDefinitionDone()
@@ -1255,7 +1257,7 @@ public class CompensationEventExecutionTest {
         .withProcessInstanceKey(processInstanceKey)
         .withType("A")
         .limit(3)
-        .forEach(job -> ENGINE.job().withKey(job.getKey()).withType("A").complete());
+        .forEach(job -> ENGINE.job().withKey(job.getKey()).complete());
 
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType("C").complete();
@@ -1281,6 +1283,16 @@ public class CompensationEventExecutionTest {
   public void
       shouldNotTriggerHandlersForSubprocessIfParentMultiInstancesSubprocessesAreNotCompleted() {
     // given
+    final Consumer<SubProcessBuilder> subprocessLevel2 =
+        subprocess ->
+            subprocess
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask("A", task -> task.zeebeJobType("A"))
+                .boundaryEvent()
+                .compensation(
+                    compensation -> compensation.serviceTask("Undo-A").zeebeJobType("Undo-A"));
+
     final var process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
@@ -1292,25 +1304,11 @@ public class CompensationEventExecutionTest {
                         .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
                         .embeddedSubProcess()
                         .startEvent()
-                        .subProcess(
-                            "subprocess-2",
-                            subprocess2 ->
-                                subprocess2
-                                    .embeddedSubProcess()
-                                    .startEvent()
-                                    .serviceTask("A", task -> task.zeebeJobType("A"))
-                                    .boundaryEvent()
-                                    .compensation(
-                                        compensation ->
-                                            compensation
-                                                .serviceTask("Undo-A")
-                                                .zeebeJobType("Undo-A")))
-                        .serviceTask("B")
-                        .zeebeJobType("B"))
+                        .subProcess("subprocess-2", subprocessLevel2)
+                        .serviceTask("B", task -> task.zeebeJobType("B")))
             .parallelGateway("join")
             .moveToNode("fork")
-            .serviceTask("C")
-            .zeebeJobType("C")
+            .serviceTask("C", task -> task.zeebeJobType("C"))
             .intermediateThrowEvent("compensation-throw-event")
             .compensateEventDefinition()
             .compensateEventDefinitionDone()
@@ -1326,9 +1324,9 @@ public class CompensationEventExecutionTest {
         .withProcessInstanceKey(processInstanceKey)
         .withType("A")
         .limit(3)
-        .forEach(job -> ENGINE.job().withKey(job.getKey()).withType("A").complete());
+        .forEach(job -> ENGINE.job().withKey(job.getKey()).complete());
 
-    final var jobKeys =
+    final var jobKeysOfTaskB =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType("B")
@@ -1336,12 +1334,12 @@ public class CompensationEventExecutionTest {
             .map(Record::getKey)
             .toList();
 
-    ENGINE.job().withKey(jobKeys.getFirst()).complete();
+    ENGINE.job().withKey(jobKeysOfTaskB.getFirst()).complete();
 
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType("C").complete();
 
-    jobKeys.stream().skip(1).forEach(key -> ENGINE.job().withKey(key).complete());
+    jobKeysOfTaskB.stream().skip(1).forEach(key -> ENGINE.job().withKey(key).complete());
 
     // then
     assertThat(
