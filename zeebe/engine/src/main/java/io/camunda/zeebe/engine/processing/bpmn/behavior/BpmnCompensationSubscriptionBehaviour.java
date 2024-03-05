@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBou
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCompensation;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -62,20 +61,31 @@ public class BpmnCompensationSubscriptionBehaviour {
 
   public void createCompensationSubscription(
       final ExecutableActivity element, final BpmnElementContext context) {
-    if (hasCompensationBoundaryEvent(element)) {
+    final var elementId = BufferUtil.bufferAsString(element.getId());
+
+    if (hasCompensationBoundaryEvent(element)
+        || hasCompletedActivityWithCompensationHandler(context, elementId)) {
+
       final var key = keyGenerator.nextKey();
-      final var compensationHandlerId = getCompensationHandlerId(element);
+      final var flowScopeId = BufferUtil.bufferAsString(element.getFlowScope().getId());
+
       final var compensation =
           new CompensationSubscriptionRecord()
               .setTenantId(context.getTenantId())
               .setProcessInstanceKey(context.getProcessInstanceKey())
               .setProcessDefinitionKey(context.getProcessDefinitionKey())
-              .setCompensableActivityId(BufferUtil.bufferAsString(context.getElementId()))
-              .setCompensableActivityScopeId(
-                  BufferUtil.bufferAsString(element.getFlowScope().getId()))
-              .setCompensationHandlerId(compensationHandlerId)
+              .setCompensableActivityId(elementId)
+              .setCompensableActivityScopeId(flowScopeId)
               .setCompensableActivityInstanceKey(context.getElementInstanceKey())
               .setCompensableActivityScopeKey(context.getFlowScopeKey());
+
+      Optional.ofNullable(getCompensationHandlerId(element))
+          .ifPresent(compensation::setCompensationHandlerId);
+
+      if (element.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+        compensation.setMultiInstance(true);
+      }
+
       stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
     }
   }
@@ -195,44 +205,6 @@ public class BpmnCompensationSubscriptionBehaviour {
                     compensation.getKey(),
                     CompensationSubscriptionIntent.DELETED,
                     compensation.getRecord()));
-  }
-
-  public void createCompensationSubscriptionForSubprocess(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    if (hasCompletedActivityWithCompensationHandler(
-        context, BufferUtil.bufferAsString(element.getId()))) {
-      final var key = keyGenerator.nextKey();
-      final var compensation =
-          new CompensationSubscriptionRecord()
-              .setTenantId(context.getTenantId())
-              .setProcessInstanceKey(context.getProcessInstanceKey())
-              .setProcessDefinitionKey(context.getProcessDefinitionKey())
-              .setCompensableActivityId(BufferUtil.bufferAsString(context.getElementId()))
-              .setCompensableActivityScopeId(
-                  BufferUtil.bufferAsString(element.getFlowScope().getId()))
-              .setCompensableActivityInstanceKey(context.getElementInstanceKey())
-              .setCompensableActivityScopeKey(context.getFlowScopeKey());
-
-      stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
-    }
-  }
-
-  public void createCompensationSubscriptionForMultiInstance(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-
-    final var key = keyGenerator.nextKey();
-    final var compensation =
-        new CompensationSubscriptionRecord()
-            .setTenantId(context.getTenantId())
-            .setProcessInstanceKey(context.getProcessInstanceKey())
-            .setProcessDefinitionKey(context.getProcessDefinitionKey())
-            .setCompensableActivityId(BufferUtil.bufferAsString(context.getElementId()))
-            .setCompensableActivityScopeId(
-                BufferUtil.bufferAsString(element.getFlowScope().getId()))
-            .setCompensableActivityInstanceKey(context.getElementInstanceKey())
-            .setCompensableActivityScopeKey(context.getFlowScopeKey())
-            .setMultiInstance(true);
-    stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
   }
 
   private boolean hasCompensationBoundaryEvent(final ExecutableActivity element) {

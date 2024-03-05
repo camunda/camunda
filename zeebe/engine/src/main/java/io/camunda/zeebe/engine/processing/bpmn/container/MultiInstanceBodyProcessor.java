@@ -106,8 +106,7 @@ public final class MultiInstanceBodyProcessor
         .getOutputCollection()
         .ifPresent(variableName -> stateBehavior.propagateVariable(context, variableName));
 
-    compensationSubscriptionBehaviour.createCompensationSubscriptionForMultiInstance(
-        element, context);
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
 
     return stateTransitionBehavior
         .transitionToCompleted(element, context)
@@ -398,11 +397,11 @@ public final class MultiInstanceBodyProcessor
 
       case "numberOfActiveInstances" -> getNumberOfActiveInstancesVariable(elementInstanceKey);
 
-      case "numberOfCompletedInstances" -> getNumberOfCompletedInstancesVariable(
-          elementInstanceKey);
+      case "numberOfCompletedInstances" ->
+          getNumberOfCompletedInstancesVariable(elementInstanceKey);
 
-      case "numberOfTerminatedInstances" -> getNumberOfTerminatedInstancesVariable(
-          elementInstanceKey);
+      case "numberOfTerminatedInstances" ->
+          getNumberOfTerminatedInstancesVariable(elementInstanceKey);
 
       default -> null;
     };
