@@ -92,11 +92,7 @@ public final class MultiInstanceBodyProcessor
                 eventSubscriptionBehavior
                     .subscribeToEvents(element, context)
                     .map(ok -> inputCollection))
-        .thenDo(inputCollection -> {
-          activate(element, context, inputCollection);
-          compensationSubscriptionBehaviour.createCompensationSubscriptionForMultiInstance(
-              element, context);
-        });
+        .thenDo(inputCollection -> activate(element, context, inputCollection));
   }
 
   @Override
@@ -110,13 +106,12 @@ public final class MultiInstanceBodyProcessor
         .getOutputCollection()
         .ifPresent(variableName -> stateBehavior.propagateVariable(context, variableName));
 
+    compensationSubscriptionBehaviour.createCompensationSubscriptionForMultiInstance(
+        element, context);
+
     return stateTransitionBehavior
         .transitionToCompleted(element, context)
-        .thenDo(completed -> {
-          compensationSubscriptionBehaviour.completeCompensationSubscriptionForMultiInstance(
-              context);
-          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
-        });
+        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 
   @Override
@@ -307,16 +302,12 @@ public final class MultiInstanceBodyProcessor
                   terminated.getFlowScopeKey(),
                   eventTrigger,
                   terminated);
-              compensationSubscriptionBehaviour.deleteCompensationSubscriptionForMultiInstance(
-                  flowScopeContext);
               stateTransitionBehavior.onElementTerminated(element, terminated);
             },
             () -> {
               final var terminated =
                   stateTransitionBehavior.transitionToTerminated(
                       flowScopeContext, element.getEventType());
-              compensationSubscriptionBehaviour.deleteCompensationSubscriptionForMultiInstance(
-                  flowScopeContext);
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
   }
@@ -407,11 +398,11 @@ public final class MultiInstanceBodyProcessor
 
       case "numberOfActiveInstances" -> getNumberOfActiveInstancesVariable(elementInstanceKey);
 
-      case "numberOfCompletedInstances" ->
-          getNumberOfCompletedInstancesVariable(elementInstanceKey);
+      case "numberOfCompletedInstances" -> getNumberOfCompletedInstancesVariable(
+          elementInstanceKey);
 
-      case "numberOfTerminatedInstances" ->
-          getNumberOfTerminatedInstancesVariable(elementInstanceKey);
+      case "numberOfTerminatedInstances" -> getNumberOfTerminatedInstancesVariable(
+          elementInstanceKey);
 
       default -> null;
     };

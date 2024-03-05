@@ -115,13 +115,7 @@ public class BpmnCompensationSubscriptionBehaviour {
             .filter(CompensationSubscriptionRecord::isMultiInstance)
             .map(CompensationSubscriptionRecord::getCompensableActivityId)
             .collect(Collectors.toSet());
-    final List<CompensationSubscription> subscriptionsOfScopes =
-        groupedSubscriptions.get(true).stream()
-            .filter(
-                compensationSubscription ->
-                    !multiInstanceSubscriptions.contains(
-                        compensationSubscription.getRecord().getCompensableActivityId()))
-            .collect(Collectors.toList());
+    final List<CompensationSubscription> subscriptionsOfScopes = groupedSubscriptions.get(true);
     final List<CompensationSubscription> subscriptionsOfHandlers = groupedSubscriptions.get(false);
 
     final boolean hasCompensationHandlerInCurrentScope =
@@ -219,11 +213,6 @@ public class BpmnCompensationSubscriptionBehaviour {
               .setCompensableActivityInstanceKey(context.getElementInstanceKey())
               .setCompensableActivityScopeKey(context.getFlowScopeKey());
 
-      if (BpmnElementType.MULTI_INSTANCE_BODY.equals(element.getFlowScope().getElementType())) {
-        final long flowScopeOfMultiInstanceBody =
-            elementInstanceState.getInstance(context.getFlowScopeKey()).getParentKey();
-        compensation.setCompensableActivityScopeKey(flowScopeOfMultiInstanceBody);
-      }
       stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
     }
   }
@@ -244,14 +233,6 @@ public class BpmnCompensationSubscriptionBehaviour {
             .setCompensableActivityScopeKey(context.getFlowScopeKey())
             .setMultiInstance(true);
     stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
-  }
-
-  public void completeCompensationSubscriptionForMultiInstance(final BpmnElementContext context) {
-    updateMultiInstanceCompensationSubscriptions(context, CompensationSubscriptionIntent.COMPLETED);
-  }
-
-  public void deleteCompensationSubscriptionForMultiInstance(final BpmnElementContext context) {
-    updateMultiInstanceCompensationSubscriptions(context, CompensationSubscriptionIntent.DELETED);
   }
 
   private boolean hasCompensationBoundaryEvent(final ExecutableActivity element) {
@@ -472,28 +453,6 @@ public class BpmnCompensationSubscriptionBehaviour {
                   subs.get(childSubscriptionRecord.getRecord().getCompensableActivityInstanceKey()),
                   childSubscriptionRecord.getRecord().getCompensableActivityId(),
                   childSubscriptionRecord.getRecord().getCompensableActivityInstanceKey());
-            });
-  }
-
-  private void updateMultiInstanceCompensationSubscriptions(
-      final BpmnElementContext context, final CompensationSubscriptionIntent intent) {
-    compensationSubscriptionState
-        .findSubscriptionsByProcessInstanceKey(
-            context.getTenantId(), context.getProcessInstanceKey())
-        .stream()
-        .filter(
-            compensationSubscription ->
-                context.getElementInstanceKey()
-                    == compensationSubscription.getRecord().getCompensableActivityInstanceKey())
-        .forEach(
-            compensation -> {
-              stateWriter.appendFollowUpEvent(
-                  compensation.getKey(),
-                  CompensationSubscriptionIntent.TRIGGERED,
-                  compensation.getRecord());
-
-              stateWriter.appendFollowUpEvent(
-                  compensation.getKey(), intent, compensation.getRecord());
             });
   }
 }
