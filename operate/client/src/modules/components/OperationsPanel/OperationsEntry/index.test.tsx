@@ -29,6 +29,7 @@ import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Filters} from 'App/Processes/ListView/Filters';
+import {IS_BATCH_MOVE_MODIFICATION_ENABLED} from 'modules/feature-flags';
 
 function createWrapper() {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -162,16 +163,13 @@ describe('OperationsEntry', () => {
       },
     );
 
+    const {name, id} = OPERATIONS.DELETE_PROCESS_DEFINITION;
+
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    expect(
-      screen.getByText('5de66f22-a438-40f8-a89c-904g2dgfjm28'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('Delete ProcessDefinitionA - version 1'),
-    ).toBeInTheDocument();
+    expect(screen.getByText(id)).toBeInTheDocument();
+    expect(screen.getByText(`Delete ${name}`)).toBeInTheDocument();
     expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
-    expect(screen.getByText('1 instance deleted')).toBeInTheDocument();
   });
 
   it('should render delete decision definition operation', () => {
@@ -185,41 +183,16 @@ describe('OperationsEntry', () => {
       },
     );
 
+    const {name, id} = OPERATIONS.DELETE_DECISION_DEFINITION;
+
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
-    expect(
-      screen.getByText('5de66f22-a438-40f8-a89c-fn298fn23988'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('Delete DecisionDefinitionA - version 1'),
-    ).toBeInTheDocument();
+    expect(screen.getByText(id)).toBeInTheDocument();
+    expect(screen.getByText(`Delete ${name}`)).toBeInTheDocument();
     expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
-    expect(screen.getByText('23 instances deleted')).toBeInTheDocument();
   });
 
-  it('should render instances count when there is one instance', () => {
-    render(<OperationsEntry {...mockProps} operation={OPERATIONS.EDIT} />, {
-      wrapper: createWrapper(),
-    });
-
-    expect(screen.getByText('1 Instance')).toBeInTheDocument();
-  });
-
-  it('should render instances count when there is more than one instance', () => {
-    render(
-      <OperationsEntry
-        {...mockProps}
-        operation={{
-          ...OPERATIONS.EDIT,
-          instancesCount: 3,
-        }}
-      />,
-      {wrapper: createWrapper()},
-    );
-
-    expect(screen.getByText('3 Instances')).toBeInTheDocument();
-  });
-
+  //This test is duplicated by the new component OperationsEntryStatus and should be removed after BE issue #6294 gets resolved
   it('should not render instances count for delete operation', () => {
     render(
       <OperationsEntry
@@ -235,54 +208,132 @@ describe('OperationsEntry', () => {
     expect(screen.queryByText('3 Instances')).not.toBeInTheDocument();
   });
 
-  it('should filter by Operation and expand Filters Panel', async () => {
-    panelStatesStore.toggleFiltersPanel();
+  (IS_BATCH_MOVE_MODIFICATION_ENABLED ? it : it.skip)(
+    'should render id link for non-delete instance operations',
+    () => {
+      render(
+        <OperationsEntry
+          {...mockProps}
+          operation={{
+            ...OPERATIONS.EDIT,
+            instancesCount: 6,
+            failedOperationsCount: 3,
+            completedOperationsCount: 3,
+          }}
+        />,
+        {wrapper: createWrapper()},
+      );
 
-    const {user} = render(
+      expect(
+        screen.getByRole('link', {name: OPERATIONS.EDIT.id}),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it('should not render id link for successful delete instance operations', () => {
+    render(
       <OperationsEntry
         {...mockProps}
         operation={{
-          ...OPERATIONS.EDIT,
-          instancesCount: 3,
+          ...OPERATIONS.DELETE_PROCESS_INSTANCE,
+          instancesCount: 1,
+          failedOperationsCount: 0,
+          completedOperationsCount: 1,
         }}
       />,
       {wrapper: createWrapper()},
     );
 
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
-
-    await user.click(screen.getByText('3 Instances'));
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052$/,
-    );
-
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
+    expect(
+      screen.getByText(OPERATIONS.DELETE_PROCESS_INSTANCE.id),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: OPERATIONS.DELETE_PROCESS_INSTANCE.id}),
+    ).not.toBeInTheDocument();
   });
 
-  it('should not remove optional operation id filter when operation filter is applied twice', async () => {
-    const {user} = render(
-      <>
+  it('should not render id link when all instances are successful for delete process definition', () => {
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={{
+          ...OPERATIONS.DELETE_PROCESS_DEFINITION,
+          instancesCount: 5,
+          failedOperationsCount: 0,
+          completedOperationsCount: 5,
+        }}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(
+      screen.getByText(OPERATIONS.DELETE_PROCESS_DEFINITION.id),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {
+        name: OPERATIONS.DELETE_PROCESS_DEFINITION.id,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  (IS_BATCH_MOVE_MODIFICATION_ENABLED ? it : it.skip)(
+    'should filter by Operation and expand Filters Panel',
+    async () => {
+      panelStatesStore.toggleFiltersPanel();
+
+      const {user} = render(
         <OperationsEntry
           {...mockProps}
           operation={{
             ...OPERATIONS.EDIT,
-            instancesCount: 3,
+            instancesCount: 1,
           }}
-        />
-        <Filters />
-      </>,
-      {wrapper: createWrapper()},
-    );
+        />,
+        {wrapper: createWrapper()},
+      );
 
-    expect(screen.queryByLabelText(/^operation id$/i)).not.toBeInTheDocument();
+      expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
-    await user.click(screen.getByText('3 Instances'));
+      await user.click(screen.getByText(OPERATIONS.EDIT.id));
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052$/,
+      );
 
-    expect(await screen.findByLabelText(/^operation id$/i)).toBeInTheDocument();
+      expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
+    },
+  );
 
-    await user.click(screen.getByText('3 Instances'));
-    expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
-  });
+  (IS_BATCH_MOVE_MODIFICATION_ENABLED ? it : it.skip)(
+    'should not remove optional operation id filter when operation filter is applied twice',
+    async () => {
+      const {user} = render(
+        <>
+          <OperationsEntry
+            {...mockProps}
+            operation={{
+              ...OPERATIONS.EDIT,
+              instancesCount: 1,
+            }}
+          />
+          <Filters />
+        </>,
+        {wrapper: createWrapper()},
+      );
+
+      expect(
+        screen.queryByLabelText(/^operation id$/i),
+      ).not.toBeInTheDocument();
+
+      await user.click(screen.getByText(OPERATIONS.EDIT.id));
+
+      expect(
+        await screen.findByLabelText(/^operation id$/i),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByText(OPERATIONS.EDIT.id));
+      expect(screen.getByLabelText(/^operation id$/i)).toBeInTheDocument();
+    },
+  );
 
   it('should fake the first 10% progress', async () => {
     render(

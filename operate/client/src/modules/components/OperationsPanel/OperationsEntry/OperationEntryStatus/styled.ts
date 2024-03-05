@@ -15,36 +15,28 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {RequestHandler, rest} from 'msw';
-import {IS_BATCH_MOVE_MODIFICATION_ENABLED} from 'modules/feature-flags';
+import styled from 'styled-components';
+import {styles, supportError, supportSuccess} from '@carbon/elements';
+import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
+import {CheckmarkFilled as BaseCheckmark} from '@carbon/icons-react';
 
-const mocks = [
-  {completedOperationsCount: 1, failedOperationsCount: 0, instancesCount: 1}, //delete instance
-  {completedOperationsCount: 3, failedOperationsCount: 7, instancesCount: 10}, //both
-  {completedOperationsCount: 0, failedOperationsCount: 10, instancesCount: 10}, //all fail
-  {completedOperationsCount: 10, failedOperationsCount: 0, instancesCount: 10}, //all success
-  {completedOperationsCount: 3, failedOperationsCount: 7, instancesCount: 10}, //both
-  {completedOperationsCount: 0, failedOperationsCount: 1, instancesCount: 1}, // single fail
-  {completedOperationsCount: 1, failedOperationsCount: 0, instancesCount: 1}, //single success
-];
+const StatusContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+`;
 
-const batchOperationHandlers = IS_BATCH_MOVE_MODIFICATION_ENABLED
-  ? [
-      rest.post('api/batch-operations', async (req, res, ctx) => {
-        const originalResponse = await ctx.fetch(req);
-        let originalResponseData = await originalResponse.json();
-        originalResponseData = originalResponseData.map(
-          (r: any, index: number) => ({
-            ...r,
-            ...(mocks[index] || mocks.at(-1)),
-          }),
-        );
+const WarningFilled = styled(BaseWarningFilled)`
+  fill: ${supportError};
+`;
 
-        return res(ctx.json(originalResponseData));
-      }),
-    ]
-  : [];
+const CheckmarkFilled = styled(BaseCheckmark)`
+  fill: ${supportSuccess};
+`;
 
-const handlers: RequestHandler[] = [...batchOperationHandlers];
+const Text = styled.p`
+  margin: 0;
+  ${styles.bodyShort01};
+`;
 
-export {handlers};
+export {StatusContainer, WarningFilled, CheckmarkFilled, Text};

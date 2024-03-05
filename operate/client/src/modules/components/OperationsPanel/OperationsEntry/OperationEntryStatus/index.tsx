@@ -15,36 +15,66 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {RequestHandler, rest} from 'msw';
-import {IS_BATCH_MOVE_MODIFICATION_ENABLED} from 'modules/feature-flags';
+import {CheckmarkFilled, StatusContainer, Text, WarningFilled} from './styled';
+import pluralSuffix from 'modules/utils/pluralSuffix';
+import {OperationLabelType} from '../';
 
-const mocks = [
-  {completedOperationsCount: 1, failedOperationsCount: 0, instancesCount: 1}, //delete instance
-  {completedOperationsCount: 3, failedOperationsCount: 7, instancesCount: 10}, //both
-  {completedOperationsCount: 0, failedOperationsCount: 10, instancesCount: 10}, //all fail
-  {completedOperationsCount: 10, failedOperationsCount: 0, instancesCount: 10}, //all success
-  {completedOperationsCount: 3, failedOperationsCount: 7, instancesCount: 10}, //both
-  {completedOperationsCount: 0, failedOperationsCount: 1, instancesCount: 1}, // single fail
-  {completedOperationsCount: 1, failedOperationsCount: 0, instancesCount: 1}, //single success
-];
+interface Props {
+  isTypeDeleteProcessOrDecision: boolean;
+  label: OperationLabelType;
+  failedOperationsCount?: number;
+  completedOperationsCount?: number;
+}
 
-const batchOperationHandlers = IS_BATCH_MOVE_MODIFICATION_ENABLED
-  ? [
-      rest.post('api/batch-operations', async (req, res, ctx) => {
-        const originalResponse = await ctx.fetch(req);
-        let originalResponseData = await originalResponse.json();
-        originalResponseData = originalResponseData.map(
-          (r: any, index: number) => ({
-            ...r,
-            ...(mocks[index] || mocks.at(-1)),
-          }),
-        );
+const OperationEntryStatus: React.FC<Props> = ({
+  label,
+  isTypeDeleteProcessOrDecision,
+  failedOperationsCount = 0,
+  completedOperationsCount = 0,
+}) => {
+  const instanceDeletedText = `${pluralSuffix(
+    completedOperationsCount,
+    'instance',
+  )} deleted`;
 
-        return res(ctx.json(originalResponseData));
-      }),
-    ]
-  : [];
+  const successText = `${completedOperationsCount} success`;
 
-const handlers: RequestHandler[] = [...batchOperationHandlers];
+  if (label === 'Delete' && !isTypeDeleteProcessOrDecision) {
+    if (failedOperationsCount) {
+      return (
+        <StatusContainer>
+          {failedOperationsCount ? (
+            <>
+              <WarningFilled />
+              <Text>{`${failedOperationsCount} fail`}</Text>
+            </>
+          ) : null}
+        </StatusContainer>
+      );
+    }
 
-export {handlers};
+    return null;
+  }
+
+  return (
+    <StatusContainer>
+      {completedOperationsCount ? (
+        <>
+          <CheckmarkFilled />
+          <Text>
+            {isTypeDeleteProcessOrDecision ? instanceDeletedText : successText}
+          </Text>
+        </>
+      ) : null}
+      {completedOperationsCount && failedOperationsCount ? ' / ' : null}
+      {failedOperationsCount ? (
+        <>
+          <WarningFilled />
+          <Text>{`${failedOperationsCount} fail`}</Text>
+        </>
+      ) : null}
+    </StatusContainer>
+  );
+};
+
+export default OperationEntryStatus;

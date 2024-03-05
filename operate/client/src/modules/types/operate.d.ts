@@ -57,6 +57,8 @@ interface OperationEntity {
   operationsTotalCount: number;
   operationsFinishedCount: number;
   sortValues?: [string, string];
+  failedOperationsCount?: number; // Should become required when BE issue #6294 gets resolved
+  completedOperationsCount?: number; // Should become required when BE issue #6294 gets resolved
 }
 
 interface InstanceOperationEntity {
