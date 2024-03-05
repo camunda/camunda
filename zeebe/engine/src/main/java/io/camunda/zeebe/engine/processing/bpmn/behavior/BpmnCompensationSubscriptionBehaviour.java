@@ -82,16 +82,13 @@ public class BpmnCompensationSubscriptionBehaviour {
       Optional.ofNullable(getCompensationHandlerId(element))
           .ifPresent(compensation::setCompensationHandlerId);
 
-      if (element.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
-        compensation.setMultiInstance(true);
-      }
-
       stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
     }
   }
 
   public boolean triggerCompensation(
       final ExecutableFlowNode element, final BpmnElementContext context) {
+
     final Set<CompensationSubscription> notTriggeredSubscriptions =
         compensationSubscriptionState
             .findSubscriptionsByProcessInstanceKey(
@@ -102,11 +99,16 @@ public class BpmnCompensationSubscriptionBehaviour {
                     compensationSubscription.getRecord().getThrowEventId().isEmpty())
             .collect(Collectors.toSet());
 
-    if (notTriggeredSubscriptions.isEmpty()) {
+    final boolean hasCompensationHandlerInCurrentScope =
+        notTriggeredSubscriptions.stream()
+            .anyMatch(
+                subscription ->
+                    subscription.getRecord().getCompensableActivityScopeKey()
+                        == context.getFlowScopeKey());
+
+    if (!hasCompensationHandlerInCurrentScope) {
       return false;
     }
-
-    final String flowScopeId = BufferUtil.bufferAsString(element.getFlowScope().getId());
 
     final var availableScopeIds =
         getAvailableSubprocessScopeIds((ExecutableFlowElementContainer) element.getFlowScope());
@@ -119,25 +121,10 @@ public class BpmnCompensationSubscriptionBehaviour {
                         availableScopeIds.contains(
                             subscription.getRecord().getCompensableActivityId())));
 
-    final var multiInstanceSubscriptions =
-        notTriggeredSubscriptions.stream()
-            .map(CompensationSubscription::getRecord)
-            .filter(CompensationSubscriptionRecord::isMultiInstance)
-            .map(CompensationSubscriptionRecord::getCompensableActivityId)
-            .collect(Collectors.toSet());
     final List<CompensationSubscription> subscriptionsOfScopes = groupedSubscriptions.get(true);
     final List<CompensationSubscription> subscriptionsOfHandlers = groupedSubscriptions.get(false);
 
-    final boolean hasCompensationHandlerInCurrentScope =
-        notTriggeredSubscriptions.stream()
-            .anyMatch(
-                subscription ->
-                    subscription.getRecord().getCompensableActivityScopeId().equals(flowScopeId));
-
-    if (!hasCompensationHandlerInCurrentScope && subscriptionsOfScopes.isEmpty()) {
-      return false;
-    }
-
+    final String flowScopeId = BufferUtil.bufferAsString(element.getFlowScope().getId());
     triggerCompensationForScope(
         context, subscriptionsOfHandlers, flowScopeId, context.getFlowScopeKey());
 
@@ -151,15 +138,7 @@ public class BpmnCompensationSubscriptionBehaviour {
     // use recursions here
     // starting from throw event level scope to bottom and triggering the handler
     triggerHandlersTopToBottom(context, subscriptionsOfScopes, subs, context.getFlowScopeKey());
-    return notTriggeredSubscriptions.stream()
-        .map(CompensationSubscription::getRecord)
-        .filter(
-            subscription ->
-                !multiInstanceSubscriptions.contains(subscription.getCompensableActivityId()))
-        .anyMatch(
-            subscription ->
-                subscription.getCompensableActivityScopeKey() == context.getFlowScopeKey()
-                    && !subscription.isMultiInstance());
+    return true;
   }
 
   public void completeCompensationHandler(
@@ -177,7 +156,7 @@ public class BpmnCompensationSubscriptionBehaviour {
                     CompensationSubscriptionIntent.COMPLETED,
                     compensation.getRecord());
 
-                completeSubprocessSubscription(
+                completeFlowScopeSubscription(
                     tenantId,
                     processInstanceKey,
                     compensation.getRecord().getCompensableActivityScopeKey());
@@ -362,7 +341,7 @@ public class BpmnCompensationSubscriptionBehaviour {
     return compensationRecord;
   }
 
-  private void completeSubprocessSubscription(
+  private void completeFlowScopeSubscription(
       final String tenantId, final long processInstanceKey, final long scopeInstanceKey) {
 
     final var compensations =
@@ -394,11 +373,18 @@ public class BpmnCompensationSubscriptionBehaviour {
             .findFirst();
 
     completableSubscription.ifPresent(
-        subscription ->
-            stateWriter.appendFollowUpEvent(
-                subscription.getKey(),
-                CompensationSubscriptionIntent.COMPLETED,
-                subscription.getRecord()));
+        subscription -> {
+          stateWriter.appendFollowUpEvent(
+              subscription.getKey(),
+              CompensationSubscriptionIntent.COMPLETED,
+              subscription.getRecord());
+
+          // complete the flow scope of the subscription if possible (recursively)
+          completeFlowScopeSubscription(
+              tenantId,
+              processInstanceKey,
+              subscription.getRecord().getCompensableActivityScopeKey());
+        });
   }
 
   private void triggerHandlersTopToBottom(
