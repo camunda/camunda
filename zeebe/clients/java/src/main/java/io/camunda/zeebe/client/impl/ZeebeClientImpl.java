@@ -319,6 +319,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
       throw new ClientException(
           "Unexpectedly interrupted awaiting termination of in-flight request channel", e);
     }
+
+    try {
+      httpClient.close();
+    } catch (final Exception e) {
+      throw new ClientException("Failed closing http client.", e);
+    }
   }
 
   @Override
