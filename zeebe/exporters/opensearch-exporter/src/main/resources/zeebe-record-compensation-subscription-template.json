@@ -46,7 +46,7 @@
             "compensableActivityScopeKey":{
               "type": "long"
             },
-            "compensableParentKey":{
+            "compensableActivityInstanceKey":{
               "type": "long"
             },
             "variables": {
