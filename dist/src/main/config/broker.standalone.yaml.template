@@ -638,6 +638,17 @@
         # This setting can also be overridden using the environment ZEEBE_BROKER_BACKPRESSURE_GRADIENT2_LONGWINDOW
         # longWindow: 600
 
+    # exporting:
+      # This section contains definitions common to all exporters.
+      #
+      # Enable the exporters to skip record position.
+      # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTING_SKIPRECORDS"
+      # Allows to skip certain records by their position. This is useful for debugging or skipping a record that is
+      # preventing processing or exporting to continue.
+      # Record positions defined to skip in this definition will be skipped in all exporters.
+      # The value is a comma-separated list of records ids to skip. Whitespace is ignored.
+      # skipRecords:
+
     # exporters:
       # Configure exporters below
       #
