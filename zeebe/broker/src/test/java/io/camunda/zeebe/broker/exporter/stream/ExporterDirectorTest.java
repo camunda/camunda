@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +39,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -331,6 +333,30 @@ public final class ExporterDirectorTest {
         .extracting(Record::getPosition)
         .hasSize(2)
         .contains(deploymentEvent, jobEvent);
+  }
+
+  @Test
+  public void shouldNotExportSkipRecordsFilter() {
+    // given
+    exporters
+        .get(1)
+        .onConfigure(withFilter(List.of(RecordType.COMMAND), List.of(ValueType.DEPLOYMENT)));
+
+    rule.withPositionsToSkipFilter(SkipPositionsFilter.of(Set.of(1L)));
+    startExporterDirector(exporterDescriptors);
+
+    // when
+    rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+    rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
+
+    // then
+    Awaitility.await("filteringExporter has exported only the second record")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(1).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(2L));
   }
 
   @Test
