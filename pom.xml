@@ -85,6 +85,7 @@
     <version.commons.lang>3.14.0</version.commons.lang>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.commons.codec>1.16.0</version.commons.codec>
+    <version.swagger.annotations>2.2.20</version.swagger.annotations>
   </properties>
 
   <dependencyManagement>
@@ -434,6 +435,12 @@
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>netty-nio-client</artifactId>
         <version>${version.aws-sdk}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-annotations</artifactId>
+        <version>${version.swagger.annotations}</version>
       </dependency>
 
     </dependencies>

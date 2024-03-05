@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.StringJoiner;
 
+@Schema(description = "Request params used to assign the task to assignee or current user.")
 public class TaskAssignRequest {
   @Schema(
       description =
@@ -20,7 +21,8 @@ public class TaskAssignRequest {
   @Schema(
       description =
           "When `true` the task that is already assigned may be assigned again. Otherwise the task\n"
-              + "must be first unassign and only then assign again. (Default: `true`)")
+              + "must be first unassigned and only then assigned again.",
+      defaultValue = "true")
   private Boolean allowOverrideAssignment = true;
 
   public String getAssignee() {

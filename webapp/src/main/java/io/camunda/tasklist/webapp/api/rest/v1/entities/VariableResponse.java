@@ -9,17 +9,25 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 import io.camunda.tasklist.entities.DraftTaskVariableEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import java.util.StringJoiner;
 
 public class VariableResponse {
 
+  @Schema(description = "The ID of the variable")
   private String id;
+
+  @Schema(description = "The name of the variable")
   private String name;
+
+  @Schema(description = "The full value of the variable")
   private String value;
 
+  @Schema(description = "The draft value of the variable")
   private DraftVariableValue draft;
 
+  @Schema(description = "The tenant ID associated with the variable")
   private String tenantId;
 
   public String getId() {

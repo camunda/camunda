@@ -12,31 +12,124 @@ import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.queries.DateFilter;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 import java.util.Objects;
 
+@Schema(description = "Request object to search tasks by provided params.")
 public class TaskSearchRequest {
+  @Schema(description = "The state of the tasks.")
   private TaskState state;
+
+  @Schema(description = "Are the tasks assigned?")
   private Boolean assigned;
+
+  @Schema(description = "Who is assigned to the tasks?")
   private String assignee;
+
+  @Schema(description = "The assignee is one of the given assignees.")
   private String[] assignees;
+
+  @Schema(description = "What's the BPMN flow node?")
   private String taskDefinitionId;
+
+  @Schema(description = "Given group is in candidate groups list.")
   private String candidateGroup;
+
+  @Schema(description = "At least one of the given groups is in candidate groups list.")
   private String[] candidateGroups;
+
+  @Schema(description = "Given user is in candidate user list.")
   private String candidateUser;
+
+  @Schema(description = "At least one of the given users is in candidate user list.")
   private String[] candidateUsers;
+
+  @Schema(
+      description =
+          "Reference to process definition (renamed equivalent of TaskQuery.processDefinitionId field).")
   private String processDefinitionKey;
+
+  @Schema(
+      description =
+          "Reference to process instance (renamed equivalent of TaskQuery.processInstanceId field)")
   private String processInstanceKey;
+
+  @Schema(description = "Size of tasks page (default = 50).")
   private int pageSize = DEFAULT_PAGE_SIZE;
+
+  @Schema(description = "A range of follow-up dates for the tasks to search for.")
   private DateFilter followUpDate;
+
+  @Schema(description = "A range of due dates for the tasks to search for.")
   private DateFilter dueDate;
+
+  @ArraySchema(
+      arraySchema =
+          @Schema(
+              description =
+                  "An array of filter clauses specifying the variables to filter for.<br>"
+                      + "If defined, the query returns only tasks to which all clauses apply.<br>"
+                      + "However, it's important to note that this filtering mechanism is<br>"
+                      + "designed to work exclusively with truncated variables. This means<br>"
+                      + "variables of a larger size are not compatible with this filter, and<br>"
+                      + "attempts to use them may result in inaccurate or incomplete query results."))
   private TaskByVariables[] taskVariables;
+
+  @ArraySchema(
+      arraySchema =
+          @Schema(
+              description =
+                  "An array of Tenant IDs to filter tasks. When multi-tenancy is<br>"
+                      + "enabled, tasks associated with the specified tenant IDs are returned;<br>"
+                      + "if disabled, this parameter is ignored."))
   private String[] tenantIds;
+
+  @ArraySchema(
+      arraySchema =
+          @Schema(
+              description = "An array of objects specifying the fields to sort the results by."))
   private TaskOrderBy[] sort;
+
+  @ArraySchema(
+      arraySchema =
+          @Schema(
+              description =
+                  "Used to return a paginated result. Array of values that should be copied from sortValues of one of the tasks from the current search results page.<br>"
+                      + "It enables the API to return a page of tasks that directly follow the task identified by the provided values, with respect to the sorting order."))
   private String[] searchAfter;
+
+  @ArraySchema(
+      arraySchema =
+          @Schema(
+              description =
+                  "Used to return a paginated result. Array of values that should be copied from sortValues of one of the tasks from the current search results page.<br>"
+                      + "It enables the API to return a page of tasks that directly follow or are equal to the task identified by the provided values, with respect to the sorting order."))
   private String[] searchAfterOrEqual;
+
+  @ArraySchema(
+      arraySchema =
+          @Schema(
+              description =
+                  "Used to return a paginated result. Array of values that should be copied from sortValues of one of the tasks from the current search results page.<br>"
+                      + "It enables the API to return a page of tasks that directly precede the task identified by the provided values, with respect to the sorting order."))
   private String[] searchBefore;
+
+  @ArraySchema(
+      arraySchema =
+          @Schema(
+              description =
+                  "Used to return a paginated result. Array of values that should be copied from sortValues of one of the tasks from the current search results page.<br>"
+                      + "It enables the API to return a page of tasks that directly precede or are equal to the task identified by the provided values, with respect to the sorting order."))
   private String[] searchBeforeOrEqual;
+
+  @ArraySchema(
+      arraySchema =
+          @Schema(
+              description =
+                  "An array used to specify a list of variable names that should be included in the response when querying tasks.<br>"
+                      + "This field allows users to selectively retrieve specific variables associated with the tasks returned in the search results."))
   private IncludeVariable[] includeVariables;
 
   public TaskState getState() {

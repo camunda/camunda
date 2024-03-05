@@ -11,6 +11,7 @@ import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,7 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Variables", description = "API to query variables")
+@Tag(name = "Variables", description = "API to query variables.")
 @RestController
 @RequestMapping(value = TasklistURIs.VARIABLES_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
 public class VariablesController extends ApiErrorController {
@@ -31,10 +32,11 @@ public class VariablesController extends ApiErrorController {
   @Autowired private VariableService variableService;
 
   @Operation(
-      summary = "Get the variable details by variable id.",
+      summary = "Get a variable",
+      description = "Get the variable details by variable id.",
       responses = {
         @ApiResponse(
-            description = "On success returned",
+            description = "On success returned.",
             responseCode = "200",
             useReturnTypeSchema = true),
         @ApiResponse(
@@ -47,7 +49,9 @@ public class VariablesController extends ApiErrorController {
                     schema = @Schema(implementation = Error.class)))
       })
   @GetMapping("{variableId}")
-  public ResponseEntity<VariableResponse> getVariableById(@PathVariable String variableId) {
+  public ResponseEntity<VariableResponse> getVariableById(
+      @PathVariable @Parameter(description = "The ID of the variable.", required = true)
+          String variableId) {
     final var variable = variableService.getVariableResponse(variableId);
     return ResponseEntity.ok(variable);
   }

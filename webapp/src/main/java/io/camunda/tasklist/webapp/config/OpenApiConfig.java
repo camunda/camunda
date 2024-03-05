@@ -27,7 +27,8 @@ public class OpenApiConfig {
       new SecurityScheme()
           .type(SecurityScheme.Type.APIKEY)
           .in(SecurityScheme.In.COOKIE)
-          .name(TasklistURIs.COOKIE_JSESSIONID);
+          .name(TasklistURIs.COOKIE_JSESSIONID)
+          .description("Cookie-based authentication is only available on Self-Managed clusters.");
 
   public static final String BEARER_SECURITY_SCHEMA_NAME = "bearer-key";
   public static final SecurityScheme BEARER_SECURITY_SCHEMA =
@@ -119,7 +120,7 @@ public class OpenApiConfig {
               openApi
                   .info(
                       new Info()
-                          .title("Tasklist webapp API")
+                          .title("Tasklist REST API")
                           .description(
                               "Tasklist is a ready-to-use API application to rapidly implement business processes alongside user tasks in Zeebe.")
                           .version("v1")

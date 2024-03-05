@@ -6,12 +6,16 @@
  */
 package io.camunda.tasklist.queries;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+@Schema(description = "Sort results by a specific field.")
 public class TaskOrderBy {
 
   private TaskSortFields field;
+
+  @Schema(description = "* `ASC`: Ascending<br>" + "* `DESC`: Descending")
   private Sort order;
 
   public TaskSortFields getField() {

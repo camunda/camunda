@@ -6,12 +6,21 @@
  */
 package io.camunda.tasklist.queries;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Date;
 import java.util.Objects;
 import java.util.StringJoiner;
 
 public class DateFilter {
+
+  @Schema(
+      description =
+          "Start date range to search from in date-time format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard.")
   private Date from;
+
+  @Schema(
+      description =
+          "End date range to search to in date-time format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard.")
   private Date to;
 
   public Date getTo() {

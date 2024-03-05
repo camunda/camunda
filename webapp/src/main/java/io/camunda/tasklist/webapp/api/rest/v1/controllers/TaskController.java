@@ -30,6 +30,7 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -56,7 +57,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Task", description = "API to query and manage tasks")
+@Tag(name = "Task", description = "API to query and manage tasks.")
 @RestController
 @RequestMapping(value = TasklistURIs.TASKS_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
 public class TaskController extends ApiErrorController {
@@ -72,14 +73,14 @@ public class TaskController extends ApiErrorController {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Operation(
-      summary = "Returns the list of tasks that satisfy search request params",
+      summary = "Search tasks",
       description =
           "Returns the list of tasks that satisfy search request params.<br>"
-              + "<b>NOTE:</b> Only one of `[searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual]`"
-              + "search options must be present in request.",
+              + "<ul><li>If an empty body is provided, all tasks are returned.</li>"
+              + "<li>Only one of `[searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual]` search options must be present in request.</li></ul>",
       responses = {
         @ApiResponse(
-            description = "On success returned",
+            description = "On success returned.",
             responseCode = "200",
             useReturnTypeSchema = true),
         @ApiResponse(
@@ -154,10 +155,11 @@ public class TaskController extends ApiErrorController {
   }
 
   @Operation(
-      summary = "Get one task by id. Returns task or error when task does not exist.",
+      summary = "Get a task",
+      description = "Get one task by id. Returns task or error when task does not exist.",
       responses = {
         @ApiResponse(
-            description = "On success returned",
+            description = "On success returned.",
             responseCode = "200",
             useReturnTypeSchema = true),
         @ApiResponse(
@@ -176,7 +178,9 @@ public class TaskController extends ApiErrorController {
                     schema = @Schema(implementation = Error.class)))
       })
   @GetMapping("{taskId}")
-  public ResponseEntity<TaskResponse> getTaskById(@PathVariable String taskId) {
+  public ResponseEntity<TaskResponse> getTaskById(
+      @PathVariable @Parameter(description = "The ID of the task.", required = true)
+          String taskId) {
     final TaskResponse task = taskMapper.toTaskResponse(taskService.getTask(taskId));
 
     if (!isUserRestrictionEnabled() || hasAccessToTask(task)) {
@@ -209,15 +213,16 @@ public class TaskController extends ApiErrorController {
   }
 
   @Operation(
-      summary = "Assign a task with id to assignee. Returns the task.",
-      description = "Assign a task with `taskId` to `assignee` or the active user.",
+      summary = "Assign a task",
+      description =
+          "Assign a task with `taskId` to `assignee` or the active user. Returns the task.",
       requestBody =
           @io.swagger.v3.oas.annotations.parameters.RequestBody(
               description =
                   "When using REST API with JWT authentication token following request body parameters may be used."),
       responses = {
         @ApiResponse(
-            description = "On success returned",
+            description = "On success returned.",
             responseCode = "200",
             useReturnTypeSchema = true),
         @ApiResponse(
@@ -248,7 +253,8 @@ public class TaskController extends ApiErrorController {
   @PreAuthorize("hasPermission('write')")
   @PatchMapping("{taskId}/assign")
   public ResponseEntity<TaskResponse> assignTask(
-      @PathVariable String taskId, @RequestBody(required = false) TaskAssignRequest assignRequest) {
+      @PathVariable @Parameter(description = "The ID of the task.", required = true) String taskId,
+      @RequestBody(required = false) TaskAssignRequest assignRequest) {
     final var safeAssignRequest = requireNonNullElse(assignRequest, new TaskAssignRequest());
     final var assignedTask =
         taskService.assignTask(
@@ -257,11 +263,11 @@ public class TaskController extends ApiErrorController {
   }
 
   @Operation(
-      summary = "Unassign a task with provided id. Returns the task.",
-      description = "Unassign a task with `taskId`.",
+      summary = "Unassign a task",
+      description = "Unassign a task with `taskId`. Returns the task.",
       responses = {
         @ApiResponse(
-            description = "On success returned",
+            description = "On success returned.",
             responseCode = "200",
             useReturnTypeSchema = true),
         @ApiResponse(
@@ -283,17 +289,19 @@ public class TaskController extends ApiErrorController {
       })
   @PreAuthorize("hasPermission('write')")
   @PatchMapping("{taskId}/unassign")
-  public ResponseEntity<TaskResponse> unassignTask(@PathVariable String taskId) {
+  public ResponseEntity<TaskResponse> unassignTask(
+      @PathVariable @Parameter(description = "The ID of the task.", required = true)
+          String taskId) {
     final var unassignedTask = taskService.unassignTask(taskId);
     return ResponseEntity.ok(taskMapper.toTaskResponse(unassignedTask));
   }
 
   @Operation(
-      summary = "Complete a task with taskId and optional variables. Returns the task.",
-      description = "Complete a task with `taskId` and optional `variables`",
+      summary = "Complete a task",
+      description = "Complete a task with `taskId` and optional `variables`. Returns the task.",
       responses = {
         @ApiResponse(
-            description = "On success returned",
+            description = "On success returned.",
             responseCode = "200",
             useReturnTypeSchema = true),
         @ApiResponse(
@@ -324,7 +332,7 @@ public class TaskController extends ApiErrorController {
   @PreAuthorize("hasPermission('write')")
   @PatchMapping("{taskId}/complete")
   public ResponseEntity<TaskResponse> completeTask(
-      @PathVariable String taskId,
+      @PathVariable @Parameter(description = "The ID of the task.", required = true) String taskId,
       @RequestBody(required = false) TaskCompleteRequest taskCompleteRequest) {
     final var variables =
         requireNonNullElse(taskCompleteRequest, new TaskCompleteRequest()).getVariables();
@@ -347,44 +355,36 @@ public class TaskController extends ApiErrorController {
   }
 
   @Operation(
-      summary = "Saves draft variables for a task.",
+      summary = "Save draft variables",
       description =
-          "This operation validates the task and draft variables, deletes existing draft variables for the task, "
-              + "and then checks for new draft variables. If a new variable's `name` matches an existing one but the "
-              + "`value` differs, it is saved. In case of duplicate draft variable names, the last variable's value is kept.",
+          "This operation performs several actions: <br/>"
+              + "<ol><li>Validates the task and draft variables.</li><li>Deletes existing draft variables for the task.</li><li>Checks for new draft variables. If a new variable's `name` matches an existing one but the `value` differs, it is saved. In case of duplicate draft variable names, the last variable's value is kept.</li></ol><b>NOTE:</b><ul><li>Invoking this method successively will overwrite all existing draft variables. Only draft variables submitted in the most recent request body will be persisted. Therefore, ensure you include all necessary variables in each request to maintain the intended variable set.</li><li>The UI does not currently display the values for draft variables that are created via this endpoint.</li></ul>",
       responses = {
         @ApiResponse(
-            description = "On success returned",
             responseCode = "204",
-            useReturnTypeSchema = true),
+            description = "On success returned.",
+            content = @Content(mediaType = MediaType.ALL_VALUE)),
         @ApiResponse(
-            description =
-                "An error is returned when the task is not active (not in the `CREATED` state).<br>"
-                    + "An error is returned if the task was not claimed (assigned) before, except the case when JWT authentication token used.<br>"
-                    + "An error is returned if the task is not assigned to the current user, except the case when JWT authentication token used.",
             responseCode = "400",
+            description =
+                "An error is returned when the task is not active (not in the `CREATED` state).<br/>"
+                    + "An error is returned if the task was not claimed (assigned) before, except the case when JWT authentication token used.<br/>"
+                    + "An error is returned if the task is not assigned to the current user, except the case when JWT authentication token used.",
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
-            description = "An error is returned when the task with the `taskId` is not found.",
             responseCode = "404",
+            description = "An error is returned when the task with the `taskId` is not found.",
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
-            description = "User has no permission to access the task (Self-managed only).",
-            responseCode = "403",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class))),
-        @ApiResponse(
+            responseCode = "500",
             description =
                 "An error is returned if an unexpected error occurs while persisting draft task variables.",
-            responseCode = "500",
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
@@ -393,7 +393,8 @@ public class TaskController extends ApiErrorController {
   @PreAuthorize("hasPermission('write')")
   @PostMapping("{taskId}/variables")
   public ResponseEntity<Void> saveDraftTaskVariables(
-      @PathVariable String taskId, @RequestBody SaveVariablesRequest saveVariablesRequest) {
+      @PathVariable @Parameter(description = "The ID of the task.", required = true) String taskId,
+      @RequestBody SaveVariablesRequest saveVariablesRequest) {
     final TaskResponse task = taskMapper.toTaskResponse(taskService.getTask(taskId));
     if (!isUserRestrictionEnabled() || hasAccessToTask(task)) {
       variableService.persistDraftTaskVariables(taskId, saveVariablesRequest.getVariables());
@@ -404,14 +405,14 @@ public class TaskController extends ApiErrorController {
   }
 
   @Operation(
-      summary = "Returns the list of task variables",
+      summary = "Search task variables",
       description =
           "This method returns a list of task variables for the specified `taskId` and `variableName`.<br>"
               + "If the request body is not provided or if the `variableNames` parameter in the request is empty, "
               + "all variables associated with the task will be returned.",
       responses = {
         @ApiResponse(
-            description = "On success returned",
+            description = "On success returned.",
             responseCode = "200",
             useReturnTypeSchema = true),
         @ApiResponse(
@@ -424,7 +425,7 @@ public class TaskController extends ApiErrorController {
       })
   @PostMapping("{taskId}/variables/search")
   public ResponseEntity<List<VariableSearchResponse>> searchTaskVariables(
-      @PathVariable String taskId,
+      @PathVariable @Parameter(description = "The ID of the task.", required = true) String taskId,
       @RequestBody(required = false) VariablesSearchRequest variablesSearchRequest) {
     final Map<String, Boolean> variableNamesToReturnFullValue;
     if (variablesSearchRequest != null) {

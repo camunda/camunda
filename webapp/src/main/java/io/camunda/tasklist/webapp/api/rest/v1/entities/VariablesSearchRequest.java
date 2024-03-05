@@ -6,14 +6,22 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+@Schema(description = "Request object to search tasks variables by provided variable names.")
 public class VariablesSearchRequest {
+  @ArraySchema(arraySchema = @Schema(description = "Names of variables to find."))
   private List<String> variableNames = new ArrayList<>();
 
+  @ArraySchema(
+      arraySchema =
+          @Schema(
+              description = "An array of variable names that should be included in the response."))
   private List<IncludeVariable> includeVariables = new ArrayList<>();
 
   public List<String> getVariableNames() {

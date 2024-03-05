@@ -11,6 +11,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -24,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Form", description = "API to query forms")
+@Tag(name = "Form", description = "API to query forms.")
 @RestController
 @RequestMapping(value = TasklistURIs.FORMS_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
 public class FormController extends ApiErrorController {
@@ -32,12 +33,12 @@ public class FormController extends ApiErrorController {
   @Autowired private FormStore formStore;
 
   @Operation(
-      summary = "Get the form details by form id and processDefinitionKey.",
+      summary = "Get a form",
       description =
           "Get the form details by `formId` and `processDefinitionKey` required query param. The `version` query param is optional and is used only for deployed forms (if empty, it retrieves the highest version).",
       responses = {
         @ApiResponse(
-            description = "On success returned",
+            description = "On success returned.",
             responseCode = "200",
             useReturnTypeSchema = true),
         @ApiResponse(
@@ -51,9 +52,15 @@ public class FormController extends ApiErrorController {
       })
   @GetMapping("{formId}")
   public ResponseEntity<FormResponse> getForm(
-      @PathVariable String formId,
-      @RequestParam String processDefinitionKey,
-      @RequestParam(required = false) Long version) {
+      @PathVariable @Parameter(description = "The ID of the form.", required = true) String formId,
+      @RequestParam
+          @Parameter(description = "Reference to the process definition.", required = true)
+          String processDefinitionKey,
+      @RequestParam(required = false)
+          @Parameter(
+              description = "The version of the form. Valid only for deployed forms.",
+              required = false)
+          Long version) {
     final var form = formStore.getForm(formId, processDefinitionKey, version);
 
     // This is to set processDefinitionKey when the form is deployed

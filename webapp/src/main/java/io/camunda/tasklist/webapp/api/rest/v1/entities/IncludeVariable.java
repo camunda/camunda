@@ -6,11 +6,15 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 
 public class IncludeVariable {
+
+  @Schema(description = "The name of the variable.")
   private String name;
 
+  @Schema(description = "Always return the full value of the variable?", defaultValue = "false")
   private boolean alwaysReturnFullValue = false;
 
   public String getName() {

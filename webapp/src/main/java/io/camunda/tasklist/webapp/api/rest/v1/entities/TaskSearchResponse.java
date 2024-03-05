@@ -7,33 +7,99 @@
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import io.camunda.tasklist.entities.TaskState;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.StringJoiner;
 
 public class TaskSearchResponse {
+  @Schema(description = "The unique identifier of the task.")
   private String id;
+
+  @Schema(description = "The name of the task.")
   private String name;
+
+  @Schema(description = "User Task ID from the BPMN definition.")
   private String taskDefinitionId;
+
+  @Schema(description = "The name of the process.")
   private String processName;
+
+  @Schema(
+      description = "When was the task created (renamed equivalent of `Task.creationTime` field).")
   private String creationDate;
+
+  @Schema(
+      description =
+          "When was the task completed (renamed equivalent of `Task.completionTime` field).")
   private String completionDate;
+
+  @Schema(description = "The username/id of who is assigned to the task.")
   private String assignee;
+
+  @Schema(description = "The state of the task.")
   private TaskState taskState;
+
+  @ArraySchema(
+      arraySchema =
+          @Schema(
+              description =
+                  "Array of values to be copied into `TaskSearchRequest` to request for next or previous page of tasks."))
   private String[] sortValues;
+
+  @Schema(description = "A flag to show that the task is first in the current filter.")
   private boolean isFirst;
+
+  @Schema(description = "Reference to the task form.")
   private String formKey;
+
+  @Schema(
+      description =
+          "Reference to the ID of a deployed form. If the form is not deployed, this property is null.")
   private String formId;
+
+  @Schema(
+      description =
+          "Reference to the version of a deployed form. If the form is not deployed, this property is null.")
   private Long formVersion;
+
+  @Schema(
+      description =
+          "Is the form embedded for this task? If there is no form, this property is null.")
   private Boolean isFormEmbedded;
+
+  @Schema(
+      description =
+          "Reference to process definition (renamed equivalent of `Task.processDefinitionId` field).")
   private String processDefinitionKey;
+
+  @Schema(
+      description =
+          "Reference to process instance id (renamed equivalent of `Task.processInstanceId` field).")
   private String processInstanceKey;
+
+  @Schema(description = "The tenant ID associated with the task.")
   private String tenantId;
+
+  @Schema(description = "The due date for the task.")
   private OffsetDateTime dueDate;
+
+  @Schema(description = "The follow-up date for the task.")
   private OffsetDateTime followUpDate;
+
+  @ArraySchema(arraySchema = @Schema(description = "The candidate groups for the task."))
   private String[] candidateGroups;
+
+  @ArraySchema(arraySchema = @Schema(description = "The candidate users for the task."))
   private String[] candidateUsers;
+
+  @ArraySchema(
+      arraySchema =
+          @Schema(
+              description =
+                  "An array of the task's variables. Only variables specified in `TaskSearchRequest.includeVariables` are returned. Note that a variable's draft value is not returned in `TaskSearchResponse`."))
   private VariableSearchResponse[] variables;
 
   public String getId() {

@@ -6,9 +6,20 @@
  */
 package io.camunda.tasklist.webapp.rest.exception;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public class Error {
+
+  @Schema(
+      description =
+          "An integer that represents the HTTP status code of the error response. For example, 400 indicates a 'Bad Request' error, 404 indicates a 'Not Found' error, and so on.",
+      format = "int32")
   private int status;
+
+  @Schema(description = "A string that provides a brief description of the error that occurred.")
   private String message;
+
+  @Schema(description = "Error instance UUID for lookup (e.g., in log messages).")
   private String instance;
 
   public int getStatus() {

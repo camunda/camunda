@@ -9,16 +9,38 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.entities.ProcessEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import java.util.StringJoiner;
 
 public class FormResponse {
+
+  @Schema(description = "The unique identifier of the embedded form within one process.")
   private String id;
+
+  @Schema(
+      description =
+          "Reference to process definition (renamed equivalent of `Form.processDefinitionId` field).")
   private String processDefinitionKey;
+
+  @Schema(description = "The title of the form.")
   private String title;
+
+  @Schema(description = "The form content.")
   private String schema;
+
+  @Schema(
+      description =
+          "The version field is null in the case of an embedded form, while it represents the deployed form's version in other scenarios.",
+      format = "int64")
   private Long version;
+
+  @Schema(description = "The tenant ID associated with the form.")
   private String tenantId;
+
+  @Schema(
+      description =
+          "Indicates whether the deployed form is deleted or not on Zeebe. This field is false by default, in the case of an embedded form.")
   private Boolean isDeleted;
 
   public String getId() {

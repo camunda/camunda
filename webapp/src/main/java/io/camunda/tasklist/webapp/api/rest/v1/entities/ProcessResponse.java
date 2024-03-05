@@ -7,16 +7,33 @@
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import io.camunda.tasklist.entities.ProcessEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 import java.util.Objects;
 
 public class ProcessResponse {
+
+  @Schema(description = "The unique identifier of the process")
   private String id;
+
+  @Schema(description = "The name of the process")
   private String name;
+
+  @Schema(description = "The BPMN process ID")
   private String bpmnProcessId;
+
+  @Schema(
+      description =
+          "Array of values to be copied into `ProcessSearchRequest` to request for next or previous page of processes")
   private String[] sortValues;
+
+  @Schema(description = "The version of the process")
   private Integer version;
+
+  @Schema(description = "The ID of the form associated with the start event. Null if not set.")
   private String startEventFormId = null;
+
+  @Schema(description = "The tenant ID associated with the process")
   private String tenantId;
 
   public String getId() {

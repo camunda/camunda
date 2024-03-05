@@ -7,12 +7,17 @@
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 
+@Schema(
+    description =
+        "Request object with variables to update or add to task during the task completion.")
 public class TaskCompleteRequest {
 
+  @Schema(description = "Variables to update or add to task during the task completion")
   private List<VariableInputDTO> variables = new ArrayList<>();
 
   public List<VariableInputDTO> getVariables() {

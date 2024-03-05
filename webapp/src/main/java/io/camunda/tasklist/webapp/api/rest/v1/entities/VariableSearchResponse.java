@@ -9,15 +9,27 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 import io.camunda.tasklist.entities.DraftTaskVariableEntity;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import java.util.StringJoiner;
 
 public class VariableSearchResponse {
+  @Schema(description = "The unique identifier of the variable.")
   private String id;
+
+  @Schema(description = "The name of the variable.")
   private String name;
+
+  @Schema(description = "The value of the variable.")
   private String value;
+
+  @Schema(description = "Does the `previewValue` contain the truncated value or full value?")
   private boolean isValueTruncated;
+
+  @Schema(description = "A preview of the variable's value. Limited in size.")
   private String previewValue;
+
+  @Schema(description = "The draft value of the variable.")
   private DraftSearchVariableValue draft;
 
   public String getId() {
@@ -162,8 +174,13 @@ public class VariableSearchResponse {
   }
 
   public static class DraftSearchVariableValue {
+    @Schema(description = "The value of the variable.")
     private String value;
+
+    @Schema(description = "Does the `previewValue` contain the truncated value or full value?")
     private boolean isValueTruncated;
+
+    @Schema(description = "A preview of the variable's value. Limited in size.")
     private String previewValue;
 
     public String getValue() {

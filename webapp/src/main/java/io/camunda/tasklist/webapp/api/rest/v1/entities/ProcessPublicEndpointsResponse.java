@@ -9,13 +9,21 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 
 public class ProcessPublicEndpointsResponse {
 
+  @Schema(description = "The BPMN process ID")
   private String bpmnProcessId;
+
+  @Schema(description = "The process definition key")
   private String processDefinitionKey;
+
+  @Schema(description = "The endpoint associated with the process")
   private String endpoint;
+
+  @Schema(description = "The tenant ID associated with the process")
   private String tenantId;
 
   public String getBpmnProcessId() {
