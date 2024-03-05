@@ -188,8 +188,15 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     expires = accessToken.getToken().getExpiresAt();
     groups = accessToken.getUserDetails().getGroups();
     if (!isPolling()) {
-      refreshTokenExpiresAt =
-          getIdentity().authentication().decodeJWT(this.tokens.getRefreshToken()).getExpiresAt();
+      try {
+        refreshTokenExpiresAt =
+            getIdentity().authentication().decodeJWT(this.tokens.getRefreshToken()).getExpiresAt();
+      } catch (TokenDecodeException e) {
+        LOGGER.error(
+            "Unable to decode refresh token {} with exception: {}",
+            this.tokens.getRefreshToken(),
+            e.getMessage());
+      }
     }
     if (!hasExpired()) {
       setAuthenticated(true);
