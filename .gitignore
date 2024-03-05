@@ -47,3 +47,14 @@ hs_err*.log
 /metrics/
 *.exe
 /clients/go/.idea/
+*.iml
+.idea/
+.classpath
+.project
+.settings
+target/
+.DS_Store
+.vscode/
+dependency-reduced-pom.xml
+.eslintcache
+els-snapshots

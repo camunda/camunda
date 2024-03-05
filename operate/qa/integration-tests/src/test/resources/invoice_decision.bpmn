@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_07usul6" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.12.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0" camunda:diagramRelationId="ce9569f6-7b97-47ac-8309-0ce4476849a8">
+  <bpmn:process id="invoice_decision" name="Invoice Decision" isExecutable="true">
+    <bpmn:startEvent id="startEvent">
+      <bpmn:outgoing>Flow_0ot8sm4</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0ot8sm4" sourceRef="startEvent" targetRef="taskDefineApprover" />
+    <bpmn:sequenceFlow id="Flow_0dswf45" sourceRef="taskDefineApprover" targetRef="taskNoOp" />
+    <bpmn:businessRuleTask id="taskDefineApprover" name="Define Approver">
+      <bpmn:extensionElements>
+        <zeebe:calledDecision decisionId="invoiceAssignApprover" resultVariable="approverGroups" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0ot8sm4</bpmn:incoming>
+      <bpmn:outgoing>Flow_0dswf45</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:manualTask id="taskNoOp" name="No Op">
+      <bpmn:incoming>Flow_0dswf45</bpmn:incoming>
+      <bpmn:outgoing>Flow_0c8r9la</bpmn:outgoing>
+    </bpmn:manualTask>
+    <bpmn:endEvent id="endEvent">
+      <bpmn:incoming>Flow_0c8r9la</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0c8r9la" sourceRef="taskNoOp" targetRef="endEvent" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="invoice_decision">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="startEvent">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0fdcns1_di" bpmnElement="taskDefineApprover">
+        <dc:Bounds x="290" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0h26n7x_di" bpmnElement="taskNoOp">
+        <dc:Bounds x="460" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_049ywnj_di" bpmnElement="endEvent">
+        <dc:Bounds x="632" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0ot8sm4_di" bpmnElement="Flow_0ot8sm4">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="290" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dswf45_di" bpmnElement="Flow_0dswf45">
+        <di:waypoint x="390" y="117" />
+        <di:waypoint x="460" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0c8r9la_di" bpmnElement="Flow_0c8r9la">
+        <di:waypoint x="560" y="117" />
+        <di:waypoint x="632" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

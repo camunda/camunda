@@ -42,7 +42,7 @@ Here is a diagram illustrating the release schedule of the five alpha releases p
 2022                                2023
 Oct       Nov          Dec          Jan          Feb          Mar          Apr
 8.1-----------------------------------------------------------------------------
-          8.2-alpha1   8.2-alpha2   8.2-alpha3   8.2-alpha4   8.2-alpha5   8.2-- 
+          8.2-alpha1   8.2-alpha2   8.2-alpha3   8.2-alpha4   8.2-alpha5   8.2--
 1         2            3            4            5            6            7
 ```
 
