@@ -97,7 +97,7 @@ public final class ScriptTaskProcessor
             })
         .thenDo(
             completed -> {
-              compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
+              compensationSubscriptionBehaviour.completeCompensationHandler(element, completed);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             });
   }

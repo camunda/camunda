@@ -315,7 +315,7 @@ public class IntermediateThrowEventProcessor
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
 
       final var isCompensationTriggered =
-          compensationSubscriptionBehaviour.triggerCompensation(element, activating);
+          compensationSubscriptionBehaviour.triggerCompensation(activating);
 
       if (isCompensationTriggered) {
         return SUCCESS;

@@ -53,7 +53,7 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
         .transitionToCompleted(element, context)
         .thenDo(
             completed -> {
-              compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
+              compensationSubscriptionBehaviour.completeCompensationHandler(element, completed);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             });
   }
