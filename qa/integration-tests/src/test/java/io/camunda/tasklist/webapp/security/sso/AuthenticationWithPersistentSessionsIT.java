@@ -38,6 +38,7 @@ import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
 import io.camunda.tasklist.webapp.graphql.entity.C8AppLink;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterMetadata;
 import java.util.Base64;
@@ -99,6 +100,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @MockBean private AuthenticationController authenticationController;
 
   @MockBean private AssigneeMigrator assigneeMigrator;
+  @MockBean private IdentityAuthorizationService identityAuthorizationService;
 
   @MockBean
   @Qualifier("auth0_restTemplate")

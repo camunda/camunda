@@ -47,6 +47,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   private Date refreshTokenExpiresAt;
   private volatile List<TasklistTenant> tenants = Collections.emptyList();
   private IdentityAuthorization authorization;
+  private List<String> groups;
 
   public IdentityAuthentication() {
     super(null);
@@ -185,6 +186,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     }
     subject = accessToken.getToken().getSubject();
     expires = accessToken.getToken().getExpiresAt();
+    groups = accessToken.getUserDetails().getGroups();
     if (!isPolling()) {
       refreshTokenExpiresAt =
           getIdentity().authentication().decodeJWT(this.tokens.getRefreshToken()).getExpiresAt();
@@ -257,6 +259,15 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
 
   public IdentityAuthentication setAuthorizations(IdentityAuthorization authorization) {
     this.authorization = authorization;
+    return this;
+  }
+
+  public List<String> getGroups() {
+    return groups;
+  }
+
+  public IdentityAuthentication setGroups(List<String> groups) {
+    this.groups = groups;
     return this;
   }
 

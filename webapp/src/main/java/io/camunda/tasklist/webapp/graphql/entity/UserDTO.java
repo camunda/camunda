@@ -25,6 +25,7 @@ public class UserDTO {
 
   private List<C8AppLink> c8Links = List.of();
   private List<TasklistTenant> tenants = List.of();
+  private List<String> groups = List.of();
 
   public String getUserId() {
     return userId;
@@ -105,29 +106,65 @@ public class UserDTO {
     return this;
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(userId, displayName, apiUser, permissions, roles, salesPlanType, c8Links);
+  public List<String> getGroups() {
+    return groups;
+  }
+
+  public UserDTO setGroups(List<String> groups) {
+    this.groups = groups;
+    return this;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
+  public boolean equals(Object o) {
+    if (this == o) {
       return true;
     }
-    if (obj == null) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    final UserDTO other = (UserDTO) obj;
-    return Objects.equals(apiUser, other.apiUser)
-        && Objects.equals(displayName, other.displayName)
-        && Objects.equals(userId, other.userId)
-        && Objects.equals(permissions, other.permissions)
-        && Objects.equals(roles, other.roles)
-        && Objects.equals(salesPlanType, other.salesPlanType)
-        && Objects.equals(c8Links, other.c8Links);
+    final UserDTO userDTO = (UserDTO) o;
+    return apiUser == userDTO.apiUser
+        && Objects.equals(userId, userDTO.userId)
+        && Objects.equals(displayName, userDTO.displayName)
+        && Objects.equals(permissions, userDTO.permissions)
+        && Objects.equals(roles, userDTO.roles)
+        && Objects.equals(salesPlanType, userDTO.salesPlanType)
+        && Objects.equals(c8Links, userDTO.c8Links)
+        && Objects.equals(tenants, userDTO.tenants)
+        && Objects.equals(groups, userDTO.groups);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        userId, displayName, apiUser, permissions, roles, salesPlanType, c8Links, tenants, groups);
+  }
+
+  @Override
+  public String toString() {
+    return "UserDTO{"
+        + "userId='"
+        + userId
+        + '\''
+        + ", displayName='"
+        + displayName
+        + '\''
+        + ", apiUser="
+        + apiUser
+        + ", permissions="
+        + permissions
+        + ", roles="
+        + roles
+        + ", salesPlanType='"
+        + salesPlanType
+        + '\''
+        + ", c8Links="
+        + c8Links
+        + ", tenants="
+        + tenants
+        + ", groups="
+        + groups
+        + '}';
   }
 }

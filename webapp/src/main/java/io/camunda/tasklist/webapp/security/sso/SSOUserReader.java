@@ -15,6 +15,7 @@ import io.camunda.tasklist.webapp.graphql.entity.C8AppLink;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.sso.model.C8ConsoleService;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterMetadata;
 import java.util.List;
@@ -33,6 +34,8 @@ public class SSOUserReader implements UserReader {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired private C8ConsoleService c8ConsoleService;
+
+  @Autowired private IdentityAuthorizationService identityAuthorizationService;
 
   @Override
   public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
@@ -55,6 +58,7 @@ public class SSOUserReader implements UserReader {
               .setUserId(/*authentication.getName()*/ email)
               .setDisplayName(name)
               .setApiUser(false)
+              .setGroups(identityAuthorizationService.getUserGroups())
               .setPermissions(tokenAuthentication.getPermissions())
               .setRoles(
                   tokenAuthentication.getRoles(tasklistProperties.getAuth0().getOrganizationsKey()))

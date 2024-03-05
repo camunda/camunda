@@ -41,6 +41,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class IdentityUserReaderTest {
+
+  static final List<String> GROUPS = List.of("Group A", "Group B");
   @Mock private Identity identity;
   @Mock private ApplicationContext context;
   @Mock private AccessToken accessToken;
@@ -54,13 +56,14 @@ class IdentityUserReaderTest {
   }
 
   @Test
-  public void shouldReturnTheUserIdAndPermissionsByIdentityAuth() {
+  public void shouldReturnTheUserIdPermissionsAndGroupsByIdentityAuth() {
     // given
     final IdentityAuthentication identityAuthentication = mock(IdentityAuthentication.class);
 
     when(identityAuthentication.getId()).thenReturn("user123");
     when(identityAuthentication.getName()).thenReturn("userIdTest");
     when(identityAuthentication.getPermissions()).thenReturn(List.of(Permission.WRITE));
+    when(identityAuthentication.getGroups()).thenReturn(GROUPS);
 
     // when
     final Optional<UserDTO> currentUser =
@@ -70,10 +73,11 @@ class IdentityUserReaderTest {
     assertTrue(currentUser.isPresent());
     assertEquals("userIdTest", currentUser.get().getUserId());
     assertEquals(List.of(Permission.WRITE), currentUser.get().getPermissions());
+    assertEquals(GROUPS, currentUser.get().getGroups());
   }
 
   @Test
-  public void shouldReturnTheUserIdAndPermissionsByJwtAuthenticationToken() {
+  public void shouldReturnTheUserIdAndPermissionsAndGroupsJwtAuthenticationToken() {
     // given
     final Jwt jwt = mock(Jwt.class);
     final var jwtAuthenticationToken = mock(IdentityTenantAwareJwtAuthenticationToken.class);

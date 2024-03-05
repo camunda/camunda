@@ -39,7 +39,8 @@ public class IdentityUserReader implements UserReader {
               .setUserId(/*identityAuthentication.getId()*/ identityAuthentication.getName())
               .setDisplayName(identityAuthentication.getUserDisplayName())
               .setPermissions(identityAuthentication.getPermissions())
-              .setTenants(identityAuthentication.getTenants()));
+              .setTenants(identityAuthentication.getTenants())
+              .setGroups(identityAuthentication.getGroups()));
     } else if (authentication
         instanceof IdentityTenantAwareJwtAuthenticationToken identityTenantAwareToken) {
       final AccessToken accessToken =
