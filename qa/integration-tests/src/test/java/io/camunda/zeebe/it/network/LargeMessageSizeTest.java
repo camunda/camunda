@@ -28,7 +28,6 @@ import java.util.Random;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -46,16 +45,11 @@ public final class LargeMessageSizeTest {
   private static final long METADATA_SIZE = 512;
 
   private static final String LARGE_TEXT = "x".repeat((int) (LARGE_SIZE - METADATA_SIZE));
-
-  private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(b -> b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
-
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
-
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
-
+  private final EmbeddedBrokerRule brokerRule =
+      new EmbeddedBrokerRule(b -> b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
+  private final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
   private String jobType;
 
   private static BpmnModelInstance process(final String jobType) {
@@ -80,7 +74,7 @@ public final class LargeMessageSizeTest {
 
     // when
     final var deployment =
-        CLIENT_RULE
+        clientRule
             .getClient()
             .newDeployResourceCommand()
             .addResourceStringUtf8(largeProcess, "process.bpmn")
@@ -91,7 +85,7 @@ public final class LargeMessageSizeTest {
 
     // then
     final var processInstanceEvent =
-        CLIENT_RULE
+        clientRule
             .getClient()
             .newCreateInstanceCommand()
             .processDefinitionKey(processDefinitionKey)
@@ -104,13 +98,13 @@ public final class LargeMessageSizeTest {
   @Test
   public void shouldCreateInstanceWithLargeVariables() {
     // given
-    final var processDefinitionKey = CLIENT_RULE.deployProcess(process(jobType));
+    final var processDefinitionKey = clientRule.deployProcess(process(jobType));
 
     // when
     final Map<String, Object> largeVariables = Map.of("largeVariable", LARGE_TEXT);
 
     final var processInstanceEvent =
-        CLIENT_RULE
+        clientRule
             .getClient()
             .newCreateInstanceCommand()
             .processDefinitionKey(processDefinitionKey)
@@ -125,10 +119,10 @@ public final class LargeMessageSizeTest {
   @Test
   public void shouldCompleteJobWithLargeVariables() {
     // given
-    final var processDefinitionKey = CLIENT_RULE.deployProcess(process(jobType));
+    final var processDefinitionKey = clientRule.deployProcess(process(jobType));
 
     final var processInstanceEvent =
-        CLIENT_RULE
+        clientRule
             .getClient()
             .newCreateInstanceCommand()
             .processDefinitionKey(processDefinitionKey)
@@ -138,7 +132,7 @@ public final class LargeMessageSizeTest {
     // when
     final Map<String, Object> largeVariables = Map.of("largeVariable", LARGE_TEXT);
 
-    CLIENT_RULE
+    clientRule
         .getClient()
         .newWorker()
         .jobType(jobType)
@@ -162,7 +156,7 @@ public final class LargeMessageSizeTest {
             .endEvent()
             .done();
 
-    CLIENT_RULE
+    clientRule
         .getClient()
         .newDeployResourceCommand()
         .addProcessModel(modelInstance, "foo.bpmn")
@@ -175,7 +169,7 @@ public final class LargeMessageSizeTest {
 
     final int numberOfJobsToActivate = 5;
     for (int i = 0; i < numberOfJobsToActivate; i++) {
-      CLIENT_RULE
+      clientRule
           .getClient()
           .newCreateInstanceCommand()
           .bpmnProcessId("foo")
@@ -193,7 +187,7 @@ public final class LargeMessageSizeTest {
 
     // when
     final JobWorkerBuilderStep3 builder =
-        CLIENT_RULE.getClient().newWorker().jobType("foo").handler(COMPLETING_JOB_HANDLER);
+        clientRule.getClient().newWorker().jobType("foo").handler(COMPLETING_JOB_HANDLER);
 
     // then
     try (final JobWorker ignored = builder.open()) {
