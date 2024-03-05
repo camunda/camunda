@@ -31,6 +31,7 @@ module.exports = {
                 `test`, // Adding missing tests or correcting existing tests
             ],
         ],
+        'scope-empty': [2, 'always'],
 
         // warning rules
 
@@ -53,7 +54,6 @@ module.exports = {
         'references-empty': [0, 'never'],
         'scope-enum': [0, 'always', []],
         'scope-case': [0, 'always', 'lower-case'],
-        'scope-empty': [0, 'never'],
         'scope-max-length': [0, 'always', Infinity],
         'scope-min-length': [0, 'always', 0],
         'subject-case': [0, 'never', ['sentence-case', 'start-case', 'pascal-case', 'upper-case']],
