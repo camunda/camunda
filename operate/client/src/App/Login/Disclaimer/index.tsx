@@ -16,26 +16,33 @@
  */
 
 import {Link} from '@carbon/react';
-import {Container} from './styled';
+import {Container, InlineLink} from './styled';
+import {useState} from 'react';
+import {TermsConditionsModal} from 'modules/components/TermsConditionsModal';
 
 const Disclaimer: React.FC = () => {
+  const [isTermsConditionModalOpen, setTermsConditionModalOpen] =
+    useState<boolean>(false);
+
   return window.clientConfig?.isEnterprise ? null : (
-    <Container>
-      Non-Production License. If you would like information on production usage,
-      please refer to our{' '}
-      <Link
-        href="https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/"
-        target="_blank"
-        inline
-      >
-        terms & conditions page
-      </Link>{' '}
-      or{' '}
-      <Link href="https://camunda.com/contact/" target="_blank" inline>
-        contact sales
-      </Link>
-      .
-    </Container>
+    <>
+      <Container>
+        Non-Production License. If you would like information on production
+        usage, please refer to our{' '}
+        <InlineLink onClick={() => setTermsConditionModalOpen(true)} inline>
+          terms & conditions page
+        </InlineLink>{' '}
+        or{' '}
+        <Link href="https://camunda.com/contact/" target="_blank" inline>
+          contact sales
+        </Link>
+        .
+      </Container>
+      <TermsConditionsModal
+        isModalOpen={isTermsConditionModalOpen}
+        onModalClose={() => setTermsConditionModalOpen(false)}
+      />
+    </>
   );
 };
 

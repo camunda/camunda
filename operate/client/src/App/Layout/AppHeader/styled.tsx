@@ -20,6 +20,7 @@ import {Link} from '@carbon/react';
 
 const InlineLink = styled(Link)`
   display: inline;
+  cursor: pointer;
 `;
 
 export {InlineLink};

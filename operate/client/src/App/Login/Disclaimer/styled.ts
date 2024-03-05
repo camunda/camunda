@@ -17,6 +17,7 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/elements';
+import {Link} from '@carbon/react';
 
 const Container = styled.span`
   color: var(--cds-text-secondary);
@@ -29,4 +30,8 @@ const Container = styled.span`
   }
 `;
 
-export {Container};
+const InlineLink = styled(Link)`
+  cursor: pointer;
+`;
+
+export {Container, InlineLink};
