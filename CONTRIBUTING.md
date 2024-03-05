@@ -32,7 +32,7 @@ For contributions to Zeebe, building quickly is typically sufficient.
 However, users of Zeebe are recommended to build the full distribution.
 
 To fully build the Zeebe distribution, run the command: `mvn clean install -DskipTests` in the root folder.
-This is slightly slower than building quickly, but ensures the distribution is assembled completely.
+This is slightly slower than building quickly but ensures the distribution is assembled completely.
 The resulting Zeebe distribution can be found in the folder `dist/target`, i.e.
 
 ```
@@ -51,16 +51,16 @@ docker build \
 ```
 
 This is a small overview of the contents of the different modules:
-- `util` contains custom implementations of building blocks like an actor scheduler, buffer allocations, metrics. Its parts are used in most of the other modules
+- `util` contains custom implementations of building blocks like an actor scheduler, buffer allocations, and metrics. Its parts are used in most of the other modules
 - `protocol` contains the SBE definition of the main message protocol
 - `bpmn-model` is a Java API for BPMN process definitions used for parsing etc.
-- `msgpack-*` is custom msgpack implementation with extensions to evaluate json-path expressions on msgpack objects
+- `msgpack-*` is a custom msgpack implementation with extensions to evaluate json-path expressions on msgpack objects
 - `dispatcher` is a custom implementation of message passing between threads
 - `service-container` is a custom implementation to manage dependencies between different services
-- `logstreams` is an implementation of a append only log backed by the filesystem
+- `logstreams` is an implementation of an append-only log backed by the filesystem
 - `transport` is our abstraction over network transports
 - `gateway` is the implementation of the gRPC gateway, using our SBE-based protocol to communicate with brokers
-- `gateway-protocol` is the gRPC definitions for the Zeebe client-to-gateway protocol
+- `gateway-protocol` contains the gRPC definitions for the Zeebe client-to-gateway protocol
 - `zb-db` is our RocksDB wrapper for state management
 - `engine`  is the implementation of the event stream processor
 - `broker` contains the Zeebe broker which is the server side of Zeebe
@@ -69,7 +69,7 @@ This is a small overview of the contents of the different modules:
 - `benchmark` contains utilities the team uses to run load tests
 - `exporters/elasticsearch-exporter` contains the official Elasticsearch exporter for Zeebe
 - `journal` contains the append-only log used by the consensus algorithm
-- `snapshots` module abstracting how state snapshots (i.e. `zb-db`) are handled
+- `snapshots` abstracts how state snapshots (i.e. `zb-db`) are handled
 
 ### Test Execution
 
@@ -95,7 +95,7 @@ Zeebe uses GitHub issues to organize the development process. If you want to
 report a bug or request a new feature feel free to open a new issue on
 [GitHub][issues].
 
-If you are reporting a bug, please help to speed up problem diagnosis by
+If you report a bug, please help speed up problem diagnosis by
 providing as much information as possible. Ideally, that would include a small
 [sample project][sample] that reproduces the problem.
 
@@ -103,12 +103,12 @@ If you have a general usage question please ask on the [forum](http://forum.camu
 
 ## GitHub Issue Guidelines
 
-Every issue should have a meaningful name and a description which either
+Every issue should have a meaningful name and a description that either
 describes:
 - a new feature with details about the use case the feature would solve or
 improve
-- a problem, how we can reproduce it and what would be the expected behavior
-- a change and the intention how this would improve the system
+- a problem, how we can reproduce it, and what the expected behavior would be
+- a change and the intention of how this would improve the system
 
 ## Starting on an issue
 
@@ -117,7 +117,7 @@ follow the following steps:
 
 1. Check that a [GitHub issue][issues] exists for the task you want to work on.
    If one does not, create one. Refer to the [issue guidelines](#github-issue-guidelines).
-2. Check that no one is already working on the issue, and make sure the team would accept a pull request for this topic. Some topics are complex in nature and may touch multiple of [Camunda's Components](https://docs.camunda.io/docs/components/), requiring internal coordination.
+2. Check that no one is already working on the issue, and make sure the team would accept a pull request for this topic. Some topics are complex and may touch multiple of [Camunda's Components](https://docs.camunda.io/docs/components/), requiring internal coordination.
 3. Checkout the `main` branch and pull the latest changes.
 
    ```
@@ -132,24 +132,24 @@ follow the following steps:
 5. Follow the [Google Java Format](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
    and [Zeebe Code Style](https://github.com/zeebe-io/zeebe/wiki/Code-Style) while coding.
 6. Implement the required changes on your branch and regularly push your
-   changes to the origin so that the CI can run. Code formatting, style and
-   license header are fixed automatically by running maven. Checkstyle
+   changes to the origin so that the CI can run. Code formatting, style, and
+   license header are fixed automatically by running Maven. Checkstyle
    violations have to be fixed manually.
 
    ```
-   git commit -am 'feat(broker): bpel support'
+   git commit -am 'feat: add BPEL execution support'
    git push -u origin 123-adding-bpel-support
    ```
-7. If you think you finished the issue please prepare the branch for reviewing.
+7. If you think you finished the issue please prepare the branch for review.
    Please consider our [pull requests and code
    reviews](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews)
-   guide, before requesting a review. In general the commits should be squashed
+   guide, before requesting a review. In general, the commits should be squashed
    into meaningful commits with a helpful message. This means cleanup/fix etc
    commits should be squashed into the related commit. If you made refactorings
-   it would be best if they are split up into another commit. Rule of thumb is
-   that you should think about how a reviewer can best understand your changes.
-   Please follow the [commit message guidelines](#commit-message-guidelines).
-8. After finishing up the squashing force push your changes to your branch.
+   it would be best if they are split up into another commit. Think about how
+   a reviewer can best understand your changes. Please follow the
+   [commit message guidelines](#commit-message-guidelines).
+8. After finishing up the squashing, force push your changes to your branch.
 
    ```
    git push --force-with-lease
@@ -169,19 +169,19 @@ Before opening your first pull request, please have a look at this [guide](https
 3. The reviewer will look at the pull request in the following days and give
    you either feedback or accept the changes. Your reviewer might use
    [emoji code](#review-emoji-code) during the reviewing process.
-   1. If there are changes requested address them in a new commit. Notify the
+   1. If there are changes requested, address them in a new commit. Notify the
       reviewer in a comment if the pull request is ready for review again. If
       the changes are accepted squash them again in the related commit and force push.
       Then initiate a merge by adding your PR to the merge queue via the `Merge when ready` button.
-   2. If no changes are requested the reviewer will initiate a merge themselves.
+   2. If no changes are requested, the reviewer will initiate a merge themselves.
 4. When a merge is initiated, a bot will merge your branch with the latest
    `main` and run the CI on it.
-   1. If everything goes well the branch is merged and deleted and the issue
+   1. If everything goes well, the branch is merged and deleted and the issue
       and pull request are closed.
-   2. If there are merge conflicts the author of the pull request has to
+   2. If there are merge conflicts, the author of the pull request has to
       manually rebase `main` into the issue branch and retrigger a merge
       attempt.
-   3. If there are CI errors the author of the pull request has to check if
+   3. If there are CI errors, the author of the pull request has to check if
       they are caused by its changes and address them. If they are flaky tests, please
       have a look at this [guide](docs/ci.md#determine-flakiness) on how to handle them.
       Once the CI errors are resolved, a merge can be retried by simply enqueueing the PR again.
@@ -193,9 +193,9 @@ Before doing your first review, please have a look at this [guide](https://githu
 As a reviewer, you are encouraged to use the following [emoji code](#review-emoji-code) in your comments.
 
 The review should result in:
-- approving the changes if there are only optional suggestions/minor issues 🔧, throughts 💭, or likes 👍
-- requesting changes if there are major issues ❌
-- commenting if there are open questions ❓
+- Approving the changes if there are only optional suggestions/minor issues 🔧, throughts 💭, or likes 👍
+- Requesting changes if there are major issues ❌
+- Commenting if there are open questions ❓
 
 ### Review emoji code
 
@@ -212,7 +212,7 @@ _Inspired by [Microsofts emoji code](https://devblogs.microsoft.com/appcenter/ho
 
 ### Stale pull requests
 
-If there has not been any activity in your PR after a month it is automatically marked as stale. If it remains inactive we may decide to close the PR.
+If there has not been any activity in your PR after a month, it is automatically marked as stale. If it remains inactive, we may decide to close the PR.
 When this happens and you're still interested in contributing, please feel free to reopen it.
 
 ## Backporting changes
@@ -226,15 +226,15 @@ Please follow these steps to backport your changes:
    - if the pull request is _not yet_ merged, it will be automatically backported when it gets merged.
    - if the pull request is _already_ merged, create a comment on the pull request that contains
      `/backport` to trigger the automatic backporting.
-2. The Github Actions bot comments on the pull request once it finishes:
-   - When _successful_, a new backport pull request was automatically created. Simply approve the PR,
+2. The GitHub actions bot comments on the pull request once it finishes:
+   - When _successful_, a new backport pull request was automatically created. Simply approve the PR
      and enqueue it to the merge queue by clicking the `Merge when ready` button.
    - If it _failed_, please follow these **manual steps**:
      1. Locally checkout the target branch (e.g. `stable/1.0`).
-     2. Make sure it's up to date with origin (i.e. `git pull`).
+     2. Make sure it's up to date with the origin (i.e. `git pull`).
      3. Checkout a new branch for your backported changes (e.g. `git checkout -b
         backport-123-to-stable/1.0`).
-     4. Cherry pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
+     4. Cherry-pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
         conflicts.
      5. Push your cherry-picked changes `git push`.
      6. Create a pull request for your backport branch:
@@ -257,21 +257,21 @@ Commit messages use [Conventional Commits](https://www.conventionalcommits.org/e
 <footer> (optional)
 ```
 
-Zeebe uses a GitHub Actions workflow checking your commit messages when a pull request is
+Zeebe uses a GitHub Actions workflow to check your commit messages when a pull request is
 submitted. Please make sure to address any hints from the bot.
 
 ### Commit message header
 
 Examples:
 
-* `docs(reference): add start event to bpmn symbol support matrix`
-* `perf(broker): reduce latency in backpressure`
-* `feat(clients/go): allow more than 9000 jobs in a single call`
+* `docs: add start event to bpmn symbol support matrix`
+* `perf: reduce latency in backpressure`
+* `feat: allow more than 9000 jobs in a single call`
 
 The commit header should match the following pattern:
 
 ```
-%{type}(%{scope}): %{description}
+%{type}: %{description}
 ```
 
 The commit header should be kept short, preferably under 72 chars but we allow a max of 120 chars.
@@ -287,21 +287,20 @@ The commit header should be kept short, preferably under 72 chars but we allow a
   - `refactor`: A code change that does not change the behavior
   - `style`: A change to align the code with our style guide
   - `test`: Adding missing tests or correcting existing tests
-- `scope` (optional): name of the changed component (e.g. `engine`, `journal`, `README`)
 - `description`: short description of the change in present tense
 
 ### Commit message body
 
 Should describe the motivation for the change.
-This is optional, but encouraged.
+This is optional but encouraged.
 Good commit messages explain what changed AND why you changed it.
 See [I've written a clear changelist description](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews#ive-written-a-clear-changelist-description).
 
 ## Contributor License Agreement
 
 You will be asked to sign our Contributor License Agreement when you open a Pull Request. We are not
-asking you to assign copyright to us, but to give us the right to distribute
-your code without restriction. We ask this of all contributors in order to
+asking you to assign copyright to us but to give us the right to distribute
+your code without restriction. We ask this of all contributors to
 assure our users of the origin and continuing existence of the code. You only
 need to sign the CLA once.
 
