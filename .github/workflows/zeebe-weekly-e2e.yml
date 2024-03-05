@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Weekly E2E
     steps:
-      - uses: ./.github/workflows/zeebe-e2e-testbench.yaml
+      - uses: actions/checkout@v4
       - name: Trigger Weekly E2E on ${{ matrix.branch }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
