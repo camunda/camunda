@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -58,10 +59,12 @@ public class BpmnCompensationSubscriptionBehaviour {
   public void createCompensationSubscription(
       final ExecutableActivity element, final BpmnElementContext context) {
 
-    if (hasCompensationBoundaryEvent(element) || isFlowScopeWithSubscriptions(context)) {
+    final var elementId = BufferUtil.bufferAsString(element.getId());
+
+    if ((hasCompensationBoundaryEvent(element) || isFlowScopeWithSubscriptions(context))
+        && !isMultiInstanceActivityAlreadySubscribed(element, context, elementId)) {
 
       final var key = keyGenerator.nextKey();
-      final var elementId = BufferUtil.bufferAsString(element.getId());
       final var flowScopeId = BufferUtil.bufferAsString(element.getFlowScope().getId());
 
       final var compensation =
@@ -78,6 +81,26 @@ public class BpmnCompensationSubscriptionBehaviour {
 
       stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
     }
+  }
+
+  private boolean isMultiInstanceActivityAlreadySubscribed(
+      final ExecutableActivity element, final BpmnElementContext context, final String elementId) {
+    final var availableTasks =
+        List.of(
+            BpmnElementType.TASK,
+            BpmnElementType.SERVICE_TASK,
+            BpmnElementType.MANUAL_TASK,
+            BpmnElementType.USER_TASK,
+            BpmnElementType.SEND_TASK,
+            BpmnElementType.SCRIPT_TASK);
+
+    return BpmnElementType.MULTI_INSTANCE_BODY.equals(element.getFlowScope().getElementType())
+        && availableTasks.contains(element.getElementType())
+        && compensationSubscriptionState
+            .findSubscriptionsByProcessInstanceKey(
+                context.getTenantId(), context.getProcessInstanceKey())
+            .stream()
+            .anyMatch(sub -> elementId.equals(sub.getRecord().getCompensableActivityId()));
   }
 
   private boolean hasCompensationBoundaryEvent(final ExecutableActivity element) {
@@ -100,6 +123,12 @@ public class BpmnCompensationSubscriptionBehaviour {
   }
 
   private Optional<String> getCompensationHandlerId(final ExecutableActivity element) {
+    // multi instance subscriptions doesn't need to have handlerId, otherwise they will activate
+    // again the compensation handler
+    if (BpmnElementType.MULTI_INSTANCE_BODY.equals(element.getElementType())) {
+      return Optional.empty();
+    }
+
     return element.getBoundaryEvents().stream()
         .map(ExecutableBoundaryEvent::getCompensation)
         .filter(Objects::nonNull)
@@ -263,8 +292,7 @@ public class BpmnCompensationSubscriptionBehaviour {
         .filter(
             subscription ->
                 subscription.getRecord().getCompensationHandlerId().equals(compensationHandlerId))
-        .findFirst()
-        .ifPresent(compensation -> completeSubscription(context, compensation));
+        .forEach(compensation -> completeSubscription(context, compensation));
   }
 
   private void completeSubscription(
