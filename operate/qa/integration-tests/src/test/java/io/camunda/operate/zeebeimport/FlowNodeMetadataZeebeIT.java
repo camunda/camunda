@@ -38,7 +38,9 @@ import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
+import io.camunda.operate.webapp.rest.dto.metadata.CallActivityInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEntryDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadata;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
@@ -68,6 +70,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
 
   private ProcessInstancesArchiverJob archiverJob;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -139,7 +142,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(
-        flowNodeMetadata.getInstanceMetadata(),
+        (FlowNodeInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata(),
         taskId,
         SERVICE_TASK,
         flowNodeInstanceId2,
@@ -215,7 +218,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(
-        flowNodeMetadata.getInstanceMetadata(),
+        (FlowNodeInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata(),
         taskId,
         SERVICE_TASK,
         flowNodeInstanceId2,
@@ -271,7 +274,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(
-        flowNodeMetadata.getInstanceMetadata(),
+        (FlowNodeInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata(),
         subprocessId,
         MULTI_INSTANCE_BODY,
         flowNodeInstanceId1,
@@ -294,7 +297,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(
-        flowNodeMetadata.getInstanceMetadata(),
+        (FlowNodeInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata(),
         subprocessId,
         MULTI_INSTANCE_BODY,
         flowNodeInstanceId2,
@@ -321,7 +324,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(
-        flowNodeMetadata.getInstanceMetadata(),
+        (FlowNodeInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata(),
         subprocessId,
         MULTI_INSTANCE_BODY,
         flowNodeInstanceId3,
@@ -345,7 +348,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(
-        flowNodeMetadata.getInstanceMetadata(),
+        (FlowNodeInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata(),
         subprocessId,
         SUB_PROCESS,
         subprocessInstanceId1,
@@ -369,7 +372,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeMetadata.getFlowNodeType()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(
-        flowNodeMetadata.getInstanceMetadata(),
+        (FlowNodeInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata(),
         subprocessId,
         SUB_PROCESS,
         subprocessInstanceId2,
@@ -415,7 +418,8 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertThat(flowNodeMetadata.getInstanceMetadata().getFlowNodeType()).isEqualTo(CALL_ACTIVITY);
     final String calledProcessInstanceId1 =
-        flowNodeMetadata.getInstanceMetadata().getCalledProcessInstanceId();
+        ((CallActivityInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata())
+            .getCalledProcessInstanceId();
     assertThat(calledProcessInstanceId1).isNotNull();
     // check that calledProcessInstanceId is the right one
     final ProcessInstanceForListViewEntity calledProcessInstance =
@@ -432,7 +436,8 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeMetadata.getInstanceCount()).isNull();
     final String flowNodeInstanceId2 = flowNodeMetadata.getFlowNodeInstanceId();
     final String calledProcessInstanceId2 =
-        flowNodeMetadata.getInstanceMetadata().getCalledProcessInstanceId();
+        ((CallActivityInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata())
+            .getCalledProcessInstanceId();
     assertThat(calledProcessInstanceId2).isNotNull();
     assertThat(calledProcessInstanceId2).isEqualTo(calledProcessInstanceId2);
     assertThat(flowNodeInstanceId2).isNotNull();
@@ -465,7 +470,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
             .getProcessInstanceKey();
 
     // when 1.1
-    FlowNodeMetadataDto flowNodeMetadata =
+    final FlowNodeMetadataDto flowNodeMetadata =
         tester.getFlowNodeMetadataFromRest(
             String.valueOf(processInstanceKey), callActivityId, null, null);
 
@@ -473,10 +478,13 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeMetadata.getInstanceCount()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertThat(flowNodeMetadata.getInstanceMetadata().getFlowNodeType()).isEqualTo(CALL_ACTIVITY);
-    assertThat(flowNodeMetadata.getInstanceMetadata().getCalledProcessDefinitionName())
+    assertThat(
+            ((CallActivityInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata())
+                .getCalledProcessDefinitionName())
         .isEqualTo(calledProcessId);
     final String calledProcessInstanceId1 =
-        flowNodeMetadata.getInstanceMetadata().getCalledProcessInstanceId();
+        ((CallActivityInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata())
+            .getCalledProcessInstanceId();
     assertThat(calledProcessInstanceId1).isNotNull();
     // check that calledProcessInstanceId is the right one
     final ProcessInstanceForListViewEntity calledProcessInstance =
@@ -573,7 +581,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     final String flowNodeInstanceId = tasks.get(0).getId();
 
     // when 2.3 - one instance out of several (Peter case)
-    FlowNodeMetadataDto flowNodeMetadata =
+    final FlowNodeMetadataDto flowNodeMetadata =
         tester.getFlowNodeMetadataFromRest(
             String.valueOf(processInstanceKey), null, null, flowNodeInstanceId);
 
@@ -629,7 +637,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
             .getProcessInstanceKey();
 
     // when 3.3 - instance count by breadcrump
-    FlowNodeMetadataDto flowNodeMetadata =
+    final FlowNodeMetadataDto flowNodeMetadata =
         tester.getFlowNodeMetadataFromRest(
             String.valueOf(processInstanceKey), subprocessId, SUB_PROCESS, null);
 
@@ -651,17 +659,16 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void assertFlowNodeInstanceData(
-      final FlowNodeInstanceMetadataDto metadata,
+      final FlowNodeInstanceMetadata metadata,
       final String flowNodeId,
       final FlowNodeType flowNodeType,
       final String flowNodeInstanceId,
-      boolean endDateExists,
+      final boolean endDateExists,
       final String jobType) {
     assertThat(metadata.getFlowNodeId()).isEqualTo(flowNodeId);
     assertThat(metadata.getFlowNodeType()).isEqualTo(flowNodeType);
     assertThat(metadata.getFlowNodeInstanceId()).isEqualTo(flowNodeInstanceId);
     assertThat(metadata.getStartDate()).isNotNull();
-    assertThat(metadata.getJobType()).isEqualTo(jobType);
     if (endDateExists) {
       assertThat(metadata.getEndDate()).isNotNull();
       assertThat(metadata.getEndDate()).isAfter(metadata.getStartDate());
@@ -699,9 +706,9 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
 
     // get flow node instance tree
     final String processInstanceId = String.valueOf(processInstanceKey);
-    FlowNodeInstanceQueryDto request =
+    final FlowNodeInstanceQueryDto request =
         new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId);
-    List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
+    final List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
 
     assertMetadata(
         instances,
@@ -716,7 +723,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
           EventType.ELEMENT_COMPLETED,
           processInstanceKey,
           "taskA");
-    } catch (AssertionError ae) {
+    } catch (final AssertionError ae) {
       assertMetadata(
           instances, EventSourceType.JOB, EventType.COMPLETED, processInstanceKey, "taskA");
     }
@@ -733,7 +740,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
           EventType.ELEMENT_COMPLETED,
           processInstanceKey,
           "taskC");
-    } catch (AssertionError ae) {
+    } catch (final AssertionError ae) {
       assertMetadata(
           instances, EventSourceType.JOB, EventType.COMPLETED, processInstanceKey, "taskC");
     }
@@ -748,9 +755,9 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testMetadataForCanceledOnIncident() throws Exception {
     // having
-    String flowNodeId = "taskA";
+    final String flowNodeId = "taskA";
 
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final Long processInstanceKey =
         tester
             .deployProcess("demoProcess_v_1.bpmn")
@@ -768,9 +775,9 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     // when
     // get flow node instance tree
     final String processInstanceId = String.valueOf(processInstanceKey);
-    FlowNodeInstanceQueryDto request =
+    final FlowNodeInstanceQueryDto request =
         new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId);
-    List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
+    final List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
 
     // then
     try {
@@ -780,7 +787,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
           EventType.ELEMENT_TERMINATED,
           processInstanceKey,
           flowNodeId);
-    } catch (AssertionError ae) {
+    } catch (final AssertionError ae) {
       assertMetadata(
           instances, EventSourceType.INCIDENT, EventType.RESOLVED, processInstanceKey, flowNodeId);
     }
@@ -789,8 +796,8 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testMetadataIncidentOnInputMapping() throws Exception {
     // having
-    String processId = "demoProcess";
-    BpmnModelInstance process =
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .serviceTask("task1")
@@ -810,9 +817,9 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     // when
     // get flow node instance tree
     final String processInstanceId = String.valueOf(processInstanceKey);
-    FlowNodeInstanceQueryDto request =
+    final FlowNodeInstanceQueryDto request =
         new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId);
-    List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
+    final List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
 
     // then last event does not have a jobId
     final FlowNodeMetadataDto flowNodeMetadata =
@@ -821,7 +828,8 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
             null,
             null,
             instances.get(instances.size() - 1).getId());
-    FlowNodeInstanceMetadataDto flowNodeInstanceMetadata = flowNodeMetadata.getInstanceMetadata();
+    final FlowNodeInstanceMetadata flowNodeInstanceMetadata =
+        flowNodeMetadata.getInstanceMetadata();
     assertThat(flowNodeMetadata.getIncident().getJobId()).isNull();
     // assert incident fields
     assertThat(flowNodeMetadata.getIncident().getErrorMessage()).isNotNull();
@@ -980,7 +988,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     // when
     // get metadata by flowNodeId from parent process instance
     final String processInstanceId = String.valueOf(parentProcessInstanceKey);
-    FlowNodeMetadataDto flowNodeMetadata =
+    final FlowNodeMetadataDto flowNodeMetadata =
         tester.getFlowNodeMetadataFromRest(processInstanceId, callActivity1Id, null, null);
 
     // then two incidents are returned
@@ -1153,11 +1161,11 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
     // having
     final OffsetDateTime testStartTime = OffsetDateTime.now();
 
-    String processId = "eventProcess";
+    final String processId = "eventProcess";
     final String correlationKey = "5";
     final String messageName = "clientMessage";
     deployProcess("messageEventProcess_v_1.bpmn");
-    Long processInstanceKey =
+    final Long processInstanceKey =
         tester
             .deployProcess("messageEventProcess_v_1.bpmn")
             .waitUntil()
@@ -1182,14 +1190,7 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
         tester.getFlowNodeMetadataFromRest(
             String.valueOf(processInstanceKey), null, null, messageEventId);
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
-    assertFlowNodeInstanceMessageData(
-        flowNodeMetadata.getInstanceMetadata(), messageName, correlationKey);
-  }
-
-  private void assertFlowNodeInstanceMessageData(
-      final FlowNodeInstanceMetadataDto metadata,
-      final String messageName,
-      final String correlationKey) {
+    final FlowNodeInstanceMetadata metadata = flowNodeMetadata.getInstanceMetadata();
     assertThat(metadata.getMessageName()).isEqualTo(messageName);
     assertThat(metadata.getCorrelationKey()).isEqualTo(correlationKey);
   }
@@ -1228,22 +1229,22 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void assertMetadata(
-      List<FlowNodeInstanceDto> flowNodes,
-      EventSourceType eventSourceType,
-      EventType eventType,
-      Long processInstanceKey,
-      String activityId)
+      final List<FlowNodeInstanceDto> flowNodes,
+      final EventSourceType eventSourceType,
+      final EventType eventType,
+      final Long processInstanceKey,
+      final String activityId)
       throws Exception {
     assertMetadata(flowNodes, eventSourceType, eventType, processInstanceKey, activityId, null);
   }
 
   private void assertMetadata(
-      List<FlowNodeInstanceDto> flowNodes,
-      EventSourceType eventSourceType,
-      EventType eventType,
-      Long processInstanceKey,
-      String flowNodeId,
-      String errorMessage)
+      final List<FlowNodeInstanceDto> flowNodes,
+      final EventSourceType eventSourceType,
+      final EventType eventType,
+      final Long processInstanceKey,
+      final String flowNodeId,
+      final String errorMessage)
       throws Exception {
 
     final Optional<FlowNodeInstanceDto> flowNodeInstance =
@@ -1255,9 +1256,9 @@ public class FlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
         tester.getFlowNodeMetadataFromRest(
             String.valueOf(processInstanceKey), null, null, flowNodeInstance.get().getId());
 
-    String assertionName = String.format("%s.%s", eventSourceType, eventType);
+    final String assertionName = String.format("%s.%s", eventSourceType, eventType);
 
-    final FlowNodeInstanceMetadataDto flowNodeInstanceMetadata =
+    final FlowNodeInstanceMetadata flowNodeInstanceMetadata =
         flowNodeMetadata.getInstanceMetadata();
     assertThat(flowNodeInstanceMetadata).isNotNull();
     assertThat(flowNodeInstanceMetadata.getFlowNodeId())

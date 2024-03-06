@@ -35,6 +35,7 @@ import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.util.Tuple;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
@@ -50,15 +51,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -69,22 +71,36 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
   private static final Logger logger =
       LoggerFactory.getLogger(OpensearchDecisionInstanceReader.class);
 
-  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
+  private final DecisionInstanceTemplate decisionInstanceTemplate;
 
-  @Autowired private DateTimeFormatter dateTimeFormatter;
+  private final DateTimeFormatter dateTimeFormatter;
 
-  @Autowired private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
-  @Autowired private OperateProperties operateProperties;
+  private final OperateProperties operateProperties;
 
-  @Autowired(required = false)
-  private PermissionsService permissionsService;
+  private final PermissionsService permissionsService;
 
-  @Autowired private RichOpenSearchClient richOpenSearchClient;
+  private final RichOpenSearchClient richOpenSearchClient;
+
+  public OpensearchDecisionInstanceReader(
+      final DecisionInstanceTemplate decisionInstanceTemplate,
+      final DateTimeFormatter dateTimeFormatter,
+      final ObjectMapper objectMapper,
+      final OperateProperties operateProperties,
+      final PermissionsService permissionsService,
+      final RichOpenSearchClient richOpenSearchClient) {
+    this.decisionInstanceTemplate = decisionInstanceTemplate;
+    this.dateTimeFormatter = dateTimeFormatter;
+    this.objectMapper = objectMapper;
+    this.operateProperties = operateProperties;
+    this.permissionsService = permissionsService;
+    this.richOpenSearchClient = richOpenSearchClient;
+  }
 
   @Override
-  public DecisionInstanceDto getDecisionInstance(String decisionInstanceId) {
-    var searchRequest =
+  public DecisionInstanceDto getDecisionInstance(final String decisionInstanceId) {
+    final var searchRequest =
         searchRequestBuilder(decisionInstanceTemplate)
             .query(
                 withTenantCheck(
@@ -99,32 +115,33 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
               .doc()
               .searchUnique(searchRequest, DecisionInstanceEntity.class, decisionInstanceId),
           DecisionInstanceDto.class);
-    } catch (NotFoundException e) {
+    } catch (final NotFoundException e) {
       throw new io.camunda.operate.webapp.rest.exception.NotFoundException(e.getMessage());
     }
   }
 
   @Override
   public DecisionInstanceListResponseDto queryDecisionInstances(
-      DecisionInstanceListRequestDto request) {
-    DecisionInstanceListResponseDto result = new DecisionInstanceListResponseDto();
-    List<DecisionInstanceEntity> entities = queryDecisionInstancesEntities(request, result);
+      final DecisionInstanceListRequestDto request) {
+    final DecisionInstanceListResponseDto result = new DecisionInstanceListResponseDto();
+    final List<DecisionInstanceEntity> entities = queryDecisionInstancesEntities(request, result);
     result.setDecisionInstances(DecisionInstanceForListDto.createFrom(entities, objectMapper));
     return result;
   }
 
   @Override
-  public Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(String decisionInstanceId) {
+  public Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(
+      final String decisionInstanceId) {
     // we need to find all decision instances with the same key, which we extract from
     // decisionInstanceId
     final Long decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
 
-    var searchRequest =
+    final var searchRequest =
         searchRequestBuilder(decisionInstanceTemplate)
             .query(withTenantCheck(term(DecisionInstanceTemplate.KEY, decisionInstanceKey)))
             .source(sourceInclude(DECISION_ID, STATE));
 
-    List<DRDDataEntryDto> results = new ArrayList<>();
+    final List<DRDDataEntryDto> results = new ArrayList<>();
     richOpenSearchClient
         .doc()
         .scrollWith(
@@ -135,7 +152,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
                     .filter(hit -> hit.source() != null)
                     .forEach(
                         hit -> {
-                          var map = hit.source();
+                          final var map = hit.source();
                           results.add(
                               new DRDDataEntryDto(
                                   hit.id(),
@@ -145,13 +162,45 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
     return results.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId));
   }
 
+  @Override
+  public Tuple<String, String> getCalledDecisionInstanceAndDefinitionByFlowNodeInstanceId(
+      final String flowNodeInstanceId) {
+    final String[] calledDecisionInstanceId = {null};
+    final String[] calledDecisionDefinitionName = {null};
+    findCalledDecisionInstance(
+        flowNodeInstanceId,
+        hit -> {
+          final var source = hit.source();
+          final var rootDecisionDefId = source.getRootDecisionDefinitionId();
+          final var decisionDefId = source.getDecisionDefinitionId();
+          if (rootDecisionDefId.equals(decisionDefId)) {
+            // this is our instance, we will show the link
+            calledDecisionInstanceId[0] = source.getId();
+            var decisionName = source.getDecisionName();
+            if (decisionName == null) {
+              decisionName = source.getDecisionId();
+            }
+            calledDecisionDefinitionName[0] = decisionName;
+          } else {
+            // we will show only name of the root decision without the link
+            var decisionName = source.getRootDecisionName();
+            if (decisionName == null) {
+              decisionName = source.getRootDecisionId();
+            }
+            calledDecisionDefinitionName[0] = decisionName;
+          }
+        });
+
+    return Tuple.of(calledDecisionInstanceId[0], calledDecisionDefinitionName[0]);
+  }
+
   private List<DecisionInstanceEntity> queryDecisionInstancesEntities(
       final DecisionInstanceListRequestDto request, final DecisionInstanceListResponseDto result) {
-    var query = createRequestQuery(request.getQuery());
+    final var query = createRequestQuery(request.getQuery());
 
-    logger.debug("Decision instance search request: \n{}", query.toString());
+    logger.debug("Decision instance search request: \n{}", query);
 
-    var searchRequest =
+    final var searchRequest =
         searchRequestBuilder(decisionInstanceTemplate)
             .query(query)
             .source(sourceExclude(RESULT, EVALUATED_INPUTS, EVALUATED_OUTPUTS));
@@ -161,7 +210,8 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
     logger.debug(
         "Search request will search in: \n{}", decisionInstanceTemplate.getFullQualifiedName());
 
-    var response = richOpenSearchClient.doc().search(searchRequest, DecisionInstanceEntity.class);
+    final var response =
+        richOpenSearchClient.doc().search(searchRequest, DecisionInstanceEntity.class);
     result.setTotalCount(response.hits().total().value());
 
     final List<DecisionInstanceEntity> decisionInstanceEntities =
@@ -178,7 +228,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
 
   private Query createRequestQuery(
       final DecisionInstanceListQueryDto decisionInstanceListQueryDto) {
-    var query =
+    final var query =
         withTenantCheck(
             and(
                 createEvaluatedFailedQuery(decisionInstanceListQueryDto),
@@ -191,7 +241,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
     return query == null ? matchAll() : query;
   }
 
-  private Query createTenantIdQuery(DecisionInstanceListQueryDto query) {
+  private Query createTenantIdQuery(final DecisionInstanceListQueryDto query) {
     if (query.getTenantId() != null) {
       return term(DecisionInstanceTemplate.TENANT_ID, query.getTenantId());
     }
@@ -200,7 +250,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
 
   private Query createReadPermissionQuery() {
     if (permissionsService == null) return null;
-    var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
+    final var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
     if (allowed == null) return null;
     return allowed.isAll() ? matchAll() : stringTerms(DecisionIndex.DECISION_ID, allowed.getIds());
   }
@@ -209,7 +259,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
       final DecisionInstanceListQueryDto decisionInstanceListQueryDto) {
     if (decisionInstanceListQueryDto.getEvaluationDateAfter() != null
         || decisionInstanceListQueryDto.getEvaluationDateBefore() != null) {
-      var query =
+      final var query =
           RangeQuery.of(
               q -> {
                 q.field(EVALUATION_DATE);
@@ -268,14 +318,14 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
   }
 
   private void applySorting(
-      SearchRequest.Builder searchRequest, DecisionInstanceListRequestDto request) {
-    String sortBy = getSortBy(request);
+      final SearchRequest.Builder searchRequest, final DecisionInstanceListRequestDto request) {
+    final String sortBy = getSortBy(request);
 
     final boolean directSorting =
         request.getSearchAfter() != null || request.getSearchBefore() == null;
     if (request.getSorting() != null) {
-      SortOptions sort1;
-      SortOrder sort1DirectOrder =
+      final SortOptions sort1;
+      final SortOrder sort1DirectOrder =
           request.getSorting().getSortOrder().equalsIgnoreCase("desc")
               ? SortOrder.Desc
               : SortOrder.Asc;
@@ -287,9 +337,9 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
       searchRequest.sort(sort1);
     }
 
-    SortOptions sort2;
-    SortOptions sort3;
-    Object[] querySearchAfter;
+    final SortOptions sort2;
+    final SortOptions sort3;
+    final Object[] querySearchAfter;
     if (directSorting) { // this sorting is also the default one for 1st page
       sort2 = sortOptions(KEY, SortOrder.Asc);
       sort3 = sortOptions(EXECUTION_INDEX, SortOrder.Asc);
@@ -310,16 +360,43 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
   private String getSortBy(final DecisionInstanceListRequestDto request) {
     if (request.getSorting() != null) {
       String sortBy = request.getSorting().getSortBy();
-      if (sortBy.equals(DecisionInstanceTemplate.ID)) {
-        // we sort by id as numbers, not as strings
-        sortBy = KEY;
-      } else if (sortBy.equals(DecisionInstanceListRequestDto.SORT_BY_TENANT_ID)) {
-        sortBy = TENANT_ID;
-      } else if (sortBy.equals(SORT_BY_PROCESS_INSTANCE_ID)) {
-        sortBy = PROCESS_INSTANCE_KEY;
-      }
+      sortBy =
+          switch (sortBy) {
+            case DecisionInstanceTemplate.ID ->
+                // we sort by id as numbers, not as strings
+                KEY;
+            case DecisionInstanceListRequestDto.SORT_BY_TENANT_ID -> TENANT_ID;
+            case SORT_BY_PROCESS_INSTANCE_ID -> PROCESS_INSTANCE_KEY;
+            default -> sortBy;
+          };
       return sortBy;
     }
     return null;
+  }
+
+  private void findCalledDecisionInstance(
+      final String flowNodeInstanceId,
+      final Consumer<Hit<DecisionInstanceEntity>> decisionInstanceConsumer) {
+
+    final var searchRequest =
+        searchRequestBuilder(decisionInstanceTemplate.getAlias())
+            .query(withTenantCheck(term(ELEMENT_INSTANCE_KEY, flowNodeInstanceId)))
+            .source(
+                sourceInclude(
+                    ROOT_DECISION_DEFINITION_ID,
+                    ROOT_DECISION_NAME,
+                    ROOT_DECISION_ID,
+                    DECISION_DEFINITION_ID,
+                    DECISION_NAME,
+                    DecisionIndex.DECISION_ID))
+            .sort(
+                List.of(
+                    sortOptions(EVALUATION_DATE, SortOrder.Desc),
+                    sortOptions(EXECUTION_INDEX, SortOrder.Desc)));
+    final var response =
+        richOpenSearchClient.doc().search(searchRequest, DecisionInstanceEntity.class);
+    if (response.hits().total().value() >= 1) {
+      decisionInstanceConsumer.accept(response.hits().hits().get(0));
+    }
   }
 }

@@ -1,7 +1,7 @@
 /*
  * Copyright Camunda Services GmbH
  *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
+ * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE, YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
  * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
  *
  * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
@@ -16,74 +16,78 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
-import static org.elasticsearch.index.query.QueryBuilders.*;
+import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.UserTaskEntity;
+import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.UserTaskTemplate;
+import io.camunda.operate.schema.templates.EventTemplate;
+import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.webapp.reader.UserTaskReader;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Conditional(ElasticsearchCondition.class)
 @Component
-public class ElasticsearchUserTaskReader extends AbstractReader implements UserTaskReader {
+@Conditional(ElasticsearchCondition.class)
+public class EventReader implements io.camunda.operate.webapp.reader.EventReader {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUserTaskReader.class);
+  final EventTemplate eventTemplate;
 
-  private final UserTaskTemplate userTaskTemplate;
+  private final TenantAwareElasticsearchClient tenantAwareClient;
 
-  public ElasticsearchUserTaskReader(final UserTaskTemplate userTaskTemplate) {
-    this.userTaskTemplate = userTaskTemplate;
+  private final ObjectMapper objectMapper;
+
+  public EventReader(
+      final EventTemplate eventTemplate,
+      final TenantAwareElasticsearchClient tenantAwareClient,
+      final ObjectMapper objectMapper) {
+    this.eventTemplate = eventTemplate;
+    this.tenantAwareClient = tenantAwareClient;
+    this.objectMapper = objectMapper;
   }
 
   @Override
-  public List<UserTaskEntity> getUserTasks() {
-    logger.debug("retrieve all user tasks");
+  public EventEntity getEventEntityByFlowNodeInstanceId(final String flowNodeInstanceId) {
+    final EventEntity eventEntity;
+    // request corresponding event and build cumulative metadata
+    final QueryBuilder query =
+        constantScoreQuery(termQuery(EventTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId));
+    final SearchRequest request =
+        ElasticsearchUtil.createSearchRequest(eventTemplate)
+            .source(new SearchSourceBuilder().query(query).sort(EventTemplate.ID));
     try {
-      final QueryBuilder query = matchAllQuery();
-      final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
-              .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
-      return scroll(searchRequest, UserTaskEntity.class);
-    } catch (final IOException e) {
-      final String message =
-          String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public Optional<UserTaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
-    logger.debug("Get UserTask by flowNodeInstanceKey {}", flowNodeInstanceKey);
-    try {
-      final QueryBuilder query =
-          termQuery(UserTaskTemplate.ELEMENT_INSTANCE_KEY, flowNodeInstanceKey);
-      final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
-              .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
-      final var hits = tenantAwareClient.search(searchRequest).getHits();
-      if (hits.getTotalHits().value == 1) {
-        return Optional.of(
-            ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, UserTaskEntity.class)
-                .get(0));
+      final SearchResponse response = tenantAwareClient.search(request);
+      if (response.getHits().getTotalHits().value >= 1) {
+        // take last event
+        eventEntity =
+            fromSearchHit(
+                response
+                    .getHits()
+                    .getHits()[(int) (response.getHits().getTotalHits().value - 1)]
+                    .getSourceAsString(),
+                objectMapper,
+                EventEntity.class);
+      } else {
+        throw new NotFoundException(
+            String.format(
+                "Could not find flow node instance event with id '%s'.", flowNodeInstanceId));
       }
     } catch (final IOException e) {
       final String message =
-          String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
+          String.format(
+              "Exception occurred, while obtaining metadata for flow node instance: %s",
+              e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
-    return Optional.empty();
+    return eventEntity;
   }
 }

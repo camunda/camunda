@@ -23,11 +23,15 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.UserTaskTemplate;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.util.Tuple;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -36,11 +40,29 @@ import org.springframework.stereotype.Component;
 public class UserTaskZeebeRecordProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(UserTaskZeebeRecordProcessor.class);
-  private static final Set<String> CREATE_STATES = Set.of(UserTaskIntent.CREATED.name());
-  private static final Set<String> UPDATE_STATES =
-      Set.of(UserTaskIntent.ASSIGNED.name(), UserTaskIntent.MIGRATED.name());
+  private static final Set<Intent> CREATE_STATES = Set.of(UserTaskIntent.CREATED);
+  private static final Set<Intent> UPDATE_STATES =
+      Set.of(
+          UserTaskIntent.ASSIGNED,
+          UserTaskIntent.MIGRATED,
+          UserTaskIntent.UPDATED,
+          UserTaskIntent.COMPLETED,
+          UserTaskIntent.CANCELED);
   private final UserTaskTemplate userTaskTemplate;
   private final ObjectMapper objectMapper;
+
+  private final Map<Intent, Function<UserTaskEntity, Map<String, Object>>> intentToUpdateFields =
+      Map.of(
+          UserTaskIntent.UPDATED,
+          this::getUpdateFields,
+          UserTaskIntent.MIGRATED,
+          this::getMigratedFields,
+          UserTaskIntent.ASSIGNED,
+          this::getAssignedFields,
+          UserTaskIntent.COMPLETED,
+          this::getCompletedFields,
+          UserTaskIntent.CANCELED,
+          this::getCanceledFields);
 
   public UserTaskZeebeRecordProcessor(
       final UserTaskTemplate userTaskTemplate, final ObjectMapper objectMapper) {
@@ -48,30 +70,65 @@ public class UserTaskZeebeRecordProcessor {
     this.objectMapper = objectMapper;
   }
 
-  private static Map<String, Object> getUpdateFieldsMapByIntent(
-      final String intent,
-      final UserTaskRecordValue userTaskValue,
-      final UserTaskEntity userTaskEntity) {
-    final Map<String, Object> updateFields = new HashMap<>();
-    if (intent.equals(UserTaskIntent.ASSIGNED.name())) {
-      updateFields.put(UserTaskTemplate.ASSIGNEE, userTaskValue.getAssignee());
+  private Map<String, Object> getCanceledFields(final UserTaskEntity userTaskEntity) {
+    return Map.of(UserTaskTemplate.ACTION, userTaskEntity.getAction());
+  }
+
+  private Map<String, Object> getCompletedFields(final UserTaskEntity userTaskEntity) {
+    return Map.of(
+        UserTaskTemplate.VARIABLES,
+        userTaskEntity.getVariables(),
+        UserTaskTemplate.ACTION,
+        userTaskEntity.getAction());
+  }
+
+  private Map<String, Object> getAssignedFields(final UserTaskEntity userTaskEntity) {
+    return Map.of(
+        UserTaskTemplate.ASSIGNEE,
+        userTaskEntity.getAssignee(),
+        UserTaskTemplate.ACTION,
+        userTaskEntity.getAction());
+  }
+
+  private Map<String, Object> getUpdateFields(final UserTaskEntity userTaskEntity) {
+    final Map<String, Tuple<String, Supplier<Object>>> changedAttributesToUserEntitySupplier =
+        Map.of(
+            "candidateUserList",
+            new Tuple<>(UserTaskTemplate.CANDIDATE_USERS, userTaskEntity::getCandidateUsers),
+            "candidateGroupList",
+            new Tuple<>(UserTaskTemplate.CANDIDATE_GROUPS, userTaskEntity::getCandidateGroups),
+            "dueDate",
+            new Tuple<>(UserTaskTemplate.DUE_DATE, userTaskEntity::getDueDate),
+            "followUpDate",
+            new Tuple<>(UserTaskTemplate.FOLLOW_UP_DATE, userTaskEntity::getFollowUpDate));
+
+    final var changedAttributes = userTaskEntity.getChangedAttributes();
+    final var map = new HashMap<String, Object>();
+    map.put(UserTaskTemplate.CHANGED_ATTRIBUTES, changedAttributes);
+    map.put(UserTaskTemplate.ACTION, userTaskEntity.getAction());
+    for (final var changedAttribute : changedAttributes) {
+      final var fieldAndValueSupplier = changedAttributesToUserEntitySupplier.get(changedAttribute);
+      map.put(fieldAndValueSupplier.getLeft(), fieldAndValueSupplier.getRight().get());
     }
-    if (intent.equals(UserTaskIntent.MIGRATED.name())) {
-      updateFields.put(UserTaskTemplate.BPMN_PROCESS_ID, userTaskEntity.getBpmnProcessId());
-      updateFields.put(
-          UserTaskTemplate.PROCESS_DEFINITION_VERSION,
-          userTaskEntity.getProcessDefinitionVersion());
-      updateFields.put(
-          UserTaskTemplate.PROCESS_DEFINITION_KEY, userTaskEntity.getProcessDefinitionKey());
-      updateFields.put(UserTaskTemplate.ELEMENT_ID, userTaskEntity.getElementId());
-    }
-    return updateFields;
+    return map;
+  }
+
+  private Map<String, Object> getMigratedFields(final UserTaskEntity userTaskEntity) {
+    return Map.of(
+        UserTaskTemplate.BPMN_PROCESS_ID,
+        userTaskEntity.getBpmnProcessId(),
+        UserTaskTemplate.PROCESS_DEFINITION_VERSION,
+        userTaskEntity.getProcessDefinitionVersion(),
+        UserTaskTemplate.PROCESS_DEFINITION_KEY,
+        userTaskEntity.getProcessDefinitionKey(),
+        UserTaskTemplate.ELEMENT_ID,
+        userTaskEntity.getElementId());
   }
 
   public void processUserTaskRecord(
       final BatchRequest batchRequest, final Record<UserTaskRecordValue> userTaskRecord)
       throws PersistenceException {
-    final String intent = userTaskRecord.getIntent().name();
+    final Intent intent = userTaskRecord.getIntent();
     logger.info("Intent is: {}", intent);
     final var userTaskValue = userTaskRecord.getValue();
     final UserTaskEntity userTaskEntity;
@@ -84,9 +141,8 @@ public class UserTaskZeebeRecordProcessor {
     if (CREATE_STATES.contains(intent)) {
       persistUserTask(userTaskEntity, batchRequest);
     } else if (UPDATE_STATES.contains(intent)) {
-      final Map<String, Object> updateFields =
-          getUpdateFieldsMapByIntent(intent, userTaskValue, userTaskEntity);
-      updateUserTask(userTaskEntity, updateFields, batchRequest);
+      updateUserTask(
+          userTaskEntity, intentToUpdateFields.get(intent).apply(userTaskEntity), batchRequest);
     } else {
       logger.debug("UserTask record with intent {} is ignored", intent);
     }
@@ -118,22 +174,24 @@ public class UserTaskZeebeRecordProcessor {
     return new UserTaskEntity()
         .setId(String.valueOf(userTaskRecordValue.getUserTaskKey()))
         .setKey(userTaskRecordValue.getUserTaskKey())
+        .setUserTaskKey(userTaskRecordValue.getUserTaskKey())
         .setPartitionId(userTaskRecord.getPartitionId())
         .setBpmnProcessId(userTaskRecordValue.getBpmnProcessId())
         .setTenantId(userTaskRecordValue.getTenantId())
         .setProcessInstanceKey(userTaskRecordValue.getProcessInstanceKey())
-        .setBpmnProcessId(userTaskRecordValue.getBpmnProcessId())
         .setAssignee(userTaskRecordValue.getAssignee())
-        .setCandidateGroups(List.of(userTaskRecordValue.getCandidateGroups()))
-        .setCandidateUsers(List.of(userTaskRecordValue.getCandidateUsers()))
+        .setCandidateGroups(userTaskRecordValue.getCandidateGroupsList())
+        .setCandidateUsers(userTaskRecordValue.getCandidateUsersList())
         .setDueDate(toDateOrNull(userTaskRecordValue.getDueDate()))
+        .setFollowUpDate(toDateOrNull(userTaskRecordValue.getFollowUpDate()))
         .setElementId(userTaskRecordValue.getElementId())
         .setElementInstanceKey(userTaskRecordValue.getElementInstanceKey())
         .setProcessDefinitionKey(userTaskRecordValue.getProcessDefinitionKey())
-        .setUserTaskKey(userTaskRecordValue.getUserTaskKey())
+        .setProcessDefinitionVersion(userTaskRecordValue.getProcessDefinitionVersion())
         .setVariables(objectMapper.writeValueAsString(userTaskRecordValue.getVariables()))
-        .setFollowUpDate(toDateOrNull(userTaskRecordValue.getFollowUpDate()))
-        .setFormKey(userTaskRecordValue.getFormKey());
+        .setFormKey(userTaskRecordValue.getFormKey())
+        .setChangedAttributes(userTaskRecordValue.getChangedAttributes())
+        .setAction(userTaskRecordValue.getAction());
   }
 
   private OffsetDateTime toDateOrNull(final String dateString) {

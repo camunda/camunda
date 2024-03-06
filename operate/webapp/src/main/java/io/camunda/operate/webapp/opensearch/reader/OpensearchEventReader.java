@@ -1,7 +1,7 @@
 /*
  * Copyright Camunda Services GmbH
  *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
+ * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE, YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
  * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
  *
  * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
@@ -16,47 +16,44 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.UserTaskEntity;
-import io.camunda.operate.schema.templates.UserTaskTemplate;
-import io.camunda.operate.webapp.reader.UserTaskReader;
-import java.util.List;
-import java.util.Optional;
+import io.camunda.operate.entities.EventEntity;
+import io.camunda.operate.schema.templates.EventTemplate;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.webapp.reader.EventReader;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchUserTaskReader extends OpensearchAbstractReader implements UserTaskReader {
+public class OpensearchEventReader implements EventReader {
 
-  private final UserTaskTemplate userTaskTemplate;
+  private final EventTemplate eventTemplate;
 
-  public OpensearchUserTaskReader(final UserTaskTemplate userTaskTemplate) {
-    this.userTaskTemplate = userTaskTemplate;
+  private final RichOpenSearchClient richOpenSearchClient;
+
+  public OpensearchEventReader(
+      final EventTemplate eventTemplate, final RichOpenSearchClient richOpenSearchClient) {
+    this.eventTemplate = eventTemplate;
+    this.richOpenSearchClient = richOpenSearchClient;
   }
 
   @Override
-  public List<UserTaskEntity> getUserTasks() {
+  public EventEntity getEventEntityByFlowNodeInstanceId(final String flowNodeInstanceId) {
     final var request =
-        searchRequestBuilder(userTaskTemplate.getAlias()).query(withTenantCheck(matchAll()));
-    return richOpenSearchClient.doc().searchValues(request, UserTaskEntity.class);
-  }
-
-  @Override
-  public Optional<UserTaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
-    final var request =
-        searchRequestBuilder(userTaskTemplate.getAlias())
-            .query(
-                withTenantCheck(term(UserTaskTemplate.ELEMENT_INSTANCE_KEY, flowNodeInstanceKey)));
-    final var hits = richOpenSearchClient.doc().search(request, UserTaskEntity.class).hits();
-    if (hits.total().value() == 1) {
-      return Optional.of(hits.hits().get(0).source());
+        searchRequestBuilder(eventTemplate.getAlias())
+            .query(withTenantCheck(term(EventTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId)))
+            .sort(sortOptions(EventTemplate.ID, SortOrder.Asc));
+    final var response = richOpenSearchClient.doc().search(request, EventEntity.class);
+    if (response.hits().total().value() >= 1) {
+      return response.hits().hits().get(0).source();
     }
-    return Optional.empty();
+    return null;
   }
 }

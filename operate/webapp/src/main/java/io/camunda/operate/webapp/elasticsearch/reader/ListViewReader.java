@@ -16,6 +16,9 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
+import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.OperationEntity;
@@ -26,6 +29,7 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.Tuple;
 import io.camunda.operate.webapp.elasticsearch.QueryHelper;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -37,9 +41,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -53,8 +60,6 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ListViewReader implements io.camunda.operate.webapp.reader.ListViewReader {
-
-  private static final String WILD_CARD = "*";
 
   private static final Logger logger = LoggerFactory.getLogger(ListViewReader.class);
 
@@ -70,6 +75,8 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
 
   @Autowired private DateTimeFormatter dateTimeFormatter;
 
+  @Autowired private ListViewTemplate listViewTemplate;
+
   @Autowired(required = false)
   private PermissionsService permissionsService;
 
@@ -80,12 +87,13 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
    * @return
    */
   @Override
-  public ListViewResponseDto queryProcessInstances(ListViewRequestDto processInstanceRequest) {
-    ListViewResponseDto result = new ListViewResponseDto();
+  public ListViewResponseDto queryProcessInstances(
+      final ListViewRequestDto processInstanceRequest) {
+    final ListViewResponseDto result = new ListViewResponseDto();
 
-    List<ProcessInstanceForListViewEntity> processInstanceEntities =
+    final List<ProcessInstanceForListViewEntity> processInstanceEntities =
         queryListView(processInstanceRequest, result);
-    List<Long> processInstanceKeys =
+    final List<Long> processInstanceKeys =
         CollectionUtil.map(
             processInstanceEntities,
             processInstanceEntity -> Long.valueOf(processInstanceEntity.getId()));
@@ -102,7 +110,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
 
   @Override
   public List<ProcessInstanceForListViewEntity> queryListView(
-      ListViewRequestDto processInstanceRequest, ListViewResponseDto result) {
+      final ListViewRequestDto processInstanceRequest, final ListViewResponseDto result) {
 
     final QueryBuilder query = queryHelper.createRequestQuery(processInstanceRequest.getQuery());
 
@@ -112,7 +120,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
 
     applySorting(searchSourceBuilder, processInstanceRequest);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         queryHelper
             .createSearchRequest(processInstanceRequest.getQuery())
             .source(searchSourceBuilder);
@@ -120,14 +128,14 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
     logger.debug("Search request will search in: \n{}", searchRequest.indices());
 
     try {
-      SearchResponse response = tenantAwareClient.search(searchRequest);
+      final SearchResponse response = tenantAwareClient.search(searchRequest);
       result.setTotalCount(response.getHits().getTotalHits().value);
 
-      List<ProcessInstanceForListViewEntity> processInstanceEntities =
+      final List<ProcessInstanceForListViewEntity> processInstanceEntities =
           ElasticsearchUtil.mapSearchHits(
               response.getHits().getHits(),
               (sh) -> {
-                ProcessInstanceForListViewEntity entity =
+                final ProcessInstanceForListViewEntity entity =
                     ElasticsearchUtil.fromSearchHit(
                         sh.getSourceAsString(),
                         objectMapper,
@@ -139,7 +147,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
         Collections.reverse(processInstanceEntities);
       }
       return processInstanceEntities;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining instances list: %s", e.getMessage());
       logger.error(message, e);
@@ -147,15 +155,35 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
     }
   }
 
-  private void applySorting(SearchSourceBuilder searchSourceBuilder, ListViewRequestDto request) {
+  @Override
+  public Tuple<String, String> getCalledProcessInstanceIdAndNameByFlowNodeInstanceId(
+      final String flowNodeInstanceId) {
+    final String[] calledProcessInstanceId = {null};
+    final String[] calledProcessDefinitionName = {null};
+    findCalledProcessInstance(
+        flowNodeInstanceId,
+        sh -> {
+          calledProcessInstanceId[0] = sh.getId();
+          final Map<String, Object> source = sh.getSourceAsMap();
+          String processName = (String) source.get(ListViewTemplate.PROCESS_NAME);
+          if (processName == null) {
+            processName = (String) source.get(ListViewTemplate.BPMN_PROCESS_ID);
+          }
+          calledProcessDefinitionName[0] = processName;
+        });
+    return Tuple.of(calledProcessInstanceId[0], calledProcessDefinitionName[0]);
+  }
 
-    String sortBy = getSortBy(request);
+  private void applySorting(
+      final SearchSourceBuilder searchSourceBuilder, final ListViewRequestDto request) {
+
+    final String sortBy = getSortBy(request);
 
     final boolean directSorting =
         request.getSearchAfter() != null || request.getSearchBefore() == null;
     if (request.getSorting() != null) {
-      SortBuilder sort1;
-      SortOrder sort1DirectOrder = SortOrder.fromString(request.getSorting().getSortOrder());
+      final SortBuilder sort1;
+      final SortOrder sort1DirectOrder = SortOrder.fromString(request.getSorting().getSortOrder());
       if (directSorting) {
         sort1 = SortBuilders.fieldSort(sortBy).order(sort1DirectOrder).missing("_last");
       } else {
@@ -165,8 +193,8 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
       searchSourceBuilder.sort(sort1);
     }
 
-    SortBuilder sort2;
-    Object[] querySearchAfter;
+    final SortBuilder sort2;
+    final Object[] querySearchAfter;
     if (directSorting) { // this sorting is also the default one for 1st page
       sort2 = SortBuilders.fieldSort(ListViewTemplate.KEY).order(SortOrder.ASC);
       querySearchAfter = request.getSearchAfter(objectMapper); // may be null
@@ -204,6 +232,34 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
       return SortOrder.DESC;
     } else {
       return SortOrder.ASC;
+    }
+  }
+
+  private void findCalledProcessInstance(
+      final String flowNodeInstanceId, final Consumer<SearchHit> processInstanceConsumer) {
+    final TermQueryBuilder parentFlowNodeInstanceQ =
+        termQuery(PARENT_FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId);
+    final SearchRequest request =
+        ElasticsearchUtil.createSearchRequest(listViewTemplate)
+            .source(
+                new SearchSourceBuilder()
+                    .query(parentFlowNodeInstanceQ)
+                    .fetchSource(
+                        new String[] {
+                          ListViewTemplate.PROCESS_NAME, ListViewTemplate.BPMN_PROCESS_ID
+                        },
+                        null));
+    try {
+      final SearchResponse response = tenantAwareClient.search(request);
+      if (response.getHits().getTotalHits().value >= 1) {
+        processInstanceConsumer.accept(response.getHits().getAt(0));
+      }
+    } catch (final IOException e) {
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining parent process instance id for flow node instance: %s",
+              e.getMessage());
+      throw new OperateRuntimeException(message, e);
     }
   }
 }

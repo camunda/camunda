@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.webapp.rest.dto.metadata.BusinessRuleTaskInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -89,15 +90,21 @@ public class DMNFlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
       final String decision2Name, final String elementId, final Long processInstanceKey)
       throws Exception {
     // when
-    FlowNodeMetadataDto flowNodeMetadata =
+    final FlowNodeMetadataDto flowNodeMetadata =
         tester.getFlowNodeMetadataFromRest(
             String.valueOf(processInstanceKey), elementId, null, null);
 
     // then
     assertThat(flowNodeMetadata).isNotNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
-    assertThat(flowNodeMetadata.getInstanceMetadata().getCalledDecisionDefinitionName()).isNull();
-    assertThat(flowNodeMetadata.getInstanceMetadata().getCalledDecisionInstanceId()).isNull();
+    assertThat(
+            ((BusinessRuleTaskInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata())
+                .getCalledDecisionDefinitionName())
+        .isNull();
+    assertThat(
+            ((BusinessRuleTaskInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata())
+                .getCalledDecisionInstanceId())
+        .isNull();
     assertThat(flowNodeMetadata.getIncident()).isNotNull();
     assertThat(flowNodeMetadata.getIncident().getRootCauseDecision()).isNull();
     assertThat(flowNodeMetadata.getIncident().getErrorType().getId())
@@ -111,16 +118,21 @@ public class DMNFlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
       final String decision1Name)
       throws Exception {
     // when
-    FlowNodeMetadataDto flowNodeMetadata =
+    final FlowNodeMetadataDto flowNodeMetadata =
         tester.getFlowNodeMetadataFromRest(
             String.valueOf(processInstanceKey), elementId, null, null);
 
     // then
     assertThat(flowNodeMetadata).isNotNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
-    assertThat(flowNodeMetadata.getInstanceMetadata().getCalledDecisionDefinitionName())
+    assertThat(
+            ((BusinessRuleTaskInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata())
+                .getCalledDecisionDefinitionName())
         .isEqualTo(decision2Name);
-    assertThat(flowNodeMetadata.getInstanceMetadata().getCalledDecisionInstanceId()).isNull();
+    assertThat(
+            ((BusinessRuleTaskInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata())
+                .getCalledDecisionInstanceId())
+        .isNull();
     assertThat(flowNodeMetadata.getIncident()).isNotNull();
     assertThat(flowNodeMetadata.getIncident().getRootCauseDecision()).isNotNull();
     assertThat(flowNodeMetadata.getIncident().getRootCauseDecision().getDecisionName())
@@ -136,17 +148,25 @@ public class DMNFlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
       final String decision2Name, final String elementId, final Long processInstanceKey)
       throws Exception {
     // when
-    FlowNodeMetadataDto flowNodeMetadata =
+    final FlowNodeMetadataDto flowNodeMetadata =
         tester.getFlowNodeMetadataFromRest(
             String.valueOf(processInstanceKey), elementId, null, null);
 
     // then
     assertThat(flowNodeMetadata).isNotNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
-    assertThat(flowNodeMetadata.getInstanceMetadata().getCalledDecisionDefinitionName())
+    assertThat(
+            ((BusinessRuleTaskInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata())
+                .getCalledDecisionDefinitionName())
         .isEqualTo(decision2Name);
-    assertThat(flowNodeMetadata.getInstanceMetadata().getCalledDecisionInstanceId()).isNotNull();
-    assertThat(flowNodeMetadata.getInstanceMetadata().getCalledDecisionInstanceId()).endsWith("-2");
+    assertThat(
+            ((BusinessRuleTaskInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata())
+                .getCalledDecisionInstanceId())
+        .isNotNull();
+    assertThat(
+            ((BusinessRuleTaskInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata())
+                .getCalledDecisionInstanceId())
+        .endsWith("-2");
     assertThat(flowNodeMetadata.getIncident()).isNull();
   }
 }

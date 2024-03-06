@@ -38,7 +38,7 @@ public class FlowNodeMetadataDto {
 
   private List<FlowNodeInstanceBreadcrumbEntryDto> breadcrumb = new ArrayList<>();
 
-  private FlowNodeInstanceMetadataDto instanceMetadata;
+  private FlowNodeInstanceMetadata instanceMetadata;
 
   private Long incidentCount;
 
@@ -90,12 +90,11 @@ public class FlowNodeMetadataDto {
     return this;
   }
 
-  public FlowNodeInstanceMetadataDto getInstanceMetadata() {
+  public FlowNodeInstanceMetadata getInstanceMetadata() {
     return instanceMetadata;
   }
 
-  public FlowNodeMetadataDto setInstanceMetadata(
-      final FlowNodeInstanceMetadataDto instanceMetadata) {
+  public FlowNodeMetadataDto setInstanceMetadata(final FlowNodeInstanceMetadata instanceMetadata) {
     this.instanceMetadata = instanceMetadata;
     return this;
   }

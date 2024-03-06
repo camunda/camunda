@@ -17,6 +17,7 @@
 package io.camunda.operate.webapp.reader;
 
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.util.Tuple;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import java.util.List;
@@ -26,4 +27,7 @@ public interface ListViewReader {
 
   List<ProcessInstanceForListViewEntity> queryListView(
       ListViewRequestDto processInstanceRequest, ListViewResponseDto result);
+
+  Tuple<String, String> getCalledProcessInstanceIdAndNameByFlowNodeInstanceId(
+      final String flowNodeInstanceId);
 }
