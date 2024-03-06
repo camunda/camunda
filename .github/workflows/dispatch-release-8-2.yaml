@@ -4,13 +4,13 @@
 name: Repo dispatch Release 8.2
 
 on:
-  repository_dispatch: 
+  repository_dispatch:
     types: [trigger_release_8_2]
 
 jobs:
   run-release:
     name: "Release ${{ github.event.client_payload.releaseVersion }}"
-    uses: camunda/zeebe/.github/workflows/release.yml@stable/8.2
+    uses: camunda/zeebe/.github/workflows/zeebe-release.yml@stable/8.2
     secrets: inherit
     with:
       releaseVersion: ${{ github.event.client_payload.releaseVersion }}
