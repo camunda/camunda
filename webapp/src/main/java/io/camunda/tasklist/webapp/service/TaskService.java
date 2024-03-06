@@ -99,7 +99,7 @@ public class TaskService {
     if (!currentUser.isApiUser()) {
       query.setImplementation(TaskImplementation.JOB_WORKER);
     }
-    
+
     final List<TaskSearchView> tasks = taskStore.getTasks(query.toTaskQuery());
     final Set<String> fieldNames =
         fetchFullValuesFromDB
