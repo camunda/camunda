@@ -70,3 +70,16 @@ it('should format tooltip durations', () => {
     })
   ).toContain('formatted ' + durationInMs);
 });
+
+it('should use logaritmic scale for large values', () => {
+  const largeData = [
+    {key: 1, value: 101, outlier: false},
+    {key: 2, value: 1, outlier: true},
+  ];
+  shallow(<DurationChart data={largeData} colors={[]} isLogharitmic />);
+
+  runAllEffects();
+
+  const chartConfiguration = ChartMock.mock.calls[0]?.[1] as any;
+  expect(chartConfiguration.options.scales.y.type).toBe('logarithmic');
+});

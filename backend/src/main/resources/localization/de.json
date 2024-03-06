@@ -1070,6 +1070,7 @@
     "editAccess": "Zugriff bearbeiten",
     "id": "ID",
     "instanceIds": "Instanz IDs",
+    "processInstanceIds": "Prozessinstanz IDs",
     "seeDocs": "Siehe Dokumentation",
     "undefined": "nicht definiert",
     "null": "null",

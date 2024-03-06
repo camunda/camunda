@@ -8,7 +8,12 @@
 import {Modal, DurationChart} from 'components';
 import {t} from 'translation';
 
-import {AnalysisProcessDefinitionParameters, OutlierNode, getOutlierSummary} from './service';
+import {
+  AnalysisProcessDefinitionParameters,
+  OutlierNode,
+  shouldUseLogharitmicScale,
+  getOutlierSummary,
+} from './service';
 import VariablesTable from './VariablesTable';
 
 import './OutlierDetailsModal.scss';
@@ -18,6 +23,8 @@ interface OutlierDetailsModalProps {
   onClose: () => void;
   config: AnalysisProcessDefinitionParameters;
 }
+
+const MIN_OUTLIER_TO_MAX_NONOUTLIER_RATIO = 100;
 
 export default function OutlierDetailsModal({
   selectedOutlierNode,
@@ -39,6 +46,7 @@ export default function OutlierDetailsModal({
         <DurationChart
           data={data}
           colors={data.map(({outlier}) => (outlier ? '#1991c8' : '#eeeeee'))}
+          isLogharitmic={shouldUseLogharitmicScale(data, MIN_OUTLIER_TO_MAX_NONOUTLIER_RATIO)}
         />
         <h2>{t('analysis.task.detailsModal.variablesTable')}</h2>
         <VariablesTable config={config} selectedOutlierNode={selectedOutlierNode} />
