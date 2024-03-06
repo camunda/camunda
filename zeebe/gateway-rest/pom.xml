@@ -231,7 +231,7 @@
               <generatorName>spring</generatorName>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.gateway.protocol.rest</modelPackage>
-              <schemaMappings>ProblemDetail=org.springframework.http.ProblemDetail</schemaMappings>
+              <typeMappings>OffsetDateTime=String</typeMappings>
               <generateApis>false</generateApis>
               <generateSupportingFiles>false</generateSupportingFiles>
               <generateModels>true</generateModels>

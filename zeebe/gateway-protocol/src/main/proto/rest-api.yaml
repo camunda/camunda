@@ -324,10 +324,12 @@ components:
       properties:
         dueDate:
           type: string
+          format: date-time
           description: The due date of the task. Reset by providing an empty String.
           nullable: true
         followUpDate:
           type: string
+          format: date-time
           description: The follow-up date of the task. Reset by providing an empty String.
           nullable: true
         candidateUsers:
