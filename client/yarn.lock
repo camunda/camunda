@@ -191,14 +191,7 @@
   dependencies:
     "@babel/helper-plugin-utils" "^7.22.5"
 
-"@babel/runtime@^7.10.0", "@babel/runtime@^7.15.4", "@babel/runtime@^7.18.3", "@babel/runtime@^7.19.4", "@babel/runtime@^7.22.15", "@babel/runtime@^7.5.5", "@babel/runtime@^7.8.7", "@babel/runtime@^7.9.2":
-  version "7.23.2"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.23.2.tgz#062b0ac103261d68a966c4c7baf2ae3e62ec3885"
-  integrity sha512-mM8eg4yl5D6i3lu2QKPuPH4FArvJ8KhTofbE7jwMUv9KX5mBvwPAqnV3MlyBNqdp9RyRKP6Yck8TrfYrPvX3bg==
-  dependencies:
-    regenerator-runtime "^0.14.0"
-
-"@babel/runtime@^7.12.5":
+"@babel/runtime@^7.10.0", "@babel/runtime@^7.12.5", "@babel/runtime@^7.15.4", "@babel/runtime@^7.18.3", "@babel/runtime@^7.19.4", "@babel/runtime@^7.22.15", "@babel/runtime@^7.5.5", "@babel/runtime@^7.8.7", "@babel/runtime@^7.9.2":
   version "7.24.0"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.24.0.tgz#584c450063ffda59697021430cb47101b085951e"
   integrity sha512-Chk32uHMg6TnQdvw2e9IlqPpFX/6NLuK0Ys2PqLb7/gL5uFn9mXvK715FGLlOLQrcO4qIkNHkvPGktzzXexsFw==
@@ -256,15 +249,15 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.7.2":
-  version "1.7.2"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.7.2.tgz#e049f6a8f231e2bb29105717b27fa9615c2f8fb3"
-  integrity sha512-y0zE8AQNRRY5hv0BqSsD9/uD8o7KStl3i5VWjZtxZsASJhoSAO4rMUZ0B1i6CK/TkOgKmMtXP9acswjpFxSyrg==
+"@bpmn-io/form-js-carbon-styles@1.7.3":
+  version "1.7.3"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.7.3.tgz#8ad8d111b50b74f9c9889f65205f0aaec517f603"
+  integrity sha512-5W3zoa4VxY8eaKr4mLu/yRdugzhan8fTKsJGXfJR+iW0ErGdAo969rIxEbINsAKBqNiWxdipoWsEgvPxKbh/VQ==
 
-"@bpmn-io/form-js-viewer@1.7.2":
-  version "1.7.2"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.7.2.tgz#60abc2b19d569a28675d994908b79441df636a48"
-  integrity sha512-isHwUAgnjh+w/636r/mEkIOvlPlppWS+lj9XfuecUVAj7rMWSwKNU3tWsPEpLp2LR0yrKQv4n4S4p8zKDEN1jQ==
+"@bpmn-io/form-js-viewer@1.7.3":
+  version "1.7.3"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.7.3.tgz#08ccabd327debc9a154cbb11bbb99c32f1454ecd"
+  integrity sha512-/XEDHzZbxmYXAp10ClPQu8h/4CoYqPdUYkppD/fL+UXFTO9ZJFBMn2TGgJEwXZP3H6/m6fSFqPFuWnVudWkCYg==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
@@ -1318,14 +1311,7 @@
   dependencies:
     "@types/node" "*"
 
-"@types/node@*", "@types/node@>=12.12.47", "@types/node@>=13.7.0", "@types/node@^20.11.16":
-  version "20.11.24"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.11.24.tgz#cc207511104694e84e9fb17f9a0c4c42d4517792"
-  integrity sha512-Kza43ewS3xoLgCEpQrsT+xRo/EJej1y0kVYGiLFE1NEODXGzTfwiC6tXTLMQskn1X4/Rjlh0MQUvx9W+L9long==
-  dependencies:
-    undici-types "~5.26.4"
-
-"@types/node@20.11.25":
+"@types/node@*", "@types/node@20.11.25", "@types/node@>=12.12.47", "@types/node@>=13.7.0", "@types/node@^20.11.16":
   version "20.11.25"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-20.11.25.tgz#0f50d62f274e54dd7a49f7704cc16bfbcccaf49f"
   integrity sha512-TBHyJxk2b7HceLVGFcpAUjsa5zIdsPWlR6XHfyGzd0SFu+/NFgQgMAl96MSDZgQDvJAvV6BKsFOrt6zIL09JDw==
@@ -1337,17 +1323,10 @@
   resolved "https://registry.yarnpkg.com/@types/prop-types/-/prop-types-15.7.9.tgz#b6f785caa7ea1fe4414d9df42ee0ab67f23d8a6d"
   integrity sha512-n1yyPsugYNSmHgxDFjicaI2+gCNjsBck8UX9kuofAKlc0h1bL+20oSF72KeNaW2DUlesbEVCFgyV2dPGTiY42g==
 
-"@types/react-dom@18.2.20":
+"@types/react-dom@18.2.20", "@types/react-dom@^18.0.0":
   version "18.2.20"
   resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.2.20.tgz#cbdf7abb3cc2377980bb1294bc51375016a8320f"
   integrity sha512-HXN/biJY8nv20Cn9ZbCFq3liERd4CozVZmKbaiZ9KiKTrWqsP7eoGDO6OOGvJQwoVFuiXaiJ7nBBjiFFbRmQMQ==
-  dependencies:
-    "@types/react" "*"
-
-"@types/react-dom@^18.0.0":
-  version "18.2.19"
-  resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.2.19.tgz#b84b7c30c635a6c26c6a6dfbb599b2da9788be58"
-  integrity sha512-aZvQL6uUbIJpjZk4U8JZGbau9KDeAwMfmhyWorxgBkqDIEf6ROjRozcmPIicqsUwPUjbkDfHKgGee1Lq65APcA==
   dependencies:
     "@types/react" "*"
 
