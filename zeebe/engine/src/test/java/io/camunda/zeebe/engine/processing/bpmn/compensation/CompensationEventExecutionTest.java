@@ -870,6 +870,14 @@ public class CompensationEventExecutionTest {
         .containsSubsequence(
             tuple(CompensationSubscriptionIntent.TRIGGERED, "CompensationHandler"),
             tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
