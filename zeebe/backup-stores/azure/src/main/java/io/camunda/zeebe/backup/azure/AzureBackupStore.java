@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
@@ -67,6 +68,13 @@ public final class AzureBackupStore implements BackupStore {
     if (config.connectionString() != null) {
       return new BlobServiceClientBuilder()
           .connectionString(config.connectionString())
+          .buildClient();
+    } else if (config.endpoint() != null
+        && config.accountName() == null
+        && config.accountKey() == null) {
+      return new BlobServiceClientBuilder()
+          .endpoint(config.endpoint())
+          .credential(new DefaultAzureCredentialBuilder().build())
           .buildClient();
     } else {
       return new BlobServiceClientBuilder()
@@ -182,11 +190,12 @@ public final class AzureBackupStore implements BackupStore {
 
   public static void validateConfig(final AzureBackupConfig config) {
     if (config.connectionString() == null
+        && config.endpoint() == null
         && (config.accountKey() == null
             || config.accountName() == null
             || config.endpoint() == null)) {
       throw new IllegalArgumentException(
-          "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
+          "Connection string, endpoint, or all of connection information (account name, account key, and endpoint) must be provided.");
     }
     if (config.containerName() == null) {
       throw new IllegalArgumentException("Container name cannot be null.");
