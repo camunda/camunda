@@ -13,13 +13,11 @@ import java.util.Objects;
 
 public class UserTaskRecordValueImpl implements UserTaskRecordValue {
   private long userTaskKey;
-
   private String assignee;
-
   private String candidateGroups;
-
+  private List<String> candidateGroupsList;
   private String candidateUsers;
-
+  private List<String> candidateUsersList;
   private String dueDate;
 
   private String followUpDate;
@@ -43,6 +41,10 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
   private long processInstanceKey;
 
   private List<String> changedAttributes;
+  private String action;
+  private String externalFormReference;
+  private Map<String, String> customHeaders;
+  private long creationTimestamp;
 
   @Override
   public long getUserTaskKey() {
@@ -62,7 +64,6 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     this.assignee = assignee;
   }
 
-  @Override
   public String getCandidateGroups() {
     return candidateGroups;
   }
@@ -71,7 +72,6 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     this.candidateGroups = candidateGroups;
   }
 
-  @Override
   public String getCandidateUsers() {
     return candidateUsers;
   }
@@ -106,6 +106,26 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
   @Override
   public List<String> getChangedAttributes() {
     return changedAttributes;
+  }
+
+  @Override
+  public String getAction() {
+    return action;
+  }
+
+  @Override
+  public String getExternalFormReference() {
+    return externalFormReference;
+  }
+
+  @Override
+  public Map<String, String> getCustomHeaders() {
+    return customHeaders;
+  }
+
+  @Override
+  public long getCreationTimestamp() {
+    return creationTimestamp;
   }
 
   public void setChangedAttributes(List<String> changedAttributes) {
@@ -186,6 +206,24 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
 
   public void setProcessInstanceKey(long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+  }
+
+  @Override
+  public List<String> getCandidateGroupsList() {
+    return candidateGroupsList;
+  }
+
+  public void setCandidateGroupsList(List<String> candidateGroupsList) {
+    this.candidateGroupsList = candidateGroupsList;
+  }
+
+  @Override
+  public List<String> getCandidateUsersList() {
+    return candidateUsersList;
+  }
+
+  public void setCandidateUsersList(List<String> candidateUsersList) {
+    this.candidateUsersList = candidateUsersList;
   }
 
   @Override

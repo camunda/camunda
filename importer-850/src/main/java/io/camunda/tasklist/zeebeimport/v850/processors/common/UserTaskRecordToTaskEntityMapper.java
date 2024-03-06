@@ -8,7 +8,6 @@ package io.camunda.tasklist.zeebeimport.v850.processors.common;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskImplementation;
@@ -21,11 +20,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -125,24 +120,16 @@ public class UserTaskRecordToTaskEntityMapper {
       entity.setAssignee(assignee);
     }
 
-    final String candidateGroups = recordValue.getCandidateGroups();
+    final List<String> candidateGroups = recordValue.getCandidateGroupsList();
 
-    if (isNotEmpty(candidateGroups)) {
-      try {
-        entity.setCandidateGroups(objectMapper.readValue(candidateGroups, String[].class));
-      } catch (JsonProcessingException e) {
-        LOGGER.warn("Candidate groups can't be parsed from {}", candidateGroups, e);
-      }
+    if (!candidateGroups.isEmpty()) {
+      entity.setCandidateGroups(candidateGroups.toArray(new String[candidateGroups.size()]));
     }
 
-    final String candidateUsers = recordValue.getCandidateUsers();
+    final List<String> candidateUsers = recordValue.getCandidateUsersList();
 
-    if (isNotEmpty(candidateUsers)) {
-      try {
-        entity.setCandidateUsers(objectMapper.readValue(candidateUsers, String[].class));
-      } catch (JsonProcessingException e) {
-        LOGGER.warn("Candidate users can't be parsed from {}", candidateUsers, e);
-      }
+    if (!candidateUsers.isEmpty()) {
+      entity.setCandidateUsers(candidateUsers.toArray(new String[candidateUsers.size()]));
     }
     return Optional.of(entity);
   }

@@ -7,6 +7,7 @@
 package io.camunda.tasklist.zeebeimport.v850.record.value;
 
 import io.camunda.tasklist.zeebeimport.v850.record.RecordValueWithPayloadImpl;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +28,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private String errorMessage;
   private String errorCode;
   private String tenantId;
+  private JobKind jobKind;
 
   public JobRecordValueImpl() {}
 
@@ -172,25 +174,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        bpmnProcessId,
-        elementId,
-        elementInstanceKey,
-        processInstanceKey,
-        processDefinitionKey,
-        processDefinitionVersion,
-        type,
-        worker,
-        deadline,
-        customHeaders,
-        retries,
-        tenantId);
+  public JobKind getJobKind() {
+    return jobKind;
+  }
+
+  public JobRecordValueImpl setJobKind(JobKind jobKind) {
+    this.jobKind = jobKind;
+    return this;
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -205,14 +199,38 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && processInstanceKey == that.processInstanceKey
         && processDefinitionKey == that.processDefinitionKey
         && processDefinitionVersion == that.processDefinitionVersion
+        && deadline == that.deadline
         && retries == that.retries
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(elementId, that.elementId)
         && Objects.equals(type, that.type)
         && Objects.equals(worker, that.worker)
-        && Objects.equals(deadline, that.deadline)
         && Objects.equals(customHeaders, that.customHeaders)
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(errorCode, that.errorCode)
+        && Objects.equals(tenantId, that.tenantId)
+        && jobKind == that.jobKind;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        bpmnProcessId,
+        elementId,
+        elementInstanceKey,
+        processInstanceKey,
+        processDefinitionKey,
+        processDefinitionVersion,
+        type,
+        worker,
+        deadline,
+        customHeaders,
+        retries,
+        errorMessage,
+        errorCode,
+        tenantId,
+        jobKind);
   }
 
   @Override
@@ -244,11 +262,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + customHeaders
         + ", retries="
         + retries
-        + ", tenantId="
-        + tenantId
-        + ", variables='"
-        + getVariables()
+        + ", errorMessage='"
+        + errorMessage
         + '\''
+        + ", errorCode='"
+        + errorCode
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", jobKind="
+        + jobKind
         + '}';
   }
 }

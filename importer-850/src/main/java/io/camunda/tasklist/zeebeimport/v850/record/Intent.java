@@ -51,4 +51,9 @@ public enum Intent implements io.camunda.zeebe.protocol.record.intent.Intent {
   public short value() {
     return value;
   }
+
+  @Override
+  public boolean isEvent() {
+    return false;
+  }
 }
