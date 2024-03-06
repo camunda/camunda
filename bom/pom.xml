@@ -186,6 +186,7 @@
             </includes>
             <excludes>
               <exclude>zeebe/benchmarks/project/**/*</exclude>
+              <exclude>operate/**/*</exclude>
             </excludes>
             <mapping>
               <java>SLASHSTAR_STYLE</java>
