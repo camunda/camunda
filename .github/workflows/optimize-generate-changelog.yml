@@ -1,7 +1,6 @@
 name: Optimze generate changelog
 
 on:
-  push:
   workflow_dispatch:
     inputs:
       branch:
