@@ -42,7 +42,7 @@ Here is a diagram illustrating the release schedule of the five alpha releases p
 2022                                2023
 Oct       Nov          Dec          Jan          Feb          Mar          Apr
 8.1-----------------------------------------------------------------------------
-          8.2-alpha1   8.2-alpha2   8.2-alpha3   8.2-alpha4   8.2-alpha5   8.2-- 
+          8.2-alpha1   8.2-alpha2   8.2-alpha3   8.2-alpha4   8.2-alpha5   8.2--
 1         2            3            4            5            6            7
 ```
 
@@ -54,7 +54,7 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 
 * [Releases](https://github.com/camunda/zeebe/releases)
 * [Pre-built Docker images](https://hub.docker.com/r/camunda/zeebe/tags?page=1&ordering=last_updated)
-* [Building Docker images for other platforms](/docs/building_docker_images.md)
+* [Building Docker images for other platforms](/zeebe/docs/building_docker_images.md)
 * [Blog](https://camunda.com/blog/category/process-automation-as-a-service/)
 * [Documentation Home](https://docs.camunda.io)
 * [Issue Tracker](https://github.com/camunda/zeebe/issues)
