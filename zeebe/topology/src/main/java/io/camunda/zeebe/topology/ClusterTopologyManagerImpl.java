@@ -56,7 +56,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   private Consumer<ClusterTopology> topologyGossiper;
   private final ActorFuture<Void> startFuture;
   private TopologyChangeAppliers changeAppliers;
-  private TopologyChangedListener onInconsistentTopologyDetected;
+  private InconsistentTopologyListener onInconsistentTopologyDetected;
   private final MemberId localMemberId;
   // Indicates whether there is a topology change operation in progress on this member.
   private boolean onGoingTopologyChangeOperation = false;
@@ -200,7 +200,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
                 persistedClusterTopology.update(mergedTopology);
 
                 if (isConflictingTopology && onInconsistentTopologyDetected != null) {
-                  onInconsistentTopologyDetected.onLocalTopologyChanged(
+                  onInconsistentTopologyDetected.onInconsistentLocalTopology(
                       mergedTopology, oldTopology);
                 }
 
@@ -349,7 +349,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     executor.run(() -> changeAppliers = null);
   }
 
-  void registerTopologyChangedListener(final TopologyChangedListener listener) {
+  void registerTopologyChangedListener(final InconsistentTopologyListener listener) {
     executor.run(() -> onInconsistentTopologyDetected = listener);
   }
 

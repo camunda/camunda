@@ -15,7 +15,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import io.camunda.zeebe.topology.ClusterTopologyManager.TopologyChangedListener;
+import io.camunda.zeebe.topology.ClusterTopologyManager.InconsistentTopologyListener;
 import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
@@ -265,7 +265,7 @@ final class ClusterTopologyManagerTest {
     final AtomicReference<ClusterTopology> newTopology = new AtomicReference<>();
     final AtomicReference<ClusterTopology> oldTopology = new AtomicReference<>();
     final CompletableFuture<Void> listenerCalled = new CompletableFuture<>();
-    final TopologyChangedListener listener =
+    final InconsistentTopologyListener listener =
         (received, old) -> {
           newTopology.set(received);
           oldTopology.set(old);

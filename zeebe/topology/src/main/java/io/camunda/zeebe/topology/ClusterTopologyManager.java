@@ -26,7 +26,7 @@ public interface ClusterTopologyManager {
    * node or restarting all partitions with the new topology.
    */
   @FunctionalInterface
-  interface TopologyChangedListener {
+  interface InconsistentTopologyListener {
 
     /**
      * Invoked when the local member state in the local topology is old compared to the newer
@@ -36,6 +36,6 @@ public interface ClusterTopologyManager {
      * @param newTopology new topology received
      * @param oldTopology the local topology before receiving the new one
      */
-    void onLocalTopologyChanged(ClusterTopology newTopology, ClusterTopology oldTopology);
+    void onInconsistentLocalTopology(ClusterTopology newTopology, ClusterTopology oldTopology);
   }
 }
