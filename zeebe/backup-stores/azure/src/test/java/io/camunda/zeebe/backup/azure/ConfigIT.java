@@ -18,6 +18,8 @@ public class ConfigIT {
           + "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
           + "BlobEndpoint=http://127.0.0.1:";
 
+  private static final String VALID_ENDPOINT = "http://127.0.0.1";
+
   @Test
   void shouldSuccessfullyValidateCredentialsConfig() {
     final AzureBackupConfig azureBackupConfig =
@@ -51,6 +53,21 @@ public class ConfigIT {
   }
 
   @Test
+  void shouldValidateEndpointConfig() {
+
+    final AzureBackupConfig azureBackupConfig =
+        new AzureBackupConfig.Builder()
+            .withEndpoint(VALID_ENDPOINT)
+            .withContainerName(UUID.randomUUID().toString())
+            .build();
+
+    Assertions.assertThatCode(() -> new AzureBackupStore(azureBackupConfig))
+        .doesNotThrowAnyException();
+    Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
   void shouldFailValidationBecauseOfMissingAccountName() {
     final AzureBackupConfig azureBackupConfig =
         new AzureBackupConfig.Builder()
@@ -65,7 +82,7 @@ public class ConfigIT {
         .hasMessage("'accountName' cannot be null.");
     Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
         .hasMessage(
-            "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
+            "Connection string, endpoint, or all of connection information (account name, account key, and endpoint) must be provided.");
   }
 
   @Test
@@ -81,7 +98,7 @@ public class ConfigIT {
         .hasMessage("The Azure Storage endpoint url is malformed.");
     Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
         .hasMessage(
-            "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
+            "Connection string, endpoint, or all of connection information (account name, account key, and endpoint) must be provided.");
   }
 
   @Test
