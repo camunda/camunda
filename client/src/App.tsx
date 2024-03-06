@@ -14,12 +14,14 @@ import {
   createBrowserRouter,
   createRoutesFromElements,
 } from 'react-router-dom';
+import {ErrorBoundary} from 'react-error-boundary';
 import {Notifications} from 'modules/notifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {SessionWatcher} from './SessionWatcher';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
+import {ErrorWithinLayout, FallbackErrorPage} from 'errorBoundaries';
 
 const Wrapper: React.FC = () => {
   return (
@@ -45,11 +47,20 @@ const router = createBrowserRouter(
           <Route
             path=":bpmnProcessId/start"
             lazy={() => import('./Processes')}
+            ErrorBoundary={ErrorWithinLayout}
           />
         </Route>
         <Route path="/" lazy={() => import('./Tasks')}>
-          <Route index lazy={() => import('./Tasks/EmptyPage')} />
-          <Route path=":id" lazy={() => import('./Tasks/Task')} />
+          <Route
+            index
+            lazy={() => import('./Tasks/EmptyPage')}
+            ErrorBoundary={ErrorWithinLayout}
+          />
+          <Route
+            path=":id"
+            lazy={() => import('./Tasks/Task')}
+            ErrorBoundary={ErrorWithinLayout}
+          />
         </Route>
       </Route>
     </Route>,
@@ -61,13 +72,15 @@ const router = createBrowserRouter(
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <ReactQueryProvider>
-        <Notifications />
-        <NetworkStatusWatcher />
-        <RouterProvider router={router} />
-      </ReactQueryProvider>
-    </ThemeProvider>
+    <ErrorBoundary FallbackComponent={FallbackErrorPage}>
+      <ThemeProvider>
+        <ReactQueryProvider>
+          <Notifications />
+          <NetworkStatusWatcher />
+          <RouterProvider router={router} />
+        </ReactQueryProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 
