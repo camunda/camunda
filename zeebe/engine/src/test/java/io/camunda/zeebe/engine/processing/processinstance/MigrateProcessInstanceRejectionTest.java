@@ -895,6 +895,74 @@ public class MigrateProcessInstanceRejectionTest {
         .hasKey(processInstanceKey);
   }
 
+  @Test
+  public void shouldRejectMigrationWhenTargetSubprocessHasBoundaryEvent() {
+    // given
+    final String processId = "process";
+    final String targetProcessId = "process2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .subProcess(
+                        "sub1",
+                        s ->
+                            s.embeddedSubProcess()
+                                .startEvent()
+                                .serviceTask("A", t -> t.zeebeJobType("task"))
+                                .endEvent())
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .subProcess(
+                        "sub2",
+                        s ->
+                            s.embeddedSubProcess()
+                                .startEvent()
+                                .serviceTask("B", t -> t.zeebeJobType("task"))
+                                .endEvent())
+                    .boundaryEvent("boundary")
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                    .endEvent()
+                    .moveToActivity("sub2")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, targetProcessId);
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .addMappingInstruction("sub1", "sub2")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+              Expected to migrate process instance '%s' \
+              but target element with id 'sub1' has a boundary event. \
+              Migrating target elements with boundary events is not possible yet."""
+                .formatted(processInstanceKey))
+        .hasKey(processInstanceKey);
+  }
+
   private static long extractTargetProcessDefinitionKey(
       final Record<DeploymentRecordValue> deployment, final String bpmnProcessId) {
     return deployment.getValue().getProcessesMetadata().stream()
