@@ -43,7 +43,8 @@ public class BlockSequenceBuilder extends AbstractBlockBuilder {
           new UserTaskBlockBuilder.Factory(),
           new ManualTaskBlockBuilder.Factory(),
           new IntermediateThrowEventBlockBuilder.Factory(),
-          new EscalationEventBlockBuilder.Factory());
+          new EscalationEventBlockBuilder.Factory(),
+          new CompensationEventBlockBuilder.Factory());
 
   private final List<BlockBuilder> blockBuilders = new ArrayList<>();
 
