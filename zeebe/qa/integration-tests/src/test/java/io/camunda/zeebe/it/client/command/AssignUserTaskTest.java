@@ -76,7 +76,7 @@ public final class AssignUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldRejectIfJobIsAlreadyAssignedWithProhibitedOverride() {
+  public void shouldRejectIfUserTaskIsAlreadyAssignedWithProhibitedOverride() {
     // given
     client.newUserTaskAssignCommand(userTaskKey).assignee("foobar").send().join();
 
