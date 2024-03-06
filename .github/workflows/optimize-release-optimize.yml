@@ -221,6 +221,7 @@ jobs:
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
+          ref: ${{ env.BRANCH }}
           fetch-depth: 0
 
       - name: Get last tag on branch
@@ -247,6 +248,8 @@ jobs:
           -H "X-GitHub-Api-Version: 2022-11-28" \
           https://api.github.com/repos/${{ github.repository }}/releases \
           -d '{"tag_name":"${{ env.RELEASE_VERSION }}","target_commitish":"${{ github.sha }}","name":"${{ env.RELEASE_VERSION }}","body":${{ toJson(steps.changelog.outputs.body) }},"draft":true,"prerelease":${{ env.IS_ALPHA == 'true' }},"generate_release_notes":false,"make_latest":"${{ env.DOCKER_LATEST }}"}'
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
