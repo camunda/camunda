@@ -30,7 +30,8 @@ public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserT
   UpdateUserTaskCommandStep1 action(String action);
 
   /**
-   * Set the due date to set in the user task.
+   * Set the due date to set in the user task. Use {@link #clearDueDate()} to remove the due date
+   * from the task.
    *
    * @param dueDate the due date to set
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
@@ -47,7 +48,8 @@ public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserT
   UpdateUserTaskCommandStep1 clearDueDate();
 
   /**
-   * Set the follow-up date to set in the user task.
+   * Set the follow-up date to set in the user task. Use {@link #clearFollowUpDate()} to remove the
+   * follow-up date from the task.
    *
    * @param followUpDate the follow-up date to set
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
@@ -64,7 +66,8 @@ public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserT
   UpdateUserTaskCommandStep1 clearFollowUpDate();
 
   /**
-   * Set the candidate groups to set in the user task.
+   * Set the candidate groups to set in the user task. This replaces the candidate groups in the
+   * task. Use {@link #clearCandidateGroups()} to remove the candidate groups from the task.
    *
    * @param candidateGroups the candidate groups to set
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
@@ -73,7 +76,8 @@ public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserT
   UpdateUserTaskCommandStep1 candidateGroups(List<String> candidateGroups);
 
   /**
-   * Set the candidate groups to set in the user task.
+   * Set the candidate groups to set in the user task. This replaces the candidate groups in the
+   * task. Use {@link #clearCandidateGroups()} to remove the candidate groups from the task.
    *
    * @param candidateGroups the candidate groups to set
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
@@ -82,7 +86,7 @@ public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserT
   UpdateUserTaskCommandStep1 candidateGroups(String... candidateGroups);
 
   /**
-   * Clear the candidate groups in the user task.
+   * Remove the candidate groups from the user task.
    *
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
@@ -90,7 +94,8 @@ public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserT
   UpdateUserTaskCommandStep1 clearCandidateGroups();
 
   /**
-   * Set the candidate users to set in the user task.
+   * Set the candidate users to set in the user task. This replaces the candidate users in the task.
+   * Use {@link #clearCandidateUsers()} to remove the candidate users from the task.
    *
    * @param candidateUsers the candidate users to set
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
@@ -99,7 +104,8 @@ public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserT
   UpdateUserTaskCommandStep1 candidateUsers(List<String> candidateUsers);
 
   /**
-   * Set the candidate users to set in the user task.
+   * Set the candidate users to set in the user task. This replaces the candidate users in the task.
+   * Use {@link #clearCandidateUsers()} to remove the candidate users from the task.
    *
    * @param candidateUsers the candidate users to set
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
@@ -108,7 +114,7 @@ public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserT
   UpdateUserTaskCommandStep1 candidateUsers(String... candidateUsers);
 
   /**
-   * Clear the candidate users in the user task.
+   * Remove the candidate users from the user task.
    *
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
