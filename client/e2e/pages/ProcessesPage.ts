@@ -15,6 +15,7 @@ class ProcessesPage {
   readonly docsLink: Locator;
   readonly searchProcessesInput: Locator;
   readonly processTile: Locator;
+  readonly tasksTab: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -24,6 +25,7 @@ class ProcessesPage {
     this.docsLink = page.getByRole('link', {name: 'here'});
     this.searchProcessesInput = page.getByPlaceholder('Search processes');
     this.processTile = page.getByTestId('process-tile');
+    this.tasksTab = page.getByRole('link', {name: 'Tasks'});
   }
 
   async clickContinueButton() {

@@ -70,12 +70,9 @@ test.describe('process page', () => {
 
     await processesPage.clickStartProcessButton();
     await expect(page.getByText('Process has started')).toBeVisible();
-    await expect(
-      page.getByText('We will redirect you to the task once it is created'),
-    ).toBeVisible();
-    await expect(page.getByText('Task has no variables')).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(processesPage.startProcessButton).not.toBeVisible();
+    await expect(page.getByText('Waiting for tasks...')).toBeVisible();
+    await expect(processesPage.startProcessButton).toBeVisible();
   });
 
   test('complete task started by process instance', async ({
@@ -83,6 +80,7 @@ test.describe('process page', () => {
     mainPage,
     taskDetailsPage,
     processesPage,
+    taskPanelPage,
   }) => {
     await mainPage.clickProcessesTab();
     await expect(page).toHaveURL('/processes');
@@ -92,9 +90,9 @@ test.describe('process page', () => {
     await expect(processesPage.processTile).toHaveCount(1, {timeout: 10000});
 
     await processesPage.clickStartProcessButton();
-    await expect(page.getByText('Task has no variables')).toBeVisible({
-      timeout: 10000,
-    });
+    await processesPage.tasksTab.click();
+
+    await taskPanelPage.openTask('User_Task');
 
     await taskDetailsPage.assignToMeButton.click();
     await taskDetailsPage.completeButton.click();

@@ -6,10 +6,10 @@
  */
 
 import {action, makeObservable, observable} from 'mobx';
-import type {ProcessInstance, Task} from 'modules/types';
+import type {ProcessInstance} from 'modules/types';
 
 type NewProcessInstanceType = ProcessInstance & {
-  removeCallback: (tasks: Task[] | null) => void;
+  removeCallback: () => void;
 };
 
 class NewProcessInstance {
@@ -33,8 +33,8 @@ class NewProcessInstance {
     }, 15000);
   };
 
-  removeInstance = (tasks: Task[] | null = []) => {
-    this.instance?.removeCallback(tasks);
+  removeInstance = () => {
+    this.instance?.removeCallback();
     this.instance = null;
     if (this.intervalId !== null) {
       clearTimeout(this.intervalId);

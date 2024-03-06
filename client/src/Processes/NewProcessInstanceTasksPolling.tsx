@@ -6,22 +6,16 @@
  */
 
 import {observer} from 'mobx-react-lite';
-import {pages} from 'modules/routing';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {Task} from 'modules/types';
-import {useLocation, useNavigate} from 'react-router-dom';
-import {tracking} from 'modules/tracking';
 import {useQuery} from '@tanstack/react-query';
 import {request, RequestError} from 'modules/request';
 import {api} from 'modules/api';
-import {useEffect} from 'react';
 
 type NewTasksResponse = Task[];
 
 const NewProcessInstanceTasksPolling: React.FC = observer(() => {
   const {instance} = newProcessInstance;
-  const navigate = useNavigate();
-  const location = useLocation();
 
   useQuery<NewTasksResponse, RequestError | Error>({
     queryKey: ['newTasks'],
@@ -57,30 +51,9 @@ const NewProcessInstanceTasksPolling: React.FC = observer(() => {
         return;
       }
 
-      newProcessInstance.removeInstance(data);
-
-      if (data.length === 1 && location.pathname === `/${pages.processes()}`) {
-        const [{id}] = data;
-
-        tracking.track({
-          eventName: 'process-tasks-polling-ended',
-          outcome: 'single-task-found',
-        });
-
-        navigate({pathname: pages.taskDetails(id)});
-
-        return;
-      }
+      newProcessInstance.removeInstance();
     },
   });
-
-  useEffect(() => {
-    return () => {
-      if (newProcessInstance.instance !== null) {
-        newProcessInstance.removeInstance(null);
-      }
-    };
-  }, []);
 
   return null;
 });

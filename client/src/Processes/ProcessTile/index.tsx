@@ -91,68 +91,14 @@ const ProcessTile: React.FC<Props> = ({
 
       newProcessInstance.setInstance({
         ...data,
-        removeCallback: (tasks = []) => {
+        removeCallback: () => {
           setStatus('finished');
-          if (tasks === null) {
-            tracking.track({
-              eventName: 'process-tasks-polling-ended',
-              outcome: 'navigated-away',
-            });
-            notificationsStore.displayNotification({
-              isDismissable: true,
-              kind: 'info',
-              title: 'The task will appear in the list once it is created.',
-            });
-
-            return;
-          }
-
-          if (tasks.length === 0) {
-            tracking.track({
-              eventName: 'process-tasks-polling-ended',
-              outcome: 'no-tasks-found',
-            });
-            notificationsStore.displayNotification({
-              isDismissable: true,
-              kind: 'info',
-              title: "We couldn't find a task for the started process.",
-              subtitle:
-                'Your process might have not reached a user task yet, your user might not have rights to the task or the process might have an incident.',
-            });
-
-            return;
-          }
-
-          if (tasks.length > 1) {
-            tracking.track({
-              eventName: 'process-tasks-polling-ended',
-              outcome: 'multiple-tasks-found',
-            });
-            tasks.forEach(({name, id, processName}) => {
-              notificationsStore.displayNotification({
-                isDismissable: false,
-                kind: 'success',
-                title: `Process "${processName}" reached task "${name}"`,
-                isActionable: true,
-                actionButtonLabel: 'Open task',
-                onActionButtonClick: () => {
-                  tracking.track({
-                    eventName: 'process-task-toast-clicked',
-                  });
-                  navigate({pathname: pages.taskDetails(id)});
-                },
-              });
-            });
-
-            return;
-          }
         },
       });
       notificationsStore.displayNotification({
         isDismissable: true,
         kind: 'success',
         title: 'Process has started',
-        subtitle: 'We will redirect you to the task once it is created',
       });
     },
   });
