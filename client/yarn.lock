@@ -318,6 +318,11 @@
   resolved "https://registry.yarnpkg.com/@carbon/feature-flags/-/feature-flags-0.16.0.tgz#0896249e14d6e581639608a3061b7f38e1810bf8"
   integrity sha512-hCrfVZ6oVnPjjupelbvQX4D0i6GlZuKVverAf0LkOydXHrPjSyuEmg+czsylyCBg4r/hxtSTu91Tq6aqz/DsHg==
 
+"@carbon/feature-flags@^0.17.0":
+  version "0.17.0"
+  resolved "https://registry.yarnpkg.com/@carbon/feature-flags/-/feature-flags-0.17.0.tgz#be92b553844b872b64a6883e457b5efef385f786"
+  integrity sha512-/qa/ItdC9KaChhKcKZTqWfRjko0Wh81hFkzqooORL8i5wHSCeR31ax0FYVTakFbUtzEuNmN9oIiCnFlfGl4/+A==
+
 "@carbon/grid@^11.11.0", "@carbon/grid@^11.21.0", "@carbon/grid@^11.21.1":
   version "11.21.1"
   resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.21.1.tgz#e375520cfb32f99b888445eee247a9f91bab0f3a"
@@ -354,16 +359,16 @@
   resolved "https://registry.yarnpkg.com/@carbon/motion/-/motion-11.16.1.tgz#91d6cd57cc4402d391ac55e3985f96d051a749be"
   integrity sha512-e865DvKnoxg41/L3g2zaNc5+xA+OXk0dNfOmG9MpzWBMlViCYUnCYCVKuyhdT7YSbRJuBuXXsisAVIJzBkEQKQ==
 
-"@carbon/react@1.51.1":
-  version "1.51.1"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.51.1.tgz#5fe622bf276b0fff8de5830935dd64125da4a0ae"
-  integrity sha512-ExvVdjLa03v5evwF7wwOT+XMNqNOAhW+QCUtxsHMrf5qvNi4TFqnaocBJ1oCrSkm/l5dJtRaEzFCmCJQyRtlKw==
+"@carbon/react@1.50.0":
+  version "1.50.0"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.50.0.tgz#41e1adf68b854bc60edfe5880a0f882b3c41db91"
+  integrity sha512-x8hmCRd2A4qelrvnaP6Hb23oGvIuuNlzBfjYrzTcDKCe/t+d2Wd5XsPJ2AsaJRhw3Yd5MvCt81aMNtF0Rajpkw==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@carbon/feature-flags" "^0.16.0"
     "@carbon/icons-react" "^11.36.0"
     "@carbon/layout" "^11.20.0"
-    "@carbon/styles" "^1.51.1"
+    "@carbon/styles" "^1.50.0"
     "@ibm/telemetry-js" "^1.2.0"
     classnames "2.5.1"
     copy-to-clipboard "^3.3.1"
@@ -381,13 +386,13 @@
     wicg-inert "^3.1.1"
     window-or-global "^1.0.1"
 
-"@carbon/styles@^1.51.1":
-  version "1.51.1"
-  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.51.1.tgz#99b9e4c5a646421e3bd89daf74059ea42e8917c2"
-  integrity sha512-JncoM2zQiaUINP8Wt3jsPtXJMFqB6sToWy3BvQWVLZGi5v/ZCS8zv//3ZtJpUsgD6t3klnjvW3qzkPsk5aJcLg==
+"@carbon/styles@^1.50.0":
+  version "1.52.0"
+  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.52.0.tgz#9dc4bf32256d091055f79a7227dc9ee93a30981f"
+  integrity sha512-abtMJS5gGRFmH/Af4ssm546suWr1sjp/O54PxwdS5LWp/Y49ZWtmmBED1ZEsQmW3N5jJcd/1ZCXcJNAwvEUkYA==
   dependencies:
     "@carbon/colors" "^11.20.0"
-    "@carbon/feature-flags" "^0.16.0"
+    "@carbon/feature-flags" "^0.17.0"
     "@carbon/grid" "^11.21.0"
     "@carbon/layout" "^11.20.0"
     "@carbon/motion" "^11.16.0"
@@ -1848,23 +1853,13 @@ browserslist-to-esbuild@2.1.1:
   dependencies:
     meow "^13.0.0"
 
-browserslist@4.23.0:
+browserslist@4.23.0, browserslist@^4.21.9:
   version "4.23.0"
   resolved "https://registry.yarnpkg.com/browserslist/-/browserslist-4.23.0.tgz#8f3acc2bbe73af7213399430890f86c63a5674ab"
   integrity sha512-QW8HiM1shhT2GuzkvklfjcKDiWFXHOeFCIA/huJPwHsslwcydgk7X+z2zXpEijP98UCY7HbubZt5J2Zgvf0CaQ==
   dependencies:
     caniuse-lite "^1.0.30001587"
     electron-to-chromium "^1.4.668"
-    node-releases "^2.0.14"
-    update-browserslist-db "^1.0.13"
-
-browserslist@^4.21.9:
-  version "4.22.3"
-  resolved "https://registry.yarnpkg.com/browserslist/-/browserslist-4.22.3.tgz#299d11b7e947a6b843981392721169e27d60c5a6"
-  integrity sha512-UAp55yfwNv0klWNapjs/ktHoguxuQNGnOzxYmfnXIS+8AsRDZkSDxg7R1AX3GKzn078SBI5dzwzj/Yx0Or0e3A==
-  dependencies:
-    caniuse-lite "^1.0.30001580"
-    electron-to-chromium "^1.4.648"
     node-releases "^2.0.14"
     update-browserslist-db "^1.0.13"
 
@@ -1928,11 +1923,6 @@ camelize@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/camelize/-/camelize-1.0.1.tgz#89b7e16884056331a35d6b5ad064332c91daa6c3"
   integrity sha512-dU+Tx2fsypxTgtLoE36npi3UqcjSSMNYfkqgmoEhtZrraP5VWq0K7FkWVTYa8eMPtnU/G2txVsfdCJTn9uzpuQ==
-
-caniuse-lite@^1.0.30001580:
-  version "1.0.30001593"
-  resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001593.tgz"
-  integrity sha512-UWM1zlo3cZfkpBysd7AS+z+v007q9G1+fLTUU42rQnY6t2axoogPW/xol6T7juU5EUoOhML4WgBIdG+9yYqAjQ==
 
 caniuse-lite@^1.0.30001587:
   version "1.0.30001594"
@@ -2511,11 +2501,6 @@ ejs@^3.1.5:
   integrity sha512-rC+QVNMJWv+MtPgkt0y+0rVEIdbtxVADApW9JXrUVlzHetgcyczP/E7DJmWJ4fJCZF2cPcBk0laWO9ZHMG3DmQ==
   dependencies:
     jake "^10.8.5"
-
-electron-to-chromium@^1.4.648:
-  version "1.4.657"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.657.tgz#8a07ee3faa552976970843a80a1c94088ea59c9a"
-  integrity sha512-On2ymeleg6QbRuDk7wNgDdXtNqlJLM2w4Agx1D/RiTmItiL+a9oq5p7HUa2ZtkAtGBe/kil2dq/7rPfkbe0r5w==
 
 electron-to-chromium@^1.4.668:
   version "1.4.692"
