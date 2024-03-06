@@ -196,7 +196,6 @@ public class ReportDescriptionsRestServiceIT extends AbstractReportRestServiceIT
 
   @ParameterizedTest
   @MethodSource("validDescription")
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void updateSingleProcessReportWithValidDescription(final String description) {
     // given
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
@@ -218,7 +217,6 @@ public class ReportDescriptionsRestServiceIT extends AbstractReportRestServiceIT
 
   @ParameterizedTest
   @MethodSource("validDescription")
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void updateSingleDecisionReportWithValidDescription(final String description) {
     // given
     final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
@@ -240,7 +238,6 @@ public class ReportDescriptionsRestServiceIT extends AbstractReportRestServiceIT
 
   @ParameterizedTest
   @MethodSource("validDescription")
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void updateCombinedReportWithValidDescription(final String description) {
     // given
     CombinedReportDefinitionRequestDto combinedReportDefinitionDto = new CombinedReportDefinitionRequestDto();
