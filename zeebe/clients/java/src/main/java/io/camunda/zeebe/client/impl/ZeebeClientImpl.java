@@ -43,6 +43,7 @@ import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
+import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
@@ -67,6 +68,7 @@ import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
+import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
@@ -469,6 +471,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public UpdateUserTaskCommandStep1 newUserTaskUpdateCommand(final long userTaskKey) {
     return new UpdateUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
+  }
+
+  @Override
+  public UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(final long userTaskKey) {
+    return new UnassignUserTaskCommandImpl(httpClient, userTaskKey);
   }
 
   private JobClient newJobClient() {
