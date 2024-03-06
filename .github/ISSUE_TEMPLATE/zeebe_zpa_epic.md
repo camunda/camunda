@@ -3,7 +3,7 @@
 name: Zeebe Process Automation team Epic
 about: Prepare a new Epic for the ZPA team
 title: '[EPIC] '
-labels: 'kind/epic'
+labels: ['kind/epic', 'component/zeebe']
 assignees: ''
 
 ---

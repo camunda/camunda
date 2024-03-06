@@ -1,9 +1,9 @@
 ---
 
-name: Documentation issue
+name: Zeebe Documentation issue
 about: Changes to the documentation
 title: ''
-labels: 'kind/documentation'
+labels: ['kind/documentation', 'component/zeebe']
 assignees: ''
 
 ---
