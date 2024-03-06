@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.springframework.stereotype.Component;
 
@@ -21,11 +22,12 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class SpringBrokerBridge {
-
   private Supplier<BrokerHealthCheckService> healthCheckServiceSupplier;
   private Supplier<BrokerAdminService> adminServiceSupplier;
   private Supplier<JobStreamService> jobStreamServiceSupplier;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
+
+  private Consumer<Integer> shutdownHelper;
 
   public void registerBrokerHealthCheckServiceSupplier(
       final Supplier<BrokerHealthCheckService> healthCheckServiceSupplier) {
@@ -61,5 +63,23 @@ public class SpringBrokerBridge {
 
   public Optional<JobStreamService> getJobStreamService() {
     return Optional.ofNullable(jobStreamServiceSupplier).map(Supplier::get);
+  }
+
+  /**
+   * Registers a shutdown helper that can initiate a graceful shutdown of the broker. This will be
+   * used when any exceptional cases may need to be handled by shutting down the broker.
+   *
+   * @param shutdownHelper the shutdown helper
+   */
+  public void registerShutdownHelper(final Consumer<Integer> shutdownHelper) {
+    this.shutdownHelper = shutdownHelper;
+  }
+
+  public void initiateShutdown(final int errorCode) {
+    if (shutdownHelper != null) {
+      shutdownHelper.accept(errorCode);
+    } else {
+      System.exit(errorCode);
+    }
   }
 }
