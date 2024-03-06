@@ -9,13 +9,47 @@ package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public final class UnassignUserTaskTest extends UserTaskTest {
+@ZeebeIntegration
+@AutoCloseResources
+class UnassignUserTaskTest {
+
+  @TestZeebe(clusterSize = 1, partitionCount = 1, replicationFactor = 1)
+  private static final TestCluster CLUSTER =
+      TestCluster.builder().withEmbeddedGateway(false).withGatewaysCount(1).build();
+
+  @AutoCloseResource private ZeebeClient client;
+
+  private long userTaskKey;
+
+  @BeforeEach
+  void initClientAndInstances() {
+    final var gateway = CLUSTER.availableGateway();
+    client =
+        CLUSTER
+            .newClientBuilder()
+            .gatewayAddress(gateway.gatewayAddress())
+            .gatewayRestApiPort(gateway.mappedPort(TestZeebePort.REST))
+            .defaultRequestTimeout(Duration.ofSeconds(15))
+            .build();
+    final ZeebeResourcesHelper resourcesHelper = new ZeebeResourcesHelper(client);
+    userTaskKey = resourcesHelper.createSingleUserTask();
+  }
 
   @Test
-  public void shouldUnassignUserTask() {
+  void shouldUnassignUserTask() {
     // given
     client.newUserTaskAssignCommand(userTaskKey).assignee("foobar").send().join();
 

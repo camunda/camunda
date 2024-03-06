@@ -10,15 +10,49 @@ package io.camunda.zeebe.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import java.time.Duration;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public final class UpdateUserTaskTest extends UserTaskTest {
+@ZeebeIntegration
+@AutoCloseResources
+class UpdateUserTaskTest {
+
+  @TestZeebe(clusterSize = 1, partitionCount = 1, replicationFactor = 1)
+  private static final TestCluster CLUSTER =
+      TestCluster.builder().withEmbeddedGateway(false).withGatewaysCount(1).build();
+
+  @AutoCloseResource private ZeebeClient client;
+
+  private long userTaskKey;
+
+  @BeforeEach
+  void initClientAndInstances() {
+    final var gateway = CLUSTER.availableGateway();
+    client =
+        CLUSTER
+            .newClientBuilder()
+            .gatewayAddress(gateway.gatewayAddress())
+            .gatewayRestApiPort(gateway.mappedPort(TestZeebePort.REST))
+            .defaultRequestTimeout(Duration.ofSeconds(15))
+            .build();
+    final ZeebeResourcesHelper resourcesHelper = new ZeebeResourcesHelper(client);
+    userTaskKey = resourcesHelper.createSingleUserTask();
+  }
 
   @Test
-  public void shouldUpdateUserTaskWithAction() {
+  void shouldUpdateUserTaskWithAction() {
     // when
     client.newUserTaskUpdateCommand(userTaskKey).action("foo").send().join();
 
@@ -28,7 +62,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldUpdateUserTaskWithDueDate() {
+  void shouldUpdateUserTaskWithDueDate() {
     // when
     client.newUserTaskUpdateCommand(userTaskKey).dueDate("myDate").send().join();
 
@@ -38,7 +72,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldUpdateUserTaskWithFollowUpDate() {
+  void shouldUpdateUserTaskWithFollowUpDate() {
     // when
     client.newUserTaskUpdateCommand(userTaskKey).followUpDate("myDate").send().join();
 
@@ -48,7 +82,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldUpdateUserTaskWithDueDateAndFollowUpDate() {
+  void shouldUpdateUserTaskWithDueDateAndFollowUpDate() {
     // when
     client
         .newUserTaskUpdateCommand(userTaskKey)
@@ -67,7 +101,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldUpdateUserTaskWithCandidateGroup() {
+  void shouldUpdateUserTaskWithCandidateGroup() {
     // when
     client.newUserTaskUpdateCommand(userTaskKey).candidateGroups("foo").send().join();
 
@@ -78,7 +112,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldUpdateUserTaskWithCandidateGroups() {
+  void shouldUpdateUserTaskWithCandidateGroups() {
     // when
     client.newUserTaskUpdateCommand(userTaskKey).candidateGroups("foo", "bar").send().join();
 
@@ -89,7 +123,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldUpdateUserTaskWithCandidateGroupsList() {
+  void shouldUpdateUserTaskWithCandidateGroupsList() {
     // when
     client
         .newUserTaskUpdateCommand(userTaskKey)
@@ -104,7 +138,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldUpdateUserTaskWithCandidateUser() {
+  void shouldUpdateUserTaskWithCandidateUser() {
     // when
     client.newUserTaskUpdateCommand(userTaskKey).candidateUsers("foo").send().join();
 
@@ -115,7 +149,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldUpdateUserTaskWithCandidateUsers() {
+  void shouldUpdateUserTaskWithCandidateUsers() {
     // when
     client.newUserTaskUpdateCommand(userTaskKey).candidateUsers("foo", "bar").send().join();
 
@@ -126,7 +160,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldUpdateUserTaskWithCandidateUsersList() {
+  void shouldUpdateUserTaskWithCandidateUsersList() {
     // when
     client
         .newUserTaskUpdateCommand(userTaskKey)
@@ -141,7 +175,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldClearUserTaskDueDate() {
+  void shouldClearUserTaskDueDate() {
     // given
     client.newUserTaskUpdateCommand(userTaskKey).dueDate("foo").send().join();
 
@@ -154,7 +188,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldClearUserTaskFollowUpDate() {
+  void shouldClearUserTaskFollowUpDate() {
     // given
     client.newUserTaskUpdateCommand(userTaskKey).followUpDate("foo").send().join();
 
@@ -167,7 +201,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldClearUserTaskCandidateGroups() {
+  void shouldClearUserTaskCandidateGroups() {
     // given
     client.newUserTaskUpdateCommand(userTaskKey).candidateGroups("foo").send().join();
 
@@ -180,7 +214,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldClearUserTaskCandidateUsers() {
+  void shouldClearUserTaskCandidateUsers() {
     // given
     client.newUserTaskUpdateCommand(userTaskKey).candidateUsers("foo").send().join();
 
@@ -193,7 +227,7 @@ public final class UpdateUserTaskTest extends UserTaskTest {
   }
 
   @Test
-  public void shouldRejectIfMissingUpdateData() {
+  void shouldRejectIfMissingUpdateData() {
     // when / then
     assertThatThrownBy(() -> client.newUserTaskUpdateCommand(userTaskKey).send().join())
         .hasCauseInstanceOf(ProblemException.class)
