@@ -24,6 +24,9 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.Either;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -132,16 +135,41 @@ public class RequestMapper {
 
   private static Optional<ProblemDetail> validateUpdateRequest(
       final UserTaskUpdateRequest updateRequest) {
+    final List<String> violations = new ArrayList<>();
     if (updateRequest == null
         || (updateRequest.getAction() == null && isEmpty(updateRequest.getChangeset()))) {
-      final String message =
-          "No update data provided. Provide at least an \"action\" or a non-null value for a supported attribute in the \"changeset\".";
-      final ProblemDetail problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST, message, INVALID_ARGUMENT.name());
-      return Optional.of(problemDetail);
+      violations.add(
+          "No update data provided. Provide at least an \"action\" or a non-null value for a supported attribute in the \"changeset\".");
     }
-    return Optional.empty();
+    if (updateRequest != null && !isEmpty(updateRequest.getChangeset())) {
+      final var changeset = updateRequest.getChangeset();
+      if (changeset.getDueDate() != null && !changeset.getDueDate().isEmpty()) {
+        try {
+          ZonedDateTime.parse(changeset.getDueDate());
+        } catch (final DateTimeParseException ex) {
+          violations.add(
+              String.format(
+                  "The provided due date '%s' cannot be parsed as a date according to RFC 3339, section 5.6.",
+                  updateRequest.getChangeset().getDueDate()));
+        }
+      }
+      if (changeset.getFollowUpDate() != null && !changeset.getFollowUpDate().isEmpty()) {
+        try {
+          ZonedDateTime.parse(changeset.getFollowUpDate());
+        } catch (final DateTimeParseException ex) {
+          violations.add(
+              String.format(
+                  "The provided follow-up date '%s' cannot be parsed as a date according to RFC 3339, section 5.6.",
+                  updateRequest.getChangeset().getFollowUpDate()));
+        }
+      }
+    }
+    if (violations.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        RestErrorMapper.createProblemDetail(
+            HttpStatus.BAD_REQUEST, String.join(" ", violations), INVALID_ARGUMENT.name()));
   }
 
   private static boolean isEmpty(final Changeset changeset) {
