@@ -1,4 +1,4 @@
-name: Optimze generate changelog
+name: Optimize generate changelog
 
 on:
   workflow_dispatch:
