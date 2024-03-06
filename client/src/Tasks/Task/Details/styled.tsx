@@ -20,6 +20,7 @@ const Header = styled(TaskDetailsRow)`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 40px;
 `;
 
 const HeaderLeftContainer = styled.div`
