@@ -1099,8 +1099,8 @@ public class MigrateProcessInstanceTest {
   @Test
   public void shouldWriteMigratedEventWhenActiveElementHasAJobIncident() {
     // given
-    final String sourceProcessId = "process";
-    final String targetProcessId = "process2";
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
         ENGINE
             .deployment()
@@ -1187,8 +1187,8 @@ public class MigrateProcessInstanceTest {
   @Test
   public void shouldWriteMigratedEventWhenActiveElementHasAProcessIncident() {
     // given
-    final String sourceProcessId = "process";
-    final String targetProcessId = "process2";
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
         ENGINE
             .deployment()
@@ -1284,8 +1284,8 @@ public class MigrateProcessInstanceTest {
   @Test
   public void shouldMigrateSubprocess() {
     // given
-    final String processId = "process";
-    final String targetProcessId = "process2";
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
         ENGINE
             .deployment()
@@ -1348,8 +1348,8 @@ public class MigrateProcessInstanceTest {
   @Test
   public void shouldMigrateNestedSubprocess() {
     // given
-    final String processId = "process";
-    final String targetProcessId = "process2";
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
         ENGINE
             .deployment()
@@ -1427,9 +1427,8 @@ public class MigrateProcessInstanceTest {
   @Test
   public void shouldMigrateSubprocessWithBoundaryEvent() {
     // given
-    final String processId = "process";
-    final String targetProcessId = "process2";
-
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
         ENGINE
             .deployment()
@@ -1510,7 +1509,7 @@ public class MigrateProcessInstanceTest {
         .describedAs("Expect that process definition key changed")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
         .describedAs("Expect that bpmn process id and element id changed")
-        .hasBpmnProcessId("process2")
+        .hasBpmnProcessId(targetProcessId)
         .hasElementId("sub2")
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
