@@ -17,6 +17,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -25,12 +26,14 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
+@Tag(OPENSEARCH_PASSING)
 public class MultiEngineImportIT extends AbstractMultiEngineIT {
 
   @Test
@@ -73,6 +76,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     }
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void allProcessInstancesEventsAndVariablesAreImported() {
     // given
@@ -89,6 +93,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     assertProcessInstanceImportResults(processInstances, PROCESS_KEY_1, PROCESS_KEY_2);
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void allProcessInstancesEventsAndVariablesAreImported_importDeactivatedForOneEngine() {
     // given
@@ -109,6 +114,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     }
   }
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void allProcessInstancesEventAndVariablesAreImportedWithAuthentication() {
     // given

@@ -7,14 +7,17 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+@Tag(OPENSEARCH_PASSING)
 public class ProcessEngineImportRestServiceIT extends AbstractPlatformIT {
 
   private static final String PROCESS_ID = "aProcessId";

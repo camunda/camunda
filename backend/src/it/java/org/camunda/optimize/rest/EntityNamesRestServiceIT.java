@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -27,14 +28,17 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE;
 import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 
+@Tag(OPENSEARCH_PASSING)
 public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void getEntityNames_WorksForAllPossibleEntities() {
     // given
@@ -122,6 +126,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     assertThat(result.getEventBasedProcessName()).isNull();
   }
 
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   @Test
   public void getEntityNames_NotAvailableIdReturns404() {
     // given
@@ -137,6 +142,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   @Test
   public void getEntityNames_NoIdProvidedReturns400() {
     // given
