@@ -11,7 +11,11 @@ import {isEqual} from 'lodash';
 type FormJSData = Record<string, unknown>;
 
 class FormManager {
-  #form = new Form();
+  #form = new Form({
+    properties: {
+      textLinkTarget: '_blank',
+    },
+  });
   #schema: string | null = null;
   #onSubmit: (result: {errors: object; data: FormJSData}) => void = () => {};
   #data: FormJSData | null = null;
