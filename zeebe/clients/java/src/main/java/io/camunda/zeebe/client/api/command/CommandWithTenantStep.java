@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.ExperimentalApi;
 
 public interface CommandWithTenantStep<T> {
 
@@ -27,14 +26,6 @@ public interface CommandWithTenantStep<T> {
   String DEFAULT_TENANT_IDENTIFIER = "<default>";
 
   /**
-   * <strong>Experimental: This method is under development, and as such using it may have no effect
-   * on the command builder when called. While unimplemented, it simply returns the command builder
-   * instance unchanged. This method already exists for software that is building support for
-   * multi-tenancy, and already wants to use this API during its development. As support for
-   * multi-tenancy is added to Zeebe, each of the commands that implement this method may start to
-   * take effect. Until this warning is removed, anything described below may not yet have taken
-   * effect, and the interface and its description are subject to change.</strong>
-   *
    * <p>Specifies the tenant that will own any entities (e.g. process definition, process instances,
    * etc.) resulting from this command, or that owns any entities (e.g. jobs) referred to from this
    * command.
@@ -53,6 +44,5 @@ public interface CommandWithTenantStep<T> {
    * @return the builder for this command with the tenant specified
    * @since 8.3
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/12653")
   T tenantId(String tenantId);
 }
