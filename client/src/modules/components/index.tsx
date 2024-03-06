@@ -49,6 +49,8 @@ export {TenantInfo} from './TenantInfo';
 export {VersionPopover, TenantPopover} from './DefinitionSelection';
 export {CopyToClipboard} from './CopyToClipboard';
 export {ShareEntity} from './ShareEntity';
+export {ErrorPage} from './ErrorPage';
+export {ErrorBoundary} from './ErrorBoundary';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

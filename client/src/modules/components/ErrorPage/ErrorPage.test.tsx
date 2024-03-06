@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import ErrorPage from './ErrorPage';
@@ -13,5 +12,7 @@ import ErrorPage from './ErrorPage';
 it('displays the error message passed in props', () => {
   const node = shallow(<ErrorPage>This is the error message.</ErrorPage>);
 
-  expect(node).toMatchSnapshot();
+  expect(node.text()).toContain('This is the error message.');
+  expect(node.find('h1')).toHaveText('This link is not valid.');
+  expect(node.find('Link')).toHaveText('Go to Home…');
 });

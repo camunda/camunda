@@ -5,11 +5,19 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component, ReactNode} from 'react';
 import {ErrorPage} from 'components';
 
-export default class ErrorBoundary extends React.Component {
-  constructor(props) {
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  error: Error | string | null;
+}
+
+export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
 
     this.state = {
@@ -17,7 +25,7 @@ export default class ErrorBoundary extends React.Component {
     };
   }
 
-  componentDidCatch(error) {
+  componentDidCatch(error: Error) {
     this.setState({error});
   }
 
@@ -31,7 +39,7 @@ export default class ErrorBoundary extends React.Component {
           text={`An application error occured.
 Refresh your browser or close it and sign in again.`}
         >
-          <pre>{error.message || error}</pre>
+          <pre>{typeof error === 'object' ? error.message : error}</pre>
         </ErrorPage>
       );
     }

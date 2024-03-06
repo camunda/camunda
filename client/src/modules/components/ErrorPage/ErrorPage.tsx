@@ -5,13 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ReactNode} from 'react';
 import {Link} from 'react-router-dom';
 
-import './ErrorPage.scss';
 import {t} from 'translation';
 
-export default function ErrorPage({children, noLink, text}) {
+import './ErrorPage.scss';
+
+interface ErrorPageProps {
+  children?: ReactNode;
+  noLink?: boolean;
+  text?: string;
+}
+
+export default function ErrorPage({children, noLink, text}: ErrorPageProps) {
   return (
     <div className="ErrorPage">
       <h1>{text || t('common.errors.inValidLink')}</h1>
