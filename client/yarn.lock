@@ -1980,9 +1980,9 @@
   integrity sha512-2SYjOWdiR13iQ5s1job/ajYYIByqk+rCu6M+m5hmsytgFLf0TxRwGzQn7itHELwxKUQLC5XYJjZ4Sug6urWOMw==
 
 "@carbon/icons-react@^11.25.0", "@carbon/icons-react@^11.28.0":
-  version "11.36.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.36.0.tgz#63ac3bed34cdf95495e7355ed22253a8dcbd1c7d"
-  integrity sha512-gOs0TLvbu7YOk3wUO2BSISDr6cO0yaZ8b1C8SBfUN39pmJVPJ+ZFVUyWLR2tc+im2ksFouuzKGFRz9w3b85bCA==
+  version "11.37.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.37.0.tgz#93971bbb1275f391fad788181c6362a57937d4bb"
+  integrity sha512-WxEv4E8tderAdqQLsSrzpYg1zmMnYFLZAsBY8NRk7Xg1LuaHKC4Wwwjh4EbxGSCKRPTynwWZlIrtwYAw2z7qyw==
   dependencies:
     "@carbon/icon-helpers" "^10.46.0"
     "@carbon/telemetry" "0.1.0"
