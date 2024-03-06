@@ -54,7 +54,8 @@ final class DiskSpaceRecoveryIT {
           .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "1MB")
           .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "1MB")
           .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING", "8MB")
-          .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION", "1MB");
+          .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION", "1MB")
+          .withEnv("ZEEBE_LOG_LEVEL", "DEBUG");
 
   @SuppressWarnings("JUnitMalformedDeclaration")
   @RegisterExtension
