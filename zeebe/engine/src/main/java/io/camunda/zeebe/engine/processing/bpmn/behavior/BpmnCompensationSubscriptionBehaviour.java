@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import static java.util.function.Predicate.not;
+
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
@@ -114,7 +116,7 @@ public class BpmnCompensationSubscriptionBehaviour {
             .findSubscriptionsByProcessInstanceKey(
                 context.getTenantId(), context.getProcessInstanceKey())
             .stream()
-            .filter(BpmnCompensationSubscriptionBehaviour::isCompensationNotTriggered)
+            .filter(not(BpmnCompensationSubscriptionBehaviour::isCompensationTriggered))
             .collect(Collectors.toSet());
 
     if (hasCompensationSubscriptionInScope(subscriptions, context.getFlowScopeKey())) {
@@ -134,9 +136,9 @@ public class BpmnCompensationSubscriptionBehaviour {
             subscription -> subscription.getRecord().getCompensableActivityScopeKey() == scopeKey);
   }
 
-  private static boolean isCompensationNotTriggered(
+  private static boolean isCompensationTriggered(
       final CompensationSubscription compensationSubscription) {
-    return compensationSubscription.getRecord().getThrowEventId().isEmpty();
+    return !compensationSubscription.getRecord().getThrowEventId().isEmpty();
   }
 
   private void triggerCompensationFromTopToBottom(
@@ -250,9 +252,18 @@ public class BpmnCompensationSubscriptionBehaviour {
 
     final var compensationHandlerId = BufferUtil.bufferAsString(element.getId());
 
+    // complete the subscription of the compensation handler
+    // - if there are multiple subscriptions for the same compensation handler then we may
+    // complete the wrong subscription
     compensationSubscriptionState
-        .findSubscriptionByCompensationHandlerId(
-            context.getTenantId(), context.getProcessInstanceKey(), compensationHandlerId)
+        .findSubscriptionsByProcessInstanceKey(
+            context.getTenantId(), context.getProcessInstanceKey())
+        .stream()
+        .filter(BpmnCompensationSubscriptionBehaviour::isCompensationTriggered)
+        .filter(
+            subscription ->
+                subscription.getRecord().getCompensationHandlerId().equals(compensationHandlerId))
+        .findFirst()
         .ifPresent(compensation -> completeSubscription(context, compensation));
   }
 
