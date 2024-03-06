@@ -21,21 +21,24 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
 
   private long userTaskKey;
   private String assignee;
-  private String candidateGroups;
-  private String candidateUsers;
+  private List<String> candidateGroupsList;
+  private List<String> candidateUsersList;
   private String dueDate;
-  private String followUpDate;
-  private long formKey;
   private String elementId;
   private long elementInstanceKey;
   private String bpmnProcessId;
   private int processDefinitionVersion;
   private long processDefinitionKey;
-  private Map<String, Object> variables;
   private long processInstanceKey;
   private String tenantId;
-
   private List<String> changedAttributes;
+  private Map<String, Object> variables;
+  private String followUpDate;
+  private long formKey;
+  private String action;
+  private String externalFormReference;
+  private Map<String, String> customHeaders;
+  private long creationTimestamp;
 
   @JsonIgnore
   public OffsetDateTime getDateForDueDate() {

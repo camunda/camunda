@@ -39,7 +39,7 @@ public class ZeebeProcessInstanceWriter {
 
   public List<ImportRequestDto> generateProcessInstanceImports(
       final List<ProcessInstanceDto> processInstances, final String sourceExportIndex) {
-    String importItemName = "zeebe process instances";
+    final String importItemName = "zeebe process instances";
     log.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
     indexRepository.createMissingIndices(
         PROCESS_INSTANCE_INDEX,
