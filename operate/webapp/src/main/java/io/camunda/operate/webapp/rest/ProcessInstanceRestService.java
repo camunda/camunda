@@ -136,7 +136,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity createBatchOperation(
       @RequestBody final CreateBatchOperationRequestDto batchOperationRequest) {
-    validator.validateCreateBatchRequest(batchOperationRequest);
+    validator.validateCreateBatchOperationRequest(batchOperationRequest);
     return batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 

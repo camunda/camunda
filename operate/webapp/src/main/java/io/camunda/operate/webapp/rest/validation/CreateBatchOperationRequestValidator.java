@@ -20,7 +20,6 @@ import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import java.util.Set;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -30,23 +29,36 @@ public class CreateBatchOperationRequestValidator {
     if (batchOperationRequest.getQuery() == null) {
       throw new InvalidRequestException("List view query must be defined.");
     }
-    if (batchOperationRequest.getOperationType() == null) {
+
+    final OperationType operationType = batchOperationRequest.getOperationType();
+    if (operationType == null) {
       throw new InvalidRequestException("Operation type must be defined.");
     }
-    if (Set.of(OperationType.UPDATE_VARIABLE, OperationType.ADD_VARIABLE)
-        .contains(batchOperationRequest.getOperationType())) {
-      throw new InvalidRequestException(
-          "For variable update use \"Create operation for one process instance\" endpoint.");
-    }
-    if (batchOperationRequest.getOperationType() == OperationType.MIGRATE_PROCESS_INSTANCE) {
-      final MigrationPlanDto migrationPlanDto = batchOperationRequest.getMigrationPlan();
-      if (migrationPlanDto == null) {
+
+    switch (operationType) {
+      case UPDATE_VARIABLE:
+      case ADD_VARIABLE:
         throw new InvalidRequestException(
-            String.format(
-                "Migration plan is mandatory for %s operation",
-                OperationType.MIGRATE_PROCESS_INSTANCE));
-      }
-      migrationPlanDto.validate();
+            "For variable update use \"Create operation for one process instance\" endpoint.");
+
+      case MIGRATE_PROCESS_INSTANCE:
+        validateMigrateProcessInstanceType(batchOperationRequest);
+        break;
+
+      default:
+        break;
     }
+  }
+
+  private void validateMigrateProcessInstanceType(
+      final CreateBatchOperationRequestDto batchOperationRequest) {
+    final MigrationPlanDto migrationPlanDto = batchOperationRequest.getMigrationPlan();
+    if (migrationPlanDto == null) {
+      throw new InvalidRequestException(
+          String.format(
+              "Migration plan is mandatory for %s operation",
+              OperationType.MIGRATE_PROCESS_INSTANCE));
+    }
+    migrationPlanDto.validate();
   }
 }

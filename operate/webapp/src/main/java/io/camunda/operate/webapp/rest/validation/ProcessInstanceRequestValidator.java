@@ -65,7 +65,7 @@ public class ProcessInstanceRequestValidator {
     }
   }
 
-  public void validateCreateBatchRequest(
+  public void validateCreateBatchOperationRequest(
       final CreateBatchOperationRequestDto batchOperationRequest) {
     createBatchOperationRequestValidator.validate(batchOperationRequest);
   }
