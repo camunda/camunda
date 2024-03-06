@@ -34,7 +34,11 @@ import org.agrona.DirectBuffer;
 public final class ProcessInstanceMigrationPreconditionChecker {
 
   private static final EnumSet<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
-      EnumSet.of(BpmnElementType.PROCESS, BpmnElementType.SERVICE_TASK, BpmnElementType.USER_TASK);
+      EnumSet.of(
+          BpmnElementType.PROCESS,
+          BpmnElementType.SERVICE_TASK,
+          BpmnElementType.USER_TASK,
+          BpmnElementType.SUB_PROCESS);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
 
