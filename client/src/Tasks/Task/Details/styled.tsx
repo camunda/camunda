@@ -18,9 +18,11 @@ const AssignButtonContainer = styled.span`
 
 const Header = styled(TaskDetailsRow)`
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   min-height: 40px;
+  gap: var(--cds-spacing-05);
 `;
 
 const HeaderLeftContainer = styled.div`
@@ -33,6 +35,7 @@ const HeaderRightContainer = styled.div`
   align-items: center;
   justify-content: center;
   gap: var(--cds-spacing-05);
+  margin-left: auto;
 `;
 
 const Content = styled(Section)`
