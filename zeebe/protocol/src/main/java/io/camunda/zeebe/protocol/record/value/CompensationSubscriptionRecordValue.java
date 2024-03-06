@@ -66,6 +66,17 @@ public interface CompensationSubscriptionRecordValue extends RecordValue {
   String getCompensationHandlerId();
 
   /**
+   * @return the instance key of the flow scope that contains the activity with the compensation
+   *     handler
+   */
+  long getCompensableActivityScopeKey();
+
+  /**
+   * @return the instance key of the activity with the compensation handler
+   */
+  long getCompensableActivityInstanceKey();
+
+  /**
    * @return the local variables of activity with compensation handler
    */
   Map<String, Object> getVariables();

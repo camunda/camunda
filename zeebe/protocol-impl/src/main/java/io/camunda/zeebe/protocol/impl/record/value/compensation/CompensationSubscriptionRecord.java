@@ -40,10 +40,16 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
       new LongProperty("throwEventInstanceKey", -1);
   private final StringProperty compensationHandlerIdProperty =
       new StringProperty("compensationHandlerId", EMPTY_STRING);
+
+  private final LongProperty compensableActivityScopeKeyProperty =
+      new LongProperty("compensableActivityScopeKey", -1);
+
+  private final LongProperty compensableActivityInstanceKeyProperty =
+      new LongProperty("compensableActivityInstanceKey", -1);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public CompensationSubscriptionRecord() {
-    super(8);
+    super(11);
     declareProperty(tenantIdProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
@@ -52,6 +58,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(throwEventIdProperty)
         .declareProperty(throwEventInstanceKeyProperty)
         .declareProperty(compensationHandlerIdProperty)
+        .declareProperty(compensableActivityScopeKeyProperty)
+        .declareProperty(compensableActivityInstanceKeyProperty)
         .declareProperty(variablesProperty);
   }
 
@@ -64,6 +72,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     throwEventIdProperty.setValue(record.getThrowEventId());
     throwEventInstanceKeyProperty.setValue(record.getThrowEventInstanceKey());
     compensationHandlerIdProperty.setValue(record.getCompensationHandlerId());
+    compensableActivityScopeKeyProperty.setValue(record.getCompensableActivityScopeKey());
+    compensableActivityInstanceKeyProperty.setValue(record.getCompensableActivityInstanceKey());
     variablesProperty.setValue(record.getVariablesBuffer());
   }
 
@@ -123,12 +133,34 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
+  public long getCompensableActivityScopeKey() {
+    return compensableActivityScopeKeyProperty.getValue();
+  }
+
+  @Override
+  public long getCompensableActivityInstanceKey() {
+    return compensableActivityInstanceKeyProperty.getValue();
+  }
+
+  @Override
   public Map<String, Object> getVariables() {
     return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
   public CompensationSubscriptionRecord setVariables(final DirectBuffer variables) {
     variablesProperty.setValue(variables);
+    return this;
+  }
+
+  public CompensationSubscriptionRecord setCompensableActivityInstanceKey(
+      final long compensableActivityInstanceKey) {
+    compensableActivityInstanceKeyProperty.setValue(compensableActivityInstanceKey);
+    return this;
+  }
+
+  public CompensationSubscriptionRecord setCompensableActivityScopeKey(
+      final long scopeInstanceKey) {
+    compensableActivityScopeKeyProperty.setValue(scopeInstanceKey);
     return this;
   }
 

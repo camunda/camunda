@@ -77,8 +77,7 @@ public final class SubProcessProcessor
         .flatMap(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(completing);
-              compensationSubscriptionBehaviour.createCompensationSubscriptionForSubprocess(
-                  element, completing);
+              compensationSubscriptionBehaviour.createCompensationSubscription(element, completing);
               return stateTransitionBehavior.transitionToCompleted(element, completing);
             })
         .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));

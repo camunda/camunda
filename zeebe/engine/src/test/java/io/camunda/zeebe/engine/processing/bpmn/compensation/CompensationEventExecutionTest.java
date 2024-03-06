@@ -13,20 +13,23 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -160,31 +163,29 @@ public class CompensationEventExecutionTest {
         .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
         .complete();
 
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
+        .complete();
+
     // then
     assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
+                .limit(3))
         .extracting(
-            Record::getValueType,
             Record::getIntent,
-            r -> r.getValue().getTenantId(),
-            r -> r.getValue().getProcessInstanceKey(),
             r -> r.getValue().getCompensableActivityId(),
             r -> r.getValue().getThrowEventId())
         .containsSequence(
+            tuple(CompensationSubscriptionIntent.CREATED, "ActivityToCompensate", ""),
             tuple(
-                ValueType.COMPENSATION_SUBSCRIPTION,
-                CompensationSubscriptionIntent.CREATED,
-                TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-                processInstanceKey,
-                "ActivityToCompensate",
-                ""),
-            tuple(
-                ValueType.COMPENSATION_SUBSCRIPTION,
                 CompensationSubscriptionIntent.TRIGGERED,
-                TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-                processInstanceKey,
+                "ActivityToCompensate",
+                "CompensationThrowEvent"),
+            tuple(
+                CompensationSubscriptionIntent.COMPLETED,
                 "ActivityToCompensate",
                 "CompensationThrowEvent"));
   }
@@ -205,6 +206,7 @@ public class CompensationEventExecutionTest {
         .ofInstance(processInstanceKey)
         .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
         .complete();
+
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -222,11 +224,6 @@ public class CompensationEventExecutionTest {
             Record::getIntent,
             r -> r.getValue().getElementId())
         .containsSubsequence(
-            tuple(
-                BpmnElementType.SERVICE_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "ActivityToCompensate"),
             tuple(
                 BpmnElementType.SERVICE_TASK,
                 BpmnEventType.UNSPECIFIED,
@@ -260,11 +257,6 @@ public class CompensationEventExecutionTest {
             tuple(
                 BpmnElementType.SERVICE_TASK,
                 BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationHandler"),
-            tuple(
-                BpmnElementType.SERVICE_TASK,
-                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationHandler"),
             tuple(
@@ -282,14 +274,6 @@ public class CompensationEventExecutionTest {
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 PROCESS_ID));
-
-    assertThat(
-            RecordingExporter.compensationSubscriptionRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(3))
-        .extracting(Record::getValueType, Record::getIntent)
-        .contains(
-            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED));
   }
 
   @Test
@@ -308,6 +292,7 @@ public class CompensationEventExecutionTest {
         .ofInstance(processInstanceKey)
         .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
         .complete();
+
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -325,11 +310,6 @@ public class CompensationEventExecutionTest {
             Record::getIntent,
             r -> r.getValue().getElementId())
         .containsSubsequence(
-            tuple(
-                BpmnElementType.SERVICE_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "ActivityToCompensate"),
             tuple(
                 BpmnElementType.SERVICE_TASK,
                 BpmnEventType.UNSPECIFIED,
@@ -363,11 +343,6 @@ public class CompensationEventExecutionTest {
             tuple(
                 BpmnElementType.SERVICE_TASK,
                 BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationHandler"),
-            tuple(
-                BpmnElementType.SERVICE_TASK,
-                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationHandler"),
             tuple(
@@ -385,14 +360,6 @@ public class CompensationEventExecutionTest {
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 PROCESS_ID));
-
-    assertThat(
-            RecordingExporter.compensationSubscriptionRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(3))
-        .extracting(Record::getValueType, Record::getIntent)
-        .contains(
-            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED));
   }
 
   @Test
@@ -411,16 +378,19 @@ public class CompensationEventExecutionTest {
         .ofInstance(processInstanceKey)
         .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
         .complete();
+
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
         .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY2)
         .complete();
+
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
         .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
         .complete();
+
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -468,10 +438,10 @@ public class CompensationEventExecutionTest {
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(6))
-        .extracting(Record::getValueType, Record::getIntent)
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
         .containsSubsequence(
-            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED),
-            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED));
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler2"));
   }
 
   @Test
@@ -490,16 +460,19 @@ public class CompensationEventExecutionTest {
         .ofInstance(processInstanceKey)
         .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
         .complete();
+
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
         .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY2)
         .complete();
+
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
         .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
         .complete();
+
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -542,19 +515,10 @@ public class CompensationEventExecutionTest {
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 PROCESS_ID));
-
-    assertThat(
-            RecordingExporter.compensationSubscriptionRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(6))
-        .extracting(Record::getValueType, Record::getIntent)
-        .containsSubsequence(
-            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED),
-            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED));
   }
 
   @Test
-  public void shouldActivateAndTerminateCompensationHandlerForIntermediateThrowEvent() {
+  public void shouldTerminateCompensationHandler() {
     // given
     final var process =
         createModelFromClasspathResource("/compensation/compensation-throw-event.bpmn");
@@ -563,13 +527,13 @@ public class CompensationEventExecutionTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // when
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
         .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
         .complete();
 
+    // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
@@ -608,73 +572,15 @@ public class CompensationEventExecutionTest {
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
-        .extracting(Record::getValueType, Record::getIntent)
-        .contains(
-            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED));
-  }
-
-  @Test
-  public void shouldActivateAndTerminateCompensationHandlerForEndEvent() {
-    // given
-    final var process =
-        createModelFromClasspathResource("/compensation/compensation-end-event.bpmn");
-
-    ENGINE.deployment().withXmlResource(process).deploy();
-
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // when
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
-        .complete();
-
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
-
-    // then
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceTerminated())
-        .extracting(
-            r -> r.getValue().getBpmnElementType(),
-            r -> r.getValue().getBpmnEventType(),
-            Record::getIntent,
-            r -> r.getValue().getElementId())
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
         .containsSubsequence(
-            tuple(
-                BpmnElementType.END_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationEndEvent"),
-            tuple(
-                BpmnElementType.END_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_TERMINATED,
-                "CompensationEndEvent"),
-            tuple(
-                BpmnElementType.SERVICE_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_TERMINATED,
-                "CompensationHandler"),
-            tuple(
-                BpmnElementType.PROCESS,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_TERMINATED,
-                PROCESS_ID));
-
-    assertThat(
-            RecordingExporter.compensationSubscriptionRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(3))
-        .extracting(Record::getValueType, Record::getIntent)
-        .contains(
-            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED));
+            tuple(CompensationSubscriptionIntent.TRIGGERED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.DELETED, "CompensationHandler"));
   }
 
   @Test
-  public void shouldDeleteAllSubscriptionWhenProcessIsCompletedWithoutTriggerCompensationHandler() {
+  public void
+      shouldDeleteAllSubscriptionsWhenProcessIsCompletedWithoutTriggerCompensationHandler() {
     // given
     final var process =
         createModelFromClasspathResource("/compensation/compensation-no-throw-event.bpmn");
@@ -698,7 +604,7 @@ public class CompensationEventExecutionTest {
 
   @Test
   public void
-      shouldDeleteAllSubscriptionWhenProcessIsTerminatedWithoutTriggerCompensationHandler() {
+      shouldDeleteAllSubscriptionsWhenProcessIsTerminatedWithoutTriggerCompensationHandler() {
     // given
     final var process =
         createModelFromClasspathResource(
@@ -756,19 +662,10 @@ public class CompensationEventExecutionTest {
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(8))
-        .extracting(
-            Record::getValueType,
-            Record::getIntent,
-            r -> r.getValue().getCompensableActivityScopeId())
-        .containsSubsequence(
-            tuple(
-                ValueType.COMPENSATION_SUBSCRIPTION,
-                CompensationSubscriptionIntent.TRIGGERED,
-                "embedded-subprocess"),
-            tuple(
-                ValueType.COMPENSATION_SUBSCRIPTION,
-                CompensationSubscriptionIntent.TRIGGERED,
-                "embedded-subprocess-2"));
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .contains(
+            tuple(CompensationSubscriptionIntent.TRIGGERED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.TRIGGERED, "CompensationHandler2"));
   }
 
   @Test
@@ -795,17 +692,10 @@ public class CompensationEventExecutionTest {
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(4))
-        .extracting(
-            Record::getValueType, Record::getIntent, r -> r.getValue().getCompensableActivityId())
-        .containsSubsequence(
-            tuple(
-                ValueType.COMPENSATION_SUBSCRIPTION,
-                CompensationSubscriptionIntent.DELETED,
-                "ActivityToCompensate"),
-            tuple(
-                ValueType.COMPENSATION_SUBSCRIPTION,
-                CompensationSubscriptionIntent.DELETED,
-                "embedded-subprocess"));
+        .extracting(Record::getIntent, r -> r.getValue().getCompensableActivityId())
+        .contains(
+            tuple(CompensationSubscriptionIntent.DELETED, "embedded-subprocess"),
+            tuple(CompensationSubscriptionIntent.DELETED, "ActivityToCompensate"));
   }
 
   @Test
@@ -837,20 +727,17 @@ public class CompensationEventExecutionTest {
     assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(6))
+                .limit(5))
         .extracting(
-            Record::getValueType,
             Record::getIntent,
             r -> r.getValue().getCompensableActivityScopeId(),
             r -> r.getValue().getCompensationHandlerId())
         .containsSubsequence(
             tuple(
-                ValueType.COMPENSATION_SUBSCRIPTION,
                 CompensationSubscriptionIntent.COMPLETED,
                 "embedded-subprocess",
                 "CompensationHandler2"),
             tuple(
-                ValueType.COMPENSATION_SUBSCRIPTION,
                 CompensationSubscriptionIntent.DELETED,
                 "compensation-process",
                 "CompensationHandler"));
@@ -901,6 +788,364 @@ public class CompensationEventExecutionTest {
                 BpmnElementType.PROCESS,
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldInvokeCompensationHandlerTheSameAmountAsExecuted() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-multi-instance.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeJobs(processInstanceKey, SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY, 3);
+
+    completeJobs(processInstanceKey, SERVICE_TASK_TYPE_COMPENSATION_HANDLER, 3);
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(20))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .containsSubsequence(
+            tuple(CompensationSubscriptionIntent.TRIGGERED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.TRIGGERED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.TRIGGERED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldTriggerOnlyCorrectHandlerForMultiInstance() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-throw-error.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    completeJobs(processInstanceKey, SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY, 3);
+
+    // when
+    final AtomicInteger jobCount = new AtomicInteger(1);
+
+    ENGINE
+        .jobs()
+        .withType("activity")
+        .activate()
+        .getValue()
+        .getJobKeys()
+        .forEach(
+            jobKey -> {
+              if (jobCount.get() == 2) {
+                ENGINE.job().withKey(jobKey).throwError();
+              } else {
+                ENGINE.job().withKey(jobKey).complete();
+              }
+              jobCount.getAndIncrement();
+            });
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(8))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .containsSubsequence(
+            tuple(CompensationSubscriptionIntent.TRIGGERED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldTriggerCompensationHandlerOnlyOnce() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-multi-throw-event.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
+        .complete();
+
+    // When
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(6))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .containsSubsequence(
+            tuple(CompensationSubscriptionIntent.TRIGGERED, ""),
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler"));
+  }
+
+  @Test
+  public void shouldCompleteSubprocessAfterAllCompensationHandlerAreCompleted() {
+    // given
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-subprocess-multi-handler.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
+        .complete();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY2)
+        .complete();
+
+    // When
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
+        .complete();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER2)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(9))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .containsSubsequence(
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.COMPLETED, "CompensationHandler2"),
+            tuple(CompensationSubscriptionIntent.COMPLETED, ""));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldNotTriggerCompensationHandlerIfTheParentSubprocessIsNotCompleted() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-multi-subprocess.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
+        .complete();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("activity2").complete();
+
+    // When
+    ENGINE.job().ofInstance(processInstanceKey).withType("activity").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(6))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .containsSubsequence(
+            tuple(CompensationSubscriptionIntent.CREATED, "CompensationHandler"),
+            tuple(CompensationSubscriptionIntent.DELETED, "CompensationHandler"));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldNotTriggerHandlersForMultiInstanceInsideNotCompletedSubprocess() {
+    // given
+    final Consumer<SubProcessBuilder> subprocessLevel2 =
+        subprocess ->
+            subprocess
+                .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask("A", task -> task.zeebeJobType("A"))
+                .boundaryEvent()
+                .compensation(
+                    compensation -> compensation.serviceTask("Undo-A").zeebeJobType("Undo-A"));
+
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .parallelGateway("fork")
+            .subProcess(
+                "subprocess-1",
+                subprocess ->
+                    subprocess
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .subProcess("subprocess-2", subprocessLevel2)
+                        .serviceTask("B", task -> task.zeebeJobType("B"))
+                        .endEvent())
+            .parallelGateway("join")
+            .moveToNode("fork")
+            .serviceTask("C", task -> task.zeebeJobType("C"))
+            .intermediateThrowEvent("compensation-throw-event")
+            .compensateEventDefinition()
+            .compensateEventDefinitionDone()
+            .connectTo("join")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    completeJobs(processInstanceKey, "A", 3);
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("C").complete();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(tuple("Undo-A", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void
+      shouldNotTriggerHandlersForSubprocessIfParentMultiInstancesSubprocessesAreNotCompleted() {
+    // given
+    final Consumer<SubProcessBuilder> subprocessLevel2 =
+        subprocess ->
+            subprocess
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask("A", task -> task.zeebeJobType("A"))
+                .boundaryEvent()
+                .compensation(
+                    compensation -> compensation.serviceTask("Undo-A").zeebeJobType("Undo-A"));
+
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .parallelGateway("fork")
+            .subProcess(
+                "subprocess",
+                subprocess ->
+                    subprocess
+                        .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2,3]"))
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .subProcess("subprocess-2", subprocessLevel2)
+                        .serviceTask("B", task -> task.zeebeJobType("B")))
+            .parallelGateway("join")
+            .moveToNode("fork")
+            .serviceTask("C", task -> task.zeebeJobType("C"))
+            .intermediateThrowEvent("compensation-throw-event")
+            .compensateEventDefinition()
+            .compensateEventDefinitionDone()
+            .connectTo("join")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    completeJobs(processInstanceKey, "A", 3);
+
+    final var jobKeysOfTaskB =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("B")
+            .limit(3)
+            .map(Record::getKey)
+            .toList();
+
+    ENGINE.job().withKey(jobKeysOfTaskB.getFirst()).complete();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("C").complete();
+
+    jobKeysOfTaskB.stream().skip(1).forEach(key -> ENGINE.job().withKey(key).complete());
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(tuple("Undo-A", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
@@ -1074,5 +1319,14 @@ public class CompensationEventExecutionTest {
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
     final var resourceAsStream = getClass().getResourceAsStream(classpath);
     return Bpmn.readModelFromStream(resourceAsStream);
+  }
+
+  private void completeJobs(final long processInstanceKey, final String jobType, final int number) {
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(jobType)
+        .limit(number)
+        .map(Record::getKey)
+        .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
   }
 }

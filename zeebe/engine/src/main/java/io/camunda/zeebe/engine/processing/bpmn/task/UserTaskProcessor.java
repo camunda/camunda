@@ -91,7 +91,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
             })
         .thenDo(
             completed -> {
-              compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
+              compensationSubscriptionBehaviour.completeCompensationHandler(element, completed);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             });
   }
