@@ -36,17 +36,18 @@ export default function createPlugins({updateReport, report: {combined, data, re
       endDate: 'instanceEndDate',
     };
 
-    plugins.push(
-      zoomIn({
-        updateReport,
-        filters: data.filter,
-        type: groupByFilterType[data.groupBy.type],
-        valueRange: {
-          min: parseISO(dataPoints[0]),
-          max: parseISO(dataPoints[dataPoints.length - 1]),
-        },
-      })
-    );
+    !!dataPoints.length &&
+      plugins.push(
+        zoomIn({
+          updateReport,
+          filters: data.filter,
+          type: groupByFilterType[data.groupBy.type],
+          valueRange: {
+            min: parseISO(dataPoints[0]),
+            max: parseISO(dataPoints[dataPoints.length - 1]),
+          },
+        })
+      );
   }
 
   return plugins;
