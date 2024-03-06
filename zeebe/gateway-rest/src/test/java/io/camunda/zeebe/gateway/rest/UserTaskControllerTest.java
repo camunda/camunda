@@ -26,6 +26,8 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.net.URI;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,9 @@ import reactor.core.publisher.Mono;
 public class UserTaskControllerTest {
 
   private static final String USER_TASKS_BASE_URL = "v1/user-tasks";
+
+  private static final String TEST_TIME =
+      ZonedDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneId.of("UTC")).toString();
 
   @MockBean BrokerClient brokerClient;
   Supplier<CompletableFuture<BrokerResponse<Object>>> brokerResponseFutureSupplier;
@@ -210,8 +215,8 @@ public class UserTaskControllerTest {
                 new Changeset()
                     .addCandidateGroupsItem("foo")
                     .addCandidateUsersItem("bar")
-                    .dueDate("abc")
-                    .followUpDate("def"));
+                    .dueDate(TEST_TIME)
+                    .followUpDate(TEST_TIME));
 
     // when / then
     webClient
@@ -236,8 +241,8 @@ public class UserTaskControllerTest {
             UserTaskRecord.CANDIDATE_GROUPS,
             UserTaskRecord.DUE_DATE,
             UserTaskRecord.FOLLOW_UP_DATE)
-        .hasDueDate("abc")
-        .hasFollowUpDate("def")
+        .hasDueDate(TEST_TIME)
+        .hasFollowUpDate(TEST_TIME)
         .hasCandidateGroupsList("foo")
         .hasCandidateUsersList("bar");
   }
@@ -247,7 +252,7 @@ public class UserTaskControllerTest {
     // given
     final var request =
         new UserTaskUpdateRequest()
-            .changeset(new Changeset().addCandidateGroupsItem("foo").followUpDate("def"));
+            .changeset(new Changeset().addCandidateGroupsItem("foo").followUpDate(TEST_TIME));
 
     // when / then
     webClient
@@ -269,7 +274,7 @@ public class UserTaskControllerTest {
         .hasAction("")
         .hasChangedAttributes(UserTaskRecord.CANDIDATE_GROUPS, UserTaskRecord.FOLLOW_UP_DATE)
         .hasDueDate("")
-        .hasFollowUpDate("def")
+        .hasFollowUpDate(TEST_TIME)
         .hasCandidateGroupsList("foo")
         .hasNoCandidateUsersList();
   }
@@ -284,7 +289,9 @@ public class UserTaskControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .body(
             BodyInserters.fromValue(
-                "{\"changeset\": { \"followUpDate\": \"def\", \"candidateGroups\": [\"foo\"]}}"))
+                "{\"changeset\": { \"followUpDate\": \""
+                    + TEST_TIME
+                    + "\", \"candidateGroups\": [\"foo\"]}}"))
         .exchange()
         .expectStatus()
         .isNoContent()
@@ -298,7 +305,7 @@ public class UserTaskControllerTest {
         .hasAction("")
         .hasChangedAttributes(UserTaskRecord.CANDIDATE_GROUPS, UserTaskRecord.FOLLOW_UP_DATE)
         .hasDueDate("")
-        .hasFollowUpDate("def")
+        .hasFollowUpDate(TEST_TIME)
         .hasCandidateGroupsList("foo")
         .hasNoCandidateUsersList();
   }
@@ -374,8 +381,8 @@ public class UserTaskControllerTest {
                 new Changeset()
                     .addCandidateGroupsItem("foo")
                     .addCandidateUsersItem("bar")
-                    .dueDate("abc")
-                    .followUpDate("def"));
+                    .dueDate(TEST_TIME)
+                    .followUpDate(TEST_TIME));
 
     // when / then
     webClient
@@ -400,8 +407,8 @@ public class UserTaskControllerTest {
             UserTaskRecord.CANDIDATE_GROUPS,
             UserTaskRecord.DUE_DATE,
             UserTaskRecord.FOLLOW_UP_DATE)
-        .hasDueDate("abc")
-        .hasFollowUpDate("def")
+        .hasDueDate(TEST_TIME)
+        .hasFollowUpDate(TEST_TIME)
         .hasCandidateGroupsList("foo")
         .hasCandidateUsersList("bar");
   }
@@ -423,6 +430,98 @@ public class UserTaskControllerTest {
         .uri(USER_TASKS_BASE_URL + "/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+
+    Mockito.verifyNoInteractions(brokerClient);
+  }
+
+  @Test
+  public void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedDueDate() {
+    // given
+    final var request = new UserTaskUpdateRequest().changeset(new Changeset().dueDate("foo"));
+
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "The provided due date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.");
+    expectedBody.setTitle("INVALID_ARGUMENT");
+    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskUpdateRequest.class)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+
+    Mockito.verifyNoInteractions(brokerClient);
+  }
+
+  @Test
+  public void shouldYieldBadRequestWhenUpdateTaskWithMalformedFollowUpDate() {
+    // given
+    final var request = new UserTaskUpdateRequest().changeset(new Changeset().followUpDate("foo"));
+
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "The provided follow-up date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.");
+    expectedBody.setTitle("INVALID_ARGUMENT");
+    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskUpdateRequest.class)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+
+    Mockito.verifyNoInteractions(brokerClient);
+  }
+
+  @Test
+  public void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedFollowUpAndDueDate() {
+    // given
+    final var request =
+        new UserTaskUpdateRequest().changeset(new Changeset().dueDate("bar").followUpDate("foo"));
+
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            "The provided due date 'bar' cannot be parsed as a date according to RFC 3339, section 5.6. "
+                + "The provided follow-up date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.");
+    expectedBody.setTitle("INVALID_ARGUMENT");
+    expectedBody.setInstance(URI.create("/api/v1/user-tasks/1"));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("api/v1/user-tasks/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskUpdateRequest.class)
         .exchange()
         .expectStatus()
         .isBadRequest()
