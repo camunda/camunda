@@ -105,7 +105,7 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            """
+                """
             Expected to migrate process instance '%d' \
             but a concurrent command was executed on the process instance. \
             Please retry the migration."""
@@ -276,7 +276,7 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            """
+                """
             Expected to migrate process instance '%d' \
             but a concurrent command was executed on the process instance. \
             Please retry the migration."""
@@ -688,7 +688,7 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            """
+                """
             Expected to migrate process instance '%d' \
             but a concurrent command was executed on the process instance. \
             Please retry the migration."""
@@ -793,7 +793,7 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            """
+                """
             Expected to migrate process instance '%d' \
             but active element with id 'timer' has an unsupported type. \
             The migration of a BOUNDARY_EVENT is not supported."""
@@ -892,7 +892,7 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            """
+                """
             Expected to migrate process instance '%d' \
             but a concurrent command was executed on the process instance. \
             Please retry the migration."""

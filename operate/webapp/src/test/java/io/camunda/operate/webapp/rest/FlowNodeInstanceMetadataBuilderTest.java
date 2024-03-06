@@ -103,7 +103,8 @@ class FlowNodeInstanceMetadataBuilderTest {
         Optional.of(
             new UserTaskEntity()
                 .setUserTaskKey(42L)
-                .setVariables("""
+                .setVariables(
+                    """
       { "name": "Homer Simpson", "City":"Springfield" }
 """)
                 .setAction("action")
@@ -150,7 +151,8 @@ class FlowNodeInstanceMetadataBuilderTest {
         Optional.of(
             new UserTaskEntity()
                 .setUserTaskKey(42L)
-                .setVariables("""
+                .setVariables(
+                    """
       { "name": "Homer Simpson"
 """));
     when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
