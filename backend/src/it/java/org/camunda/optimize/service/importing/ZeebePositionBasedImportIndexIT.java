@@ -5,10 +5,24 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.BpmnModels.START_EVENT;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
+
 import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.github.netmikey.logunit.api.LogCapturer;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.AbstractCCSMIT;
@@ -18,35 +32,14 @@ import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.importing.zeebe.fetcher.es.AbstractZeebeRecordFetcherES;
+import org.camunda.optimize.service.importing.zeebe.fetcher.os.AbstractZeebeRecordFetcherOS;
 import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.event.LoggingEvent;
-
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.util.BpmnModels.START_EVENT;
-import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
-import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
-import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
-import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
@@ -60,7 +53,9 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
   private final LogCapturer positionBasedHandlerLogs = LogCapturer.create().captureForType(PositionBasedImportIndexHandler.class);
   @RegisterExtension
   @Order(2)
-  private final LogCapturer zeebeFetcherLogs = LogCapturer.create().captureForType(AbstractZeebeRecordFetcherES.class);
+  private final LogCapturer zeebeFetcherLogs = LogCapturer.create()
+      .captureForType(AbstractZeebeRecordFetcherES.class)
+      .captureForType(AbstractZeebeRecordFetcherOS.class);
 
   @Test
   public void importPositionIsZeroIfNothingIsImportedYet() {
@@ -435,20 +430,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
   private List<ZeebeProcessInstanceRecordDto> getZeebeExportedProcessInstances() {
     final String expectedIndex =
       zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
-    final OptimizeElasticsearchClient esClient =
-      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(expectedIndex)
-      .source(new SearchSourceBuilder()
-                .query(matchAllQuery())
-                .trackTotalHits(true)
-                .size(10000));
-    final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
-    return ElasticsearchReaderUtil.mapHits(
-      searchResponse.getHits(),
-      ZeebeProcessInstanceRecordDto.class,
-      embeddedOptimizeExtension.getObjectMapper()
-    );
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(expectedIndex, ZeebeProcessInstanceRecordDto.class);
   }
 
   private void waitUntilInstanceRecordWithElementTypeAndIntentExported(final BpmnElementType elementType, final Intent intent) {

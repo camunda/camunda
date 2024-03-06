@@ -253,12 +253,18 @@ jobs:
           excludedGroups: ''
           profiles: 'it,engine-latest'
           requiresCambpm: true
-        # TODO with #11449 once OS project is completed remove this "includedGroups" section and the "exclude"
-        # section below
+        # TODO with #11449 once OS project is completed remove all the "includedGroups" and
+        # the "exclude" section below
         - includedGroups: 'openSearchPassing'
           excludedGroups: 'openSearchSingleTestFailOK,openSearchShouldBePassing'
           profiles: 'it,engine-latest'
           requiresCambpm: true
+          database: 'opensearch'
+        # Always run CCSM with OpenSearch, also on master, since it's passing.
+        - includedGroups: 'ccsm-test'
+          excludedGroups: ''
+          profiles: 'ccsm-it'
+          requiresCambpm: false
           database: 'opensearch'
         exclude:
         - database: 'elasticsearch'

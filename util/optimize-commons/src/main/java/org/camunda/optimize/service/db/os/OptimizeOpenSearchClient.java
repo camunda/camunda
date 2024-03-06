@@ -54,6 +54,7 @@ import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
@@ -268,18 +269,24 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   public <T> long count(final String[] indexNames, final T query, final String errorMessage) {
-    if (query instanceof Query openSearchQuery) {
-      final CountRequest.Builder countReqBuilder =
-          new CountRequest.Builder().index(List.of(indexNames)).query(openSearchQuery);
-      final CountResponse response =
-          richOpenSearchClient.doc().count(countReqBuilder, e -> errorMessage);
-      return response.count();
+    Query osQuery;
+    if (query instanceof QueryVariant openSearchQuery) {
+      osQuery = openSearchQuery.toQuery();
     } else {
-      throw new IllegalArgumentException(
-          "The count method requires an OpenSearch object of type Query, "
-              + "instead got "
-              + query.getClass().getSimpleName());
+      if (query instanceof Query) {
+        osQuery = (Query) query;
+      } else {
+        throw new IllegalArgumentException(
+            "The count method requires an OpenSearch object of type Query, "
+                + "instead got "
+                + query.getClass().getSimpleName());
+      }
     }
+    final CountRequest.Builder countReqBuilder =
+        new CountRequest.Builder().index(List.of(indexNames)).query(osQuery);
+    final CountResponse response =
+        richOpenSearchClient.doc().count(countReqBuilder, e -> errorMessage);
+    return response.count();
   }
 
   public long count(final String indexName, final String errorMessage) {

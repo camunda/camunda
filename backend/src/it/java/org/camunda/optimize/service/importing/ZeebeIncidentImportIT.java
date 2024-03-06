@@ -5,8 +5,27 @@
  */
 package org.camunda.optimize.service.importing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus.OPEN;
+import static org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus.RESOLVED;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
+import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
+import static org.camunda.optimize.util.ZeebeBpmnModels.CATCH_EVENT;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createIncidentProcess;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
+
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
@@ -20,40 +39,11 @@ import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentDataDto;
 import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.condition.EnabledIf;
-
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus.OPEN;
-import static org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus.RESOLVED;
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
-import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
-import static org.camunda.optimize.util.ZeebeBpmnModels.CATCH_EVENT;
-import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
-import static org.camunda.optimize.util.ZeebeBpmnModels.createIncidentProcess;
-import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
@@ -236,12 +226,13 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     waitUntilIncidentRecordsWithProcessIdExported(1, processId);
   }
 
-  private BoolQueryBuilder getQueryForIncidentEvents() {
-    return boolQuery().must(termsQuery(
-      ZeebeProcessInstanceRecordDto.Fields.intent,
+  private TermsQueryContainer getQueryForIncidentEvents() {
+    TermsQueryContainer query = new TermsQueryContainer();
+    query.addTermQuery(ZeebeProcessInstanceRecordDto.Fields.intent, List.of(
       IncidentIntent.CREATED.name(),
       IncidentIntent.RESOLVED.name()
     ));
+    return query;
   }
 
   private IncidentDto createIncident(final ProcessInstanceDto processInstanceDto,
@@ -285,21 +276,12 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   private Map<Long, List<ZeebeIncidentRecordDto>> getZeebeExportedIncidentEventsByElementId() {
     final String expectedIndex =
       zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
-    final OptimizeElasticsearchClient esClient =
-      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(expectedIndex)
-      .source(new SearchSourceBuilder()
-                .query(getQueryForIncidentEvents())
-                .trackTotalHits(true)
-                .size(100));
-    final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
-    return ElasticsearchReaderUtil.mapHits(
-        searchResponse.getHits(),
-        ZeebeIncidentRecordDto.class,
-        embeddedOptimizeExtension.getObjectMapper()
-      ).stream()
-      .collect(Collectors.groupingBy(event -> event.getValue().getElementInstanceKey()));
+    return databaseIntegrationTestExtension.getZeebeExportedRecordsByQuery(
+      expectedIndex,
+      getQueryForIncidentEvents(),
+      ZeebeIncidentRecordDto.class
+    ).stream()
+        .collect(Collectors.groupingBy(event -> event.getValue().getElementInstanceKey()));
   }
 
   private void resolveIncident() {

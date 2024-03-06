@@ -336,8 +336,11 @@ public abstract class AbstractCCSMIT extends AbstractIT {
       final String exportIndex,
       final TermsQueryContainer queryForProcessableEvents,
       final Class<T> zeebeRecordClass) {
-    return databaseIntegrationTestExtension.getZeebeExportedProcessableEvents(
-        exportIndex, queryForProcessableEvents, zeebeRecordClass);
+    return databaseIntegrationTestExtension.getZeebeExportedRecordsByQuery(
+      exportIndex,
+      queryForProcessableEvents,
+      zeebeRecordClass
+    );
   }
 
   private TermsQueryContainer getQueryForProcessableUserTaskEvents() {

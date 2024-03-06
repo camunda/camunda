@@ -5,9 +5,28 @@
  */
 package org.camunda.optimize.test.it.extension.db;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
+
 import com.google.common.collect.Iterables;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import jakarta.ws.rs.NotSupportedException;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -68,26 +87,6 @@ import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.testcontainers.shaded.org.apache.commons.lang3.NotImplementedException;
 
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
-
 @Slf4j
 public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
@@ -104,6 +103,25 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     super(customIndexPrefix, haveToClean);
     initOsClient();
     setTestIndexRepository(new TestIndexRepositoryOS(prefixAwareOptimizeOpenSearchClient));
+  }
+
+  private static ClientAndServer initMockServer() {
+    return DatabaseTestService.initMockServer(
+      IntegrationTestConfigurationUtil
+        .createItConfigurationService()
+        .getOpenSearchConfiguration()
+        .getFirstConnectionNode());
+  }
+
+  @NotNull
+  private static IndexRequest.Builder createIndexRequestBuilder(final String indexName, final String id, final Object entry) {
+    final IndexRequest.Builder request =
+      new IndexRequest.Builder()
+        .document(entry)
+        .index(indexName)
+        .id(id)
+        .refresh(Refresh.True);
+    return request;
   }
 
   @Override
@@ -156,7 +174,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void refreshAllOptimizeIndices() {
     try {
-      RefreshRequest refreshAllIndicesRequest =
+      final RefreshRequest refreshAllIndicesRequest =
         new RefreshRequest.Builder()
           .index(getIndexNameService().getIndexPrefix() + "*")
           .build();
@@ -164,13 +182,13 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       getOptimizeOpenSearchClient().getOpenSearchClient()
         .indices()
         .refresh(refreshAllIndicesRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeIntegrationTestException("Could not refresh Optimize indices!", e);
     }
   }
 
   @Override
-  public void addEntryToDatabase(String indexName, String id, Object entry) {
+  public void addEntryToDatabase(final String indexName, final String id, final Object entry) {
     final IndexRequest.Builder request = createIndexRequestBuilder(indexName, id, entry);
     final IndexResponse response = getOptimizeOpenSearchClient().getRichOpenSearchClient()
       .doc()
@@ -182,13 +200,13 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void addEntriesToDatabase(String indexName, Map<String, Object> idToEntryMap) {
+  public void addEntriesToDatabase(final String indexName, final Map<String, Object> idToEntryMap) {
     StreamSupport.stream(Iterables.partition(idToEntryMap.entrySet(), 10_000).spliterator(), false)
       .forEach(batch -> {
         final BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-        List<BulkOperation> operations = new ArrayList<>();
-        for (Map.Entry<String, Object> idAndObject : batch) {
-          IndexOperation.Builder<Object> operation =
+        final List<BulkOperation> operations = new ArrayList<>();
+        for (final Map.Entry<String, Object> idAndObject : batch) {
+          final IndexOperation.Builder<Object> operation =
             new IndexOperation.Builder<>().document(idAndObject.getValue()).id(idAndObject.getKey());
           operations.add(operation.build()._toBulkOperation());
         }
@@ -214,7 +232,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     try {
       return Long.valueOf(getOptimizeOpenSearchClient()
                             .count(new String[]{indexName}, QueryDSL.matchAll())).intValue();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(
         "Cannot evaluate document count for index " + indexName,
         e
@@ -229,7 +247,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public Integer getCountOfCompletedInstancesWithIdsIn(final Set<Object> processInstanceIds) {
-    Set<String> stringProcessInstanceIds = processInstanceIds.stream()
+    final Set<String> stringProcessInstanceIds = processInstanceIds.stream()
       .map(Object::toString)
       .collect(Collectors.toSet());
 
@@ -354,7 +372,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   @SneakyThrows
   @Override
   public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String dbType, final String engine) {
-    Optional<TimestampBasedImportIndexDto> response = prefixAwareOptimizeOpenSearchClient.getRichOpenSearchClient()
+    final Optional<TimestampBasedImportIndexDto> response = prefixAwareOptimizeOpenSearchClient.getRichOpenSearchClient()
       .doc()
       .getWithRetries(
         TIMESTAMP_BASED_IMPORT_INDEX_NAME,
@@ -396,9 +414,12 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   @SneakyThrows
   @Override
   public void deleteAllOtherZeebeRecordsWithPrefix(final String zeebeRecordPrefix, final String recordsToKeep) {
-    final GetIndexResponse allIndices = getOptimizeOpenSearchClient().getRichOpenSearchClient()
-      .index()
-      .get(RequestDSL.getIndexRequestBuilder("*").ignoreUnavailable(true));
+    // Since we are retrieving zeebe records, we cannot use the rich opensearch client,
+    // because it will add optimize prefixes to the request
+    final GetIndexResponse allIndices = getOptimizeOpenSearchClient()
+        .getOpenSearchClient()
+        .indices()
+        .get(RequestDSL.getIndexRequestBuilder("*").ignoreUnavailable(true).build());
 
     final String[] indicesToDelete = allIndices.result().keySet().stream()
       .filter(indexName -> indexName.contains(zeebeRecordPrefix) && !indexName.contains(recordsToKeep))
@@ -470,16 +491,18 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   @SneakyThrows
-  public <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex, final TermsQueryContainer queryForProcessableEvents, final Class<T> zeebeRecordClass) {
-    BoolQuery query = queryForProcessableEvents.toOpenSearchQuery();
-    SearchRequest.Builder searchRequest = RequestDSL.searchRequestBuilder()
+  public <T> List<T> getZeebeExportedRecordsByQuery(final String exportIndex,
+      final TermsQueryContainer queryForZeebeRecords,
+      final Class<T> zeebeRecordClass) {
+    final BoolQuery query = queryForZeebeRecords.toOpenSearchQuery();
+    final SearchRequest.Builder searchRequest = RequestDSL.searchRequestBuilder()
       .index(exportIndex)
       .query(query.toQuery())
       .size(100);
     return getOptimizeOpenSearchClient()
       .getOpenSearchClient()
       .search(searchRequest.build(), zeebeRecordClass)
-      .documents();
+      .hits().hits().stream().map(Hit::source).toList();
   }
 
   @Override
@@ -568,6 +591,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
+  @Override
   @SneakyThrows
   public String getDatabaseVersion() {
     if (opensearchDatabaseVersion == null) {
@@ -576,6 +600,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     }
     return opensearchDatabaseVersion;
   }
+
   private OptimizeOpenSearchClient getOptimizeOpenSearchClient() {
     return prefixAwareOptimizeOpenSearchClient;
   }
@@ -588,15 +613,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
-  private static ClientAndServer initMockServer() {
-    return DatabaseTestService.initMockServer(
-      IntegrationTestConfigurationUtil
-        .createItConfigurationService()
-        .getOpenSearchConfiguration()
-        .getFirstConnectionNode());
-  }
-
-  private void createClientAndAddToCache(String clientKey, ConfigurationService configurationService) {
+  private void createClientAndAddToCache(final String clientKey, final ConfigurationService configurationService) {
     final DatabaseConnectionNodeConfiguration osConfig =
       configurationService.getOpenSearchConfiguration().getFirstConnectionNode();
     log.info("Creating OS Client with host {} and port {}", osConfig.getHost(), osConfig.getHttpPort());
@@ -619,13 +636,13 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   private void adjustClusterSettings() {
-    PutClusterSettingsRequest.Builder settings = new PutClusterSettingsRequest.Builder()
+    final PutClusterSettingsRequest.Builder settings = new PutClusterSettingsRequest.Builder()
       .persistent("action.auto_create_index", JsonData.of(true))
       .persistent("cluster.max_shards_per_node", JsonData.of(10000))
       .flatSettings(true);
     try {
       getOptimizeOpenSearchClient().getOpenSearchClient().cluster().putSettings(settings.build());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Could not update cluster settings!", e);
     }
   }
@@ -647,16 +664,16 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       .trackTotalHits(new TrackHits.Builder().enabled(true).build())
       .size(100);
 
-    String errorMessage = "Was not able to retrieve all documents for indices";
-    SearchResponse<T> searchResponse = getOptimizeOpenSearchClient().search(searchReqBuilder, type, errorMessage);
-    return searchResponse.hits().hits().stream().map(Hit::source).toList();
+    final String errorMessage = "Was not able to retrieve all documents for indices";
+    final SearchResponse<T> searchResponse = getOptimizeOpenSearchClient().search(searchReqBuilder, type, errorMessage);
+    return searchResponse.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
   }
 
   private int getInstanceCountWithQuery(final Query query) {
     try {
       return Long.valueOf(getOptimizeOpenSearchClient()
                             .count(new String[]{PROCESS_INSTANCE_MULTI_ALIAS}, query)).intValue();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(
         "Cannot evaluate document count for index " + PROCESS_INSTANCE_MULTI_ALIAS,
         e
@@ -671,17 +688,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   private void deleteIndexOfMapping(final IndexMappingCreator<IndexSettings.Builder> indexMapping) {
     deleteIndices(new String[]{indexMapping.getIndexName()});
-  }
-
-  @NotNull
-  private static IndexRequest.Builder createIndexRequestBuilder(final String indexName, final String id, final Object entry) {
-    IndexRequest.Builder request =
-      new IndexRequest.Builder()
-        .document(entry)
-        .index(indexName)
-        .id(id)
-        .refresh(Refresh.True);
-    return request;
   }
 
   private void deleteIndices(final String[] indicesToDelete) {

@@ -5,6 +5,21 @@
  */
 package org.camunda.optimize.test.it.extension.db;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +27,15 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -38,43 +62,50 @@ import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
-
 @Slf4j
 public abstract class DatabaseTestService {
 
   protected static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
-
-  protected boolean haveToClean;
   protected final String customIndexPrefix;
+  protected boolean haveToClean;
+  @Getter
   private TestIndexRepository testIndexRepository;
 
   protected DatabaseTestService(final String customIndexPrefix,
                                 final boolean haveToClean) {
     this.customIndexPrefix = customIndexPrefix;
     this.haveToClean = haveToClean;
+  }
+
+  protected static ClientAndServer initMockServer(final DatabaseConnectionNodeConfiguration dbConfig) {
+    log.info("Setting up DB MockServer on port {}", IntegrationTestConfigurationUtil.getDatabaseMockServerPort());
+    return MockServerUtil.createProxyMockServer(
+      dbConfig.getHost(),
+      dbConfig.getHttpPort(),
+      IntegrationTestConfigurationUtil.getDatabaseMockServerPort()
+    );
+  }
+
+  private static ObjectMapper createObjectMapper() {
+    final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter));
+
+    return Jackson2ObjectMapperBuilder
+      .json()
+      .modules(javaTimeModule)
+      .featuresToDisable(
+        SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+        DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+        DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
+      )
+      .featuresToEnable(
+        JsonParser.Feature.ALLOW_COMMENTS,
+        SerializationFeature.INDENT_OUTPUT
+      )
+      .build();
   }
 
   public ObjectMapper getObjectMapper() {
@@ -157,9 +188,9 @@ public abstract class DatabaseTestService {
 
   public abstract long countRecordsByQuery(final TermsQueryContainer queryContainer, final String expectedIndex);
 
-  public abstract <T> List<T> getZeebeExportedProcessableEvents(final String exportIndex,
-                                                                final TermsQueryContainer queryForProcessableEvents,
-                                                                final Class<T> zeebeRecordClass);
+  public abstract <T> List<T> getZeebeExportedRecordsByQuery(final String exportIndex,
+                                                             final TermsQueryContainer queryForZeebeRecords,
+                                                             final Class<T> zeebeRecordClass);
 
   public abstract void updateEventProcessRoles(final String eventProcessId, final List<IdentityDto> identityDtos);
 
@@ -189,7 +220,7 @@ public abstract class DatabaseTestService {
   public abstract String getDatabaseVersion();
 
   public void disableCleanup() {
-    this.haveToClean = false;
+    haveToClean = false;
   }
 
   public void cleanAndVerifyDatabase() {
@@ -199,14 +230,10 @@ public abstract class DatabaseTestService {
       deleteAllEventProcessInstanceIndices();
       deleteCamundaEventIndicesAndEventCountsAndTraces();
       deleteAllProcessInstanceArchiveIndices();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       //nothing to do
       log.error("can't clean optimize indexes", e);
     }
-  }
-
-  public TestIndexRepository getTestIndexRepository() {
-    return testIndexRepository;
   }
 
   public List<ProcessInstanceDto> getProcessInstancesById(final List<String> instanceIds) {
@@ -274,15 +301,6 @@ public abstract class DatabaseTestService {
     deleteIndicesStartingWithPrefix(EVENT_PROCESS_INSTANCE_INDEX_PREFIX);
   }
 
-  protected static ClientAndServer initMockServer(final DatabaseConnectionNodeConfiguration dbConfig) {
-    log.info("Setting up DB MockServer on port {}", IntegrationTestConfigurationUtil.getDatabaseMockServerPort());
-    return MockServerUtil.createProxyMockServer(
-      dbConfig.getHost(),
-      dbConfig.getHttpPort(),
-      IntegrationTestConfigurationUtil.getDatabaseMockServerPort()
-    );
-  }
-
   protected List<EventProcessRoleRequestDto<IdentityDto>> mapIdentityDtosToEventProcessRoleRequestDto(
     final List<IdentityDto> identityDtos) {
     return identityDtos.stream()
@@ -290,28 +308,6 @@ public abstract class DatabaseTestService {
       .map(identityDto -> new IdentityDto(identityDto.getId(), identityDto.getType()))
       .map(EventProcessRoleRequestDto::new)
       .collect(Collectors.toList());
-  }
-
-  private static ObjectMapper createObjectMapper() {
-    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
-    JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter));
-
-    return Jackson2ObjectMapperBuilder
-      .json()
-      .modules(javaTimeModule)
-      .featuresToDisable(
-        SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
-        DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
-        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-        DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
-      )
-      .featuresToEnable(
-        JsonParser.Feature.ALLOW_COMMENTS,
-        SerializationFeature.INDENT_OUTPUT
-      )
-      .build();
   }
 
 }

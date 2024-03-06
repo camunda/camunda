@@ -5,24 +5,6 @@
  */
 package org.camunda.optimize.service.importing.processdefinition;
 
-import io.camunda.zeebe.client.api.response.Process;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import lombok.SneakyThrows;
-import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractCCSMIT;
-import org.camunda.optimize.dto.optimize.DataImportSourceType;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
-import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
-import org.junit.jupiter.api.condition.EnabledIf;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
@@ -42,6 +24,23 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.createProcessWith83Signa
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
+
+import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import lombok.SneakyThrows;
+import org.assertj.core.groups.Tuple;
+import org.camunda.optimize.AbstractCCSMIT;
+import org.camunda.optimize.dto.optimize.DataImportSourceType;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
 
