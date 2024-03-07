@@ -46,6 +46,14 @@ public class SearchCheckPredicatesHolder {
   @Qualifier("processInstancesAreFinishedCheck")
   private Predicate<Object[]> processInstancesAreFinishedCheck;
 
+  @Autowired
+  @Qualifier("incidentsAreActiveCheck")
+  private Predicate<Object[]> incidentsAreActiveCheck;
+
+  @Autowired
+  @Qualifier("incidentsInProcessAreActiveCheck")
+  private Predicate<Object[]> incidentsInProcessAreActiveCheck;
+
   public Predicate<Object[]> getProcessIsDeployedCheck() {
     return processIsDeployedCheck;
   }
@@ -60,5 +68,13 @@ public class SearchCheckPredicatesHolder {
 
   public Predicate<Object[]> getProcessInstancesAreFinishedCheck() {
     return processInstancesAreFinishedCheck;
+  }
+
+  public Predicate<Object[]> getIncidentsAreActiveCheck() {
+    return incidentsAreActiveCheck;
+  }
+
+  public Predicate<Object[]> getIncidentsInProcessAreActiveCheck() {
+    return incidentsInProcessAreActiveCheck;
   }
 }

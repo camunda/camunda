@@ -14,86 +14,68 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.webapp.rest.dto.metadata;
+package io.camunda.operate.zeebeimport;
 
-import io.camunda.operate.entities.EventEntity;
-import io.camunda.operate.entities.FlowNodeType;
-import java.time.OffsetDateTime;
-import java.util.Objects;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class BusinessRuleTaskInstanceMetadataDto extends JobFlowNodeInstanceMetadataDto
-    implements FlowNodeInstanceMetadata {
+import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.IncidentState;
+import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
+import io.camunda.zeebe.client.api.command.MigrationPlan;
+import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
+import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-  private String calledDecisionInstanceId;
-  private String calledDecisionDefinitionName;
+public class IncidentImportIT extends OperateZeebeSearchAbstractIT {
 
-  public BusinessRuleTaskInstanceMetadataDto(
-      final String flowNodeId,
-      final String flowNodeInstanceId,
-      final FlowNodeType flowNodeType,
-      final OffsetDateTime startDate,
-      final OffsetDateTime endDate,
-      final EventEntity event,
-      final String calledDecisionInstanceId,
-      final String calledDecisionDefinitionName) {
-    super(flowNodeId, flowNodeInstanceId, flowNodeType, startDate, endDate, event);
-    if (calledDecisionInstanceId != null) {
-      setCalledDecisionInstanceId(calledDecisionInstanceId);
-    }
-    if (calledDecisionDefinitionName != null) {
-      setCalledDecisionDefinitionName(calledDecisionDefinitionName);
-    }
-  }
+  @Autowired private IncidentTemplate incidentTemplate;
 
-  public BusinessRuleTaskInstanceMetadataDto() {
-    super();
-  }
+  @Test
+  public void shouldImportMigratedIncident() throws IOException {
 
-  public String getCalledDecisionInstanceId() {
-    return calledDecisionInstanceId;
-  }
+    // given
+    String bpmnSource = "double-task-incident.bpmn";
+    String bpmnTarget = "double-task.bpmn";
+    Long processDefinitionKeySource = operateTester.deployProcessAndWait(bpmnSource);
+    Long processDefinitionKeyTarget = operateTester.deployProcessAndWait(bpmnTarget);
 
-  public BusinessRuleTaskInstanceMetadataDto setCalledDecisionInstanceId(
-      final String calledDecisionInstanceId) {
-    this.calledDecisionInstanceId = calledDecisionInstanceId;
-    return this;
-  }
+    // when
+    Long processInstanceKey = operateTester.startProcessAndWait("doubleTaskIncident");
+    operateTester.waitUntilIncidentsAreActive(processInstanceKey, 1);
 
-  public String getCalledDecisionDefinitionName() {
-    return calledDecisionDefinitionName;
-  }
+    MigrationPlan migrationPlan =
+        new MigrationPlanImpl(processDefinitionKeyTarget, new ArrayList<>());
+    List.of("taskA", "taskB")
+        .forEach(
+            item ->
+                migrationPlan
+                    .getMappingInstructions()
+                    .add(new MigrationPlanBuilderImpl.MappingInstruction(item + "Incident", item)));
+    zeebeClient
+        .newMigrateProcessInstanceCommand(processInstanceKey)
+        .migrationPlan(migrationPlan)
+        .send()
+        .join();
 
-  public BusinessRuleTaskInstanceMetadataDto setCalledDecisionDefinitionName(
-      final String calledDecisionDefinitionName) {
-    this.calledDecisionDefinitionName = calledDecisionDefinitionName;
-    return this;
-  }
+    operateTester.waitUntilIncidentsInProcessAreActive("doubleTask", 1);
+    List<IncidentEntity> incidents =
+        testSearchRepository.searchTerm(
+            incidentTemplate.getAlias(),
+            IncidentTemplate.PROCESS_INSTANCE_KEY,
+            processInstanceKey,
+            IncidentEntity.class,
+            1);
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), calledDecisionInstanceId, calledDecisionDefinitionName);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    final BusinessRuleTaskInstanceMetadataDto that = (BusinessRuleTaskInstanceMetadataDto) o;
-    return Objects.equals(calledDecisionInstanceId, that.calledDecisionInstanceId)
-        && Objects.equals(calledDecisionDefinitionName, that.calledDecisionDefinitionName);
-  }
-
-  @Override
-  public String toString() {
-    return "BusinessRuleTaskInstanceMetadataDto{"
-        + "calledDecisionInstanceId='"
-        + calledDecisionInstanceId
-        + '\''
-        + ", calledDecisionDefinitionName='"
-        + calledDecisionDefinitionName
-        + '\''
-        + "} "
-        + super.toString();
+    // then
+    assertThat(incidents.size()).isEqualTo(1);
+    assertThat(incidents.get(0).getState()).isEqualTo(IncidentState.ACTIVE);
+    assertThat(incidents.get(0).getBpmnProcessId()).isEqualTo("doubleTask");
+    assertThat(incidents.get(0).getProcessDefinitionKey()).isEqualTo(processDefinitionKeyTarget);
+    assertThat(incidents.get(0).getFlowNodeId()).isEqualTo("taskA");
   }
 }

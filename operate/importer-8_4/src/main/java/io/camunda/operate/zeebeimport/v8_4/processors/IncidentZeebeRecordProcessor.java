@@ -18,10 +18,7 @@ package io.camunda.operate.zeebeimport.v8_4.processors;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
-import io.camunda.operate.entities.ErrorType;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.*;
 import io.camunda.operate.entities.post.PostImporterActionType;
 import io.camunda.operate.entities.post.PostImporterQueueEntity;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -39,6 +36,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -89,7 +87,10 @@ public class IncidentZeebeRecordProcessor {
   private void persistPostImportQueueEntry(
       final Record record, final IncidentRecordValue recordValue, final BatchRequest batchRequest)
       throws PersistenceException {
-    final String intent = record.getIntent().name();
+    String intent = record.getIntent().name();
+    if (intent.equals(IncidentIntent.MIGRATED.toString())) {
+      intent = IncidentIntent.CREATED.toString();
+    }
     final PostImporterQueueEntity postImporterQueueEntity =
         new PostImporterQueueEntity()
             // id = incident key + intent
@@ -123,7 +124,7 @@ public class IncidentZeebeRecordProcessor {
           OperationType.RESOLVE_INCIDENT,
           batchRequest);
       // resolved incident is not updated directly, only in post importer
-    } else if (intentStr.equals(IncidentIntent.CREATED.toString())) {
+    } else {
       final IncidentEntity incident =
           new IncidentEntity()
               .setId(ConversionUtils.toStringOrNull(incidentKey))
@@ -155,13 +156,26 @@ public class IncidentZeebeRecordProcessor {
           .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
       logger.debug("Index incident: id {}", incident.getId());
-      // we only insert incidents but never update -> update will be performed in post importer
+
+      final Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intentStr, incident);
       batchRequest.upsert(
           incidentTemplate.getFullQualifiedName(),
           String.valueOf(incident.getKey()),
           incident,
-          Map.of());
+          updateFields);
       newIncidentHandler.accept(incident);
     }
+  }
+
+  private static Map<String, Object> getUpdateFieldsMapByIntent(
+      final String intent, final IncidentEntity incidentEntity) {
+    final Map<String, Object> updateFields = new HashMap<>();
+    if (intent.equals(IncidentIntent.MIGRATED.name())) {
+      updateFields.put(IncidentTemplate.BPMN_PROCESS_ID, incidentEntity.getBpmnProcessId());
+      updateFields.put(
+          IncidentTemplate.PROCESS_DEFINITION_KEY, incidentEntity.getProcessDefinitionKey());
+      updateFields.put(IncidentTemplate.FLOW_NODE_ID, incidentEntity.getFlowNodeId());
+    }
+    return updateFields;
   }
 }

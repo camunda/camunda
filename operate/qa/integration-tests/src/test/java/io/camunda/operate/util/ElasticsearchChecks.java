@@ -827,6 +827,22 @@ public class ElasticsearchChecks {
     }
   }
 
+  public long getIncidentsCount(String bpmnProcessId, IncidentState state) {
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(incidentTemplate)
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        joinWithAnd(
+                            termQuery(STATE, state), termQuery(BPMN_PROCESS_ID, bpmnProcessId))));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return response.getHits().getTotalHits().value;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   /**
    * Including pending
    *
@@ -880,6 +896,28 @@ public class ElasticsearchChecks {
       int incidentsCount = (int) objects[1];
       try {
         return getActiveIncidentsCount(processInstanceKey) == incidentsCount;
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  /**
+   * Checks whether the incidents of given args[0] bpmnProcessId (Long) equals given args[1]
+   * incidentsCount (Integer)
+   *
+   * @return
+   */
+  @Bean(name = "incidentsInProcessAreActiveCheck")
+  public Predicate<Object[]> incidentsInProcessAreActiveCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(String.class);
+      assertThat(objects[1]).isInstanceOf(Integer.class);
+      String bpmnProcessId = (String) objects[0];
+      int incidentsCount = (int) objects[1];
+      try {
+        return getIncidentsCount(bpmnProcessId, IncidentState.ACTIVE) == incidentsCount;
       } catch (NotFoundException ex) {
         return false;
       }
