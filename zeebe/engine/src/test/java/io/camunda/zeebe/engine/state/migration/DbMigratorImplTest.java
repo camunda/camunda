@@ -197,4 +197,26 @@ public class DbMigratorImplTest {
     // then -- migration is not run
     verify(mockMigration, never()).runMigration(mockProcessingState);
   }
+
+  @Test
+  void shouldNotRunMigrationsIfTheSameVersion() {
+    // given
+    final var mockProcessingState = mock(MutableProcessingState.class);
+    final var mockMigrationState = mock(MutableMigrationState.class);
+    // the version is the same as the migrated version
+    when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
+    final String currentVersion = VersionUtil.getVersion();
+    when(mockMigrationState.getMigratedByVersion()).thenReturn(currentVersion);
+
+    final var mockMigration = mock(MigrationTask.class);
+
+    final var sut =
+        new DbMigratorImpl(mockProcessingState, Collections.singletonList(mockMigration));
+
+    // when
+    sut.runMigrations();
+
+    // then
+    verify(mockMigration, never()).runMigration(mockProcessingState);
+  }
 }
