@@ -6,7 +6,7 @@
 ARG BASE_IMAGE="ubuntu:jammy"
 ARG BASE_DIGEST="sha256:f9d633ff6640178c2d0525017174a688e2c1aef28f0a0130b26bd5554491f0da"
 ARG JDK_IMAGE="eclipse-temurin:17-jdk-jammy"
-ARG JDK_DIGEST="sha256:fff4a27c817ab1e215bdbd8d3105703c2fb2b5af32cf215de67e383be3fadcc6"
+ARG JDK_DIGEST="sha256:721e57dee9ae41be4791f3c7da8250c41086551790fdd8b10c30bb4c9577ba8e"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
