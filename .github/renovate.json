@@ -9,9 +9,17 @@
     "/^stable\\/8\\..*/"
   ],
   "dependencyDashboard": true,
-  "enabledManagers": [
-    "maven", "dockerfile", "gomod", "github-actions"
+  "prConcurrentLimit": 30,
+  "updateNotScheduled": false,
+  "schedule": [
+    "after 10pm every weekday",
+    "before 6am every weekday"
   ],
+  "helmv3": {
+    "registryAliases": {
+      "helm-camunda-io": "https://helm.camunda.io"
+    }
+  },
   "packageRules": [
     {
       "matchBaseBranches": ["/^stable\\/8\\..*/"],
@@ -67,6 +75,29 @@
       "description" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
       "matchPackagePatterns": [".*"],
       "allowedVersions": "!/-SNAPSHOT$/"
+    },
+    {
+      "matchManagers": ["npm", "nvm"],
+      "additionalBranchPrefix": "fe-"
+    },
+    {
+      "matchPackagePrefixes": ["@types/"],
+      "groupName": "definitelyTyped"
+    },
+    {
+      "extends": "monorepo:react",
+      "groupName": "react monorepo"
+    },
+    {
+      "extends": "monorepo:react-router",
+      "groupName": "react-router monorepo"
+    },
+    {
+      "matchManagers": ["npm", "nvm"],
+      "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["patch"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch"
     }
   ],
   "dockerfile": {
@@ -74,9 +105,5 @@
       "zeebe/benchmarks/**",
       "clients/go/vendor/**"
     ]
-  },
-  "schedule": [
-    "after 8pm every weekday",
-    "before 6am every weekday"
-  ]
+  }
 }
