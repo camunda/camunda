@@ -56,6 +56,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class DigestService implements ConfigurationReloadable {
 
+  private static final String DIGEST_EMAIL_TEMPLATE = "digestEmailTemplate.ftl";
+  private static final String HTTP_PREFIX = "http://";
+  private static final String HTTPS_PREFIX = "https://";
+  private static final String UTM_SOURCE = "digest";
+  private static final String UTM_MEDIUM = "email";
+  private static final String DEFAULT_LOCALE = "en";
   private final ConfigurationService configurationService;
   private final EmailService emailService;
   private final AbstractIdentityService identityService;
@@ -65,16 +71,8 @@ public class DigestService implements ConfigurationReloadable {
   private final ProcessOverviewReader processOverviewReader;
   private final ReportReader reportReader;
   private final RootUrlGenerator rootUrlGenerator;
-
   private final Map<String, ScheduledFuture<?>> scheduledDigestTasks = new HashMap<>();
   private ThreadPoolTaskScheduler digestTaskScheduler;
-
-  private static final String DIGEST_EMAIL_TEMPLATE = "digestEmailTemplate.ftl";
-  private static final String HTTP_PREFIX = "http://";
-  private static final String HTTPS_PREFIX = "https://";
-  private static final String UTM_SOURCE = "digest";
-  private static final String UTM_MEDIUM = "email";
-  private static final String DEFAULT_LOCALE = "en";
 
   @PostConstruct
   public void init() {
@@ -84,9 +82,9 @@ public class DigestService implements ConfigurationReloadable {
 
   @PreDestroy
   public void destroy() {
-    if (this.digestTaskScheduler != null) {
-      this.digestTaskScheduler.destroy();
-      this.digestTaskScheduler = null;
+    if (digestTaskScheduler != null) {
+      digestTaskScheduler.destroy();
+      digestTaskScheduler = null;
     }
   }
 
@@ -139,11 +137,11 @@ public class DigestService implements ConfigurationReloadable {
 
   private void initTaskScheduler() {
     if (digestTaskScheduler == null) {
-      this.digestTaskScheduler = new ThreadPoolTaskScheduler();
-      this.digestTaskScheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
-      this.digestTaskScheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-      this.digestTaskScheduler.setThreadNamePrefix("DigestTaskScheduler");
-      this.digestTaskScheduler.initialize();
+      digestTaskScheduler = new ThreadPoolTaskScheduler();
+      digestTaskScheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+      digestTaskScheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+      digestTaskScheduler.setThreadNamePrefix("DigestTaskScheduler");
+      digestTaskScheduler.initialize();
     }
   }
 
@@ -174,7 +172,7 @@ public class DigestService implements ConfigurationReloadable {
 
     try {
       composeAndSendDigestEmail(overviewDto, mostRecentKpiReportResults);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Failed to send digest email", e);
     } finally {
       // The most recent results are then set as the baseline for the digest
@@ -226,7 +224,7 @@ public class DigestService implements ConfigurationReloadable {
         "kpiResults",
             getKpiSummaryDtos(
                 processDefinitionName, currentKpiReportResults, previousKpiReportResults),
-        "optimizeProcessPageLink", getOptimizeProcessPageLink());
+        "optimizeHomePageLink", getOptimizeHomePageLink());
   }
 
   private int calculateSuccessfulKpiInPercent(
@@ -244,7 +242,7 @@ public class DigestService implements ConfigurationReloadable {
   private void updateBaselineKpiReportResults(
       final String processDefinitionKey, final List<KpiResultDto> mostRecentKpiReportResults) {
     // We must use a Map that allows null values, so explicitly create a HashMap here
-    Map<String, String> reportIdsToValues = new HashMap<>();
+    final Map<String, String> reportIdsToValues = new HashMap<>();
     mostRecentKpiReportResults.forEach(
         result -> reportIdsToValues.put(result.getReportId(), result.getValue()));
     processOverviewWriter.updateProcessDigestResults(
@@ -255,8 +253,8 @@ public class DigestService implements ConfigurationReloadable {
     return new DigestTask(this, processDefinitionKey);
   }
 
-  private String getOptimizeProcessPageLink() {
-    return rootUrlGenerator.getRootUrl() + "/#/processes";
+  private String getOptimizeHomePageLink() {
+    return rootUrlGenerator.getRootUrl() + "/#/";
   }
 
   private String getReportViewLink(final String reportId, final String collectionId) {
@@ -308,6 +306,12 @@ public class DigestService implements ConfigurationReloadable {
         .toList();
   }
 
+  public enum KpiChangeType {
+    GOOD, // compared to previous report value, new value is closer to KPI target
+    NEUTRAL, // no change
+    BAD // compared to previous report value, new value is further away from KPI target
+  }
+
   @Data
   public static class DigestTemplateKpiSummaryDto {
     private final String reportName;
@@ -326,17 +330,17 @@ public class DigestService implements ConfigurationReloadable {
         @Nullable final String previousValue) {
       this.reportName = reportName;
       this.reportLink = reportLink;
-      this.kpiType = StringUtils.capitalize(kpiResultDto.getType().getId());
-      this.targetMet = kpiResultDto.isTargetMet();
-      this.target =
+      kpiType = StringUtils.capitalize(kpiResultDto.getType().getId());
+      targetMet = kpiResultDto.isTargetMet();
+      target =
           getKpiTargetString(
               kpiResultDto.getTarget(),
               kpiResultDto.getUnit(),
               kpiResultDto.getMeasure(),
               kpiResultDto.isBelow());
-      this.current = getKpiValueString(kpiResultDto.getValue(), kpiResultDto.getMeasure());
-      this.changeInPercent = getKpiChangeInPercent(kpiResultDto, previousValue);
-      this.changeType =
+      current = getKpiValueString(kpiResultDto.getValue(), kpiResultDto.getMeasure());
+      changeInPercent = getKpiChangeInPercent(kpiResultDto, previousValue);
+      changeType =
           evaluateChangeType(kpiResultDto, getKpiChangeInPercent(kpiResultDto, previousValue));
     }
 
@@ -349,7 +353,7 @@ public class DigestService implements ConfigurationReloadable {
         final TargetValueUnit unit,
         final ViewProperty kpiMeasure,
         final boolean isBelow) {
-      String targetString;
+      final String targetString;
       if (ViewProperty.DURATION.equals(kpiMeasure)) {
         targetString = target + " " + StringUtils.capitalize(unit.getId());
       } else if (ViewProperty.PERCENTAGE.equals(kpiMeasure)) {
@@ -396,11 +400,5 @@ public class DigestService implements ConfigurationReloadable {
         return changeInPercent > 0. ? KpiChangeType.GOOD : KpiChangeType.BAD;
       }
     }
-  }
-
-  public enum KpiChangeType {
-    GOOD, // compared to previous report value, new value is closer to KPI target
-    NEUTRAL, // no change
-    BAD // compared to previous report value, new value is further away from KPI target
   }
 }
