@@ -63,7 +63,8 @@ paths:
       description: The final cluster consists of only the brokers in the request body. New brokers
                    in the request will be added to the cluster. Any existing brokers that are not part
                    of the request will be removed from the cluster. The partitions will be re-distributed
-                   to the given brokers. All brokers must be running to complete the operation.
+                   to the given brokers. All brokers must be running to complete the operation unless the
+                   parameter force is set to true.
       requestBody:
         required: true
         content:
@@ -72,6 +73,8 @@ paths:
               $ref: "#/components/schemas/ScaleRequest"
       parameters:
         - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/ForceParameter'
+        - $ref: '#/components/parameters/ReplicationFactorParameter'
       responses:
         '202':
           $ref: "#/components/responses/ScaleBrokersResponse"
@@ -118,6 +121,24 @@ components:
       schema:
         type: boolean
         default: false
+    ForceParameter:
+      name: force
+      description: If true, the operation is a force operation. This is typically used to force remove a set of brokers when they are not available.
+      in: query
+      style: form
+      required: false
+      schema:
+        type: boolean
+        default: false
+    ReplicationFactorParameter:
+        name: replicationFactor
+        description: The new replication factor for the partitions. If not specified, the current replication factor is used.
+        in: query
+        style: form
+        required: false
+        schema:
+            type: integer
+            format: int32
 
   responses:
     ConcurrentChangeError:
