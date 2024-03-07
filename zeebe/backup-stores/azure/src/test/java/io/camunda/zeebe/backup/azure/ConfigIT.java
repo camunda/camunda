@@ -81,9 +81,6 @@ public class ConfigIT {
 
     Assertions.assertThatCode(() -> new AzureBackupStore(azureBackupConfig))
             .hasMessage("'accountName' cannot be null.");
-    Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
-            .hasMessage(
-                    "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
   }
 
   @Test
@@ -99,7 +96,7 @@ public class ConfigIT {
             .hasMessage("The Azure Storage endpoint url is malformed.");
     Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
             .hasMessage(
-                    "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
+                    "Connection string, endpoint, or all of connection information (account name, account key, and endpoint) must be provided.");
   }
 
   @Test
