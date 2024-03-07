@@ -119,7 +119,7 @@ which is used specifically to communicate between members of the same cluster vi
 
 - `io.atomix.cluster.messaging.MessagingException.NoSuchMemberException` - this can occur in two
   ways. This can be returned immediately at the calling site (so on the client side) if the there is
-  known member with the given ID in the cluster (obtained via the membership protocol). It can also
+  no known member with the given ID in the cluster (obtained via the membership protocol). It can also
   be returned by the server if the request was received, parsed, but the server does not know any
   member matching the sender's address. Make sure to read the exception message to figure out which
   case. In either case, this is typically transient and can be retried, but if it persists, this
