@@ -85,17 +85,6 @@ paths:
           $ref: '#/components/responses/GatewayError'
         '504':
           $ref: '#/components/responses/TimeoutError'
-    get:
-      summary: Return the list of broker ids
-      responses:
-        '200':
-          description: Returns the list of broker ids
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/BrokerId"
 
   /:
     get:
