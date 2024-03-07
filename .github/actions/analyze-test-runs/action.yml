@@ -7,13 +7,17 @@ inputs:
   buildOutputFilePath:
     description: 'Path to the build log file.'
     required: true
+  skipSummary:
+    description: "Whether to run the test-summary action, it might run into problems an large test outputs"
+    default: "false"
+    required: false
 
 runs:
   using: composite
   steps:
   - name: Test Summary
     uses: test-summary/action@v2
-    if: always()
+    if: ${{ inputs.skipSummary == 'false' }}
     with:
       paths: |
         **/target/failsafe-reports/TEST-*.xml
