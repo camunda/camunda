@@ -35,65 +35,6 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldRejectMigrationForActiveSubProcess() {
-    // given
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(SOURCE_PROCESS)
-                    .startEvent()
-                    .subProcess(
-                        "sub", s -> s.embeddedSubProcess().startEvent().userTask("A").endEvent())
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(TARGET_PROCESS)
-                    .startEvent()
-                    .subProcess(
-                        "sub",
-                        s ->
-                            s.embeddedSubProcess()
-                                .startEvent()
-                                .userTask("A")
-                                .userTask("B")
-                                .endEvent())
-                    .endEvent()
-                    .done())
-            .deploy();
-    final long targetProcessDefinitionKey = extractTargetProcessDefinitionKey(deployment);
-
-    final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(SOURCE_PROCESS).create();
-
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("A")
-        .await();
-
-    // when
-    final var rejection =
-        ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .migration()
-            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("A", "A")
-            .expectRejection()
-            .migrate();
-
-    // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
-    Assertions.assertThat(rejection.getRejectionReason())
-        .contains(
-            String.format(
-                """
-                Expected to migrate process instance '%s' but active element with id '%s' \
-                has an unsupported type. The migration of a %s is not supported""",
-                processInstanceKey, "sub", "SUB_PROCESS"));
-  }
-
-  @Test
   public void shouldRejectMigrationForActiveMessageIntermediateCatchEvent() {
     // given
     final var deployment =
