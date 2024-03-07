@@ -17,6 +17,7 @@
 package io.atomix.cluster.messaging;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.utils.net.Address;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -63,7 +64,7 @@ public interface ClusterCommunicationService {
    * @param subject message subject
    * @param message message to send
    * @param encoder function for encoding message to byte[]
-   * @param reliable whether to perform a reliable (TCP) unicast
+   * @param reliable whether to perform a reliable (TCP) unicast or not (UDP)
    * @param <M> message type
    */
   <M> void broadcast(String subject, M message, Function<M, byte[]> encoder, boolean reliable);
@@ -75,7 +76,7 @@ public interface ClusterCommunicationService {
    * @param message message to send
    * @param encoder function for encoding message to byte[]
    * @param memberIds recipient node identifiers
-   * @param reliable whether to perform a reliable (TCP) unicast
+   * @param reliable whether to perform a reliable (TCP) unicast or not (UDP)
    * @param <M> message type
    */
   <M> void multicast(
@@ -92,7 +93,7 @@ public interface ClusterCommunicationService {
    * @param message message to send
    * @param encoder function for encoding message to byte[]
    * @param memberId recipient node identifier
-   * @param reliable whether to perform a reliable (TCP) unicast
+   * @param reliable whether to perform a reliable (TCP) unicast or not (UDP)
    * @param <M> message type
    */
   <M> void unicast(
@@ -100,6 +101,15 @@ public interface ClusterCommunicationService {
 
   /**
    * Sends a message and expects a reply.
+   *
+   * <p>The returned future may be completed exceptionally with any exceptions listed by {@link
+   * MessagingService#sendAndReceive(Address, String, byte[], boolean, Duration, Executor)}, as well
+   * as:
+   *
+   * <ul>
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.NoSuchMemberException} - indicates
+   *       that the local membership protocol cannot resolve the given member ID to a node address
+   * </ul>
    *
    * @param subject message subject
    * @param message message to send
