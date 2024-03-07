@@ -64,6 +64,7 @@ public final class GrpcClientRule extends ExternalResource {
   public GrpcClientRule(final ZeebeClient client) {
     this.client = client;
     configurator = config -> {};
+    resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
   @Override
