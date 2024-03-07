@@ -40,7 +40,7 @@ The protocol negotiation works as follows:
 
 ### Protocol format
 
-> [!Note] 
+> [!Note]
 > Version 2 has been around for years, so it's almost impossible to run into version 1 in
 > the wild. As such, documentation will focus on version 2 for now.
 
