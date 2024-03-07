@@ -1,3 +1,7 @@
+# v8.5.0-alpha2
+## 🧹 Chore
+* updating configuration for Tasklist distro - Spring 3.2.2 ([#4648](https://github.com/camunda/tasklist/issues/4648))
+* update CHANGELOG.md
 # v8.5.0-alpha1
 ## 🚀 New Features
 * add a control which allows tasklist to automatically select the first task ([#4325](https://github.com/camunda/tasklist/issues/4325))
