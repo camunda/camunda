@@ -20,7 +20,7 @@
       <version>${project.version}</version>
       <classifier>exec</classifier>
     </dependency>
-    
+
   </dependencies>
 
   <build>
@@ -54,7 +54,7 @@
               <jvmSettings>
                 <extraArgument>-Dloader.main=io.camunda.tasklist.schema.migration.SchemaMigration</extraArgument>
               </jvmSettings>
-              <mainClass>org.springframework.boot.loader.PropertiesLauncher</mainClass>
+              <mainClass>org.springframework.boot.loader.launch.PropertiesLauncher</mainClass>
               <id>migrate</id>
             </program>
           </programs>
