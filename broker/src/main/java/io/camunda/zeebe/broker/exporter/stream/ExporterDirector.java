@@ -115,6 +115,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     return actor.close();
   }
 
+  /**
+   * This method enables us to pause the exporting of records. No records are exported until resume
+   * exporting is invoked.
+   *
+   * <p>If the exporter is soft paused and pauseExporting is called, the exporter will be "hard"
+   * paused.
+   */
   public ActorFuture<Void> pauseExporting() {
     if (actor.isClosed()) {
       // Actor can be closed when there are no exporters. In that case pausing is a no-op.
@@ -129,6 +136,14 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         });
   }
 
+  /**
+   * When the exporter is soft paused, we keep exporting the records without updating the exporter
+   * state. Upon resuming, the exporter is updated with the position and metadata of the last
+   * exported record.
+   *
+   * <p>If the exporter is hard paused and softPauseExporting is called, the exporter will be soft
+   * paused.
+   */
   public ActorFuture<Void> softPauseExporting() {
     if (actor.isClosed()) {
       // Actor can be closed when there are no exporters. In that case pausing is a no-op.
@@ -144,6 +159,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         });
   }
 
+  /**
+   * This method enables us to resume the exporting of records after it has been paused. It works
+   * both to resume the "soft pause" state and the "paused" state. Upon resuming, the exporter is
+   * updated with the position and metadata of the last exported record.
+   */
   public ActorFuture<Void> resumeExporting() {
     if (actor.isClosed()) {
       // Actor can be closed when there are no exporters. In that case resuming is a no-op.
