@@ -52,6 +52,7 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
+import org.camunda.optimize.service.db.os.ExtendedOpenSearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -75,9 +76,9 @@ public class OpenSearchClientBuilder {
 
   private static final Logger log = LoggerFactory.getLogger(OpenSearchClientBuilder.class);
 
-  public static OpenSearchClient buildOpenSearchClientFromConfig(
+  public static ExtendedOpenSearchClient buildOpenSearchClientFromConfig(
       final ConfigurationService configurationService) {
-    return new OpenSearchClient(buildOpenSearchTransport(configurationService));
+    return new ExtendedOpenSearchClient(buildOpenSearchTransport(configurationService));
   }
 
   public static OpenSearchAsyncClient buildOpenSearchAsyncClientFromConfig(

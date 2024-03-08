@@ -41,7 +41,8 @@ public class OptimizeOpenSearchClientFactory {
     // TODO Evaluate the need for OpenSearchCustomHeaderProvider with OPT-7400
     final RequestOptionsProvider requestOptionsProvider =
         new RequestOptionsProvider(Collections.emptyList(), configurationService);
-    final OpenSearchClient openSearchClient = buildOpenSearchClientFromConfig(configurationService);
+    final ExtendedOpenSearchClient openSearchClient =
+        buildOpenSearchClientFromConfig(configurationService);
     final OpenSearchAsyncClient openSearchAsyncClient =
         buildOpenSearchAsyncClientFromConfig(configurationService);
     waitForOpenSearch(
