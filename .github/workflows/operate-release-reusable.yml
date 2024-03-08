@@ -74,7 +74,7 @@ env:
 jobs:
   release:
     name: "'${{ inputs.branch }}' branch"
-    runs-on: gcp-core-2-default
+    runs-on: gcp-core-32-release
     steps:
       #########################################################################
       # Setup: checkout branch
