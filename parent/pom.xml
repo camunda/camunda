@@ -108,6 +108,7 @@
     <version.json-smart>2.4.8</version.json-smart>
     <version.byte-buddy>1.14.12</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
+    <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.167</version.classgraph>
@@ -519,6 +520,48 @@
 
       <dependency>
         <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-configuration-processor</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-json</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>identity-spring-boot-starter</artifactId>
+        <version>${version.identity}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-client-common</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-webflux</artifactId>
         <version>${version.spring-boot}</version>
         <exclusions>
@@ -539,6 +582,24 @@
         <version>${project.version}</version>
         <classifier>tests</classifier>
         <type>test-jar</type>
+      </dependency>
+
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-retry</artifactId>
+        <version>${version.resilience4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-core</artifactId>
+        <version>${version.resilience4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda.spring</groupId>
+        <artifactId>spring-client-zeebe</artifactId>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
