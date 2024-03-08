@@ -106,6 +106,19 @@ public final class HttpClient implements AutoCloseable {
     sendRequest(Method.POST, path, body, requestConfig, Void.class, r -> null, result);
   }
 
+  public <HttpT, RespT> void patch(
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
+      final HttpZeebeFuture<RespT> result) {
+    sendRequest(Method.PATCH, path, body, requestConfig, Void.class, r -> null, result);
+  }
+
+  public <HttpT, RespT> void delete(
+      final String path, final RequestConfig requestConfig, final HttpZeebeFuture<RespT> result) {
+    sendRequest(Method.DELETE, path, null, requestConfig, Void.class, r -> null, result);
+  }
+
   private <HttpT, RespT> void sendRequest(
       final Method httpMethod,
       final String path,

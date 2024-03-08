@@ -20,6 +20,7 @@ import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
@@ -55,6 +56,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   private Consumer<ClusterTopology> topologyGossiper;
   private final ActorFuture<Void> startFuture;
   private TopologyChangeAppliers changeAppliers;
+  private InconsistentTopologyListener onInconsistentTopologyDetected;
   private final MemberId localMemberId;
   // Indicates whether there is a topology change operation in progress on this member.
   private boolean onGoingTopologyChangeOperation = false;
@@ -189,7 +191,19 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
                     "Received new topology {}. Updating local topology to {}",
                     receivedTopology,
                     mergedTopology);
+
+                final var oldTopology = persistedClusterTopology.getTopology();
+                final var isConflictingTopology =
+                    !Objects.equals(
+                        mergedTopology.getMember(localMemberId),
+                        oldTopology.getMember(localMemberId));
                 persistedClusterTopology.update(mergedTopology);
+
+                if (isConflictingTopology && onInconsistentTopologyDetected != null) {
+                  onInconsistentTopologyDetected.onInconsistentLocalTopology(
+                      mergedTopology, oldTopology);
+                }
+
                 topologyGossiper.accept(mergedTopology);
                 applyTopologyChangeOperation(mergedTopology);
               }
@@ -331,7 +345,15 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
         });
   }
 
-  public void removeTopologyChangeAppliers() {
+  void removeTopologyChangeAppliers() {
     executor.run(() -> changeAppliers = null);
+  }
+
+  void registerTopologyChangedListener(final InconsistentTopologyListener listener) {
+    executor.run(() -> onInconsistentTopologyDetected = listener);
+  }
+
+  void removeTopologyChangedListener() {
+    executor.run(() -> onInconsistentTopologyDetected = null);
   }
 }

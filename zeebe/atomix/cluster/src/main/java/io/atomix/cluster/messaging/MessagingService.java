@@ -46,6 +46,14 @@ public interface MessagingService {
    * Sends a message asynchronously to the specified communication address. The message is specified
    * using the type and payload.
    *
+   * <p>The future may be completed exceptionally with one of the following:
+   *
+   * <ul>
+   *   <li>{@link java.net.ConnectException} - indicates the recipient is unreachable
+   *   <li>{@link java.util.concurrent.TimeoutException} - indicates no response came back within
+   *       the given timeout
+   * </ul>
+   *
    * @param address address to send the message to.
    * @param type type of message.
    * @param payload message payload bytes.
@@ -70,7 +78,23 @@ public interface MessagingService {
       Address address, String type, byte[] payload, boolean keepAlive);
 
   /**
-   * Sends a message asynchronously and expects a response.
+   * Sends a message asynchronously and expects a response on a pooled connection.
+   *
+   * <p>The future may be completed exceptionally with one of:
+   *
+   * <ul>
+   *   <li>{@link IllegalStateException} - the underlying service cannot send the given request
+   *       (e.g. the service is not running)
+   *   <li>{@link java.net.ConnectException} - indicates the recipient is unreachable
+   *   <li>{@link java.util.concurrent.TimeoutException} - indicates no response came back after the
+   *       default timeout
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.ProtocolException} - indicates the
+   *       recipient failed to parse the incoming message
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.NoRemoteHandler} - indicates the
+   *       recipient received the message, but was no expecting to
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure} - indicates
+   *       the recipient parsed and expected the message, but it failed unexpectedly to process it
+   * </ul>
    *
    * @param address address to send the message to.
    * @param type type of message.
@@ -85,6 +109,26 @@ public interface MessagingService {
   /**
    * Sends a message asynchronously and expects a response.
    *
+   * <p>If {@code keepAlive} is false, a new, transient connection is set up and created. If true,
+   * it will reuse an existing connection (if any), or create a new one that will be kept in a pool
+   * for future reuse for this address and type pair.
+   *
+   * <p>The future may be completed exceptionally with one of:
+   *
+   * <ul>
+   *   <li>{@link IllegalStateException} - the underlying service cannot send the given request
+   *       (e.g. the service is not running)
+   *   <li>{@link java.net.ConnectException} - indicates the recipient is unreachable
+   *   <li>{@link java.util.concurrent.TimeoutException} - indicates no response came back after the
+   *       default timeout
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.ProtocolException} - indicates the
+   *       recipient failed to parse the incoming message
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.NoRemoteHandler} - indicates the
+   *       recipient received the message, but was no expecting to
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure} - indicates
+   *       the recipient parsed and expected the message, but it failed unexpectedly to process it
+   * </ul>
+   *
    * @param address address to send the message to.
    * @param type type of message.
    * @param payload message payload.
@@ -95,7 +139,23 @@ public interface MessagingService {
       Address address, String type, byte[] payload, boolean keepAlive);
 
   /**
-   * Sends a message synchronously and expects a response.
+   * Sends a message synchronously and expects a response on a pooled connection.
+   *
+   * <p>The future may be completed exceptionally with one of:
+   *
+   * <ul>
+   *   <li>{@link IllegalStateException} - the underlying service cannot send the given request
+   *       (e.g. the service is not running)
+   *   <li>{@link java.net.ConnectException} - indicates the recipient is unreachable
+   *   <li>{@link java.util.concurrent.TimeoutException} - indicates no response came back after the
+   *       default timeout
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.ProtocolException} - indicates the
+   *       recipient failed to parse the incoming message
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.NoRemoteHandler} - indicates the
+   *       recipient received the message, but was no expecting to
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure} - indicates
+   *       the recipient parsed and expected the message, but it failed unexpectedly to process it
+   * </ul>
    *
    * @param address address to send the message to.
    * @param type type of message.
@@ -111,6 +171,26 @@ public interface MessagingService {
   /**
    * Sends a message synchronously and expects a response.
    *
+   * <p>If {@code keepAlive} is false, a new, transient connection is set up and created. If true,
+   * it will reuse an existing connection (if any), or create a new one that will be kept in a pool
+   * for future reuse for this address and type pair.
+   *
+   * <p>The future may be completed exceptionally with one of:
+   *
+   * <ul>
+   *   <li>{@link IllegalStateException} - the underlying service cannot send the given request
+   *       (e.g. the service is not running)
+   *   <li>{@link java.net.ConnectException} - indicates the recipient is unreachable
+   *   <li>{@link java.util.concurrent.TimeoutException} - indicates no response came back after the
+   *       default timeout
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.ProtocolException} - indicates the
+   *       recipient failed to parse the incoming message
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.NoRemoteHandler} - indicates the
+   *       recipient received the message, but was no expecting to
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure} - indicates
+   *       the recipient parsed and expected the message, but it failed unexpectedly to process it
+   * </ul>
+   *
    * @param address address to send the message to.
    * @param type type of message.
    * @param payload message payload.
@@ -122,7 +202,23 @@ public interface MessagingService {
       Address address, String type, byte[] payload, boolean keepAlive, Executor executor);
 
   /**
-   * Sends a message asynchronously and expects a response.
+   * Sends a message asynchronously and expects a response on a pooled connection.
+   *
+   * <p>The future may be completed exceptionally with one of:
+   *
+   * <ul>
+   *   <li>{@link IllegalStateException} - the underlying service cannot send the given request
+   *       (e.g. the service is not running)
+   *   <li>{@link java.net.ConnectException} - indicates the recipient is unreachable
+   *   <li>{@link java.util.concurrent.TimeoutException} - indicates no response came back within
+   *       the given timeout
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.ProtocolException} - indicates the
+   *       recipient failed to parse the incoming message
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.NoRemoteHandler} - indicates the
+   *       recipient received the message, but was no expecting to
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure} - indicates
+   *       the recipient parsed and expected the message, but it failed unexpectedly to process it
+   * </ul>
    *
    * @param address address to send the message to.
    * @param type type of message.
@@ -138,6 +234,26 @@ public interface MessagingService {
   /**
    * Sends a message asynchronously and expects a response.
    *
+   * <p>If {@code keepAlive} is false, a new, transient connection is set up and created. If true,
+   * it will reuse an existing connection (if any), or create a new one that will be kept in a pool
+   * for future reuse for this address and type pair.
+   *
+   * <p>The future may be completed exceptionally with one of:
+   *
+   * <ul>
+   *   <li>{@link IllegalStateException} - the underlying service cannot send the given request
+   *       (e.g. the service is not running)
+   *   <li>{@link java.net.ConnectException} - indicates the recipient is unreachable
+   *   <li>{@link java.util.concurrent.TimeoutException} - indicates no response came back within
+   *       the given timeout
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.ProtocolException} - indicates the
+   *       recipient failed to parse the incoming message
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.NoRemoteHandler} - indicates the
+   *       recipient received the message, but was no expecting to
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure} - indicates
+   *       the recipient parsed and expected the message, but it failed unexpectedly to process it
+   * </ul>
+   *
    * @param address address to send the message to.
    * @param type type of message.
    * @param payload message payload.
@@ -150,6 +266,26 @@ public interface MessagingService {
 
   /**
    * Sends a message synchronously and expects a response.
+   *
+   * <p>If {@code keepAlive} is false, a new, transient connection is set up and created. If true,
+   * it will reuse an existing connection (if any), or create a new one that will be kept in a pool
+   * for future reuse for this address and type pair.
+   *
+   * <p>The future may be completed exceptionally with one of:
+   *
+   * <ul>
+   *   <li>{@link IllegalStateException} - the underlying service cannot send the given request
+   *       (e.g. the service is not running)
+   *   <li>{@link java.net.ConnectException} - indicates the recipient is unreachable
+   *   <li>{@link java.util.concurrent.TimeoutException} - indicates no response came back within
+   *       the given timeout
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.ProtocolException} - indicates the
+   *       recipient failed to parse the incoming message
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.NoRemoteHandler} - indicates the
+   *       recipient received the message, but was no expecting to
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure} - indicates
+   *       the recipient parsed and expected the message, but it failed unexpectedly to process it
+   * </ul>
    *
    * @param address address to send the message to.
    * @param type type of message.
