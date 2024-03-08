@@ -36,7 +36,7 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
 
   public RecordStream between(
       final Predicate<Record<?>> lowerBound, final Predicate<Record<?>> upperBound) {
-    return limit(upperBound::test).skipUntil(lowerBound::test);
+    return supply(dropWhile(Predicate.not(lowerBound))).limit(upperBound::test);
   }
 
   public RecordStream limitToProcessInstance(final long processInstanceKey) {
