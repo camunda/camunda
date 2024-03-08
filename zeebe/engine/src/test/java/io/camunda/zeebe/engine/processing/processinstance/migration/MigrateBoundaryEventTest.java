@@ -13,8 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -161,6 +163,76 @@ public class MigrateBoundaryEventTest {
                 .exists())
         .describedAs("Expect that the message boundary event is subscribed")
         .isTrue();
+  }
+
+  @Test
+  public void shouldUnsubscribeAndSubscribeUnmappedMessageBoundaryEvents() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    // note that the message name must differ in the target process for this test case. If both
+    // message names are the same, a mapping instruction must be provided for these boundary events
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("boundary")
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("boundary")
+                    .message(m -> m.name("message2").zeebeCorrelationKeyExpression("key"))
+                    .endEvent()
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("key", "key").create();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == ProcessInstanceMigrationIntent.MIGRATE,
+                    r -> r.getIntent() == ProcessMessageSubscriptionIntent.DELETED))
+        .extracting(Record::getIntent)
+        .describedAs("Expect that the message boundary event is unsubscribed after the migration")
+        .contains(MessageSubscriptionIntent.DELETE, ProcessMessageSubscriptionIntent.DELETED);
+    assertThat(
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == ProcessInstanceMigrationIntent.MIGRATE,
+                    r -> r.getIntent() == ProcessMessageSubscriptionIntent.CREATED))
+        .extracting(Record::getIntent)
+        .describedAs("Expect that the message boundary event is subscribed to after the migration")
+        .contains(MessageSubscriptionIntent.CREATED, ProcessMessageSubscriptionIntent.CREATED);
   }
 
   @Test
