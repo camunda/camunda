@@ -75,8 +75,7 @@ public class DbMigratorImpl implements DbMigrator {
 
   @Override
   public void runMigrations() {
-    final CheckResult checkResult = checkVersionCompatibility();
-    if (checkResult instanceof Compatible.SameVersion) {
+    if (checkVersionCompatibility() instanceof Compatible.SameVersion) {
       LOGGER.info("No migrations to run, snapshot is the same as current version");
       return;
     }
