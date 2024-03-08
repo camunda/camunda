@@ -74,7 +74,7 @@ env:
 jobs:
   release:
     name: "'${{ inputs.branch }}' branch"
-    runs-on: ubuntu-22.04
+    runs-on: gcp-core-2-default
     steps:
       #########################################################################
       # Setup: checkout branch
