@@ -75,7 +75,7 @@ async function createHealthStatusConfig() {
         'optimize-e2e-tests',
         'optimize-release-optimize',
         'optimize-engine-compatibility',
-        'optimize-es-compatibility',
+        'optimize-es-compatibility-test',
       ],
     },
     snyk: {
