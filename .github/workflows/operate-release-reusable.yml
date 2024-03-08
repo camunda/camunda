@@ -128,7 +128,7 @@ jobs:
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4.5
         with:
-          maven-version: 3.8.6
+          maven-version: 3.9.6
 
       # Setup: Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: Create Maven settings.xml
