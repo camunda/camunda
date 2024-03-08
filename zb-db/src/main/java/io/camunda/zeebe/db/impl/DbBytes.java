@@ -24,7 +24,9 @@ public final class DbBytes implements DbKey, DbValue {
 
   @Override
   public void wrap(final DirectBuffer directBuffer, final int offset, final int length) {
-    bytes.wrap(directBuffer, offset, length);
+    final byte[] bytesToWrap = new byte[length];
+    directBuffer.getBytes(offset, bytesToWrap, 0, bytesToWrap.length);
+    bytes.wrap(bytesToWrap);
   }
 
   @Override
