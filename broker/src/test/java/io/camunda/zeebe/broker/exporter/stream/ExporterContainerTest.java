@@ -273,23 +273,25 @@ final class ExporterContainerTest {
 
     final var mockedRecord = mock(TypedRecord.class);
     when(mockedRecord.getPosition()).thenReturn(1L);
+    final byte[] metadata = "metadata".getBytes();
     final var recordMetadata = new RecordMetadata().requestId(1L);
     exporterContainer.exportRecord(recordMetadata, mockedRecord);
 
-    // when
-    exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition());
+    exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition(), metadata);
     awaitPreviousCall();
 
-    // then
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
     assertThat(exporterContainer.getPosition()).isZero();
+    assertThat(exporterContainer.readMetadata()).isNotPresent();
 
+    // when
     exporterContainer.undoSoftPauseExporter();
     awaitPreviousCall();
 
     // then
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
     assertThat(exporterContainer.getPosition()).isEqualTo(1);
+    assertThat(exporterContainer.readMetadata()).isPresent().hasValue(metadata);
   }
 
   @Test
