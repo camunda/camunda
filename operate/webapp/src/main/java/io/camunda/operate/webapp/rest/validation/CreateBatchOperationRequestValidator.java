@@ -19,11 +19,19 @@ package io.camunda.operate.webapp.rest.validation;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 @Component
 public class CreateBatchOperationRequestValidator {
+
+  private static final Logger logger =
+      LoggerFactory.getLogger(CreateBatchOperationRequestValidator.class);
 
   public void validate(final CreateBatchOperationRequestDto batchOperationRequest) {
     if (batchOperationRequest.getQuery() == null) {
@@ -33,6 +41,12 @@ public class CreateBatchOperationRequestValidator {
     final OperationType operationType = batchOperationRequest.getOperationType();
     if (operationType == null) {
       throw new InvalidRequestException("Operation type must be defined.");
+    }
+
+    if (operationType != OperationType.MODIFY_PROCESS_INSTANCE
+        && batchOperationRequest.getModifications() != null) {
+      throw new InvalidRequestException(
+          String.format("Modifications field not supported for %s operation", operationType));
     }
 
     switch (operationType) {
@@ -45,8 +59,21 @@ public class CreateBatchOperationRequestValidator {
         validateMigrateProcessInstanceType(batchOperationRequest);
         break;
 
+      case MODIFY_PROCESS_INSTANCE:
+        validateModifyProcessInstanceType(batchOperationRequest);
       default:
         break;
+    }
+  }
+
+  private void validateModifyProcessInstanceType(
+      final CreateBatchOperationRequestDto batchOperationRequest) {
+    final List<Modification> modifications = batchOperationRequest.getModifications();
+    if (CollectionUtils.isEmpty(modifications)) {
+      throw new InvalidRequestException("Operation requires a single modification entry.");
+    } else if (modifications.size() > 1) {
+      logger.warn("Multiple modifications in request, only one will be processed.");
+      batchOperationRequest.setModifications(List.of(modifications.get(0)));
     }
   }
 

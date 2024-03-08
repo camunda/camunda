@@ -26,7 +26,13 @@ import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -165,5 +171,57 @@ public class CreateBatchOperationRequestValidatorTest {
             new ListViewQueryDto(), OperationType.DELETE_PROCESS_DEFINITION);
 
     assertDoesNotThrow(() -> underTest.validate(batchOperationRequest));
+  }
+
+  @Test
+  public void testValidateWhenModificationsShouldNotBePresent() {
+    final CreateBatchOperationRequestDto batchOperationRequest =
+        new CreateBatchOperationRequestDto(new ListViewQueryDto(), null);
+    batchOperationRequest.setModifications(new LinkedList<>());
+
+    // Modifications field is only supported for MODIFY_PROCESS_INSTANCE command, all others
+    // should throw an exception if this field is not null
+    final var opTypes = new HashSet<>(Set.of(OperationType.values()));
+    opTypes.remove(OperationType.MODIFY_PROCESS_INSTANCE);
+
+    for (final OperationType operationType : opTypes) {
+      batchOperationRequest.setOperationType(operationType);
+      final InvalidRequestException exception =
+          assertThrows(
+              InvalidRequestException.class, () -> underTest.validate(batchOperationRequest));
+      assertThat(exception.getMessage())
+          .isEqualTo(
+              String.format("Modifications field not supported for %s operation", operationType));
+    }
+  }
+
+  @Test
+  public void testValidateModifyProcessInstance() {
+    final CreateBatchOperationRequestDto batchOperationRequest =
+        new CreateBatchOperationRequestDto(
+            new ListViewQueryDto(), OperationType.MODIFY_PROCESS_INSTANCE);
+
+    batchOperationRequest.setModifications(List.of(new Modification()));
+
+    assertDoesNotThrow(() -> underTest.validate(batchOperationRequest));
+    assertThat(batchOperationRequest.getModifications().size()).isEqualTo(1);
+  }
+
+  @Test
+  public void testValidateModifyProcessInstanceWithTooManyModifications() {
+    final CreateBatchOperationRequestDto batchOperationRequest =
+        new CreateBatchOperationRequestDto(
+            new ListViewQueryDto(), OperationType.MODIFY_PROCESS_INSTANCE);
+
+    batchOperationRequest.setModifications(
+        new LinkedList<>(
+            List.of(
+                new Modification().setModification(Type.ADD_TOKEN),
+                new Modification().setModification(Type.MOVE_TOKEN))));
+
+    assertDoesNotThrow(() -> underTest.validate(batchOperationRequest));
+    assertThat(batchOperationRequest.getModifications().size()).isEqualTo(1);
+    assertThat(batchOperationRequest.getModifications().get(0).getModification())
+        .isEqualTo(Type.ADD_TOKEN);
   }
 }
