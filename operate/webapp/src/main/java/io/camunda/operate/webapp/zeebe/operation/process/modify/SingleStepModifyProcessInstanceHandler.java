@@ -14,7 +14,7 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.webapp.zeebe.operation;
+package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type.*;
@@ -29,6 +29,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import java.util.HashMap;
@@ -66,30 +67,30 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     // Variables first
     modifyVariables(processInstanceKey, getVariableModifications(modifications), operation);
     // Token Modifications in given order
-    List<Modification> tokenModifications = getTokenModifications(modifications);
+    final List<Modification> tokenModifications = getTokenModifications(modifications);
 
     ModifyProcessInstanceCommandStep1 currentStep =
         zeebeClient.newModifyProcessInstanceCommand(processInstanceKey);
     ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 lastStep = null;
     final int lastModificationIndex = tokenModifications.size() - 1;
     for (int i = 0; i < tokenModifications.size(); i++) {
-      Modification modification = tokenModifications.get(i);
+      final Modification modification = tokenModifications.get(i);
       if (modification.getModification().equals(ADD_TOKEN)) {
-        var nextStep = addToken(currentStep, modification);
+        final var nextStep = addToken(currentStep, modification);
         if (i < lastModificationIndex) {
           currentStep = nextStep.and();
         } else {
           lastStep = nextStep;
         }
       } else if (modification.getModification().equals(CANCEL_TOKEN)) {
-        var nextStep = cancelToken(currentStep, processInstanceKey, modification);
+        final var nextStep = cancelToken(currentStep, processInstanceKey, modification);
         if (i < lastModificationIndex) {
           currentStep = nextStep.and();
         } else {
           lastStep = nextStep;
         }
       } else if (modification.getModification().equals(MOVE_TOKEN)) {
-        var nextStep = moveToken(currentStep, processInstanceKey, modification);
+        final var nextStep = moveToken(currentStep, processInstanceKey, modification);
         if (i < lastModificationIndex) {
           currentStep = nextStep.and();
         } else {
@@ -115,7 +116,8 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId());
   }
 
-  private void completeOperation(final OperationEntity operation, boolean updateFinishedInBatch)
+  private void completeOperation(
+      final OperationEntity operation, final boolean updateFinishedInBatch)
       throws PersistenceException {
     operationsManager.completeOperation(operation, updateFinishedInBatch);
   }
@@ -123,9 +125,9 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
   private void modifyVariables(
       final Long processInstanceKey,
       final List<Modification> modifications,
-      OperationEntity operation)
+      final OperationEntity operation)
       throws PersistenceException {
-    for (Modification modification : modifications) {
+    for (final Modification modification : modifications) {
       final Long scopeKey = determineScopeKey(processInstanceKey, modification);
       zeebeClient
           .newSetVariablesCommand(scopeKey)
@@ -148,6 +150,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
   }
 
   // Needed for tests
+  @Override
   public void setZeebeClient(final ZeebeClient zeebeClient) {
     this.zeebeClient = zeebeClient;
   }
@@ -168,7 +171,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
   }
 
   private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 addToken(
-      ModifyProcessInstanceCommandStep1 currentStep, final Modification modification) {
+      final ModifyProcessInstanceCommandStep1 currentStep, final Modification modification) {
     // 0. Prepare
     final String flowNodeId = modification.getToFlowNodeId();
     final Map<String, List<Map<String, Object>>> flowNodeId2variables =
@@ -184,9 +187,9 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     }
     // 2. Add variables
     if (flowNodeId2variables != null) {
-      for (String scopeId : flowNodeId2variables.keySet()) {
+      for (final String scopeId : flowNodeId2variables.keySet()) {
         final List<Map<String, Object>> variablesForFlowNode = flowNodeId2variables.get(scopeId);
-        for (Map<String, Object> vars : variablesForFlowNode) {
+        for (final Map<String, Object> vars : variablesForFlowNode) {
           nextStep = nextStep.withVariables(vars, scopeId);
         }
       }
@@ -195,7 +198,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
   }
 
   private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 cancelToken(
-      ModifyProcessInstanceCommandStep1 currentStep,
+      final ModifyProcessInstanceCommandStep1 currentStep,
       final Long processInstanceKey,
       final Modification modification) {
     final String flowNodeId = modification.getFromFlowNodeId();
@@ -219,7 +222,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
   }
 
   private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 moveToken(
-      ModifyProcessInstanceCommandStep1 currentStep,
+      final ModifyProcessInstanceCommandStep1 currentStep,
       final Long processInstanceKey,
       final Modification modification) {
     // 0. Prepare
@@ -271,7 +274,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     for (final String flowNodeId : flowNodeId2variables.keySet()) {
       if (!flowNodeId.equals(toFlowNodeId)) {
         final List<Map<String, Object>> flowNodeVars = flowNodeId2variables.get(flowNodeId);
-        for (Map<String, Object> vars : flowNodeVars) {
+        for (final Map<String, Object> vars : flowNodeVars) {
           nextStep.withVariables(vars, flowNodeId);
         }
       }
@@ -279,7 +282,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     // 2. cancel
     final String fromFlowNodeId = modification.getFromFlowNodeId();
     final String fromFlowNodeInstanceKey = modification.getFromFlowNodeInstanceKey();
-    List<Long> flowNodeInstanceKeysToCancel;
+    final List<Long> flowNodeInstanceKeysToCancel;
     if (StringUtils.hasText(fromFlowNodeInstanceKey)) {
       final Long flowNodeInstanceKey = Long.parseLong(fromFlowNodeInstanceKey);
       flowNodeInstanceKeysToCancel = List.of(flowNodeInstanceKey);
