@@ -152,26 +152,32 @@ public class BpmnCompensationSubscriptionBehaviour {
         .filter(
             subscription -> scopeKey == subscription.getRecord().getCompensableActivityScopeKey())
         .forEach(
-            subscription -> {
-              long compensationHandlerInstanceKey = NONE_COMPENSATION_HANDLER_INSTANCE_KEY;
+            subscription ->
+                triggerCompensationForSubscription(context, subscriptions, subscription));
+  }
 
-              // invoke the compensation handler if present
-              if (!subscription.getRecord().getCompensationHandlerId().isEmpty()) {
-                compensationHandlerInstanceKey =
-                    activateCompensationHandler(
-                        context, subscription.getRecord().getCompensableActivityId());
-              }
+  private void triggerCompensationForSubscription(
+      final BpmnElementContext context,
+      final Collection<CompensationSubscription> subscriptions,
+      final CompensationSubscription subscription) {
+    long compensationHandlerInstanceKey = NONE_COMPENSATION_HANDLER_INSTANCE_KEY;
 
-              // mark the subscription as triggered
-              appendCompensationSubscriptionTriggerEvent(
-                  context, subscription, compensationHandlerInstanceKey);
+    // invoke the compensation handler if present
+    if (!subscription.getRecord().getCompensationHandlerId().isEmpty()) {
+      compensationHandlerInstanceKey =
+          activateCompensationHandler(
+              context, subscription.getRecord().getCompensableActivityId());
+    }
 
-              // propagate the compensation to subprocesses
-              triggerCompensationFromTopToBottom(
-                  context,
-                  subscriptions,
-                  subscription.getRecord().getCompensableActivityInstanceKey());
-            });
+    // mark the subscription as triggered
+    appendCompensationSubscriptionTriggerEvent(
+        context, subscription, compensationHandlerInstanceKey);
+
+    // propagate the compensation to subprocesses
+    triggerCompensationFromTopToBottom(
+        context,
+        subscriptions,
+        subscription.getRecord().getCompensableActivityInstanceKey());
   }
 
   private long activateCompensationHandler(
@@ -290,29 +296,16 @@ public class BpmnCompensationSubscriptionBehaviour {
                         == context.getFlowScopeKey())
             .toList();
 
-    if (subscriptionsForActivity.isEmpty()) {
+    if (!subscriptionsForActivity.isEmpty()) {
+      // trigger the compensation for the given activity
+      subscriptionsForActivity.forEach(
+          subscription ->
+              triggerCompensationForSubscription(context, notTriggeredSubscriptions, subscription));
+      return true;
+
+    } else {
       return false;
     }
-
-    subscriptionsForActivity.forEach(
-        subscription -> {
-          // mark the subscription as triggered
-          appendCompensationSubscriptionTriggerEvent(context, subscription);
-
-          // invoke the compensation handler if present
-          if (!subscription.getRecord().getCompensationHandlerId().isEmpty()) {
-            activateCompensationHandler(
-                context, subscription.getRecord().getCompensableActivityId());
-          }
-
-          // propagate the compensation to the subprocesses if the activity is a subprocess
-          triggerCompensationFromTopToBottom(
-              context,
-              notTriggeredSubscriptions,
-              subscription.getRecord().getCompensableActivityInstanceKey());
-        });
-
-    return true;
   }
 
   public void completeCompensationHandler(final BpmnElementContext context) {
