@@ -6,12 +6,14 @@
  */
 
 import {FormRoot, FormJSCustomStyling, Layer} from './styled';
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Variable} from 'modules/types';
 import {FormManager} from 'modules/formManager';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 import {mergeVariables} from './mergeVariables';
+import {ValidationMessage} from './ValidationMessage';
+import {getFieldLabels} from './getFieldLabels';
 
 type Props = {
   handleSubmit: (variables: Variable[]) => Promise<void>;
@@ -40,8 +42,11 @@ const FormJSRenderer: React.FC<Props> = ({
   onSubmitSuccess,
   onValidationError,
 }) => {
-  const formManagerRef = useRef(new FormManager());
+  const formManagerRef = useRef<FormManager>(new FormManager());
   const formContainerRef = useRef<HTMLDivElement | null>(null);
+  const [invalidFields, setInvalidFields] = useState<
+    {ids: string[]; labels: string[]} | undefined
+  >();
 
   useEffect(() => {
     const formManager = formManagerRef.current;
@@ -63,6 +68,7 @@ const FormJSRenderer: React.FC<Props> = ({
           onImportError,
           onSubmit: async ({data: newData, errors}) => {
             onSubmitStart?.();
+            setInvalidFields(undefined);
             if (Object.keys(errors).length === 0) {
               const variables = Object.entries(
                 mergeVariables(data, newData),
@@ -82,6 +88,11 @@ const FormJSRenderer: React.FC<Props> = ({
               }
             } else {
               onValidationError?.();
+              const fieldIds = Object.keys(errors);
+              setInvalidFields({
+                ids: fieldIds,
+                labels: getFieldLabels(formManager, fieldIds),
+              });
             }
           },
         });
@@ -121,6 +132,12 @@ const FormJSRenderer: React.FC<Props> = ({
       <Layer>
         <FormRoot ref={formContainerRef} />
       </Layer>
+      {invalidFields !== undefined ? (
+        <ValidationMessage
+          fieldIds={invalidFields.ids}
+          fieldLabels={invalidFields.labels}
+        />
+      ) : null}
     </>
   );
 };

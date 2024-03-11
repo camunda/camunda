@@ -62,6 +62,11 @@ const FormScrollContainer = styled.div`
   overflow-y: auto;
 `;
 
+const FormCenterContainer = styled.div`
+  width: inherit;
+  max-width: 900px;
+`;
+
 const InlineErrorContainer = styled.div`
   padding-top: var(--cds-spacing-02);
 `;
@@ -70,6 +75,7 @@ export {
   FormSkeletonContainer,
   InlineNotification,
   FormContainer,
+  FormCenterContainer,
   FormScrollContainer,
   InlineErrorContainer,
 };

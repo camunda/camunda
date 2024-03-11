@@ -7,6 +7,7 @@
 
 import styled, {css, createGlobalStyle} from 'styled-components';
 import {Layer as BaseLayer} from '@carbon/react';
+import {Warning as BaseWarning} from '@carbon/react/icons';
 import {breakpoints} from '@carbon/elements';
 
 const FormRoot = styled.div`
@@ -36,4 +37,25 @@ const Layer = styled(BaseLayer)`
   max-width: 900px;
 `;
 
-export {FormRoot, FormJSCustomStyling, Layer};
+const WarningFilled = styled(BaseWarning)`
+  fill: var(--cds-support-error);
+`;
+
+const ValidationMessageContainer = styled.div`
+  margin-block: var(--cds-spacing-06);
+`;
+
+const HorizontalRule = styled.hr`
+  border: 0;
+  height: 1px;
+  background: var(--cds-border-subtle);
+`;
+
+export {
+  FormRoot,
+  FormJSCustomStyling,
+  Layer,
+  WarningFilled,
+  ValidationMessageContainer,
+  HorizontalRule,
+};

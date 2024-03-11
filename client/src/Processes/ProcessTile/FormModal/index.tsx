@@ -11,6 +11,7 @@ import {Process, Variable} from 'modules/types';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
 import {useRef, useState} from 'react';
 import {
+  FormCenterContainer,
   FormContainer,
   FormScrollContainer,
   FormSkeletonContainer,
@@ -137,29 +138,31 @@ const FormModal: React.FC<Props> = ({
               () => (
                 <>
                   <FormScrollContainer>
-                    <FormJSRenderer
-                      schema={schema!}
-                      handleSubmit={onSubmit}
-                      onMount={(formManager) => {
-                        formManagerRef.current = formManager;
-                      }}
-                      onSubmitStart={() => {
-                        setIsSubmitting(true);
-                      }}
-                      onImportError={() => {
-                        setIsFormSchemaValid(false);
-                      }}
-                      onSubmitError={() => {
-                        setHasSubmissionFailed(true);
-                        setIsSubmitting(false);
-                      }}
-                      onSubmitSuccess={() => {
-                        setIsSubmitting(false);
-                      }}
-                      onValidationError={() => {
-                        setIsSubmitting(false);
-                      }}
-                    />
+                    <FormCenterContainer>
+                      <FormJSRenderer
+                        schema={schema!}
+                        handleSubmit={onSubmit}
+                        onMount={(formManager) => {
+                          formManagerRef.current = formManager;
+                        }}
+                        onSubmitStart={() => {
+                          setIsSubmitting(true);
+                        }}
+                        onImportError={() => {
+                          setIsFormSchemaValid(false);
+                        }}
+                        onSubmitError={() => {
+                          setHasSubmissionFailed(true);
+                          setIsSubmitting(false);
+                        }}
+                        onSubmitSuccess={() => {
+                          setIsSubmitting(false);
+                        }}
+                        onValidationError={() => {
+                          setIsSubmitting(false);
+                        }}
+                      />
+                    </FormCenterContainer>
                   </FormScrollContainer>
                   <InlineErrorContainer>
                     {match({

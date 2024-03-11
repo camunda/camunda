@@ -5,10 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import {Form} from '@bpmn-io/form-js-viewer';
+import {
+  ConditionChecker,
+  FeelersTemplating,
+  Form,
+  FormFieldRegistry,
+} from '@bpmn-io/form-js-viewer';
+import {Errors} from '@bpmn-io/form-js-viewer/dist/types/Form';
 import {isEqual} from 'lodash';
 
 type FormJSData = Record<string, unknown>;
+
+type GetOptions = {
+  formFieldRegistry: FormFieldRegistry;
+  form: Form;
+  templating: FeelersTemplating;
+  conditionChecker: ConditionChecker;
+};
 
 class FormManager {
   #form = new Form({
@@ -17,13 +30,13 @@ class FormManager {
     },
   });
   #schema: string | null = null;
-  #onSubmit: (result: {errors: object; data: FormJSData}) => void = () => {};
+  #onSubmit: (result: {errors: Errors; data: FormJSData}) => void = () => {};
   #data: FormJSData | null = null;
 
   render = async (options: {
     schema: string;
     data: FormJSData;
-    onSubmit: (result: {errors: object; data: FormJSData}) => void;
+    onSubmit: (result: {errors: Errors; data: FormJSData}) => void;
     onImportError?: () => void;
     container: HTMLElement;
   }) => {
@@ -68,6 +81,10 @@ class FormManager {
     this.#form.detach();
     this.#form = new Form();
     this.#schema = null;
+  };
+
+  get = <T extends keyof GetOptions>(value: T): GetOptions[T] => {
+    return this.#form.get(value);
   };
 }
 

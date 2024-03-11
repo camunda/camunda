@@ -307,6 +307,7 @@ declare module '@carbon/react/icons' {
   export const SortAscending: Icon;
   export const Checkmark: Icon;
   export const Error: Icon;
+  export const Warning: Icon;
   export const WarningFilled: Icon;
   export const CheckmarkOutline: Icon;
   export const RadioButtonChecked: Icon;
