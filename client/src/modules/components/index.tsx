@@ -6,7 +6,6 @@
  */
 
 export {Button} from './Button';
-export {ButtonGroup} from './ButtonGroup';
 export {Tabs} from './Tabs';
 export {Message} from './Message';
 export {MessageBox} from './MessageBox';
@@ -27,9 +26,6 @@ export {EntityDescription} from './EntityDescription';
 export {EntityNameForm} from './EntityNameForm';
 export {LoadingIndicator} from './LoadingIndicator';
 export {DocsLink} from './DocsLink';
-export {Typeahead, MultiSelect} from './Typeahead';
-export {Tag} from './Tag';
-export {MultiValueInput, UncontrolledMultiValueInput} from './MultiValueInput';
 export {UserTypeahead} from './UserTypeahead';
 export {BPMNDiagram, ClickBehavior} from './BPMNDiagram';
 export {DMNDiagram} from './DMNDiagram';
@@ -39,11 +35,9 @@ export {Table} from './Table';
 export {TargetValueBadge} from './TargetValueBadge';
 export {DatePicker} from './DatePicker';
 export {DateRangeInput} from './DateRangeInput';
-export {SearchInput} from './SearchInput';
 export {Checklist} from './Checklist';
 export {DurationChart} from './DurationChart';
 export {ColorPicker} from './ColorPicker';
-export {Badge} from './Badge';
 export {Popover} from './Popover';
 export {TenantInfo} from './TenantInfo';
 export {VersionPopover, TenantPopover} from './DefinitionSelection';

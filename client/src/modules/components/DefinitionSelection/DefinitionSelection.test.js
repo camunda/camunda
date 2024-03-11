@@ -9,7 +9,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import {ComboBox} from '@carbon/react';
 
-import {LoadingIndicator, TenantInfo, Typeahead} from 'components';
+import {LoadingIndicator, TenantInfo} from 'components';
 import {getCollection, loadDefinitions} from 'services';
 import {getOptimizeProfile} from 'config';
 
@@ -430,7 +430,6 @@ it('should invoke onChange from MultiDefinitionSelection if selectedDefinitions 
 
   await flushPromises();
 
-  expect(node.find(Typeahead)).not.toExist();
   expect(node.find(MultiDefinitionSelection)).toExist();
 
   node.find(MultiDefinitionSelection).simulate('change', ['test']);
