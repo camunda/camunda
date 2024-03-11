@@ -91,9 +91,7 @@ public class SessionService implements ConfigurationReloadable {
       isValid = isStillValid(decodedJWT);
     } catch (final JWTVerificationException exception) {
       log.error(
-          "Error while validating authentication token [{}]. Invalid signature or claims!",
-          token,
-          exception);
+          "Error while validating authentication token. Invalid signature or claims!", exception);
     }
 
     return isValid;
