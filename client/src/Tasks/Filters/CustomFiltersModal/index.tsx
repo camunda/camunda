@@ -15,6 +15,8 @@ import {
   ModalHeader,
   RadioButton,
   RadioButtonGroup,
+  Select,
+  SelectItem,
   TextInput,
 } from '@carbon/react';
 import {
@@ -33,6 +35,7 @@ import {Close, Add} from '@carbon/react/icons';
 import arrayMutators from 'final-form-arrays';
 import {ProcessesSelect} from './ProcessesSelect';
 import {MultiTenancySelect} from 'modules/components/useMultiTenancyDropdown/MultiTenancySelect';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 const formSchema = z.object({
   assignee: z
@@ -74,6 +77,8 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
     useState(false);
   const label = 'Advanced filters';
   const {isMultiTenancyVisible} = useMultiTenancyDropdown();
+  const {data: currentUser} = useCurrentUser();
+  const groups = currentUser?.groups ?? [];
 
   return (
     <Form<FormValues>
@@ -151,15 +156,34 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                       )}
                     </Field>
                     <Field name="candidateGroup">
-                      {({input}) => (
-                        <TextInput
-                          {...input}
-                          id={input.name}
-                          labelText="In a group"
-                          className="second-column"
-                          placeholder="Enter group name"
-                        />
-                      )}
+                      {({input}) =>
+                        groups.length === 0 ? (
+                          <TextInput
+                            {...input}
+                            id={input.name}
+                            labelText="In a group"
+                            className="second-column"
+                            placeholder="Enter group name"
+                            disabled={currentUser === undefined}
+                          />
+                        ) : (
+                          <Select
+                            {...input}
+                            id={input.name}
+                            labelText="In a group"
+                            className="second-column"
+                          >
+                            <SelectItem value="" text="" />
+                            {groups.map((group) => (
+                              <SelectItem
+                                key={group}
+                                value={group}
+                                text={group}
+                              />
+                            ))}
+                          </Select>
+                        )
+                      }
                     </Field>
                   </>
                 ) : null}

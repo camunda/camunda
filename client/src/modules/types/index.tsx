@@ -23,6 +23,7 @@ type CurrentUser = {
     id: string;
     name: string;
   }[];
+  groups: string[];
 };
 
 type FullVariable = {

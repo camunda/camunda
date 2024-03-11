@@ -249,4 +249,28 @@ describe('<CustomFiltersModal />', () => {
     expect(mockOnClose).toHaveBeenCalledOnce();
     expect(mockOnApply).toHaveBeenCalledOnce();
   });
+
+  it('should load user groups', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUserWithGroups);
+        },
+        {once: true},
+      ),
+    );
+    const {user} = render(
+      <CustomFiltersModal isOpen onClose={() => {}} onApply={() => {}} />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await user.click(screen.getByRole('radio', {name: /user and group/i}));
+
+    expect(
+      await screen.findByRole('combobox', {name: /in a group/i}),
+    ).toBeInTheDocument();
+  });
 });

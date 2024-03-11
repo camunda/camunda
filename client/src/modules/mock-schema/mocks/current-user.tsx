@@ -15,6 +15,7 @@ const currentUser: CurrentUser = {
   roles: [],
   c8Links: [],
   tenants: [],
+  groups: [],
 };
 
 const currentUserWithC8Links: CurrentUser = {
@@ -46,6 +47,7 @@ const currentUserWithC8Links: CurrentUser = {
     },
   ],
   tenants: [],
+  groups: [],
 };
 
 const currentRestrictedUser: CurrentUser = {
@@ -56,6 +58,7 @@ const currentRestrictedUser: CurrentUser = {
   roles: [],
   c8Links: [],
   tenants: [],
+  groups: [],
 };
 
 const currentUserWithUnknownRole: CurrentUser = {
@@ -67,6 +70,7 @@ const currentUserWithUnknownRole: CurrentUser = {
   roles: [],
   c8Links: [],
   tenants: [],
+  groups: [],
 };
 
 const currentUserWithoutRole: CurrentUser = {
@@ -78,6 +82,7 @@ const currentUserWithoutRole: CurrentUser = {
   roles: [],
   c8Links: [],
   tenants: [],
+  groups: [],
 };
 
 const currentUserWithTenants: CurrentUser = {
@@ -97,6 +102,18 @@ const currentUserWithTenants: CurrentUser = {
       name: 'Tenant B',
     },
   ],
+  groups: [],
+};
+
+const currentUserWithGroups: CurrentUser = {
+  userId: 'demo',
+  displayName: 'Demo User',
+  permissions: ['read', 'write'],
+  salesPlanType: null,
+  roles: [],
+  c8Links: [],
+  tenants: [],
+  groups: ['admin', 'customer-support', 'guest'],
 };
 
 export {
@@ -106,4 +123,5 @@ export {
   currentUserWithUnknownRole,
   currentUserWithC8Links,
   currentUserWithTenants,
+  currentUserWithGroups,
 };
