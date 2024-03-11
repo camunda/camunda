@@ -40,8 +40,8 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.ContainerState;
-import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -75,6 +75,8 @@ final class RollingUpdateTest {
   @RegisterExtension
   private final ContainerLogsDumper logsPrinter = new ContainerLogsDumper(cluster::getNodes);
 
+  private final Collection<ZeebeVolume> volumes = new LinkedList<>();
+
   @BeforeEach
   public void setup() {
     cluster.getBrokers().values().forEach(this::configureBroker);
@@ -83,7 +85,8 @@ final class RollingUpdateTest {
   @AfterEach
   public void tearDown() {
     cluster.stop();
-    CloseHelper.quietClose(network);
+    CloseHelper.closeAll(volumes);
+    volumes.clear();
   }
 
   @ParameterizedTest(name = "from {0} to {1}")
@@ -351,8 +354,20 @@ final class RollingUpdateTest {
   }
 
   private void configureBroker(final ZeebeBrokerNode<?> broker) {
+    final var volume =
+        ZeebeVolume.newVolume(
+            cfg -> {
+              // Workaround for
+              // https://github.com/camunda-community-hub/zeebe-test-container/issues/656
+              final var labels = new HashMap<>(cfg.getLabels());
+              labels.put(
+                  DockerClientFactory.TESTCONTAINERS_SESSION_ID_LABEL,
+                  DockerClientFactory.SESSION_ID);
+              return cfg.withLabels(labels);
+            });
+    volumes.add(volume);
     broker
-        .withZeebeData(ZeebeVolume.newVolume())
+        .withZeebeData(volume)
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES", "true")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL", "250ms")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL", "100ms")
