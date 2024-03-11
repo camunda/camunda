@@ -44,8 +44,7 @@ const formSchema = z.object({
   bpmnProcess: z.string().optional(),
   tenant: z.string().optional(),
   dueDate: z.array(z.date()).optional(),
-  creationDate: z.string().optional(),
-  followUpDate: z.string().optional(),
+  followUpDate: z.array(z.date()).optional(),
   taskId: z.string().optional(),
   variables: z
     .array(
@@ -226,38 +225,31 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                       )}
                     </Field>
 
-                    <Field name="creationDate">
-                      {({input}) => (
-                        <DatePicker
-                          {...input}
-                          datePickerType="single"
-                          dateFormat="d/m/y"
-                          className="second-column"
-                        >
-                          <DatePickerInput
-                            id="creation-date"
-                            placeholder="dd/mm/yyyy"
-                            labelText="Creation date"
-                            size="md"
-                          />
-                        </DatePicker>
-                      )}
-                    </Field>
-
                     <Field name="followUpDate">
                       {({input}) => (
-                        <DatePicker
-                          {...input}
-                          datePickerType="single"
-                          dateFormat="d/m/y"
+                        <FormGroup
+                          legendText="Follow up date"
+                          className="second-column"
                         >
-                          <DatePickerInput
-                            id="follow-up-date"
-                            placeholder="dd/mm/yyyy"
-                            labelText="Follow up date"
-                            size="md"
-                          />
-                        </DatePicker>
+                          <DatePicker
+                            {...input}
+                            datePickerType="range"
+                            dateFormat="d/m/y"
+                          >
+                            <DatePickerInput
+                              id="follow-up-date-from"
+                              placeholder="dd/mm/yyyy"
+                              labelText="From"
+                              size="md"
+                            />
+                            <DatePickerInput
+                              id="follow-up-date-to"
+                              placeholder="dd/mm/yyyy"
+                              labelText="To"
+                              size="md"
+                            />
+                          </DatePicker>
+                        </FormGroup>
                       )}
                     </Field>
 
@@ -267,7 +259,6 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                           {...input}
                           id={input.name}
                           labelText="Task ID"
-                          className="second-column"
                         />
                       )}
                     </Field>

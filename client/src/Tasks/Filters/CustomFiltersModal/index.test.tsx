@@ -165,9 +165,6 @@ describe('<CustomFiltersModal />', () => {
       screen.queryByRole('textbox', {name: /to/i}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('textbox', {name: /creation date/i}),
-    ).not.toBeInTheDocument();
-    expect(
       screen.queryByRole('textbox', {name: /follow up date/i}),
     ).not.toBeInTheDocument();
     expect(
@@ -182,14 +179,24 @@ describe('<CustomFiltersModal />', () => {
 
     await user.click(screen.getByRole('switch', {name: /advanced filters/i}));
 
-    expect(screen.getByRole('group', {name: /due date/i})).toBeInTheDocument();
-    expect(screen.getByRole('textbox', {name: /from/i})).toBeInTheDocument();
-    expect(screen.getByRole('textbox', {name: /to/i})).toBeInTheDocument();
+    const dueDateGroup = screen.getByRole('group', {name: /due date/i});
+    expect(dueDateGroup).toBeInTheDocument();
     expect(
-      screen.getByRole('textbox', {name: /creation date/i}),
+      within(dueDateGroup).getByRole('textbox', {name: /from/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('textbox', {name: /follow up date/i}),
+      within(dueDateGroup).getByRole('textbox', {name: /to/i}),
+    ).toBeInTheDocument();
+
+    const followUpDateGroup = screen.getByRole('group', {
+      name: /follow up date/i,
+    });
+    expect(followUpDateGroup).toBeInTheDocument();
+    expect(
+      within(followUpDateGroup).getByRole('textbox', {name: /from/i}),
+    ).toBeInTheDocument();
+    expect(
+      within(followUpDateGroup).getByRole('textbox', {name: /to/i}),
     ).toBeInTheDocument();
     expect(screen.getByRole('textbox', {name: /task id/i})).toBeInTheDocument();
     expect(
