@@ -162,4 +162,39 @@ public class DbMigratorImplTest {
     // then -- the version is set
     verify(mockMigrationState).setMigratedByVersion(VersionUtil.getVersion());
   }
+
+  @Test
+  void shouldThrowOnInvalidUpgrade() {
+    // given -- state that was migrated by version 1.0.0
+    final var mockProcessingState = mock(MutableProcessingState.class);
+    final var mockMigrationState = mock(MutableMigrationState.class);
+    when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
+    when(mockMigrationState.getMigratedByVersion()).thenReturn("1.0.0");
+    final var mockMigration = mock(MigrationTask.class);
+    when(mockMigration.needsToRun(mockProcessingState)).thenReturn(true);
+    final var sut =
+        new DbMigratorImpl(mockProcessingState, Collections.singletonList(mockMigration));
+
+    // when -- upgrading to a version that is not compatible
+    try (final var util = Mockito.mockStatic(VersionUtil.class)) {
+      util.when(VersionUtil::getVersion).thenReturn("2.0.0");
+      // then -- running migrations throws
+      assertThatThrownBy(sut::runMigrations)
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("Snapshot is not compatible with current version");
+    }
+
+    // when - upgrading to a pre-release version
+    try (final var util = Mockito.mockStatic(VersionUtil.class)) {
+      util.when(VersionUtil::getVersion).thenReturn("2.0.0-alpha1");
+
+      // then -- running migrations throws
+      assertThatThrownBy(sut::runMigrations)
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("Cannot upgrade to or from a pre-release version");
+    }
+
+    // then -- migration is not run
+    verify(mockMigration, never()).runMigration(mockProcessingState);
+  }
 }
