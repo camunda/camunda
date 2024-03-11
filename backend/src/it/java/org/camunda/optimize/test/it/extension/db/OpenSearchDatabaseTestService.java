@@ -203,17 +203,14 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   public void addEntriesToDatabase(final String indexName, final Map<String, Object> idToEntryMap) {
     StreamSupport.stream(Iterables.partition(idToEntryMap.entrySet(), 10_000).spliterator(), false)
       .forEach(batch -> {
-        final BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
         final List<BulkOperation> operations = new ArrayList<>();
         for (final Map.Entry<String, Object> idAndObject : batch) {
           final IndexOperation.Builder<Object> operation =
             new IndexOperation.Builder<>().document(idAndObject.getValue()).id(idAndObject.getKey());
           operations.add(operation.build()._toBulkOperation());
         }
-        bulkRequestBuilder.operations(operations)
-          .index(indexName);
         prefixAwareOptimizeOpenSearchClient.doBulkRequest(
-          bulkRequestBuilder,
+          () -> new BulkRequest.Builder().operations(operations).index(indexName),
           operations,
           "add entries",
           false

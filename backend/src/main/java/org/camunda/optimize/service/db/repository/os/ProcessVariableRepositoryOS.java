@@ -58,7 +58,7 @@ public class ProcessVariableRepositoryOS implements ProcessVariableRepository {
             .toList();
 
     osClient.doBulkRequest(
-        new BulkRequest.Builder().refresh(Refresh.True),
+        () -> new BulkRequest.Builder().refresh(Refresh.True),
         bulkOperations,
         getProcessInstanceIndexAliasName(processDefinitionKey),
         false);

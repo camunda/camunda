@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -479,11 +480,13 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     if (importRequestDtos.isEmpty()) {
       log.warn("Cannot perform bulk request with empty collection of {}.", bulkRequestName);
     } else {
-      final BulkRequest.Builder bulkReqBuilder = new BulkRequest.Builder();
       final List<BulkOperation> operations =
           importRequestDtos.stream().map(this::createBulkOperation).toList();
       doBulkRequest(
-          bulkReqBuilder, operations, bulkRequestName, retryRequestIfNestedDocLimitReached);
+          BulkRequest.Builder::new,
+          operations,
+          bulkRequestName,
+          retryRequestIfNestedDocLimitReached);
     }
   }
 
@@ -535,11 +538,13 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     if (entityCollection.isEmpty()) {
       log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
     } else {
-      final BulkRequest.Builder bulkReqBuilder = new BulkRequest.Builder().index(indexName);
       final List<BulkOperation> operations =
           entityCollection.stream().map(addDtoToRequestConsumer).toList();
       doBulkRequest(
-          bulkReqBuilder, operations, importItemName, retryRequestIfNestedDocLimitReached);
+          () -> new BulkRequest.Builder().index(indexName),
+          operations,
+          importItemName,
+          retryRequestIfNestedDocLimitReached);
     }
   }
 
@@ -551,28 +556,30 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     if (entityCollection.isEmpty()) {
       log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
     } else {
-      final BulkRequest.Builder bulkReqBuilder = new BulkRequest.Builder();
       final List<BulkOperation> operations =
           entityCollection.stream().map(addDtoToRequestConsumer).toList();
       doBulkRequest(
-          bulkReqBuilder, operations, importItemName, retryRequestIfNestedDocLimitReached);
+          BulkRequest.Builder::new,
+          operations,
+          importItemName,
+          retryRequestIfNestedDocLimitReached);
     }
   }
 
   public void doBulkRequest(
-      final BulkRequest.Builder bulkReqBuilder,
+      final Supplier<BulkRequest.Builder> bulkReqBuilderSupplier,
       final List<BulkOperation> operations,
       final String itemName,
       final boolean retryRequestIfNestedDocLimitReached) {
     if (retryRequestIfNestedDocLimitReached) {
-      doBulkRequestWithNestedDocHandling(bulkReqBuilder, operations, itemName);
+      doBulkRequestWithNestedDocHandling(bulkReqBuilderSupplier, operations, itemName);
     } else {
-      doBulkRequestWithoutRetries(bulkReqBuilder, operations, itemName);
+      doBulkRequestWithoutRetries(bulkReqBuilderSupplier.get(), operations, itemName);
     }
   }
 
   private void doBulkRequestWithNestedDocHandling(
-      final BulkRequest.Builder bulkReqBuilder,
+      final Supplier<BulkRequest.Builder> bulkReqBuilderSupplier,
       final List<BulkOperation> operations,
       final String itemName) {
     if (!operations.isEmpty()) {
@@ -580,7 +587,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
       final String errorMessage =
           String.format("There were errors while performing a bulk on %s.", itemName);
-      final BulkResponse bulkResponse = bulk(bulkReqBuilder.operations(operations), errorMessage);
+      final BulkResponse bulkResponse =
+          bulk(bulkReqBuilderSupplier.get().operations(operations), errorMessage);
       if (bulkResponse.errors()) {
         final Set<String> failedNestedDocLimitItemIds =
             bulkResponse.items().stream()
@@ -596,10 +604,15 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                   + " Removing {} failed items and retrying",
               itemName,
               failedNestedDocLimitItemIds.size());
-          operations.removeIf(
-              request -> failedNestedDocLimitItemIds.contains(typeByBulkOperation(request).id()));
-          if (!operations.isEmpty()) {
-            doBulkRequestWithNestedDocHandling(bulkReqBuilder, operations, itemName);
+          final List<BulkOperation> nonFailedOperations =
+              operations.stream()
+                  .filter(
+                      request ->
+                          !failedNestedDocLimitItemIds.contains(typeByBulkOperation(request).id()))
+                  .toList();
+          if (!nonFailedOperations.isEmpty()) {
+            doBulkRequestWithNestedDocHandling(
+                bulkReqBuilderSupplier, nonFailedOperations, itemName);
           }
         } else {
           throw new OptimizeRuntimeException(

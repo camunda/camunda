@@ -125,7 +125,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
                                         .id(id))))
             .toList();
 
-    osClient.doBulkRequest(new BulkRequest.Builder(), bulkOperations, itemName, false);
+    osClient.doBulkRequest(BulkRequest.Builder::new, bulkOperations, itemName, false);
   }
 
   @Override
