@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
-import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
+import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 

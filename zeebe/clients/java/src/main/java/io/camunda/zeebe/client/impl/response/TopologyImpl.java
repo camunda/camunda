@@ -40,7 +40,7 @@ public final class TopologyImpl implements Topology {
     gatewayVersion = grpcResponse.getGatewayVersion();
   }
 
-  public TopologyImpl(final io.camunda.zeebe.gateway.protocol.rest.TopologyResponse httpResponse) {
+  public TopologyImpl(final io.camunda.zeebe.client.protocol.rest.TopologyResponse httpResponse) {
     brokers =
         httpResponse.getBrokers().stream().map(BrokerInfoImpl::new).collect(Collectors.toList());
     clusterSize = httpResponse.getClusterSize();

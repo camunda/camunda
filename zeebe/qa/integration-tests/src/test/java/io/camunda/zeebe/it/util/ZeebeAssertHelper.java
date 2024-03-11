@@ -17,10 +17,12 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -136,6 +138,61 @@ public final class ZeebeAssertHelper {
 
     assertThat(job).isNotNull();
     consumer.accept(job);
+  }
+
+  public static void assertUserTaskCompleted(
+      final long userTaskKey, final Consumer<UserTaskRecordValue> consumer) {
+    final UserTaskRecordValue userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
+            .filter(record -> record.getKey() == userTaskKey)
+            .findFirst()
+            .map(Record::getValue)
+            .orElse(null);
+
+    assertThat(userTask).isNotNull();
+    consumer.accept(userTask);
+  }
+
+  public static void assertUserTaskAssigned(
+      final long userTaskKey, final Consumer<UserTaskRecordValue> consumer) {
+    assertUserTaskAssigned(userTaskKey, 1, consumer);
+  }
+
+  public static void assertUserTaskAssigned(
+      final long userTaskKey,
+      final long expectedRecords,
+      final Consumer<UserTaskRecordValue> consumer) {
+    final UserTaskRecordValue userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .filter(record -> record.getKey() == userTaskKey)
+            .limit(expectedRecords)
+            .map(Record::getValue)
+            .toList()
+            .getLast();
+
+    assertThat(userTask).isNotNull();
+    consumer.accept(userTask);
+  }
+
+  public static void assertUserTaskUpdated(
+      final long userTaskKey, final Consumer<UserTaskRecordValue> consumer) {
+    assertUserTaskUpdated(userTaskKey, 1, consumer);
+  }
+
+  public static void assertUserTaskUpdated(
+      final long userTaskKey,
+      final long expectedRecords,
+      final Consumer<UserTaskRecordValue> consumer) {
+    final UserTaskRecordValue userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED)
+            .filter(record -> record.getKey() == userTaskKey)
+            .limit(expectedRecords)
+            .map(Record::getValue)
+            .toList()
+            .getLast();
+
+    assertThat(userTask).isNotNull();
+    consumer.accept(userTask);
   }
 
   public static void assertElementCompleted(final String bpmnId, final String activity) {
