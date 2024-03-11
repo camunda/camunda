@@ -96,14 +96,17 @@ public class OperateSession implements Session {
     delegate.setCreationTime(creationTime);
     changed = true;
   }
-public boolean containsAuthentication() {
+
+  public boolean containsAuthentication() {
     return getAuthentication() != null;
   }
+
   public boolean isAuthenticated() {
     final var authentication = getAuthentication();
     return (authentication != null && authentication.isAuthenticated());
   }
-private Authentication getAuthentication() {
+
+  private Authentication getAuthentication() {
     final var securityContext =
         (SecurityContext) delegate.getAttribute(SPRING_SECURITY_CONTEXT_KEY);
     final Authentication authentication;
@@ -116,11 +119,13 @@ private Authentication getAuthentication() {
 
     return authentication;
   }
+
   @Override
   public int hashCode() {
     return Objects.hash(getId());
   }
-@Override
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -131,24 +136,25 @@ private Authentication getAuthentication() {
     final OperateSession session = (OperateSession) o;
     return Objects.equals(getId(), session.getId());
   }
-    @Override
+
+  @Override
   public String toString() {
     return String.format("OperateSession: %s ", getId());
-  }@Override
+  }
+
+  @Override
   public Instant getLastAccessedTime() {
     return delegate.getLastAccessedTime();
   }
 
-public boolean isPolling() {
+  public boolean isPolling() {
     return polling;
   }
 
-public OperateSession setPolling(final boolean polling) {
+  public OperateSession setPolling(final boolean polling) {
     this.polling = polling;
     return this;
   }
-
-
 
   @Override
   public void setLastAccessedTime(final Instant lastAccessedTime) {
@@ -167,24 +173,8 @@ public OperateSession setPolling(final boolean polling) {
     changed = true;
   }
 
-    @Override
+  @Override
   public boolean isExpired() {
     return delegate.isExpired();
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
