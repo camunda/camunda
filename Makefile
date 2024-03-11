@@ -46,8 +46,8 @@ env-sso-up:
 
 .PHONY: env-identity-up
 env-identity-up:
-	@docker-compose -f ./config/docker-compose.identity.yml up -d identity elasticsearch zeebe \
-	&& mvn install -DskipTests=true -Dskip.fe.build=false \
+	@docker-compose -f ./operate/config/docker-compose.identity.yml up -d identity elasticsearch zeebe \
+	&& mvn install -DskipTests=true -Dskip.fe.build=true \
 	&& CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform \
 	   CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform \
        CAMUNDA_IDENTITY_CLIENT_ID=operate \
