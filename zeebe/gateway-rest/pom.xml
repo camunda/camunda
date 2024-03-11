@@ -267,7 +267,9 @@
     <profile>
       <id>openapi-windows</id>
       <activation>
-        <os><family>Windows</family></os>
+        <os>
+          <family>Windows</family>
+        </os>
       </activation>
       <properties>
         <openapi.spec>${maven.multiModuleProjectDirectory}\zeebe\gateway-protocol\src\main\proto\rest-api.yaml</openapi.spec>
