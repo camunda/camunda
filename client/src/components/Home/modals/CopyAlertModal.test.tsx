@@ -7,8 +7,6 @@
 
 import {shallow} from 'enzyme';
 
-import {LabeledInput} from 'components';
-
 import CopyAlertModal from './CopyAlertModal';
 
 const props = {
@@ -20,9 +18,9 @@ const props = {
 it('should update the alert name', () => {
   const node = shallow(<CopyAlertModal {...props} />);
 
-  expect(node.find(LabeledInput).prop('value')).toBe('test (copy)');
+  expect(node.find('TextInput').prop('value')).toBe('test (copy)');
 
-  node.find(LabeledInput).simulate('change', {target: {value: 'new alert'}});
+  node.find('TextInput').simulate('change', {target: {value: 'new alert'}});
   node.find('Button').at(1).simulate('click');
 
   expect(props.onConfirm).toHaveBeenCalledWith('new alert');
