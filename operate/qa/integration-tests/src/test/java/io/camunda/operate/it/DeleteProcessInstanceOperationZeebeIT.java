@@ -96,6 +96,6 @@ public class DeleteProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     assertThat(operations.size()).isEqualTo(1);
     BatchOperationEntity operation = operations.get(0);
     assertThat(operation.getOperationsTotalCount()).isEqualTo(1);
-    assertThat(operation.getOperationsFinishedCount()).isZero();
+    assertThat(operation.getOperationsFinishedCount()).isEqualTo(1);
   }
 }
