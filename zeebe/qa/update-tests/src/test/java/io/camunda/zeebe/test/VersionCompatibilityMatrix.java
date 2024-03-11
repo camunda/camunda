@@ -11,14 +11,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Optional;
+import java.util.SequencedCollection;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
 
@@ -39,7 +41,7 @@ final class VersionCompatibilityMatrix {
    *   <li>Periodic tests: {@link #full()} for full coverage of all allowed upgrade paths.
    * </ul>
    */
-  private static Stream<Arguments> auto() throws IOException, InterruptedException {
+  private static Stream<Arguments> auto() {
     if (System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY") != null) {
       return full();
     } else if (System.getenv("CI") != null) {
@@ -53,8 +55,7 @@ final class VersionCompatibilityMatrix {
     return Stream.of(Arguments.of(VersionUtil.getPreviousVersion(), "CURRENT"));
   }
 
-  private static Stream<Arguments> fromPreviousPatchesToCurrent()
-      throws IOException, InterruptedException {
+  private static Stream<Arguments> fromPreviousPatchesToCurrent() {
     final var current = VersionUtil.getSemanticVersion().orElseThrow();
     return discoverVersions()
         .filter(version -> version.compareTo(current) < 0)
@@ -63,15 +64,41 @@ final class VersionCompatibilityMatrix {
   }
 
   private static Stream<Arguments> full() {
-    final var versions = discoverVersions().toList();
-    return versions.stream()
-        .filter(version -> version.minor() > 0)
-        .flatMap(
-            version1 ->
-                versions.stream()
-                    .filter(version2 -> version1.compareTo(version2) < 0)
-                    .filter(version2 -> version2.minor() - version1.minor() <= 1)
-                    .map(version2 -> Arguments.of(version1.toString(), version2.toString())));
+    final var versions = discoverVersions().sorted().toList();
+    final var combinations =
+        versions.stream()
+            .filter(version -> version.minor() > 0)
+            .flatMap(
+                version1 ->
+                    versions.stream()
+                        .filter(version2 -> version1.compareTo(version2) < 0)
+                        .filter(version2 -> version2.minor() - version1.minor() <= 1)
+                        .map(version2 -> Arguments.of(version1.toString(), version2.toString())))
+            .toList();
+
+    final var index =
+        Optional.ofNullable(System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_INDEX"))
+            .map(Integer::parseInt)
+            .orElse(0);
+    final var total =
+        Optional.ofNullable(System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_TOTAL"))
+            .map(Integer::parseInt)
+            .orElse(1);
+    return shard(combinations, index, total);
+  }
+
+  @VisibleForTesting
+  static <T> Stream<T> shard(final SequencedCollection<T> list, final int index, final int total) {
+    if (list.size() < total) {
+      throw new IllegalArgumentException(
+          "Can't shard a list of size %d into %d shards".formatted(list.size(), total));
+    }
+    final var shardSize = Math.floorDiv(list.size(), total);
+    final var shardStart = index * shardSize;
+    // The last shard includes the remaining elements. At max, it will have `total` more elements
+    // than a regular shard.
+    final var shardLimit = index == total - 1 ? shardSize + total : shardSize;
+    return list.stream().skip(shardStart).limit(shardLimit);
   }
 
   /**
@@ -82,7 +109,7 @@ final class VersionCompatibilityMatrix {
    *     href="https://docs.github.com/en/rest/git/refs?apiVersion=2022-11-28#list-matching-references--parameters">GitHub
    *     API</a>
    */
-  private static Stream<SemanticVersion> discoverVersions() {
+  static Stream<SemanticVersion> discoverVersions() {
     @JsonIgnoreProperties(ignoreUnknown = true)
     record Ref(String ref) {
       SemanticVersion toSemanticVersion() {
