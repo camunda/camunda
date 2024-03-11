@@ -1,0 +1,10 @@
+component/zeebe:
+  - changed-files:
+    - all-globs-to-any-file: 
+      - '!operate/**'
+      - '!.github/workflows/operate-*'
+component/operate:
+  - changed-files:
+    - all-globs-to-any-file:
+      - '!zeebe/**'
+      - '!.github/workflows/zeebe-*'
