@@ -22,6 +22,12 @@ public class BrokerShutdownHelper {
   @Autowired private ApplicationContext appContext;
 
   public void initiateShutdown(final int returnCode) {
+    // This can be called from an Actor. We should ensure that any blocking operation is not run on
+    // the actor. Hence, schedule it on a common thread pool.
+    Thread.ofVirtual().start(() -> shutdown(returnCode));
+  }
+
+  private void shutdown(final int returnCode) {
     SpringApplication.exit(appContext, () -> returnCode);
   }
 }
