@@ -86,7 +86,7 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testProcessNameAndVersionAreLoaded() {
     // having
-    String processId = "demoProcess";
+    final String processId = "demoProcess";
     final Long processDefinitionKey =
         ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
     final long processInstanceKey =
@@ -107,15 +107,17 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected void processImportTypeAndWait(
-      ImportValueType importValueType, Predicate<Object[]> waitTill, Object... arguments) {
+      final ImportValueType importValueType,
+      final Predicate<Object[]> waitTill,
+      final Object... arguments) {
     searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
   }
 
   @Test
   public void testCreateProcessInstanceWithEmptyProcessName() {
     // given a process with empty name
-    String processId = "emptyNameProcess";
-    BpmnModelInstance model =
+    final String processId = "emptyNameProcess";
+    final BpmnModelInstance model =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("taskA")
@@ -141,15 +143,15 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testIncidentCreatesProcessInstance() {
     // having
-    String activityId = "taskA";
-    String processId = "demoProcess";
-    Long processDefinitionKey =
+    final String activityId = "taskA";
+    final String processId = "demoProcess";
+    final Long processDefinitionKey =
         tester
             .deployProcess("demoProcess_v_1.bpmn")
             .waitUntil()
             .processIsDeployed()
             .getProcessDefinitionKey();
-    Long processInstanceKey =
+    final Long processInstanceKey =
         tester.startProcessInstance(processId, "{\"a\": \"b\"}").getProcessInstanceKey();
     // create an incident
     tester.failTask(activityId, "Some error");
@@ -249,16 +251,16 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testEarlierEventsAreIgnored() throws Exception {
     // having
-    String activityId = "taskA";
-    String processId = "demoProcess";
+    final String activityId = "taskA";
+    final String processId = "demoProcess";
 
-    Long processDefinitionKey =
+    final Long processDefinitionKey =
         tester
             .deployProcess("demoProcess_v_1.bpmn")
             .waitUntil()
             .processIsDeployed()
             .getProcessDefinitionKey();
-    Long processInstanceKey =
+    final Long processInstanceKey =
         tester.startProcessInstance(processId, "{\"a\": \"b\"}").getProcessInstanceKey();
 
     // create an incident
@@ -282,9 +284,9 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
     // when
     // get flow node instance tree
     final String processInstanceId = String.valueOf(processInstanceKey);
-    FlowNodeInstanceQueryDto request =
+    final FlowNodeInstanceQueryDto request =
         new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId);
-    List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
+    final List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
 
     final FlowNodeMetadataDto flowNodeMetadata =
         tester.getFlowNodeMetadataFromRest(
@@ -292,7 +294,8 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
             null,
             null,
             instances.get(instances.size() - 1).getId());
-    FlowNodeInstanceMetadataDto flowNodeInstanceMetadata = flowNodeMetadata.getInstanceMetadata();
+    final FlowNodeInstanceMetadataDto flowNodeInstanceMetadata =
+        (FlowNodeInstanceMetadataDto) flowNodeMetadata.getInstanceMetadata();
     assertThat(flowNodeMetadata.getIncident()).isNotNull();
     assertThat(flowNodeMetadata.getIncident().getErrorMessage()).isEqualTo(incidentError);
     assertThat(flowNodeMetadata.getIncident().getErrorType().getId())
@@ -322,9 +325,9 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
 
   private void assertIncidentEntity(
       final IncidentEntity incidentEntity,
-      String activityId,
+      final String activityId,
       final Long processDefinitionKey,
-      String bpmnProcessId,
+      final String bpmnProcessId,
       final IncidentState state) {
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
@@ -336,7 +339,7 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void assertProcessInstanceListViewEntityWithIncident(
-      ProcessInstanceForListViewEntity processInstanceEntity,
+      final ProcessInstanceForListViewEntity processInstanceEntity,
       final String processName,
       final Long processDefinitionKey,
       final Long processInstanceKey) {
@@ -361,17 +364,17 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
     return listViewResponse.getProcessInstances().get(0);
   }
 
-  protected List<FlowNodeInstanceEntity> getFlowNodeInstances(Long processInstanceKey) {
+  protected List<FlowNodeInstanceEntity> getFlowNodeInstances(final Long processInstanceKey) {
     return tester.getAllFlowNodeInstances(processInstanceKey);
   }
 
   @Test
   public void testOnlyIncidentIsLoaded() throws Exception {
     // having
-    String activityId = "taskA";
-    String processId = "demoProcess";
+    final String activityId = "taskA";
+    final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
-    Long processInstanceKey =
+    final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     // create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
@@ -388,14 +391,14 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected void assertListViewResponse() throws Exception {
-    ListViewRequestDto listViewRequest = createGetAllProcessInstancesRequest();
+    final ListViewRequestDto listViewRequest = createGetAllProcessInstancesRequest();
     listViewRequest.setPageSize(100);
-    MockHttpServletRequestBuilder request =
+    final MockHttpServletRequestBuilder request =
         post(query())
             .content(mockMvcTestRule.json(listViewRequest))
             .contentType(mockMvcTestRule.getContentType());
 
-    MvcResult mvcResult =
+    final MvcResult mvcResult =
         mockMvc
             .perform(request)
             .andExpect(status().isOk())
@@ -412,8 +415,8 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testIncidentDeletedAfterActivityCompleted() {
     // having
-    String activityId = "taskA";
-    String processId = "demoProcess";
+    final String activityId = "taskA";
+    final String processId = "demoProcess";
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -460,7 +463,7 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
     assertFlowNodeIsCompleted(flowNodeInstances.get(1), "taskA");
   }
 
-  protected long getOnlyIncidentKey(long processInstanceKey) {
+  protected long getOnlyIncidentKey(final long processInstanceKey) {
     final List<IncidentEntity> incidents =
         incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(incidents).hasSize(1);
@@ -470,8 +473,8 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
   @Test
   public void testIncidentDeletedAfterActivityTerminated() {
     // having
-    String activityId = "taskA";
-    String processId = "demoProcess";
+    final String activityId = "taskA";
+    final String processId = "demoProcess";
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -566,7 +569,7 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
     // when
     // get metadata by flowNodeId from parent process instance
     final String processInstanceId = String.valueOf(parentProcessInstanceKey);
-    FlowNodeMetadataDto flowNodeMetadata =
+    final FlowNodeMetadataDto flowNodeMetadata =
         tester.getFlowNodeMetadataFromRest(processInstanceId, callActivity1Id, null, null);
 
     // then one incident is returned
@@ -598,8 +601,8 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
                 task -> task.zeebeCalledDecisionId(demoDecisionId2).zeebeResultVariable("result"))
             .done();
 
-    String bigJSONVariablePayload = payloadUtil.readStringFromClasspath("/large-payload.txt");
-    String payload = "{\"value\": \"" + bigJSONVariablePayload + "\"}";
+    final String bigJSONVariablePayload = payloadUtil.readStringFromClasspath("/large-payload.txt");
+    final String payload = "{\"value\": \"" + bigJSONVariablePayload + "\"}";
     tester
         .deployProcess(instance, "test.bpmn")
         .deployDecision("largeInputOutput.dmn")
@@ -839,11 +842,12 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
   }
 
-  private void assertStartActivityCompleted(FlowNodeInstanceEntity activity) {
+  private void assertStartActivityCompleted(final FlowNodeInstanceEntity activity) {
     assertFlowNodeIsCompleted(activity, "start");
   }
 
-  private void assertFlowNodeIsInIncidentState(FlowNodeInstanceEntity activity, String activityId) {
+  private void assertFlowNodeIsInIncidentState(
+      final FlowNodeInstanceEntity activity, final String activityId) {
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(activity.getProcessDefinitionKey()).isNotNull();
     assertThat(activity.getBpmnProcessId()).isNotNull();
@@ -853,7 +857,8 @@ public class ZeebeImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
-  private void assertFlowNodeIsCompleted(FlowNodeInstanceEntity activity, String activityId) {
+  private void assertFlowNodeIsCompleted(
+      final FlowNodeInstanceEntity activity, final String activityId) {
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(activity.getProcessDefinitionKey()).isNotNull();
     assertThat(activity.getBpmnProcessId()).isNotNull();

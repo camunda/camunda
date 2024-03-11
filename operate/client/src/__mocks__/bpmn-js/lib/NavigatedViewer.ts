@@ -23,7 +23,7 @@ const createMockedModules = (container: any): {[module: string]: any} => ({
     addMarker: jest.fn(),
     removeMarker: jest.fn(),
     resized: jest.fn(),
-    getRootElement: jest.fn(),
+    getRootElement: jest.fn(() => container.innerHTML),
     findRoot: jest.fn(),
   },
   zoomScroll: {stepZoom: jest.fn()},

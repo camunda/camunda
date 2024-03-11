@@ -1,17 +1,6 @@
 {
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:base", ":rebaseStalePrs", ":semanticCommitTypeAll(chore)"],
-  "includePaths": [
-    "client/**",
-    "operate/client/**",
-    ".github/**",
-    ".ci/**",
-    "Dockerfile",
-    "operate.Dockerfile"
-  ],
-  "ignorePaths": [
-    "client/pom.xml",
-    "operate/client/pom.xml"
-  ],
   "baseBranches": [
     "master",
     "/^stable\\/8\\..*/"
@@ -23,6 +12,10 @@
     }
   },
   "packageRules": [
+    {
+      "matchManagers": ["npm", "nvm"],
+      "additionalBranchPrefix": "fe-"
+    },
     {
       "matchPackagePrefixes": ["@types/"],
       "groupName": "definitelyTyped"
@@ -36,6 +29,7 @@
       "groupName": "react-router monorepo"
     },
     {
+      "matchManagers": ["npm", "nvm"],
       "matchPackagePatterns": ["*"],
       "matchUpdateTypes": ["patch"],
       "groupName": "all non-major dependencies",
@@ -47,10 +41,9 @@
       "enabled": false
     },
     {
-      "matchManagers": "dockerfile",
+      "matchManagers": ["dockerfile"],
       "separateMajorMinor": true,
       "separateMinorPatch": true
     }
-  ],
-  "branchPrefix": "fe-renovate/"
+  ]
 }

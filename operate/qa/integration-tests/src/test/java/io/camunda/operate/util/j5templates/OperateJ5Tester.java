@@ -86,4 +86,16 @@ public class OperateJ5Tester {
   public void refreshSearchIndices() {
     searchTestRuleProvider.refreshSearchIndices();
   }
+
+  public OperateJ5Tester waitUntilIncidentsAreActive(Long processInstanceKey, int count) {
+    searchTestRuleProvider.processAllRecordsAndWait(
+        searchPredicates.getIncidentsAreActiveCheck(), processInstanceKey, count);
+    return this;
+  }
+
+  public OperateJ5Tester waitUntilIncidentsInProcessAreActive(String bpmnProcessId, int count) {
+    searchTestRuleProvider.processAllRecordsAndWait(
+        searchPredicates.getIncidentsInProcessAreActiveCheck(), bpmnProcessId, count);
+    return this;
+  }
 }

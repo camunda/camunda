@@ -17,6 +17,7 @@
 package io.camunda.operate.webapp.opensearch.reader;
 
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
@@ -25,6 +26,7 @@ import io.camunda.operate.entities.UserTaskEntity;
 import io.camunda.operate.schema.templates.UserTaskTemplate;
 import io.camunda.operate.webapp.reader.UserTaskReader;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -40,8 +42,21 @@ public class OpensearchUserTaskReader extends OpensearchAbstractReader implement
 
   @Override
   public List<UserTaskEntity> getUserTasks() {
-    var request =
+    final var request =
         searchRequestBuilder(userTaskTemplate.getAlias()).query(withTenantCheck(matchAll()));
     return richOpenSearchClient.doc().searchValues(request, UserTaskEntity.class);
+  }
+
+  @Override
+  public Optional<UserTaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
+    final var request =
+        searchRequestBuilder(userTaskTemplate.getAlias())
+            .query(
+                withTenantCheck(term(UserTaskTemplate.ELEMENT_INSTANCE_KEY, flowNodeInstanceKey)));
+    final var hits = richOpenSearchClient.doc().search(request, UserTaskEntity.class).hits();
+    if (hits.total().value() == 1) {
+      return Optional.of(hits.hits().get(0).source());
+    }
+    return Optional.empty();
   }
 }

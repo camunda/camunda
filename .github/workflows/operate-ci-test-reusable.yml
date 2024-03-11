@@ -41,7 +41,7 @@ jobs:
   integration-tests:
     name: Test
     runs-on: gcp-core-32-default
-    if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
+    if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/fe-') }}
 
     steps:
       # Setup: checkout branch

@@ -22,6 +22,7 @@ import java.util.Map;
 
 public enum IncidentState {
   ACTIVE("CREATED"),
+  MIGRATED("MIGRATED"),
   RESOLVED("RESOLVED"),
   PENDING(null);
 

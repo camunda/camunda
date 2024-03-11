@@ -20,14 +20,9 @@ import static io.camunda.operate.entities.FlowNodeState.ACTIVE;
 import static io.camunda.operate.entities.FlowNodeState.COMPLETED;
 import static io.camunda.operate.entities.FlowNodeState.TERMINATED;
 import static io.camunda.operate.schema.indices.DecisionIndex.DECISION_ID;
-import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_NAME;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.EVALUATION_DATE;
-import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.EXECUTION_INDEX;
-import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ROOT_DECISION_DEFINITION_ID;
-import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ROOT_DECISION_ID;
-import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ROOT_DECISION_NAME;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.END_DATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.FLOW_NODE_ID;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.ID;
@@ -38,7 +33,6 @@ import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.START
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
 import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
@@ -55,14 +49,13 @@ import io.camunda.operate.entities.*;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.util.TreePath;
 import io.camunda.operate.webapp.data.IncidentDataHolder;
+import io.camunda.operate.webapp.rest.FlowNodeInstanceMetadataBuilder;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
@@ -72,10 +65,9 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.metadata.DecisionInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEntryDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadata;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
@@ -115,10 +107,6 @@ public class FlowNodeInstanceReader extends AbstractReader
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
-  @Autowired private EventTemplate eventTemplate;
-
-  @Autowired private ListViewTemplate listViewTemplate;
-
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired private IncidentTemplate incidentTemplate;
@@ -129,11 +117,13 @@ public class FlowNodeInstanceReader extends AbstractReader
 
   @Autowired private IncidentReader incidentReader;
 
+  @Autowired private FlowNodeInstanceMetadataBuilder flowNodeInstanceMetadataBuilder;
+
   @Override
   public Map<String, FlowNodeInstanceResponseDto> getFlowNodeInstances(
-      FlowNodeInstanceRequestDto request) {
-    Map<String, FlowNodeInstanceResponseDto> response = new HashMap<>();
-    for (FlowNodeInstanceQueryDto query : request.getQueries()) {
+      final FlowNodeInstanceRequestDto request) {
+    final Map<String, FlowNodeInstanceResponseDto> response = new HashMap<>();
+    for (final FlowNodeInstanceQueryDto query : request.getQueries()) {
       response.put(query.getTreePath(), getFlowNodeInstances(query));
     }
     return response;
@@ -141,7 +131,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
   @Override
   public FlowNodeMetadataDto getFlowNodeMetadata(
-      String processInstanceId, final FlowNodeMetadataRequestDto request) {
+      final String processInstanceId, final FlowNodeMetadataRequestDto request) {
     if (request.getFlowNodeId() != null) {
       return getMetadataByFlowNodeId(
           processInstanceId, request.getFlowNodeId(), request.getFlowNodeType());
@@ -153,7 +143,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
   @Deprecated
   @Override
-  public Map<String, FlowNodeStateDto> getFlowNodeStates(String processInstanceId) {
+  public Map<String, FlowNodeStateDto> getFlowNodeStates(final String processInstanceId) {
     final String latestFlowNodeAggName = "latestFlowNode";
     final String activeFlowNodesAggName = "activeFlowNodes";
     final String activeFlowNodesBucketsAggName = "activeFlowNodesBuckets";
@@ -193,10 +183,10 @@ public class FlowNodeInstanceReader extends AbstractReader
     try {
       final SearchResponse response = tenantAwareClient.search(request);
 
-      Set<String> incidentPaths = new HashSet<>();
+      final Set<String> incidentPaths = new HashSet<>();
       processAggregation(response.getAggregations(), incidentPaths, new Boolean[] {false});
 
-      Set<String> finishedFlowNodes =
+      final Set<String> finishedFlowNodes =
           collectFinishedFlowNodes(response.getAggregations().get(finishedFlowNodesAggName));
 
       final Filter activeFlowNodesAgg = response.getAggregations().get(activeFlowNodesAggName);
@@ -204,7 +194,7 @@ public class FlowNodeInstanceReader extends AbstractReader
           activeFlowNodesAgg.getAggregations().get(activeFlowNodesBucketsAggName);
       final Map<String, FlowNodeStateDto> result = new HashMap<>();
       if (flowNodesAgg != null) {
-        for (Bucket flowNode : flowNodesAgg.getBuckets()) {
+        for (final Bucket flowNode : flowNodesAgg.getBuckets()) {
           final Map<String, Object> lastFlowNodeFields =
               ((TopHits) flowNode.getAggregations().get(latestFlowNodeAggName))
                   .getHits()
@@ -220,13 +210,13 @@ public class FlowNodeInstanceReader extends AbstractReader
         }
       }
       // add finished when needed
-      for (String finishedFlowNodeId : finishedFlowNodes) {
+      for (final String finishedFlowNodeId : finishedFlowNodes) {
         if (result.get(finishedFlowNodeId) == null) {
           result.put(finishedFlowNodeId, FlowNodeStateDto.COMPLETED);
         }
       }
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining states for instance flow nodes: %s",
@@ -237,7 +227,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
   @Override
   public List<Long> getFlowNodeInstanceKeysByIdAndStates(
-      final Long processInstanceId, final String flowNodeId, List<FlowNodeState> states) {
+      final Long processInstanceId, final String flowNodeId, final List<FlowNodeState> states) {
     final List<Long> flowNodeInstanceKeys = new ArrayList<>();
     try {
       final SearchRequest searchRequest =
@@ -257,11 +247,11 @@ public class FlowNodeInstanceReader extends AbstractReader
                       .fetchField(ID));
       final SearchHits searchHits = tenantAwareClient.search(searchRequest).getHits();
 
-      for (SearchHit searchHit : searchHits) {
+      for (final SearchHit searchHit : searchHits) {
         final Map<String, DocumentField> documentFields = searchHit.getDocumentFields();
         flowNodeInstanceKeys.add(Long.parseLong(documentFields.get(ID).getValue()));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(
           String.format("Could not retrieve flowNodeInstanceKey for flowNodeId %s ", flowNodeId),
           e);
@@ -335,7 +325,7 @@ public class FlowNodeInstanceReader extends AbstractReader
                       .setActive(
                           ((Filter) bucket.getAggregations().get(COUNT_ACTIVE)).getDocCount()))
           .collect(Collectors.toList());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining statistics for process instance flow nodes: %s",
@@ -344,7 +334,8 @@ public class FlowNodeInstanceReader extends AbstractReader
     }
   }
 
-  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
+  @Override
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(final Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery =
         termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final SearchRequest searchRequest =
@@ -356,13 +347,13 @@ public class FlowNodeInstanceReader extends AbstractReader
     try {
       return ElasticsearchUtil.scroll(
           searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
   }
 
-  private FlowNodeInstanceResponseDto getFlowNodeInstances(FlowNodeInstanceQueryDto request) {
-    FlowNodeInstanceResponseDto response = queryFlowNodeInstances(request);
+  private FlowNodeInstanceResponseDto getFlowNodeInstances(final FlowNodeInstanceQueryDto request) {
+    final FlowNodeInstanceResponseDto response = queryFlowNodeInstances(request);
     // query one additional instance
     if (request.getSearchAfterOrEqual() != null || request.getSearchBeforeOrEqual() != null) {
       adjustResponse(response, request);
@@ -386,7 +377,7 @@ public class FlowNodeInstanceReader extends AbstractReader
       flowNodeInstanceId = (String) request.getSearchBeforeOrEqual(objectMapper)[1];
     }
 
-    FlowNodeInstanceQueryDto newRequest =
+    final FlowNodeInstanceQueryDto newRequest =
         request
             .createCopy()
             .setSearchAfter(null)
@@ -421,7 +412,7 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private FlowNodeInstanceResponseDto queryFlowNodeInstances(
-      final FlowNodeInstanceQueryDto flowNodeInstanceRequest, String flowNodeInstanceId) {
+      final FlowNodeInstanceQueryDto flowNodeInstanceRequest, final String flowNodeInstanceId) {
 
     final String processInstanceId = flowNodeInstanceRequest.getProcessInstanceId();
     final String parentTreePath = flowNodeInstanceRequest.getTreePath();
@@ -435,7 +426,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     final QueryBuilder query =
         constantScoreQuery(termQuery(PROCESS_INSTANCE_KEY, processInstanceId));
 
-    AggregationBuilder runningParentsAgg =
+    final AggregationBuilder runningParentsAgg =
         filter(
             AGG_RUNNING_PARENT,
             joinWithAnd(
@@ -446,7 +437,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     final QueryBuilder postFilter =
         joinWithAnd(termQuery(LEVEL, level), prefixQuery(TREE_PATH, parentTreePath), idsQuery);
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(query)
             .aggregation(runningParentsAgg)
@@ -460,7 +451,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate).source(searchSourceBuilder);
     try {
-      FlowNodeInstanceResponseDto response;
+      final FlowNodeInstanceResponseDto response;
       if (flowNodeInstanceRequest.getPageSize() != null) {
         response = getOnePage(searchRequest, processInstanceId);
       } else {
@@ -476,7 +467,7 @@ public class FlowNodeInstanceReader extends AbstractReader
       }
 
       return response;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining all flow node instances: %s", e.getMessage());
@@ -490,7 +481,7 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private FlowNodeInstanceResponseDto scrollAllSearchHits(
-      final SearchRequest searchRequest, String processInstanceId) throws IOException {
+      final SearchRequest searchRequest, final String processInstanceId) throws IOException {
     final Boolean[] runningParent = new Boolean[] {false};
     final List<FlowNodeInstanceEntity> children =
         tenantAwareClient.search(
@@ -513,7 +504,7 @@ public class FlowNodeInstanceReader extends AbstractReader
   private Function<SearchHit, FlowNodeInstanceEntity> getSearchHitFunction(
       final Set<String> incidentPaths) {
     return (sh) -> {
-      FlowNodeInstanceEntity entity =
+      final FlowNodeInstanceEntity entity =
           fromSearchHit(sh.getSourceAsString(), objectMapper, FlowNodeInstanceEntity.class);
       entity.setSortValues(sh.getSortValues());
       if (incidentPaths != null && incidentPaths.contains(entity.getTreePath())) {
@@ -537,16 +528,17 @@ public class FlowNodeInstanceReader extends AbstractReader
         runningParent[0], FlowNodeInstanceDto.createFrom(children, objectMapper));
   }
 
-  private boolean flowNodeInstanceIsRunningOrIsNotMarked(FlowNodeInstanceEntity flowNodeInstance) {
+  private boolean flowNodeInstanceIsRunningOrIsNotMarked(
+      final FlowNodeInstanceEntity flowNodeInstance) {
     return flowNodeInstance.getEndDate() == null || !flowNodeInstance.isIncident();
   }
 
-  private QueryBuilder hasProcessInstanceAsTreePathPrefixAndIsIncident(String treePath) {
+  private QueryBuilder hasProcessInstanceAsTreePathPrefixAndIsIncident(final String treePath) {
     return joinWithAnd(prefixQuery(TREE_PATH, treePath), termQuery(INCIDENT, true));
   }
 
   private FiltersAggregator.KeyedFilter newFilterForFlowNodeInstance(
-      FlowNodeInstanceEntity flowNodeInstance) {
+      final FlowNodeInstanceEntity flowNodeInstance) {
     return new FiltersAggregator.KeyedFilter(
         flowNodeInstance.getId(),
         hasProcessInstanceAsTreePathPrefixAndIsIncident(flowNodeInstance.getTreePath()));
@@ -554,7 +546,7 @@ public class FlowNodeInstanceReader extends AbstractReader
 
   // Max size: page size of request - default: 50
   private void markHasIncident(
-      String processInstanceId, List<FlowNodeInstanceEntity> flowNodeInstances) {
+      final String processInstanceId, final List<FlowNodeInstanceEntity> flowNodeInstances) {
     if (flowNodeInstances == null || flowNodeInstances.isEmpty()) return;
     final List<FiltersAggregator.KeyedFilter> filters =
         flowNodeInstances.stream()
@@ -582,24 +574,24 @@ public class FlowNodeInstanceReader extends AbstractReader
           .getBuckets()
           .forEach(b -> flowNodeIdIncidents.put(b.getKeyAsString(), b.getDocCount()));
       // logger.info("FlowNodeInstance -> incidents: {}", flowNodeIdIncidents);
-      for (var flowNodeInstance : flowNodeInstances) {
-        Long count = flowNodeIdIncidents.getOrDefault(flowNodeInstance.getId(), 0L);
+      for (final var flowNodeInstance : flowNodeInstances) {
+        final Long count = flowNodeIdIncidents.getOrDefault(flowNodeInstance.getId(), 0L);
         if (count > 0) {
           flowNodeInstance.setIncident(true);
         }
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       logger.error("Could not retrieve flow node incidents", e);
     }
   }
 
   private Consumer<Aggregations> getAggsProcessor(
-      Set<String> incidentPaths, Boolean[] runningParent) {
+      final Set<String> incidentPaths, final Boolean[] runningParent) {
     return (aggs) -> {
       if (incidentPaths != null) {
-        Filter filterAggs = aggs.get(AGG_INCIDENTS);
+        final Filter filterAggs = aggs.get(AGG_INCIDENTS);
         if (filterAggs != null) {
-          Terms termsAggs = filterAggs.getAggregations().get(AGG_INCIDENT_PATHS);
+          final Terms termsAggs = filterAggs.getAggregations().get(AGG_INCIDENT_PATHS);
           if (termsAggs != null) {
             incidentPaths.addAll(
                 termsAggs.getBuckets().stream()
@@ -608,7 +600,7 @@ public class FlowNodeInstanceReader extends AbstractReader
           }
         }
       }
-      Filter filterAggs = aggs.get(AGG_RUNNING_PARENT);
+      final Filter filterAggs = aggs.get(AGG_RUNNING_PARENT);
       if (filterAggs != null && filterAggs.getDocCount() > 0) {
         runningParent[0] = true;
       }
@@ -616,7 +608,9 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private Set<String> processAggregation(
-      final Aggregations aggregations, Set<String> incidentPaths, Boolean[] runningParent) {
+      final Aggregations aggregations,
+      final Set<String> incidentPaths,
+      final Boolean[] runningParent) {
     getAggsProcessor(incidentPaths, runningParent).accept(aggregations);
     return incidentPaths;
   }
@@ -680,7 +674,7 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private void searchForIncidents(
-      FlowNodeMetadataDto flowNodeMetadata,
+      final FlowNodeMetadataDto flowNodeMetadata,
       final String processInstanceId,
       final String flowNodeId,
       final String flowNodeInstanceId,
@@ -728,7 +722,7 @@ public class FlowNodeInstanceReader extends AbstractReader
                 rootCauseDecision);
         flowNodeMetadata.setIncident(incidentDto);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining incidents: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
@@ -736,7 +730,7 @@ public class FlowNodeInstanceReader extends AbstractReader
   }
 
   private void searchForIncidentsByFlowNodeIdAndType(
-      FlowNodeMetadataDto flowNodeMetadata,
+      final FlowNodeMetadataDto flowNodeMetadata,
       final String processInstanceId,
       final String flowNodeId,
       final FlowNodeType flowNodeType) {
@@ -782,7 +776,7 @@ public class FlowNodeInstanceReader extends AbstractReader
                 rootCauseDecision);
         flowNodeMetadata.setIncident(incidentDto);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining incidents: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
@@ -814,7 +808,7 @@ public class FlowNodeInstanceReader extends AbstractReader
             .setDecisionName(decisionName)
             .setInstanceId(response.getHits().getHits()[0].getId());
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while searching for root cause decision. Flow node instance id: %s. Error message: %s.",
@@ -834,7 +828,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     try {
       response = tenantAwareClient.search(request);
       flowNodeInstance = getFlowNodeInstance(response);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining metadata for flow node instance: %s",
@@ -850,7 +844,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     final List<FlowNodeInstanceBreadcrumbEntryDto> result = new ArrayList<>();
 
     // adjust to use prefixQuery
-    int lastSeparatorIndex = treePath.lastIndexOf("/");
+    final int lastSeparatorIndex = treePath.lastIndexOf("/");
     final String prefixTreePath =
         lastSeparatorIndex > -1 ? treePath.substring(0, lastSeparatorIndex) : treePath;
 
@@ -875,7 +869,7 @@ public class FlowNodeInstanceReader extends AbstractReader
       result.addAll(buildBreadcrumbForFlowNodeId(levelsAgg.getBuckets(), level));
 
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining metadata for flow node: %s", e.getMessage());
@@ -940,7 +934,7 @@ public class FlowNodeInstanceReader extends AbstractReader
       }
 
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining metadata for flow node: %s", e.getMessage());
@@ -982,7 +976,7 @@ public class FlowNodeInstanceReader extends AbstractReader
     if ((firstBucketFlowNodeType != null
             && firstBucketFlowNodeType.equals(FlowNodeType.MULTI_INSTANCE_BODY))
         || getBucketFromLevel(buckets, currentInstanceLevel).getDocCount() > 1) {
-      for (Bucket levelBucket : buckets) {
+      for (final Bucket levelBucket : buckets) {
         final TopHits levelTopHits = levelBucket.getAggregations().get(LEVELS_TOP_HITS_AGG_NAME);
         final Map<String, Object> instanceFields = levelTopHits.getHits().getAt(0).getSourceAsMap();
         if ((int) instanceFields.get(LEVEL) <= currentInstanceLevel) {
@@ -1007,162 +1001,9 @@ public class FlowNodeInstanceReader extends AbstractReader
     return null;
   }
 
-  private FlowNodeInstanceMetadataDto buildInstanceMetadata(
+  private FlowNodeInstanceMetadata buildInstanceMetadata(
       final FlowNodeInstanceEntity flowNodeInstance) {
-    final EventEntity eventEntity = getEventEntity(flowNodeInstance.getId());
-    final String[] calledProcessInstanceId = {null};
-    final String[] calledProcessDefinitionName = {null};
-    final String[] calledDecisionInstanceId = {null};
-    final String[] calledDecisionDefinitionName = {null};
-    final FlowNodeType type = flowNodeInstance.getType();
-    if (type == null) {
-      logger.error(
-          String.format(
-              "FlowNodeType for FlowNodeInstance with id %s is null", flowNodeInstance.getId()));
-      return null;
-    }
-    if (flowNodeInstance.getType().equals(FlowNodeType.CALL_ACTIVITY)) {
-      findCalledProcessInstance(
-          flowNodeInstance.getId(),
-          sh -> {
-            calledProcessInstanceId[0] = sh.getId();
-            final Map<String, Object> source = sh.getSourceAsMap();
-            String processName = (String) source.get(ListViewTemplate.PROCESS_NAME);
-            if (processName == null) {
-              processName = (String) source.get(ListViewTemplate.BPMN_PROCESS_ID);
-            }
-            calledProcessDefinitionName[0] = processName;
-          });
-    } else if (flowNodeInstance.getType().equals(FlowNodeType.BUSINESS_RULE_TASK)) {
-      findCalledDecisionInstance(
-          flowNodeInstance.getId(),
-          sh -> {
-            final Map<String, Object> source = sh.getSourceAsMap();
-            final String rootDecisionDefId = (String) source.get(ROOT_DECISION_DEFINITION_ID);
-            final String decisionDefId = (String) source.get(DECISION_DEFINITION_ID);
-
-            if (rootDecisionDefId.equals(decisionDefId)) {
-              // this is our instance, we will show the link
-              calledDecisionInstanceId[0] = sh.getId();
-              String decisionName = (String) source.get(DECISION_NAME);
-              if (decisionName == null) {
-                decisionName = (String) source.get(DECISION_ID);
-              }
-              calledDecisionDefinitionName[0] = decisionName;
-            } else {
-              // we will show only name of the root decision without the link
-              String decisionName = (String) source.get(ROOT_DECISION_NAME);
-              if (decisionName == null) {
-                decisionName = (String) source.get(ROOT_DECISION_ID);
-              }
-              calledDecisionDefinitionName[0] = decisionName;
-            }
-          });
-    }
-    return FlowNodeInstanceMetadataDto.createFrom(
-        flowNodeInstance,
-        eventEntity,
-        calledProcessInstanceId[0],
-        calledProcessDefinitionName[0],
-        calledDecisionInstanceId[0],
-        calledDecisionDefinitionName[0]);
-  }
-
-  private void findCalledProcessInstance(
-      final String flowNodeInstanceId, Consumer<SearchHit> processInstanceConsumer) {
-    final TermQueryBuilder parentFlowNodeInstanceQ =
-        termQuery(PARENT_FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId);
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(listViewTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(parentFlowNodeInstanceQ)
-                    .fetchSource(
-                        new String[] {
-                          ListViewTemplate.PROCESS_NAME, ListViewTemplate.BPMN_PROCESS_ID
-                        },
-                        null));
-    try {
-      final SearchResponse response = tenantAwareClient.search(request);
-      if (response.getHits().getTotalHits().value >= 1) {
-        processInstanceConsumer.accept(response.getHits().getAt(0));
-      }
-    } catch (IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining parent process instance id for flow node instance: %s",
-              e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  private void findCalledDecisionInstance(
-      final String flowNodeInstanceId, Consumer<SearchHit> decisionInstanceConsumer) {
-    final TermQueryBuilder flowNodeInstanceQ = termQuery(ELEMENT_INSTANCE_KEY, flowNodeInstanceId);
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(decisionInstanceTemplate)
-            .source(
-                new SearchSourceBuilder()
-                    .query(flowNodeInstanceQ)
-                    .fetchSource(
-                        new String[] {
-                          ROOT_DECISION_DEFINITION_ID,
-                          ROOT_DECISION_NAME,
-                          ROOT_DECISION_ID,
-                          DECISION_DEFINITION_ID,
-                          DECISION_NAME,
-                          DECISION_ID
-                        },
-                        null)
-                    .sort(EVALUATION_DATE, SortOrder.DESC)
-                    .sort(EXECUTION_INDEX, SortOrder.DESC));
-    try {
-      final SearchResponse response = tenantAwareClient.search(request);
-      if (response.getHits().getTotalHits().value >= 1) {
-        decisionInstanceConsumer.accept(response.getHits().getAt(0));
-      }
-    } catch (IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining calls decision instance id for flow node instance: %s",
-              e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  private EventEntity getEventEntity(final String flowNodeInstanceId) {
-    final EventEntity eventEntity;
-    // request corresponding event and build cumulative metadata
-    QueryBuilder query =
-        constantScoreQuery(termQuery(EventTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId));
-    final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(eventTemplate)
-            .source(new SearchSourceBuilder().query(query).sort(EventTemplate.ID));
-    try {
-      final SearchResponse response = tenantAwareClient.search(request);
-      if (response.getHits().getTotalHits().value >= 1) {
-        // take last event
-        eventEntity =
-            fromSearchHit(
-                response
-                    .getHits()
-                    .getHits()[(int) (response.getHits().getTotalHits().value - 1)]
-                    .getSourceAsString(),
-                objectMapper,
-                EventEntity.class);
-      } else {
-        throw new NotFoundException(
-            String.format(
-                "Could not find flow node instance event with id '%s'.", flowNodeInstanceId));
-      }
-    } catch (IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining metadata for flow node instance: %s",
-              e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-    return eventEntity;
+    return flowNodeInstanceMetadataBuilder.buildFrom(flowNodeInstance);
   }
 
   private Set<String> collectFinishedFlowNodes(final Filter finishedFlowNodes) {
@@ -1171,7 +1012,7 @@ public class FlowNodeInstanceReader extends AbstractReader
         ((Terms) finishedFlowNodes.getAggregations().get(FINISHED_FLOW_NODES_BUCKETS_AGG_NAME))
             .getBuckets();
     if (buckets != null) {
-      for (Bucket bucket : buckets) {
+      for (final Bucket bucket : buckets) {
         result.add(bucket.getKeyAsString());
       }
     }

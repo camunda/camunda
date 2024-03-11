@@ -27,8 +27,8 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.reader.UserTaskReader;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -44,7 +44,7 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
 
   private final UserTaskTemplate userTaskTemplate;
 
-  public ElasticsearchUserTaskReader(UserTaskTemplate userTaskTemplate) {
+  public ElasticsearchUserTaskReader(final UserTaskTemplate userTaskTemplate) {
     this.userTaskTemplate = userTaskTemplate;
   }
 
@@ -53,16 +53,37 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
     logger.debug("retrieve all user tasks");
     try {
       final QueryBuilder query = matchAllQuery();
-      SearchRequest searchRequest =
+      final SearchRequest searchRequest =
           ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
               .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
-      SearchResponse response = tenantAwareClient.search(searchRequest);
-      return ElasticsearchUtil.mapSearchHits(
-          response.getHits().getHits(), objectMapper, UserTaskEntity.class);
-    } catch (IOException e) {
+      return scroll(searchRequest, UserTaskEntity.class);
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
+  }
+
+  @Override
+  public Optional<UserTaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
+    logger.debug("Get UserTask by flowNodeInstanceKey {}", flowNodeInstanceKey);
+    try {
+      final QueryBuilder query =
+          termQuery(UserTaskTemplate.ELEMENT_INSTANCE_KEY, flowNodeInstanceKey);
+      final SearchRequest searchRequest =
+          ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
+              .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
+      final var hits = tenantAwareClient.search(searchRequest).getHits();
+      if (hits.getTotalHits().value == 1) {
+        return Optional.of(
+            ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, UserTaskEntity.class)
+                .get(0));
+      }
+    } catch (final IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+    return Optional.empty();
   }
 }

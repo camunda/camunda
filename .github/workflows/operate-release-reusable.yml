@@ -128,7 +128,7 @@ jobs:
       - name: Setup Maven
         uses: stCarolas/setup-maven@v4.5
         with:
-          maven-version: 3.8.6
+          maven-version: 3.9.6
 
       # Setup: Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: Create Maven settings.xml
@@ -263,8 +263,7 @@ jobs:
           export ARCHITECTURE=arm64
           bash ./.ci/docker/test/verify.sh $IMAGE_NAME:$IMAGE_TAG
 
-          docker buildx build . \
-          -f $DOCKER_FILE_NAME \
+          docker buildx build -f $DOCKER_FILE_NAME . \
           --platform linux/arm64,linux/amd64 \
           --build-arg VERSION=$VERSION \
           --build-arg REVISION=$commit_hash \
@@ -274,7 +273,7 @@ jobs:
           --push
 
           if ${IS_LATEST}; then
-            docker buildx build . \
+            docker buildx build -f $DOCKER_FILE_NAME . \
             --platform linux/arm64,linux/amd64 \
             --build-arg VERSION=$VERSION \
             --build-arg REVISION=$commit_hash \

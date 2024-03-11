@@ -12,6 +12,7 @@
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
     <version>3.2.3</version>
+    <relativePath />
   </parent>
 
   <modules>
@@ -57,8 +58,8 @@
     <netty.version>4.1.100.Final</netty.version>
 
     <!-- Library versions not provided by spring boot -->
-    <version.zeebe>8.5.0-alpha1</version.zeebe>
-    <version.identity>8.5.0-alpha1</version.identity>
+    <version.zeebe>8.5.0-alpha2</version.zeebe>
+    <version.identity>8.5.0-alpha2</version.identity>
     <version.elasticsearch>7.17.16</version.elasticsearch>
     <version.parsson>1.1.5</version.parsson>
     <version.opensearch>2.5.0</version.opensearch>
@@ -452,7 +453,7 @@
                 <exclude>**/target/**/*.md</exclude>
                 <exclude>**/node_modules/**/*.md</exclude>
               </excludes>
-              <flexmark></flexmark>
+              <flexmark />
             </markdown>
           </configuration>
           <dependencies>
@@ -498,7 +499,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration></configuration>
+              <configuration />
             </execution>
           </executions>
         </plugin>
@@ -619,13 +620,6 @@
     </repository>
   </distributionManagement>
 
-  <scm>
-    <url>https://github.com/camunda/operate</url>
-    <connection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/operate.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_USERNAME}:${env.GITHUB_TOKEN}@github.com/camunda/operate.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
-
   <issueManagement>
     <system>Jira</system>
     <url>https://app.camunda.com/jira/browse/OPE/</url>
@@ -698,5 +692,4 @@
     </repository>
 
   </repositories>
-
 </project>

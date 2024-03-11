@@ -19,8 +19,7 @@ package io.camunda.operate.util;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllFinishedRequest;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createProcessInstanceRequest;
-import static io.camunda.operate.schema.templates.IncidentTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.operate.schema.templates.IncidentTemplate.STATE;
+import static io.camunda.operate.schema.templates.IncidentTemplate.*;
 import static io.camunda.operate.store.opensearch.OpensearchIncidentStore.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
@@ -748,6 +747,14 @@ public class OpensearchChecks {
                         term(PROCESS_INSTANCE_KEY, processInstanceKey))));
   }
 
+  public long getIncidentsCount(String bpmnProcessId, IncidentState state) {
+    return richOpenSearchClient
+        .doc()
+        .docCount(
+            searchRequestBuilder(incidentTemplate)
+                .query(and(term(STATE, state.name()), term(BPMN_PROCESS_ID, bpmnProcessId))));
+  }
+
   /**
    * Including pending
    *
@@ -789,6 +796,28 @@ public class OpensearchChecks {
       int incidentsCount = (int) objects[1];
       try {
         return getActiveIncidentsCount(processInstanceKey) == incidentsCount;
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  /**
+   * Checks whether the incidents of given args[0] bpmnProcessId (Long) equals given args[1]
+   * incidentsCount (Integer)
+   *
+   * @return
+   */
+  @Bean(name = "incidentsInProcessAreActiveCheck")
+  public Predicate<Object[]> incidentsInProcessAreActiveCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(String.class);
+      assertThat(objects[1]).isInstanceOf(Integer.class);
+      String bpmnProcessId = (String) objects[0];
+      int incidentsCount = (int) objects[1];
+      try {
+        return getIncidentsCount(bpmnProcessId, IncidentState.ACTIVE) == incidentsCount;
       } catch (NotFoundException ex) {
         return false;
       }

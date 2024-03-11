@@ -45,47 +45,52 @@ public class EventMetadataEntity {
     return jobType;
   }
 
-  public void setJobType(String jobType) {
+  public EventMetadataEntity setJobType(final String jobType) {
     this.jobType = jobType;
+    return this;
   }
 
   public Integer getJobRetries() {
     return jobRetries;
   }
 
-  public void setJobRetries(Integer jobRetries) {
+  public EventMetadataEntity setJobRetries(final Integer jobRetries) {
     this.jobRetries = jobRetries;
+    return this;
   }
 
   public String getJobWorker() {
     return jobWorker;
   }
 
-  public void setJobWorker(String jobWorker) {
+  public EventMetadataEntity setJobWorker(final String jobWorker) {
     this.jobWorker = jobWorker;
+    return this;
   }
 
   public OffsetDateTime getJobDeadline() {
     return jobDeadline;
   }
 
-  public void setJobDeadline(OffsetDateTime jobDeadline) {
+  public EventMetadataEntity setJobDeadline(final OffsetDateTime jobDeadline) {
     this.jobDeadline = jobDeadline;
+    return this;
   }
 
   public Map<String, String> getJobCustomHeaders() {
     return jobCustomHeaders;
   }
 
-  public void setJobCustomHeaders(Map<String, String> jobCustomHeaders) {
+  public EventMetadataEntity setJobCustomHeaders(final Map<String, String> jobCustomHeaders) {
     this.jobCustomHeaders = jobCustomHeaders;
+    return this;
   }
 
   public Long getJobKey() {
     return jobKey;
   }
 
-  public void setJobKey(Long jobKey) {
+  public void setJobKey(final Long jobKey) {
     this.jobKey = jobKey;
   }
 
@@ -93,7 +98,7 @@ public class EventMetadataEntity {
     return incidentErrorType;
   }
 
-  public void setIncidentErrorType(ErrorType incidentErrorType) {
+  public void setIncidentErrorType(final ErrorType incidentErrorType) {
     this.incidentErrorType = incidentErrorType;
   }
 
@@ -101,7 +106,7 @@ public class EventMetadataEntity {
     return incidentErrorMessage;
   }
 
-  public void setIncidentErrorMessage(String incidentErrorMessage) {
+  public void setIncidentErrorMessage(final String incidentErrorMessage) {
     this.incidentErrorMessage = incidentErrorMessage;
   }
 

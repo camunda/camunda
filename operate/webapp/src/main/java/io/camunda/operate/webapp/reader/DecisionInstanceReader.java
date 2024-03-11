@@ -16,6 +16,7 @@
  */
 package io.camunda.operate.webapp.reader;
 
+import io.camunda.operate.util.Tuple;
 import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
@@ -29,4 +30,7 @@ public interface DecisionInstanceReader {
   DecisionInstanceListResponseDto queryDecisionInstances(DecisionInstanceListRequestDto request);
 
   Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(String decisionInstanceId);
+
+  Tuple<String, String> getCalledDecisionInstanceAndDefinitionByFlowNodeInstanceId(
+      final String flowNodeInstanceId);
 }

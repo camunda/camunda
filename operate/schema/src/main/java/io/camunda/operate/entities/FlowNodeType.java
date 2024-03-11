@@ -49,13 +49,13 @@ public enum FlowNodeType {
 
   private static final Logger logger = LoggerFactory.getLogger(FlowNodeType.class);
 
-  public static FlowNodeType fromZeebeBpmnElementType(String bpmnElementType) {
+  public static FlowNodeType fromZeebeBpmnElementType(final String bpmnElementType) {
     if (bpmnElementType == null) {
       return UNSPECIFIED;
     }
     try {
       return FlowNodeType.valueOf(bpmnElementType);
-    } catch (IllegalArgumentException ex) {
+    } catch (final IllegalArgumentException ex) {
       logger.error(
           "Flow node type not found for value [{}]. UNKNOWN type will be assigned.",
           bpmnElementType);

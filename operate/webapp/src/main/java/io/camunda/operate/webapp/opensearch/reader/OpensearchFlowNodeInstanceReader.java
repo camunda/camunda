@@ -20,14 +20,9 @@ import static io.camunda.operate.entities.FlowNodeState.ACTIVE;
 import static io.camunda.operate.entities.FlowNodeState.COMPLETED;
 import static io.camunda.operate.entities.FlowNodeState.TERMINATED;
 import static io.camunda.operate.schema.indices.DecisionIndex.DECISION_ID;
-import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_NAME;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.EVALUATION_DATE;
-import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.EXECUTION_INDEX;
-import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ROOT_DECISION_DEFINITION_ID;
-import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ROOT_DECISION_ID;
-import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.ROOT_DECISION_NAME;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.END_DATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.FLOW_NODE_ID;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.ID;
@@ -38,7 +33,6 @@ import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.START
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
 import static io.camunda.operate.store.opensearch.OpensearchIncidentStore.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.filtersAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
@@ -54,7 +48,6 @@ import static org.opensearch.client.opensearch._types.SortOrder.Desc;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
@@ -62,15 +55,14 @@ import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.util.TreePath;
 import io.camunda.operate.webapp.data.IncidentDataHolder;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
+import io.camunda.operate.webapp.rest.FlowNodeInstanceMetadataBuilder;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
@@ -80,10 +72,9 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.metadata.DecisionInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEntryDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadata;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -100,8 +91,6 @@ import org.opensearch.client.opensearch._types.aggregations.*;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -110,18 +99,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     implements FlowNodeInstanceReader {
-  private static final Logger logger =
-      LoggerFactory.getLogger(OpensearchFlowNodeInstanceReader.class);
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
-
-  @Autowired private EventTemplate eventTemplate;
 
   @Autowired private IncidentTemplate incidentTemplate;
 
   @Autowired private OpensearchIncidentReader incidentReader;
-
-  @Autowired private ListViewTemplate listViewTemplate;
 
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
@@ -129,11 +112,13 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
   @Autowired private ProcessCache processCache;
 
+  @Autowired private FlowNodeInstanceMetadataBuilder flowNodeInstanceMetadataBuilder;
+
   @Override
   public Map<String, FlowNodeInstanceResponseDto> getFlowNodeInstances(
-      FlowNodeInstanceRequestDto request) {
-    Map<String, FlowNodeInstanceResponseDto> response = new HashMap<>();
-    for (FlowNodeInstanceQueryDto query : request.getQueries()) {
+      final FlowNodeInstanceRequestDto request) {
+    final Map<String, FlowNodeInstanceResponseDto> response = new HashMap<>();
+    for (final FlowNodeInstanceQueryDto query : request.getQueries()) {
       response.put(query.getTreePath(), getFlowNodeInstances(query));
     }
     return response;
@@ -141,7 +126,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
   @Override
   public FlowNodeMetadataDto getFlowNodeMetadata(
-      String processInstanceId, FlowNodeMetadataRequestDto request) {
+      final String processInstanceId, final FlowNodeMetadataRequestDto request) {
     if (request.getFlowNodeId() != null) {
       return getMetadataByFlowNodeId(
           processInstanceId, request.getFlowNodeId(), request.getFlowNodeType());
@@ -152,7 +137,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   }
 
   @Override
-  public Map<String, FlowNodeStateDto> getFlowNodeStates(String processInstanceId) {
+  public Map<String, FlowNodeStateDto> getFlowNodeStates(final String processInstanceId) {
     final String latestFlowNodeAggName = "latestFlowNode";
     final String activeFlowNodesAggName = "activeFlowNodes";
     final String activeFlowNodesBucketsAggName = "activeFlowNodesBuckets";
@@ -187,7 +172,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
             Map.of(
                 AGG_INCIDENT_PATHS, termAggregation(TREE_PATH, TERMS_AGG_SIZE)._toAggregation()));
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
             .query(query)
             .aggregations(
@@ -197,12 +182,12 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                     finishedFlowNodesAggName, finishedFlowNodesAggs))
             .size(0);
 
-    Map<String, Aggregate> aggregates =
+    final Map<String, Aggregate> aggregates =
         richOpenSearchClient.doc().searchAggregations(searchRequestBuilder);
 
-    Set<String> incidentPaths = getIncidentPaths(aggregates.get(AGG_INCIDENTS).filter());
+    final Set<String> incidentPaths = getIncidentPaths(aggregates.get(AGG_INCIDENTS).filter());
 
-    Set<String> finishedFlowNodes =
+    final Set<String> finishedFlowNodes =
         collectFinishedFlowNodes(aggregates.get(finishedFlowNodesAggName).filter());
 
     final StringTermsAggregate flowNodesAgg =
@@ -216,8 +201,8 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     final Map<String, FlowNodeStateDto> result = new HashMap<>();
     if (flowNodesAgg != null) {
       record FlowNodeResult(String state, String treePath) {}
-      for (StringTermsBucket bucket : flowNodesAgg.buckets().array()) {
-        var lastFlowNode =
+      for (final StringTermsBucket bucket : flowNodesAgg.buckets().array()) {
+        final var lastFlowNode =
             bucket
                 .aggregations()
                 .get(latestFlowNodeAggName)
@@ -238,7 +223,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     }
 
     // add finished when needed
-    for (String finishedFlowNodeId : finishedFlowNodes) {
+    for (final String finishedFlowNodeId : finishedFlowNodes) {
       if (result.get(finishedFlowNodeId) == null) {
         result.put(finishedFlowNodeId, FlowNodeStateDto.COMPLETED);
       }
@@ -249,8 +234,8 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
   @Override
   public List<Long> getFlowNodeInstanceKeysByIdAndStates(
-      Long processInstanceId, String flowNodeId, List<FlowNodeState> states) {
-    var searchRequestBuilder =
+      final Long processInstanceId, final String flowNodeId, final List<FlowNodeState> states) {
+    final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate.getAlias())
             .query(
                 withTenantCheck(
@@ -269,8 +254,8 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
   @Override
   public Collection<FlowNodeStatisticsDto> getFlowNodeStatisticsForProcessInstance(
-      Long processInstanceId) {
-    var searchRequestBuilder =
+      final Long processInstanceId) {
+    final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
             .query(
                 constantScore(
@@ -319,8 +304,8 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   }
 
   @Override
-  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
-    var searchRequestBuilder =
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(final Long processInstanceKey) {
+    final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
             .query(
                 constantScore(
@@ -333,8 +318,8 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
         .scrollValues(searchRequestBuilder, FlowNodeInstanceEntity.class);
   }
 
-  private FlowNodeInstanceResponseDto getFlowNodeInstances(FlowNodeInstanceQueryDto request) {
-    FlowNodeInstanceResponseDto response = queryFlowNodeInstances(request);
+  private FlowNodeInstanceResponseDto getFlowNodeInstances(final FlowNodeInstanceQueryDto request) {
+    final FlowNodeInstanceResponseDto response = queryFlowNodeInstances(request);
     // query one additional instance
     if (request.getSearchAfterOrEqual() != null || request.getSearchBeforeOrEqual() != null) {
       adjustResponse(response, request);
@@ -351,7 +336,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
       flowNodeInstanceId = (String) request.getSearchBeforeOrEqual(objectMapper)[1];
     }
 
-    FlowNodeInstanceQueryDto newRequest =
+    final FlowNodeInstanceQueryDto newRequest =
         request
             .createCopy()
             .setSearchAfter(null)
@@ -386,7 +371,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   }
 
   private FlowNodeInstanceResponseDto queryFlowNodeInstances(
-      final FlowNodeInstanceQueryDto flowNodeInstanceRequest, String flowNodeInstanceId) {
+      final FlowNodeInstanceQueryDto flowNodeInstanceRequest, final String flowNodeInstanceId) {
 
     final String processInstanceId = flowNodeInstanceRequest.getProcessInstanceId();
     final String parentTreePath = flowNodeInstanceRequest.getTreePath();
@@ -396,7 +381,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     final Query query =
         withTenantCheck(constantScore(term(PROCESS_INSTANCE_KEY, processInstanceId)));
 
-    Aggregation runningParentsAgg =
+    final Aggregation runningParentsAgg =
         and(not(exists(END_DATE)), prefix(TREE_PATH, parentTreePath), term(LEVEL, level - 1))
             ._toAggregation();
 
@@ -415,7 +400,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     applySorting(searchRequestBuilder, flowNodeInstanceRequest);
 
     try {
-      FlowNodeInstanceResponseDto response;
+      final FlowNodeInstanceResponseDto response;
       if (flowNodeInstanceRequest.getPageSize() != null) {
         response = getOnePage(searchRequestBuilder, processInstanceId);
       } else {
@@ -431,7 +416,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
       }
 
       return response;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining all flow node instances: %s", e.getMessage());
@@ -440,7 +425,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   }
 
   private FlowNodeInstanceResponseDto scrollAllSearchHits(
-      final SearchRequest.Builder searchRequestBuilder, String processInstanceId)
+      final SearchRequest.Builder searchRequestBuilder, final String processInstanceId)
       throws IOException {
     final OpenSearchDocumentOperations.AggregatedResult<Hit<FlowNodeInstanceEntity>> response =
         richOpenSearchClient.doc().scrollHits(searchRequestBuilder, FlowNodeInstanceEntity.class);
@@ -448,7 +433,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
         response.values().stream()
             .map(
                 hit -> {
-                  var entity = hit.source();
+                  final var entity = hit.source();
                   entity.setSortValues(hit.sort().toArray());
                   return entity;
                 })
@@ -468,7 +453,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
             || request.getSearchAfterOrEqual() != null
             || (request.getSearchBefore() == null && request.getSearchBeforeOrEqual() == null);
 
-    Function<Object[], List<String>> toStrings =
+    final Function<Object[], List<String>> toStrings =
         objects -> Arrays.stream(objects).map(Object::toString).toList();
 
     if (directSorting) { // this sorting is also the default one for 1st page
@@ -494,16 +479,15 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   private FlowNodeInstanceResponseDto getOnePage(
       final SearchRequest.Builder searchRequestBuilder, final String processInstanceId)
       throws IOException {
-    var response =
+    final var response =
         richOpenSearchClient.doc().search(searchRequestBuilder, FlowNodeInstanceEntity.class);
     final boolean runningParent = isRunningParent(response.aggregations());
-    ;
 
     final List<FlowNodeInstanceEntity> children =
         response.hits().hits().stream()
             .map(
                 hit -> {
-                  var entity = hit.source();
+                  final var entity = hit.source();
                   entity.setSortValues(hit.sort().toArray());
                   return entity;
                 })
@@ -516,7 +500,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   }
 
   private void markHasIncident(
-      String processInstanceId, List<FlowNodeInstanceEntity> flowNodeInstances) {
+      final String processInstanceId, final List<FlowNodeInstanceEntity> flowNodeInstances) {
     if (flowNodeInstances == null || flowNodeInstances.isEmpty()) return;
     final Map<String, Query> filters =
         flowNodeInstances.stream()
@@ -529,7 +513,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                             prefix(TREE_PATH, flowNodeInstance.getTreePath()),
                             term(INCIDENT, true))));
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
             .query(withTenantCheck(term(PROCESS_INSTANCE_KEY, processInstanceId)))
             .size(0)
@@ -549,20 +533,21 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
             .collect(
                 Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue().docCount()));
 
-    for (var flowNodeInstance : flowNodeInstances) {
-      Long count = flowNodeIdIncidents.getOrDefault(flowNodeInstance.getId(), 0L);
+    for (final var flowNodeInstance : flowNodeInstances) {
+      final Long count = flowNodeIdIncidents.getOrDefault(flowNodeInstance.getId(), 0L);
       if (count > 0) {
         flowNodeInstance.setIncident(true);
       }
     }
   }
 
-  private boolean flowNodeInstanceIsRunningOrIsNotMarked(FlowNodeInstanceEntity flowNodeInstance) {
+  private boolean flowNodeInstanceIsRunningOrIsNotMarked(
+      final FlowNodeInstanceEntity flowNodeInstance) {
     return flowNodeInstance.getEndDate() == null || !flowNodeInstance.isIncident();
   }
 
-  private boolean isRunningParent(Map<String, Aggregate> aggs) {
-    Aggregate filterAggs = aggs.get(AGG_RUNNING_PARENT);
+  private boolean isRunningParent(final Map<String, Aggregate> aggs) {
+    final Aggregate filterAggs = aggs.get(AGG_RUNNING_PARENT);
     return filterAggs != null && filterAggs.filter().docCount() > 0;
   }
 
@@ -595,11 +580,11 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   private List<FlowNodeInstanceBreadcrumbEntryDto> buildBreadcrumb(
       final String treePath, final String flowNodeId, final int level) {
     // adjust to use prefixQuery
-    int lastSeparatorIndex = treePath.lastIndexOf("/");
+    final int lastSeparatorIndex = treePath.lastIndexOf("/");
     final String prefixTreePath =
         lastSeparatorIndex > -1 ? treePath.substring(0, lastSeparatorIndex) : treePath;
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
             .query(
                 constantScore(
@@ -612,7 +597,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
             .size(0)
             .aggregations(LEVELS_AGG_NAME, getLevelsAggs());
 
-    Buckets<LongTermsBucket> buckets =
+    final Buckets<LongTermsBucket> buckets =
         richOpenSearchClient
             .doc()
             .searchAggregations(searchRequestBuilder)
@@ -624,11 +609,11 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   }
 
   private FlowNodeInstanceEntity getFlowNodeInstanceEntity(final String flowNodeInstanceId) {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
             .query(constantScore(withTenantCheck(term(ID, flowNodeInstanceId))));
 
-    List<Hit<FlowNodeInstanceEntity>> hits =
+    final List<Hit<FlowNodeInstanceEntity>> hits =
         richOpenSearchClient
             .doc()
             .search(searchRequestBuilder, FlowNodeInstanceEntity.class)
@@ -644,7 +629,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
   private FlowNodeMetadataDto getMetadataByFlowNodeId(
       final String processInstanceId, final String flowNodeId, final FlowNodeType flowNodeType) {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(flowNodeInstanceTemplate)
             .query(
                 constantScore(
@@ -660,7 +645,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
       searchRequestBuilder.postFilter(term(TYPE, flowNodeType.name()));
     }
 
-    var response =
+    final var response =
         richOpenSearchClient.doc().search(searchRequestBuilder, FlowNodeInstanceEntity.class);
 
     if (response.hits().hits().isEmpty()) {
@@ -669,12 +654,13 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
     final FlowNodeMetadataDto result = new FlowNodeMetadataDto();
     final FlowNodeInstanceEntity flowNodeInstance = response.hits().hits().get(0).source();
-    var levelsAgg = response.aggregations().get(LEVELS_AGG_NAME).lterms();
+    final var levelsAgg = response.aggregations().get(LEVELS_AGG_NAME).lterms();
 
     if (levelsAgg != null
         && levelsAgg.buckets() != null
         && !levelsAgg.buckets().array().isEmpty()) {
-      var bucketCurrentLevel = getBucketFromLevel(levelsAgg.buckets(), flowNodeInstance.getLevel());
+      final var bucketCurrentLevel =
+          getBucketFromLevel(levelsAgg.buckets(), flowNodeInstance.getLevel());
       if (bucketCurrentLevel.docCount() == 1) {
         result.setInstanceMetadata(buildInstanceMetadata(flowNodeInstance));
         result.setFlowNodeInstanceId(flowNodeInstance.getId());
@@ -704,7 +690,8 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     return result;
   }
 
-  private LongTermsBucket getBucketFromLevel(Buckets<LongTermsBucket> buckets, final int level) {
+  private LongTermsBucket getBucketFromLevel(
+      final Buckets<LongTermsBucket> buckets, final int level) {
     return buckets.array().stream()
         .filter(b -> Integer.valueOf(b.key()).intValue() == level)
         .findFirst()
@@ -712,14 +699,14 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   }
 
   private void searchForIncidentsByFlowNodeIdAndType(
-      FlowNodeMetadataDto flowNodeMetadata,
+      final FlowNodeMetadataDto flowNodeMetadata,
       final String processInstanceId,
       final String flowNodeId,
       final FlowNodeType flowNodeType) {
     final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
     final String flowNodeInstancesTreePath =
         new TreePath(treePath).appendFlowNode(flowNodeId).toString();
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
             .query(
                 constantScore(
@@ -728,7 +715,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                             ACTIVE_INCIDENT_QUERY,
                             term(IncidentTemplate.TREE_PATH, flowNodeInstancesTreePath)))));
 
-    var hitsMeta =
+    final var hitsMeta =
         richOpenSearchClient.doc().search(searchRequestBuilder, IncidentEntity.class).hits();
 
     flowNodeMetadata.setIncidentCount(hitsMeta.total().value());
@@ -738,7 +725,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
       final Map<String, IncidentDataHolder> incData =
           incidentReader.collectFlowNodeDataForPropagatedIncidents(
               List.of(incidentEntity), processInstanceId, treePath);
-      DecisionInstanceReferenceDto rootCauseDecision =
+      final DecisionInstanceReferenceDto rootCauseDecision =
           flowNodeType == FlowNodeType.BUSINESS_RULE_TASK
               ? findRootCauseDecision(incidentEntity.getFlowNodeInstanceKey())
               : null;
@@ -757,7 +744,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   }
 
   private void searchForIncidents(
-      FlowNodeMetadataDto flowNodeMetadata,
+      final FlowNodeMetadataDto flowNodeMetadata,
       final String processInstanceId,
       final String flowNodeId,
       final String flowNodeInstanceId,
@@ -770,7 +757,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
             .appendFlowNodeInstance(flowNodeInstanceId)
             .toString();
 
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
             .query(
                 constantScore(
@@ -779,7 +766,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
                             ACTIVE_INCIDENT_QUERY,
                             term(IncidentTemplate.TREE_PATH, incidentTreePath)))));
 
-    var hitsMeta =
+    final var hitsMeta =
         richOpenSearchClient.doc().search(searchRequestBuilder, IncidentEntity.class).hits();
 
     flowNodeMetadata.setIncidentCount(hitsMeta.total().value());
@@ -809,7 +796,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   }
 
   private DecisionInstanceReferenceDto findRootCauseDecision(final Long flowNodeInstanceKey) {
-    var searchRequestBuilder =
+    final var searchRequestBuilder =
         searchRequestBuilder(decisionInstanceTemplate)
             .query(
                 withTenantCheck(
@@ -821,14 +808,14 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
             .source(sourceInclude(DECISION_NAME, DECISION_ID));
 
     record Result(String decisionName, String decisionId) {}
-    List<Hit<Result>> hits =
+    final List<Hit<Result>> hits =
         richOpenSearchClient.doc().search(searchRequestBuilder, Result.class).hits().hits();
 
     if (hits.isEmpty()) {
       return null;
     } else {
-      Result result = hits.get(0).source();
-      var decisionName =
+      final Result result = hits.get(0).source();
+      final var decisionName =
           result.decisionName() != null ? result.decisionName() : result.decisionId();
 
       return new DecisionInstanceReferenceDto()
@@ -848,7 +835,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     if ((firstBucketFlowNodeType != null
             && firstBucketFlowNodeType.equals(FlowNodeType.MULTI_INSTANCE_BODY))
         || getBucketFromLevel(buckets, currentInstanceLevel).docCount() > 1) {
-      for (LongTermsBucket levelBucket : buckets.array()) {
+      for (final LongTermsBucket levelBucket : buckets.array()) {
         final TopHitsAggregate levelTopHits =
             levelBucket.aggregations().get(LEVELS_TOP_HITS_AGG_NAME).topHits();
         record Result(Integer level, String flowNodeId, String type) {}
@@ -864,7 +851,8 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
   }
 
   private FlowNodeType getFirstBucketFlowNodeType(final Buckets<LongTermsBucket> buckets) {
-    var topHits = buckets.array().get(0).aggregations().get(LEVELS_TOP_HITS_AGG_NAME).topHits();
+    final var topHits =
+        buckets.array().get(0).aggregations().get(LEVELS_TOP_HITS_AGG_NAME).topHits();
     if (topHits != null && topHits.hits().total().value() > 0) {
       record Result(String type) {}
       final Result result = topHits.hits().hits().get(0).source().to(Result.class);
@@ -875,113 +863,9 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
     return null;
   }
 
-  private FlowNodeInstanceMetadataDto buildInstanceMetadata(
+  private FlowNodeInstanceMetadata buildInstanceMetadata(
       final FlowNodeInstanceEntity flowNodeInstance) {
-    final EventEntity eventEntity = getEventEntity(flowNodeInstance.getId());
-    final String[] calledProcessInstanceId = {null};
-    final String[] calledProcessDefinitionName = {null};
-    final String[] calledDecisionInstanceId = {null};
-    final String[] calledDecisionDefinitionName = {null};
-    final FlowNodeType type = flowNodeInstance.getType();
-
-    if (type == null) {
-      logger.error(
-          String.format(
-              "FlowNodeType for FlowNodeInstance with id %s is null", flowNodeInstance.getId()));
-      return null;
-    }
-
-    if (flowNodeInstance.getType().equals(FlowNodeType.CALL_ACTIVITY)) {
-      var searchRequestBuilder =
-          searchRequestBuilder(listViewTemplate)
-              .query(withTenantCheck(term(PARENT_FLOW_NODE_INSTANCE_KEY, flowNodeInstance.getId())))
-              .source(
-                  sourceInclude(ListViewTemplate.PROCESS_NAME, ListViewTemplate.BPMN_PROCESS_ID));
-
-      record Result(String processName, String bpmnProcessId) {}
-      var hits =
-          richOpenSearchClient.doc().search(searchRequestBuilder, Result.class).hits().hits();
-
-      if (!hits.isEmpty()) {
-        var hit = hits.get(0);
-        calledProcessInstanceId[0] = hit.id();
-        calledProcessDefinitionName[0] =
-            hit.source().processName() != null
-                ? hit.source().processName()
-                : hit.source().bpmnProcessId();
-      }
-    } else if (flowNodeInstance.getType().equals(FlowNodeType.BUSINESS_RULE_TASK)) {
-      var searchRequestBuilder =
-          searchRequestBuilder(decisionInstanceTemplate)
-              .query(withTenantCheck(term(ELEMENT_INSTANCE_KEY, flowNodeInstance.getId())))
-              .source(
-                  sourceInclude(
-                      ROOT_DECISION_DEFINITION_ID,
-                      ROOT_DECISION_NAME,
-                      ROOT_DECISION_ID,
-                      DECISION_DEFINITION_ID,
-                      DECISION_NAME,
-                      DECISION_ID))
-              .sort(sortOptions(EVALUATION_DATE, Desc), sortOptions(EXECUTION_INDEX, Desc));
-
-      record Result(
-          String rootDecisionDefinitionId,
-          String decisionDefinitionId,
-          String decisionName,
-          String decisionId,
-          String rootDecisionName,
-          String rootDecisionId) {}
-
-      var hits =
-          richOpenSearchClient.doc().search(searchRequestBuilder, Result.class).hits().hits();
-
-      if (!hits.isEmpty()) {
-        var hit = hits.get(0);
-        if (hit.source().rootDecisionDefinitionId.equals(hit.source().decisionDefinitionId)) {
-          // this is our instance, we will show the link
-          calledDecisionInstanceId[0] = hit.id();
-          calledDecisionDefinitionName[0] =
-              hit.source().decisionName() != null
-                  ? hit.source().decisionName()
-                  : hit.source().decisionId();
-        } else {
-          // we will show only name of the root decision without the link
-          calledDecisionDefinitionName[0] =
-              hit.source().rootDecisionName() != null
-                  ? hit.source().rootDecisionName()
-                  : hit.source().rootDecisionId();
-        }
-      }
-    }
-
-    return FlowNodeInstanceMetadataDto.createFrom(
-        flowNodeInstance,
-        eventEntity,
-        calledProcessInstanceId[0],
-        calledProcessDefinitionName[0],
-        calledDecisionInstanceId[0],
-        calledDecisionDefinitionName[0]);
-  }
-
-  private EventEntity getEventEntity(final String flowNodeInstanceId) {
-    var searchRequestBuilder =
-        searchRequestBuilder(eventTemplate)
-            .query(
-                constantScore(
-                    withTenantCheck(
-                        term(EventTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId))))
-            .sort(sortOptions(EventTemplate.ID, Asc));
-
-    List<EventEntity> eventEntities =
-        richOpenSearchClient.doc().searchValues(searchRequestBuilder, EventEntity.class, true);
-
-    if (eventEntities.isEmpty()) {
-      throw new NotFoundException(
-          String.format(
-              "Could not find flow node instance event with id '%s'.", flowNodeInstanceId));
-    }
-
-    return eventEntities.get(eventEntities.size() - 1); // take last event
+    return flowNodeInstanceMetadataBuilder.buildFrom(flowNodeInstance);
   }
 
   private Aggregation getLevelsAggs() {
@@ -1006,7 +890,8 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader
 
   private Set<String> getIncidentPaths(final FilterAggregate filterAggs) {
     if (filterAggs != null) {
-      StringTermsAggregate termsAggs = filterAggs.aggregations().get(AGG_INCIDENT_PATHS).sterms();
+      final StringTermsAggregate termsAggs =
+          filterAggs.aggregations().get(AGG_INCIDENT_PATHS).sterms();
       if (termsAggs != null) {
         return termsAggs.buckets().array().stream().map(b -> b.key()).collect(Collectors.toSet());
       }

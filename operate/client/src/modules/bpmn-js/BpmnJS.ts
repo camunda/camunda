@@ -123,6 +123,12 @@ class BpmnJS {
       await this.import(xml);
     }
 
+    // if render is called a second time before importing has finished,
+    // exit early because there is no root element yet.
+    if (this.#rootElement === undefined) {
+      return;
+    }
+
     if (!isEqual(this.#selectableFlowNodes, selectableFlowNodes)) {
       // handle op-selectable markers
       this.#selectableFlowNodes.forEach((flowNodeId) => {
@@ -268,6 +274,8 @@ class BpmnJS {
 
     if (elementRegistry?.get(elementId) !== undefined) {
       canvas?.addMarker(elementId, className);
+    } else {
+      throw new Error(`Element "${elementId}" not found`);
     }
   };
 

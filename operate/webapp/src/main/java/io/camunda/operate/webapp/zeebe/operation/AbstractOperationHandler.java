@@ -107,9 +107,13 @@ public abstract class AbstractOperationHandler implements OperationHandler {
         operation.getType().name());
   }
 
+  protected boolean canForceFailOperation(OperationEntity operation) {
+    return false;
+  }
+
   protected void failOperation(OperationEntity operation, String errorMsg)
       throws PersistenceException {
-    if (isLocked(operation)) {
+    if (isLocked(operation) || canForceFailOperation(operation)) {
       operation.setState(OperationState.FAILED);
       operation.setLockExpirationTime(null);
       operation.setLockOwner(null);

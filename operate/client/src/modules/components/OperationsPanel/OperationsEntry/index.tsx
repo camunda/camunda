@@ -19,6 +19,7 @@ import {formatDate} from 'modules/utils/date';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useLoadingProgress} from './useLoadingProgress';
 import {Container, Details, Title, Header, ProgressBar} from './styled';
+import OperationEntryStatus from './OperationEntryStatus';
 import {
   TrashCan,
   Error,
@@ -30,6 +31,7 @@ import {
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {IS_BATCH_MOVE_MODIFICATION_ENABLED} from 'modules/feature-flags';
 
 type OperationLabelType =
   | 'Edit'
@@ -64,6 +66,8 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     instancesCount,
     operationsTotalCount,
     operationsFinishedCount,
+    failedOperationsCount,
+    completedOperationsCount,
   } = operation;
 
   const {fakeProgressPercentage, isComplete} = useLoadingProgress({
@@ -73,16 +77,24 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
 
   const label = TYPE_LABELS[type];
 
+  const isTypeDeleteProcessOrDecision = [
+    'DELETE_PROCESS_DEFINITION',
+    'DELETE_DECISION_DEFINITION',
+  ].includes(type);
+
+  const shouldHaveIdLink =
+    label !== 'Delete' ||
+    (isTypeDeleteProcessOrDecision && failedOperationsCount) ||
+    (label === 'Delete' &&
+      !isTypeDeleteProcessOrDecision &&
+      failedOperationsCount);
+
   return (
     <Container data-testid="operations-entry">
       <Header>
         <Title>
           {label}
-          {['DELETE_PROCESS_DEFINITION', 'DELETE_DECISION_DEFINITION'].includes(
-            type,
-          )
-            ? ` ${name}`
-            : ''}
+          {isTypeDeleteProcessOrDecision ? ` ${name}` : ''}
         </Title>
         {label === 'Delete' && (
           <TrashCan size={16} data-testid="operation-delete-icon" />
@@ -103,10 +115,33 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           <MigrateAlt size={16} data-testid="operation-migrate-icon" />
         )}
       </Header>
-      <div data-testid="operation-id">{id}</div>
+      {IS_BATCH_MOVE_MODIFICATION_ENABLED && shouldHaveIdLink ? (
+        <Link
+          data-testid="operation-id"
+          to={{
+            pathname: Paths.processes(),
+            search: `?active=true&incidents=true&completed=true&canceled=true&operationId=${id}`,
+          }}
+          state={{hideOptionalFilters: true}}
+          onClick={panelStatesStore.expandFiltersPanel}
+        >
+          {id}
+        </Link>
+      ) : (
+        <div data-testid="operation-id">{id}</div>
+      )}
       {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
       <Details>
-        {label !== 'Delete' && (
+        {IS_BATCH_MOVE_MODIFICATION_ENABLED && (
+          <OperationEntryStatus
+            isTypeDeleteProcessOrDecision={isTypeDeleteProcessOrDecision}
+            label={label}
+            failedOperationsCount={failedOperationsCount}
+            completedOperationsCount={completedOperationsCount}
+          />
+        )}
+
+        {!IS_BATCH_MOVE_MODIFICATION_ENABLED && label !== 'Delete' && (
           <Link
             to={{
               pathname: Paths.processes(),
@@ -119,9 +154,10 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           </Link>
         )}
 
-        {['DELETE_PROCESS_DEFINITION', 'DELETE_DECISION_DEFINITION'].includes(
-          type,
-        ) && <div>{`${pluralSuffix(instancesCount, 'instance')} deleted`}</div>}
+        {!IS_BATCH_MOVE_MODIFICATION_ENABLED &&
+          isTypeDeleteProcessOrDecision && (
+            <div>{`${pluralSuffix(instancesCount, 'instance')} deleted`}</div>
+          )}
 
         {endDate !== null && isComplete && <div>{formatDate(endDate)}</div>}
       </Details>
@@ -130,3 +166,4 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
 };
 
 export default OperationsEntry;
+export type {OperationLabelType};

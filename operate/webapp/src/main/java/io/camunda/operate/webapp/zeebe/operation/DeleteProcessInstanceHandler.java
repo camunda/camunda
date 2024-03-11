@@ -19,6 +19,7 @@ package io.camunda.operate.webapp.zeebe.operation;
 import static io.camunda.operate.entities.OperationType.DELETE_PROCESS_INSTANCE;
 
 import io.camunda.operate.entities.OperationEntity;
+import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -52,6 +53,11 @@ public class DeleteProcessInstanceHandler extends AbstractOperationHandler
     final Long processInstanceKey = processInstance.getProcessInstanceKey();
     processInstanceWriter.deleteInstanceById(processInstanceKey);
     completeOperation(operation);
+  }
+
+  @Override
+  protected boolean canForceFailOperation(final OperationEntity operation) {
+    return operation.getState().equals(OperationState.SENT);
   }
 
   @Override

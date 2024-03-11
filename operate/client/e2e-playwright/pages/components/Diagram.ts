@@ -54,6 +54,8 @@ export class Diagram {
   }
 
   getFlowNode(flowNodeName: string) {
-    return this.diagram.getByText(new RegExp(`^${flowNodeName}$`, 'i'));
+    return this.diagram
+      .locator('.djs-element')
+      .filter({hasText: new RegExp(`^${flowNodeName}$`, 'i')});
   }
 }
