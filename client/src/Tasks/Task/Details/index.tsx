@@ -28,6 +28,7 @@ import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
 import {Task, CurrentUser} from 'modules/types';
 import {useUnassignTask} from 'modules/mutations/useUnassignTask';
 import {useAssignTask} from 'modules/mutations/useAssignTask';
+import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
 
 type AssignmentStatus =
   | 'off'
@@ -133,6 +134,7 @@ const Details: React.FC<Props> = ({
   return (
     <Container data-testid="details-info">
       <Content level={4}>
+        <TurnOnNotificationPermission />
         <Header as="header" title="Task details header">
           <HeaderLeftContainer>
             <BodyCompact $variant="02">{name}</BodyCompact>

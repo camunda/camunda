@@ -150,6 +150,7 @@ declare module '@carbon/react' {
     statusIconDescription?: string;
     subtitle?: string;
     title?: string;
+    style?: Partial<CSSStyleDeclaration>;
   }>;
 
   export const ContainedList: React.FunctionComponent<{

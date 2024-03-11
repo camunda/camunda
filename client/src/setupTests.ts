@@ -34,6 +34,8 @@ beforeEach(() => {
   mockMatchMedia();
 
   window.localStorage.clear();
+
+  vi.stubGlobal('Notification', {permission: 'denied'});
 });
 
 beforeAll(() => {

@@ -16,6 +16,13 @@ const AssignButtonContainer = styled.span`
   align-items: center;
 `;
 
+const NotificationSection = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--cds-spacing-03);
+`;
+
 const Header = styled(TaskDetailsRow)`
   display: flex;
   flex-wrap: wrap;
@@ -87,4 +94,5 @@ export {
   Content,
   Aside,
   SkeletonText,
+  NotificationSection,
 };

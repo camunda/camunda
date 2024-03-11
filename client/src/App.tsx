@@ -7,6 +7,7 @@
 
 /* istanbul ignore file */
 
+import {useEffect} from 'react';
 import {
   Outlet,
   Route,
@@ -22,6 +23,7 @@ import {SessionWatcher} from './SessionWatcher';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {ErrorWithinLayout, FallbackErrorPage} from 'errorBoundaries';
+import {tracking} from 'modules/tracking';
 
 const Wrapper: React.FC = () => {
   return (
@@ -71,6 +73,13 @@ const router = createBrowserRouter(
 );
 
 const App: React.FC = () => {
+  useEffect(() => {
+    tracking.track({
+      eventName: 'app-loaded',
+      osNotificationPermission: Notification.permission,
+    });
+  }, []);
+
   return (
     <ErrorBoundary FallbackComponent={FallbackErrorPage}>
       <ThemeProvider>

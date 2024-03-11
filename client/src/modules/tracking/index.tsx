@@ -77,6 +77,14 @@ type Events =
         | 'multiple-tasks-found'
         | 'no-tasks-found'
         | 'navigated-away';
+    }
+  | {
+      eventName: 'app-loaded';
+      osNotificationPermission: NotificationPermission;
+    }
+  | {
+      eventName: 'os-notification-permission-requested';
+      outcome: NotificationPermission;
     };
 
 const STAGE_ENV = getStage(window.location.host);
