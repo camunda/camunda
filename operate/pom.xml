@@ -12,6 +12,7 @@
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
     <version>3.2.3</version>
+    <relativePath />
   </parent>
 
   <modules>

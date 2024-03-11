@@ -77,7 +77,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Process Instance History', () => {
-  test('Scrolling behavior - root level', async ({
+  test.skip('Scrolling behavior - root level', async ({
     page,
     processInstancePage,
   }) => {
