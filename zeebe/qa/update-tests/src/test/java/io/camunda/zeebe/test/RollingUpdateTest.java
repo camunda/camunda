@@ -17,14 +17,18 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import io.camunda.zeebe.test.util.junit.CachedTestResultsExtension;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.ZeebeVolume;
 import io.zeebe.containers.cluster.ZeebeCluster;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -61,14 +65,21 @@ final class RollingUpdateTest {
           .serviceTask("task2", s -> s.zeebeJobType("secondTask"))
           .endEvent()
           .done();
-  private final Network network = Network.newNetwork();
+
+  @SuppressWarnings("unused")
+  @RegisterExtension()
+  private static final CachedTestResultsExtension CACHED_TEST_RESULTS_EXTENSION =
+      new CachedTestResultsExtension(
+          Optional.ofNullable(System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_REPORT"))
+              .map(Path::of)
+              .orElse(null));
+
   private final ZeebeCluster cluster =
       ZeebeCluster.builder()
           .withEmbeddedGateway(true)
           .withBrokersCount(3)
           .withPartitionsCount(1)
           .withReplicationFactor(3)
-          .withNetwork(network)
           .build();
 
   @SuppressWarnings("unused")
