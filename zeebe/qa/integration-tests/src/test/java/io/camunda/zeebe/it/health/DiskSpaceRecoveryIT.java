@@ -112,10 +112,14 @@ final class DiskSpaceRecoveryIT {
           .atMost(Duration.ofMinutes(3))
           .pollInterval(1, TimeUnit.MICROSECONDS)
           .untilAsserted(
-              () ->
-                  assertThatThrownBy(DiskSpaceRecoveryIT.this::publishMessage)
-                      .hasRootCauseMessage(
-                          "RESOURCE_EXHAUSTED: Cannot accept requests for partition 1. Broker is out of disk space"));
+              () -> {
+                // Ensure at least one snapshot with a compactable processed position before going
+                // out of disk space
+                partitionsClient.takeSnapshot();
+                assertThatThrownBy(DiskSpaceRecoveryIT.this::publishMessage)
+                    .hasRootCauseMessage(
+                        "RESOURCE_EXHAUSTED: Cannot accept requests for partition 1. Broker is out of disk space");
+              });
 
       // when
       partitionsClient.resumeExporting();
