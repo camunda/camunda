@@ -32,7 +32,7 @@ import {FieldArray} from 'react-final-form-arrays';
 import {Close, Add} from '@carbon/react/icons';
 import arrayMutators from 'final-form-arrays';
 import {ProcessesSelect} from './ProcessesSelect';
-import {MultiTenancyDropdown} from 'modules/components/useMultiTenancyDropdown/MultiTenancyDropdown';
+import {MultiTenancySelect} from 'modules/components/useMultiTenancyDropdown/MultiTenancySelect';
 
 const formSchema = z.object({
   assignee: z
@@ -168,16 +168,19 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                   {({input}) => (
                     <ProcessesSelect
                       {...input}
+                      id={input.name}
                       tenantId={values.tenant}
                       disabled={!isOpen}
+                      labelText="Process"
                     />
                   )}
                 </Field>
                 {isMultiTenancyVisible ? (
                   <Field name="tenant">
                     {({input}) => (
-                      <MultiTenancyDropdown
-                        onChange={input.onChange}
+                      <MultiTenancySelect
+                        {...input}
+                        id={input.name}
                         className="second-column"
                       />
                     )}

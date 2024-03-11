@@ -9,24 +9,14 @@ import {Select, SelectItem} from '@carbon/react';
 import {DEFAULT_TENANT_ID} from 'modules/constants/multiTenancy';
 import {useProcesses} from 'modules/queries/useProcesses';
 
-interface Props<T = HTMLSelectElement> {
+type Props = {
   tenantId?: string;
-  value: string;
-  name: string;
-  onBlur: (event?: React.FocusEvent<T>) => void;
-  onChange: (event: React.ChangeEvent<T>) => void;
-  onFocus: (event?: React.FocusEvent<T>) => void;
-  disabled?: boolean;
-}
+} & React.ComponentProps<typeof Select>;
 
 const ProcessesSelect: React.FC<Props> = ({
-  name,
-  value,
-  onChange,
-  onBlur,
-  onFocus,
   tenantId = DEFAULT_TENANT_ID,
   disabled,
+  ...props
 }) => {
   const {data} = useProcesses(
     {
@@ -39,15 +29,7 @@ const ProcessesSelect: React.FC<Props> = ({
   const processes = data?.processes ?? [];
 
   return (
-    <Select
-      id={name}
-      labelText="Process"
-      disabled={disabled || processes.length === 0}
-      value={value}
-      onBlur={onBlur}
-      onFocus={onFocus}
-      onChange={onChange}
-    >
+    <Select {...props} disabled={disabled || processes.length === 0}>
       <SelectItem value="all" text="All processes" />
       {processes.map((process) => (
         <SelectItem

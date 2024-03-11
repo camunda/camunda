@@ -9,28 +9,41 @@ import {Dropdown} from '@carbon/react';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {CurrentUser} from 'modules/types';
 
+type Tenants = CurrentUser['tenants'][0];
+
 type Props = {
-  initialSelectedItem?: CurrentUser['tenants'][0];
+  initialSelectedItem?: Tenants;
   onChange: (tenant: string) => void;
   className?: string;
-};
+} & Omit<
+  React.ComponentProps<typeof Dropdown<Tenants>>,
+  | 'id'
+  | 'items'
+  | 'itemToString'
+  | 'label'
+  | 'titleText'
+  | 'initialSelectedItem'
+  | 'onChange'
+>;
 
 const MultiTenancyDropdown: React.FC<Props> = ({
   onChange,
   initialSelectedItem,
-  className,
+  hideLabel = true,
+  ...props
 }) => {
   const {data: currentUser} = useCurrentUser();
   const defaultTenant = currentUser?.tenants[0];
 
   return (
-    <Dropdown<CurrentUser['tenants'][0]>
+    <Dropdown<Tenants>
+      {...props}
       key={`tenant-dropdown-${currentUser?.tenants.length ?? 0}`}
       id="tenantId"
       items={currentUser?.tenants ?? []}
       itemToString={(item) => (item ? `${item.name} - ${item.id}` : '')}
       label="Tenant"
-      hideLabel
+      hideLabel={hideLabel}
       titleText="Tenant"
       initialSelectedItem={initialSelectedItem ?? defaultTenant}
       onChange={(event) => {
@@ -42,7 +55,6 @@ const MultiTenancyDropdown: React.FC<Props> = ({
 
         onChange(id);
       }}
-      className={className}
     />
   );
 };
