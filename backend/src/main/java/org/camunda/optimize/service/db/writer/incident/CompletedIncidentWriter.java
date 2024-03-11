@@ -11,7 +11,8 @@ public interface CompletedIncidentWriter extends AbstractIncidentWriter {
   default String createInlineUpdateScript() {
     // new import incidents should win over already
     // imported incidents, since those might be open incidents
-    return """
+    return
+    """
         def existingIncidentsById = ctx._source.incidents.stream().collect(Collectors.toMap(e -> e.id, e -> e, (e1, e2) -> e1));
         def incidentsToAddById = params.incidents.stream().collect(Collectors.toMap(e -> e.id, e -> e, (e1, e2) -> e1));
         existingIncidentsById.putAll(incidentsToAddById);

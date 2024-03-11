@@ -32,12 +32,14 @@ public interface ZeebeProcessInstanceScriptFactory {
                 ProcessInstanceDto.Fields.endDate,
                 ProcessInstanceDto.Fields.state,
                 ProcessInstanceDto.Fields.dataSource));
-    return """
+    return
+        """
       def newInstance = params.instance;
       def existingInstance = ctx._source;
       """
         + simplePropertyUpdateScript
-        + """
+        +
+        """
           if (existingInstance.startDate != null && existingInstance.endDate != null) {
             def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);
             existingInstance.duration = dateFormatter.parse(existingInstance.endDate).getTime() -
@@ -56,7 +58,8 @@ public interface ZeebeProcessInstanceScriptFactory {
   }
 
   private static String createUpdateFlowNodeInstancesScript() {
-    return """
+    return
+        """
       def flowNodesById = existingInstance.flowNodeInstances.stream()
         .collect(Collectors.toMap(flowNode -> flowNode.flowNodeInstanceId, flowNode -> flowNode, (f1, f2) -> f1));
       def newFlowNodes = params.instance.flowNodeInstances;
@@ -107,7 +110,8 @@ public interface ZeebeProcessInstanceScriptFactory {
             "newIncident",
             "existingIncident",
             Set.of(IncidentDto.Fields.createTime, IncidentDto.Fields.endTime));
-    return """
+    return
+        """
       def incidentsById = existingInstance.incidents.stream()
         .collect(Collectors.toMap(incident -> incident.id, incident -> incident, (f1, f2) -> f1));
       def newIncidents = params.instance.incidents;
@@ -116,7 +120,8 @@ public interface ZeebeProcessInstanceScriptFactory {
         if (existingIncident != null) {
       """
         + simplePropertyUpdateScript
-        + """
+        +
+        """
               if (existingIncident.createTime != null && existingIncident.endTime != null) {
                 def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);
                 existingIncident.durationInMs = dateFormatter.parse(existingIncident.endTime).getTime() -
